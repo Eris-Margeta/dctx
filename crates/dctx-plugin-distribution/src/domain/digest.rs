@@ -32,13 +32,19 @@ impl Sha256Hex {
     }
 
     /// Wraps raw digest bytes.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn from_bytes(bytes: [u8; 32]) -> Self {
         Self(bytes)
     }
 
     /// Raw digest bytes.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn as_bytes(&self) -> &[u8; 32] {
         &self.0
     }
@@ -47,7 +53,8 @@ impl Sha256Hex {
     /// # Errors
     /// Returns a limit error when input exceeds the SHA-256 message length limit.
     pub fn of(bytes: &[u8]) -> Result<Self, DistributionError> {
-        let digest = Sha256::digest(bytes).map_err(|_| DistributionError::LimitExceeded { limit: u64::MAX })?;
+        let digest = Sha256::digest(bytes)
+            .map_err(|_| DistributionError::LimitExceeded { limit: u64::MAX })?;
         Ok(Self(*digest.as_bytes()))
     }
 }
@@ -73,7 +80,10 @@ fn nibble(b: u8) -> Option<u8> {
 pub type Fingerprint = Sha256Hex;
 
 /// Fingerprint of exact public key bytes.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn fingerprint(public_key: &[u8; 32]) -> Fingerprint {
     Sha256Hex::of(public_key).unwrap_or(Sha256Hex([0; 32]))
 }
@@ -91,9 +101,17 @@ pub struct PayloadCheck {
 
 impl PayloadCheck {
     /// Starts a check for `expected_bytes` with digest `expected_digest`.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new(expected_bytes: u64, expected_digest: Sha256Hex) -> Self {
-        Self { expected_bytes, expected_digest, seen: 0, hasher: Sha256::new() }
+        Self {
+            expected_bytes,
+            expected_digest,
+            seen: 0,
+            hasher: Sha256::new(),
+        }
     }
 
     /// Feeds the next chunk.
@@ -102,11 +120,15 @@ impl PayloadCheck {
     pub fn update(&mut self, chunk: &[u8]) -> Result<(), DistributionError> {
         let seen = self.seen.saturating_add(chunk.len() as u64);
         if seen > self.expected_bytes {
-            return Err(DistributionError::SizeMismatch { expected: self.expected_bytes });
+            return Err(DistributionError::SizeMismatch {
+                expected: self.expected_bytes,
+            });
         }
         self.hasher
             .update(chunk)
-            .map_err(|_| DistributionError::SizeMismatch { expected: self.expected_bytes })?;
+            .map_err(|_| DistributionError::SizeMismatch {
+                expected: self.expected_bytes,
+            })?;
         self.seen = seen;
         Ok(())
     }
@@ -116,7 +138,9 @@ impl PayloadCheck {
     /// Refuses a final size mismatch or a digest that differs from the expected digest.
     pub fn finish(self) -> Result<(), DistributionError> {
         if self.seen != self.expected_bytes {
-            return Err(DistributionError::SizeMismatch { expected: self.expected_bytes });
+            return Err(DistributionError::SizeMismatch {
+                expected: self.expected_bytes,
+            });
         }
         if *self.hasher.finalize().as_bytes() != self.expected_digest.0 {
             return Err(DistributionError::IntegrityFailure);
@@ -127,7 +151,11 @@ impl PayloadCheck {
     /// Checks a complete in-memory payload.
     /// # Errors
     /// Refuses a size mismatch, hash length overflow, or digest mismatch.
-    pub fn whole(bytes: &[u8], expected_bytes: u64, expected_digest: Sha256Hex) -> Result<(), DistributionError> {
+    pub fn whole(
+        bytes: &[u8],
+        expected_bytes: u64,
+        expected_digest: Sha256Hex,
+    ) -> Result<(), DistributionError> {
         let mut check = Self::new(expected_bytes, expected_digest);
         check.update(bytes)?;
         check.finish()
@@ -153,8 +181,9 @@ mod tests {
     #[test]
     fn fingerprint_matches_the_fixture_publisher_key() {
         let key: [u8; 32] = [
-            0xd7, 0x5a, 0x98, 0x01, 0x82, 0xb1, 0x0a, 0xb7, 0xd5, 0x4b, 0xfe, 0xd3, 0xc9, 0x64, 0x07, 0x3a, 0x0e,
-            0xe1, 0x72, 0xf3, 0xda, 0xa6, 0x23, 0x25, 0xaf, 0x02, 0x1a, 0x68, 0xf7, 0x07, 0x51, 0x1a,
+            0xd7, 0x5a, 0x98, 0x01, 0x82, 0xb1, 0x0a, 0xb7, 0xd5, 0x4b, 0xfe, 0xd3, 0xc9, 0x64,
+            0x07, 0x3a, 0x0e, 0xe1, 0x72, 0xf3, 0xda, 0xa6, 0x23, 0x25, 0xaf, 0x02, 0x1a, 0x68,
+            0xf7, 0x07, 0x51, 0x1a,
         ];
         assert_eq!(
             fingerprint(&key).to_string(),
@@ -166,9 +195,18 @@ mod tests {
     fn payload_check_refuses_size_before_hash() {
         let digest = Sha256Hex::parse(ABC, Document::Manifest).unwrap();
         assert!(PayloadCheck::whole(b"abc", 3, digest).is_ok());
-        assert_eq!(PayloadCheck::whole(b"abcd", 3, digest), Err(DistributionError::SizeMismatch { expected: 3 }));
-        assert_eq!(PayloadCheck::whole(b"ab", 3, digest), Err(DistributionError::SizeMismatch { expected: 3 }));
-        assert_eq!(PayloadCheck::whole(b"abd", 3, digest), Err(DistributionError::IntegrityFailure));
+        assert_eq!(
+            PayloadCheck::whole(b"abcd", 3, digest),
+            Err(DistributionError::SizeMismatch { expected: 3 })
+        );
+        assert_eq!(
+            PayloadCheck::whole(b"ab", 3, digest),
+            Err(DistributionError::SizeMismatch { expected: 3 })
+        );
+        assert_eq!(
+            PayloadCheck::whole(b"abd", 3, digest),
+            Err(DistributionError::IntegrityFailure)
+        );
     }
 
     proptest! {

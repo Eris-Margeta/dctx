@@ -43,7 +43,10 @@ fn closes(source: &str, token: &Token) -> Option<Shape> {
 }
 
 /// Returns partners, or the byte where nesting exceeded `max_depth`.
-#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+)]
 pub(super) fn pair(
     source: &str,
     tokens: &[Token],

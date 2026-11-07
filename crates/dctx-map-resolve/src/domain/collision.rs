@@ -57,7 +57,10 @@ pub enum AliasExpansion {
 }
 
 /// Import bindings that compete. A single binding is not a collision.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn alias_collisions(files: &[Facts]) -> Vec<AliasCollision> {
     let mut groups: BTreeMap<(String, String, String), BTreeSet<String>> = BTreeMap::new();
     for file in files {
@@ -90,7 +93,10 @@ pub fn alias_collisions(files: &[Facts]) -> Vec<AliasCollision> {
 }
 
 /// Display names that belong to more than one node.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn name_collisions(files: &[Facts]) -> Vec<NameCollision> {
     grouped_names(files)
         .into_iter()
@@ -100,7 +106,10 @@ pub fn name_collisions(files: &[Facts]) -> Vec<NameCollision> {
 
 /// Every node with this display or bare name, sorted by identity.
 /// One match returns that match. Several matches return all of them.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn disambiguate_name(files: &[Facts], package: &str, name: &str) -> Vec<StableId> {
     grouped_names(files)
         .into_iter()
@@ -145,7 +154,10 @@ fn grouped_names(files: &[Facts]) -> Vec<NameCollision> {
 
 /// Classifies matches that were already collected.
 /// Zero is unknown, one is unique, and the rest stay a sorted collision.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn expansion_from_hits(mut hits: Vec<StableId>) -> AliasExpansion {
     hits.sort();
     hits.dedup();
@@ -157,7 +169,10 @@ pub fn expansion_from_hits(mut hits: Vec<StableId>) -> AliasExpansion {
 }
 
 /// Expands a full stable id or a short `@` alias. Colliding aliases stay lists.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn expand_alias(ids: &[StableId], query: &str) -> AliasExpansion {
     if let Ok(id) = query.parse::<StableId>() {
         return if ids.iter().any(|candidate| candidate == &id) {
@@ -176,7 +191,10 @@ pub fn expand_alias(ids: &[StableId], query: &str) -> AliasExpansion {
 
 /// Body groups that are not a single disappeared-to-added move.
 /// Empty fingerprints and unique pairs are omitted. `detect_moves` keeps the pairs.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn body_collisions(previous: &[Node], current: &[Node]) -> Vec<BodyCollision> {
     let old_ids: BTreeSet<_> = previous.iter().map(|node| &node.id).collect();
     let new_ids: BTreeSet<_> = current.iter().map(|node| &node.id).collect();
@@ -271,11 +289,11 @@ mod tests {
         files[0].references.reverse();
         files.reverse();
         assert_eq!(alias_collisions(&files), collisions);
-        let alone = file(
-            "src/lib.rs",
-            vec![entry.clone()],
+        let alone = file("src/lib.rs", vec![entry.clone()]);
+        assert_eq!(
+            alias_collisions(std::slice::from_ref(&alone)),
+            [] as [crate::domain::collision::AliasCollision; 0]
         );
-        assert_eq!(alias_collisions(std::slice::from_ref(&alone)), [] as [crate::domain::collision::AliasCollision; 0]);
         let names = disambiguate_name(&files, "fixture", "work");
         assert_eq!(names, vec![left.node.id.clone(), right.node.id.clone()]);
         assert_eq!(name_collisions(&files)[0].candidates, names);
@@ -312,11 +330,20 @@ mod tests {
         expected.sort();
         assert_eq!(collision, AliasExpansion::Collision(expected));
 
-        let mut old = definition("src/old.rs", "calculate", "old::calculate", NodeKind::Symbol).node;
+        let mut old = definition(
+            "src/old.rs",
+            "calculate",
+            "old::calculate",
+            NodeKind::Symbol,
+        )
+        .node;
         old.fingerprint = "same-body".into();
         let mut new = definition("src/new.rs", "compute", "new::compute", NodeKind::Symbol).node;
         new.fingerprint = old.fingerprint.clone();
-        assert_eq!(body_collisions(std::slice::from_ref(&old), std::slice::from_ref(&new)), [] as [crate::domain::collision::BodyCollision; 0]);
+        assert_eq!(
+            body_collisions(std::slice::from_ref(&old), std::slice::from_ref(&new)),
+            [] as [crate::domain::collision::BodyCollision; 0]
+        );
         assert_eq!(detect_moves(&[old.clone()], &[new.clone()], "r").len(), 1);
         let mut another = new.clone();
         another.id = other;
@@ -326,13 +353,19 @@ mod tests {
         assert_eq!(collisions.len(), 1);
         assert_eq!(collisions[0].old, vec![old.id.clone()]);
         assert_eq!(collisions[0].new, vec![another.id.clone(), new.id.clone()]);
-        assert_eq!(detect_moves(&previous, &current, "r"), [] as [crate::domain::moves::Move; 0]);
+        assert_eq!(
+            detect_moves(&previous, &current, "r"),
+            [] as [crate::domain::moves::Move; 0]
+        );
         previous.reverse();
         current.reverse();
         assert_eq!(body_collisions(&previous, &current), collisions);
         old.fingerprint.clear();
         new.fingerprint.clear();
         another.fingerprint.clear();
-        assert_eq!(body_collisions(&[old], &[new, another]), [] as [crate::domain::collision::BodyCollision; 0]);
+        assert_eq!(
+            body_collisions(&[old], &[new, another]),
+            [] as [crate::domain::collision::BodyCollision; 0]
+        );
     }
 }

@@ -4,9 +4,9 @@
 //! Depends on [`super::dictionary`] for the strings it points at. The builder emits one range per first character.
 //! A stored range must be the exact dictionary slice that starts with that prefix.
 
-use super::cursor::{push_u32, Cursor};
+use super::cursor::{Cursor, push_u32};
 use super::error::SegmentError;
-use super::limits::{bounded_count, DecoderLimits};
+use super::limits::{DecoderLimits, bounded_count};
 
 /// One inclusive dictionary range whose strings all start with `prefix`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -69,10 +69,17 @@ pub(crate) fn check_range<S: AsRef<str>>(
     if !first_text.starts_with(prefix) || !last_text.starts_with(prefix) {
         return Err(SegmentError::Prefix("range"));
     }
-    if start > 0 && dictionary.get(start - 1).is_some_and(|text| text.as_ref().starts_with(prefix)) {
+    if start > 0
+        && dictionary
+            .get(start - 1)
+            .is_some_and(|text| text.as_ref().starts_with(prefix))
+    {
         return Err(SegmentError::Prefix("not exact"));
     }
-    if dictionary.get(end + 1).is_some_and(|text| text.as_ref().starts_with(prefix)) {
+    if dictionary
+        .get(end + 1)
+        .is_some_and(|text| text.as_ref().starts_with(prefix))
+    {
         return Err(SegmentError::Prefix("not exact"));
     }
     Ok(())
@@ -117,7 +124,12 @@ pub(crate) fn decode<'a, S: AsRef<str>>(
     if count != record_count || count == 0 {
         return Err(SegmentError::Cardinality("count"));
     }
-    let room = bounded_count(count, 12, u64::try_from(payload.len()).unwrap_or(u64::MAX), limits.max_records)?;
+    let room = bounded_count(
+        count,
+        12,
+        u64::try_from(payload.len()).unwrap_or(u64::MAX),
+        limits.max_records,
+    )?;
     let mut out = Vec::with_capacity(room);
     let mut previous: Option<&str> = None;
     for _ in 0..count {
@@ -134,7 +146,11 @@ pub(crate) fn decode<'a, S: AsRef<str>>(
         let first = cursor.u32()?;
         let last = cursor.u32()?;
         check_range(dictionary, prefix, first, last)?;
-        out.push(PrefixEntry { prefix, first, last });
+        out.push(PrefixEntry {
+            prefix,
+            first,
+            last,
+        });
     }
     if !cursor.rest().is_empty() {
         return Err(SegmentError::Prefix("trailing"));

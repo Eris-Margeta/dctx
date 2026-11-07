@@ -26,12 +26,16 @@ fn p8_recovery_progress() {
 
     store.cancel_at(Boundary::AfterReserve);
     assert_eq!(
-        store.publish(req("main", 2, segment("cancel-a"))).unwrap_err(),
+        store
+            .publish(req("main", 2, segment("cancel-a")))
+            .unwrap_err(),
         StoreError::Cancelled
     );
     store.request_cancel();
     assert_eq!(
-        store.publish(req("main", 2, segment("cancel-b"))).unwrap_err(),
+        store
+            .publish(req("main", 2, segment("cancel-b")))
+            .unwrap_err(),
         StoreError::Cancelled
     );
     assert_eq!(store.committed("main").unwrap(), Some(1));
@@ -40,8 +44,15 @@ fn p8_recovery_progress() {
     for index in 0..3 {
         let store = open(fs.clone());
         fs.arm_crash(Some(Boundary::AfterSegmentDirSync));
-        let err = store.publish(req("main", 2, segment(&format!("orphan-{index}")))).unwrap_err();
-        assert_eq!(err, StoreError::Crashed { boundary: "after-segment-dir-sync" });
+        let err = store
+            .publish(req("main", 2, segment(&format!("orphan-{index}"))))
+            .unwrap_err();
+        assert_eq!(
+            err,
+            StoreError::Crashed {
+                boundary: "after-segment-dir-sync"
+            }
+        );
     }
     assert_eq!(segment_count(&fs), 4);
     let store = open(fs.clone());
@@ -51,7 +62,10 @@ fn p8_recovery_progress() {
     assert_eq!(segment_count(&fs), 3);
     assert!(fs.exists("maintenance/cursor").unwrap());
     store.request_cancel();
-    assert_eq!(store.gc(GcBudget { objects: 32 }).unwrap_err(), StoreError::Cancelled);
+    assert_eq!(
+        store.gc(GcBudget { objects: 32 }).unwrap_err(),
+        StoreError::Cancelled
+    );
     assert_eq!(segment_count(&fs), 3);
     assert!(fs.exists("maintenance/cursor").unwrap());
     let store = open(fs.clone());
@@ -61,12 +75,16 @@ fn p8_recovery_progress() {
     assert!(!fs.exists("maintenance/cursor").unwrap());
     let pin = store.pin("main").unwrap();
     assert_eq!(pin.generation(), 1);
-    let bytes = store.read_segment(&pin, pin.segments()[0].digest()).unwrap();
+    let bytes = store
+        .read_segment(&pin, pin.segments()[0].digest())
+        .unwrap();
     assert_eq!(bytes, live);
     decode(&bytes, SegmentRole::Fact).unwrap();
 
     let tiny = SegmentStoreCap::open_tiny(fs.clone());
-    let err = tiny.publish(req("main", 2, segment("too-big"))).unwrap_err();
+    let err = tiny
+        .publish(req("main", 2, segment("too-big")))
+        .unwrap_err();
     assert!(matches!(err, StoreError::CacheLimit { .. }), "{err}");
     assert_ne!(err, StoreError::DiskFull);
     assert_eq!(store.committed("main").unwrap(), Some(1));
@@ -74,12 +92,18 @@ fn p8_recovery_progress() {
     let fs = MemoryFs::posix();
     fs.stick_lock("main");
     let store = open(fs.clone());
-    assert_eq!(store.publish(req("main", 1, segment("stuck"))).unwrap_err(), StoreError::Busy);
+    assert_eq!(
+        store.publish(req("main", 1, segment("stuck"))).unwrap_err(),
+        StoreError::Busy
+    );
     fs.crash();
     assert!(fs.lock_held("main"));
     assert_eq!(store.recover().unwrap_err(), StoreError::Busy);
     assert!(fs.lock_held("main"));
-    assert_eq!(store.publish(req("main", 1, segment("again"))).unwrap_err(), StoreError::Busy);
+    assert_eq!(
+        store.publish(req("main", 1, segment("again"))).unwrap_err(),
+        StoreError::Busy
+    );
 
     let fs = MemoryFs::posix();
     let store = open(fs.clone());

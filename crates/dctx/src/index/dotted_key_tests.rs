@@ -5,13 +5,29 @@ use super::{defines, reads, segments};
 #[test]
 fn dotted_queries_split_into_segments() {
     assert_eq!(segments("server.port"), Some(vec!["server", "port"]));
-    assert_eq!(segments("logging.level.root"), Some(vec!["logging", "level", "root"]));
-    assert_eq!(segments("my-app.max_conn2"), Some(vec!["my-app", "max_conn2"]));
+    assert_eq!(
+        segments("logging.level.root"),
+        Some(vec!["logging", "level", "root"])
+    );
+    assert_eq!(
+        segments("my-app.max_conn2"),
+        Some(vec!["my-app", "max_conn2"])
+    );
 }
 
 #[test]
 fn other_queries_are_not_dotted_keys() {
-    for query in ["port", "server.", ".port", "server..port", "server port", "server.port extra", "1abc.port", "a.b(c)", "HOME"] {
+    for query in [
+        "port",
+        "server.",
+        ".port",
+        "server..port",
+        "server port",
+        "server.port extra",
+        "1abc.port",
+        "a.b(c)",
+        "HOME",
+    ] {
         assert_eq!(segments(query), None, "{query}");
     }
 }

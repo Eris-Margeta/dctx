@@ -20,7 +20,10 @@ pub enum FileContentHandling {
 }
 
 /// Classifies a file to determine content handling strategy
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn classify_file(path: &Path, content: &[u8]) -> FileContentHandling {
     // 1. Check extension first (most reliable)
     if let Some(ext) = path.extension().and_then(|s| s.to_str()) {
@@ -122,7 +125,10 @@ fn binary(file_type: &str) -> FileContentHandling {
 }
 
 /// Analyzes file content to determine if it's binary
-#[allow(clippy::cast_precision_loss, reason = "Both counts are at most the 8192-byte sample size and are represented exactly by f64.")]
+#[allow(
+    clippy::cast_precision_loss,
+    reason = "Both counts are at most the 8192-byte sample size and are represented exactly by f64."
+)]
 fn is_binary_content(content: &[u8]) -> bool {
     // Empty files are not binary
     if content.is_empty() {

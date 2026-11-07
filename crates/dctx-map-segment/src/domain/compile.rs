@@ -6,7 +6,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use super::adjacency::{self, forward_key, ForwardEdge, Target};
+use super::adjacency::{self, ForwardEdge, Target, forward_key};
 use super::dictionary::{self, OwnedStrings};
 use super::directory::{BuiltSection, REQUIRED};
 use super::draft::{
@@ -14,7 +14,7 @@ use super::draft::{
 };
 use super::error::SegmentError;
 use super::fact_record;
-use super::facts::{self, validate_fact, Declaration, Fact, FactKey, Provenance, RawRef};
+use super::facts::{self, Declaration, Fact, FactKey, Provenance, RawRef, validate_fact};
 use super::kinds::{Completion, SectionKind, SegmentRole};
 use super::limits::DecoderLimits;
 use super::nodes::{self, ViewKey, ViewNode};
@@ -32,14 +32,20 @@ pub(crate) struct Input<'a> {
     pub(crate) edges: &'a [EdgeDraft],
 }
 
-pub(crate) fn sections(input: &Input<'_>, limits: &DecoderLimits) -> Result<Vec<BuiltSection>, SegmentError> {
+pub(crate) fn sections(
+    input: &Input<'_>,
+    limits: &DecoderLimits,
+) -> Result<Vec<BuiltSection>, SegmentError> {
     match input.role {
         SegmentRole::Fact => fact_sections(input, limits),
         SegmentRole::View => view_sections(input, limits),
     }
 }
 
-fn fact_sections(input: &Input<'_>, limits: &DecoderLimits) -> Result<Vec<BuiltSection>, SegmentError> {
+fn fact_sections(
+    input: &Input<'_>,
+    limits: &DecoderLimits,
+) -> Result<Vec<BuiltSection>, SegmentError> {
     if input.view_key.is_some() || !input.nodes.is_empty() || !input.edges.is_empty() {
         return Err(SegmentError::Role("forbidden"));
     }
@@ -55,7 +61,14 @@ fn fact_sections(input: &Input<'_>, limits: &DecoderLimits) -> Result<Vec<BuiltS
         facts.push(compile_fact(fact, &dict)?);
     }
     facts.sort_by_key(|left| facts::encode_key(&left.key));
-    let postings = compile_postings(SegmentRole::Fact, input.terms, input.lengths, &BTreeMap::new(), 0, &dict)?;
+    let postings = compile_postings(
+        SegmentRole::Fact,
+        input.terms,
+        input.lengths,
+        &BTreeMap::new(),
+        0,
+        &dict,
+    )?;
     let mut sections = Vec::new();
     push_dictionary(&mut sections, &dict)?;
     push_prefixes(&mut sections, &dict)?;
@@ -65,7 +78,10 @@ fn fact_sections(input: &Input<'_>, limits: &DecoderLimits) -> Result<Vec<BuiltS
     Ok(sections)
 }
 
-fn view_sections(input: &Input<'_>, limits: &DecoderLimits) -> Result<Vec<BuiltSection>, SegmentError> {
+fn view_sections(
+    input: &Input<'_>,
+    limits: &DecoderLimits,
+) -> Result<Vec<BuiltSection>, SegmentError> {
     if !input.facts.is_empty() {
         return Err(SegmentError::Role("fact"));
     }
@@ -115,7 +131,10 @@ fn view_sections(input: &Input<'_>, limits: &DecoderLimits) -> Result<Vec<BuiltS
     Ok(sections)
 }
 
-fn fact_dictionary(input: &Input<'_>, limits: &DecoderLimits) -> Result<OwnedStrings, SegmentError> {
+fn fact_dictionary(
+    input: &Input<'_>,
+    limits: &DecoderLimits,
+) -> Result<OwnedStrings, SegmentError> {
     let mut set = BTreeSet::new();
     for fact in input.facts {
         remember(&mut set, &fact.dialect, limits)?;
@@ -147,7 +166,10 @@ fn fact_dictionary(input: &Input<'_>, limits: &DecoderLimits) -> Result<OwnedStr
     OwnedStrings::from_set(set, limits)
 }
 
-fn view_dictionary(input: &Input<'_>, limits: &DecoderLimits) -> Result<OwnedStrings, SegmentError> {
+fn view_dictionary(
+    input: &Input<'_>,
+    limits: &DecoderLimits,
+) -> Result<OwnedStrings, SegmentError> {
     let mut set = BTreeSet::new();
     if let Some(key) = input.view_key {
         remember(&mut set, &key.trust, limits)?;
@@ -278,11 +300,15 @@ fn compile_edges(
 ) -> Result<Vec<ForwardEdge>, SegmentError> {
     let mut edges = Vec::new();
     for draft in drafts {
-        let source = *nodes.get(draft.source.as_str()).ok_or(SegmentError::Adjacency("node"))?;
+        let source = *nodes
+            .get(draft.source.as_str())
+            .ok_or(SegmentError::Adjacency("node"))?;
         let target = match &draft.target {
-            EdgeEnd::Resolved(name) => {
-                Target::Resolved(*nodes.get(name.as_str()).ok_or(SegmentError::Adjacency("node"))?)
-            }
+            EdgeEnd::Resolved(name) => Target::Resolved(
+                *nodes
+                    .get(name.as_str())
+                    .ok_or(SegmentError::Adjacency("node"))?,
+            ),
             EdgeEnd::Unresolved(name) => Target::Unresolved(dict.id(name)?),
         };
         edges.push(ForwardEdge {
@@ -351,7 +377,9 @@ fn resolve_doc(
             if role != SegmentRole::View {
                 return Err(SegmentError::Postings("doc"));
             }
-            *nodes.get(name.as_str()).ok_or(SegmentError::Postings("doc"))?
+            *nodes
+                .get(name.as_str())
+                .ok_or(SegmentError::Postings("doc"))?
         }
     };
     if id >= doc_count {
@@ -360,7 +388,11 @@ fn resolve_doc(
     Ok(id)
 }
 
-fn remember(set: &mut BTreeSet<String>, value: &str, limits: &DecoderLimits) -> Result<(), SegmentError> {
+fn remember(
+    set: &mut BTreeSet<String>,
+    value: &str,
+    limits: &DecoderLimits,
+) -> Result<(), SegmentError> {
     if usize::try_from(limits.max_string_bytes).is_ok_and(|max| value.len() > max) {
         return Err(SegmentError::Limit("string"));
     }
@@ -371,13 +403,19 @@ fn remember(set: &mut BTreeSet<String>, value: &str, limits: &DecoderLimits) -> 
     Ok(())
 }
 
-fn push_dictionary(sections: &mut Vec<BuiltSection>, dict: &OwnedStrings) -> Result<(), SegmentError> {
+fn push_dictionary(
+    sections: &mut Vec<BuiltSection>,
+    dict: &OwnedStrings,
+) -> Result<(), SegmentError> {
     let (payload, count) = dictionary::encode(dict.as_slice())?;
     sections.push(section(SectionKind::Dictionary, true, count, payload));
     Ok(())
 }
 
-fn push_prefixes(sections: &mut Vec<BuiltSection>, dict: &OwnedStrings) -> Result<(), SegmentError> {
+fn push_prefixes(
+    sections: &mut Vec<BuiltSection>,
+    dict: &OwnedStrings,
+) -> Result<(), SegmentError> {
     let specs = prefix::sparse_first_char(dict.as_slice());
     if specs.is_empty() {
         return Ok(());

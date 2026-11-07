@@ -11,8 +11,8 @@ use dctx_plugin_protocol::records::scalars::ProjectPath;
 
 use crate::domain::liveness::ProcessEvidence;
 use crate::ports::{
-    AuditKind, AuditPort, AuditRecord, AuditUnavailable, Clock, FileFault, FileIdentity, FilePort, ProcessId, ProcessPort,
-    Recipe, RecipeOutcome, RecipePort, SpawnFault,
+    AuditKind, AuditPort, AuditRecord, AuditUnavailable, Clock, FileFault, FileIdentity, FilePort,
+    ProcessId, ProcessPort, Recipe, RecipeOutcome, RecipePort, SpawnFault,
 };
 
 /// In-memory audit log; `available` and `capacity` inject outages and full logs.
@@ -30,13 +30,21 @@ pub struct FakeAudit {
 
 impl Default for FakeAudit {
     fn default() -> Self {
-        Self { records: Vec::new(), available: true, capacity: 1024, fail_next: None }
+        Self {
+            records: Vec::new(),
+            available: true,
+            capacity: 1024,
+            fail_next: None,
+        }
     }
 }
 
 impl FakeAudit {
     /// Number of records of `kind`.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn count(&self, kind: AuditKind) -> usize {
         self.records.iter().filter(|r| r.kind == kind).count()
     }
@@ -75,49 +83,87 @@ impl FakeFiles {
     /// Creates or overwrites `path` with `bytes`, as an outside writer would.
     pub fn put(&mut self, path: &ProjectPath, bytes: &[u8]) {
         let version = self.files.get(path).map_or(1, |(id, _)| id.version + 1);
-        let object = if let Some((id, _)) = self.files.get(path) { id.object } else {
+        let object = if let Some((id, _)) = self.files.get(path) {
+            id.object
+        } else {
             self.next_object += 1;
             self.next_object
         };
-        let identity = FileIdentity { object, version, size: bytes.len() as u64 };
+        let identity = FileIdentity {
+            object,
+            version,
+            size: bytes.len() as u64,
+        };
         self.files.insert(path.clone(), (identity, bytes.to_vec()));
     }
 
     /// Current content of `path`.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn content(&self, path: &ProjectPath) -> Option<&[u8]> {
         self.files.get(path).map(|(_, bytes)| bytes.as_slice())
     }
 
-    fn checked(&self, path: &ProjectPath, expected: FileIdentity) -> Result<&(FileIdentity, Vec<u8>), FileFault> {
+    fn checked(
+        &self,
+        path: &ProjectPath,
+        expected: FileIdentity,
+    ) -> Result<&(FileIdentity, Vec<u8>), FileFault> {
         let entry = self.files.get(path).ok_or(FileFault::Missing)?;
-        if entry.0 == expected { Ok(entry) } else { Err(FileFault::Changed) }
+        if entry.0 == expected {
+            Ok(entry)
+        } else {
+            Err(FileFault::Changed)
+        }
     }
 }
 
 impl FilePort for FakeFiles {
     fn identity(&mut self, path: &ProjectPath) -> Result<FileIdentity, FileFault> {
         self.identities += 1;
-        self.files.get(path).map(|(id, _)| *id).ok_or(FileFault::Missing)
+        self.files
+            .get(path)
+            .map(|(id, _)| *id)
+            .ok_or(FileFault::Missing)
     }
 
-    fn read(&mut self, path: &ProjectPath, expected: FileIdentity, offset: u64, length: u64) -> Result<Vec<u8>, FileFault> {
+    fn read(
+        &mut self,
+        path: &ProjectPath,
+        expected: FileIdentity,
+        offset: u64,
+        length: u64,
+    ) -> Result<Vec<u8>, FileFault> {
         let (_, bytes) = self.checked(path, expected)?;
-        let start = usize::try_from(offset).unwrap_or(usize::MAX).min(bytes.len());
-        let end = usize::try_from(offset.saturating_add(length)).unwrap_or(usize::MAX).min(bytes.len());
+        let start = usize::try_from(offset)
+            .unwrap_or(usize::MAX)
+            .min(bytes.len());
+        let end = usize::try_from(offset.saturating_add(length))
+            .unwrap_or(usize::MAX)
+            .min(bytes.len());
         let chunk = bytes[start..end].to_vec();
         self.reads += 1;
         Ok(chunk)
     }
 
-    fn replace(&mut self, path: &ProjectPath, expected: FileIdentity, bytes: &[u8]) -> Result<FileIdentity, FileFault> {
+    fn replace(
+        &mut self,
+        path: &ProjectPath,
+        expected: FileIdentity,
+        bytes: &[u8],
+    ) -> Result<FileIdentity, FileFault> {
         self.checked(path, expected)?;
         self.put(path, bytes);
         self.replaces += 1;
         if std::mem::take(&mut self.uncertain_next_replace) {
             return Err(FileFault::Uncertain);
         }
-        self.files.get(path).map(|(id, _)| *id).ok_or(FileFault::Uncertain)
+        self.files
+            .get(path)
+            .map(|(id, _)| *id)
+            .ok_or(FileFault::Uncertain)
     }
 }
 
@@ -225,7 +271,10 @@ mod tests {
 
     #[test]
     fn audit_fails_once_by_kind() {
-        let mut audit = FakeAudit { fail_next: Some(AuditKind::Completion), ..FakeAudit::default() };
+        let mut audit = FakeAudit {
+            fail_next: Some(AuditKind::Completion),
+            ..FakeAudit::default()
+        };
         let record = |kind| AuditRecord {
             kind,
             plugin: dctx_plugin_protocol::records::scalars::PluginId::new("dctx/git").expect("id"),

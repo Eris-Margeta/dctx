@@ -132,7 +132,11 @@ fn for_path_matches_the_shared_literal() {
     let mut seen = Vec::new();
     for (extension, language) in SHARED_EXTENSIONS {
         seen.push(*extension);
-        assert_eq!(Language::for_path(&format!("src/app.{extension}")), *language, "{extension}");
+        assert_eq!(
+            Language::for_path(&format!("src/app.{extension}")),
+            *language,
+            "{extension}"
+        );
         assert_eq!(
             Language::for_path(&format!("dir.dot/app.{}", extension.to_ascii_uppercase())),
             *language,
@@ -142,23 +146,28 @@ fn for_path_matches_the_shared_literal() {
     assert_eq!(
         seen,
         [
-            "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java",
-            "c", "h", "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts",
-            "rb", "rake", "gemspec", "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam",
-            "f90", "f95", "f03", "f08", "f", "for",
-            "pl", "pm", "t", "psgi",
-            "erl", "hrl",
-            "groovy",
-            "gradle",
-            "ps1", "psm1", "psd1", "v", "vh", "sv", "svh",
-            "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs", "tf", "tfvars", "hcl", "sql", "sh", "bash", "zsh", "bats", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql", "vue", "svelte", "astro", "html", "htm",
-            "clj", "cljs", "cljc", "edn", "lisp", "lsp", "cl", "scm", "ss", "el", "nix",
+            "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py",
+            "pyi", "go", "java", "c", "h", "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc",
+            "toml", "yaml", "yml", "cs", "kt", "kts", "rb", "rake", "gemspec", "php", "phtml",
+            "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "f90", "f95", "f03",
+            "f08", "f", "for", "pl", "pm", "t", "psgi", "erl", "hrl", "groovy", "gradle", "ps1",
+            "psm1", "psd1", "v", "vh", "sv", "svh", "txt", "rst", "adoc", "asciidoc", "org", "tex",
+            "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs", "tf", "tfvars", "hcl", "sql", "sh",
+            "bash", "zsh", "bats", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql", "vue",
+            "svelte", "astro", "html", "htm", "clj", "cljs", "cljc", "edn", "lisp", "lsp", "cl",
+            "scm", "ss", "el", "nix",
         ]
     );
     for basename in SHARED_RUBY_BASENAMES {
         assert_eq!(Language::for_path(basename), Language::Ruby);
-        assert_eq!(Language::for_path(&format!("lib/{}", basename.to_ascii_lowercase())), Language::Ruby);
-        assert_eq!(Language::for_path(&format!("lib\\{basename}")), Language::Ruby);
+        assert_eq!(
+            Language::for_path(&format!("lib/{}", basename.to_ascii_lowercase())),
+            Language::Ruby
+        );
+        assert_eq!(
+            Language::for_path(&format!("lib\\{basename}")),
+            Language::Ruby
+        );
     }
     assert_eq!(SHARED_RUBY_BASENAMES, ["Rakefile", "Gemfile"]);
     // A bare word is not an extension. This agrees with facade `language_of`.
@@ -182,7 +191,10 @@ const SHARED_INFRA_BASENAMES: &[(&str, Language)] = &[
 fn infra_basenames_match_the_shared_literal() {
     for (basename, language) in SHARED_INFRA_BASENAMES {
         assert_eq!(Language::for_path(basename), *language, "{basename}");
-        assert_eq!(Language::for_path(&basename.to_ascii_lowercase()), *language);
+        assert_eq!(
+            Language::for_path(&basename.to_ascii_lowercase()),
+            *language
+        );
         assert_eq!(Language::for_path(&format!("ci/{basename}")), *language);
         assert_eq!(Language::for_path(&format!("ci\\{basename}")), *language);
         let facts = PureParser.parse(basename, b"x\n").expect(basename);
@@ -202,7 +214,15 @@ fn ruby_basename_facts_match_the_rb_control() {
     assert_eq!(control.nodes[1].signature, "def real");
     assert_eq!(control.nodes[1].summary.text, "def real");
     assert_eq!(control.nodes[1].summary.source.as_str(), "sig");
-    for path in ["src/app.RB", "tasks/app.RAKE", "demo.GEMSPEC", "Rakefile", "lib/Gemfile", "pkg/RAKEFILE", "GEMFILE"] {
+    for path in [
+        "src/app.RB",
+        "tasks/app.RAKE",
+        "demo.GEMSPEC",
+        "Rakefile",
+        "lib/Gemfile",
+        "pkg/RAKEFILE",
+        "GEMFILE",
+    ] {
         let facts = real_facts(path);
         assert_eq!(facts.nodes[1].name, "real");
         assert_eq!(facts.nodes[1].id.as_str(), format!("s:{path}#real"));
@@ -216,13 +236,22 @@ fn ruby_basename_facts_match_the_rb_control() {
 
     let fixture_control = fixture_facts("src/sample.rb");
     assert_eq!(
-        fixture_control.nodes.iter().map(|node| node.name.as_str()).collect::<Vec<_>>(),
+        fixture_control
+            .nodes
+            .iter()
+            .map(|node| node.name.as_str())
+            .collect::<Vec<_>>(),
         ["src/sample.rb", "Box", "Box::run", "helper"]
     );
     for path in ["Rakefile", "lib/Gemfile", "tasks/app.RAKE", "demo.GEMSPEC"] {
         let facts = fixture_facts(path);
         assert_eq!(
-            facts.nodes.iter().skip(1).map(|node| node.name.as_str()).collect::<Vec<_>>(),
+            facts
+                .nodes
+                .iter()
+                .skip(1)
+                .map(|node| node.name.as_str())
+                .collect::<Vec<_>>(),
             ["Box", "Box::run", "helper"]
         );
         assert_eq!(facts.nodes[1].symbol_kind, Some(SymbolKind::Class));

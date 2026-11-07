@@ -81,7 +81,8 @@ fn failure_has_digest_revision_span_and_only_current_file_node() {
         index
             .answer(&source, &Request::new(Verb::Explain, "s:lib.rs#repaired"))
             .unwrap()
-            .records, [] as [dctx_map_query::Record; 0]
+            .records,
+        [] as [dctx_map_query::Record; 0]
     );
 }
 

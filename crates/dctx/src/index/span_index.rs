@@ -16,7 +16,8 @@ pub(super) struct SpanIndex {
 impl SpanIndex {
     /// Indexes `text` in one forward pass.
     pub(super) fn build(text: &str) -> Self {
-        let rows = text.bytes().filter(|byte| *byte == b'\n').count() + usize::from(!text.ends_with('\n'));
+        let rows =
+            text.bytes().filter(|byte| *byte == b'\n').count() + usize::from(!text.ends_with('\n'));
         let mut starts = Vec::with_capacity(rows);
         let mut ends = Vec::with_capacity(rows);
         let mut offset = 0usize;
@@ -28,7 +29,11 @@ impl SpanIndex {
             ends.push(end);
             offset = offset.saturating_add(line.len());
         }
-        Self { starts, ends, file_len: u64::try_from(text.len()).unwrap_or(u64::MAX) }
+        Self {
+            starts,
+            ends,
+            file_len: u64::try_from(text.len()).unwrap_or(u64::MAX),
+        }
     }
 
     /// `[start, end)` for inclusive 1-based `lines`, or `[0, 0]` when the start line is absent.
@@ -40,7 +45,11 @@ impl SpanIndex {
         let Some(&start) = self.starts.get(row(start_line)) else {
             return [0, 0];
         };
-        let end = self.ends.get(row(end_line)).copied().unwrap_or(self.file_len);
+        let end = self
+            .ends
+            .get(row(end_line))
+            .copied()
+            .unwrap_or(self.file_len);
         [start, end]
     }
 }
@@ -51,22 +60,35 @@ fn row(line: u32) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use std::fmt::Write as _;
     use super::super::lex_dispatch::line_span_oracle;
     use super::SpanIndex;
+    use std::fmt::Write as _;
 
     fn assert_oracle(text: &str) {
         let index = SpanIndex::build(text);
-        assert_eq!(index.starts.len(), text.split_inclusive('\n').count(), "{text:?}");
+        assert_eq!(
+            index.starts.len(),
+            text.split_inclusive('\n').count(),
+            "{text:?}"
+        );
         assert_eq!(index.starts.len(), index.ends.len());
-        let last = u32::try_from(index.starts.len()).unwrap_or(u32::MAX).saturating_add(2);
+        let last = u32::try_from(index.starts.len())
+            .unwrap_or(u32::MAX)
+            .saturating_add(2);
         for start in 0..=last {
             for end in 0..=last {
                 let lines = [start, end];
-                assert_eq!(index.line_span(lines), line_span_oracle(text, lines), "{text:?} {lines:?}");
+                assert_eq!(
+                    index.line_span(lines),
+                    line_span_oracle(text, lines),
+                    "{text:?} {lines:?}"
+                );
             }
         }
-        assert_eq!(index.line_span([u32::MAX, u32::MAX]), line_span_oracle(text, [u32::MAX, u32::MAX]));
+        assert_eq!(
+            index.line_span([u32::MAX, u32::MAX]),
+            line_span_oracle(text, [u32::MAX, u32::MAX])
+        );
     }
 
     #[test]

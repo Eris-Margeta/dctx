@@ -11,18 +11,33 @@ fn pure_parser_records_coverage_for_each_language_family() {
     let rust = PureParser.parse("lib.rs", b"fn valid() {}").unwrap();
     assert_eq!(rust.precision.coverage(), Coverage::Syntax);
     assert_eq!(rust.precision.completion(), &Completion::Complete);
-    assert!(rust.precision.parser().as_str().starts_with("dctx-lex-rust/"));
+    assert!(
+        rust.precision
+            .parser()
+            .as_str()
+            .starts_with("dctx-lex-rust/")
+    );
 
-    let script = PureParser.parse("view.tsx", b"export const View = () => 1;").unwrap();
+    let script = PureParser
+        .parse("view.tsx", b"export const View = () => 1;")
+        .unwrap();
     assert_eq!(script.language, dctx_map_parse::Language::Tsx);
     assert_eq!(script.precision.coverage(), Coverage::Structural);
-    assert!(script.precision.parser().as_str().starts_with("dctx-lex-js"));
+    assert!(
+        script
+            .precision
+            .parser()
+            .as_str()
+            .starts_with("dctx-lex-js")
+    );
 
     let notes = PureParser.parse("notes.md", b"# Title\n\nBody.\n").unwrap();
     assert_eq!(notes.precision.coverage(), Coverage::Structural);
     assert_eq!(notes.precision.parser().as_str(), "dctx-lex-md:1");
 
-    let other = PureParser.parse("notes.xyz", b"// Only a module.\n").unwrap();
+    let other = PureParser
+        .parse("notes.xyz", b"// Only a module.\n")
+        .unwrap();
     assert_eq!(other.precision.coverage(), Coverage::Opaque);
     assert_eq!(other.precision.completion().as_str(), "complete");
     assert_eq!(other.nodes.len(), 1);
@@ -35,7 +50,11 @@ mod oracle {
     use dctx_map_parse::TreeSitterParser;
     use std::collections::BTreeSet;
 
-    fn ids(parse: &dyn Fn(&str, &[u8]) -> dctx_map_parse::ParsedFile, path: &str, bytes: &[u8]) -> BTreeSet<String> {
+    fn ids(
+        parse: &dyn Fn(&str, &[u8]) -> dctx_map_parse::ParsedFile,
+        path: &str,
+        bytes: &[u8],
+    ) -> BTreeSet<String> {
         parse(path, bytes)
             .nodes
             .iter()
@@ -74,7 +93,11 @@ mod oracle {
                     .collect::<BTreeSet<_>>()
             };
             assert_eq!(refs(&pure), refs(&oracle), "{path}");
-            assert!(pure.edges.iter().all(|edge| edge.kind == EdgeKind::Contains));
+            assert!(
+                pure.edges
+                    .iter()
+                    .all(|edge| edge.kind == EdgeKind::Contains)
+            );
             let _ = oracle;
         }
     }

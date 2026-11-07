@@ -44,7 +44,9 @@ pub struct RecentStore {
 impl RecentStore {
     /// Stores `recent_projects.json` inside `storage_dir`. The directory is created on use.
     pub fn new(storage_dir: impl Into<PathBuf>) -> Self {
-        Self { dir: storage_dir.into() }
+        Self {
+            dir: storage_dir.into(),
+        }
     }
 
     /// Loads the list. A missing file is an empty list.
@@ -56,8 +58,9 @@ impl RecentStore {
         if !path.exists() {
             return Ok(Vec::new());
         }
-        let content = fs::read_to_string(&path)
-            .map_err(|error| DesktopError::ReadRecent { detail: error.to_string() })?;
+        let content = fs::read_to_string(&path).map_err(|error| DesktopError::ReadRecent {
+            detail: error.to_string(),
+        })?;
         serde_json::from_str(&content).map_err(|error| parse_recent_error(&error))
     }
 
@@ -70,7 +73,9 @@ impl RecentStore {
     /// Refuses nonexistent paths and propagates recent-list loading, encoding and persistence failures.
     pub fn add(&self, path: &str, accessed_at: &str) -> Result<(), DesktopError> {
         if !Path::new(path).exists() {
-            return Err(DesktopError::RecentPathMissing { path: path.to_string() });
+            return Err(DesktopError::RecentPathMissing {
+                path: path.to_string(),
+            });
         }
         let mut projects = self.get()?;
         if let Some(existing) = projects.iter_mut().find(|project| project.path == path) {
@@ -100,22 +105,30 @@ impl RecentStore {
         let original = projects.len();
         projects.retain(|project| project.path != path);
         if projects.len() == original {
-            return Err(DesktopError::RecentMissing { path: path.to_string() });
+            return Err(DesktopError::RecentMissing {
+                path: path.to_string(),
+            });
         }
         self.save(&projects)
     }
 
     fn file_path(&self) -> Result<PathBuf, DesktopError> {
-        fs::create_dir_all(&self.dir)
-            .map_err(|error| DesktopError::CreateStorageDir { detail: error.to_string() })?;
+        fs::create_dir_all(&self.dir).map_err(|error| DesktopError::CreateStorageDir {
+            detail: error.to_string(),
+        })?;
         Ok(self.dir.join(RECENT_FILE))
     }
 
     fn save(&self, projects: &[RecentProject]) -> Result<(), DesktopError> {
         let path = self.file_path()?;
-        let json = serde_json::to_string_pretty(projects)
-            .map_err(|error| DesktopError::SerializeRecent { detail: error.to_string() })?;
-        fs::write(path, json).map_err(|error| DesktopError::WriteRecent { detail: error.to_string() })
+        let json = serde_json::to_string_pretty(projects).map_err(|error| {
+            DesktopError::SerializeRecent {
+                detail: error.to_string(),
+            }
+        })?;
+        fs::write(path, json).map_err(|error| DesktopError::WriteRecent {
+            detail: error.to_string(),
+        })
     }
 }
 
@@ -158,8 +171,11 @@ mod tests {
         use std::sync::atomic::{AtomicU64, Ordering};
         static NEXT: AtomicU64 = AtomicU64::new(1);
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
-        let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_nanos());
-        let path = std::env::temp_dir().join(format!("dctx-desktop-api-recent-{label}-{n}-{nanos}"));
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |d| d.as_nanos());
+        let path =
+            std::env::temp_dir().join(format!("dctx-desktop-api-recent-{label}-{n}-{nanos}"));
         fs::create_dir_all(&path).expect("temp");
         path
     }
@@ -195,7 +211,10 @@ mod tests {
         store.remove(path).expect("remove");
         assert_eq!(store.get().expect("gone"), [] as [RecentProject; 0]);
         let missing = store.remove(path).expect_err("missing");
-        assert_eq!(missing.command_string(), format!("Project not found in recent list: {path}"));
+        assert_eq!(
+            missing.command_string(),
+            format!("Project not found in recent list: {path}")
+        );
         let _ = fs::remove_dir_all(&root);
     }
 }

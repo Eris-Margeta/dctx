@@ -4,7 +4,7 @@
 //! Depends on the walker cursor for brackets, annotations and depth limits.
 //! Called from type declarations, methods, heritage clauses and parameter lists.
 
-use super::{is_modifier_word, is_primitive, Scope, Walker};
+use super::{Scope, Walker, is_modifier_word, is_primitive};
 use crate::domain::DiagnosticReason;
 
 /// One formal or record component.
@@ -16,7 +16,11 @@ pub(super) struct Declarator {
 }
 
 impl Walker<'_> {
-    pub(super) fn type_params(&mut self, open: usize, end: usize) -> (usize, Vec<String>, Vec<(usize, usize)>) {
+    pub(super) fn type_params(
+        &mut self,
+        open: usize,
+        end: usize,
+    ) -> (usize, Vec<String>, Vec<(usize, usize)>) {
         let mut cursor = open + 1;
         let mut depth = 1u32;
         let mut names = Vec::new();
@@ -196,7 +200,9 @@ impl Walker<'_> {
                 continue;
             }
             if angle == 0
-                && (self.is_punct(cursor, "(") || self.is_punct(cursor, "[") || self.is_punct(cursor, "{"))
+                && (self.is_punct(cursor, "(")
+                    || self.is_punct(cursor, "[")
+                    || self.is_punct(cursor, "{"))
                 && let Some(close) = self.close(cursor)
             {
                 cursor = (close + 1).min(to);

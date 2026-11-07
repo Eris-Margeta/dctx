@@ -22,7 +22,12 @@ use crate::domain::DctxError;
 /// Another Unix gets `0` (no kernel guard); the pre-open and post-open checks below still apply there.
 #[cfg(unix)]
 const O_NOFOLLOW: i32 = if cfg!(any(target_os = "linux", target_os = "android")) {
-    if cfg!(any(target_arch = "aarch64", target_arch = "arm", target_arch = "powerpc", target_arch = "powerpc64")) {
+    if cfg!(any(
+        target_arch = "aarch64",
+        target_arch = "arm",
+        target_arch = "powerpc",
+        target_arch = "powerpc64"
+    )) {
         0o100_000
     } else {
         0o400_000
@@ -54,7 +59,8 @@ impl FsSource {
         if path.as_os_str().is_empty() {
             return Err(DctxError::invalid("source path is empty"));
         }
-        let root = std::fs::canonicalize(path).map_err(|error| DctxError::from_core(map_io(error)))?;
+        let root =
+            std::fs::canonicalize(path).map_err(|error| DctxError::from_core(map_io(error)))?;
         let meta = std::fs::metadata(&root).map_err(|error| DctxError::from_core(map_io(error)))?;
         if !meta.is_dir() {
             return Err(DctxError::invalid("source root must be a directory"));
@@ -67,7 +73,9 @@ impl FsSource {
         if !path.is_root() {
             for segment in path.as_str().split('/') {
                 if segment.is_empty() || segment == "." || segment == ".." {
-                    return Err(CoreError::InvalidRequest { reason: "path escapes the source root" });
+                    return Err(CoreError::InvalidRequest {
+                        reason: "path escapes the source root",
+                    });
                 }
                 full.push(segment);
             }
@@ -81,11 +89,19 @@ impl FsSource {
             return Ok(());
         }
         let segments: Vec<&str> = path.as_str().split('/').collect();
-        let checked = if last { segments.len() } else { segments.len().saturating_sub(1) };
+        let checked = if last {
+            segments.len()
+        } else {
+            segments.len().saturating_sub(1)
+        };
         let mut full = self.root.clone();
         for segment in segments.iter().take(checked) {
             full.push(segment);
-            if std::fs::symlink_metadata(&full).map_err(map_io)?.file_type().is_symlink() {
+            if std::fs::symlink_metadata(&full)
+                .map_err(map_io)?
+                .file_type()
+                .is_symlink()
+            {
                 return Err(CoreError::PolicyDenied);
             }
         }
@@ -98,7 +114,10 @@ fn open_no_follow(path: &Path) -> Result<std::fs::File, CoreError> {
     #[cfg(unix)]
     let opened = {
         use std::os::unix::fs::*;
-        std::fs::File::options().read(true).custom_flags(O_NOFOLLOW).open(path)
+        std::fs::File::options()
+            .read(true)
+            .custom_flags(O_NOFOLLOW)
+            .open(path)
     };
     #[cfg(not(unix))]
     let opened = std::fs::File::open(path);
@@ -121,7 +140,11 @@ fn open_no_follow(path: &Path) -> Result<std::fs::File, CoreError> {
 impl Source for FsSource {
     fn root_kind(&self) -> Result<NodeType, CoreError> {
         let meta = std::fs::symlink_metadata(&self.root).map_err(map_io)?;
-        if meta.is_dir() { Ok(NodeType::Directory) } else { Err(CoreError::SourceUnavailable) }
+        if meta.is_dir() {
+            Ok(NodeType::Directory)
+        } else {
+            Err(CoreError::SourceUnavailable)
+        }
     }
 
     fn entries(&self, dir: &RelativePath) -> Result<Vec<SourceEntry>, CoreError> {
@@ -150,7 +173,10 @@ impl Source for FsSource {
     fn metadata(&self, path: &RelativePath) -> Result<EntryMeta, CoreError> {
         let full = self.confined(path)?;
         let meta = std::fs::symlink_metadata(&full).map_err(map_io)?;
-        Ok(EntryMeta { size: meta.len(), modified: Timestamp(modified_millis(&meta)) })
+        Ok(EntryMeta {
+            size: meta.len(),
+            modified: Timestamp(modified_millis(&meta)),
+        })
     }
 
     fn stat(&self, path: &RelativePath) -> Result<(EntryMeta, Option<EntryStamp>), CoreError> {
@@ -159,7 +185,10 @@ impl Source for FsSource {
         // so a stamp older than `now - RACY_WINDOW_NS` can never be matched by a later edit.
         let now = now_ns();
         let meta = std::fs::symlink_metadata(&full).map_err(map_io)?;
-        let entry = EntryMeta { size: meta.len(), modified: Timestamp(modified_millis(&meta)) };
+        let entry = EntryMeta {
+            size: meta.len(),
+            modified: Timestamp(modified_millis(&meta)),
+        };
         Ok((entry, settled_stamp(&meta, now)))
     }
 
@@ -171,14 +200,22 @@ impl Source for FsSource {
             return Err(CoreError::PolicyDenied);
         }
         if meta.len() > max_bytes {
-            return Err(CoreError::ResourceLimit { resource: dctx_core::error::Resource::FileBytes, limit: max_bytes });
+            return Err(CoreError::ResourceLimit {
+                resource: dctx_core::error::Resource::FileBytes,
+                limit: max_bytes,
+            });
         }
         // Stop one byte past the cap so a file that grows after the stat cannot buffer an unbounded body.
         let file = open_no_follow(&full)?;
         let mut bytes = Vec::new();
-        file.take(max_bytes.saturating_add(1)).read_to_end(&mut bytes).map_err(map_io)?;
+        file.take(max_bytes.saturating_add(1))
+            .read_to_end(&mut bytes)
+            .map_err(map_io)?;
         if u64::try_from(bytes.len()).unwrap_or(u64::MAX) > max_bytes {
-            return Err(CoreError::ResourceLimit { resource: dctx_core::error::Resource::FileBytes, limit: max_bytes });
+            return Err(CoreError::ResourceLimit {
+                resource: dctx_core::error::Resource::FileBytes,
+                limit: max_bytes,
+            });
         }
         Ok(bytes)
     }
@@ -188,14 +225,18 @@ fn modified_millis(meta: &std::fs::Metadata) -> u64 {
     meta.modified()
         .ok()
         .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
-        .map_or(0, |duration| u64::try_from(duration.as_millis()).unwrap_or(u64::MAX))
+        .map_or(0, |duration| {
+            u64::try_from(duration.as_millis()).unwrap_or(u64::MAX)
+        })
 }
 
 /// A stamp is trusted only when the file's mtime is at least this far behind the clock of the stat (git's racy-entry rule).
 const RACY_WINDOW_NS: u128 = 2_000_000_000;
 
 fn now_ns() -> u128 {
-    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |duration| duration.as_nanos())
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |duration| duration.as_nanos())
 }
 
 /// The stat identity of a regular file whose mtime is settled: at least [`RACY_WINDOW_NS`] before `now_ns`.
@@ -204,11 +245,20 @@ fn settled_stamp(meta: &std::fs::Metadata, now_ns: u128) -> Option<EntryStamp> {
     if !meta.file_type().is_file() {
         return None;
     }
-    let modified_ns = meta.modified().ok()?.duration_since(std::time::UNIX_EPOCH).ok()?.as_nanos();
+    let modified_ns = meta
+        .modified()
+        .ok()?
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()?
+        .as_nanos();
     if modified_ns == 0 || modified_ns.saturating_add(RACY_WINDOW_NS) > now_ns {
         return None;
     }
-    Some(EntryStamp { size: meta.len(), modified_ns, inode: inode_of(meta)? })
+    Some(EntryStamp {
+        size: meta.len(),
+        modified_ns,
+        inode: inode_of(meta)?,
+    })
 }
 
 #[cfg(unix)]
@@ -244,17 +294,34 @@ mod tests {
         let rel = RelativePath::parse("a.txt").expect("path");
         let (meta, fresh) = source.stat(&rel).expect("stat");
         assert_eq!(meta.size, 3);
-        assert_eq!(fresh, None, "a file written just now is inside the racy window");
+        assert_eq!(
+            fresh, None,
+            "a file written just now is inside the racy window"
+        );
         let old = std::time::SystemTime::now() - std::time::Duration::from_secs(3600);
-        fs::File::options().write(true).open(&path).expect("open").set_modified(old).expect("age");
+        fs::File::options()
+            .write(true)
+            .open(&path)
+            .expect("open")
+            .set_modified(old)
+            .expect("age");
         let (_, settled) = source.stat(&rel).expect("stat");
         let stamp = settled.expect("settled stamp");
         assert_eq!(stamp.size, 3);
         assert_ne!(stamp.inode, 0);
         assert_eq!(source.stat(&rel).expect("again").1, Some(stamp));
         let future = std::time::SystemTime::now() + std::time::Duration::from_secs(3600);
-        fs::File::options().write(true).open(&path).expect("open").set_modified(future).expect("future");
-        assert_eq!(source.stat(&rel).expect("future").1, None, "a future mtime is never settled");
+        fs::File::options()
+            .write(true)
+            .open(&path)
+            .expect("open")
+            .set_modified(future)
+            .expect("future");
+        assert_eq!(
+            source.stat(&rel).expect("future").1,
+            None,
+            "a future mtime is never settled"
+        );
     }
 
     #[test]
@@ -270,9 +337,13 @@ mod tests {
         let dir = tempfile::tempdir().expect("temp");
         let source = FsSource::open(dir.path()).expect("open");
         assert_eq!(source.root_kind().expect("root"), NodeType::Directory);
-        assert_eq!(source.entries(&RelativePath::root()).expect("entries"), [] as [dctx_core::facts::SourceEntry; 0]);
+        assert_eq!(
+            source.entries(&RelativePath::root()).expect("entries"),
+            [] as [dctx_core::facts::SourceEntry; 0]
+        );
         let path = RelativePath::parse("missing.txt").expect("path");
-        let grant = ReadGrant::authorize(&path, FileHandlingDecision::Include, true).expect("grant");
+        let grant =
+            ReadGrant::authorize(&path, FileHandlingDecision::Include, true).expect("grant");
         let error = source.read(&grant, 32).expect_err("read");
         assert_eq!(error, CoreError::SourceUnavailable);
     }
@@ -281,7 +352,11 @@ mod tests {
     fn read_stops_at_the_byte_cap_and_a_fitting_file_is_returned() {
         let dir = tempfile::tempdir().expect("temp");
         let path = dir.path().join("note.txt");
-        let mut note = std::fs::File::options().write(true).create_new(true).open(&path).expect("note");
+        let mut note = std::fs::File::options()
+            .write(true)
+            .create_new(true)
+            .open(&path)
+            .expect("note");
         std::io::Write::write_all(&mut note, b"01234567").expect("body");
         drop(note);
         let source = FsSource::open(dir.path()).expect("open");
@@ -290,7 +365,10 @@ mod tests {
         let denied = source.read(&grant, 4).expect_err("over cap");
         assert!(matches!(
             denied,
-            CoreError::ResourceLimit { resource: dctx_core::error::Resource::FileBytes, limit: 4 }
+            CoreError::ResourceLimit {
+                resource: dctx_core::error::Resource::FileBytes,
+                limit: 4
+            }
         ));
         assert_eq!(source.read(&grant, 8).expect("within cap"), b"01234567");
     }
@@ -303,21 +381,46 @@ mod tests {
         fs::write(outside.path().join("secret.txt"), b"OUTSIDE_SENTINEL").expect("secret");
         let dir = tempfile::tempdir().expect("temp");
         fs::write(dir.path().join("kept.txt"), b"kept").expect("kept");
-        std::os::unix::fs::symlink(outside.path().join("secret.txt"), dir.path().join("link.txt")).expect("file link");
+        std::os::unix::fs::symlink(
+            outside.path().join("secret.txt"),
+            dir.path().join("link.txt"),
+        )
+        .expect("file link");
         std::os::unix::fs::symlink(outside.path(), dir.path().join("linkdir")).expect("dir link");
         let source = FsSource::open(dir.path()).expect("open");
-        let mut names: Vec<_> = source.entries(&RelativePath::root()).expect("entries").into_iter().map(|entry| (entry.name.clone(), entry.is_dir())).collect();
+        let mut names: Vec<_> = source
+            .entries(&RelativePath::root())
+            .expect("entries")
+            .into_iter()
+            .map(|entry| (entry.name.clone(), entry.is_dir()))
+            .collect();
         names.sort();
-        assert_eq!(names, [("kept.txt".to_string(), false), ("link.txt".to_string(), false), ("linkdir".to_string(), false)]);
+        assert_eq!(
+            names,
+            [
+                ("kept.txt".to_string(), false),
+                ("link.txt".to_string(), false),
+                ("linkdir".to_string(), false)
+            ]
+        );
         for target in ["link.txt", "linkdir/secret.txt"] {
             let path = RelativePath::parse(target).expect("path");
-            let grant = ReadGrant::authorize(&path, FileHandlingDecision::Include, true).expect("grant");
-            assert_eq!(source.read(&grant, 64).expect_err(target), CoreError::PolicyDenied, "{target}");
+            let grant =
+                ReadGrant::authorize(&path, FileHandlingDecision::Include, true).expect("grant");
+            assert_eq!(
+                source.read(&grant, 64).expect_err(target),
+                CoreError::PolicyDenied,
+                "{target}"
+            );
         }
         let linked = RelativePath::parse("linkdir").expect("dir");
-        assert_eq!(source.entries(&linked).expect_err("dir link"), CoreError::PolicyDenied);
+        assert_eq!(
+            source.entries(&linked).expect_err("dir link"),
+            CoreError::PolicyDenied
+        );
         let kept = RelativePath::parse("kept.txt").expect("kept");
-        let grant = ReadGrant::authorize(&kept, FileHandlingDecision::Include, true).expect("grant");
+        let grant =
+            ReadGrant::authorize(&kept, FileHandlingDecision::Include, true).expect("grant");
         assert_eq!(source.read(&grant, 64).expect("kept"), b"kept");
     }
 
@@ -330,9 +433,15 @@ mod tests {
         let dir = tempfile::tempdir().expect("temp");
         let link = dir.path().join("swapped.txt");
         std::os::unix::fs::symlink(outside.path().join("secret.txt"), &link).expect("link");
-        assert_eq!(open_no_follow(&link).expect_err("symlink"), CoreError::PolicyDenied);
+        assert_eq!(
+            open_no_follow(&link).expect_err("symlink"),
+            CoreError::PolicyDenied
+        );
         fs::write(dir.path().join("plain.txt"), b"plain").expect("plain");
         assert!(open_no_follow(&dir.path().join("plain.txt")).is_ok());
-        assert_eq!(open_no_follow(dir.path()).expect_err("directory"), CoreError::PolicyDenied);
+        assert_eq!(
+            open_no_follow(dir.path()).expect_err("directory"),
+            CoreError::PolicyDenied
+        );
     }
 }

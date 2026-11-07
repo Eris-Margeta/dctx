@@ -28,19 +28,28 @@ impl Chunk {
     }
 
     /// The raw bytes.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn as_bytes(&self) -> &[u8] {
         &self.0
     }
 
     /// Number of raw bytes.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
     /// Whether the chunk is empty (valid at EOF and as an empty final upload chunk).
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -85,9 +94,13 @@ impl Chunk {
     }
 
     /// Canonical base64 text.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn encode_base64(&self) -> String {
-        const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        const ALPHABET: &[u8; 64] =
+            b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         let mut out = String::with_capacity(self.0.len().div_ceil(3) * 4);
         for group in self.0.chunks(3) {
             let mut acc = 0u32;
@@ -96,7 +109,9 @@ impl Chunk {
             }
             for index in 0..4 {
                 if index <= group.len() {
-                    out.push(char::from(ALPHABET[((acc >> (18 - 6 * index)) & 0x3F) as usize]));
+                    out.push(char::from(
+                        ALPHABET[((acc >> (18 - 6 * index)) & 0x3F) as usize],
+                    ));
                 } else {
                     out.push('=');
                 }
@@ -132,9 +147,15 @@ mod tests {
 
     #[test]
     fn decodes_canonical_rfc4648_vectors() {
-        for (plain, encoded) in
-            [("", ""), ("f", "Zg=="), ("fo", "Zm8="), ("foo", "Zm9v"), ("foob", "Zm9vYg=="), ("fooba", "Zm9vYmE="), ("foobar", "Zm9vYmFy")]
-        {
+        for (plain, encoded) in [
+            ("", ""),
+            ("f", "Zg=="),
+            ("fo", "Zm8="),
+            ("foo", "Zm9v"),
+            ("foob", "Zm9vYg=="),
+            ("fooba", "Zm9vYmE="),
+            ("foobar", "Zm9vYmFy"),
+        ] {
             let chunk = Chunk::decode_base64(encoded).expect("valid");
             assert_eq!(chunk.as_bytes(), plain.as_bytes());
             assert_eq!(chunk.encode_base64(), encoded);
@@ -143,25 +164,44 @@ mod tests {
 
     #[test]
     fn refuses_noncanonical_spellings() {
-        for bad in ["YW Jj", "YWJ", "Zg", "Zg=", "Z===", "Zm9v\n", "Zm-v", "Zg==Zg==", "=Zm9"] {
+        for bad in [
+            "YW Jj", "YWJ", "Zg", "Zg=", "Z===", "Zm9v\n", "Zm-v", "Zg==Zg==", "=Zm9",
+        ] {
             let refusal = Chunk::decode_base64(bad).unwrap_err();
             assert_eq!(refusal.stage, Stage::Schema, "{bad}");
         }
         let pad = Chunk::decode_base64("YR==").unwrap_err();
-        assert_eq!((pad.stage, pad.reason), (Stage::Semantic, "nonzero-pad-bits"));
-        assert_eq!(Chunk::decode_base64("Zm9=").unwrap_err().reason, "nonzero-pad-bits");
+        assert_eq!(
+            (pad.stage, pad.reason),
+            (Stage::Semantic, "nonzero-pad-bits")
+        );
+        assert_eq!(
+            Chunk::decode_base64("Zm9=").unwrap_err().reason,
+            "nonzero-pad-bits"
+        );
     }
 
     #[test]
     fn size_is_bounded_before_allocation() {
         let max = Chunk::new(&vec![7u8; MAX_CHUNK_BYTES]).expect("max");
         let text = max.encode_base64();
-        assert_eq!(Chunk::decode_base64(&text).map(|c| c.len()), Ok(MAX_CHUNK_BYTES));
+        assert_eq!(
+            Chunk::decode_base64(&text).map(|c| c.len()),
+            Ok(MAX_CHUNK_BYTES)
+        );
         assert!(Chunk::new(&vec![0u8; MAX_CHUNK_BYTES + 1]).is_err());
         assert_eq!(text.len(), MAX_CHUNK_CHARS);
         let over = "AAAA".repeat(MAX_CHUNK_CHARS / 4);
-        assert_eq!(Chunk::decode_base64(&over).unwrap_err().reason, "chunk-too-large");
-        assert_eq!(Chunk::decode_base64(&format!("{text}AAAA")).unwrap_err().reason, "invalid-base64");
+        assert_eq!(
+            Chunk::decode_base64(&over).unwrap_err().reason,
+            "chunk-too-large"
+        );
+        assert_eq!(
+            Chunk::decode_base64(&format!("{text}AAAA"))
+                .unwrap_err()
+                .reason,
+            "invalid-base64"
+        );
         assert!(Chunk::default().is_empty());
     }
 }

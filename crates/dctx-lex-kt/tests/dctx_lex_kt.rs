@@ -5,8 +5,8 @@
 #![forbid(unsafe_code)]
 
 use dctx_lex_kt::{
-    Completion, DiagnosticReason, Dialect, KotlinLexer, LexError, LexedFile, Precision, PARSER_ID,
-    PARSER_REVISION,
+    Completion, DiagnosticReason, Dialect, KotlinLexer, LexError, LexedFile, PARSER_ID,
+    PARSER_REVISION, Precision,
 };
 use std::collections::BTreeSet;
 
@@ -20,19 +20,37 @@ fn extract(path: &str, source: &str) -> LexedFile {
 }
 
 fn names(facts: &LexedFile) -> Vec<&str> {
-    facts.nodes.iter().map(|node| node.fact.name.as_str()).collect()
+    facts
+        .nodes
+        .iter()
+        .map(|node| node.fact.name.as_str())
+        .collect()
 }
 
 fn labeled<'a>(facts: &'a LexedFile, name: &str) -> &'a dctx_lex_kt::Labeled<dctx_map_model::Node> {
-    facts.nodes.iter().find(|node| node.fact.name == name).unwrap_or_else(|| panic!("missing {name}"))
+    facts
+        .nodes
+        .iter()
+        .find(|node| node.fact.name == name)
+        .unwrap_or_else(|| panic!("missing {name}"))
 }
 
 fn node<'a>(facts: &'a LexedFile, name: &str) -> &'a dctx_map_model::Node {
-    &facts.nodes.iter().find(|node| node.fact.name == name).unwrap_or_else(|| panic!("missing {name}")).fact
+    &facts
+        .nodes
+        .iter()
+        .find(|node| node.fact.name == name)
+        .unwrap_or_else(|| panic!("missing {name}"))
+        .fact
 }
 
 fn calls(facts: &LexedFile) -> Vec<&str> {
-    facts.references.iter().filter(|item| item.fact.kind.as_str() == "calls").map(|item| item.fact.name.as_str()).collect()
+    facts
+        .references
+        .iter()
+        .filter(|item| item.fact.kind.as_str() == "calls")
+        .map(|item| item.fact.name.as_str())
+        .collect()
 }
 
 fn imports(facts: &LexedFile) -> Vec<(&str, Option<&str>)> {
@@ -54,7 +72,9 @@ fn uses(facts: &LexedFile) -> Vec<&str> {
 }
 
 fn file_lines(source: &str) -> u32 {
-    u32::try_from(source.bytes().filter(|byte| *byte == b'\n').count()).expect("bounded test coordinate") + 1
+    u32::try_from(source.bytes().filter(|byte| *byte == b'\n').count())
+        .expect("bounded test coordinate")
+        + 1
 }
 
 fn check_store(source: &str, facts: &LexedFile) {
@@ -63,22 +83,42 @@ fn check_store(source: &str, facts: &LexedFile) {
     assert_eq!(facts.nodes[0].fact.kind.as_str(), "module");
     assert_eq!(facts.edges.len(), facts.nodes.len() - 1);
     assert!(facts.diagnostics.len() <= LexedFile::MAX_DIAGNOSTICS);
-    let completion = if facts.diagnostics.is_empty() { Completion::Complete } else { Completion::Partial };
+    let completion = if facts.diagnostics.is_empty() {
+        Completion::Complete
+    } else {
+        Completion::Partial
+    };
     assert_eq!(facts.completion, completion);
     let mut ids = BTreeSet::new();
     for node in &facts.nodes {
         let fact = &node.fact;
-        let identity = fact.id.as_str().split_once(':').map(|(_, rest)| match rest.split_once('#') {
-            Some((path, _)) => path,
-            None => rest,
-        });
+        let identity =
+            fact.id
+                .as_str()
+                .split_once(':')
+                .map(|(_, rest)| match rest.split_once('#') {
+                    Some((path, _)) => path,
+                    None => rest,
+                });
         assert_eq!(fact.path, facts.path, "{}", fact.name);
         assert_eq!(identity, Some(facts.path.as_str()), "{}", fact.id);
-        assert!(fact.id.as_str().starts_with(fact.kind.letter()), "{}", fact.id);
-        assert!(fact.lines[0] >= 1 && fact.lines[1] >= fact.lines[0], "{}", fact.name);
+        assert!(
+            fact.id.as_str().starts_with(fact.kind.letter()),
+            "{}",
+            fact.id
+        );
+        assert!(
+            fact.lines[0] >= 1 && fact.lines[1] >= fact.lines[0],
+            "{}",
+            fact.name
+        );
         assert!(fact.lines[1] <= lines, "{} spans past the file", fact.name);
         assert_eq!(fact.fingerprint.len(), 64, "{}", fact.name);
-        assert!(ids.insert(fact.id.as_str().to_string()), "duplicate id {}", fact.id);
+        assert!(
+            ids.insert(fact.id.as_str().to_string()),
+            "duplicate id {}",
+            fact.id
+        );
     }
     let mut owned = BTreeSet::from([facts.nodes[0].fact.id.as_str()]);
     loop {
@@ -100,7 +140,11 @@ fn check_store(source: &str, facts: &LexedFile) {
         }
     }
     for node in &facts.nodes {
-        assert!(owned.contains(node.fact.id.as_str()), "{} is not owned by the file", node.fact.name);
+        assert!(
+            owned.contains(node.fact.id.as_str()),
+            "{} is not owned by the file",
+            node.fact.name
+        );
     }
     for reference in &facts.references {
         let fact = &reference.fact;
@@ -147,16 +191,47 @@ fn basic_fixture_matches_the_golden_shape() {
     let facts = extract("src/App.kt", BASIC);
     check_store(BASIC, &facts);
     assert_eq!(facts.dialect, Dialect::Kotlin);
-    assert!(facts.nodes.iter().all(|node| node.precision == Precision::Structural));
-    assert!(facts.edges.iter().all(|edge| edge.precision == Precision::Structural));
+    assert!(
+        facts
+            .nodes
+            .iter()
+            .all(|node| node.precision == Precision::Structural)
+    );
+    assert!(
+        facts
+            .edges
+            .iter()
+            .all(|edge| edge.precision == Precision::Structural)
+    );
     assert!(facts.diagnostics.is_empty(), "{:?}", facts.diagnostics);
     assert_eq!(
         names(&facts),
         [
-            "src/App.kt", "Box", "Box::Box", "Box::item", "Box::size", "Box::show", "Point",
-            "Point::Point", "Point::x", "Point::y", "Color", "Color::RED", "Color::GREEN",
-            "Color::GREEN::code", "Color::n", "Task", "Task::run", "Registry", "Registry::add",
-            "Id", "identity", "trimmed", "App", "App::greeting", "App::start",
+            "src/App.kt",
+            "Box",
+            "Box::Box",
+            "Box::item",
+            "Box::size",
+            "Box::show",
+            "Point",
+            "Point::Point",
+            "Point::x",
+            "Point::y",
+            "Color",
+            "Color::RED",
+            "Color::GREEN",
+            "Color::GREEN::code",
+            "Color::n",
+            "Task",
+            "Task::run",
+            "Registry",
+            "Registry::add",
+            "Id",
+            "identity",
+            "trimmed",
+            "App",
+            "App::greeting",
+            "App::start",
         ]
     );
     assert_eq!(facts.nodes[0].fact.signature, "com.example.app");
@@ -165,37 +240,116 @@ fn basic_fixture_matches_the_golden_shape() {
     assert_eq!(node(&facts, "Box").summary.text, "A box of values.");
     assert_eq!(node(&facts, "Box::size").summary.text, "Size of the box.");
     assert_eq!(node(&facts, "Point").summary.text, "Holds a point.");
-    assert_eq!(node(&facts, "Box").signature, "open class Box<T : CharSequence>(public val item: T) : Base()");
+    assert_eq!(
+        node(&facts, "Box").signature,
+        "open class Box<T : CharSequence>(public val item: T) : Base()"
+    );
     assert_eq!(node(&facts, "Box::Box").signature, "(public val item: T)");
-    assert_eq!(node(&facts, "Point::Point").signature, "(val x: Int, val y: Int)");
+    assert_eq!(
+        node(&facts, "Point::Point").signature,
+        "(val x: Int, val y: Int)"
+    );
     assert_eq!(node(&facts, "Box::show").signature, "fun show(): String");
-    assert_eq!(node(&facts, "identity").signature, "fun <T> identity(value: T): T");
-    assert_eq!(node(&facts, "trimmed").signature, "fun String?.trimmed(): String");
-    assert_eq!(node(&facts, "App::greeting").signature, "private val greeting: String");
+    assert_eq!(
+        node(&facts, "identity").signature,
+        "fun <T> identity(value: T): T"
+    );
+    assert_eq!(
+        node(&facts, "trimmed").signature,
+        "fun String?.trimmed(): String"
+    );
+    assert_eq!(
+        node(&facts, "App::greeting").signature,
+        "private val greeting: String"
+    );
     assert!(!node(&facts, "App::greeting").public);
     assert!(node(&facts, "Box::item").public);
-    assert_eq!(node(&facts, "Box").symbol_kind.map(dctx_map_model::SymbolKind::as_str), Some("class"));
-    assert_eq!(node(&facts, "Point").symbol_kind.map(dctx_map_model::SymbolKind::as_str), Some("struct"));
-    assert_eq!(node(&facts, "Color").symbol_kind.map(dctx_map_model::SymbolKind::as_str), Some("enum"));
-    assert_eq!(node(&facts, "Task").symbol_kind.map(dctx_map_model::SymbolKind::as_str), Some("interface"));
-    assert_eq!(node(&facts, "Id").symbol_kind.map(dctx_map_model::SymbolKind::as_str), Some("type"));
-    assert_eq!(node(&facts, "identity").symbol_kind.map(dctx_map_model::SymbolKind::as_str), Some("fn"));
-    assert_eq!(node(&facts, "Box::show").symbol_kind.map(dctx_map_model::SymbolKind::as_str), Some("method"));
-    assert_eq!(node(&facts, "Box::item").symbol_kind.map(dctx_map_model::SymbolKind::as_str), Some("const"));
+    assert_eq!(
+        node(&facts, "Box")
+            .symbol_kind
+            .map(dctx_map_model::SymbolKind::as_str),
+        Some("class")
+    );
+    assert_eq!(
+        node(&facts, "Point")
+            .symbol_kind
+            .map(dctx_map_model::SymbolKind::as_str),
+        Some("struct")
+    );
+    assert_eq!(
+        node(&facts, "Color")
+            .symbol_kind
+            .map(dctx_map_model::SymbolKind::as_str),
+        Some("enum")
+    );
+    assert_eq!(
+        node(&facts, "Task")
+            .symbol_kind
+            .map(dctx_map_model::SymbolKind::as_str),
+        Some("interface")
+    );
+    assert_eq!(
+        node(&facts, "Id")
+            .symbol_kind
+            .map(dctx_map_model::SymbolKind::as_str),
+        Some("type")
+    );
+    assert_eq!(
+        node(&facts, "identity")
+            .symbol_kind
+            .map(dctx_map_model::SymbolKind::as_str),
+        Some("fn")
+    );
+    assert_eq!(
+        node(&facts, "Box::show")
+            .symbol_kind
+            .map(dctx_map_model::SymbolKind::as_str),
+        Some("method")
+    );
+    assert_eq!(
+        node(&facts, "Box::item")
+            .symbol_kind
+            .map(dctx_map_model::SymbolKind::as_str),
+        Some("const")
+    );
     assert_eq!(
         imports(&facts),
-        [("kotlin.collections.List", None), ("kotlin.collections.*", None), ("com.example.util.Names", Some("Labels"))]
+        [
+            ("kotlin.collections.List", None),
+            ("kotlin.collections.*", None),
+            ("com.example.util.Names", Some("Labels"))
+        ]
     );
     assert_eq!(
         calls(&facts),
-        ["Base", "render", "store.save", "trim", "hidden", "box.show", "Registry.add", "identity", "items.forEach", "item.go"]
+        [
+            "Base",
+            "render",
+            "store.save",
+            "trim",
+            "hidden",
+            "box.show",
+            "Registry.add",
+            "identity",
+            "items.forEach",
+            "item.go"
+        ]
     );
     let types = uses(&facts);
     for name in ["CharSequence", "Base", "String"] {
-        assert!(types.contains(&name), "missing uses-type {name} in {types:?}");
+        assert!(
+            types.contains(&name),
+            "missing uses-type {name} in {types:?}"
+        );
     }
-    assert!(!names(&facts).iter().any(|name| name.contains("Ghost") || name.contains("NotAClass") || name.contains("Decoy")));
-    assert!(!calls(&facts).iter().any(|name| *name == "item.length" || *name == "length"));
+    assert!(!names(&facts).iter().any(|name| name.contains("Ghost")
+        || name.contains("NotAClass")
+        || name.contains("Decoy")));
+    assert!(
+        !calls(&facts)
+            .iter()
+            .any(|name| *name == "item.length" || *name == "length")
+    );
     assert_eq!(PARSER_ID, "dctx-lex-kt");
     assert_eq!(PARSER_REVISION, 1);
 }
@@ -207,14 +361,46 @@ fn incomplete_file_keeps_later_declarations() {
     assert_eq!(facts.completion, Completion::Partial);
     assert_eq!(facts.nodes[0].fact.signature, "p");
     assert_eq!(facts.nodes[0].precision, Precision::Structural);
-    assert!(facts.diagnostics.iter().any(|item| item.reason == DiagnosticReason::UnterminatedString));
-    assert!(facts.diagnostics.iter().any(|item| item.reason == DiagnosticReason::UnbalancedBracket));
-    assert_eq!(names(&facts), ["src/Partial.kt", "Ready", "Ready::ok", "Broken", "Later", "tail"]);
+    assert!(
+        facts
+            .diagnostics
+            .iter()
+            .any(|item| item.reason == DiagnosticReason::UnterminatedString)
+    );
+    assert!(
+        facts
+            .diagnostics
+            .iter()
+            .any(|item| item.reason == DiagnosticReason::UnbalancedBracket)
+    );
+    assert_eq!(
+        names(&facts),
+        [
+            "src/Partial.kt",
+            "Ready",
+            "Ready::ok",
+            "Broken",
+            "Later",
+            "tail"
+        ]
+    );
     assert_eq!(node(&facts, "Ready").summary.text, "Ready is complete.");
     assert_eq!(labeled(&facts, "Ready").precision, Precision::Structural);
-    assert_eq!(facts.nodes.iter().find(|item| item.fact.name == "Ready::ok").expect("ok").precision, Precision::Structural);
+    assert_eq!(
+        facts
+            .nodes
+            .iter()
+            .find(|item| item.fact.name == "Ready::ok")
+            .expect("ok")
+            .precision,
+        Precision::Structural
+    );
     for name in ["Broken", "Later", "tail"] {
-        let labeled = facts.nodes.iter().find(|item| item.fact.name == name).unwrap_or_else(|| panic!("{name}"));
+        let labeled = facts
+            .nodes
+            .iter()
+            .find(|item| item.fact.name == name)
+            .unwrap_or_else(|| panic!("{name}"));
         assert_eq!(labeled.precision, Precision::Partial, "{name}");
     }
 }
@@ -235,11 +421,19 @@ fn tilde_in_a_name_is_abstained() {
     let facts = extract("n.kt", source);
     check_store(source, &facts);
     assert_eq!(names(&facts), ["n.kt"]);
-    assert!(facts.diagnostics.iter().any(|item| item.reason == DiagnosticReason::UnsupportedName));
+    assert!(
+        facts
+            .diagnostics
+            .iter()
+            .any(|item| item.reason == DiagnosticReason::UnsupportedName)
+    );
 }
 
 #[test]
-#[allow(clippy::cast_possible_truncation, reason = "The fuzz length deliberately uses the PRNG's native low word before applying the 301-byte bound.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "The fuzz length deliberately uses the PRNG's native low word before applying the 301-byte bound."
+)]
 fn arbitrary_bytes_and_truncated_fixtures_stay_bounded() {
     let mut state = 0x1234_5678_9abc_def0_u64;
     for _ in 0..200 {
@@ -253,7 +447,9 @@ fn arbitrary_bytes_and_truncated_fixtures_stay_bounded() {
     for source in [BASIC, INCOMPLETE] {
         for len in 0..=source.len() {
             let prefix = &source.as_bytes()[..len];
-            let facts = KotlinLexer::default().extract("f.kt", prefix).unwrap_or_else(|error| panic!("prefix {len}: {error}"));
+            let facts = KotlinLexer::default()
+                .extract("f.kt", prefix)
+                .unwrap_or_else(|error| panic!("prefix {len}: {error}"));
             check_store(&source[..len], &facts);
             assert_stable("f.kt", prefix);
         }
@@ -295,7 +491,9 @@ mod tests {
         let ann_scopes: Vec<&str> = facts
             .references
             .iter()
-            .filter(|item| item.fact.kind.as_str() == "uses-type" && item.fact.name == "JvmOverloads")
+            .filter(|item| {
+                item.fact.kind.as_str() == "uses-type" && item.fact.name == "JvmOverloads"
+            })
             .map(|item| item.fact.scope.as_str())
             .collect();
         assert_eq!(
@@ -307,7 +505,9 @@ mod tests {
             ]
         );
         assert!(facts.references.iter().any(|item| {
-            item.fact.kind.as_str() == "uses-type" && item.fact.name == "Keep" && item.fact.scope == "Marked::Marked"
+            item.fact.kind.as_str() == "uses-type"
+                && item.fact.name == "Keep"
+                && item.fact.scope == "Marked::Marked"
         }));
         assert_eq!(calls(&facts), ["JSObject", "StdSerializer", "zero"]);
         for name in ["JSObject", "Class", "ReadClipData", "StdSerializer", "Int"] {

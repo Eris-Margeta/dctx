@@ -51,7 +51,10 @@ impl Registry {
         now: u64,
         freshness_ceiling: Option<u64>,
     ) -> Result<Admission, DistributionError> {
-        let record = self.plugins.get_mut(id).ok_or(DistributionError::NotInstalled)?;
+        let record = self
+            .plugins
+            .get_mut(id)
+            .ok_or(DistributionError::NotInstalled)?;
         match record.enablement {
             Enablement::Enabled => {}
             Enablement::Disabled => return Err(DistributionError::Disabled),
@@ -62,7 +65,11 @@ impl Registry {
         trust.check_freshness(now, freshness_ceiling)?;
         let version = version.version.clone();
         *record.leases.entry(digest).or_insert(0) += 1;
-        Ok(Admission { id: id.clone(), digest, version })
+        Ok(Admission {
+            id: id.clone(),
+            digest,
+            version,
+        })
     }
 
     /// Ends one worker lease.
@@ -76,18 +83,24 @@ impl Registry {
     }
 
     /// Registers the bundled build authenticated by the containing release. A sticky mask survives.
-    #[allow(clippy::needless_pass_by_value, reason = "Preserve the public value-taking registration contract for an installed version, including the already-recorded case.")]
+    #[allow(
+        clippy::needless_pass_by_value,
+        reason = "Preserve the public value-taking registration contract for an installed version, including the already-recorded case."
+    )]
     pub fn register_bundled(&mut self, id: &PluginId, version: InstalledVersion) {
-        let record = self.plugins.entry(id.clone()).or_insert_with(|| PluginRecord {
-            origin: Origin::Bundled,
-            versions: Vec::new(),
-            active: None,
-            high_water: 0,
-            enablement: Enablement::Enabled,
-            consent: None,
-            leases: std::collections::BTreeMap::default(),
-            rollbacks: Vec::new(),
-        });
+        let record = self
+            .plugins
+            .entry(id.clone())
+            .or_insert_with(|| PluginRecord {
+                origin: Origin::Bundled,
+                versions: Vec::new(),
+                active: None,
+                high_water: 0,
+                enablement: Enablement::Enabled,
+                consent: None,
+                leases: std::collections::BTreeMap::default(),
+                rollbacks: Vec::new(),
+            });
         if record.version(&version.digest).is_none() {
             record.versions.push(version.clone());
         }
@@ -100,13 +113,26 @@ impl Registry {
     /// `plugin list` row for `id`.
     /// # Errors
     /// Returns `NotInstalled` for an unknown plugin ID.
-    pub fn status(&self, id: &PluginId, trust: &TrustStore, now: u64) -> Result<PluginStatus, DistributionError> {
-        let record = self.plugins.get(id).ok_or(DistributionError::NotInstalled)?;
+    pub fn status(
+        &self,
+        id: &PluginId,
+        trust: &TrustStore,
+        now: u64,
+    ) -> Result<PluginStatus, DistributionError> {
+        let record = self
+            .plugins
+            .get(id)
+            .ok_or(DistributionError::NotInstalled)?;
         let active = record.active_version();
         let needs_consent = active.is_some_and(|version| {
-            !record.consent.as_ref().is_some_and(|consent| consent.covers(&version.signer, &version.capabilities))
+            !record
+                .consent
+                .as_ref()
+                .is_some_and(|consent| consent.covers(&version.signer, &version.capabilities))
         });
-        let blocked = record.active.is_some_and(|digest| admissible(record, &digest, trust).is_err());
+        let blocked = record
+            .active
+            .is_some_and(|digest| admissible(record, &digest, trust).is_err());
         Ok(PluginStatus {
             id: id.clone(),
             origin: record.origin,
@@ -119,8 +145,14 @@ impl Registry {
     }
 }
 
-fn admissible<'a>(record: &'a PluginRecord, digest: &Sha256Hex, trust: &TrustStore) -> Result<&'a InstalledVersion, DistributionError> {
-    let version = record.version(digest).ok_or(DistributionError::NotInstalled)?;
+fn admissible<'a>(
+    record: &'a PluginRecord,
+    digest: &Sha256Hex,
+    trust: &TrustStore,
+) -> Result<&'a InstalledVersion, DistributionError> {
+    let version = record
+        .version(digest)
+        .ok_or(DistributionError::NotInstalled)?;
     if version.quarantined {
         return Err(DistributionError::Quarantined);
     }
@@ -130,8 +162,15 @@ fn admissible<'a>(record: &'a PluginRecord, digest: &Sha256Hex, trust: &TrustSto
     if trust.is_key_revoked(&version.signer) {
         return Err(DistributionError::KeyRevoked);
     }
-    let covered = record.consent.as_ref().is_some_and(|consent| consent.covers(&version.signer, &version.capabilities));
-    if covered { Ok(version) } else { Err(DistributionError::ConsentRequired) }
+    let covered = record
+        .consent
+        .as_ref()
+        .is_some_and(|consent| consent.covers(&version.signer, &version.capabilities));
+    if covered {
+        Ok(version)
+    } else {
+        Err(DistributionError::ConsentRequired)
+    }
 }
 
 #[cfg(test)]
@@ -146,12 +185,25 @@ mod tests {
         let mut registry = Registry::default();
         registry.register_bundled(&id, version(1, 1));
         let status = registry.status(&id, &trust, 0).unwrap();
-        assert_eq!((status.enablement, status.needs_consent), (Enablement::Enabled, true));
-        assert_eq!(registry.admit(&id, &trust, 0, None), Err(DistributionError::ConsentRequired));
+        assert_eq!(
+            (status.enablement, status.needs_consent),
+            (Enablement::Enabled, true)
+        );
+        assert_eq!(
+            registry.admit(&id, &trust, 0, None),
+            Err(DistributionError::ConsentRequired)
+        );
         registry.disable(&id).unwrap();
         registry.register_bundled(&id, version(2, 2));
         let record = registry.get(&id).unwrap();
-        assert_eq!(record.active, Some(Sha256Hex::from_bytes([1; 32])), "masked plugin is not reselected");
-        assert_eq!(registry.admit(&id, &trust, 0, None), Err(DistributionError::Disabled));
+        assert_eq!(
+            record.active,
+            Some(Sha256Hex::from_bytes([1; 32])),
+            "masked plugin is not reselected"
+        );
+        assert_eq!(
+            registry.admit(&id, &trust, 0, None),
+            Err(DistributionError::Disabled)
+        );
     }
 }

@@ -17,7 +17,11 @@ mod tests {
     }
 
     fn names(facts: &LexedFile) -> Vec<&str> {
-        facts.nodes.iter().map(|node| node.fact.name.as_str()).collect()
+        facts
+            .nodes
+            .iter()
+            .map(|node| node.fact.name.as_str())
+            .collect()
     }
 
     fn calls(facts: &LexedFile) -> Vec<&str> {
@@ -49,7 +53,12 @@ mod tests {
     fn trailing_float_dot_does_not_swallow_the_next_declaration() {
         // Positive control: a fraction digit already keeps the dot on the number.
         let control = extract("package p\nconst A = 1.0\nfunc F() { G(1.0) }\n");
-        assert_eq!(control.completion, Completion::Complete, "{:?}", control.diagnostics);
+        assert_eq!(
+            control.completion,
+            Completion::Complete,
+            "{:?}",
+            control.diagnostics
+        );
         assert!(names(&control).contains(&"A") && names(&control).contains(&"F"));
         assert_eq!(calls(&control), ["G"]);
 
@@ -65,7 +74,12 @@ mod tests {
         ];
         for body in bodies {
             let facts = extract(&format!("package p\n{body}"));
-            assert_eq!(facts.completion, Completion::Complete, "{body}{:?}", facts.diagnostics);
+            assert_eq!(
+                facts.completion,
+                Completion::Complete,
+                "{body}{:?}",
+                facts.diagnostics
+            );
             let got = names(&facts);
             assert!(got.contains(&"A") && got.contains(&"F"), "{body}{got:?}");
             if body.contains("B =") {
@@ -75,9 +89,20 @@ mod tests {
 
         // `1.e2` / `1.E2` are one number, so the exponent is not a callee.
         for literal in ["1.e2", "1.E2"] {
-            let facts = extract(&format!("package p\nconst A = {literal}(x)\nfunc F() {{}}\n"));
-            assert_eq!(facts.completion, Completion::Complete, "{literal} {:?}", facts.diagnostics);
-            assert!(names(&facts).contains(&"F"), "{literal} {:?}", names(&facts));
+            let facts = extract(&format!(
+                "package p\nconst A = {literal}(x)\nfunc F() {{}}\n"
+            ));
+            assert_eq!(
+                facts.completion,
+                Completion::Complete,
+                "{literal} {:?}",
+                facts.diagnostics
+            );
+            assert!(
+                names(&facts).contains(&"F"),
+                "{literal} {:?}",
+                names(&facts)
+            );
             assert!(calls(&facts).is_empty(), "{literal} {:?}", calls(&facts));
         }
     }
@@ -88,7 +113,9 @@ mod tests {
         // `Confidence::Exact`. There is no non-exact contains variant. A span that
         // runs past the first diagnostic is already `Precision::Partial` on that
         // edge; PARSERS-v1 layers partial completion over the syntax label.
-        let damaged = extract("package p\nfunc Ready() {}\nfunc Broken() {\n\treturn len(s\n}\nconst Later = 1\n");
+        let damaged = extract(
+            "package p\nfunc Ready() {}\nfunc Broken() {\n\treturn len(s\n}\nconst Later = 1\n",
+        );
         assert_eq!(damaged.completion, Completion::Partial);
         assert_ne!(damaged.diagnostics, []);
 
@@ -105,7 +132,12 @@ mod tests {
         }
 
         let clean = extract("package p\nfunc Ready() {}\nfunc Broken() {}\nconst Later = 1\n");
-        assert_eq!(clean.completion, Completion::Complete, "{:?}", clean.diagnostics);
+        assert_eq!(
+            clean.completion,
+            Completion::Complete,
+            "{:?}",
+            clean.diagnostics
+        );
         for name in ["p", "Ready", "Broken", "Later"] {
             let edge = edge_to(&clean, name);
             assert_eq!(edge.precision, Precision::Structural, "{name}");

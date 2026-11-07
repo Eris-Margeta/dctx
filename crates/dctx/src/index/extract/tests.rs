@@ -27,10 +27,16 @@ fn signature_text_is_one_short_line_and_call_style_stops_at_the_first_argument()
     assert_eq!(signature_text(&wide), "fn w(");
     let accents = format!("fn {}() {{}}", "\u{e9}".repeat(300));
     assert_eq!(signature_text(&accents).chars().count(), SIGNATURE_CAP);
-    let call = format!("test(\"case 1 {}\", () => {{\n  target();\n}});", "x".repeat(2000));
+    let call = format!(
+        "test(\"case 1 {}\", () => {{\n  target();\n}});",
+        "x".repeat(2000)
+    );
     let head = signature_text(&call);
     assert!(head.starts_with("test(\"case 1 xxx") && head.chars().count() <= SIGNATURE_CAP);
-    assert_eq!(signature_text("it('works', () => { run(); });"), "it('works', ...)");
+    assert_eq!(
+        signature_text("it('works', () => { run(); });"),
+        "it('works', ...)"
+    );
     assert_eq!(signature_text("it('lonely')"), "it('lonely')");
     assert_eq!(signature_text("pub fn ping() {}"), "pub fn ping()");
 }
@@ -50,8 +56,14 @@ fn duplicate_names_and_headings_are_distinct() {
     assert_eq!(script[0].name, "ping");
     assert_eq!(script[0].kind, "fn");
     assert_eq!(script[0].summary_source, "sig");
-    assert_eq!(extract_structural("blob.bin", b"fn ping() {}\0"), [] as [crate::index::extract::Symbol; 0]);
-    assert_eq!(extract_structural("notes.log", b"# Fixture\n"), [] as [crate::index::extract::Symbol; 0]);
+    assert_eq!(
+        extract_structural("blob.bin", b"fn ping() {}\0"),
+        [] as [crate::index::extract::Symbol; 0]
+    );
+    assert_eq!(
+        extract_structural("notes.log", b"# Fixture\n"),
+        [] as [crate::index::extract::Symbol; 0]
+    );
 }
 
 #[test]
@@ -174,7 +186,10 @@ fn dispatch_table_matches_the_shared_literal_and_ruby_basenames() {
     assert_eq!(RUBY_BASENAMES, LITERAL_RUBY_BASENAMES);
     for (extension, tag) in LITERAL_EXTENSIONS {
         assert_eq!(language_of(&format!("src/app.{extension}")), *tag);
-        assert_eq!(language_of(&format!("dir.dot/app.{}", extension.to_ascii_uppercase())), *tag);
+        assert_eq!(
+            language_of(&format!("dir.dot/app.{}", extension.to_ascii_uppercase())),
+            *tag
+        );
     }
     assert_eq!(language_of("sql/pgtap.sql.in"), "sql");
     assert_eq!(language_of("sql/PGTAP.SQL.IN"), "sql");
@@ -182,11 +197,25 @@ fn dispatch_table_matches_the_shared_literal_and_ruby_basenames() {
     assert_eq!(language_of(".sql.in"), "opaque");
     for basename in LITERAL_RUBY_BASENAMES {
         assert_eq!(language_of(basename), "ruby");
-        assert_eq!(language_of(&format!("lib/{}", basename.to_ascii_lowercase())), "ruby");
+        assert_eq!(
+            language_of(&format!("lib/{}", basename.to_ascii_lowercase())),
+            "ruby"
+        );
         assert_eq!(language_of(&format!("lib\\{basename}")), "ruby");
     }
-    for (basename, tag) in [("Makefile", "make"), ("GNUmakefile", "make"), ("Dockerfile", "docker"), ("Containerfile", "docker")] {
-        assert_eq!(INFRA_BASENAMES.iter().find(|(name, _)| *name == basename).map(|(_, found)| *found), Some(tag));
+    for (basename, tag) in [
+        ("Makefile", "make"),
+        ("GNUmakefile", "make"),
+        ("Dockerfile", "docker"),
+        ("Containerfile", "docker"),
+    ] {
+        assert_eq!(
+            INFRA_BASENAMES
+                .iter()
+                .find(|(name, _)| *name == basename)
+                .map(|(_, found)| *found),
+            Some(tag)
+        );
         assert_eq!(language_of(basename), tag);
         assert_eq!(language_of(&basename.to_ascii_lowercase()), tag);
         assert_eq!(language_of(&format!("ci/{basename}")), tag);
@@ -209,7 +238,14 @@ fn dispatch_table_matches_the_shared_literal_and_ruby_basenames() {
     assert_eq!(control[0].signature, "def real");
     assert_eq!(control[0].summary, "def real");
     assert_eq!(control[0].summary_source, "sig");
-    for path in ["src/app.RB", "tasks/app.RAKE", "demo.GEMSPEC", "Rakefile", "lib/Gemfile", "pkg/RAKEFILE"] {
+    for path in [
+        "src/app.RB",
+        "tasks/app.RAKE",
+        "demo.GEMSPEC",
+        "Rakefile",
+        "lib/Gemfile",
+        "pkg/RAKEFILE",
+    ] {
         let symbols = extract_structural(path, source);
         assert_eq!(symbols.len(), 1, "{path}");
         assert_eq!(symbols[0].name, control[0].name);
@@ -219,10 +255,22 @@ fn dispatch_table_matches_the_shared_literal_and_ruby_basenames() {
         assert_eq!(symbols[0].summary, control[0].summary);
         assert_eq!(symbols[0].summary_source, control[0].summary_source);
     }
-    assert_eq!(extract_structural("Guardfile", source), [] as [crate::index::extract::Symbol; 0]);
-    assert_eq!(extract_structural("config.ru", source), [] as [crate::index::extract::Symbol; 0]);
-    assert_eq!(extract_structural("A.RS", b"fn RustMain() {}\n")[0].name, "RustMain");
-    assert_eq!(extract_structural("README.MD", b"# MdMain\n")[0].name, "MdMain");
+    assert_eq!(
+        extract_structural("Guardfile", source),
+        [] as [crate::index::extract::Symbol; 0]
+    );
+    assert_eq!(
+        extract_structural("config.ru", source),
+        [] as [crate::index::extract::Symbol; 0]
+    );
+    assert_eq!(
+        extract_structural("A.RS", b"fn RustMain() {}\n")[0].name,
+        "RustMain"
+    );
+    assert_eq!(
+        extract_structural("README.MD", b"# MdMain\n")[0].name,
+        "MdMain"
+    );
 }
 
 #[test]
@@ -232,7 +280,17 @@ fn plain_ids_match_stable_id_and_rejected_names_stay_rejected() {
     assert!(path_ok);
     let mut text = super::TextBlob::default();
     let path_span = text.push(path);
-    let names = ["ping", "Chain::append", "名前", "k0.events.0", "a~2", "a~01", "a#b", "has\nline", ""];
+    let names = [
+        "ping",
+        "Chain::append",
+        "名前",
+        "k0.events.0",
+        "a~2",
+        "a~01",
+        "a#b",
+        "has\nline",
+        "",
+    ];
     for name in names {
         for ordinal in [None, Some(2)] {
             for kind in [NodeKind::Symbol, NodeKind::Test] {
@@ -240,10 +298,20 @@ fn plain_ids_match_stable_id_and_rejected_names_stay_rejected() {
                 let old = dctx_map_model::StableId::new(kind, path, Some(name), ordinal).ok();
                 let formatted = got.map(|stored| {
                     let mut out = String::new();
-                    super::super::write_stable_id(&mut out, super::letter_byte(kind), path, name, stored);
+                    super::super::write_stable_id(
+                        &mut out,
+                        super::letter_byte(kind),
+                        path,
+                        name,
+                        stored,
+                    );
                     out
                 });
-                assert_eq!(formatted.as_deref(), old.as_ref().map(dctx_map_model::StableId::as_str), "{kind:?} {name:?} {ordinal:?}");
+                assert_eq!(
+                    formatted.as_deref(),
+                    old.as_ref().map(dctx_map_model::StableId::as_str),
+                    "{kind:?} {name:?} {ordinal:?}"
+                );
                 if let Some(id) = &formatted {
                     let node = node_of(super::letter_byte(kind), got.unwrap_or(0), name, path_span);
                     assert!(super::super::id_matches(&text, &node, id), "{id}");
@@ -258,7 +326,10 @@ fn plain_ids_match_stable_id_and_rejected_names_stay_rejected() {
 }
 
 #[test]
-#[allow(clippy::cast_possible_truncation, reason = "The hash is an intentionally native-word table index; truncation keeps its low bits before masking to a power-of-two capacity.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "The hash is an intentionally native-word table index; truncation keeps its low bits before masking to a power-of-two capacity."
+)]
 fn duplicate_ordinals_match_the_pre_change_index() {
     let symbols = vec![
         sample("ping"),
@@ -272,11 +343,31 @@ fn duplicate_ordinals_match_the_pre_change_index() {
     let path_span = text.push("p.rs");
     let mut nodes = Vec::new();
     let mut edges = Vec::new();
-    super::index_symbols("p.rs", path_span, 0, symbols.clone(), &mut nodes, &mut edges, &mut text);
-    assert_eq!(shown(&text, &nodes, &edges), index_oracle("p.rs", "m:p.rs", &symbols));
+    super::index_symbols(
+        "p.rs",
+        path_span,
+        0,
+        symbols.clone(),
+        &mut nodes,
+        &mut edges,
+        &mut text,
+    );
     assert_eq!(
-        nodes.iter().map(|node| node_text(&text, node)).collect::<Vec<_>>(),
-        ["s:p.rs#ping", "s:p.rs#pong", "s:p.rs#ping~2", "s:p.rs#ping~3", "s:p.rs#名前"]
+        shown(&text, &nodes, &edges),
+        index_oracle("p.rs", "m:p.rs", &symbols)
+    );
+    assert_eq!(
+        nodes
+            .iter()
+            .map(|node| node_text(&text, node))
+            .collect::<Vec<_>>(),
+        [
+            "s:p.rs#ping",
+            "s:p.rs#pong",
+            "s:p.rs#ping~2",
+            "s:p.rs#ping~3",
+            "s:p.rs#名前"
+        ]
     );
 }
 
@@ -297,10 +388,25 @@ fn large_index_matches_the_pre_change_index() {
     let path_span = text.push("p.rs");
     let mut nodes = Vec::new();
     let mut edges = Vec::new();
-    super::index_symbols("p.rs", path_span, 0, symbols.clone(), &mut nodes, &mut edges, &mut text);
+    super::index_symbols(
+        "p.rs",
+        path_span,
+        0,
+        symbols.clone(),
+        &mut nodes,
+        &mut edges,
+        &mut text,
+    );
     assert!(nodes.len() > 4_000);
-    assert_eq!(shown(&text, &nodes, &edges), index_oracle("p.rs", "m:p.rs", &symbols));
-    assert!(nodes.iter().any(|node| node_text(&text, node) == "s:p.rs#ping~2"));
+    assert_eq!(
+        shown(&text, &nodes, &edges),
+        index_oracle("p.rs", "m:p.rs", &symbols)
+    );
+    assert!(
+        nodes
+            .iter()
+            .any(|node| node_text(&text, node) == "s:p.rs#ping~2")
+    );
     assert!(!nodes.iter().any(|node| node.name == "a#b"));
 }
 
@@ -317,7 +423,12 @@ fn sample(name: &str) -> super::Symbol {
     }
 }
 
-fn node_of(letter: u8, ordinal: u32, name: &str, path: super::TextSpan) -> crate::index::IndexedNode {
+fn node_of(
+    letter: u8,
+    ordinal: u32,
+    name: &str,
+    path: super::TextSpan,
+) -> crate::index::IndexedNode {
     crate::index::IndexedNode {
         letter,
         ordinal,
@@ -338,7 +449,11 @@ fn node_text(text: &super::TextBlob, node: &crate::index::IndexedNode) -> String
     out
 }
 
-fn shown(text: &super::TextBlob, nodes: &[crate::index::IndexedNode], edges: &[crate::index::IndexedEdge]) -> Vec<String> {
+fn shown(
+    text: &super::TextBlob,
+    nodes: &[crate::index::IndexedNode],
+    edges: &[crate::index::IndexedEdge],
+) -> Vec<String> {
     nodes
         .iter()
         .zip(edges)
@@ -369,7 +484,8 @@ fn index_oracle(path: &str, module_id: &str, symbols: &[super::Symbol]) -> Vec<S
         let count = seen.entry(symbol.name.clone()).or_insert(0);
         *count += 1;
         let ordinal = if *count == 1 { None } else { Some(*count) };
-        let Ok(id) = dctx_map_model::StableId::new(symbol.graph, path, Some(&symbol.name), ordinal) else {
+        let Ok(id) = dctx_map_model::StableId::new(symbol.graph, path, Some(&symbol.name), ordinal)
+        else {
             continue;
         };
         rows.push(format!(

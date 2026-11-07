@@ -7,7 +7,7 @@ mod members;
 mod references;
 
 use crate::domain::{
-    body_fingerprint, comment_summary, DiagnosticReason, LexError, LexedFile, Limits, Precision,
+    DiagnosticReason, LexError, LexedFile, Limits, Precision, body_fingerprint, comment_summary,
 };
 use crate::lexer::{Lexed, Token};
 use dctx_map_model::{EdgeKind, Node, NodeKind, StableId, Summary, SummarySource, SymbolKind};
@@ -235,7 +235,10 @@ impl<'a> Walker<'a> {
             return;
         }
         self.bump();
-        if matches!(word.as_str(), "if" | "unless" | "while" | "until" | "for" | "case") {
+        if matches!(
+            word.as_str(),
+            "if" | "unless" | "while" | "until" | "for" | "case"
+        ) {
             self.skip_header(scope);
         }
         let inner = if word == "do" {
@@ -413,7 +416,10 @@ pub(super) fn qualify(scope: &Scope, name: &str) -> String {
 
 fn file_lines(source: &str) -> u32 {
     let newlines = source.bytes().filter(|byte| *byte == b'\n').count();
-    u32::try_from(newlines).unwrap_or(u32::MAX).saturating_add(1).max(1)
+    u32::try_from(newlines)
+        .unwrap_or(u32::MAX)
+        .saturating_add(1)
+        .max(1)
 }
 
 fn file_summary(path: &str, source: &str, lexed: &Lexed) -> (String, SummarySource) {
@@ -425,7 +431,9 @@ fn file_summary(path: &str, source: &str, lexed: &Lexed) -> (String, SummarySour
             break;
         }
         parts.push(source.get(start as usize..end as usize).unwrap_or(""));
-        expect = lexed.line(end.saturating_sub(1).max(start)).saturating_add(1);
+        expect = lexed
+            .line(end.saturating_sub(1).max(start))
+            .saturating_add(1);
     }
     match comment_summary(&parts.join("\n")) {
         Some(text) => (text, SummarySource::Doc),
@@ -483,7 +491,11 @@ mod tests {
         let facts = RubyLexer::default()
             .extract("p.rb", b"def f\nend\ndef f\nend\n")
             .expect("extract");
-        let ids: Vec<_> = facts.nodes.iter().map(|node| node.fact.id.as_str()).collect();
+        let ids: Vec<_> = facts
+            .nodes
+            .iter()
+            .map(|node| node.fact.id.as_str())
+            .collect();
         assert!(ids.contains(&"s:p.rb#f~1"), "{ids:?}");
         assert!(ids.contains(&"s:p.rb#f~2"), "{ids:?}");
         assert_eq!(facts.edges.len(), facts.nodes.len() - 1);

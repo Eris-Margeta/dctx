@@ -12,11 +12,11 @@ use std::sync::Arc;
 
 use dctx::memory::{CancelFlag, MemorySource};
 use dctx::{
-    DctxError, ErrorCode, GcRequest, MapRequest, OperationLimits, PackRequest, PurgeRequest, PurgeScope,
-    Resource, SnapshotRequest, StoragePolicy, VecSink, Verb,
+    DctxError, ErrorCode, GcRequest, MapRequest, OperationLimits, PackRequest, PurgeRequest,
+    PurgeScope, Resource, SnapshotRequest, StoragePolicy, VecSink, Verb,
 };
 
-use common::{open_session, session_parts, CancelAfter, PING};
+use common::{CancelAfter, PING, open_session, session_parts};
 
 #[test]
 fn cancel_before_snapshot_and_during_the_walk_keep_no_generation() {
@@ -26,10 +26,14 @@ fn cancel_before_snapshot_and_during_the_walk_keep_no_generation() {
         common::repository(),
         flag,
         dctx::HostGrants::PermitAll,
-        StoragePolicy::Ephemeral { max_bytes: 8 * 1024 * 1024 },
+        StoragePolicy::Ephemeral {
+            max_bytes: 8 * 1024 * 1024,
+        },
         dctx::SelectionPolicy::from_texts(&dctx::RuleTexts::default()),
     );
-    let error = session.snapshot(&SnapshotRequest::immutable()).expect_err("cancelled");
+    let error = session
+        .snapshot(&SnapshotRequest::immutable())
+        .expect_err("cancelled");
     assert_eq!(error, DctxError::Cancelled);
     assert_eq!(session.generation_count(), 0);
     assert_eq!(session.content_reads(), 0);
@@ -40,16 +44,25 @@ fn cancel_before_snapshot_and_during_the_walk_keep_no_generation() {
         shared,
         Arc::new(CancelAfter::new(3)),
         dctx::HostGrants::PermitAll,
-        StoragePolicy::Ephemeral { max_bytes: 8 * 1024 * 1024 },
+        StoragePolicy::Ephemeral {
+            max_bytes: 8 * 1024 * 1024,
+        },
         dctx::SelectionPolicy::from_texts(&dctx::RuleTexts::default()),
     );
-    let error = session.snapshot(&SnapshotRequest::immutable()).expect_err("mid");
+    let error = session
+        .snapshot(&SnapshotRequest::immutable())
+        .expect_err("mid");
     assert_eq!(error, DctxError::Cancelled);
     assert_eq!(session.generation_count(), 0);
-    assert_ne!(log.lock().expect("log").listed(), [] as [std::string::String; 0]);
+    assert_ne!(
+        log.lock().expect("log").listed(),
+        [] as [std::string::String; 0]
+    );
 
     let mut session = open_session(common::repository());
-    let handle = session.snapshot(&SnapshotRequest::immutable()).expect("later");
+    let handle = session
+        .snapshot(&SnapshotRequest::immutable())
+        .expect("later");
     assert_eq!(handle.generation(), 1);
     assert!(session.content_reads() > 0);
 }
@@ -63,9 +76,18 @@ fn pack_publishes_once_and_refuses_git_before_a_read() {
     request.git_revision = Some("HEAD".to_string());
     let mut sink = VecSink::new();
     let error = session.pack(&request, &mut sink).expect_err("git");
-    assert!(matches!(error, DctxError::UnsupportedCapability { capability: "git", .. }));
+    assert!(matches!(
+        error,
+        DctxError::UnsupportedCapability {
+            capability: "git",
+            ..
+        }
+    ));
     assert!(sink.is_empty());
-    assert_eq!(log.lock().expect("log").reads(), [] as [std::string::String; 0]);
+    assert_eq!(
+        log.lock().expect("log").reads(),
+        [] as [std::string::String; 0]
+    );
 
     request.git_revision = None;
     request.output_format = 7;
@@ -73,7 +95,10 @@ fn pack_publishes_once_and_refuses_git_before_a_read() {
     let error = session.pack(&request, &mut sink).expect_err("format");
     assert_eq!(error, DctxError::UnsupportedVersion { found: 7 });
     assert!(sink.is_empty());
-    assert_eq!(log.lock().expect("log").reads(), [] as [std::string::String; 0]);
+    assert_eq!(
+        log.lock().expect("log").reads(),
+        [] as [std::string::String; 0]
+    );
 
     request.output_format = 2;
     let mut sink = VecSink::new();
@@ -97,9 +122,13 @@ fn pack_publishes_once_and_refuses_git_before_a_read() {
 #[test]
 fn continuation_pages_and_a_foreign_cursor_is_stale() {
     let mut source = MemorySource::new();
-    source.insert_file("src/lib.rs", b"fn alpha() {}\nfn beta() {}\n", 0).expect("lib");
+    source
+        .insert_file("src/lib.rs", b"fn alpha() {}\nfn beta() {}\n", 0)
+        .expect("lib");
     let mut session = open_session(source);
-    let handle = session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
+    let handle = session
+        .snapshot(&SnapshotRequest::immutable())
+        .expect("snapshot");
     let mut request = MapRequest::new(Verb::Map);
     request.target = "m:src/lib.rs".to_string();
     request.limits.records = Some(1);
@@ -120,13 +149,20 @@ fn continuation_pages_and_a_foreign_cursor_is_stale() {
 
     request.continuation = Some("v1|9|map|s:src/lib.rs#alpha".to_string());
     let mut sink = VecSink::new();
-    let error = session.query(&handle, &request, &mut sink).expect_err("generation");
+    let error = session
+        .query(&handle, &request, &mut sink)
+        .expect_err("generation");
     assert_eq!(error, DctxError::StaleContinuation);
     assert!(sink.is_empty());
 
-    request.continuation = Some(format!("v1|{}|find|s:src/lib.rs#alpha", handle.generation()));
+    request.continuation = Some(format!(
+        "v1|{}|find|s:src/lib.rs#alpha",
+        handle.generation()
+    ));
     let mut sink = VecSink::new();
-    let error = session.query(&handle, &request, &mut sink).expect_err("verb");
+    let error = session
+        .query(&handle, &request, &mut sink)
+        .expect_err("verb");
     assert_eq!(error.code(), ErrorCode::InvalidRequest);
     assert!(sink.is_empty());
 }
@@ -136,20 +172,28 @@ fn cache_gc_respects_pins_and_purge_requires_confirm() {
     let mut source = MemorySource::new();
     source.insert_file("src/lib.rs", PING, 0).expect("lib");
     let mut session = open_session(source);
-    let handle = session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
+    let handle = session
+        .snapshot(&SnapshotRequest::immutable())
+        .expect("snapshot");
     let cursor = format!("v1|{}|map|s:src/lib.rs#ping", handle.generation());
     let status = session.cache_status();
     assert_eq!(status.reclaimed_bytes, 0);
     assert!(status.pinned_generations >= 1);
     assert!(status.committed_bytes > 0);
 
-    let blocked = session.cache_gc(GcRequest { apply: true }).expect("blocked");
+    let blocked = session
+        .cache_gc(GcRequest { apply: true })
+        .expect("blocked");
     assert!(blocked.blocked_generations >= 1);
     assert_eq!(blocked.reclaimed_bytes, 0);
     assert_eq!(session.generation_count(), 1);
 
     let error = session
-        .cache_purge(PurgeRequest { confirm: false, apply: true, scope: PurgeScope::All })
+        .cache_purge(PurgeRequest {
+            confirm: false,
+            apply: true,
+            scope: PurgeScope::All,
+        })
         .expect_err("confirm");
     assert_eq!(error.code(), ErrorCode::InvalidRequest);
     assert_eq!(session.generation_count(), 1);
@@ -160,7 +204,11 @@ fn cache_gc_respects_pins_and_purge_requires_confirm() {
 
     drop(handle);
     let dry = session
-        .cache_purge(PurgeRequest { confirm: true, apply: false, scope: PurgeScope::All })
+        .cache_purge(PurgeRequest {
+            confirm: true,
+            apply: false,
+            scope: PurgeScope::All,
+        })
         .expect("purge dry");
     assert_eq!(dry.reclaimed_bytes, 0);
     assert_eq!(session.generation_count(), 1);
@@ -169,34 +217,58 @@ fn cache_gc_respects_pins_and_purge_requires_confirm() {
     assert!(collected.reclaimed_bytes > 0);
     assert_eq!(session.generation_count(), 0);
 
-    let handle = session.snapshot(&SnapshotRequest::immutable()).expect("second");
+    let handle = session
+        .snapshot(&SnapshotRequest::immutable())
+        .expect("second");
     assert_eq!(handle.generation(), 2);
     let mut request = MapRequest::new(Verb::Map);
     request.target = "m:src/lib.rs".to_string();
     request.continuation = Some(cursor);
     let mut sink = VecSink::new();
-    let error = session.query(&handle, &request, &mut sink).expect_err("stale");
+    let error = session
+        .query(&handle, &request, &mut sink)
+        .expect_err("stale");
     assert_eq!(error, DctxError::StaleContinuation);
     assert!(sink.is_empty());
 }
 
 #[test]
 fn limits_deadline_and_cache_quota_refuse_without_a_generation() {
-    let tight = OperationLimits { work_units: Some(1), ..OperationLimits::default() };
+    let tight = OperationLimits {
+        work_units: Some(1),
+        ..OperationLimits::default()
+    };
     let mut session = open_session(common::repository());
     let error = session
-        .snapshot(&SnapshotRequest { limits: tight, ..SnapshotRequest::immutable() })
+        .snapshot(&SnapshotRequest {
+            limits: tight,
+            ..SnapshotRequest::immutable()
+        })
         .expect_err("work");
-    assert!(matches!(error, DctxError::ResourceLimit { resource: Resource::Entries, .. }));
+    assert!(matches!(
+        error,
+        DctxError::ResourceLimit {
+            resource: Resource::Entries,
+            ..
+        }
+    ));
     assert_eq!(session.content_reads(), 0);
     assert_eq!(session.generation_count(), 0);
-    let handle = session.snapshot(&SnapshotRequest::immutable()).expect("room");
+    let handle = session
+        .snapshot(&SnapshotRequest::immutable())
+        .expect("room");
     assert_eq!(handle.generation(), 1);
 
-    let frozen = OperationLimits { deadline_ms: Some(0), ..OperationLimits::default() };
+    let frozen = OperationLimits {
+        deadline_ms: Some(0),
+        ..OperationLimits::default()
+    };
     let mut session = open_session(ping_only());
     let handle = session
-        .snapshot(&SnapshotRequest { limits: frozen, ..SnapshotRequest::immutable() })
+        .snapshot(&SnapshotRequest {
+            limits: frozen,
+            ..SnapshotRequest::immutable()
+        })
         .expect("deadline");
     assert_eq!(handle.generation(), 1);
 
@@ -207,7 +279,9 @@ fn limits_deadline_and_cache_quota_refuse_without_a_generation() {
         StoragePolicy::Ephemeral { max_bytes: 1 },
         dctx::SelectionPolicy::from_texts(&dctx::RuleTexts::default()),
     );
-    let error = session.snapshot(&SnapshotRequest::immutable()).expect_err("cache");
+    let error = session
+        .snapshot(&SnapshotRequest::immutable())
+        .expect_err("cache");
     assert!(matches!(error, DctxError::CacheLimit { available: 1, .. }));
     assert_eq!(session.generation_count(), 0);
 }
@@ -219,9 +293,13 @@ fn install_plan_and_revise_selection_bump_the_epoch() {
     let plan = session.compile_template(STRUCTURAL).expect("plan");
     session.install_plan(plan);
     assert_eq!(session.epoch(), 2);
-    session.revise_selection(dctx::SelectionPolicy::from_texts(&dctx::RuleTexts::default()));
+    session.revise_selection(dctx::SelectionPolicy::from_texts(
+        &dctx::RuleTexts::default(),
+    ));
     assert_eq!(session.epoch(), 3);
-    let handle = session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
+    let handle = session
+        .snapshot(&SnapshotRequest::immutable())
+        .expect("snapshot");
     assert_eq!(handle.epoch(), 3);
 }
 
@@ -252,7 +330,9 @@ fn a_segment_written_before_the_v2_parser_id_is_rebuilt_not_reused() {
     let cache = dir.path().join("cache");
     std::fs::create_dir(&cache).expect("dir");
     let mut session = open_with_cache(markdown_source(b"# Title\n\nSome text.\n"), &cache);
-    let handle = session.snapshot_reusable(&SnapshotRequest::strict(), "/src").expect("cold");
+    let handle = session
+        .snapshot_reusable(&SnapshotRequest::strict(), "/src")
+        .expect("cold");
     assert!(!handle.reused());
     assert_eq!(handle.generation(), 1);
     let cold_reads = session.content_reads();
@@ -261,11 +341,20 @@ fn a_segment_written_before_the_v2_parser_id_is_rebuilt_not_reused() {
     drop(session);
 
     // An upgraded binary must not reuse a segment an older binary wrote with the structural v1 parser id.
-    let patched = patch_persisted_parser(&cache, dctx::STRUCTURAL_PARSER.as_bytes(), b"dctx-structural/1");
-    assert!(patched, "the persisted segment carries no structural parser id");
+    let patched = patch_persisted_parser(
+        &cache,
+        dctx::STRUCTURAL_PARSER.as_bytes(),
+        b"dctx-structural/1",
+    );
+    assert!(
+        patched,
+        "the persisted segment carries no structural parser id"
+    );
 
     let mut warm = open_with_cache(markdown_source(b"# Title\n\nSome text.\n"), &cache);
-    let handle = warm.snapshot_reusable(&SnapshotRequest::strict(), "/src").expect("warm");
+    let handle = warm
+        .snapshot_reusable(&SnapshotRequest::strict(), "/src")
+        .expect("warm");
     assert!(!handle.reused());
     assert_eq!(warm.cached_content_reads(), 0);
     assert!(warm.content_reads() >= cold_reads);
@@ -274,7 +363,9 @@ fn a_segment_written_before_the_v2_parser_id_is_rebuilt_not_reused() {
 
     // The same segment, left unpatched, must be reused on a warm start so the parser id is the gate.
     let mut warm2 = open_with_cache(markdown_source(b"# Title\n\nSome text.\n"), &cache);
-    let handle = warm2.snapshot_reusable(&SnapshotRequest::strict(), "/src").expect("warm2");
+    let handle = warm2
+        .snapshot_reusable(&SnapshotRequest::strict(), "/src")
+        .expect("warm2");
     assert!(handle.reused());
     assert!(warm2.cached_content_reads() >= 1);
     assert_eq!(warm2.content_reads(), 0);
@@ -288,17 +379,24 @@ fn markdown_source(body: &[u8]) -> MemorySource {
 }
 
 /// A session with a cache root and auto-clean disabled, so a warm start can load the retained segment.
-#[allow(clippy::field_reassign_with_default, reason = "Start from the public limit defaults and disable only auto-clean for the regression.")]
+#[allow(
+    clippy::field_reassign_with_default,
+    reason = "Start from the public limit defaults and disable only auto-clean for the regression."
+)]
 fn open_with_cache(source: MemorySource, cache: &std::path::Path) -> dctx::Session {
     let mut auto = dctx::AutoCleanConfig::default();
     auto.enabled = false;
     dctx::Session::builder(source)
         .clock(dctx::memory::FixedClock(dctx::Timestamp(0)))
         .cancellation(Arc::new(CancelFlag::new()))
-        .selection(dctx::SelectionPolicy::from_texts(&dctx::RuleTexts::default()))
+        .selection(dctx::SelectionPolicy::from_texts(
+            &dctx::RuleTexts::default(),
+        ))
         .ceiling(dctx::HostCeiling::base())
         .grants(dctx::HostGrants::PermitAll)
-        .storage(StoragePolicy::Ephemeral { max_bytes: 8 * 1024 * 1024 })
+        .storage(StoragePolicy::Ephemeral {
+            max_bytes: 8 * 1024 * 1024,
+        })
         .place("fixture")
         .view("default")
         .cache_root(cache, 1)

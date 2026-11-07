@@ -15,6 +15,6 @@ mod sha256;
 #[cfg(test)]
 mod differential;
 
-pub use algorithm::{ContentDigest, IdentityAlgorithm, IDENTITY_VERSION};
+pub use algorithm::{ContentDigest, IDENTITY_VERSION, IdentityAlgorithm};
 pub use error::HashError;
 pub use sha256::Sha256;

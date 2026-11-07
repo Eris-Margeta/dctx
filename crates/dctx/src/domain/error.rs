@@ -40,7 +40,10 @@ pub enum Resource {
 
 impl Resource {
     /// Stable name used in error text.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Entries => "entries",
@@ -102,7 +105,10 @@ pub enum ErrorCode {
 
 impl ErrorCode {
     /// The code name used by conformance tests (`PolicyDenied`, `BudgetTooSmall`, …).
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::InvalidRequest => "InvalidRequest",
@@ -221,31 +227,54 @@ pub enum DctxError {
 
 impl DctxError {
     /// An invalid request with no extra detail.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn invalid(reason: &'static str) -> Self {
-        Self::InvalidRequest { reason, detail: Box::from("") }
+        Self::InvalidRequest {
+            reason,
+            detail: Box::from(""),
+        }
     }
 
     /// An invalid request whose extra text is cut to at most 160 bytes
     /// at a UTF-8 character boundary.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn invalid_detail(reason: &'static str, detail: &str) -> Self {
-        Self::InvalidRequest { reason, detail: bounded_detail(detail) }
+        Self::InvalidRequest {
+            reason,
+            detail: bounded_detail(detail),
+        }
     }
 
     /// A missing capability with no extra detail.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn unsupported(capability: &'static str) -> Self {
-        Self::UnsupportedCapability { capability, detail: Box::from("") }
+        Self::UnsupportedCapability {
+            capability,
+            detail: Box::from(""),
+        }
     }
 
     /// Builds an [`DctxError::Io`] whose detail is cut at a char boundary.
     pub fn io(detail: impl fmt::Display) -> Self {
-        Self::Io { detail: bounded_detail(&detail.to_string()) }
+        Self::Io {
+            detail: bounded_detail(&detail.to_string()),
+        }
     }
 
     /// Translates an engine error into the facade set.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn from_core(error: CoreError) -> Self {
         match error {
             CoreError::InvalidRequest { reason } => Self::invalid(reason),
@@ -258,7 +287,13 @@ impl DctxError {
                 resource: map_resource(resource),
                 limit,
             },
-            CoreError::CacheLimit { requested, available } => Self::CacheLimit { requested, available },
+            CoreError::CacheLimit {
+                requested,
+                available,
+            } => Self::CacheLimit {
+                requested,
+                available,
+            },
             CoreError::Busy => Self::Busy,
             CoreError::Cancelled => Self::Cancelled,
             CoreError::CorruptIndex { reason } => Self::CorruptIndex { reason },
@@ -269,24 +304,36 @@ impl DctxError {
     }
 
     /// Translates a template refusal. Plugin and parser gaps stay capability errors.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn from_template(error: TemplateError) -> Self {
         let text = error.to_string();
         match error {
-            TemplateError::UnknownCapability { name } | TemplateError::RequiredPluginMissing { id: name } => {
-                Self::UnsupportedCapability { capability: "template", detail: bounded_detail(&name) }
-            }
+            TemplateError::UnknownCapability { name }
+            | TemplateError::RequiredPluginMissing { id: name } => Self::UnsupportedCapability {
+                capability: "template",
+                detail: bounded_detail(&name),
+            },
             TemplateError::UnsupportedVersion { found } => Self::UnsupportedVersion { found },
-            TemplateError::BudgetTooSmall { minimum_bytes } => Self::BudgetTooSmall { minimum_bytes },
+            TemplateError::BudgetTooSmall { minimum_bytes } => {
+                Self::BudgetTooSmall { minimum_bytes }
+            }
             TemplateError::BudgetAboveCeiling { .. } => {
                 Self::invalid_detail("template budget exceeds the host ceiling", &text)
             }
-            TemplateError::GrantExpansion { .. } | TemplateError::UserDisabled { .. } => Self::PolicyDenied,
+            TemplateError::GrantExpansion { .. } | TemplateError::UserDisabled { .. } => {
+                Self::PolicyDenied
+            }
             TemplateError::Corrupt { reason } => Self::CorruptIndex { reason },
             TemplateError::DigestMismatch => Self::CorruptIndex { reason: "digest" },
             TemplateError::UnknownOpcode { .. } => Self::CorruptIndex { reason: "opcode" },
             TemplateError::UnknownSection { .. } => Self::CorruptIndex { reason: "section" },
-            TemplateError::Limit { limit, .. } => Self::ResourceLimit { resource: Resource::Records, limit },
+            TemplateError::Limit { limit, .. } => Self::ResourceLimit {
+                resource: Resource::Records,
+                limit,
+            },
             TemplateError::MissingSection { .. }
             | TemplateError::EmptySection { .. }
             | TemplateError::UnresolvedVariable { .. }
@@ -295,12 +342,17 @@ impl DctxError {
             | TemplateError::Duplicate { .. }
             | TemplateError::UnresolvedRef { .. }
             | TemplateError::UnknownField { .. }
-            | TemplateError::ReservedAlias { .. } => Self::invalid_detail("template rejected", &text),
+            | TemplateError::ReservedAlias { .. } => {
+                Self::invalid_detail("template rejected", &text)
+            }
         }
     }
 
     /// The stable code of this error.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn code(&self) -> ErrorCode {
         match self {
             Self::InvalidRequest { .. } => ErrorCode::InvalidRequest,
@@ -327,20 +379,32 @@ impl DctxError {
 
     /// Whether the engine result this error refers to is already published.
     /// Only a post-commit hook failure returns true. Every other error returns false.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn output_committed(&self) -> bool {
         match self {
-            Self::Hook { output_committed, .. } => *output_committed,
+            Self::Hook {
+                output_committed, ..
+            } => *output_committed,
             _ => false,
         }
     }
 
     /// True when the same request may succeed later without a different grant.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn is_retryable(&self) -> bool {
         matches!(
             self.code(),
-            ErrorCode::Busy | ErrorCode::Io | ErrorCode::SourceChanged | ErrorCode::CacheLimit | ErrorCode::Stale
+            ErrorCode::Busy
+                | ErrorCode::Io
+                | ErrorCode::SourceChanged
+                | ErrorCode::CacheLimit
+                | ErrorCode::Stale
         )
     }
 }
@@ -379,15 +443,30 @@ impl fmt::Display for DctxError {
             Self::UnsupportedIdentity { algorithm } => {
                 write!(formatter, "unsupported identity {algorithm}")
             }
-            Self::UnsupportedDurability { mode } => write!(formatter, "unsupported durability {mode}"),
+            Self::UnsupportedDurability { mode } => {
+                write!(formatter, "unsupported durability {mode}")
+            }
             Self::BudgetTooSmall { minimum_bytes } => {
-                write!(formatter, "budget too small: needs at least {minimum_bytes} bytes")
+                write!(
+                    formatter,
+                    "budget too small: needs at least {minimum_bytes} bytes"
+                )
             }
             Self::ResourceLimit { resource, limit } => {
-                write!(formatter, "resource limit exceeded: {} > {limit}", resource.as_str())
+                write!(
+                    formatter,
+                    "resource limit exceeded: {} > {limit}",
+                    resource.as_str()
+                )
             }
-            Self::CacheLimit { requested, available } => {
-                write!(formatter, "cache limit: requested {requested} bytes, {available} available")
+            Self::CacheLimit {
+                requested,
+                available,
+            } => {
+                write!(
+                    formatter,
+                    "cache limit: requested {requested} bytes, {available} available"
+                )
             }
             Self::Busy => formatter.write_str("busy"),
             Self::Cancelled => formatter.write_str("cancelled"),
@@ -397,8 +476,15 @@ impl fmt::Display for DctxError {
             Self::SourceChanged => formatter.write_str("source changed during read"),
             Self::SourceUnavailable => formatter.write_str("source unavailable"),
             Self::Io { detail } => write!(formatter, "io: {detail}"),
-            Self::Hook { hook, reason, output_committed } => {
-                write!(formatter, "hook {hook} failed (output_committed={output_committed}): {reason}")
+            Self::Hook {
+                hook,
+                reason,
+                output_committed,
+            } => {
+                write!(
+                    formatter,
+                    "hook {hook} failed (output_committed={output_committed}): {reason}"
+                )
             }
         }
     }
@@ -429,7 +515,10 @@ mod tests {
         assert!(!DctxError::Cancelled.is_retryable());
         assert!(DctxError::Busy.is_retryable());
         assert!(DctxError::SourceChanged.is_retryable());
-        let limit = DctxError::ResourceLimit { resource: Resource::Entries, limit: 3 };
+        let limit = DctxError::ResourceLimit {
+            resource: Resource::Entries,
+            limit: 3,
+        };
         assert_eq!(limit.to_string(), "resource limit exceeded: entries > 3");
     }
 
@@ -445,8 +534,16 @@ mod tests {
         let version = DctxError::from_template(TemplateError::UnsupportedVersion { found: 9 });
         assert_eq!(version, DctxError::UnsupportedVersion { found: 9 });
         assert!(!DctxError::Cancelled.output_committed());
-        let before = DctxError::Hook { hook: "before-pack-output-written", reason: "hook-failed", output_committed: false };
-        let after = DctxError::Hook { hook: "after-pack-output-written", reason: "hook-failed", output_committed: true };
+        let before = DctxError::Hook {
+            hook: "before-pack-output-written",
+            reason: "hook-failed",
+            output_committed: false,
+        };
+        let after = DctxError::Hook {
+            hook: "after-pack-output-written",
+            reason: "hook-failed",
+            output_committed: true,
+        };
         assert!(!before.output_committed());
         assert!(after.output_committed());
         assert!(before.to_string().contains("output_committed=false"));

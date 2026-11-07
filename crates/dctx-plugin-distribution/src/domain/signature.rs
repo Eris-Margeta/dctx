@@ -25,7 +25,10 @@ pub fn verify_detached(
     signature: &[u8],
 ) -> Result<(), DistributionError> {
     if signature.len() != SIGNATURE_BYTES {
-        return Err(DistributionError::malformed(Document::Signature, "signature-length"));
+        return Err(DistributionError::malformed(
+            Document::Signature,
+            "signature-length",
+        ));
     }
     let mut message = Vec::with_capacity(domain.len() + document.len());
     message.extend_from_slice(domain);
@@ -43,7 +46,10 @@ mod tests {
         let key = [0u8; 32];
         assert_eq!(
             verify_detached(MANIFEST_DOMAIN, &key, b"{}", &[0; 63]),
-            Err(DistributionError::malformed(Document::Signature, "signature-length"))
+            Err(DistributionError::malformed(
+                Document::Signature,
+                "signature-length"
+            ))
         );
         assert!(matches!(
             verify_detached(MANIFEST_DOMAIN, &key, b"{}", &[0; 64]),
@@ -54,6 +60,9 @@ mod tests {
     #[test]
     fn domains_differ_and_are_not_prefixes() {
         assert_ne!(MANIFEST_DOMAIN, INDEX_DOMAIN);
-        assert!(!MANIFEST_DOMAIN.starts_with(INDEX_DOMAIN) && !INDEX_DOMAIN.starts_with(MANIFEST_DOMAIN));
+        assert!(
+            !MANIFEST_DOMAIN.starts_with(INDEX_DOMAIN)
+                && !INDEX_DOMAIN.starts_with(MANIFEST_DOMAIN)
+        );
     }
 }

@@ -6,13 +6,18 @@
 
 use std::cmp::Ordering;
 
-use super::cursor::{push_bool, push_bytes, push_narrow, push_record, push_u16, push_u32, push_u64, Cursor};
+use super::cursor::{
+    Cursor, push_bool, push_bytes, push_narrow, push_record, push_u16, push_u32, push_u64,
+};
 use super::error::SegmentError;
-use super::facts::{encode_key, parse_key, validate_fact, Declaration, Fact, Provenance, RawRef};
+use super::facts::{Declaration, Fact, Provenance, RawRef, encode_key, parse_key, validate_fact};
 use super::kinds::{Completion, Coverage, DeclarationKind, EdgeKind, SummarySource};
-use super::limits::{bounded_count, DecoderLimits};
+use super::limits::{DecoderLimits, bounded_count};
 
-pub(crate) fn encode(facts: &[Fact], limits: &DecoderLimits) -> Result<(Vec<u8>, u64), SegmentError> {
+pub(crate) fn encode(
+    facts: &[Fact],
+    limits: &DecoderLimits,
+) -> Result<(Vec<u8>, u64), SegmentError> {
     if facts.is_empty() {
         return Ok((Vec::new(), 0));
     }
@@ -34,11 +39,19 @@ pub(crate) fn encode(facts: &[Fact], limits: &DecoderLimits) -> Result<(Vec<u8>,
         write_provenance(&mut body, &fact.provenance)?;
         push_record(&mut out, &body, limits.max_record_bytes)?;
     }
-    Ok((out, u64::try_from(facts.len()).map_err(|_| SegmentError::Arithmetic)?))
+    Ok((
+        out,
+        u64::try_from(facts.len()).map_err(|_| SegmentError::Arithmetic)?,
+    ))
 }
 
-fn write_declarations(out: &mut Vec<u8>, fact: &Fact, limits: &DecoderLimits) -> Result<(), SegmentError> {
-    let count = u32::try_from(fact.declarations.len()).map_err(|_| SegmentError::Limit("records"))?;
+fn write_declarations(
+    out: &mut Vec<u8>,
+    fact: &Fact,
+    limits: &DecoderLimits,
+) -> Result<(), SegmentError> {
+    let count =
+        u32::try_from(fact.declarations.len()).map_err(|_| SegmentError::Limit("records"))?;
     if u64::from(count) > limits.max_records {
         return Err(SegmentError::Limit("records"));
     }
@@ -124,7 +137,8 @@ pub(crate) fn decode<S: AsRef<str>>(
         if rec_len > limits.max_record_bytes {
             return Err(SegmentError::Limit("record"));
         }
-        let record = cursor.take(usize::try_from(rec_len).map_err(|_| SegmentError::Arithmetic)?)?;
+        let record =
+            cursor.take(usize::try_from(rec_len).map_err(|_| SegmentError::Arithmetic)?)?;
         let fact = read_fact(record, dictionary, limits)?;
         let raw_key = encode_key(&fact.key);
         if let Some(prior) = &previous {
@@ -225,7 +239,8 @@ fn read_ref(cursor: &mut Cursor<'_>) -> Result<RawRef, SegmentError> {
 }
 
 fn read_provenance(cursor: &mut Cursor<'_>) -> Result<Provenance, SegmentError> {
-    let coverage = Coverage::from_code(u16::from(cursor.u8()?)).ok_or(SegmentError::Facts("kind"))?;
+    let coverage =
+        Coverage::from_code(u16::from(cursor.u8()?)).ok_or(SegmentError::Facts("kind"))?;
     let completion =
         Completion::from_code(u16::from(cursor.u8()?)).ok_or(SegmentError::Facts("kind"))?;
     let completion_reason = cursor.u32()?;
@@ -305,7 +320,10 @@ mod tests {
         let dictionary = ["name"];
         let fact = sample();
         let (payload, count) = encode(std::slice::from_ref(&fact), &limits).unwrap();
-        assert_eq!(decode(&payload, count, &dictionary, &limits).unwrap(), vec![fact.clone()]);
+        assert_eq!(
+            decode(&payload, count, &dictionary, &limits).unwrap(),
+            vec![fact.clone()]
+        );
         let mut wide = fact.clone();
         wide.declarations[0].span_end = 9;
         let (bad, bad_count) = encode(&[wide], &limits).unwrap();

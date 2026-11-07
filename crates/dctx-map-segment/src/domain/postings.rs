@@ -4,10 +4,10 @@
 //! Depends on [`super::varint`] and [`super::kinds::Field`]. Ranking reads the token lengths from here.
 //! Path rows are refused when the segment role is fact. Zero-length sections mean no documents.
 
-use super::cursor::{push_narrow, push_record, push_u32, Cursor};
+use super::cursor::{Cursor, push_narrow, push_record, push_u32};
 use super::error::SegmentError;
 use super::kinds::{Field, SegmentRole};
-use super::limits::{bounded_count, DecoderLimits};
+use super::limits::{DecoderLimits, bounded_count};
 use super::varint::{push_varint, read_varint};
 
 /// One document's positions for a term. Positions are absolute, not deltas.
@@ -41,7 +41,10 @@ pub struct Postings {
 
 impl Postings {
     /// Finds the row for `field` and `term_id`.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn row(&self, field: Field, term_id: u32) -> Option<&TermRow> {
         self.rows
             .binary_search_by(|row| (row.field.code(), row.term_id).cmp(&(field.code(), term_id)))
@@ -62,7 +65,8 @@ pub(crate) fn encode(
         return Err(SegmentError::Postings("length"));
     }
     let mut out = Vec::new();
-    let doc_count = u32::try_from(postings.lengths.len()).map_err(|_| SegmentError::Limit("records"))?;
+    let doc_count =
+        u32::try_from(postings.lengths.len()).map_err(|_| SegmentError::Limit("records"))?;
     push_u32(&mut out, doc_count);
     for length in &postings.lengths {
         push_u32(&mut out, *length);
@@ -88,7 +92,10 @@ pub(crate) fn encode(
         write_hits(&mut body, row, &postings.lengths)?;
         push_record(&mut out, &body, limits.max_record_bytes)?;
     }
-    Ok((out, u64::try_from(postings.rows.len()).map_err(|_| SegmentError::Arithmetic)?))
+    Ok((
+        out,
+        u64::try_from(postings.rows.len()).map_err(|_| SegmentError::Arithmetic)?,
+    ))
 }
 
 fn write_hits(out: &mut Vec<u8>, row: &TermRow, lengths: &[u32]) -> Result<(), SegmentError> {
@@ -115,7 +122,10 @@ fn write_positions(out: &mut Vec<u8>, positions: &[u32], length: u32) -> Result<
     if positions.is_empty() {
         return Err(SegmentError::Postings("frequency"));
     }
-    push_varint(out, u64::try_from(positions.len()).map_err(|_| SegmentError::Arithmetic)?);
+    push_varint(
+        out,
+        u64::try_from(positions.len()).map_err(|_| SegmentError::Arithmetic)?,
+    );
     let mut previous: Option<u32> = None;
     for position in positions {
         if *position >= length {
@@ -143,7 +153,10 @@ pub(crate) fn decode(
         if record_count != 0 {
             return Err(SegmentError::Cardinality("count"));
         }
-        return Ok(Postings { lengths: Vec::new(), rows: Vec::new() });
+        return Ok(Postings {
+            lengths: Vec::new(),
+            rows: Vec::new(),
+        });
     }
     let mut cursor = Cursor::new(payload, 0);
     let doc_count = cursor.u32()?;
@@ -165,7 +178,8 @@ pub(crate) fn decode(
         if rec_len > limits.max_record_bytes {
             return Err(SegmentError::Limit("record"));
         }
-        let record = cursor.take(usize::try_from(rec_len).map_err(|_| SegmentError::Arithmetic)?)?;
+        let record =
+            cursor.take(usize::try_from(rec_len).map_err(|_| SegmentError::Arithmetic)?)?;
         let row = read_row(record, &lengths, dict_len, role, limits)?;
         let key = (row.field.code(), row.term_id);
         if previous.is_some_and(|prior| key <= prior) {
@@ -227,7 +241,11 @@ fn read_row(
     if !cursor.rest().is_empty() {
         return Err(SegmentError::Postings("trailing"));
     }
-    Ok(TermRow { field, term_id, hits })
+    Ok(TermRow {
+        field,
+        term_id,
+        hits,
+    })
 }
 
 fn read_positions(
@@ -283,7 +301,10 @@ mod tests {
             rows: vec![TermRow {
                 field: Field::Identifier,
                 term_id: 0,
-                hits: vec![TermHit { doc: 0, positions: vec![1] }],
+                hits: vec![TermHit {
+                    doc: 0,
+                    positions: vec![1],
+                }],
             }],
         };
         let (payload, count) = encode(&postings, SegmentRole::Fact, &limits()).unwrap();
@@ -297,7 +318,10 @@ mod tests {
         );
         let decoded = decode(&payload, count, 1, SegmentRole::Fact, &limits()).unwrap();
         assert_eq!(decoded, postings);
-        assert_eq!(encode(&postings, SegmentRole::Fact, &limits()).unwrap().0, payload);
+        assert_eq!(
+            encode(&postings, SegmentRole::Fact, &limits()).unwrap().0,
+            payload
+        );
     }
 
     #[test]
@@ -316,12 +340,21 @@ mod tests {
                 field: Field::Identifier,
                 term_id: 0,
                 hits: vec![
-                    TermHit { doc: 0, positions: vec![0] },
-                    TermHit { doc: 1, positions: vec![0, 2] },
+                    TermHit {
+                        doc: 0,
+                        positions: vec![0],
+                    },
+                    TermHit {
+                        doc: 1,
+                        positions: vec![0, 2],
+                    },
                 ],
             }],
         };
         let (payload, count) = encode(&ok, SegmentRole::View, &limits()).unwrap();
-        assert_eq!(decode(&payload, count, 1, SegmentRole::View, &limits()).unwrap(), ok);
+        assert_eq!(
+            decode(&payload, count, 1, SegmentRole::View, &limits()).unwrap(),
+            ok
+        );
     }
 }

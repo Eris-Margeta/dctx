@@ -7,7 +7,7 @@
 
 #[cfg(test)]
 mod tests {
-    use dctx_lex_c::{Completion, Dialect, LexError, LexedFile, Limits, Precision, CLexer};
+    use dctx_lex_c::{CLexer, Completion, Dialect, LexError, LexedFile, Limits, Precision};
     use dctx_map_model::{Confidence, EdgeKind, Node};
 
     fn extract(path: &str, source: &str) -> LexedFile {
@@ -17,7 +17,11 @@ mod tests {
     }
 
     fn names(facts: &LexedFile) -> Vec<&str> {
-        facts.nodes.iter().map(|node| node.fact.name.as_str()).collect()
+        facts
+            .nodes
+            .iter()
+            .map(|node| node.fact.name.as_str())
+            .collect()
     }
 
     fn node<'a>(facts: &'a LexedFile, name: &str) -> &'a Node {
@@ -33,7 +37,12 @@ mod tests {
     fn comparison_and_shift_nesting_keeps_the_translation_unit() {
         let source_one = "int a;\nvoid f(void) { if (a < 1) a++; }\n";
         let one = extract("one.c", source_one);
-        assert_eq!(one.completion, Completion::Complete, "{:?}", one.diagnostics);
+        assert_eq!(
+            one.completion,
+            Completion::Complete,
+            "{:?}",
+            one.diagnostics
+        );
         assert!(names(&one).contains(&"f"), "{:?}", names(&one));
 
         let mut repeated = String::from("int a;\nvoid f(void) {\n");
@@ -44,7 +53,12 @@ mod tests {
         let many = CLexer::default()
             .extract("many.c", repeated.as_bytes())
             .unwrap_or_else(|error| panic!("{error}"));
-        assert_eq!(many.completion, Completion::Complete, "{:?}", many.diagnostics);
+        assert_eq!(
+            many.completion,
+            Completion::Complete,
+            "{:?}",
+            many.diagnostics
+        );
         assert!(names(&many).contains(&"f"));
 
         let tight = CLexer::new(Limits {
@@ -62,13 +76,26 @@ mod tests {
         let facts = tight
             .extract("expr.c", expr.as_bytes())
             .unwrap_or_else(|error| panic!("{error}"));
-        assert_eq!(facts.completion, Completion::Complete, "{:?}", facts.diagnostics);
+        assert_eq!(
+            facts.completion,
+            Completion::Complete,
+            "{:?}",
+            facts.diagnostics
+        );
         let found = names(&facts);
-        assert!(found.contains(&"v") && found.contains(&"after"), "{found:?}");
+        assert!(
+            found.contains(&"v") && found.contains(&"after"),
+            "{found:?}"
+        );
 
         let declared = "int x = a < b, y;\nint p = a >> 1, q;\nint m = a + b, n;\n";
         let decls = extract("decl.c", declared);
-        assert_eq!(decls.completion, Completion::Complete, "{:?}", decls.diagnostics);
+        assert_eq!(
+            decls.completion,
+            Completion::Complete,
+            "{:?}",
+            decls.diagnostics
+        );
         let found = names(&decls);
         for name in ["x", "y", "p", "q", "m", "n"] {
             assert!(found.contains(&name), "missing {name} in {found:?}");
@@ -109,7 +136,15 @@ mod tests {
         let exact = extract("box.C", source);
         assert_eq!(exact.dialect, Dialect::Cpp);
         assert!(names(&exact).contains(&"value"));
-        for path in ["Widget.hxx", "Widget.HXX", "unit.c++", "unit.C++", "mod.ixx", "part.cppm", "a.CPP"] {
+        for path in [
+            "Widget.hxx",
+            "Widget.HXX",
+            "unit.c++",
+            "unit.C++",
+            "mod.ixx",
+            "part.cppm",
+            "a.CPP",
+        ] {
             let facts = extract(path, source);
             assert_eq!(facts.dialect, Dialect::Cpp, "{path}");
             assert!(names(&facts).contains(&"value"), "{path}");
@@ -157,7 +192,12 @@ mod tests {
             "clean.c",
             "int ready(void) { return 1; }\nint broken(int x) { return x; }\nint later(void);\n",
         );
-        assert_eq!(clean.completion, Completion::Complete, "{:?}", clean.diagnostics);
+        assert_eq!(
+            clean.completion,
+            Completion::Complete,
+            "{:?}",
+            clean.diagnostics
+        );
         for name in ["ready", "broken", "later"] {
             let id = node(&clean, name).id.as_str();
             let edge = clean

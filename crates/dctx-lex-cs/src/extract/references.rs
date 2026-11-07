@@ -5,9 +5,9 @@
 //! Lambdas are not symbols; their bodies are still scanned.
 use super::{Body, Scope, Walker};
 use crate::domain::{
-    body_fingerprint, doc_body, gap_ok, normalize, slice, xml_summary, DiagnosticReason, Precision,
+    DiagnosticReason, Precision, body_fingerprint, doc_body, gap_ok, normalize, slice, xml_summary,
 };
-use crate::lexer::{keyword, predefined, Kind, NONE};
+use crate::lexer::{Kind, NONE, keyword, predefined};
 use dctx_map_model::{EdgeKind, SummarySource};
 
 impl<'a> Walker<'a> {
@@ -126,7 +126,9 @@ impl<'a> Walker<'a> {
     }
 
     pub(crate) fn text(&self, index: usize) -> &'a str {
-        self.toks.get(index).map_or("", |token| slice(self.src, token.start, token.end))
+        self.toks
+            .get(index)
+            .map_or("", |token| slice(self.src, token.start, token.end))
     }
 
     pub(crate) fn kind(&self, index: usize) -> Option<Kind> {
@@ -153,25 +155,42 @@ impl<'a> Walker<'a> {
         self.word(index) && (predefined(self.text(index)) || !keyword(self.text(index)))
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     pub(crate) fn start_byte(&self, index: usize) -> u32 {
-        self.toks.get(index).map_or(self.src.len() as u32, |token| token.start)
+        self.toks
+            .get(index)
+            .map_or(self.src.len() as u32, |token| token.start)
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     pub(crate) fn end_byte(&self, index: usize) -> u32 {
-        self.toks.get(index).map_or(self.src.len() as u32, |token| token.end)
+        self.toks
+            .get(index)
+            .map_or(self.src.len() as u32, |token| token.end)
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     pub(crate) fn line(&self, byte: u32) -> u32 {
-        self.line_starts.partition_point(|&start| start <= byte).max(1) as u32
+        self.line_starts
+            .partition_point(|&start| start <= byte)
+            .max(1) as u32
     }
 
     pub(crate) fn span_lines(&self, start: u32, end: u32) -> [u32; 2] {
         let cap = self.file_end.max(1);
         let first = self.line(start).clamp(1, cap);
-        let last = self.line(end.saturating_sub(1).max(start)).clamp(first, cap);
+        let last = self
+            .line(end.saturating_sub(1).max(start))
+            .clamp(first, cap);
         [first, last]
     }
 
@@ -189,11 +208,14 @@ impl<'a> Walker<'a> {
     }
 
     pub(crate) fn close_of(&self, index: usize, end: usize) -> usize {
-        self.partner_within(index, end).unwrap_or_else(|| end.saturating_sub(1).max(index))
+        self.partner_within(index, end)
+            .unwrap_or_else(|| end.saturating_sub(1).max(index))
     }
 
     pub(crate) fn after(&self, index: usize, end: usize) -> usize {
-        self.partner_within(index, end).map_or(index + 1, |partner| partner + 1).min(end)
+        self.partner_within(index, end)
+            .map_or(index + 1, |partner| partner + 1)
+            .min(end)
     }
 
     pub(crate) fn skip_noise(&self, mut index: usize, end: usize) -> usize {
@@ -265,7 +287,15 @@ impl<'a> Walker<'a> {
                 let last = after.saturating_sub(1).max(next);
                 let type_name = self.span_text(next, last);
                 let name = format!("new {type_name}");
-                self.refer(scope.owner, &scope.name, EdgeKind::Calls, name, None, index, last);
+                self.refer(
+                    scope.owner,
+                    &scope.name,
+                    EdgeKind::Calls,
+                    name,
+                    None,
+                    index,
+                    last,
+                );
                 return after;
             }
             return after.max(next);
@@ -308,7 +338,15 @@ impl<'a> Walker<'a> {
             return None;
         }
         let name = self.span_text(start, last);
-        self.refer(scope.owner, &scope.name, EdgeKind::Calls, name, None, start, last);
+        self.refer(
+            scope.owner,
+            &scope.name,
+            EdgeKind::Calls,
+            name,
+            None,
+            start,
+            last,
+        );
         Some(after)
     }
 

@@ -9,8 +9,22 @@ use crate::lexer::Kind;
 use dctx_map_model::EdgeKind;
 
 const PREDEFINED: [&str; 16] = [
-    "any", "number", "boolean", "string", "symbol", "void", "unknown", "never", "object",
-    "bigint", "undefined", "null", "true", "false", "this", "const",
+    "any",
+    "number",
+    "boolean",
+    "string",
+    "symbol",
+    "void",
+    "unknown",
+    "never",
+    "object",
+    "bigint",
+    "undefined",
+    "null",
+    "true",
+    "false",
+    "this",
+    "const",
 ];
 
 impl Walker<'_> {
@@ -36,7 +50,10 @@ impl Walker<'_> {
         k.min(end)
     }
 
-    #[allow(clippy::too_many_lines, reason = "Keep the ordered TypeScript type-operand grammar dispatch and its shared cursor updates together.")]
+    #[allow(
+        clippy::too_many_lines,
+        reason = "Keep the ordered TypeScript type-operand grammar dispatch and its shared cursor updates together."
+    )]
     fn type_operand(
         &mut self,
         k: usize,
@@ -55,7 +72,9 @@ impl Walker<'_> {
                         *operand = false;
                         Some(k + 2)
                     }
-                    "keyof" | "readonly" | "unique" | "infer" | "new" | "abstract" | "asserts" => Some(k + 1),
+                    "keyof" | "readonly" | "unique" | "infer" | "new" | "abstract" | "asserts" => {
+                        Some(k + 1)
+                    }
                     "typeof" => {
                         *operand = false;
                         let mut j = k + 2;
@@ -75,7 +94,11 @@ impl Walker<'_> {
                         while self.is(j, ".") && self.ident(j + 1) {
                             j += 2;
                         }
-                        Some(if self.is(j, "<") { self.type_args(j, end, scope) } else { j })
+                        Some(if self.is(j, "<") {
+                            self.type_args(j, end, scope)
+                        } else {
+                            j
+                        })
                     }
                     word if PREDEFINED.contains(&word) => {
                         *operand = false;
@@ -91,8 +114,21 @@ impl Walker<'_> {
                         let name = compact(
                             &self.src[self.start_byte(k) as usize..self.end_byte(j - 1) as usize],
                         );
-                        self.refer(scope.owner, scope, EdgeKind::UsesType, name, None, site, site, Precision::Structural);
-                        Some(if self.is(j, "<") { self.type_args(j, end, scope) } else { j })
+                        self.refer(
+                            scope.owner,
+                            scope,
+                            EdgeKind::UsesType,
+                            name,
+                            None,
+                            site,
+                            site,
+                            Precision::Structural,
+                        );
+                        Some(if self.is(j, "<") {
+                            self.type_args(j, end, scope)
+                        } else {
+                            j
+                        })
                     }
                 }
             }
@@ -192,7 +228,9 @@ impl Walker<'_> {
     fn tuple(&mut self, begin: usize, end: usize, scope: &Scope) {
         for (start, stop) in self.segments(begin, end) {
             let mut k = start + usize::from(self.is(start, "..."));
-            if self.ident(k) && (self.is(k + 1, ":") || (self.is(k + 1, "?") && self.is(k + 2, ":"))) {
+            if self.ident(k)
+                && (self.is(k + 1, ":") || (self.is(k + 1, "?") && self.is(k + 2, ":")))
+            {
                 k += if self.is(k + 1, ":") { 2 } else { 3 };
             }
             self.scan_type(k, stop, scope);
@@ -303,7 +341,9 @@ mod tests {
     use dctx_map_model::EdgeKind;
 
     fn types(source: &str) -> Vec<String> {
-        let facts = JsLexer::default().extract("t.ts", source.as_bytes()).unwrap();
+        let facts = JsLexer::default()
+            .extract("t.ts", source.as_bytes())
+            .unwrap();
         facts
             .references
             .iter()

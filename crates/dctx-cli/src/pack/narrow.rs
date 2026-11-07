@@ -4,7 +4,7 @@
 use std::path::Path;
 
 use dctx_core::datatypes::{DirContextTreeNode, IgnoreRule, NodeType};
-use dctx_core::file_classifier::{FileContentHandling, classify_file};
+use dctx_core::file_classifier::{classify_file, FileContentHandling};
 use dctx_core::selection::rule_matches;
 
 use super::base_name;

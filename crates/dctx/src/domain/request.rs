@@ -32,7 +32,10 @@ pub enum Verb {
 
 impl Verb {
     /// Wire name (`map`, `find`, `neighbors`, `explain`, `read`, `grep`, `skeleton`).
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Map => "map",
@@ -76,7 +79,10 @@ pub enum Direction {
 
 impl Direction {
     /// Wire name.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Out => "out",
@@ -99,7 +105,10 @@ pub enum FreshnessMode {
 
 impl FreshnessMode {
     /// Wire name.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::ImmutableSnapshot => "immutable_snapshot",
@@ -122,27 +131,51 @@ pub struct SnapshotRequest {
 
 impl SnapshotRequest {
     /// Immutable snapshot with safety caps.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn immutable() -> Self {
-        Self { request_version: REQUEST_VERSION, freshness: FreshnessMode::ImmutableSnapshot, limits: OperationLimits::default() }
+        Self {
+            request_version: REQUEST_VERSION,
+            freshness: FreshnessMode::ImmutableSnapshot,
+            limits: OperationLimits::default(),
+        }
     }
 
     /// Metadata inventory with safety caps.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn metadata() -> Self {
-        Self { request_version: REQUEST_VERSION, freshness: FreshnessMode::Metadata, limits: OperationLimits::default() }
+        Self {
+            request_version: REQUEST_VERSION,
+            freshness: FreshnessMode::Metadata,
+            limits: OperationLimits::default(),
+        }
     }
 
     /// Strict snapshot with safety caps.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn strict() -> Self {
-        Self { request_version: REQUEST_VERSION, freshness: FreshnessMode::Strict, limits: OperationLimits::default() }
+        Self {
+            request_version: REQUEST_VERSION,
+            freshness: FreshnessMode::Strict,
+            limits: OperationLimits::default(),
+        }
     }
 }
 
 /// One pack run. The session's selection policy is the policy; this request does not load files.
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[allow(clippy::struct_excessive_bools, reason = "These independent public pack options retain their existing combinations and serialized request schema.")]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "These independent public pack options retain their existing combinations and serialized request schema."
+)]
 pub struct PackRequest {
     /// Must be [`REQUEST_VERSION`].
     pub request_version: u32,
@@ -182,7 +215,10 @@ pub struct PackRequest {
 
 impl PackRequest {
     /// JSON v2 pack of the session view.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new() -> Self {
         Self {
             request_version: REQUEST_VERSION,
@@ -205,35 +241,53 @@ impl PackRequest {
     }
 
     /// True when a directory may be listed. Include patterns do not drop directories.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn admits_directory(&self, path: &str, name: &str) -> bool {
         if !self.apply_filters {
             return true;
         }
-        self.view_filter().should_include_directory(name) && !pattern_hit(&self.exclude_patterns, path, name, true)
+        self.view_filter().should_include_directory(name)
+            && !pattern_hit(&self.exclude_patterns, path, name, true)
     }
 
     /// True when a file may be opened. `size` is used only for the empty and byte-size filters.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn admits_file(&self, path: &str, name: &str, size: u64) -> bool {
         if !self.apply_filters {
             return true;
         }
         let binary = extension_binary(name);
-        if !self.view_filter().should_include_file(name, size, binary, std::path::Path::new(path)) {
+        if !self
+            .view_filter()
+            .should_include_file(name, size, binary, std::path::Path::new(path))
+        {
             return false;
         }
-        if !self.include_patterns.is_empty() && !pattern_hit(&self.include_patterns, path, name, false) {
+        if !self.include_patterns.is_empty()
+            && !pattern_hit(&self.include_patterns, path, name, false)
+        {
             return false;
         }
         !pattern_hit(&self.exclude_patterns, path, name, false)
     }
 
     /// True when admission needs a size, so the caller stats the file before deciding.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn filters_need_size(&self) -> bool {
         self.apply_filters
-            && (self.only_empty || self.only_non_empty || self.min_size_bytes.is_some() || self.max_size_bytes.is_some())
+            && (self.only_empty
+                || self.only_non_empty
+                || self.min_size_bytes.is_some()
+                || self.max_size_bytes.is_some())
     }
 
     fn view_filter(&self) -> dctx_core::filter::FilterConfig {
@@ -314,7 +368,10 @@ pub struct MapRequest {
 
 impl MapRequest {
     /// A request for `verb` at version 1, JSON v2, both directions.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new(verb: Verb) -> Self {
         Self {
             request_version: REQUEST_VERSION,
@@ -358,11 +415,16 @@ impl MapRequest {
         }
         if self.verb == Verb::Read {
             if self.line_start.is_some() && self.continuation.is_some() {
-                return Err(DctxError::invalid("line start and a continuation both select the window"));
+                return Err(DctxError::invalid(
+                    "line start and a continuation both select the window",
+                ));
             }
             // Read's hard depth is 0. A positive depth used to carry `--lines` start.
             if self.depth.is_some_and(|depth| depth > 0) {
-                return Err(DctxError::invalid_detail("limit exceeds the verb hard cap", "depth"));
+                return Err(DctxError::invalid_detail(
+                    "limit exceeds the verb hard cap",
+                    "depth",
+                ));
             }
         }
         Ok(())
@@ -375,13 +437,24 @@ mod tests {
 
     #[test]
     fn verb_names_round_trip() {
-        for name in ["map", "find", "neighbors", "explain", "read", "grep", "skeleton"] {
+        for name in [
+            "map",
+            "find",
+            "neighbors",
+            "explain",
+            "read",
+            "grep",
+            "skeleton",
+        ] {
             assert_eq!(Verb::parse(name).expect("verb").as_str(), name);
         }
         assert!(Verb::parse("pack").is_err());
         assert_eq!(MapRequest::new(Verb::Find).output_format, 2);
         assert!(MapRequest::new(Verb::Read).line_start.is_none());
-        assert_eq!(SnapshotRequest::metadata().freshness, FreshnessMode::Metadata);
+        assert_eq!(
+            SnapshotRequest::metadata().freshness,
+            FreshnessMode::Metadata
+        );
     }
 
     #[test]

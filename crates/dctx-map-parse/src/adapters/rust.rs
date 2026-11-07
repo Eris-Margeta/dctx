@@ -20,12 +20,12 @@ use super::rust_references::references;
 
 /// Maps a complete syn extraction. Partial files become [`ParseError::Syntax`].
 pub(super) fn parse_pure(path: &str, source: &str, bytes: &[u8]) -> Result<ParsedFile, ParseError> {
-    let extracted = dctx_lex_rust::extract(bytes, &Limits::default()).map_err(|refusal| {
-        match refusal {
+    let extracted =
+        dctx_lex_rust::extract(bytes, &Limits::default()).map_err(|refusal| match refusal {
             Refusal::TooLarge { .. } => ParseError::TooLarge,
+            Refusal::Worker => ParseError::Grammar(Refusal::Worker.to_string()),
             other => syntax_error(path, &other),
-        }
-    })?;
+        })?;
     if let Completion::Partial(refusal) = &extracted.completion {
         return Err(syntax_error(path, refusal));
     }
@@ -44,7 +44,14 @@ pub(super) fn parse_pure(path: &str, source: &str, bytes: &[u8]) -> Result<Parse
     let mut pending = references_of(&extracted, source, &nodes);
     pending.sort_by_key(|site| (site.at, site.rank, site.seq));
     for site in pending {
-        facts.reference(site.src, site.kind, site.name, &site.scope, site.alias, site.lines);
+        facts.reference(
+            site.src,
+            site.kind,
+            site.name,
+            &site.scope,
+            site.alias,
+            site.lines,
+        );
     }
     facts.finish()
 }
@@ -67,7 +74,11 @@ struct Placed {
     scope: String,
 }
 
-fn declare(extracted: &Extraction, source: &str, facts: &mut Facts) -> Result<Vec<Placed>, ParseError> {
+fn declare(
+    extracted: &Extraction,
+    source: &str,
+    facts: &mut Facts,
+) -> Result<Vec<Placed>, ParseError> {
     let mut placed: Vec<Placed> = Vec::with_capacity(extracted.declarations.len());
     for declaration in &extracted.declarations {
         let parent_scope = declaration
@@ -108,7 +119,10 @@ fn declare(extracted: &Extraction, source: &str, facts: &mut Facts) -> Result<Ve
                 public: declaration.public,
                 summary,
             },
-            declaration.parent.and_then(|index| placed.get(index)).map_or(0, |p| p.node),
+            declaration
+                .parent
+                .and_then(|index| placed.get(index))
+                .map_or(0, |p| p.node),
         );
         placed.push(Placed { node, scope });
     }
@@ -208,7 +222,10 @@ struct Site {
     lines: [u32; 2],
 }
 
-#[allow(clippy::too_many_lines, reason = "Keep the source-ordered reference dispatch together with its shared scope and declaration state.")]
+#[allow(
+    clippy::too_many_lines,
+    reason = "Keep the source-ordered reference dispatch together with its shared scope and declaration state."
+)]
 fn references_of(extracted: &Extraction, source: &str, placed: &[Placed]) -> Vec<Site> {
     let mut sites = Vec::new();
     let mut seq = 0_u32;

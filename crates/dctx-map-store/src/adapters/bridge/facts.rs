@@ -5,8 +5,8 @@
 //! A conflicting payload is refused and does not increment the parse count.
 
 use super::ledger;
-use crate::domain::{plain_label, FactKey, Result, Retain, StoreError};
-use rusqlite::{params, Connection, OptionalExtension};
+use crate::domain::{FactKey, Result, Retain, StoreError, plain_label};
+use rusqlite::{Connection, OptionalExtension, params};
 
 pub(crate) fn retain(
     connection: &mut Connection,
@@ -58,7 +58,10 @@ pub(crate) fn retain(
         "INSERT INTO blob_refs(namespace, root_id, fact_key) VALUES(?1, ?2, ?3)",
         params![namespace, root, key_text],
     )?;
-    transaction.execute("UPDATE bridge_ledger SET parses = parses + 1 WHERE id = 1", [])?;
+    transaction.execute(
+        "UPDATE bridge_ledger SET parses = parses + 1 WHERE id = 1",
+        [],
+    )?;
     transaction.commit()?;
     Ok(Retain::Parsed)
 }

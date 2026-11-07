@@ -28,15 +28,28 @@ pub struct HostSession<A, F, R, P> {
 impl<A: AuditPort, F: FilePort, R: RecipePort, P: ProcessPort> HostSession<A, F, R, P> {
     /// Composes a session; `outstanding` is the negotiated outstanding-request ceiling (≤ 16).
     pub fn new(broker: Broker<A, F, R>, supervisor: Supervisor<P>, outstanding: usize) -> Self {
-        Self { broker, supervisor, queue: BoundedQueue::new(outstanding) }
+        Self {
+            broker,
+            supervisor,
+            queue: BoundedQueue::new(outstanding),
+        }
     }
 
     /// Accepts a worker request into the bounded queue; overflow cancels the sender.
     /// # Errors
     /// Refuses closed admission or exhausted queue/tracked-request capacity; resource exhaustion cancels the session.
-    pub fn receive(&mut self, id: RequestId, request: Request, now: u64) -> Result<(), HostRefusal> {
+    pub fn receive(
+        &mut self,
+        id: RequestId,
+        request: Request,
+        now: u64,
+    ) -> Result<(), HostRefusal> {
         if !self.supervisor.admits() {
-            return Err(HostRefusal::new(ErrorCode::Cancelled, Phase::Broker, "admission-closed"));
+            return Err(HostRefusal::new(
+                ErrorCode::Cancelled,
+                Phase::Broker,
+                "admission-closed",
+            ));
         }
         if let Err(Overflow::CancelSender(refusal)) = self.queue.push((id.clone(), request)) {
             self.cancel(StopReason::ResourceLimit, now);
@@ -55,7 +68,11 @@ impl<A: AuditPort, F: FilePort, R: RecipePort, P: ProcessPort> HostSession<A, F,
         let result = if self.supervisor.admits() {
             self.broker.handle(&request)
         } else {
-            Err(HostRefusal::new(ErrorCode::Cancelled, Phase::Broker, "admission-closed"))
+            Err(HostRefusal::new(
+                ErrorCode::Cancelled,
+                Phase::Broker,
+                "admission-closed",
+            ))
         };
         if result.is_ok() {
             self.supervisor.broker_completed(&id, now);
@@ -73,7 +90,11 @@ impl<A: AuditPort, F: FilePort, R: RecipePort, P: ProcessPort> HostSession<A, F,
     }
 
     /// A probe reply arrived.
-    pub fn probe_reply(&mut self, wait: Option<&dctx_plugin_protocol::records::common::Wait>, now: u64) -> Verdict {
+    pub fn probe_reply(
+        &mut self,
+        wait: Option<&dctx_plugin_protocol::records::common::Wait>,
+        now: u64,
+    ) -> Verdict {
         let verdict = self.supervisor.probe_reply(wait, now);
         if let Verdict::Cancel(_) = verdict {
             self.close();

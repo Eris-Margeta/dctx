@@ -2,8 +2,8 @@
 //! Privacy refusals for secrets, ignored files, and symlinks.
 //! Implements SPEC-MAP-MODE sections 6.1 and 7 on the public source port.
 //! The engine records content opens and leaves denied paths unread.
-use dctx_map_query::ports::Source;
 use dctx_map_query::FileSource;
+use dctx_map_query::ports::Source;
 use std::fs;
 
 #[test]
@@ -42,13 +42,25 @@ fn token_and_secrets_files_never_enter_the_snapshot() {
     let dir = tempfile::tempdir().unwrap();
     fs::create_dir_all(dir.path().join("deploy")).unwrap();
     fs::write(dir.path().join("credentials.py"), "def load(): pass\n").unwrap();
-    for name in [".npmrc", "deploy/secrets.yaml", "settings.env", ".envrc", "store.p12"] {
+    for name in [
+        ".npmrc",
+        "deploy/secrets.yaml",
+        "settings.env",
+        ".envrc",
+        "store.p12",
+    ] {
         fs::write(dir.path().join(name), "SECRET").unwrap();
     }
     let source = FileSource::new(dir.path()).unwrap();
     let snapshot = source.snapshot().unwrap();
     assert!(snapshot.files.contains_key("credentials.py"));
-    for name in [".npmrc", "deploy/secrets.yaml", "settings.env", ".envrc", "store.p12"] {
+    for name in [
+        ".npmrc",
+        "deploy/secrets.yaml",
+        "settings.env",
+        ".envrc",
+        "store.p12",
+    ] {
         assert!(!snapshot.files.contains_key(name), "{name}");
         assert!(source.read(name).is_err(), "{name}");
     }

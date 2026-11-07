@@ -1,11 +1,15 @@
 [package]
 name = "dctx-plugin-git"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2024"
 description = "The bundled dctx/git plugin: local .gitignore protection and brokered staging (PLUGINS.md §6)"
 license.workspace = true
 repository.workspace = true
-publish = false
+rust-version.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [lib]
 path = "src/lib.rs"
@@ -15,7 +19,7 @@ name = "dctx-plugin-git"
 path = "src/main.rs"
 
 [dependencies]
-dctx-plugin-protocol = { path = "../../crates/dctx-plugin-protocol" }
+dctx-plugin-protocol = { version = "=1.2.0", path = "../../crates/dctx-plugin-protocol" }
 
 [dev-dependencies]
 dctx-hash = { path = "../../crates/dctx-hash" }

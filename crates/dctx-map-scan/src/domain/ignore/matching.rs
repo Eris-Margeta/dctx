@@ -14,7 +14,10 @@ pub type MatchCache = RefCell<HashMap<(String, String), bool>>;
 const MAX_CACHE_ENTRIES: usize = 10_000;
 
 /// Evaluates ordered rules without caching.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn should_ignore_item(
     item_relative_path: &str,
     item_name: &str,
@@ -33,7 +36,10 @@ pub fn should_ignore_item(
 }
 
 /// Evaluates ordered rules using an optional bounded glob cache.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn should_ignore_item_cached(
     item_relative_path: &str,
     item_name: &str,

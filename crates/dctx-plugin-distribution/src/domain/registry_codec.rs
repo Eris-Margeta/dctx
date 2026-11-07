@@ -11,18 +11,47 @@ use super::consent::{CapabilitySet, ConsentRecord, ConsentScope};
 use super::digest::Sha256Hex;
 use super::fields::{Closed, uint};
 use super::names::{PluginId, Version};
-use super::registry::{Enablement, InstalledVersion, Origin, PluginRecord, Registry, RollbackEntry};
+use super::registry::{
+    Enablement, InstalledVersion, Origin, PluginRecord, Registry, RollbackEntry,
+};
 use crate::error::{DistributionError, Document};
 
 /// Registry state format written by this crate.
 pub const FORMAT: u64 = 1;
-const LIMITS: DecodeLimits = DecodeLimits { max_bytes: 16 << 20, max_depth: 32, max_members: 1 << 20 };
-const RECORD: [&str; 9] = ["id", "origin", "versions", "active", "high_water", "enablement", "consent", "leases", "rollbacks"];
-const VERSION: [&str; 7] = ["version", "release_sequence", "digest", "manifest_sha256", "signer", "capabilities", "quarantined"];
+const LIMITS: DecodeLimits = DecodeLimits {
+    max_bytes: 16 << 20,
+    max_depth: 32,
+    max_members: 1 << 20,
+};
+const RECORD: [&str; 9] = [
+    "id",
+    "origin",
+    "versions",
+    "active",
+    "high_water",
+    "enablement",
+    "consent",
+    "leases",
+    "rollbacks",
+];
+const VERSION: [&str; 7] = [
+    "version",
+    "release_sequence",
+    "digest",
+    "manifest_sha256",
+    "signer",
+    "capabilities",
+    "quarantined",
+];
 const CONSENT: [&str; 4] = ["digest", "signer", "capabilities", "scope"];
 
 fn obj(members: Vec<(&str, Json)>) -> Json {
-    Json::Object(members.into_iter().map(|(key, value)| (key.to_owned(), value)).collect())
+    Json::Object(
+        members
+            .into_iter()
+            .map(|(key, value)| (key.to_owned(), value))
+            .collect(),
+    )
 }
 
 fn hex(digest: &Sha256Hex) -> Json {
@@ -34,10 +63,19 @@ fn refuse(reason: &'static str) -> DistributionError {
 }
 
 /// Canonical bytes of `registry`.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn encode(registry: &Registry) -> Vec<u8> {
-    let plugins = registry.records().map(|(id, record)| encode_record(id, record)).collect();
-    to_canonical(&obj(vec![("format", Json::uint(FORMAT)), ("plugins", Json::Array(plugins))]))
+    let plugins = registry
+        .records()
+        .map(|(id, record)| encode_record(id, record))
+        .collect();
+    to_canonical(&obj(vec![
+        ("format", Json::uint(FORMAT)),
+        ("plugins", Json::Array(plugins)),
+    ]))
 }
 
 fn encode_record(id: &PluginId, record: &PluginRecord) -> Json {
@@ -52,8 +90,18 @@ fn encode_record(id: &PluginId, record: &PluginRecord) -> Json {
         Enablement::Disabled => "disabled",
     };
     let versions = record.versions.iter().map(encode_version).collect();
-    let leases = record.leases.iter().map(|(digest, count)| obj(vec![("digest", hex(digest)), ("count", Json::uint(u64::from(*count)))]));
-    let rollbacks = record.rollbacks.iter().map(|entry| obj(vec![("digest", hex(&entry.digest)), ("reason", Json::str(&entry.reason))]));
+    let leases = record.leases.iter().map(|(digest, count)| {
+        obj(vec![
+            ("digest", hex(digest)),
+            ("count", Json::uint(u64::from(*count))),
+        ])
+    });
+    let rollbacks = record.rollbacks.iter().map(|entry| {
+        obj(vec![
+            ("digest", hex(&entry.digest)),
+            ("reason", Json::str(&entry.reason)),
+        ])
+    });
     obj(vec![
         ("id", Json::str(id.as_str())),
         ("origin", Json::str(origin)),
@@ -61,7 +109,10 @@ fn encode_record(id: &PluginId, record: &PluginRecord) -> Json {
         ("active", record.active.as_ref().map_or(Json::Null, hex)),
         ("high_water", Json::uint(record.high_water)),
         ("enablement", Json::str(enablement)),
-        ("consent", record.consent.as_ref().map_or(Json::Null, encode_consent)),
+        (
+            "consent",
+            record.consent.as_ref().map_or(Json::Null, encode_consent),
+        ),
         ("leases", Json::Array(leases.collect())),
         ("rollbacks", Json::Array(rollbacks.collect())),
     ])
@@ -82,7 +133,10 @@ fn encode_version(version: &InstalledVersion) -> Json {
 fn encode_consent(consent: &ConsentRecord) -> Json {
     let scope = match &consent.scope {
         ConsentScope::User => obj(vec![("kind", Json::str("user"))]),
-        ConsentScope::Project(path) => obj(vec![("kind", Json::str("project")), ("path", Json::str(path))]),
+        ConsentScope::Project(path) => obj(vec![
+            ("kind", Json::str("project")),
+            ("path", Json::str(path)),
+        ]),
     };
     obj(vec![
         ("digest", hex(&consent.digest)),
@@ -97,7 +151,12 @@ fn encode_consent(consent: &ConsentRecord) -> Json {
 /// Refuses malformed/oversized JSON, unsupported formats, duplicate IDs, or invalid registry records.
 pub fn decode(bytes: &[u8]) -> Result<Registry, DistributionError> {
     let value = decode_object(bytes, LIMITS).map_err(|refusal| refuse(refusal.reason))?;
-    let top = Closed::new(&value, Document::Registry, &["format", "plugins"], &["format", "plugins"])?;
+    let top = Closed::new(
+        &value,
+        Document::Registry,
+        &["format", "plugins"],
+        &["format", "plugins"],
+    )?;
     if top.uint("format")? != FORMAT {
         return Err(refuse("format"));
     }
@@ -139,16 +198,33 @@ fn decode_record(value: &Json) -> Result<(PluginId, PluginRecord), DistributionE
     };
     let mut leases = std::collections::BTreeMap::new();
     for lease in item.array("leases", 0, usize::MAX)? {
-        let lease = Closed::new(lease, Document::Registry, &["digest", "count"], &["digest", "count"])?;
+        let lease = Closed::new(
+            lease,
+            Document::Registry,
+            &["digest", "count"],
+            &["digest", "count"],
+        )?;
         let count = u32::try_from(lease.uint("count")?).map_err(|_| refuse("lease-count"))?;
         leases.insert(digest(lease.req("digest")?)?, count);
     }
     let mut rollbacks = Vec::new();
     for entry in item.array("rollbacks", 0, usize::MAX)? {
-        let entry = Closed::new(entry, Document::Registry, &["digest", "reason"], &["digest", "reason"])?;
-        rollbacks.push(RollbackEntry { digest: digest(entry.req("digest")?)?, reason: entry.str("reason")?.to_owned() });
+        let entry = Closed::new(
+            entry,
+            Document::Registry,
+            &["digest", "reason"],
+            &["digest", "reason"],
+        )?;
+        rollbacks.push(RollbackEntry {
+            digest: digest(entry.req("digest")?)?,
+            reason: entry.str("reason")?.to_owned(),
+        });
     }
-    let versions = item.array("versions", 0, usize::MAX)?.iter().map(decode_version).collect::<Result<Vec<_>, _>>()?;
+    let versions = item
+        .array("versions", 0, usize::MAX)?
+        .iter()
+        .map(decode_version)
+        .collect::<Result<Vec<_>, _>>()?;
     if active.is_some_and(|active| !versions.iter().any(|version| version.digest == active)) {
         return Err(refuse("active-not-installed"));
     }
@@ -174,16 +250,26 @@ fn decode_version(value: &Json) -> Result<InstalledVersion, DistributionError> {
         manifest_sha256: digest(item.req("manifest_sha256")?)?,
         signer: digest(item.req("signer")?)?,
         capabilities: CapabilitySet::from_json(item.req("capabilities")?)?,
-        quarantined: item.req("quarantined")?.as_bool().ok_or(refuse("quarantined"))?,
+        quarantined: item
+            .req("quarantined")?
+            .as_bool()
+            .ok_or(refuse("quarantined"))?,
     })
 }
 
 fn decode_consent(value: &Json) -> Result<ConsentRecord, DistributionError> {
     let item = Closed::new(value, Document::Registry, &CONSENT, &CONSENT)?;
-    let scope = Closed::new(item.object("scope")?, Document::Registry, &["kind", "path"], &["kind"])?;
+    let scope = Closed::new(
+        item.object("scope")?,
+        Document::Registry,
+        &["kind", "path"],
+        &["kind"],
+    )?;
     let scope = match (scope.str("kind")?, scope.get("path")) {
         ("user", None) => ConsentScope::User,
-        ("project", Some(path)) => ConsentScope::Project(path.as_str().ok_or(refuse("scope"))?.to_owned()),
+        ("project", Some(path)) => {
+            ConsentScope::Project(path.as_str().ok_or(refuse("scope"))?.to_owned())
+        }
         _ => return Err(refuse("scope")),
     };
     Ok(ConsentRecord {
@@ -203,7 +289,9 @@ mod tests {
     fn registry_round_trips_and_refuses_unknown_formats() {
         let id = PluginId::parse("dctx/git").unwrap();
         let mut registry = Registry::default();
-        registry.record_install(&id, Origin::Installed, version(1, 1)).unwrap();
+        registry
+            .record_install(&id, Origin::Installed, version(1, 1))
+            .unwrap();
         registry.disable(&id).unwrap();
         let record = registry.plugins.get_mut(&id).unwrap();
         record.active = Some(Sha256Hex::from_bytes([1; 32]));
@@ -213,12 +301,19 @@ mod tests {
             capabilities: CapabilitySet::default(),
             scope: ConsentScope::Project("/work/p".into()),
         });
-        record.rollbacks.push(RollbackEntry { digest: Sha256Hex::from_bytes([1; 32]), reason: "r".into() });
+        record.rollbacks.push(RollbackEntry {
+            digest: Sha256Hex::from_bytes([1; 32]),
+            reason: "r".into(),
+        });
         let bytes = encode(&registry);
         assert_eq!(decode(&bytes).unwrap(), registry);
-        let future = String::from_utf8(bytes.clone()).unwrap().replace("\"format\":1", "\"format\":2");
+        let future = String::from_utf8(bytes.clone())
+            .unwrap()
+            .replace("\"format\":1", "\"format\":2");
         assert_eq!(decode(future.as_bytes()), Err(refuse("format")));
-        let script = String::from_utf8(bytes).unwrap().replace("\"format\":1", "\"format\":1,\"migrate\":\"sh\"");
+        let script = String::from_utf8(bytes)
+            .unwrap()
+            .replace("\"format\":1", "\"format\":1,\"migrate\":\"sh\"");
         assert_eq!(decode(script.as_bytes()), Err(refuse("unknown-field")));
     }
 

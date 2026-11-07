@@ -7,7 +7,8 @@ use crate::domain::DiagnosticReason;
 
 const OPS: &[&[u8]] = &[
     b"<<=", b">>=", b"<=>", b"...", b"->*", b".*", b"::", b"->", b"<<", b">>", b"<=", b">=", b"==",
-    b"!=", b"&&", b"||", b"++", b"--", b"+=", b"-=", b"*=", b"/=", b"%=", b"&=", b"|=", b"^=", b"##",
+    b"!=", b"&&", b"||", b"++", b"--", b"+=", b"-=", b"*=", b"/=", b"%=", b"&=", b"|=", b"^=",
+    b"##",
 ];
 
 const RAW: &[&[u8]] = &[b"u8R\"", b"uR\"", b"UR\"", b"LR\"", b"R\""];
@@ -102,7 +103,10 @@ impl<'a> Lexer<'a> {
         Kind::Punct
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn try_raw(&mut self) -> Option<Kind> {
         let rest = &self.b[self.pos..];
         let prefix = RAW.iter().find(|prefix| rest.starts_with(prefix))?;
@@ -159,7 +163,10 @@ impl<'a> Lexer<'a> {
         None
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn scan_quoted(&mut self, quote: u8, reason: DiagnosticReason) -> Kind {
         let start = self.pos;
         self.pos += 1;
@@ -182,21 +189,19 @@ impl<'a> Lexer<'a> {
     }
 
     fn scan_number(&mut self) {
-        let hex = self.b[self.pos] == b'0'
-            && matches!(self.b.get(self.pos + 1), Some(b'x' | b'X'));
+        let hex = self.b[self.pos] == b'0' && matches!(self.b.get(self.pos + 1), Some(b'x' | b'X'));
         if self.b[self.pos] == b'0'
             && matches!(self.b.get(self.pos + 1), Some(b'x' | b'X' | b'b' | b'B'))
         {
             self.pos += 2;
         }
-        while self.pos < self.b.len()
-            && (self.digit(self.pos, hex) || self.b[self.pos] == b'\'')
-        {
+        while self.pos < self.b.len() && (self.digit(self.pos, hex) || self.b[self.pos] == b'\'') {
             self.pos += 1;
         }
         if self.b.get(self.pos) == Some(&b'.') && self.digit(self.pos + 1, hex) {
             self.pos += 1;
-            while self.pos < self.b.len() && (self.digit(self.pos, hex) || self.b[self.pos] == b'\'')
+            while self.pos < self.b.len()
+                && (self.digit(self.pos, hex) || self.b[self.pos] == b'\'')
             {
                 self.pos += 1;
             }
@@ -212,7 +217,11 @@ impl<'a> Lexer<'a> {
                 }
             }
         }
-        while self.pos < self.b.len() && matches!(self.b[self.pos], b'u' | b'U' | b'l' | b'L' | b'f' | b'F' | b'z' | b'Z')
+        while self.pos < self.b.len()
+            && matches!(
+                self.b[self.pos],
+                b'u' | b'U' | b'l' | b'L' | b'f' | b'F' | b'z' | b'Z'
+            )
         {
             self.pos += 1;
         }
@@ -300,7 +309,10 @@ impl<'a> Lexer<'a> {
         self.line_token = true;
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn skip_block_in_directive(&mut self) {
         let start = self.pos;
         self.pos += 2;
@@ -332,7 +344,10 @@ impl<'a> Lexer<'a> {
         RAW.iter().any(|prefix| rest.starts_with(prefix))
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn line_comment(&mut self) {
         let start = self.pos;
         self.pos += 2;
@@ -348,7 +363,10 @@ impl<'a> Lexer<'a> {
         });
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn block_comment(&mut self) {
         let start = self.pos;
         self.pos += 2;
@@ -382,7 +400,10 @@ impl<'a> Lexer<'a> {
         });
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn push(&mut self, kind: Kind, start: usize) {
         self.tokens.push(Token {
             kind,
@@ -416,15 +437,22 @@ mod tests {
     #[test]
     fn an_open_string_is_a_diagnostic_and_not_a_declaration() {
         let lexed = lex("char *s = \"unterminated\n", &Limits::default()).unwrap();
-        assert!(lexed
-            .diagnostics
-            .iter()
-            .any(|d| d.reason == DiagnosticReason::UnterminatedString));
+        assert!(
+            lexed
+                .diagnostics
+                .iter()
+                .any(|d| d.reason == DiagnosticReason::UnterminatedString)
+        );
         let words: Vec<&str> = lexed
             .tokens
             .iter()
             .filter(|token| token.kind == Kind::Ident)
-            .map(|token| lexed.logical.get(token.start as usize..token.end as usize).unwrap_or(""))
+            .map(|token| {
+                lexed
+                    .logical
+                    .get(token.start as usize..token.end as usize)
+                    .unwrap_or("")
+            })
             .collect();
         assert_eq!(words, vec!["char", "s"]);
     }

@@ -62,7 +62,12 @@ pub struct LegacyLimits {
 
 impl Default for LegacyLimits {
     fn default() -> Self {
-        Self { max_total_bytes: 64 * 1024 * 1024, max_depth: 128, max_name_bytes: 4096, max_nodes: 100_000 }
+        Self {
+            max_total_bytes: 64 * 1024 * 1024,
+            max_depth: 128,
+            max_name_bytes: 4096,
+            max_nodes: 100_000,
+        }
     }
 }
 
@@ -103,7 +108,9 @@ impl fmt::Display for LegacyError {
         match self {
             Self::BadMagic => formatter.write_str("invalid DIRCTXTV signature"),
             Self::Truncated => formatter.write_str("truncated legacy snapshot"),
-            Self::UnknownVersion { major, minor } => write!(formatter, "unsupported legacy revision {major}.{minor}"),
+            Self::UnknownVersion { major, minor } => {
+                write!(formatter, "unsupported legacy revision {major}.{minor}")
+            }
             Self::UnknownNodeType(kind) => write!(formatter, "unknown legacy node type {kind}"),
             Self::InvalidUtf8 => formatter.write_str("legacy path is not UTF-8"),
             Self::LimitExceeded(bound) => write!(formatter, "legacy {bound} limit exceeded"),
@@ -127,7 +134,10 @@ impl std::error::Error for LegacyError {
 
 pub(crate) fn check_version(version: &Version) -> Result<(), LegacyError> {
     if version.major == 0 {
-        return Err(LegacyError::UnknownVersion { major: version.major, minor: version.minor });
+        return Err(LegacyError::UnknownVersion {
+            major: version.major,
+            minor: version.minor,
+        });
     }
     Ok(())
 }

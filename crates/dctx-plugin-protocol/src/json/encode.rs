@@ -7,7 +7,10 @@
 use super::value::Json;
 
 /// Canonical bytes of `value`.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn to_canonical(value: &Json) -> Vec<u8> {
     let mut out = Vec::new();
     write_canonical(value, &mut out);
@@ -76,11 +79,17 @@ mod tests {
     fn sorts_keys_by_bytes_and_escapes_minimally() {
         let value = Json::Object(vec![
             ("b".into(), Json::str("q\"\\\n\u{1f}/\u{e9}")),
-            ("a".into(), Json::Array(vec![Json::Int(-3), Json::Null, Json::Bool(false)])),
+            (
+                "a".into(),
+                Json::Array(vec![Json::Int(-3), Json::Null, Json::Bool(false)]),
+            ),
             ("B".into(), Json::Object(vec![])),
         ]);
         let text = String::from_utf8(to_canonical(&value)).expect("utf8");
-        assert_eq!(text, "{\"B\":{},\"a\":[-3,null,false],\"b\":\"q\\\"\\\\\\u000a\\u001f/\u{e9}\"}");
+        assert_eq!(
+            text,
+            "{\"B\":{},\"a\":[-3,null,false],\"b\":\"q\\\"\\\\\\u000a\\u001f/\u{e9}\"}"
+        );
     }
 
     #[test]

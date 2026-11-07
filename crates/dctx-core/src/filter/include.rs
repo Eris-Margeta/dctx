@@ -10,7 +10,10 @@ use std::path::Path;
 
 impl FilterConfig {
     /// Check if a file should be included based on all active filters
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn should_include_file(
         &self,
         file_name: &str,
@@ -68,7 +71,10 @@ impl FilterConfig {
     }
 
     /// Check if a directory should be included based on hidden filter
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn should_include_directory(&self, dir_name: &str) -> bool {
         // Hidden filter for directories
         if self.only_hidden && !super::names::is_hidden(dir_name) {

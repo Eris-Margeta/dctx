@@ -10,7 +10,7 @@
 //! Calls live in `calls_block.rs`. Heuristic by design: one declaration per line, bodies never entered.
 //! Consumes authorized UTF-8 from extract; never panics on malformed or truncated input.
 
-use super::super::{ident_at, is_denied, mask, Syntax};
+use super::super::{Syntax, ident_at, is_denied, mask};
 use super::{Block, Tok};
 
 /// How Fortran reads: `!` line comments, `'` and `"` strings, blocks closed by `end`.
@@ -174,10 +174,10 @@ fn decl_of(line: &str, _source: &str, _owner: Option<&str>) -> Option<(String, &
     match first {
         "program" => return name_after(rest).map(|name| (name.to_string(), "fn")),
         "module" if rest.starts_with([' ', '\t']) => {
-            return name_after(rest).map(|name| (name.to_string(), "type"))
+            return name_after(rest).map(|name| (name.to_string(), "type"));
         }
         "type" if !rest.trim_start().starts_with('(') => {
-            return name_after(rest).map(|name| (name.to_string(), "type"))
+            return name_after(rest).map(|name| (name.to_string(), "type"));
         }
         "abstract" | "interface" => {
             let after = if first == "abstract" {

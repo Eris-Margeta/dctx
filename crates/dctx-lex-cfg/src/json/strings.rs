@@ -174,7 +174,12 @@ impl<'a> Parser<'a> {
                     self.cur.i += 1;
                 }
                 Some(_) => {
-                    if let Some(ch) = self.cur.src.get(self.cur.i..).and_then(|text| text.chars().next()) {
+                    if let Some(ch) = self
+                        .cur
+                        .src
+                        .get(self.cur.i..)
+                        .and_then(|text| text.chars().next())
+                    {
                         out.push(ch);
                         self.cur.i += ch.len_utf8();
                     } else {

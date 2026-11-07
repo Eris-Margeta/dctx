@@ -43,7 +43,10 @@ impl Default for MemorySource {
 
 impl MemorySource {
     /// An empty root directory.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the memory adapter API's existing caller lint behavior.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the memory adapter API's existing caller lint behavior."
+    )]
     pub fn new() -> Self {
         Self {
             dirs: BTreeMap::from([(String::new(), 0)]),
@@ -60,13 +63,21 @@ impl MemorySource {
     /// Returns `InvalidRequest` if `path` is not a valid relative path or
     /// names the root directory. Returns `ResourceLimit` if the path exceeds
     /// the core path-length limit.
-    pub fn insert_file(&mut self, path: &str, bytes: &[u8], modified: u64) -> Result<(), DctxError> {
+    pub fn insert_file(
+        &mut self,
+        path: &str,
+        bytes: &[u8],
+        modified: u64,
+    ) -> Result<(), DctxError> {
         let path = RelativePath::parse(path)?;
         if path.is_root() {
-            return Err(DctxError::InvalidRequest { reason: "the root is a directory" });
+            return Err(DctxError::InvalidRequest {
+                reason: "the root is a directory",
+            });
         }
         self.insert_parents(path.as_str());
-        self.files.insert(path.as_str().to_string(), (bytes.to_vec(), modified));
+        self.files
+            .insert(path.as_str().to_string(), (bytes.to_vec(), modified));
         Ok(())
     }
 
@@ -190,10 +201,16 @@ impl Source for MemorySource {
         let key = path.as_str();
         self.record(SourceCall::Metadata(key.to_string()));
         if let Some((bytes, modified)) = self.files.get(key) {
-            return Ok(EntryMeta { size: bytes.len() as u64, modified: Timestamp(*modified) });
+            return Ok(EntryMeta {
+                size: bytes.len() as u64,
+                modified: Timestamp(*modified),
+            });
         }
         match self.dirs.get(key) {
-            Some(modified) => Ok(EntryMeta { size: 0, modified: Timestamp(*modified) }),
+            Some(modified) => Ok(EntryMeta {
+                size: 0,
+                modified: Timestamp(*modified),
+            }),
             None => Err(DctxError::SourceUnavailable),
         }
     }
@@ -206,7 +223,10 @@ impl Source for MemorySource {
         }
         let (bytes, _) = self.files.get(key).ok_or(DctxError::SourceUnavailable)?;
         if bytes.len() as u64 > max_bytes {
-            return Err(DctxError::ResourceLimit { resource: Resource::FileBytes, limit: max_bytes });
+            return Err(DctxError::ResourceLimit {
+                resource: Resource::FileBytes,
+                limit: max_bytes,
+            });
         }
         Ok(bytes.clone())
     }
@@ -224,7 +244,9 @@ mod tests {
 
     fn sample() -> MemorySource {
         let mut source = MemorySource::new();
-        source.insert_file("src/main.rs", b"fn main() {}", 7).unwrap();
+        source
+            .insert_file("src/main.rs", b"fn main() {}", 7)
+            .unwrap();
         source.insert_file("README.md", b"# x", 5).unwrap();
         source.insert_dir("empty", 3).unwrap();
         source
@@ -237,16 +259,29 @@ mod tests {
         let names: Vec<&str> = root.iter().map(|e| e.name.as_str()).collect();
         assert_eq!(names, ["empty", "src", "README.md"]);
         assert!(root[1].is_dir());
-        let src = source.entries(&RelativePath::parse("src").unwrap()).unwrap();
+        let src = source
+            .entries(&RelativePath::parse("src").unwrap())
+            .unwrap();
         assert_eq!(src, vec![SourceEntry::file("main.rs")]);
     }
 
     #[test]
     fn metadata_and_reads_are_logged() {
         let source = sample();
-        let meta = source.metadata(&RelativePath::parse("src/main.rs").unwrap()).unwrap();
-        assert_eq!(meta, EntryMeta { size: 12, modified: Timestamp(7) });
-        assert_eq!(source.read(&grant("src/main.rs"), 100).unwrap(), b"fn main() {}");
+        let meta = source
+            .metadata(&RelativePath::parse("src/main.rs").unwrap())
+            .unwrap();
+        assert_eq!(
+            meta,
+            EntryMeta {
+                size: 12,
+                modified: Timestamp(7)
+            }
+        );
+        assert_eq!(
+            source.read(&grant("src/main.rs"), 100).unwrap(),
+            b"fn main() {}"
+        );
         assert_eq!(source.reads(), ["src/main.rs"]);
         assert_eq!(source.metadata_requests(), ["src/main.rs"]);
         assert!(source.touched("src"));
@@ -257,12 +292,22 @@ mod tests {
     fn oversized_and_failing_reads_are_refused_with_positive_control() {
         let mut source = sample();
         assert!(source.read(&grant("README.md"), 3).is_ok());
-        assert!(matches!(source.read(&grant("README.md"), 2), Err(DctxError::ResourceLimit { .. })));
+        assert!(matches!(
+            source.read(&grant("README.md"), 2),
+            Err(DctxError::ResourceLimit { .. })
+        ));
         source.fail_reads_of("README.md");
-        assert!(matches!(source.read(&grant("README.md"), 3), Err(DctxError::Io { .. })));
+        assert!(matches!(
+            source.read(&grant("README.md"), 3),
+            Err(DctxError::Io { .. })
+        ));
         source.fail_listing_of("src");
-        assert!(source.entries(&RelativePath::parse("src").unwrap()).is_err());
-        assert!(source.entries(&RelativePath::parse("missing").unwrap()).is_err());
+        assert!(source
+            .entries(&RelativePath::parse("src").unwrap())
+            .is_err());
+        assert!(source
+            .entries(&RelativePath::parse("missing").unwrap())
+            .is_err());
     }
 
     #[test]

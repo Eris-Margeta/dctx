@@ -1,16 +1,21 @@
 [package]
 name = "dctx-map-store"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2024"
 license.workspace = true
 repository.workspace = true
+rust-version.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 description = "Persistent graph facts, pack snapshots and a content-addressed comparison cache for dctx"
 
 [dependencies]
-dctx-core = { path = "../dctx-core" }
-dctx-hash = { path = "../dctx-hash" }
-dctx-map-model = { path = "../dctx-map-model" }
-dctx-ports = { path = "../dctx-ports" }
+dctx-core = { version = "=1.2.0", path = "../dctx-core" }
+dctx-hash = { version = "=1.2.0", path = "../dctx-hash" }
+dctx-map-model = { version = "=1.2.0", path = "../dctx-map-model" }
+dctx-ports = { version = "=1.2.0", path = "../dctx-ports" }
 rusqlite = { version = "0.32", features = ["bundled"] }
 thiserror = "2"
 serde_json = "1"

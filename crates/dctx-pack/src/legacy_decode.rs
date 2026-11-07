@@ -6,8 +6,8 @@
 #![forbid(unsafe_code)]
 
 use crate::legacy_codec::{
-    LEGACY_MAGIC, LEGACY_MAX_DEPTH, LegacyBodies, LegacyDocument, LegacyError, LegacyHeader, LegacyLimits, LegacyNode,
-    add, bounded, check_version,
+    add, bounded, check_version, LegacyBodies, LegacyDocument, LegacyError, LegacyHeader,
+    LegacyLimits, LegacyNode, LEGACY_MAGIC, LEGACY_MAX_DEPTH,
 };
 use dctx_core::datatypes::NodeType;
 use dctx_core::version::Version;
@@ -18,13 +18,25 @@ use dctx_core::version::Version;
 ///
 /// # Errors
 /// Refuses malformed or truncated documents, invalid versions, names, offsets or bodies, arithmetic overflow and exceeded decode limits.
-pub fn decode_legacy(bytes: &[u8], bodies: LegacyBodies, limits: LegacyLimits) -> Result<LegacyDocument, LegacyError> {
+pub fn decode_legacy(
+    bytes: &[u8],
+    bodies: LegacyBodies,
+    limits: LegacyLimits,
+) -> Result<LegacyDocument, LegacyError> {
     bounded(bytes.len(), limits.max_total_bytes, "total bytes")?;
-    let mut reader = Reader { bytes, position: 0, nodes: 0, limits };
+    let mut reader = Reader {
+        bytes,
+        position: 0,
+        nodes: 0,
+        limits,
+    };
     if reader.take(8)? != LEGACY_MAGIC {
         return Err(LegacyError::BadMagic);
     }
-    let version = Version { major: u32::from_le_bytes(reader.array()?), minor: u32::from_le_bytes(reader.array()?) };
+    let version = Version {
+        major: u32::from_le_bytes(reader.array()?),
+        minor: u32::from_le_bytes(reader.array()?),
+    };
     check_version(&version)?;
     let mut root = reader.node(0)?;
     let data_offset = reader.position;
@@ -33,7 +45,13 @@ pub fn decode_legacy(bytes: &[u8], bodies: LegacyBodies, limits: LegacyLimits) -
     if bodies == LegacyBodies::Include {
         load_bodies(&mut root, data)?;
     }
-    Ok(LegacyDocument { header: LegacyHeader { version, data_offset }, root })
+    Ok(LegacyDocument {
+        header: LegacyHeader {
+            version,
+            data_offset,
+        },
+        root,
+    })
 }
 
 struct Reader<'a> {
@@ -46,7 +64,10 @@ struct Reader<'a> {
 impl<'a> Reader<'a> {
     fn take(&mut self, count: usize) -> Result<&'a [u8], LegacyError> {
         let end = add(self.position, count)?;
-        let value = self.bytes.get(self.position..end).ok_or(LegacyError::Truncated)?;
+        let value = self
+            .bytes
+            .get(self.position..end)
+            .ok_or(LegacyError::Truncated)?;
         self.position = end;
         Ok(value)
     }
@@ -66,7 +87,8 @@ impl<'a> Reader<'a> {
         };
         let name_len = usize::from(u16::from_le_bytes(self.array()?));
         bounded(name_len, self.limits.max_name_bytes, "name bytes")?;
-        let name = std::str::from_utf8(self.take(name_len)?).map_err(|_| LegacyError::InvalidUtf8)?;
+        let name =
+            std::str::from_utf8(self.take(name_len)?).map_err(|_| LegacyError::InvalidUtf8)?;
         let mut node = LegacyNode::new(kind, name, std::path::PathBuf::new());
         node.last_modified_timestamp = u64::from_le_bytes(self.array()?);
         match kind {
@@ -75,7 +97,8 @@ impl<'a> Reader<'a> {
                 node.content_size = u64::from_le_bytes(self.array()?);
             }
             NodeType::Directory => {
-                let count = usize::try_from(u32::from_le_bytes(self.array()?)).map_err(|_| LegacyError::Overflow)?;
+                let count = usize::try_from(u32::from_le_bytes(self.array()?))
+                    .map_err(|_| LegacyError::Overflow)?;
                 bounded(add(self.nodes, count)?, self.limits.max_nodes, "nodes")?;
                 // Even an empty directory requires 15 metadata bytes. Do not reserve
                 // from a declared child count before checking the available buffer.
@@ -92,8 +115,12 @@ impl<'a> Reader<'a> {
 }
 
 fn range(node: &LegacyNode, data_len: usize) -> Result<std::ops::Range<usize>, LegacyError> {
-    let end = node.content_offset_in_data_section.checked_add(node.content_size).ok_or(LegacyError::Overflow)?;
-    let start = usize::try_from(node.content_offset_in_data_section).map_err(|_| LegacyError::Overflow)?;
+    let end = node
+        .content_offset_in_data_section
+        .checked_add(node.content_size)
+        .ok_or(LegacyError::Overflow)?;
+    let start =
+        usize::try_from(node.content_offset_in_data_section).map_err(|_| LegacyError::Overflow)?;
     let end = usize::try_from(end).map_err(|_| LegacyError::Overflow)?;
     if start > data_len {
         return Err(LegacyError::InvalidOffset);
@@ -104,7 +131,11 @@ fn range(node: &LegacyNode, data_len: usize) -> Result<std::ops::Range<usize>, L
     Ok(start..end)
 }
 
-fn validate_ranges(root: &LegacyNode, data: &[u8], limits: LegacyLimits) -> Result<(), LegacyError> {
+fn validate_ranges(
+    root: &LegacyNode,
+    data: &[u8],
+    limits: LegacyLimits,
+) -> Result<(), LegacyError> {
     let mut stack = vec![root];
     let mut extent = 0;
     let mut body_bytes = 0;

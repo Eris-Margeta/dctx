@@ -13,7 +13,10 @@ pub enum Dialect {
 
 impl Dialect {
     /// Selects Ruby from the path. Other files are unsupported.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn for_path(path: &str) -> Option<Self> {
         let base = path.rsplit(['/', '\\']).next().unwrap_or(path);
         if base.eq_ignore_ascii_case("Rakefile") || base.eq_ignore_ascii_case("Gemfile") {

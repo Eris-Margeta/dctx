@@ -12,12 +12,61 @@ const OPS: &[&[u8]] = &[
 
 /// Words that do not end a statement, so a following newline is not a semicolon.
 pub(super) const PREFIX: &[&str] = &[
-    "abstract", "actual", "annotation", "as", "by", "catch", "class", "companion", "const",
-    "constructor", "crossinline", "data", "do", "else", "enum", "expect", "external", "final",
-    "finally", "for", "fun", "if", "import", "in", "infix", "init", "inline", "inner",
-    "interface", "internal", "is", "lateinit", "noinline", "object", "open", "operator", "out",
-    "override", "package", "private", "protected", "public", "reified", "sealed", "suspend",
-    "tailrec", "try", "typealias", "val", "value", "var", "vararg", "when", "where", "while",
+    "abstract",
+    "actual",
+    "annotation",
+    "as",
+    "by",
+    "catch",
+    "class",
+    "companion",
+    "const",
+    "constructor",
+    "crossinline",
+    "data",
+    "do",
+    "else",
+    "enum",
+    "expect",
+    "external",
+    "final",
+    "finally",
+    "for",
+    "fun",
+    "if",
+    "import",
+    "in",
+    "infix",
+    "init",
+    "inline",
+    "inner",
+    "interface",
+    "internal",
+    "is",
+    "lateinit",
+    "noinline",
+    "object",
+    "open",
+    "operator",
+    "out",
+    "override",
+    "package",
+    "private",
+    "protected",
+    "public",
+    "reified",
+    "sealed",
+    "suspend",
+    "tailrec",
+    "try",
+    "typealias",
+    "val",
+    "value",
+    "var",
+    "vararg",
+    "when",
+    "where",
+    "while",
 ];
 
 pub(crate) struct Lexer<'a> {
@@ -77,7 +126,8 @@ impl<'a> Lexer<'a> {
             return self.scan_annotation(max_depth);
         }
         if byte == b'"' {
-            let raw = self.b.get(self.pos + 1) == Some(&b'"') && self.b.get(self.pos + 2) == Some(&b'"');
+            let raw =
+                self.b.get(self.pos + 1) == Some(&b'"') && self.b.get(self.pos + 2) == Some(&b'"');
             return self.scan_string(raw, max_depth);
         }
         if byte == b'\'' {
@@ -216,7 +266,10 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn scan_interp(&mut self, max_depth: u32) -> Result<bool, u32> {
         let mut depth = 1u32;
         if depth > max_depth {
@@ -265,7 +318,10 @@ impl<'a> Lexer<'a> {
         Ok(false)
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn fail_string(&mut self, start: usize, raw: bool, emitted: bool) {
         let reason = if raw {
             DiagnosticReason::UnterminatedRaw
@@ -295,7 +351,10 @@ impl<'a> Lexer<'a> {
         *next == b'{' || starts_ident(self.char_at(self.pos + 1))
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn scan_char(&mut self) {
         let start = self.pos;
         self.pos += 1;
@@ -311,7 +370,8 @@ impl<'a> Lexer<'a> {
             } else if self.pos < self.b.len() && self.b[self.pos] != b'\n' {
                 self.bump();
             }
-        } else if self.pos < self.b.len() && self.b[self.pos] != b'\'' && self.b[self.pos] != b'\n' {
+        } else if self.pos < self.b.len() && self.b[self.pos] != b'\'' && self.b[self.pos] != b'\n'
+        {
             self.bump();
         }
         if self.pos < self.b.len() && self.b[self.pos] == b'\'' {
@@ -324,7 +384,10 @@ impl<'a> Lexer<'a> {
         self.push(Kind::BadChar, start);
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn scan_ticks(&mut self) {
         let start = self.pos;
         self.pos += 1;
@@ -369,7 +432,10 @@ impl<'a> Lexer<'a> {
                 return true;
             }
         }
-        if rest.first().is_some_and(|byte| b"+-*/%&|^<>=!(),.[]{}:~?".contains(byte)) {
+        if rest
+            .first()
+            .is_some_and(|byte| b"+-*/%&|^<>=!(),.[]{}:~?".contains(byte))
+        {
             self.pos += 1;
             return true;
         }
@@ -384,7 +450,10 @@ impl<'a> Lexer<'a> {
         self.block_comment(max_depth)
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn line_comment(&mut self) {
         if self.insert && self.groups == 0 {
             self.push_semi(self.pos);
@@ -406,7 +475,10 @@ impl<'a> Lexer<'a> {
         self.insert = false;
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn block_comment(&mut self, max_depth: u32) -> Result<(), u32> {
         let start = self.pos;
         let newline_before = self.insert && self.groups == 0 && self.comment_has_newline(start);
@@ -414,7 +486,8 @@ impl<'a> Lexer<'a> {
             self.push_semi(start);
         }
         self.pos += 2;
-        let javadoc = self.b.get(self.pos) == Some(&b'*') && self.b.get(self.pos + 1) != Some(&b'/');
+        let javadoc =
+            self.b.get(self.pos) == Some(&b'*') && self.b.get(self.pos + 1) != Some(&b'/');
         let mut depth = 1u32;
         while self.pos < self.b.len() && depth > 0 {
             if self.b[self.pos] == b'/' && self.b.get(self.pos + 1) == Some(&b'*') {
@@ -466,7 +539,6 @@ impl<'a> Lexer<'a> {
         }
         false
     }
-
 }
 
 pub(super) fn starts_ident(ch: char) -> bool {

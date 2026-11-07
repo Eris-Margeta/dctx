@@ -14,7 +14,9 @@ impl Lifecycle {
     /// Refuses an already registered root ID.
     pub fn register_root(&mut self, id: RootId) -> Result<(), crate::error::CacheError> {
         if self.roots.contains_key(&id) {
-            return Err(crate::error::CacheError::InvalidRequest { reason: "root already registered" });
+            return Err(crate::error::CacheError::InvalidRequest {
+                reason: "root already registered",
+            });
         }
         self.roots.insert(
             id,
@@ -39,7 +41,9 @@ impl Lifecycle {
     /// Refuses an unknown root ID.
     pub fn touch(&mut self, root: RootId) -> Result<(), crate::error::CacheError> {
         if !self.roots.contains_key(&root) {
-            return Err(crate::error::CacheError::InvalidRequest { reason: "unknown root" });
+            return Err(crate::error::CacheError::InvalidRequest {
+                reason: "unknown root",
+            });
         }
         self.note_use(root);
         let wall = self.wall;
@@ -69,9 +73,12 @@ impl Lifecycle {
     /// # Errors
     /// Refuses an unknown root ID.
     pub fn pin_root(&mut self, root: RootId, pinned: bool) -> Result<(), crate::error::CacheError> {
-        let record = self.roots.get_mut(&root).ok_or(crate::error::CacheError::InvalidRequest {
-            reason: "unknown root",
-        })?;
+        let record = self
+            .roots
+            .get_mut(&root)
+            .ok_or(crate::error::CacheError::InvalidRequest {
+                reason: "unknown root",
+            })?;
         record.pinned = pinned;
         self.bump();
         Ok(())
@@ -95,9 +102,12 @@ impl Lifecycle {
     /// # Errors
     /// Refuses an unknown root ID.
     pub fn note_online(&mut self, root: RootId) -> Result<(), crate::error::CacheError> {
-        let record = self.roots.get_mut(&root).ok_or(crate::error::CacheError::InvalidRequest {
-            reason: "unknown root",
-        })?;
+        let record = self
+            .roots
+            .get_mut(&root)
+            .ok_or(crate::error::CacheError::InvalidRequest {
+                reason: "unknown root",
+            })?;
         record.missing = false;
         record.offline = false;
         record.unavailable_since = None;
@@ -111,9 +121,12 @@ impl Lifecycle {
         offline: bool,
     ) -> Result<(), crate::error::CacheError> {
         let wall = self.wall;
-        let record = self.roots.get_mut(&root).ok_or(crate::error::CacheError::InvalidRequest {
-            reason: "unknown root",
-        })?;
+        let record = self
+            .roots
+            .get_mut(&root)
+            .ok_or(crate::error::CacheError::InvalidRequest {
+                reason: "unknown root",
+            })?;
         record.missing = true;
         if offline {
             record.offline = true;

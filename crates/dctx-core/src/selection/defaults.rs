@@ -2,7 +2,7 @@
 //! Built-in (layer 1) ignore and omit-content rules compiled into every build.
 //! Implements the hardcoded layer of the three-layer selection policy (hardcoded → global → local).
 //! Depends on nothing; plain rule text parsed by [`super::rule`].
-//! Used by [`super::policy::SelectionPolicy::from_texts`] and re-exported by `crate::config`.
+//! Used by [`super::policy::SelectionPolicy::from_texts`] and filesystem adapters.
 
 /// Base rules that exclude items universally unless a later rule negates them.
 pub const HARDCODED_IGNORE_RULES: &[&str] = &[
@@ -10,7 +10,7 @@ pub const HARDCODED_IGNORE_RULES: &[&str] = &[
     ".git/",
     ".svn/",
     ".hg/",
-    // Dependencies and tool caches (ADR-015: matches the legacy and map-scan built-ins)
+    // Dependencies and tool caches (ADR-015: matches the map-scan built-ins)
     "node_modules/",
     "bower_components/",
     ".turbo/",
@@ -88,7 +88,10 @@ mod tests {
 
     #[test]
     fn every_builtin_line_parses_to_a_rule() {
-        assert_eq!(parse_rule_lines(HARDCODED_IGNORE_RULES).len(), HARDCODED_IGNORE_RULES.len());
+        assert_eq!(
+            parse_rule_lines(HARDCODED_IGNORE_RULES).len(),
+            HARDCODED_IGNORE_RULES.len()
+        );
         assert_eq!(
             parse_rule_lines(HARDCODED_OMIT_CONTENT_RULES).len(),
             HARDCODED_OMIT_CONTENT_RULES.len()

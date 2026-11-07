@@ -4,8 +4,8 @@
 //! Depends on [`super::envelope`], [`super::bytes`], and [`super::options::Revisions`]. The store writes the result.
 //! Digest order is the canonical segment order. A git object id has no field here.
 
-use super::bytes::{push_str, structured, Cur};
-use super::envelope::{self, Section, REQUIRED};
+use super::bytes::{Cur, push_str, structured};
+use super::envelope::{self, REQUIRED, Section};
 use super::error::StoreError;
 use super::options::Revisions;
 use crate::SegmentRole;
@@ -52,7 +52,9 @@ pub(crate) fn manifest_digest(envelope: &[u8]) -> Result<[u8; 32], StoreError> {
 
 pub(crate) fn encode_manifest(manifest: &Manifest) -> Result<Vec<u8>, StoreError> {
     if manifest.generation == 0 {
-        return Err(StoreError::InvalidRequest { reason: "generation" });
+        return Err(StoreError::InvalidRequest {
+            reason: "generation",
+        });
     }
     let mut identity = Vec::new();
     push_str(&mut identity, &manifest.namespace)?;
@@ -75,7 +77,8 @@ pub(crate) fn encode_manifest(manifest: &Manifest) -> Result<Vec<u8>, StoreError
         return Err(StoreError::InvalidRequest { reason: "segment" });
     }
     let mut segments = Vec::new();
-    let count = u32::try_from(refs.len()).map_err(|_| StoreError::InvalidRequest { reason: "segment" })?;
+    let count =
+        u32::try_from(refs.len()).map_err(|_| StoreError::InvalidRequest { reason: "segment" })?;
     segments.extend_from_slice(&count.to_le_bytes());
     for seg in &refs {
         segments.extend_from_slice(&seg.digest);
@@ -163,7 +166,11 @@ pub(crate) fn decode_manifest(bytes: &[u8]) -> Result<Manifest, StoreError> {
         if cur.u16()? != 1 || cur.u64()? != 0 {
             return Err(StoreError::CorruptIndex { reason: "manifest" });
         }
-        segments.push(SegmentRef { digest, length, role });
+        segments.push(SegmentRef {
+            digest,
+            length,
+            role,
+        });
     }
     cur.finish()?;
     let mut cur = Cur::new(revision_bytes);
@@ -239,7 +246,10 @@ mod tests {
     fn manifest_round_trips_and_kind_6_is_vcs() {
         let bytes = encode_manifest(&sample()).unwrap();
         assert_eq!(decode_manifest(&bytes).unwrap(), sample());
-        assert_eq!(manifest_digest(&bytes).unwrap(), manifest_digest(&bytes).unwrap());
+        assert_eq!(
+            manifest_digest(&bytes).unwrap(),
+            manifest_digest(&bytes).unwrap()
+        );
         let vcs = envelope::assemble(
             &MAGIC,
             &[Section {

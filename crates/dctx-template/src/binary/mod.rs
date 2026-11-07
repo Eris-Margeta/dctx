@@ -6,7 +6,7 @@
 
 use dctx_hash::Sha256;
 
-use crate::error::{TemplateError, MAX_PLAN_BYTES, MAX_SECTIONS};
+use crate::error::{MAX_PLAN_BYTES, MAX_SECTIONS, TemplateError};
 use crate::model::{ContextPlan, KNOWN_CAPABILITY_BITS};
 use crate::opcode::validate_program;
 
@@ -18,7 +18,7 @@ use digest::{
     body_of, decode_provenance, digests_of, domain_digest, encode_provenance, hash_body,
     plan_digest,
 };
-use io::{read_section, Reader};
+use io::{Reader, read_section};
 use sections::{decode_budgets, decode_indexes, decode_render, decode_selections, decode_views};
 
 const MAGIC: &[u8] = b"DCTXIR\0\0";
@@ -70,13 +70,21 @@ pub fn to_bytes(plan: &ContextPlan) -> Result<Vec<u8>, TemplateError> {
 ///
 /// # Errors
 /// Refuses malformed, truncated, unsupported, oversized or digest-inconsistent envelopes and invalid plan structure.
-#[allow(clippy::similar_names, reason = "reader and render name the binary reader and render digest; keeping those protocol roles recognizable is clearer than unrelated replacements.")]
+#[allow(
+    clippy::similar_names,
+    reason = "reader and render name the binary reader and render digest; keeping those protocol roles recognizable is clearer than unrelated replacements."
+)]
 pub fn from_bytes(bytes: &[u8]) -> Result<ContextPlan, TemplateError> {
     if bytes.len() > usize::try_from(MAX_PLAN_BYTES).unwrap_or(usize::MAX) {
-        return Err(TemplateError::Limit { what: "plan", limit: u64::from(MAX_PLAN_BYTES) });
+        return Err(TemplateError::Limit {
+            what: "plan",
+            limit: u64::from(MAX_PLAN_BYTES),
+        });
     }
     if bytes.len() < 64 {
-        return Err(TemplateError::Corrupt { reason: "truncated" });
+        return Err(TemplateError::Corrupt {
+            reason: "truncated",
+        });
     }
     let hash_at = bytes.len() - 32;
     let (body, hash) = bytes.split_at(hash_at);
@@ -88,7 +96,9 @@ pub fn from_bytes(bytes: &[u8]) -> Result<ContextPlan, TemplateError> {
     let major = reader.u16()?;
     let minor = reader.u16()?;
     if major != IR_MAJOR || minor != IR_MINOR {
-        return Err(TemplateError::UnsupportedVersion { found: u32::from(major) });
+        return Err(TemplateError::UnsupportedVersion {
+            found: u32::from(major),
+        });
     }
     let total = reader.u64()?;
     let file_len = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
@@ -97,20 +107,30 @@ pub fn from_bytes(bytes: &[u8]) -> Result<ContextPlan, TemplateError> {
     }
     let capabilities = reader.u64()?;
     let section_count = reader.u32()?;
-    let digest = Sha256::digest(body).map_err(|_| TemplateError::Limit { what: "hash", limit: u64::MAX })?;
+    let digest = Sha256::digest(body).map_err(|_| TemplateError::Limit {
+        what: "hash",
+        limit: u64::MAX,
+    })?;
     let mut actual = [0u8; 32];
     actual.copy_from_slice(hash);
     if actual != *digest.as_bytes() {
         return Err(TemplateError::DigestMismatch);
     }
     if capabilities & !KNOWN_CAPABILITY_BITS != 0 {
-        return Err(TemplateError::UnknownCapability { name: format!("bits:{capabilities:x}") });
+        return Err(TemplateError::UnknownCapability {
+            name: format!("bits:{capabilities:x}"),
+        });
     }
     if section_count > MAX_SECTIONS {
-        return Err(TemplateError::Limit { what: "sections", limit: u64::from(MAX_SECTIONS) });
+        return Err(TemplateError::Limit {
+            what: "sections",
+            limit: u64::from(MAX_SECTIONS),
+        });
     }
     if section_count != SECTION_COUNT {
-        return Err(TemplateError::Corrupt { reason: "section count" });
+        return Err(TemplateError::Corrupt {
+            reason: "section count",
+        });
     }
     let mut payloads = Vec::with_capacity(7);
     for expected in 1u16..=7 {
@@ -119,10 +139,14 @@ pub fn from_bytes(bytes: &[u8]) -> Result<ContextPlan, TemplateError> {
             if !(1..=7).contains(&kind) {
                 return Err(TemplateError::UnknownSection { kind });
             }
-            return Err(TemplateError::Corrupt { reason: "section order" });
+            return Err(TemplateError::Corrupt {
+                reason: "section order",
+            });
         }
         if schema != SCHEMA {
-            return Err(TemplateError::UnsupportedVersion { found: u32::from(schema) });
+            return Err(TemplateError::UnsupportedVersion {
+                found: u32::from(schema),
+            });
         }
         payloads.push(payload.to_vec());
     }
@@ -170,7 +194,8 @@ pub fn from_bytes(bytes: &[u8]) -> Result<ContextPlan, TemplateError> {
 fn assemble(capabilities: u64, payloads: &[&[u8]; 7]) -> Result<Vec<u8>, TemplateError> {
     let mut sections = Vec::new();
     for (index, payload) in payloads.iter().enumerate() {
-        let kind = u16::try_from(index + 1).map_err(|_| TemplateError::Corrupt { reason: "section" })?;
+        let kind =
+            u16::try_from(index + 1).map_err(|_| TemplateError::Corrupt { reason: "section" })?;
         let len = u32::try_from(payload.len()).map_err(|_| TemplateError::Limit {
             what: "section",
             limit: u64::from(MAX_PLAN_BYTES),
@@ -182,7 +207,10 @@ fn assemble(capabilities: u64, payloads: &[&[u8]; 7]) -> Result<Vec<u8>, Templat
     }
     let total = 32usize.saturating_add(sections.len()).saturating_add(32);
     if total > usize::try_from(MAX_PLAN_BYTES).unwrap_or(usize::MAX) {
-        return Err(TemplateError::Limit { what: "plan", limit: u64::from(MAX_PLAN_BYTES) });
+        return Err(TemplateError::Limit {
+            what: "plan",
+            limit: u64::from(MAX_PLAN_BYTES),
+        });
     }
     let total_u64 = u64::try_from(total).unwrap_or(u64::MAX);
     let mut file = Vec::with_capacity(total);
@@ -193,7 +221,10 @@ fn assemble(capabilities: u64, payloads: &[&[u8]; 7]) -> Result<Vec<u8>, Templat
     file.extend_from_slice(&capabilities.to_le_bytes());
     file.extend_from_slice(&SECTION_COUNT.to_le_bytes());
     file.extend_from_slice(&sections);
-    let digest = Sha256::digest(&file).map_err(|_| TemplateError::Limit { what: "hash", limit: u64::MAX })?;
+    let digest = Sha256::digest(&file).map_err(|_| TemplateError::Limit {
+        what: "hash",
+        limit: u64::MAX,
+    })?;
     file.extend_from_slice(digest.as_bytes());
     Ok(file)
 }
@@ -245,7 +276,10 @@ k = \"v\"
         let mut corrupt = plan.clone();
         corrupt.render.layouts[0].instructions[0].opcode = 99;
         let encoded = encode(&corrupt, false).expect("unchecked encode");
-        assert!(matches!(from_bytes(&encoded), Err(TemplateError::UnknownOpcode { opcode: 99 })));
+        assert!(matches!(
+            from_bytes(&encoded),
+            Err(TemplateError::UnknownOpcode { opcode: 99 })
+        ));
     }
 
     #[test]
@@ -254,10 +288,16 @@ k = \"v\"
         let mut flipped = bytes.clone();
         let last = flipped.len() - 1;
         flipped[last] ^= 0xff;
-        assert!(matches!(from_bytes(&flipped), Err(TemplateError::DigestMismatch)));
+        assert!(matches!(
+            from_bytes(&flipped),
+            Err(TemplateError::DigestMismatch)
+        ));
         let mut future = bytes;
         future[8] = 2;
-        assert!(matches!(from_bytes(&future), Err(TemplateError::UnsupportedVersion { found: 2 })));
+        assert!(matches!(
+            from_bytes(&future),
+            Err(TemplateError::UnsupportedVersion { found: 2 })
+        ));
     }
 
     #[test]
@@ -265,6 +305,9 @@ k = \"v\"
         let mut plan = sample();
         plan.capabilities |= 1 << 20;
         let bytes = encode(&plan, true).expect("encode");
-        assert!(matches!(from_bytes(&bytes), Err(TemplateError::UnknownCapability { .. })));
+        assert!(matches!(
+            from_bytes(&bytes),
+            Err(TemplateError::UnknownCapability { .. })
+        ));
     }
 }

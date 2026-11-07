@@ -26,19 +26,29 @@ pub struct SegmentBuilder {
 
 impl SegmentBuilder {
     /// An empty fact segment. Dictionary and facts are required and may be empty.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn fact() -> Self {
         Self::new(SegmentRole::Fact)
     }
 
     /// An empty view segment. [`Self::set_view_key`] is required before [`Self::build`].
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn view() -> Self {
         Self::new(SegmentRole::View)
     }
 
     /// Replaces the ceilings. A value above the standard cap is clamped when building.
-    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn with_limits(mut self, limits: DecoderLimits) -> Self {
         self.limits = limits;
         self
@@ -75,7 +85,11 @@ impl SegmentBuilder {
         if u64::try_from(lengths.len()).unwrap_or(u64::MAX) > self.limits.effective().max_records {
             return Err(SegmentError::Limit("records"));
         }
-        self.lengths = if lengths.is_empty() { None } else { Some(lengths) };
+        self.lengths = if lengths.is_empty() {
+            None
+        } else {
+            Some(lengths)
+        };
         Ok(())
     }
 
@@ -167,7 +181,10 @@ mod tests {
             ..DecoderLimits::standard()
         };
         assert_eq!(
-            SegmentBuilder::fact().with_limits(tight).build().unwrap_err(),
+            SegmentBuilder::fact()
+                .with_limits(tight)
+                .build()
+                .unwrap_err(),
             SegmentError::Limit("segment")
         );
     }

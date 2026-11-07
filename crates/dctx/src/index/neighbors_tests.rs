@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Tests for the breadth-first neighbors traversal over a hand-built call chain `f1 -> f2 -> f3 -> f4` plus a back edge `f4 -> f1`.
 
-use super::{collect, Collected};
+use super::{Collected, collect};
 use crate::domain::{Direction, FreshnessMode, MapRequest, Verb};
 use crate::index::{Generation, IndexedEdge, IndexedNode, TextBlob};
 
@@ -25,7 +25,14 @@ fn chain() -> Generation {
         .collect();
     let calls = text.push("calls");
     let name = text.push("name");
-    let edges = Vec::from([(0, 1), (1, 2), (2, 3), (3, 0)].map(|(src, dst)| IndexedEdge { src, dst, edge: calls, confidence: name }));
+    let edges = Vec::from(
+        [(0, 1), (1, 2), (2, 3), (3, 0)].map(|(src, dst)| IndexedEdge {
+            src,
+            dst,
+            edge: calls,
+            confidence: name,
+        }),
+    );
     Generation {
         id: 1,
         digest: String::new(),
@@ -62,7 +69,14 @@ fn depth_one_lines_keep_their_shape() {
 
 #[test]
 fn deeper_nodes_follow_by_depth_once_and_carry_the_depth() {
-    assert_eq!(ids(3), ["calls:out:s:a.py#f2", "calls:out:2:s:a.py#f3", "calls:out:3:s:a.py#f4"]);
+    assert_eq!(
+        ids(3),
+        [
+            "calls:out:s:a.py#f2",
+            "calls:out:2:s:a.py#f3",
+            "calls:out:3:s:a.py#f4"
+        ]
+    );
     // The back edge reaches f1, which is the root and already settled.
     assert_eq!(ids(4), ids(3));
 }
@@ -73,13 +87,30 @@ fn a_self_edge_is_listed_inbound() {
     let mut generation = chain();
     let calls = generation.edges[0].edge;
     let name = generation.edges[0].confidence;
-    generation.edges = vec![IndexedEdge { src: 0, dst: 0, edge: calls, confidence: name }];
-    for (direction, want) in [(Direction::In, "calls:in:s:a.py#f1"), (Direction::Out, "calls:out:s:a.py#f1")] {
+    generation.edges = vec![IndexedEdge {
+        src: 0,
+        dst: 0,
+        edge: calls,
+        confidence: name,
+    }];
+    for (direction, want) in [
+        (Direction::In, "calls:in:s:a.py#f1"),
+        (Direction::Out, "calls:out:s:a.py#f1"),
+    ] {
         let mut request = MapRequest::new(Verb::Neighbors);
         request.target = "s:a.py#f1".to_string();
         request.direction = direction;
-        let Collected::Records(records) = collect(&generation, &request, 1).expect("collect") else { panic!("records") };
-        assert_eq!(records.into_iter().map(|record| record.id).collect::<Vec<_>>(), [want]);
+        let Collected::Records(records) = collect(&generation, &request, 1).expect("collect")
+        else {
+            panic!("records")
+        };
+        assert_eq!(
+            records
+                .into_iter()
+                .map(|record| record.id)
+                .collect::<Vec<_>>(),
+            [want]
+        );
     }
 }
 
@@ -103,8 +134,17 @@ fn decl_pair_fixture() -> Generation {
         summary_source: "sig".to_string(),
         signature: String::new(),
     };
-    let nodes = vec![node(header, "add"), node(source, "add"), node(caller, "main")];
-    let edges = vec![IndexedEdge { src: 2, dst: 1, edge: calls, confidence: name }];
+    let nodes = vec![
+        node(header, "add"),
+        node(source, "add"),
+        node(caller, "main"),
+    ];
+    let edges = vec![IndexedEdge {
+        src: 2,
+        dst: 1,
+        edge: calls,
+        confidence: name,
+    }];
     Generation {
         id: 1,
         digest: String::new(),
@@ -132,7 +172,13 @@ fn a_header_prototype_answers_with_its_definition_and_names_it() {
     let Collected::Records(records) = collect(&generation, &request, 1).expect("collect") else {
         panic!("records expected");
     };
-    assert_eq!(records.into_iter().map(|record| record.id).collect::<Vec<_>>(), ["calls:in:s:main.c#main"]);
+    assert_eq!(
+        records
+            .into_iter()
+            .map(|record| record.id)
+            .collect::<Vec<_>>(),
+        ["calls:in:s:main.c#main"]
+    );
     let pair = super::super::decl_pair::pair_record(&generation, "s:c/util.h#add").expect("pair");
     assert_eq!(pair.id, "pair:s:c/util.c#add");
     assert_eq!(pair.kind, "definition");
@@ -144,7 +190,13 @@ fn a_header_prototype_answers_with_its_definition_and_names_it() {
     let Collected::Records(records) = collect(&generation, &direct, 1).expect("collect") else {
         panic!("records expected");
     };
-    assert_eq!(records.into_iter().map(|record| record.id).collect::<Vec<_>>(), ["calls:in:s:main.c#main"]);
+    assert_eq!(
+        records
+            .into_iter()
+            .map(|record| record.id)
+            .collect::<Vec<_>>(),
+        ["calls:in:s:main.c#main"]
+    );
 }
 
 /// A generation with `s:big.ts#target` and `count` callers named `caller<n>`, each with a 2 KB signature summary.
@@ -156,8 +208,15 @@ fn big_callers(count: u32) -> Generation {
     let calls = generation.text.push("calls");
     let name = generation.text.push("name");
     for n in 0..=count {
-        let label = if n == 0 { "target".to_string() } else { format!("caller{n}") };
-        let sig = format!("export function {label}(): number {{ return {} }}", "x".repeat(2000));
+        let label = if n == 0 {
+            "target".to_string()
+        } else {
+            format!("caller{n}")
+        };
+        let sig = format!(
+            "export function {label}(): number {{ return {} }}",
+            "x".repeat(2000)
+        );
         generation.nodes.push(IndexedNode {
             letter: b's',
             ordinal: 0,
@@ -171,7 +230,12 @@ fn big_callers(count: u32) -> Generation {
             signature: String::new(),
         });
         if n > 0 {
-            generation.edges.push(IndexedEdge { src: n, dst: 0, edge: calls, confidence: name });
+            generation.edges.push(IndexedEdge {
+                src: n,
+                dst: 0,
+                edge: calls,
+                confidence: name,
+            });
         }
     }
     generation
@@ -179,15 +243,19 @@ fn big_callers(count: u32) -> Generation {
 
 #[test]
 fn a_2000_token_page_carries_at_least_36_callers_with_2kb_summaries() {
-    use crate::domain::{encode_answer, Answer, Freshness, Precision};
+    use crate::domain::{Answer, Freshness, Precision, encode_answer};
     let mut request = MapRequest::new(Verb::Neighbors);
     request.target = "s:big.ts#target".to_string();
     request.direction = Direction::In;
-    let Collected::Records(records) = collect(&big_callers(60), &request, 1).expect("collect") else {
+    let Collected::Records(records) = collect(&big_callers(60), &request, 1).expect("collect")
+    else {
         panic!("records expected");
     };
     assert_eq!(records.len(), 60);
-    assert!(records.iter().all(|record| record.summary.is_empty()), "a signature summary is dropped from an edge record");
+    assert!(
+        records.iter().all(|record| record.summary.is_empty()),
+        "a signature summary is dropped from an edge record"
+    );
     let page = |count: usize| -> String {
         let answer = Answer {
             generation: 1,
@@ -196,16 +264,34 @@ fn a_2000_token_page_carries_at_least_36_callers_with_2kb_summaries() {
             records: records[..count].to_vec(),
             more: 0,
             next: None,
-            freshness: Freshness { mode: "immutable_snapshot".to_string(), state: "verified".to_string(), age_s: 0 },
-            precision: Precision { coverage: "structural".to_string(), completion: "complete".to_string(), parser: "dctx-structural/2".to_string() },
+            freshness: Freshness {
+                mode: "immutable_snapshot".to_string(),
+                state: "verified".to_string(),
+                age_s: 0,
+            },
+            precision: Precision {
+                coverage: "structural".to_string(),
+                completion: "complete".to_string(),
+                parser: "dctx-structural/2".to_string(),
+            },
             outcome: None,
         };
         encode_answer("fixture", &answer)
     };
     // 2000 tokens at 3.5 bytes each.
-    let fitting = (1..=records.len()).take_while(|count| page(*count).len() <= 7000).count();
+    let fitting = (1..=records.len())
+        .take_while(|count| page(*count).len() <= 7000)
+        .count();
     assert!(fitting >= 36, "only {fitting} callers fit in 2000 tokens");
     let json = page(1);
-    assert!(!json.contains("\"span\"") && !json.contains("\"signature\"") && !json.contains("\"target\""), "{json}");
-    assert!(json.contains("\"edge\":\"calls\",\"direction\":\"in\",\"confidence\":\"name\""), "{json}");
+    assert!(
+        !json.contains("\"span\"")
+            && !json.contains("\"signature\"")
+            && !json.contains("\"target\""),
+        "{json}"
+    );
+    assert!(
+        json.contains("\"edge\":\"calls\",\"direction\":\"in\",\"confidence\":\"name\""),
+        "{json}"
+    );
 }

@@ -6,8 +6,8 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
-mod error;
 pub mod domain;
+mod error;
 mod extract;
 mod lexer;
 
@@ -29,7 +29,10 @@ pub struct PyLexer {
 
 impl PyLexer {
     /// Builds an extractor; limits above the ceilings are narrowed to them.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new(limits: Limits) -> Self {
         Self {
             limits: limits.narrowed(),
@@ -84,10 +87,7 @@ mod tests {
         ));
         assert!(small.extract("x.py", b"a=1").is_ok());
         assert!(lexer.extract("x.py", b"").is_ok());
-        assert_eq!(
-            Dialect::for_path("pkg/app.PYW"),
-            Some(Dialect::Python)
-        );
+        assert_eq!(Dialect::for_path("pkg/app.PYW"), Some(Dialect::Python));
         assert_eq!(Dialect::for_path("types.pyi"), Some(Dialect::Stub));
         assert_eq!(Dialect::for_path("notes.md"), None);
     }
@@ -106,7 +106,11 @@ mod tests {
             Err(LexError::TooDeep { .. })
         ));
         let shallow = "(".repeat(8) + &")".repeat(8);
-        assert!(PyLexer::default().extract("d.py", shallow.as_bytes()).is_ok());
+        assert!(
+            PyLexer::default()
+                .extract("d.py", shallow.as_bytes())
+                .is_ok()
+        );
         let narrow = PyLexer::new(Limits {
             max_depth: 4,
             ..Limits::default()
@@ -140,8 +144,15 @@ mod tests {
     #[test]
     fn strings_and_comments_do_not_invent_declarations() {
         let source = "# def fake():\ns = \"def fake():\"\ns2 = b\"def fake():\"\ndef real():\n    return 1\n";
-        let facts = PyLexer::default().extract("m.py", source.as_bytes()).unwrap();
-        let names: Vec<_> = facts.nodes.iter().skip(1).map(|node| node.fact.name.as_str()).collect();
+        let facts = PyLexer::default()
+            .extract("m.py", source.as_bytes())
+            .unwrap();
+        let names: Vec<_> = facts
+            .nodes
+            .iter()
+            .skip(1)
+            .map(|node| node.fact.name.as_str())
+            .collect();
         assert_eq!(names, ["real"]);
         assert_eq!(facts.completion, Completion::Complete);
         assert_eq!(facts.references, []);

@@ -40,7 +40,11 @@ impl Distribution<'_> {
     }
 
     /// Fetches a small document completely.
-    pub(super) fn fetch_all(&self, url: &HttpsUrl, limit: u64) -> Result<Vec<u8>, DistributionError> {
+    pub(super) fn fetch_all(
+        &self,
+        url: &HttpsUrl,
+        limit: u64,
+    ) -> Result<Vec<u8>, DistributionError> {
         let mut out = Vec::new();
         self.fetch(url, limit, &mut |chunk| {
             out.extend_from_slice(chunk);
@@ -58,7 +62,9 @@ fn read_bounded(
     let mut buffer = vec![0u8; CHUNK];
     let mut total: u64 = 0;
     loop {
-        let read = reader.read(&mut buffer).map_err(|_| NetworkError::Interrupted)?;
+        let read = reader
+            .read(&mut buffer)
+            .map_err(|_| NetworkError::Interrupted)?;
         if read == 0 {
             return Ok(total);
         }

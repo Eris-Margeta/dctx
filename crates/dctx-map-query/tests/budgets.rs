@@ -2,8 +2,8 @@
 //! Wire-budget and continuation invariants through the public query API.
 //! Implements SPEC-MAP-MODE sections 3 and 4 for text and JSON.
 //! Uses real parsed source to catch skipped pages and oversized source bodies.
-use std::fmt::Write as _;
 use dctx_map_query::{AnswerBudget, FileSource, Format, Index, Request, Verb, render_answer};
+use std::fmt::Write as _;
 use std::{collections::BTreeSet, fs};
 
 #[test]
@@ -11,8 +11,11 @@ fn budget_cut_pages_preserve_every_record_and_are_deterministic() {
     let dir = tempfile::tempdir().unwrap();
     let mut code = String::new();
     for i in 0..35 {
-        writeln!(code, "/// Executes a bounded operation.\npub fn operation_{i:02}() {{}}"
-        ).expect("writing to a String cannot fail");
+        writeln!(
+            code,
+            "/// Executes a bounded operation.\npub fn operation_{i:02}() {{}}"
+        )
+        .expect("writing to a String cannot fail");
     }
     fs::write(dir.path().join("lib.rs"), code).unwrap();
     let source = FileSource::new(dir.path()).unwrap();

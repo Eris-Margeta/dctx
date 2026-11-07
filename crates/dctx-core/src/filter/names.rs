@@ -12,8 +12,18 @@ pub(super) fn is_hidden(name: &str) -> bool {
 }
 
 /// Whole final path components that are always sensitive (compared after ASCII lowercasing).
-const SENSITIVE_NAMES: &[&str] =
-    &[".env", ".envrc", ".netrc", "_netrc", ".npmrc", ".pypirc", ".pgpass", ".htpasswd", ".git-credentials", "credentials"];
+const SENSITIVE_NAMES: &[&str] = &[
+    ".env",
+    ".envrc",
+    ".netrc",
+    "_netrc",
+    ".npmrc",
+    ".pypirc",
+    ".pgpass",
+    ".htpasswd",
+    ".git-credentials",
+    "credentials",
+];
 
 /// Extensions (text after the last dot, non-empty stem) of env, key, certificate and keystore files.
 const SENSITIVE_EXTENSIONS: &[&str] = &["env", "pem", "key", "p12", "pfx", "jks", "keystore"];
@@ -36,7 +46,10 @@ pub fn is_secret_shaped_name(name: &str) -> bool {
     if SENSITIVE_NAMES.contains(&lower.as_str()) || lower.starts_with(".env.") {
         return true;
     }
-    if lower.strip_suffix("credentials.json").is_some_and(|head| head.ends_with('.')) {
+    if lower
+        .strip_suffix("credentials.json")
+        .is_some_and(|head| head.ends_with('.'))
+    {
         return true;
     }
     if let Some((stem, extension)) = lower.rsplit_once('.') {
@@ -48,7 +61,9 @@ pub fn is_secret_shaped_name(name: &str) -> bool {
         }
     }
     SSH_KEYS.iter().any(|&key| {
-        lower.strip_prefix(key).is_some_and(|rest| rest.is_empty() || (rest.starts_with(['_', '-']) && !rest.contains('.')))
+        lower.strip_prefix(key).is_some_and(|rest| {
+            rest.is_empty() || (rest.starts_with(['_', '-']) && !rest.contains('.'))
+        })
     })
 }
 
@@ -94,10 +109,26 @@ mod tests {
 
     #[test]
     fn secret_shaped_names_cover_env_files() {
-        for name in [".env", ".env.local", ".env.production", "settings.env", ".envrc", ".ENV", "prod.ENV"] {
+        for name in [
+            ".env",
+            ".env.local",
+            ".env.production",
+            "settings.env",
+            ".envrc",
+            ".ENV",
+            "prod.ENV",
+        ] {
             assert!(is_secret_shaped_name(name), "{name}");
         }
-        for name in ["environment.rs", "env.rs", "envrc", "src", ".environment", "app.py", "myenv"] {
+        for name in [
+            "environment.rs",
+            "env.rs",
+            "envrc",
+            "src",
+            ".environment",
+            "app.py",
+            "myenv",
+        ] {
             assert!(!is_secret_shaped_name(name), "{name}");
         }
     }
@@ -105,16 +136,52 @@ mod tests {
     #[test]
     fn sensitive_names_cover_keys_credentials_and_token_files() {
         for name in [
-            "server.pem", "TLS.KEY", "client.p12", "store.pfx", "app.jks", "release.keystore", "id_rsa", "id_ed25519",
-            "id_ecdsa", "id_dsa", "id_rsa_deploy", "id_ed25519-old", "credentials", "credentials.json", "Credentials.YAML",
-            "gcp.credentials.json", "secrets.yaml", "secrets.yml", "secrets.json", ".npmrc", ".netrc", "_netrc", ".pypirc",
-            ".pgpass", ".htpasswd", ".git-credentials",
+            "server.pem",
+            "TLS.KEY",
+            "client.p12",
+            "store.pfx",
+            "app.jks",
+            "release.keystore",
+            "id_rsa",
+            "id_ed25519",
+            "id_ecdsa",
+            "id_dsa",
+            "id_rsa_deploy",
+            "id_ed25519-old",
+            "credentials",
+            "credentials.json",
+            "Credentials.YAML",
+            "gcp.credentials.json",
+            "secrets.yaml",
+            "secrets.yml",
+            "secrets.json",
+            ".npmrc",
+            ".netrc",
+            "_netrc",
+            ".pypirc",
+            ".pgpass",
+            ".htpasswd",
+            ".git-credentials",
         ] {
             assert!(is_secret_shaped_name(name), "{name}");
         }
         for name in [
-            "credentials.py", "credentials.rs", "secrets.rs", "secret.yaml", "id_rsa.pub", "id_rsa.py", "keys.rs", "pem.rs",
-            ".key", "npmrc", "app.yaml", "config.json", "README.md", "key.txt", "my_id_rsa", "credentialsx",
+            "credentials.py",
+            "credentials.rs",
+            "secrets.rs",
+            "secret.yaml",
+            "id_rsa.pub",
+            "id_rsa.py",
+            "keys.rs",
+            "pem.rs",
+            ".key",
+            "npmrc",
+            "app.yaml",
+            "config.json",
+            "README.md",
+            "key.txt",
+            "my_id_rsa",
+            "credentialsx",
         ] {
             assert!(!is_secret_shaped_name(name), "{name}");
         }
@@ -122,10 +189,23 @@ mod tests {
 
     #[test]
     fn git_segments_are_found_at_any_depth_and_only_exactly() {
-        for path in [".git", ".git/config", "nested/.git", "nested/.git/objects/ab"] {
+        for path in [
+            ".git",
+            ".git/config",
+            "nested/.git",
+            "nested/.git/objects/ab",
+        ] {
             assert!(has_git_segment(path), "{path}");
         }
-        for path in ["", "src/lib.rs", ".github/workflows/ci.yml", ".gitignore", "a.git/config", "git/config", ".gitmodules"] {
+        for path in [
+            "",
+            "src/lib.rs",
+            ".github/workflows/ci.yml",
+            ".gitignore",
+            "a.git/config",
+            "git/config",
+            ".gitmodules",
+        ] {
             assert!(!has_git_segment(path), "{path}");
         }
     }

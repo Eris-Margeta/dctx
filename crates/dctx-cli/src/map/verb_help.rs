@@ -69,9 +69,23 @@ mod tests {
 
     #[test]
     fn every_verb_has_one_example_and_other_words_have_none() {
-        for verb in ["map", "find", "neighbors", "explain", "read", "skeleton", "grep", "hubs", "path", "export"] {
+        for verb in [
+            "map",
+            "find",
+            "neighbors",
+            "explain",
+            "read",
+            "skeleton",
+            "grep",
+            "hubs",
+            "path",
+            "export",
+        ] {
             let page = text(verb).expect(verb);
-            assert!(page.starts_with(&format!("Usage: dctx map {verb}")), "{page}");
+            assert!(
+                page.starts_with(&format!("Usage: dctx map {verb}")),
+                "{page}"
+            );
             assert_eq!(page.matches("\nExample: dctx map ").count(), 1, "{page}");
         }
         assert!(text("index").is_none());

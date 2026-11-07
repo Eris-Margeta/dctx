@@ -24,8 +24,13 @@ pub use domain::index::{IndexEntry, IndexRelease, VerifiedIndex, escape_display}
 pub use domain::manifest::{Artifact, Manifest, Payload};
 pub use domain::names::{KeyId, PluginId, SafeFileName, Target, Version};
 pub use domain::origin::{HttpsUrl, OriginPolicy};
-pub use domain::registry::{Confinement, Enablement, InstalledVersion, Origin, PluginRecord, Registry};
+pub use domain::registry::{
+    Confinement, Enablement, InstalledVersion, Origin, PluginRecord, Registry,
+};
 pub use domain::trust::{TrustSource, TrustStore, TrustedKey, VerifiedManifest};
 pub use error::{DistributionError, Document, NetworkError, OriginRefusal};
 pub use ports::{Body, Clock, InstallKey, LockToken, Network, Response, Store};
-pub use service::{DEFAULT_MAX_ARTIFACT_BYTES, Distribution, InstallPolicy, InstallReport, RecoveryReport, VerifyOutcome};
+pub use service::{
+    DEFAULT_MAX_ARTIFACT_BYTES, Distribution, InstallPolicy, InstallReport, RecoveryReport,
+    VerifyOutcome,
+};

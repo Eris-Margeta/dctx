@@ -39,16 +39,11 @@ mod template_validation_tests {
             .map(|p| normalize_pattern(p))
             .collect();
 
-        let omit_set: HashSet<String> = omit_patterns
-            .iter()
-            .map(|p| normalize_pattern(p))
-            .collect();
+        let omit_set: HashSet<String> =
+            omit_patterns.iter().map(|p| normalize_pattern(p)).collect();
 
         // Find conflicts
-        let conflicts: Vec<String> = ignore_set
-            .intersection(&omit_set)
-            .cloned()
-            .collect();
+        let conflicts: Vec<String> = ignore_set.intersection(&omit_set).cloned().collect();
 
         // Assert no conflicts
         assert!(
@@ -94,7 +89,8 @@ mod template_validation_tests {
             );
 
             // Check for leading slashes (patterns should be relative)
-            assert!(!(pattern.starts_with('/') && pattern != "/"),
+            assert!(
+                !(pattern.starts_with('/') && pattern != "/"),
                 "Pattern '{pattern}' starts with '/' - patterns should be relative. \
                  Use 'folder/' instead of '/folder/'"
             );
@@ -134,7 +130,8 @@ mod template_validation_tests {
             );
 
             // Check for leading slashes
-            assert!(!(pattern.starts_with('/') && pattern != "/"),
+            assert!(
+                !(pattern.starts_with('/') && pattern != "/"),
                 "Pattern '{pattern}' starts with '/' - patterns should be relative"
             );
         }
@@ -241,12 +238,7 @@ mod template_validation_tests {
         }
 
         // Critical patterns that must be in omit
-        let critical_omit = vec![
-            "package-lock.json",
-            "Cargo.lock",
-            ".env",
-            "*.pdf",
-        ];
+        let critical_omit = vec!["package-lock.json", "Cargo.lock", ".env", "*.pdf"];
 
         for pattern in critical_omit {
             assert!(

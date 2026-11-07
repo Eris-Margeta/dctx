@@ -5,9 +5,7 @@
 //! Called from the compilation-unit entry and from nested type sites.
 
 use super::declarations_generics::Declarator;
-use super::{
-    is_modifier_word, DeclKind, Prefix, Scope, ScopeKind, SymbolDraft, Walker,
-};
+use super::{DeclKind, Prefix, Scope, ScopeKind, SymbolDraft, Walker, is_modifier_word};
 use crate::domain::{DiagnosticReason, Precision};
 use dctx_map_model::{EdgeKind, NodeKind, SymbolKind};
 
@@ -66,7 +64,10 @@ impl Walker<'_> {
             self.end_byte(last)
         };
         let body = brace
-            .and_then(|open| self.close(open).map(|close| (self.start_byte(open), self.end_byte(close))))
+            .and_then(|open| {
+                self.close(open)
+                    .map(|close| (self.start_byte(open), self.end_byte(close)))
+            })
             .unwrap_or_else(|| (self.start_byte(start), sig_end));
         let symbol = match kind {
             DeclKind::Interface | DeclKind::Annotation => SymbolKind::Interface,
@@ -130,7 +131,13 @@ impl Walker<'_> {
         }
     }
 
-    pub(crate) fn class_body(&mut self, mut index: usize, end: usize, scope: &Scope, enum_head: bool) {
+    pub(crate) fn class_body(
+        &mut self,
+        mut index: usize,
+        end: usize,
+        scope: &Scope,
+        enum_head: bool,
+    ) {
         if enum_head {
             index = self.enum_constants(index, end, scope);
             if self.is_punct(index, ";") {
@@ -163,9 +170,13 @@ impl Walker<'_> {
             }
             let last = cursor.saturating_sub(1).max(name);
             let sig_end = args
-                .and_then(|open| self.close(open)).map_or_else(|| self.end_byte(name), |close| self.end_byte(close));
+                .and_then(|open| self.close(open))
+                .map_or_else(|| self.end_byte(name), |close| self.end_byte(close));
             let body_span = body
-                .and_then(|open| self.close(open).map(|close| (self.start_byte(open), self.end_byte(close))))
+                .and_then(|open| {
+                    self.close(open)
+                        .map(|close| (self.start_byte(open), self.end_byte(close)))
+                })
                 .unwrap_or((self.start_byte(name), self.end_byte(name)));
             if let Some(child) = self.emit(
                 SymbolDraft {
@@ -185,10 +196,14 @@ impl Walker<'_> {
                 scope,
             ) {
                 self.scan_annotation_list(&prefix, &child);
-                if let Some(open) = args.and_then(|open| self.close(open).map(|close| (open, close))) {
+                if let Some(open) =
+                    args.and_then(|open| self.close(open).map(|close| (open, close)))
+                {
                     self.scan_block(open.0 + 1, open.1, &child);
                 }
-                if let Some(open) = body.and_then(|open| self.close(open).map(|close| (open, close))) {
+                if let Some(open) =
+                    body.and_then(|open| self.close(open).map(|close| (open, close)))
+                {
                     self.class_body(open.0 + 1, open.1, &child, false);
                 }
             }
@@ -202,7 +217,10 @@ impl Walker<'_> {
     }
 
     fn looks_like_constant(&self, index: usize, end: usize, scope: &Scope) -> bool {
-        if !self.word(index) || is_modifier_word(self.text(index)) || self.decl_kind(index).is_some() {
+        if !self.word(index)
+            || is_modifier_word(self.text(index))
+            || self.decl_kind(index).is_some()
+        {
             return false;
         }
         if self.text(index) == scope.simple && self.is_punct(index + 1, "(") {
@@ -229,7 +247,10 @@ impl Walker<'_> {
                 first: component.type_from,
                 last: component.name,
                 sig_end: self.end_byte(component.name),
-                body: (self.start_byte(component.type_from), self.end_byte(component.name)),
+                body: (
+                    self.start_byte(component.type_from),
+                    self.end_byte(component.name),
+                ),
                 is_public: false,
                 precision: Precision::Structural,
             },
@@ -259,7 +280,11 @@ impl Walker<'_> {
             implements: Vec::new(),
             permits: Vec::new(),
         };
-        while cursor < end && !self.is_punct(cursor, "{") && !self.is_punct(cursor, ";") && self.ok() {
+        while cursor < end
+            && !self.is_punct(cursor, "{")
+            && !self.is_punct(cursor, ";")
+            && self.ok()
+        {
             if self.is_word(cursor, "extends") {
                 mode = HeritageMode::Extends;
                 cursor += 1;
@@ -321,7 +346,16 @@ impl Walker<'_> {
         if name.is_empty() {
             return;
         }
-        self.refer(scope.owner, scope, kind, name, None, from, from, Precision::Structural);
+        self.refer(
+            scope.owner,
+            scope,
+            kind,
+            name,
+            None,
+            from,
+            from,
+            Precision::Structural,
+        );
     }
 
     fn outer_type_name(&self, mut from: usize, to: usize) -> String {

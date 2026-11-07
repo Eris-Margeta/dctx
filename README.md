@@ -40,7 +40,7 @@
 
 <table>
 <tr><td><b>Deterministic</b></td><td>Same source snapshot and request give identical bytes (every text verb checked over 5 runs on Linux; the cross-OS gate is still open). <code>dctx pack</code> tree lines carry no timestamps, so a <code>touch</code> changes nothing.</td></tr>
-<tr><td><b>Prefix-stable</b></td><td>In a <code>dctx pack</code> page, an edit keeps every byte before the edited file as a shared prefix, which is what a provider's prompt cache reuses. Map answers are not prefix-stable yet (<a href="docs/SPEC.md">spec</a> PPE-3).</td></tr>
+<tr><td><b>Prefix-stable</b></td><td>In a <code>dctx pack</code> page, an edit keeps every byte before the edited file as a shared prefix, which is what a provider's prompt cache reuses. Map and find answers were byte-identical after unrelated edits in 33/33 text and 33/33 JSON cases (<a href="docs/research/stability-20261105/REPORT.md">measured 6 Nov 2026</a>); layered prompt tiers are still a target (<a href="docs/SPEC.md">spec</a> PPE-3).</td></tr>
 <tr><td><b>Private and offline</b></td><td>No telemetry, no model calls, no network. The release check counts socket calls under <code>strace -f</code> and fails on any. Secrets files are listed by name, never read.</td></tr>
 <tr><td><b>Fast</b></td><td>Cold index of the benchmark corpora in 0.13-1.20 s (Trail-Code 1.04-52.83 s, graphify 4.59-59.56 s), on one Linux x86_64 runner.</td></tr>
 <tr><td><b>Agent-ready</b></td><td><code>dctx mcp</code> is a stdio MCP server exposing the map verbs; answers are bounded and never split a record.</td></tr>
@@ -342,7 +342,7 @@ An earlier two-way study against Trail-Code (October 2026, dctx `17dff0b`, befor
 
 ## Open source and maintenance
 
-dctx is open source under the [Apache-2.0](LICENSE) license, which makes it free for any use, including commercial use. The core (`pack`) and every modality stay open, and no feature is held back behind a paid edition. Companies that depend on dctx can fund its upkeep through a [maintenance agreement](MAINTENANCE.md), which covers security response times, long-term support and a written commitment for procurement, or through [GitHub Sponsors](https://github.com/sponsors/Eris-Margeta). Paying never changes the license and never closes a feature. The "dctx" name and logo are trademarks of Eris Margeta; see [TRADEMARK.md](TRADEMARK.md) for what forks may call themselves.
+dctx is open source under the [Apache-2.0](LICENSE) license, which makes it free for any use, including commercial use. The core (`pack`) and every modality stay open, and no feature is held back behind a paid edition. Companies that depend on dctx can fund its upkeep through a [maintenance agreement](MAINTENANCE.md), which covers security response times, long-term support and a written commitment for procurement (see [maintenance](https://www.dctx.internet.technology/maintenance/)). Paying never changes the license and never closes a feature. The "dctx" name and logo are trademarks of Eris Margeta; see [TRADEMARK.md](TRADEMARK.md) for what forks may call themselves.
 
 Project code is open source (Apache-2.0) and **ongoing work**; third-party dependencies retain their own licenses. Parts of the current development line use third-party crates; anything with third-party dependencies is not considered enterprise-ready.
 

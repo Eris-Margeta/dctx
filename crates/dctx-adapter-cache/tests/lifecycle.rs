@@ -8,7 +8,7 @@ mod support;
 
 use dctx_adapter_cache::{
     CacheError, ExportEvidence, GcRequest, KnownExport, Lifecycle, OutputPlace, Physical,
-    PurgeRequest, PurgeScope, Quota, RootId, SessionId, SliceBudget, RECOGNIZED_LEGACY_VERSION,
+    PurgeRequest, PurgeScope, Quota, RECOGNIZED_LEGACY_VERSION, RootId, SessionId, SliceBudget,
 };
 
 fn ledger() -> Lifecycle {
@@ -43,7 +43,9 @@ fn p3_pin_gc_interleavings() {
     shared.register_root(right).expect("root");
     let fact = shared.insert_fact(10, &[left, right]).expect("shared");
     let only_left = shared.insert_fact(7, &[left]).expect("exclusive");
-    shared.publish_view(left, 4, &[fact, only_left]).expect("view");
+    shared
+        .publish_view(left, 4, &[fact, only_left])
+        .expect("view");
     shared.publish_view(right, 4, &[fact]).expect("view");
     shared.publish_view(left, 4, &[]).expect("view");
     shared.publish_view(left, 4, &[]).expect("view");
@@ -53,7 +55,11 @@ fn p3_pin_gc_interleavings() {
     assert!(shared.object_bytes(only_left).is_none());
     assert!(shared.p3_holds());
     let status = shared.status();
-    let row = status.roots.iter().find(|row| row.id == right).expect("right");
+    let row = status
+        .roots
+        .iter()
+        .find(|row| row.id == right)
+        .expect("right");
     assert_eq!(row.shared_bytes, 10);
 }
 
@@ -85,33 +91,53 @@ fn purge_requires_confirmation_and_keeps_leased_bytes() {
     life.register_root(right).expect("root");
     let shared = life.insert_fact(12, &[left, right]).expect("shared");
     let only_left = life.insert_fact(9, &[left]).expect("exclusive");
-    let generation = life.publish_view(left, 4, &[shared, only_left]).expect("view");
+    let generation = life
+        .publish_view(left, 4, &[shared, only_left])
+        .expect("view");
     life.publish_view(right, 4, &[shared]).expect("view");
     let export = KnownExport {
         place: OutputPlace::Registry,
         label: "registry/owned.bin".to_string(),
         bytes: 6,
-        evidence: ExportEvidence::OwnedBinary { version: RECOGNIZED_LEGACY_VERSION, identity: 3 },
+        evidence: ExportEvidence::OwnedBinary {
+            version: RECOGNIZED_LEGACY_VERSION,
+            identity: 3,
+        },
     };
     life.adopt_legacy(&export).expect("adopt");
     let revision = life.logical_revision();
     assert!(matches!(
-        life.purge(PurgeRequest { scope: PurgeScope::Root(left), confirm: false, dry_run: false }),
+        life.purge(PurgeRequest {
+            scope: PurgeScope::Root(left),
+            confirm: false,
+            dry_run: false
+        }),
         Err(CacheError::InvalidRequest { .. })
     ));
     assert_eq!(life.logical_revision(), revision);
     let planned = life
-        .purge(PurgeRequest { scope: PurgeScope::Root(left), confirm: false, dry_run: true })
+        .purge(PurgeRequest {
+            scope: PurgeScope::Root(left),
+            confirm: false,
+            dry_run: true,
+        })
         .expect("plan");
     assert!(planned.dry_run);
     assert_eq!(planned.dropped, 1);
     assert_eq!(life.logical_revision(), revision);
-    assert_eq!(life.adopted_labels(), vec!["registry/owned.bin".to_string()]);
+    assert_eq!(
+        life.adopted_labels(),
+        vec!["registry/owned.bin".to_string()]
+    );
 
     let lease = life.reader_begin(left, SessionId::new(1)).expect("begin");
     life.reader_confirm(lease).expect("confirm");
     let held = life
-        .purge(PurgeRequest { scope: PurgeScope::Root(left), confirm: true, dry_run: false })
+        .purge(PurgeRequest {
+            scope: PurgeScope::Root(left),
+            confirm: true,
+            dry_run: false,
+        })
         .expect("purge");
     assert_eq!(held.held_by_lease, 1);
     assert_eq!(held.dropped, 0);
@@ -123,7 +149,10 @@ fn purge_requires_confirmation_and_keeps_leased_bytes() {
     assert!(life.open_current(right).is_ok());
     assert_eq!(life.object_bytes(shared), Some(12));
     assert!(life.object_bytes(only_left).is_none());
-    assert_eq!(life.adopted_labels(), vec!["registry/owned.bin".to_string()]);
+    assert_eq!(
+        life.adopted_labels(),
+        vec!["registry/owned.bin".to_string()]
+    );
     assert!(life.p3_holds());
 }
 
@@ -138,7 +167,11 @@ fn leased_purge_is_reclaimed_after_release_and_gc() {
     let lease = life.reader_begin(root, SessionId::new(1)).expect("begin");
     life.reader_confirm(lease).expect("confirm");
     let purged = life
-        .purge(PurgeRequest { scope: PurgeScope::Root(root), confirm: true, dry_run: false })
+        .purge(PurgeRequest {
+            scope: PurgeScope::Root(root),
+            confirm: true,
+            dry_run: false,
+        })
         .expect("purge");
     assert_eq!(purged.held_by_lease, 1);
     assert_eq!(purged.dropped, 0);
@@ -172,7 +205,10 @@ fn revocation_hides_a_generation_before_gc() {
     let manifest = life.manifest_of(root, generation).expect("manifest");
     let object = life.manifest_object(manifest).expect("object");
     life.revoke_manifest(manifest).expect("revoke");
-    assert!(matches!(life.open_current(root), Err(CacheError::PolicyDenied)));
+    assert!(matches!(
+        life.open_current(root),
+        Err(CacheError::PolicyDenied)
+    ));
     support::drain(&mut life, true);
     assert_eq!(life.object_bytes(object), Some(8));
     assert!(life.status().authorization_revoked_bytes >= 8);
@@ -188,7 +224,10 @@ fn corrupt_objects_stay_quarantined() {
     let manifest = life.manifest_of(root, generation).expect("manifest");
     let object = life.manifest_object(manifest).expect("object");
     life.note_incompatible(object).expect("quarantine");
-    assert!(matches!(life.open_current(root), Err(CacheError::CorruptIndex { .. })));
+    assert!(matches!(
+        life.open_current(root),
+        Err(CacheError::CorruptIndex { .. })
+    ));
     support::drain(&mut life, true);
     assert_eq!(life.object_bytes(object), Some(8));
     assert_eq!(life.object_state(object), Some(Physical::Published));
@@ -206,10 +245,24 @@ fn evicted_pack_history_sets_history_reset() {
     assert!(!life.history_reset(root));
     let newest = life.publish_pack(root, 6, &[]).expect("pack");
     assert!(life.history_reset(root));
-    assert_eq!(life.manifest_state(life.manifest_of(root, oldest).expect("id")), Some(Physical::Retired));
-    assert_eq!(life.manifest_state(life.manifest_of(root, middle).expect("id")), Some(Physical::Published));
-    assert_eq!(life.manifest_state(life.manifest_of(root, newest).expect("id")), Some(Physical::Published));
-    assert!(life.status().roots.iter().any(|row| row.id == root && row.history_reset));
+    assert_eq!(
+        life.manifest_state(life.manifest_of(root, oldest).expect("id")),
+        Some(Physical::Retired)
+    );
+    assert_eq!(
+        life.manifest_state(life.manifest_of(root, middle).expect("id")),
+        Some(Physical::Published)
+    );
+    assert_eq!(
+        life.manifest_state(life.manifest_of(root, newest).expect("id")),
+        Some(Physical::Published)
+    );
+    assert!(
+        life.status()
+            .roots
+            .iter()
+            .any(|row| row.id == root && row.history_reset)
+    );
     life.acknowledge_history(root);
     assert!(!life.history_reset(root));
 }

@@ -14,14 +14,20 @@ use super::records::{file_read, file_write, outputs, program_cap, state_cap};
 /// Selector syntax, uniqueness and the program/resource pair. No catalog lookup.
 pub(crate) fn screen_selectors(allow: &[String]) -> Result<(), TemplateError> {
     if allow.len() > 64 {
-        return Err(TemplateError::Limit { what: "allow", limit: 64 });
+        return Err(TemplateError::Limit {
+            what: "allow",
+            limit: 64,
+        });
     }
     let mut seen = BTreeSet::new();
     let mut program = false;
     let mut resource = false;
     for selector in allow {
         if !seen.insert(selector.as_str()) {
-            return Err(TemplateError::Duplicate { kind: "allow", name: selector.clone() });
+            return Err(TemplateError::Duplicate {
+                kind: "allow",
+                name: selector.clone(),
+            });
         }
         plain_text(selector)?;
         match classify(selector)? {
@@ -76,7 +82,9 @@ pub(crate) fn expand_allow(
     let mut roles = BTreeSet::new();
     let mut operations = BTreeSet::new();
     for selector in allow {
-        if !catalog.capabilities.iter().any(|known| known == selector) || denied.contains(selector.as_str()) {
+        if !catalog.capabilities.iter().any(|known| known == selector)
+            || denied.contains(selector.as_str())
+        {
             return Err(TemplateError::GrantExpansion { kind: "plugin" });
         }
         match classify(selector)? {
@@ -152,8 +160,12 @@ fn literal_path(path: &str) -> bool {
         && !path.contains("//")
         && !path.contains('\\')
         && !path.contains('*')
-        && path.split('/').all(|segment| !segment.is_empty() && segment != "." && segment != "..")
-        && path.bytes().all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'.' | b'/' | b'-'))
+        && path
+            .split('/')
+            .all(|segment| !segment.is_empty() && segment != "." && segment != "..")
+        && path
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'.' | b'/' | b'-'))
 }
 
 pub(super) fn role_ok(role: &str) -> bool {
@@ -161,6 +173,7 @@ pub(super) fn role_ok(role: &str) -> bool {
     !bytes.is_empty()
         && bytes.len() <= 64
         && bytes[0].is_ascii_lowercase()
-        && bytes.iter().all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || *byte == b'-')
+        && bytes
+            .iter()
+            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || *byte == b'-')
 }
-

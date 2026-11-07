@@ -11,8 +11,8 @@ use std::sync::Arc;
 
 use dctx::memory::{CancelFlag, FixedClock};
 use dctx::{
-    BoundedSink, HostCeiling, HostGrants, PackRequest, SelectionPolicy, Session, SnapshotRequest, StoragePolicy,
-    Timestamp, VecSink,
+    BoundedSink, HostCeiling, HostGrants, PackRequest, SelectionPolicy, Session, SnapshotRequest,
+    StoragePolicy, Timestamp, VecSink,
 };
 use serde::{Deserialize, Serialize};
 
@@ -45,7 +45,10 @@ pub struct SnapshotResponse {
 ///
 /// Rule files load first. Filters and the `.git` boundary sit on the source, so a
 /// content read happens only for a file the desktop selection still includes.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn generate_snapshot(root: &Path, config: &DesktopConfig) -> SnapshotResponse {
     if !root.exists() {
         return refuse(&DesktopError::PathMissing);
@@ -60,27 +63,52 @@ pub fn generate_snapshot(root: &Path, config: &DesktopConfig) -> SnapshotRespons
     };
     let limit = u64::try_from(config.file_count_limit).unwrap_or(u64::MAX);
     if surveyed.files > limit {
-        return refuse(&DesktopError::DirectoryTooLarge { files: surveyed.files, limit });
+        return refuse(&DesktopError::DirectoryTooLarge {
+            files: surveyed.files,
+            limit,
+        });
     }
     if config.has_active_filters() && surveyed.files > 0 && surveyed.included == 0 {
         return refuse(&DesktopError::AllFiltered);
     }
     match render(root, config, &rules) {
-        Ok(output) => SnapshotResponse { success: true, output, error: None, is_formatted: true },
+        Ok(output) => SnapshotResponse {
+            success: true,
+            output,
+            error: None,
+            is_formatted: true,
+        },
         Err(error) => refuse(&error),
     }
 }
 
 fn refuse(error: &DesktopError) -> SnapshotResponse {
-    SnapshotResponse { success: false, output: String::new(), error: Some(error.command_string()), is_formatted: false }
+    SnapshotResponse {
+        success: false,
+        output: String::new(),
+        error: Some(error.command_string()),
+        is_formatted: false,
+    }
 }
 
-fn render(root: &Path, config: &DesktopConfig, rules: &ProjectRules) -> Result<String, DesktopError> {
+fn render(
+    root: &Path,
+    config: &DesktopConfig,
+    rules: &ProjectRules,
+) -> Result<String, DesktopError> {
     let mut session = open_session(root, config, rules)?;
-    if config.tree_only { render_metadata(&mut session) } else { render_pack(&mut session) }
+    if config.tree_only {
+        render_metadata(&mut session)
+    } else {
+        render_pack(&mut session)
+    }
 }
 
-fn open_session(root: &Path, config: &DesktopConfig, rules: &ProjectRules) -> Result<Session, DesktopError> {
+fn open_session(
+    root: &Path,
+    config: &DesktopConfig,
+    rules: &ProjectRules,
+) -> Result<Session, DesktopError> {
     let source = desktop_source(root, config)?;
     let texts = rules.texts();
     Session::builder(source)
@@ -89,23 +117,37 @@ fn open_session(root: &Path, config: &DesktopConfig, rules: &ProjectRules) -> Re
         .selection(SelectionPolicy::from_texts(&texts))
         .ceiling(HostCeiling::base())
         .grants(HostGrants::PermitAll)
-        .storage(StoragePolicy::Ephemeral { max_bytes: SESSION_BYTES })
+        .storage(StoragePolicy::Ephemeral {
+            max_bytes: SESSION_BYTES,
+        })
         .place(place_name(root))
         .view("default")
         .build()
-        .map_err(|error| DesktopError::Walk { detail: error.to_string() })
+        .map_err(|error| DesktopError::Walk {
+            detail: error.to_string(),
+        })
 }
 
 fn place_name(root: &Path) -> String {
-    root.file_name().and_then(|name| name.to_str()).filter(|name| !name.is_empty()).unwrap_or("project").to_string()
+    root.file_name()
+        .and_then(|name| name.to_str())
+        .filter(|name| !name.is_empty())
+        .unwrap_or("project")
+        .to_string()
 }
 
 fn render_metadata(session: &mut Session) -> Result<String, DesktopError> {
     let handle = session
         .snapshot(&SnapshotRequest::metadata())
-        .map_err(|error| DesktopError::Walk { detail: error.to_string() })?;
+        .map_err(|error| DesktopError::Walk {
+            detail: error.to_string(),
+        })?;
     // The digest hashes modification times, so it changes on a bare `touch`: it goes last, behind a lead line that never changes.
-    Ok(format!("# snapshot metadata\n# snapshot generation={} digest={}\n", handle.generation(), handle.digest()))
+    Ok(format!(
+        "# snapshot metadata\n# snapshot generation={} digest={}\n",
+        handle.generation(),
+        handle.digest()
+    ))
 }
 
 fn render_pack(session: &mut Session) -> Result<String, DesktopError> {
@@ -115,8 +157,14 @@ fn render_pack(session: &mut Session) -> Result<String, DesktopError> {
     request.git_revision = None;
     let mut sink = VecSink::new();
     let page: &mut dyn BoundedSink = &mut sink;
-    session.pack(&request, page).map_err(|error| DesktopError::Walk { detail: error.to_string() })?;
-    String::from_utf8(sink.as_bytes().to_vec()).map_err(|error| DesktopError::Format { detail: error.to_string() })
+    session
+        .pack(&request, page)
+        .map_err(|error| DesktopError::Walk {
+            detail: error.to_string(),
+        })?;
+    String::from_utf8(sink.as_bytes().to_vec()).map_err(|error| DesktopError::Format {
+        detail: error.to_string(),
+    })
 }
 
 #[cfg(test)]
@@ -127,7 +175,9 @@ mod tests {
         use std::sync::atomic::{AtomicU64, Ordering};
         static NEXT: AtomicU64 = AtomicU64::new(1);
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
-        let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_nanos());
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |d| d.as_nanos());
         let path = std::env::temp_dir().join(format!("dctx-desktop-api-snap-{label}-{n}-{nanos}"));
         fs::create_dir_all(&path).expect("temp");
         path
@@ -135,7 +185,10 @@ mod tests {
 
     #[test]
     fn missing_path_is_refused_before_a_walk() {
-        let response = generate_snapshot(Path::new("/dctx-desktop-api-missing-path"), &DesktopConfig::default());
+        let response = generate_snapshot(
+            Path::new("/dctx-desktop-api-missing-path"),
+            &DesktopConfig::default(),
+        );
         assert!(!response.success);
         assert_eq!(response.error.as_deref(), Some("Path does not exist"));
         assert!(!response.is_formatted);
@@ -143,7 +196,10 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::field_reassign_with_default, reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions.")]
+    #[allow(
+        clippy::field_reassign_with_default,
+        reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions."
+    )]
     fn oversized_directory_is_refused_and_a_small_one_packs() {
         let root = scratch("size");
         fs::write(root.join("a.txt"), b"a").expect("a");
@@ -170,7 +226,10 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::field_reassign_with_default, reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions.")]
+    #[allow(
+        clippy::field_reassign_with_default,
+        reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions."
+    )]
     fn git_directory_is_not_opened_or_counted() {
         let root = scratch("git");
         fs::write(root.join("keep.txt"), b"keep").expect("keep");
@@ -197,7 +256,10 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::field_reassign_with_default, reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions.")]
+    #[allow(
+        clippy::field_reassign_with_default,
+        reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions."
+    )]
     fn extension_filter_refusal_has_a_matching_success() {
         let root = scratch("filter");
         fs::write(root.join("note.txt"), b"n").expect("note");
@@ -212,7 +274,10 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::field_reassign_with_default, reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions.")]
+    #[allow(
+        clippy::field_reassign_with_default,
+        reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions."
+    )]
     fn tree_only_uses_a_metadata_snapshot() {
         let root = scratch("tree");
         fs::write(root.join("keep.txt"), b"keep").expect("keep");
@@ -223,8 +288,16 @@ mod tests {
         assert!(response.output.starts_with("# snapshot metadata\n"));
         let (lead, trailer) = response.output.split_once('\n').expect("two lines");
         assert_eq!(lead, "# snapshot metadata");
-        assert!(trailer.starts_with("# snapshot generation=") && trailer.contains(" digest=") && trailer.ends_with('\n'));
-        assert_eq!(trailer.matches('\n').count(), 1, "the trailer is the last line");
+        assert!(
+            trailer.starts_with("# snapshot generation=")
+                && trailer.contains(" digest=")
+                && trailer.ends_with('\n')
+        );
+        assert_eq!(
+            trailer.matches('\n').count(),
+            1,
+            "the trailer is the last line"
+        );
         let _ = fs::remove_dir_all(&root);
     }
 

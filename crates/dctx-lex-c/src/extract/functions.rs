@@ -5,7 +5,7 @@
 //! Out-of-line `Type::name` definitions stay methods of the enclosing scope.
 use super::{Item, Region, Scope, Walker};
 use crate::domain::DiagnosticReason;
-use crate::lexer::{keyword, opens_template_args, AngleDepth, Kind};
+use crate::lexer::{AngleDepth, Kind, keyword, opens_template_args};
 use dctx_map_model::SymbolKind;
 
 pub(crate) struct FoundFn {
@@ -36,7 +36,11 @@ impl Walker<'_> {
                 (self.start_of(start), self.end_of(func.term))
             };
             let item = Item {
-                symbol: Some(if is_method { SymbolKind::Method } else { SymbolKind::Function }),
+                symbol: Some(if is_method {
+                    SymbolKind::Method
+                } else {
+                    SymbolKind::Function
+                }),
                 local: func.local.clone(),
                 first: start,
                 last: last.min(self.toks.len().saturating_sub(1)),
@@ -113,7 +117,10 @@ impl Walker<'_> {
                 && let Some(func) = self.operator_func(index, end)
             {
                 found = Some(func);
-            } else if depth == 0 && self.is(index, "(") && let Some(func) = self.func_at(index, end) {
+            } else if depth == 0
+                && self.is(index, "(")
+                && let Some(func) = self.func_at(index, end)
+            {
                 let keep_operator = found
                     .as_ref()
                     .is_some_and(|found| self.is(found.bare_at, "operator"));
@@ -152,7 +159,11 @@ impl Walker<'_> {
     fn declarator_before(&self, paren: usize) -> Option<usize> {
         let mut index = paren.checked_sub(1)?;
         loop {
-            if self.is(index, "*") || self.is(index, "&") || self.is(index, "&&") || self.is(index, "^") {
+            if self.is(index, "*")
+                || self.is(index, "&")
+                || self.is(index, "&&")
+                || self.is(index, "^")
+            {
                 if index == 0 {
                     return None;
                 }
@@ -221,7 +232,11 @@ impl Walker<'_> {
                 spelling.push_str("[]");
                 index += 2;
             }
-        } else if self.is(index, "(") && self.close(index).is_some_and(|close| self.is(close + 1, "(")) {
+        } else if self.is(index, "(")
+            && self
+                .close(index)
+                .is_some_and(|close| self.is(close + 1, "("))
+        {
             spelling.push_str("()");
             index = self.close(index)? + 1;
         } else if self.is(index, "[") && self.is(index + 1, "]") {
@@ -284,7 +299,10 @@ impl Walker<'_> {
             if self.is(index, ",") || self.is(index, "}") {
                 return None;
             }
-            if matches!(self.text(index), "noexcept" | "throw" | "alignas" | "_Alignas") {
+            if matches!(
+                self.text(index),
+                "noexcept" | "throw" | "alignas" | "_Alignas"
+            ) {
                 index += 1;
                 if self.is(index, "(") {
                     index = self.after(index);
@@ -297,7 +315,9 @@ impl Walker<'_> {
             }
             if self.is(index, "=") {
                 let next = index + 1;
-                if matches!(self.text(next), "default" | "delete") || self.kind(next) == Some(Kind::Number) {
+                if matches!(self.text(next), "default" | "delete")
+                    || self.kind(next) == Some(Kind::Number)
+                {
                     index = next + 1;
                     continue;
                 }
@@ -316,7 +336,11 @@ impl Walker<'_> {
             }
             if self.is(index, "->") {
                 index += 1;
-                while index < end && !self.is(index, "{") && !self.is(index, ";") && !self.is(index, ",") {
+                while index < end
+                    && !self.is(index, "{")
+                    && !self.is(index, ";")
+                    && !self.is(index, ",")
+                {
                     if self.is(index, "(") || self.is(index, "[") || self.is(index, "{") {
                         index = self.after(index);
                     } else {
@@ -329,7 +353,13 @@ impl Walker<'_> {
                 || (self.ident(index)
                     && matches!(
                         self.text(index),
-                        "const" | "volatile" | "override" | "final" | "mutable" | "constexpr" | "consteval"
+                        "const"
+                            | "volatile"
+                            | "override"
+                            | "final"
+                            | "mutable"
+                            | "constexpr"
+                            | "consteval"
                     ))
                 || (self.ident(index) && self.known_macro(self.text(index)))
             {
@@ -400,7 +430,12 @@ impl Walker<'_> {
         false
     }
 
-    fn segment_name(&self, start: usize, end: usize, allow_single: bool) -> Option<(usize, String)> {
+    fn segment_name(
+        &self,
+        start: usize,
+        end: usize,
+        allow_single: bool,
+    ) -> Option<(usize, String)> {
         let mut limit = end;
         let mut nest = AngleDepth::new();
         for index in start..end.min(self.toks.len()) {
@@ -454,7 +489,17 @@ mod tests {
         assert!(names.contains(&"Box::dtor_Box"), "{names:?}");
         assert!(names.contains(&"Box::operator=="), "{names:?}");
         assert_eq!(names.iter().filter(|name| **name == "NAME").count(), 1);
-        assert!(facts.nodes.iter().any(|n| n.fact.name == "NAME" && n.fact.symbol_kind == Some(SymbolKind::Macro)));
-        assert!(facts.diagnostics.iter().any(|d| d.reason == crate::DiagnosticReason::HiddenByMacro));
+        assert!(
+            facts
+                .nodes
+                .iter()
+                .any(|n| n.fact.name == "NAME" && n.fact.symbol_kind == Some(SymbolKind::Macro))
+        );
+        assert!(
+            facts
+                .diagnostics
+                .iter()
+                .any(|d| d.reason == crate::DiagnosticReason::HiddenByMacro)
+        );
     }
 }

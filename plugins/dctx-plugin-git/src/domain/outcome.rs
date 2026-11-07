@@ -33,7 +33,10 @@ pub enum Reason {
 
 impl Reason {
     /// Wire spelling (one of the manifest's `reason_codes`).
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Completed => "completed",
@@ -72,7 +75,10 @@ pub enum DiagnosticCode {
 
 impl DiagnosticCode {
     /// Wire spelling (one of the manifest's `diagnostic_codes`).
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::StagingDenied => "staging-denied",
@@ -103,14 +109,33 @@ pub enum Staging {
 
 impl Staging {
     /// The visible (status is warning?, reason, diagnostic) for a committed edit.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn report(self) -> (bool, Reason, Option<DiagnosticCode>) {
         match self {
             Self::NotRequested => (false, Reason::Completed, None),
-            Self::Staged => (false, Reason::Completed, Some(DiagnosticCode::WholeFileStaging)),
-            Self::Denied => (true, Reason::RulesWrittenNotStaged, Some(DiagnosticCode::StagingDenied)),
-            Self::GitMissing => (true, Reason::RulesWrittenNotStaged, Some(DiagnosticCode::GitMissing)),
-            Self::Failed => (true, Reason::RulesWrittenNotStaged, Some(DiagnosticCode::RulesWrittenNotStaged)),
+            Self::Staged => (
+                false,
+                Reason::Completed,
+                Some(DiagnosticCode::WholeFileStaging),
+            ),
+            Self::Denied => (
+                true,
+                Reason::RulesWrittenNotStaged,
+                Some(DiagnosticCode::StagingDenied),
+            ),
+            Self::GitMissing => (
+                true,
+                Reason::RulesWrittenNotStaged,
+                Some(DiagnosticCode::GitMissing),
+            ),
+            Self::Failed => (
+                true,
+                Reason::RulesWrittenNotStaged,
+                Some(DiagnosticCode::RulesWrittenNotStaged),
+            ),
         }
     }
 }
@@ -121,12 +146,24 @@ mod tests {
 
     #[test]
     fn every_staging_failure_keeps_a_visible_warning() {
-        assert_eq!(Staging::NotRequested.report(), (false, Reason::Completed, None));
+        assert_eq!(
+            Staging::NotRequested.report(),
+            (false, Reason::Completed, None)
+        );
         for staging in [Staging::Denied, Staging::GitMissing, Staging::Failed] {
             let (warning, reason, diagnostic) = staging.report();
-            assert!(warning && reason == Reason::RulesWrittenNotStaged && diagnostic.is_some(), "{staging:?}");
+            assert!(
+                warning && reason == Reason::RulesWrittenNotStaged && diagnostic.is_some(),
+                "{staging:?}"
+            );
         }
-        assert_eq!(Staging::GitMissing.report().2.map(DiagnosticCode::as_str), Some("git-missing"));
-        assert_eq!(Reason::UnsupportedRepositoryLayout.as_str(), "unsupported-repository-layout");
+        assert_eq!(
+            Staging::GitMissing.report().2.map(DiagnosticCode::as_str),
+            Some("git-missing")
+        );
+        assert_eq!(
+            Reason::UnsupportedRepositoryLayout.as_str(),
+            "unsupported-repository-layout"
+        );
     }
 }

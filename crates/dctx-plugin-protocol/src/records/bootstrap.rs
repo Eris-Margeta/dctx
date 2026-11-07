@@ -5,7 +5,9 @@
 
 use crate::json::fields::{Fields, Obj, array, constant, constant_int, list, unique_list};
 use crate::json::value::Json;
-use crate::records::common::{ApiVersion, HookName, Identity, Limits, VersionRange, decode_hook_decl, encode_hook_decl};
+use crate::records::common::{
+    ApiVersion, HookName, Identity, Limits, VersionRange, decode_hook_decl, encode_hook_decl,
+};
 use crate::records::failure::WireError;
 use crate::records::scalars::{Name, RequestId};
 use crate::refusal::Refusal;
@@ -74,12 +76,21 @@ impl BootstrapMessage {
         let id = RequestId::decode(f.req("id")?)?;
         let message = if f.req("kind")?.as_str() == Some("request") {
             constant(f.req("method")?, "hello")?;
-            Self::Hello { id, hello: Box::new(decode_hello(f.req("params")?)?) }
+            Self::Hello {
+                id,
+                hello: Box::new(decode_hello(f.req("params")?)?),
+            }
         } else {
             constant(f.req("kind")?, "response")?;
             match (f.opt("result"), f.opt("error")) {
-                (Some(result), None) => Self::Selected { id, selected: Box::new(decode_selected(result)?) },
-                (None, Some(error)) => Self::Refused { id, error: Box::new(WireError::decode(error)?) },
+                (Some(result), None) => Self::Selected {
+                    id,
+                    selected: Box::new(decode_selected(result)?),
+                },
+                (None, Some(error)) => Self::Refused {
+                    id,
+                    error: Box::new(WireError::decode(error)?),
+                },
                 _ => return Err(Refusal::schema("response-needs-one-outcome")),
             }
         };
@@ -99,9 +110,10 @@ impl BootstrapMessage {
                 .put("kind", Json::str("response"))
                 .put("id", id.encode())
                 .put("result", encode_selected(selected)),
-            Self::Refused { id, error } => {
-                base.put("kind", Json::str("response")).put("id", id.encode()).put("error", error.encode())
-            }
+            Self::Refused { id, error } => base
+                .put("kind", Json::str("response"))
+                .put("id", id.encode())
+                .put("error", error.encode()),
         };
         object.build()
     }
@@ -149,8 +161,14 @@ fn encode_selected(selected: &HelloSelected) -> Json {
     Obj::new()
         .put("version", selected.version.encode())
         .put("identity", selected.identity.encode())
-        .put("required_apis", array(&selected.required_apis, Name::encode))
-        .put("optional_apis", array(&selected.optional_apis, Name::encode))
+        .put(
+            "required_apis",
+            array(&selected.required_apis, Name::encode),
+        )
+        .put(
+            "optional_apis",
+            array(&selected.optional_apis, Name::encode),
+        )
         .put("extensions", array(&selected.extensions, Name::encode))
         .build()
 }

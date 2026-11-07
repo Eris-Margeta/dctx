@@ -15,8 +15,13 @@ pub(crate) struct Fields<'a> {
 
 impl<'a> Fields<'a> {
     pub(crate) fn of(value: &'a Json) -> Result<Self, Refusal> {
-        let members = value.as_object().ok_or(Refusal::schema("expected-object"))?;
-        Ok(Self { members, used: vec![false; members.len()] })
+        let members = value
+            .as_object()
+            .ok_or(Refusal::schema("expected-object"))?;
+        Ok(Self {
+            members,
+            used: vec![false; members.len()],
+        })
     }
 
     pub(crate) fn opt(&mut self, key: &str) -> Option<&'a Json> {
@@ -34,7 +39,11 @@ impl<'a> Fields<'a> {
     }
 
     pub(crate) fn finish(self) -> Result<(), Refusal> {
-        if self.used.iter().all(|used| *used) { Ok(()) } else { Err(Refusal::schema("unknown-field")) }
+        if self.used.iter().all(|used| *used) {
+            Ok(())
+        } else {
+            Err(Refusal::schema("unknown-field"))
+        }
     }
 }
 
@@ -42,7 +51,11 @@ impl<'a> Fields<'a> {
 pub(crate) fn int_in(value: &Json, min: u64, max: u64) -> Result<u64, Refusal> {
     let number = value.as_int().ok_or(Refusal::schema("expected-integer"))?;
     let number = u64::try_from(number).map_err(|_| Refusal::schema("integer-range"))?;
-    if (min..=max).contains(&number) { Ok(number) } else { Err(Refusal::schema("integer-range")) }
+    if (min..=max).contains(&number) {
+        Ok(number)
+    } else {
+        Err(Refusal::schema("integer-range"))
+    }
 }
 
 /// `uint`: 0 through 2^53 - 1.
@@ -65,17 +78,29 @@ pub(crate) fn string(value: &Json) -> Result<&str, Refusal> {
 
 /// Requires the exact string constant `expected`.
 pub(crate) fn constant(value: &Json, expected: &str) -> Result<(), Refusal> {
-    if value.as_str() == Some(expected) { Ok(()) } else { Err(Refusal::schema("constant-mismatch")) }
+    if value.as_str() == Some(expected) {
+        Ok(())
+    } else {
+        Err(Refusal::schema("constant-mismatch"))
+    }
 }
 
 /// Requires `true` (schema `const: true`).
 pub(crate) fn constant_true(value: &Json) -> Result<(), Refusal> {
-    if value.as_bool() == Some(true) { Ok(()) } else { Err(Refusal::schema("constant-mismatch")) }
+    if value.as_bool() == Some(true) {
+        Ok(())
+    } else {
+        Err(Refusal::schema("constant-mismatch"))
+    }
 }
 
 /// Requires the integer constant `expected`.
 pub(crate) fn constant_int(value: &Json, expected: i64) -> Result<(), Refusal> {
-    if value.as_int() == Some(expected) { Ok(()) } else { Err(Refusal::schema("constant-mismatch")) }
+    if value.as_int() == Some(expected) {
+        Ok(())
+    } else {
+        Err(Refusal::schema("constant-mismatch"))
+    }
 }
 
 /// Decodes a bounded array item by item.
@@ -144,7 +169,12 @@ mod tests {
     use super::*;
 
     fn object(members: &[(&str, Json)]) -> Json {
-        Json::Object(members.iter().map(|(k, v)| ((*k).to_owned(), v.clone())).collect())
+        Json::Object(
+            members
+                .iter()
+                .map(|(k, v)| ((*k).to_owned(), v.clone()))
+                .collect(),
+        )
     }
 
     #[test]
@@ -164,7 +194,10 @@ mod tests {
 
     #[test]
     fn integer_bounds_are_inclusive_and_signed_values_refused() {
-        assert_eq!(uint(&Json::Int(9_007_199_254_740_991)), Ok(9_007_199_254_740_991));
+        assert_eq!(
+            uint(&Json::Int(9_007_199_254_740_991)),
+            Ok(9_007_199_254_740_991)
+        );
         assert!(uint(&Json::Int(9_007_199_254_740_992)).is_err());
         assert!(uint(&Json::Int(-1)).is_err());
         assert!(positive(&Json::Int(0)).is_err());
@@ -175,9 +208,15 @@ mod tests {
     fn arrays_enforce_length_and_uniqueness() {
         let value = Json::Array(vec![Json::Int(1), Json::Int(1)]);
         assert_eq!(list(&value, 0, 2, uint), Ok(vec![1, 1]));
-        assert_eq!(unique_list(&value, 0, 2, uint).unwrap_err().reason, "duplicate-item");
+        assert_eq!(
+            unique_list(&value, 0, 2, uint).unwrap_err().reason,
+            "duplicate-item"
+        );
         assert_eq!(list(&value, 0, 1, uint).unwrap_err().reason, "array-length");
-        let built = Obj::new().put("a", array(&[1u64], |v| Json::uint(*v))).maybe("b", None).build();
+        let built = Obj::new()
+            .put("a", array(&[1u64], |v| Json::uint(*v)))
+            .maybe("b", None)
+            .build();
         assert_eq!(built, object(&[("a", Json::Array(vec![Json::Int(1)]))]));
     }
 }

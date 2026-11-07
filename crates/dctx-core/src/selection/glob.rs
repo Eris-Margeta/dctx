@@ -2,14 +2,17 @@
 //! Iterative glob matcher for ignore and omit patterns (`**`, `*`, `?`, literals).
 //! Implements the pattern syntax of the pack selection rules (ARCHITECTURE-PROPOSAL §2, DTS SELECT).
 //! Depends on nothing; pure byte matching with no IO.
-//! Used by [`super::rule`] and by the legacy cached matcher in `crate::ignore`.
+//! Used by [`super::rule`] for pure ignore and omit rule matching.
 
 /// Matches `text` against a glob `pattern`.
 ///
 /// `**` matches zero or more path segments (including `/`), `*` matches within one
 /// segment, `?` matches one non-`/` byte and every other byte matches itself.
 /// The search uses an explicit stack (pre-sized to 64) instead of recursion.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn glob_match(pattern: &[u8], text: &[u8]) -> bool {
     let mut stack: Vec<(&[u8], &[u8])> = Vec::with_capacity(64);
     stack.push((pattern, text));

@@ -25,7 +25,10 @@ pub enum Target {
 
 impl Target {
     /// Target compiled into this adapter; musl and other runtimes remain unqualified.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn current() -> Self {
         if cfg!(all(
             target_os = "linux",

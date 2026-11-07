@@ -35,7 +35,12 @@ fn assert_translates(escaped: &str, control: &str, nodes: &[&str], calls: &[&str
     assert_eq!(shape(&got), shape(&ordinary), "{escaped}");
     assert_eq!(ordinary.completion, Completion::Complete);
     assert_eq!(ordinary.diagnostics, []);
-    let names: Vec<_> = ordinary.nodes.iter().skip(1).map(|node| node.fact.name.as_str()).collect();
+    let names: Vec<_> = ordinary
+        .nodes
+        .iter()
+        .skip(1)
+        .map(|node| node.fact.name.as_str())
+        .collect();
     assert_eq!(names, nodes);
     let found: Vec<_> = ordinary
         .references
@@ -89,7 +94,10 @@ class Outer {
 ";
 
 fn node_ids(file: &LexedFile) -> Vec<&str> {
-    file.nodes.iter().map(|node| node.fact.id.as_str()).collect()
+    file.nodes
+        .iter()
+        .map(|node| node.fact.id.as_str())
+        .collect()
 }
 
 fn call_srcs<'a>(facts: &'a LexedFile, name: &str) -> Vec<&'a str> {
@@ -109,14 +117,27 @@ fn assert_graph(path: &str, facts: &LexedFile) {
     assert_eq!(facts.path, path);
     assert_ne!(facts.nodes, []);
     assert_eq!(facts.edges.len(), facts.nodes.len() - 1);
-    let mut ids: Vec<&str> = facts.nodes.iter().map(|node| node.fact.id.as_str()).collect();
+    let mut ids: Vec<&str> = facts
+        .nodes
+        .iter()
+        .map(|node| node.fact.id.as_str())
+        .collect();
     ids.sort_unstable();
     for pair in ids.windows(2) {
         assert_ne!(pair[0], pair[1], "duplicate id");
     }
-    let mut destinations: Vec<&str> = facts.edges.iter().map(|edge| edge.fact.dst.as_str()).collect();
+    let mut destinations: Vec<&str> = facts
+        .edges
+        .iter()
+        .map(|edge| edge.fact.dst.as_str())
+        .collect();
     destinations.sort_unstable();
-    let mut nested: Vec<&str> = facts.nodes.iter().skip(1).map(|node| node.fact.id.as_str()).collect();
+    let mut nested: Vec<&str> = facts
+        .nodes
+        .iter()
+        .skip(1)
+        .map(|node| node.fact.id.as_str())
+        .collect();
     nested.sort_unstable();
     assert_eq!(destinations, nested);
     let node = |id: &str| {
@@ -134,14 +155,27 @@ fn assert_graph(path: &str, facts: &LexedFile) {
         assert!(child.fact.lines[0] >= parent.fact.lines[0]);
         assert!(child.fact.lines[1] <= parent.fact.lines[1]);
         if parent.fact.kind.as_str() != "module" {
-            assert!(child.fact.name.starts_with(&format!("{}::", parent.fact.name)));
+            assert!(
+                child
+                    .fact
+                    .name
+                    .starts_with(&format!("{}::", parent.fact.name))
+            );
         }
     }
     for reference in &facts.references {
         assert_eq!(reference.fact.owner_path, path);
         let source = node(reference.fact.src.as_str());
-        assert!(reference.fact.lines[0] >= source.fact.lines[0], "{}", reference.fact.name);
-        assert!(reference.fact.lines[1] <= source.fact.lines[1], "{}", reference.fact.name);
+        assert!(
+            reference.fact.lines[0] >= source.fact.lines[0],
+            "{}",
+            reference.fact.name
+        );
+        assert!(
+            reference.fact.lines[1] <= source.fact.lines[1],
+            "{}",
+            reference.fact.name
+        );
     }
 }
 
@@ -152,7 +186,12 @@ fn j2_generated_graph_ownership() {
     let facts = at("O.java", Limits::default(), GRAPH.as_bytes()).expect("graph");
     assert_eq!(facts.completion, Completion::Complete);
     assert_graph("O.java", &facts);
-    let simple = at("S.java", Limits::default(), b"class A { void m() { live(); } }").expect("simple");
+    let simple = at(
+        "S.java",
+        Limits::default(),
+        b"class A { void m() { live(); } }",
+    )
+    .expect("simple");
     assert_graph("S.java", &simple);
     assert_call(&simple, "live", "s:S.java#A::m");
     assert_call(&facts, "one", "s:O.java#Outer::run~1");
@@ -160,16 +199,30 @@ fn j2_generated_graph_ownership() {
     assert_call(&facts, "live", "t:O.java#Outer::checks");
     assert_call(&facts, "new Holder", "t:O.java#Outer::checks");
     assert_call(&facts, "inner", "s:O.java#Outer::checks::new Holder::go");
-    assert_call(&facts, "new Nested", "s:O.java#Outer::checks::new Holder::go");
-    assert_call(&facts, "deep", "s:O.java#Outer::checks::new Holder::go::new Nested::leaf");
+    assert_call(
+        &facts,
+        "new Nested",
+        "s:O.java#Outer::checks::new Holder::go",
+    );
+    assert_call(
+        &facts,
+        "deep",
+        "s:O.java#Outer::checks::new Holder::go::new Nested::leaf",
+    );
     let tests = |name: &str| {
-        facts.references.iter().any(|reference| {
-            reference.fact.kind.as_str() == "tests" && reference.fact.name == name
-        })
+        facts
+            .references
+            .iter()
+            .any(|reference| reference.fact.kind.as_str() == "tests" && reference.fact.name == name)
     };
     assert!(tests("deep"));
     assert!(!tests("one"));
-    let shifted = at("O.java", Limits::default(), format!("\n\n{GRAPH}").as_bytes()).expect("shift");
+    let shifted = at(
+        "O.java",
+        Limits::default(),
+        format!("\n\n{GRAPH}").as_bytes(),
+    )
+    .expect("shift");
     assert_eq!(node_ids(&facts), node_ids(&shifted));
     assert_graph("O.java", &shifted);
 }
@@ -185,7 +238,10 @@ fn padded(prefix: &[u8], suffix: &[u8]) -> Vec<u8> {
 }
 
 fn quotes(lines: usize) -> Vec<u8> {
-    std::iter::repeat_n(b"\"\n", lines).flatten().copied().collect()
+    std::iter::repeat_n(b"\"\n", lines)
+        .flatten()
+        .copied()
+        .collect()
 }
 
 #[test]
@@ -210,7 +266,10 @@ fn j3_hostile_token_and_diagnostic_bounds() {
     );
     wide.pop();
     for (limit, ok) in [(0, false), (1, false), (2, true)] {
-        let limits = Limits { max_facts: limit, ..Limits::default() };
+        let limits = Limits {
+            max_facts: limit,
+            ..Limits::default()
+        };
         let result = at("A.java", limits, &wide);
         if ok {
             let facts = result.expect("facts fit");
@@ -223,9 +282,15 @@ fn j3_hostile_token_and_diagnostic_bounds() {
     head.extend_from_slice(b"/*");
     assert_eq!(
         at("A.java", Limits::default(), &padded(&head, b"*/")),
-        Err(LexError::TooDeep { line: 1, limit: Limits::CEILING.max_depth })
+        Err(LexError::TooDeep {
+            line: 1,
+            limit: Limits::CEILING.max_depth
+        })
     );
-    let depth = Limits { max_depth: 4, ..Limits::default() };
+    let depth = Limits {
+        max_depth: 4,
+        ..Limits::default()
+    };
     assert_eq!(
         at("A.java", depth, b"class A {\n(\n(\n(\n(\n"),
         Err(LexError::TooDeep { line: 5, limit: 4 })
@@ -234,24 +299,52 @@ fn j3_hostile_token_and_diagnostic_bounds() {
     assert_eq!(shallow.completion, Completion::Complete);
     assert!(shallow.nodes.iter().any(|node| node.fact.name == "A"));
     let busy = format!("class A {{ void m() {{ {} }} }}", "a();".repeat(4096));
-    let few = Limits { max_facts: 3, ..Limits::default() };
-    assert_eq!(at("A.java", few, busy.as_bytes()), Err(LexError::TooManyFacts { limit: 3 }));
+    let few = Limits {
+        max_facts: 3,
+        ..Limits::default()
+    };
+    assert_eq!(
+        at("A.java", few, busy.as_bytes()),
+        Err(LexError::TooManyFacts { limit: 3 })
+    );
     let method = at("A.java", few, b"class A { void m() {} }").expect("method");
     assert!(method.nodes.iter().any(|node| node.fact.name == "A::m"));
     let busy_ok = at("A.java", Limits::default(), busy.as_bytes()).expect("busy");
-    assert!(busy_ok.references.iter().any(|reference| reference.fact.name == "a"));
+    assert!(
+        busy_ok
+            .references
+            .iter()
+            .any(|reference| reference.fact.name == "a")
+    );
     let cap = LexedFile::MAX_DIAGNOSTICS;
     let damaged = at("A.java", Limits::default(), &quotes(cap + 1)).expect("damaged");
     assert_eq!(damaged.completion, Completion::Partial);
     assert_eq!(damaged.diagnostics.len(), cap);
     assert_eq!(damaged.diagnostics[0].byte, 0);
-    assert_eq!(damaged.diagnostics[cap - 1].byte, u32::try_from((cap - 1) * 2).expect("bounded test coordinate"));
-    assert!(damaged.diagnostics.iter().all(|d| d.reason == DiagnosticReason::UnterminatedString));
-    assert_eq!(at("A.java", Limits::default(), &quotes(cap)).unwrap().diagnostics.len(), cap);
+    assert_eq!(
+        damaged.diagnostics[cap - 1].byte,
+        u32::try_from((cap - 1) * 2).expect("bounded test coordinate")
+    );
+    assert!(
+        damaged
+            .diagnostics
+            .iter()
+            .all(|d| d.reason == DiagnosticReason::UnterminatedString)
+    );
+    assert_eq!(
+        at("A.java", Limits::default(), &quotes(cap))
+            .unwrap()
+            .diagnostics
+            .len(),
+        cap
+    );
     let kept = at("A.java", Limits::default(), b"class A {}\n\"\n").expect("one");
     assert_eq!(kept.diagnostics.len(), 1);
     assert_eq!(kept.completion, Completion::Partial);
-    assert_eq!(kept.diagnostics[0].reason, DiagnosticReason::UnterminatedString);
+    assert_eq!(
+        kept.diagnostics[0].reason,
+        DiagnosticReason::UnterminatedString
+    );
     assert!(kept.nodes.iter().any(|node| node.fact.name == "A"));
     let clean = at("A.java", Limits::default(), b"class A {}").expect("clean");
     assert_eq!(clean.completion, Completion::Complete);
@@ -264,12 +357,7 @@ fn j4_review_unicode_escapes_in_raw_source() {
     // A keyword may start with an escape, and a line comment ends at a `\u` newline
     // (including a `\\u` run). The unescaped source is the positive control.
     assert_translates(r"\u0063lass A {}", "class A {}", &["A"], &[]);
-    assert_translates(
-        r"// c\u000a class B {}",
-        "// c\n class B {}",
-        &["B"],
-        &[],
-    );
+    assert_translates(r"// c\u000a class B {}", "// c\n class B {}", &["B"], &[]);
     assert_translates(
         r"// c\\u000a class C {}",
         "// c\\\n class C {}",
@@ -309,9 +397,15 @@ class Half {
     let facts = at("A.java", Limits::default(), damaged.as_bytes()).expect("damaged");
     assert_eq!(facts.completion, Completion::Partial);
     assert_ne!(facts.diagnostics, []);
-    assert_eq!(containment(&facts, "Half::ok"), (Precision::Structural, "exact"));
+    assert_eq!(
+        containment(&facts, "Half::ok"),
+        (Precision::Structural, "exact")
+    );
     assert_eq!(containment(&facts, "Half"), (Precision::Partial, "exact"));
-    assert_eq!(containment(&facts, "Half::later"), (Precision::Partial, "exact"));
+    assert_eq!(
+        containment(&facts, "Half::later"),
+        (Precision::Partial, "exact")
+    );
     let clean = at(
         "A.java",
         Limits::default(),
@@ -320,6 +414,12 @@ class Half {
     .expect("clean");
     assert_eq!(clean.completion, Completion::Complete);
     assert_eq!(clean.diagnostics, []);
-    assert_eq!(containment(&clean, "Half"), (Precision::Structural, "exact"));
-    assert_eq!(containment(&clean, "Half::ok"), (Precision::Structural, "exact"));
+    assert_eq!(
+        containment(&clean, "Half"),
+        (Precision::Structural, "exact")
+    );
+    assert_eq!(
+        containment(&clean, "Half::ok"),
+        (Precision::Structural, "exact")
+    );
 }

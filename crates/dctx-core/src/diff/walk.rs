@@ -192,11 +192,8 @@ mod tests {
     use std::path::PathBuf;
 
     fn create_file_node(path: &str, size: u64, timestamp: u64) -> DirContextTreeNode {
-        let mut node = DirContextTreeNode::new(
-            NodeType::File,
-            path,
-            PathBuf::from(format!("/test/{path}")),
-        );
+        let mut node =
+            DirContextTreeNode::new(NodeType::File, path, PathBuf::from(format!("/test/{path}")));
         node.content_size = size;
         node.last_modified_timestamp = timestamp;
         node

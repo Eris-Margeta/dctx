@@ -31,14 +31,30 @@ impl Walker<'_> {
             let semi = self.semi_at(type_at, end);
             let last = semi.saturating_sub(1).max(type_at);
             let target = self.span_text(type_at, last);
-            self.refer(scope.owner, &scope.name, EdgeKind::Imports, target, Some(alias), type_at, last);
+            self.refer(
+                scope.owner,
+                &scope.name,
+                EdgeKind::Imports,
+                target,
+                Some(alias),
+                type_at,
+                last,
+            );
             return (semi + 1).min(end);
         }
         if self.is(name_end, ";") {
             let last = name_end.saturating_sub(1);
             let name = self.span_text(cursor, last);
             let alias = is_static.then(|| "static".to_string());
-            self.refer(scope.owner, &scope.name, EdgeKind::Imports, name, alias, cursor, last);
+            self.refer(
+                scope.owner,
+                &scope.name,
+                EdgeKind::Imports,
+                name,
+                alias,
+                cursor,
+                last,
+            );
             return name_end + 1;
         }
         self.statement(index, end, scope)
@@ -52,7 +68,13 @@ impl Walker<'_> {
         let local = self.span_text(index + 1, name_end.saturating_sub(1));
         let cursor = name_end;
         let (body_from, body_to, last, next, brace_body) = if self.is(cursor, ";") {
-            (cursor + 1, end, end.saturating_sub(1).max(cursor), end, false)
+            (
+                cursor + 1,
+                end,
+                end.saturating_sub(1).max(cursor),
+                end,
+                false,
+            )
         } else if self.is(cursor, "{") {
             let close = self.close_of(cursor, end);
             (cursor + 1, close, close, self.after(cursor, end), true)
@@ -129,7 +151,9 @@ impl Walker<'_> {
             cursor = close + 1;
         }
         let mut param_open = None;
-        if matches!(kind, DeclKind::Class | DeclKind::Struct | DeclKind::Record) && self.is(cursor, "(") {
+        if matches!(kind, DeclKind::Class | DeclKind::Struct | DeclKind::Record)
+            && self.is(cursor, "(")
+        {
             param_open = Some(cursor);
             cursor = self.after(cursor, end);
         }
@@ -158,7 +182,14 @@ impl Walker<'_> {
         );
         if let Some(child) = child {
             self.attr_uses(prefix, &child);
-            self.header_types(prefix.next, header_end, &child, kind, record_struct, &params);
+            self.header_types(
+                prefix.next,
+                header_end,
+                &child,
+                kind,
+                record_struct,
+                &params,
+            );
             if let Some(open) = param_open {
                 self.param_types(open, &child, &params);
                 if kind == DeclKind::Record {
@@ -196,7 +227,12 @@ impl Walker<'_> {
         self.is(index, "{") || self.is(index, ";") || self.is(index, "where")
     }
 
-    fn type_body_span(&mut self, cursor: usize, end: usize, name_at: usize) -> (usize, usize, usize, usize) {
+    fn type_body_span(
+        &mut self,
+        cursor: usize,
+        end: usize,
+        name_at: usize,
+    ) -> (usize, usize, usize, usize) {
         if self.is(cursor, "{") {
             if let Some(close) = self.partner_within(cursor, end) {
                 return (cursor + 1, close, close, close + 1);
@@ -207,7 +243,10 @@ impl Walker<'_> {
         if self.is(cursor, ";") {
             return (0, 0, cursor, (cursor + 1).min(end));
         }
-        self.problem(self.start_byte(cursor.max(name_at)), DiagnosticReason::Malformed);
+        self.problem(
+            self.start_byte(cursor.max(name_at)),
+            DiagnosticReason::Malformed,
+        );
         let next = self.recover(cursor, end);
         (0, 0, cursor.saturating_sub(1).max(name_at), next)
     }
@@ -308,7 +347,11 @@ impl Walker<'_> {
         let mut cursor = at + 1;
         if self.is(cursor, "=") {
             cursor += 1;
-            while cursor < end && !self.is(cursor, ",") && !self.is(cursor, "{") && !self.is(cursor, ";") {
+            while cursor < end
+                && !self.is(cursor, ",")
+                && !self.is(cursor, "{")
+                && !self.is(cursor, ";")
+            {
                 if self.is(cursor, "(") || self.is(cursor, "[") {
                     cursor = self.after(cursor, end);
                 } else {
@@ -318,8 +361,9 @@ impl Walker<'_> {
         }
         let brace = self.is(cursor, "{").then(|| self.close_of(cursor, end));
         let last = brace.unwrap_or(at);
-        let body = brace
-            .map_or((self.start_byte(at), self.end_byte(at)), |close| (self.start_byte(cursor), self.end_byte(close)));
+        let body = brace.map_or((self.start_byte(at), self.end_byte(at)), |close| {
+            (self.start_byte(cursor), self.end_byte(close))
+        });
         let child = self.emit(
             &Emit {
                 symbol: Some(SymbolKind::Const),

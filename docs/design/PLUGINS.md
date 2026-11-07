@@ -190,7 +190,7 @@ order = ["dctx/git"]
 network = "none"
 
 [PLUGIN:dctx/git]
-version = "1.1.0"
+version = "1.2.0"
 hooks = ["before-pack-output-written"]
 required = false
 allow = ["file.read:.gitignore", "file.write:.gitignore", "program:git.add-ignore", "resource:git-admin:stage-ignore"]
@@ -218,7 +218,7 @@ Illustrative release manifest (the artifact digest is a placeholder; the schema 
 ```json
 {
   "manifest_version": 1,
-  "id": "dctx/git", "name": "dctx-plugin-git", "version": "1.1.0",
+  "id": "dctx/git", "name": "dctx-plugin-git", "version": "1.2.0",
   "publisher_key": "dctx-release-key-1", "license": "Apache-2.0",
   "protocol": [{"major": 1, "min_minor": 0, "max_minor": 0}],
   "host_api": {"major": 1, "min_minor": 0},
@@ -349,7 +349,7 @@ Discovery is a **plain JSON file in a public repository**, with detached index s
     "id": "dctx/git", "repository": "owner/dctx-plugin-git",
     "summary": "Protect dctx exports from accidental Git addition",
     "publisher_key_fingerprint": "<approved fingerprint>",
-    "releases": [{"version": "1.1.0", "manifest_url": "https://example.invalid/plugin.json",
+    "releases": [{"version": "1.2.0", "manifest_url": "https://example.invalid/plugin.json",
                   "manifest_sha256": "<64 hex digits>"}]
   }]
 }

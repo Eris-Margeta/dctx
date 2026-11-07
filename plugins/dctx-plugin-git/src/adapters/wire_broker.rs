@@ -46,8 +46,16 @@ impl<'a, R: Read, W: Write> WireBroker<'a, R, W> {
         if self.fatal.is_some() {
             return Err(BrokerFailure::Protocol("link-failed"));
         }
-        let id = self.link.next_request_id().map_err(|error| self.fail(error))?;
-        self.link.send(SessionBody::Request { id: id.clone(), request }).map_err(|error| self.fail(error))?;
+        let id = self
+            .link
+            .next_request_id()
+            .map_err(|error| self.fail(error))?;
+        self.link
+            .send(SessionBody::Request {
+                id: id.clone(),
+                request,
+            })
+            .map_err(|error| self.fail(error))?;
         self.wait(&id)
     }
 
@@ -58,15 +66,28 @@ impl<'a, R: Read, W: Write> WireBroker<'a, R, W> {
                 Ok(None) => return Err(self.fail(WorkerError::Closed)),
                 Err(error) => return Err(self.fail(error)),
             };
-            let accepted = self.link.observe_host(&message).map_err(|error| self.fail(error))?;
+            let accepted = self
+                .link
+                .observe_host(&message)
+                .map_err(|error| self.fail(error))?;
             match (&message.body, accepted) {
-                (SessionBody::Response { id: answered, .. }, Accepted::Result { body, .. }) if answered == id => {
+                (SessionBody::Response { id: answered, .. }, Accepted::Result { body, .. })
+                    if answered == id =>
+                {
                     return Ok(body);
                 }
-                (SessionBody::Response { id: answered, .. }, Accepted::Error { error, .. }) if answered == id => {
+                (SessionBody::Response { id: answered, .. }, Accepted::Error { error, .. })
+                    if answered == id =>
+                {
                     return Err(BrokerFailure::Refused(error));
                 }
-                (SessionBody::Request { id: host, request: Request::Probe(probe) }, _) => {
+                (
+                    SessionBody::Request {
+                        id: host,
+                        request: Request::Probe(probe),
+                    },
+                    _,
+                ) => {
                     let body = ResultBody::Probe {
                         invocation: probe.invocation.clone(),
                         challenge: probe.challenge.clone(),
@@ -74,15 +95,29 @@ impl<'a, R: Read, W: Write> WireBroker<'a, R, W> {
                         state: ProbeState::Waiting,
                         wait: Some(Wait::BrokerRequest(id.clone())),
                     };
-                    self.link.respond(host.clone(), &body).map_err(|error| self.fail(error))?;
+                    self.link
+                        .respond(host.clone(), &body)
+                        .map_err(|error| self.fail(error))?;
                 }
-                (SessionBody::Request { id: host, request: Request::Cancel { .. } }, _) => {
+                (
+                    SessionBody::Request {
+                        id: host,
+                        request: Request::Cancel { .. },
+                    },
+                    _,
+                ) => {
                     self.link.cancelled = true;
                     self.link.abandon(id.clone());
-                    self.link.respond(host.clone(), &ResultBody::CancelAccepted).map_err(|error| self.fail(error))?;
+                    self.link
+                        .respond(host.clone(), &ResultBody::CancelAccepted)
+                        .map_err(|error| self.fail(error))?;
                     return Err(BrokerFailure::Cancelled);
                 }
-                _ => return Err(self.fail(WorkerError::Protocol(crate::adapters::violation("unexpected-host-message")))),
+                _ => {
+                    return Err(self.fail(WorkerError::Protocol(crate::adapters::violation(
+                        "unexpected-host-message",
+                    ))));
+                }
             }
         }
     }
@@ -102,26 +137,56 @@ impl<R: Read, W: Write> Broker for WireBroker<'_, R, W> {
 
     fn file_stage(&mut self, stage: &FileStage) -> Result<Uploaded, BrokerFailure> {
         match self.call(Request::FileStage(stage.clone()))? {
-            ResultBody::FileStage { upload, next_offset, complete, .. } => Ok(Uploaded { upload, next_offset, complete }),
+            ResultBody::FileStage {
+                upload,
+                next_offset,
+                complete,
+                ..
+            } => Ok(Uploaded {
+                upload,
+                next_offset,
+                complete,
+            }),
             _ => Err(unexpected()),
         }
     }
 
     fn file_replace(&mut self, replace: &FileReplace) -> Result<Replaced, BrokerFailure> {
         match self.call(Request::FileReplace(replace.clone()))? {
-            ResultBody::Replaced { precondition, receipt } => Ok(Replaced { precondition, receipt }),
+            ResultBody::Replaced {
+                precondition,
+                receipt,
+            } => Ok(Replaced {
+                precondition,
+                receipt,
+            }),
             _ => Err(unexpected()),
         }
     }
 
     fn program_run(&mut self, run: &GitAddIgnore) -> Result<ProgramRan, BrokerFailure> {
         match self.call(Request::ProgramRun(run.clone()))? {
-            ResultBody::ProgramRun { status, exit_code, receipt, .. } => Ok(ProgramRan { status, exit_code, receipt }),
+            ResultBody::ProgramRun {
+                status,
+                exit_code,
+                receipt,
+                ..
+            } => Ok(ProgramRan {
+                status,
+                exit_code,
+                receipt,
+            }),
             _ => Err(unexpected()),
         }
     }
 
-    fn progress(&mut self, phase: &'static str, completed: u64, total: Option<u64>, unit: ProgressUnit) {
+    fn progress(
+        &mut self,
+        phase: &'static str,
+        completed: u64,
+        total: Option<u64>,
+        unit: ProgressUnit,
+    ) {
         if self.fatal.is_none() {
             self.link.progress(phase, completed, total, unit);
         }

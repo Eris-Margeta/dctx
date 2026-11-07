@@ -25,7 +25,10 @@ impl OutputClass {
     pub const ALL: [Self; 3] = [Self::Text, Self::Diff, Self::State];
 
     /// Class of a planned output role; `None` is a custom output the v1 rules cannot vouch for.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn of_role(role: &str) -> Option<Self> {
         match role {
             "pack-text" => Some(Self::Text),
@@ -77,7 +80,10 @@ pub enum NestedRules {
 }
 
 /// Folds verdicts: a known conflict outranks unknown evidence, which outranks verified.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn worst(left: Coverage, right: Coverage) -> Coverage {
     match (left, right) {
         (Coverage::Conflict, _) | (_, Coverage::Conflict) => Coverage::Conflict,
@@ -87,11 +93,15 @@ pub fn worst(left: Coverage, right: Coverage) -> Coverage {
 }
 
 fn negation_verdict(line: &str, classes: impl Iterator<Item = OutputClass>) -> Coverage {
-    let Line::Rule(rule) = parse_line(line) else { return Coverage::Verified };
+    let Line::Rule(rule) = parse_line(line) else {
+        return Coverage::Verified;
+    };
     if !rule.negated {
         return Coverage::Verified;
     }
-    let Ok(glob) = rule.last_component() else { return Coverage::Unknown };
+    let Ok(glob) = rule.last_component() else {
+        return Coverage::Unknown;
+    };
     let mut verdict = Coverage::Verified;
     for class in classes {
         if (!rule.dir_only || class.is_directory()) && glob.intersects(&class.names()) {
@@ -119,17 +129,23 @@ pub fn evaluate(root: &IgnoreText, nested: &[NestedRules]) -> Coverage {
     }
     let mut verdict = Coverage::Verified;
     for (index, line) in lines.iter().enumerate() {
-        let exposed = OutputClass::ALL.iter().enumerate().filter(|(slot, _)| last_cover[*slot] < Some(index));
-        verdict = worst(verdict, negation_verdict(line, exposed.map(|(_, class)| *class)));
+        let exposed = OutputClass::ALL
+            .iter()
+            .enumerate()
+            .filter(|(slot, _)| last_cover[*slot] < Some(index));
+        verdict = worst(
+            verdict,
+            negation_verdict(line, exposed.map(|(_, class)| *class)),
+        );
     }
     for rules in nested {
         verdict = worst(
             verdict,
             match rules {
                 NestedRules::Unavailable => Coverage::Unknown,
-                NestedRules::Text(text) => {
-                    text.lines().fold(Coverage::Verified, |acc, line| worst(acc, negation_verdict(line, OutputClass::ALL.into_iter())))
-                }
+                NestedRules::Text(text) => text.lines().fold(Coverage::Verified, |acc, line| {
+                    worst(acc, negation_verdict(line, OutputClass::ALL.into_iter()))
+                }),
             },
         );
     }
@@ -150,22 +166,55 @@ mod tests {
     #[test]
     fn later_negations_conflict_and_earlier_ones_are_overridden() {
         assert_eq!(evaluate(&text(COMPLETE), &[]), Coverage::Verified);
-        assert_eq!(evaluate(&text(&format!("{COMPLETE}!*.llmcontext.txt\n")), &[]), Coverage::Conflict);
-        assert_eq!(evaluate(&text(&format!("!*.llmcontext.txt\n{COMPLETE}")), &[]), Coverage::Verified);
-        assert_eq!(evaluate(&text(&format!("{COMPLETE}!out/p.llmcontext-1-diff.txt\n")), &[]), Coverage::Conflict);
-        assert_eq!(evaluate(&text(&format!("{COMPLETE}!.dctx\n")), &[]), Coverage::Conflict);
-        assert_eq!(evaluate(&text(&format!("{COMPLETE}!*.rs\n!keep/\n")), &[]), Coverage::Verified);
-        assert_eq!(evaluate(&text(&format!("{COMPLETE}![bad\n")), &[]), Coverage::Unknown);
+        assert_eq!(
+            evaluate(&text(&format!("{COMPLETE}!*.llmcontext.txt\n")), &[]),
+            Coverage::Conflict
+        );
+        assert_eq!(
+            evaluate(&text(&format!("!*.llmcontext.txt\n{COMPLETE}")), &[]),
+            Coverage::Verified
+        );
+        assert_eq!(
+            evaluate(
+                &text(&format!("{COMPLETE}!out/p.llmcontext-1-diff.txt\n")),
+                &[]
+            ),
+            Coverage::Conflict
+        );
+        assert_eq!(
+            evaluate(&text(&format!("{COMPLETE}!.dctx\n")), &[]),
+            Coverage::Conflict
+        );
+        assert_eq!(
+            evaluate(&text(&format!("{COMPLETE}!*.rs\n!keep/\n")), &[]),
+            Coverage::Verified
+        );
+        assert_eq!(
+            evaluate(&text(&format!("{COMPLETE}![bad\n")), &[]),
+            Coverage::Unknown
+        );
         assert_eq!(evaluate(&text(".dctx\n"), &[]), Coverage::Conflict);
     }
 
     #[test]
     fn nested_evidence_must_be_available_and_clean() {
         let root = text(COMPLETE);
-        assert_eq!(evaluate(&root, &[NestedRules::Unavailable]), Coverage::Unknown);
-        assert_eq!(evaluate(&root, &[NestedRules::Text(text("*.o\n"))]), Coverage::Verified);
-        assert_eq!(evaluate(&root, &[NestedRules::Text(text("!*.txt\n"))]), Coverage::Conflict);
-        assert_eq!(worst(Coverage::Unknown, Coverage::Conflict), Coverage::Conflict);
+        assert_eq!(
+            evaluate(&root, &[NestedRules::Unavailable]),
+            Coverage::Unknown
+        );
+        assert_eq!(
+            evaluate(&root, &[NestedRules::Text(text("*.o\n"))]),
+            Coverage::Verified
+        );
+        assert_eq!(
+            evaluate(&root, &[NestedRules::Text(text("!*.txt\n"))]),
+            Coverage::Conflict
+        );
+        assert_eq!(
+            worst(Coverage::Unknown, Coverage::Conflict),
+            Coverage::Conflict
+        );
         assert_eq!(OutputClass::of_role("pack-text"), Some(OutputClass::Text));
         assert_eq!(OutputClass::of_role("custom-report"), None);
     }

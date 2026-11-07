@@ -201,13 +201,19 @@ mod tests {
 
     #[test]
     fn package_class_and_call_survive_a_string() {
-        let source = "package p; class A { int x; void m() { run(); } String s = \"class B { }\"; }";
+        let source =
+            "package p; class A { int x; void m() { run(); } String s = \"class B { }\"; }";
         let facts = JavaLexer::default()
             .extract("A.java", source.as_bytes())
             .expect("extract");
         assert_eq!(facts.completion, Completion::Complete);
         assert_eq!(facts.nodes[0].fact.signature, "p");
-        let names: Vec<_> = facts.nodes.iter().skip(1).map(|n| n.fact.name.as_str()).collect();
+        let names: Vec<_> = facts
+            .nodes
+            .iter()
+            .skip(1)
+            .map(|n| n.fact.name.as_str())
+            .collect();
         assert_eq!(names, ["A", "A::x", "A::m", "A::s"]);
         assert_eq!(facts.nodes[1].precision, Precision::Structural);
         let calls: Vec<_> = facts

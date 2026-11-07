@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Cache command persistence through the library surface.
 //! Implements ARCHITECTURE-PROPOSAL §4 `cache config` and corrupt-ledger refusal.
-//! Depends on `dctx-cli` [`run_in`]. The binary's `dctx .` path is not invoked.
+//! Depends on `dctx-cli` [`run_in`]. The binary is not invoked.
 
 use std::path::PathBuf;
 
@@ -10,9 +10,20 @@ use dctx_cli::run_in;
 #[test]
 fn config_persists_across_two_invocations() {
     let root = scratch("config");
-    let set =
-        run_in(&args(&["cache", "config", "auto", "off", "--max-bytes", "1000000", "--ttl-days", "3"]), Some(&root))
-            .expect("set");
+    let set = run_in(
+        &args(&[
+            "cache",
+            "config",
+            "auto",
+            "off",
+            "--max-bytes",
+            "1000000",
+            "--ttl-days",
+            "3",
+        ]),
+        Some(&root),
+    )
+    .expect("set");
     assert!(set.contains("auto: off"));
     assert!(set.contains("max_bytes: 1000000"));
     assert!(set.contains("ttl_days: 3"));
@@ -28,7 +39,10 @@ fn a_corrupt_ledger_is_reported_and_left_in_place() {
     std::fs::write(root.join("ledger.v1"), b"not-a-ledger").expect("write");
     let err = run_in(&args(&["cache", "status"]), Some(&root)).expect_err("status");
     assert!(err.contains("corrupt ledger"), "{err}");
-    assert_eq!(std::fs::read(root.join("ledger.v1")).expect("kept"), b"not-a-ledger");
+    assert_eq!(
+        std::fs::read(root.join("ledger.v1")).expect("kept"),
+        b"not-a-ledger"
+    );
 }
 
 #[test]
@@ -93,7 +107,9 @@ mod menu_contract {
     #[test]
     fn test_menu_add_multiple_items() {
         let mut menu = Menu::new("Test");
-        menu.add_item('1', "Option 1", "First").add_item('2', "Option 2", "Second").add_item('3', "Option 3", "Third");
+        menu.add_item('1', "Option 1", "First")
+            .add_item('2', "Option 2", "Second")
+            .add_item('3', "Option 3", "Third");
 
         assert_eq!(menu.items.len(), 3);
         assert_eq!(menu.items[1].key, '2');
@@ -111,7 +127,9 @@ mod menu_contract {
     #[test]
     fn test_menu_builder_pattern() {
         let mut menu = Menu::new("Test");
-        menu.add_item('1', "First", "").add_item('2', "Second", "").set_footer("Footer text");
+        menu.add_item('1', "First", "")
+            .add_item('2', "Second", "")
+            .set_footer("Footer text");
 
         assert_eq!(menu.items.len(), 2);
         assert_eq!(menu.footer.as_deref(), Some("Footer text"));
@@ -121,15 +139,6 @@ mod menu_contract {
     fn test_menu_context_new() {
         let context = MenuContext::new("/tmp/test".to_string());
         assert_eq!(context.current_dir, "/tmp/test");
-        assert_eq!(context.last_version, None);
-    }
-
-    #[test]
-    fn test_menu_context_with_version() {
-        let context = MenuContext::new("/tmp/test".to_string()).with_version("V2".to_string());
-
-        assert_eq!(context.current_dir, "/tmp/test");
-        assert_eq!(context.last_version, Some("V2".to_string()));
     }
 
     #[test]
@@ -138,18 +147,6 @@ mod menu_contract {
         let formatted = context.format();
 
         assert!(formatted.contains("Directory: /home/user/project"));
-        assert!(formatted.contains("Last Snapshot: None (fresh start)"));
-        assert!(formatted.contains(" | "));
-    }
-
-    #[test]
-    fn test_menu_context_format_with_version() {
-        let context = MenuContext::new("/home/user/project".to_string()).with_version("V5".to_string());
-        let formatted = context.format();
-
-        assert!(formatted.contains("Directory: /home/user/project"));
-        assert!(formatted.contains("Last Snapshot: V5"));
-        assert!(!formatted.contains("fresh start"));
     }
 
     #[test]
@@ -158,41 +155,13 @@ mod menu_contract {
         let menu = create_main_menu(&context);
 
         assert_eq!(menu.title, "dctx - Directory Context Generator");
-        assert_eq!(menu.items.len(), 6); // Options 1-5 + 0 (Exit)
+        assert_eq!(menu.items.len(), 5); // Options 1-4 + 0 (Exit)
         assert!(menu.footer.is_some());
 
         // Check specific options exist
         assert!(menu.items.iter().any(|item| item.key == '1'));
-        assert!(menu.items.iter().any(|item| item.key == '5'));
+        assert!(menu.items.iter().any(|item| item.key == '4'));
         assert!(menu.items.iter().any(|item| item.key == '0'));
-    }
-
-    #[test]
-    fn test_create_advanced_menu() {
-        let menu = create_advanced_menu();
-
-        assert_eq!(menu.title, "Advanced Options");
-        assert_eq!(menu.items.len(), 4); // Options 1-3 + 0 (Back)
-        assert_eq!(menu.footer, Some("Escape or 0 to go back".to_string()));
-
-        // Verify menu items
-        assert!(menu.items.iter().any(|item| item.label.contains("Filters")));
-        assert!(menu.items.iter().any(|item| item.label.contains("Templates")));
-        assert!(menu.items.iter().any(|item| item.label.contains("Cache")));
-    }
-
-    #[test]
-    fn test_create_filter_menu() {
-        let menu = create_filter_menu();
-
-        assert_eq!(menu.title, "Filter Options");
-        assert_eq!(menu.items.len(), 7); // Options 1-5 + 9 (Clear) + 0 (Back)
-
-        // Check key options
-        assert!(menu.items.iter().any(|item| item.key == '1' && item.label.contains("Extension")));
-        assert!(menu.items.iter().any(|item| item.key == '2' && item.label.contains("Size")));
-        assert!(menu.items.iter().any(|item| item.key == '4' && item.label.contains("Hidden")));
-        assert!(menu.items.iter().any(|item| item.key == '9' && item.label.contains("Clear")));
     }
 
     #[test]
@@ -211,12 +180,12 @@ mod menu_contract {
     fn test_create_cache_menu() {
         let menu = create_cache_menu();
 
-        assert_eq!(menu.title, "Cache & Debug");
+        assert_eq!(menu.title, "Cache");
         assert_eq!(menu.items.len(), 4); // Options 1-3 + 0 (Back)
 
-        assert!(menu.items.iter().any(|item| item.label.contains("Ignored")));
-        assert!(menu.items.iter().any(|item| item.label.contains("Reset")));
-        assert!(menu.items.iter().any(|item| item.label.contains("Clear")));
+        assert!(menu.items.iter().any(|item| item.label.contains("Status")));
+        assert!(menu.items.iter().any(|item| item.label.contains("Preview")));
+        assert!(menu.items.iter().any(|item| item.label.contains("Collect")));
     }
 
     #[test]
@@ -225,14 +194,10 @@ mod menu_contract {
         let context = MenuContext::new("/tmp".to_string());
 
         let main = create_main_menu(&context);
-        let advanced = create_advanced_menu();
-        let filter = create_filter_menu();
         let template = create_template_menu();
         let cache = create_cache_menu();
 
         assert!(main.items.iter().any(|item| item.key == '0'));
-        assert!(advanced.items.iter().any(|item| item.key == '0'));
-        assert!(filter.items.iter().any(|item| item.key == '0'));
         assert!(template.items.iter().any(|item| item.key == '0'));
         assert!(cache.items.iter().any(|item| item.key == '0'));
     }

@@ -90,7 +90,7 @@ Users must: More info → Run anyway
 **Implementation:**
 ```typescript
 // Desktop app (free) calls cloud API (paid)
-const snapshot = await fetch('https://api.dctx.app/v1/snapshot', {
+const snapshot = await fetch('https://api.example.com/v1/snapshot', {
   method: 'POST',
   headers: { 'Authorization': `Bearer ${apiKey}` },
   body: JSON.stringify({ repo: 'github.com/user/repo' })

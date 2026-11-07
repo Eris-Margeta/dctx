@@ -17,7 +17,13 @@ fn call_rows(facts: &LexedFile) -> Vec<(String, String, StableId)> {
         .references
         .iter()
         .filter(|item| item.fact.kind == EdgeKind::Calls)
-        .map(|item| (item.fact.scope.clone(), item.fact.name.clone(), item.fact.src.clone()))
+        .map(|item| {
+            (
+                item.fact.scope.clone(),
+                item.fact.name.clone(),
+                item.fact.src.clone(),
+            )
+        })
         .collect()
 }
 
@@ -37,14 +43,27 @@ fn assert_calls(facts: &LexedFile, rows: &[(&str, &str)]) {
     assert!(found.iter().all(|row| row.1 != "ghost"));
 }
 
-#[allow(clippy::fn_params_excessive_bools, reason = "The fixture generator deliberately enumerates independent raw, triple, escaped, format-spec and nested f-string dimensions.")]
-fn fstring_source(raw: bool, triple: bool, escaped: bool, spec: bool, nested: bool) -> (String, Vec<(&'static str, &'static str)>) {
+#[allow(
+    clippy::fn_params_excessive_bools,
+    reason = "The fixture generator deliberately enumerates independent raw, triple, escaped, format-spec and nested f-string dimensions."
+)]
+fn fstring_source(
+    raw: bool,
+    triple: bool,
+    escaped: bool,
+    spec: bool,
+    nested: bool,
+) -> (String, Vec<(&'static str, &'static str)>) {
     let prefix = if raw { "rf" } else { "f" };
     let quote = if triple { "\"\"\"" } else { "\"" };
     let open_lit = if triple { "ghost()\n" } else { "ghost()" };
     let close_lit = if triple { "\nghost()" } else { "" };
     let escaped = if escaped { " {{ghost()}}" } else { "" };
-    let field = if spec { "{live()!r:{width()}s}" } else { "{live()}" };
+    let field = if spec {
+        "{live()!r:{width()}s}"
+    } else {
+        "{live()}"
+    };
     let nested_field = if nested { "{f'{nested()}'}" } else { "" };
     let source = format!(
         "anchor()\ndef owner():\n    text = {prefix}{quote}{open_lit}{escaped}{field}{nested_field}{close_lit}{quote}\n    keep()\ndef other():\n    later()\n"
@@ -86,7 +105,12 @@ fn py1_formatted_string_semantic_properties() {
         "anchor()\ndef owner():\n    text = f\"{(lambda: live())}\"\n    keep()\ndef other():\n    later()\n",
         "anchor()\ndef owner():\n    text = f\"{ {live()} }\"\n    keep()\ndef other():\n    later()\n",
     ];
-    let rows = [("", "anchor"), ("owner", "live"), ("owner", "keep"), ("other", "later")];
+    let rows = [
+        ("", "anchor"),
+        ("owner", "live"),
+        ("owner", "keep"),
+        ("other", "later"),
+    ];
     for source in extras {
         let facts = extract("m.py", source);
         check_invariants(source, &facts);
@@ -98,14 +122,20 @@ fn py1_formatted_string_semantic_properties() {
         "    x = f\"{f'{f\"{live()}\"}'}\"\n",
         "    keep()\n",
     );
-    let narrow = PyLexer::new(Limits { max_depth: 2, ..Limits::default() });
+    let narrow = PyLexer::new(Limits {
+        max_depth: 2,
+        ..Limits::default()
+    });
     assert!(matches!(
         narrow.extract("m.py", deep.as_bytes()),
         Err(LexError::TooDeep { limit: 2, .. })
     ));
-    let accepted = PyLexer::new(Limits { max_depth: 3, ..Limits::default() })
-        .extract("m.py", deep.as_bytes())
-        .expect("shallower f-string nest");
+    let accepted = PyLexer::new(Limits {
+        max_depth: 3,
+        ..Limits::default()
+    })
+    .extract("m.py", deep.as_bytes())
+    .expect("shallower f-string nest");
     check_invariants(deep, &accepted);
     assert_calls(&accepted, &[("owner", "live"), ("owner", "keep")]);
 }
@@ -128,7 +158,10 @@ fn indent_rows() -> Vec<(&'static str, &'static str)> {
 /// PY2. Space and tab layouts match; a bad dedent is Partial at that line.
 /// Not a defect: logical indents already compose continuations, blanks, comments and CRLF.
 #[test]
-#[allow(clippy::similar_names, reason = "These regression tests distinguish related source spellings and their corresponding facts; the names describe the tested relationship.")]
+#[allow(
+    clippy::similar_names,
+    reason = "These regression tests distinguish related source spellings and their corresponding facts; the names describe the tested relationship."
+)]
 fn py2_indentation_composition() {
     let spaces = suite("        ", "                ", "");
     let tabs = suite("\t", "\t\t", "\t");
@@ -147,14 +180,29 @@ fn py2_indentation_composition() {
     let facts = extract("nest.py", bad);
     check_invariants(bad, &facts);
     assert_eq!(facts.completion, Completion::Partial);
-    let byte = u32::try_from(bad.find("          bad()").expect("bad indent")).expect("bounded test coordinate");
-    let line = u32::try_from(bad[..byte as usize].bytes().filter(|item| *item == b'\n').count()).expect("bounded test coordinate") + 1;
+    let byte = u32::try_from(bad.find("          bad()").expect("bad indent"))
+        .expect("bounded test coordinate");
+    let line = u32::try_from(
+        bad[..byte as usize]
+            .bytes()
+            .filter(|item| *item == b'\n')
+            .count(),
+    )
+    .expect("bounded test coordinate")
+        + 1;
     assert_eq!(facts.diagnostics.len(), 1);
-    assert_eq!(facts.diagnostics[0].reason, DiagnosticReason::InconsistentIndent);
+    assert_eq!(
+        facts.diagnostics[0].reason,
+        DiagnosticReason::InconsistentIndent
+    );
     assert_eq!(facts.diagnostics[0].byte, byte);
     assert_eq!(facts.diagnostics[0].line, line);
     assert_eq!(names(&facts), ["nest.py", "outer", "outer::inner"]);
-    let live = facts.references.iter().find(|item| item.fact.name == "live").expect("live");
+    let live = facts
+        .references
+        .iter()
+        .find(|item| item.fact.name == "live")
+        .expect("live");
     assert_eq!(live.fact.scope, "outer::inner");
     assert_eq!(live.fact.src, node(&facts, "outer::inner").fact.id);
     assert_eq!(spaced.completion, Completion::Complete);
@@ -180,7 +228,9 @@ fn py3_wide_input_budget_and_error_redaction() {
     source.extend(std::iter::repeat_n('a', fill));
     source.push_str(tail);
     assert_eq!(source.len(), limit);
-    let wide = PyLexer::default().extract("w.py", source.as_bytes()).expect("ceiling file");
+    let wide = PyLexer::default()
+        .extract("w.py", source.as_bytes())
+        .expect("ceiling file");
     assert_eq!(wide.completion, Completion::Complete);
     assert_eq!(names(&wide), ["w.py", "live"]);
     let mut over = source.into_bytes();
@@ -195,17 +245,33 @@ fn py3_wide_input_budget_and_error_redaction() {
     }
 
     let body = "def f():\n    live()\n";
-    let enough = PyLexer::new(Limits { max_facts: 3, ..Limits::default() });
-    let tight = PyLexer::new(Limits { max_facts: 2, ..Limits::default() });
-    let accepted = enough.extract("f.py", body.as_bytes()).expect("fact ceiling");
+    let enough = PyLexer::new(Limits {
+        max_facts: 3,
+        ..Limits::default()
+    });
+    let tight = PyLexer::new(Limits {
+        max_facts: 2,
+        ..Limits::default()
+    });
+    let accepted = enough
+        .extract("f.py", body.as_bytes())
+        .expect("fact ceiling");
     assert_calls(&accepted, &[("f", "live")]);
     match tight.extract("f.py", body.as_bytes()) {
         Err(error @ LexError::TooManyFacts { limit: 2 }) => assert_redacted(&error),
         other => panic!("expected TooManyFacts, got {other:?}"),
     }
-    let one = PyLexer::new(Limits { max_facts: 1, ..Limits::default() });
+    let one = PyLexer::new(Limits {
+        max_facts: 1,
+        ..Limits::default()
+    });
     assert!(one.extract("f.py", b"pass\n").is_ok());
-    match PyLexer::new(Limits { max_facts: 0, ..Limits::default() }).extract("f.py", b"pass\n") {
+    match PyLexer::new(Limits {
+        max_facts: 0,
+        ..Limits::default()
+    })
+    .extract("f.py", b"pass\n")
+    {
         Err(error @ LexError::TooManyFacts { limit: 0 }) => assert_redacted(&error),
         other => panic!("expected zero-fact refusal, got {other:?}"),
     }

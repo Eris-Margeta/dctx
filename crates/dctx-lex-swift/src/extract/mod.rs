@@ -6,14 +6,20 @@ mod declarations;
 mod members;
 mod references;
 
-use crate::domain::{Limits, LexedFile, LexError, body_fingerprint, Dialect, Completion, Labeled, Precision, DiagnosticReason, Diagnostic};
+use crate::domain::{
+    Completion, Diagnostic, DiagnosticReason, Dialect, Labeled, LexError, LexedFile, Limits,
+    Precision, body_fingerprint,
+};
 use crate::lexer::{Kind, Lexed};
 use dctx_map_model::{
     Confidence, Edge, EdgeKind, Node, NodeKind, StableId, Summary, SummarySource, SymbolKind,
 };
 use std::collections::BTreeMap;
 
-#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and angle-bracket runs fit the target integer because SwiftLexer::extract enforces the 8 MiB input ceiling.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "Source offsets, line counts and angle-bracket runs fit the target integer because SwiftLexer::extract enforces the 8 MiB input ceiling."
+)]
 pub(crate) fn extract(
     path: &str,
     src: &str,
@@ -109,7 +115,10 @@ impl Walker<'_> {
             .is_some_and(|t| t.kind == Kind::Ident)
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and angle-bracket runs fit the target integer because SwiftLexer::extract enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and angle-bracket runs fit the target integer because SwiftLexer::extract enforces the 8 MiB input ceiling."
+    )]
     fn start(&self, i: usize) -> u32 {
         self.lex
             .tokens
@@ -117,7 +126,10 @@ impl Walker<'_> {
             .map_or(self.src.len() as u32, |t| t.start)
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and angle-bracket runs fit the target integer because SwiftLexer::extract enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and angle-bracket runs fit the target integer because SwiftLexer::extract enforces the 8 MiB input ceiling."
+    )]
     fn end(&self, i: usize) -> u32 {
         self.lex
             .tokens

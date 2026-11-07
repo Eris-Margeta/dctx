@@ -11,9 +11,9 @@ mod references;
 use declarations_types::{Draft, DraftRef};
 
 use crate::domain::{
-    body_fingerprint, DiagnosticReason, Dialect, LexError, LexedFile, Limits, Precision,
+    DiagnosticReason, Dialect, LexError, LexedFile, Limits, Precision, body_fingerprint,
 };
-use crate::lexer::{opens_template_args, slice, AngleDepth, Comment, Kind, Lexed, Token, NONE};
+use crate::lexer::{AngleDepth, Comment, Kind, Lexed, NONE, Token, opens_template_args, slice};
 use dctx_map_model::{EdgeKind, Node, NodeKind, StableId, Summary, SummarySource, SymbolKind};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -48,7 +48,9 @@ pub(crate) fn extract(
     if let Some(&at) = walker.cond_open.first() {
         walker.problem(at, DiagnosticReason::UnbalancedConditional);
     }
-    walker.draft.finish(lexed, original, dialect, limits.max_facts)
+    walker
+        .draft
+        .finish(lexed, original, dialect, limits.max_facts)
 }
 
 /// Where a declaration is allowed to introduce names.
@@ -129,9 +131,10 @@ impl<'a> Walker<'a> {
     }
 
     pub(crate) fn text(&self, index: usize) -> &'a str {
-        let raw = self.toks.get(index).map_or("", |token| {
-            slice(self.logical, token.start, token.end)
-        });
+        let raw = self
+            .toks
+            .get(index)
+            .map_or("", |token| slice(self.logical, token.start, token.end));
         match self.brace_macros.get(raw).copied() {
             Some(true) => "{",
             Some(false) => "}",
@@ -151,19 +154,31 @@ impl<'a> Walker<'a> {
         self.kind(index) == Some(Kind::Ident)
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     pub(crate) fn start_of(&self, index: usize) -> u32 {
-        self.toks.get(index).map_or(self.logical.len() as u32, |token| token.start)
+        self.toks
+            .get(index)
+            .map_or(self.logical.len() as u32, |token| token.start)
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     pub(crate) fn end_of(&self, index: usize) -> u32 {
-        self.toks.get(index).map_or(self.logical.len() as u32, |token| token.end)
+        self.toks
+            .get(index)
+            .map_or(self.logical.len() as u32, |token| token.end)
     }
 
     pub(crate) fn close(&self, index: usize) -> Option<usize> {
         match self.partner.get(index).copied() {
-            Some(partner) if partner != NONE && (partner as usize) > index => Some(partner as usize),
+            Some(partner) if partner != NONE && (partner as usize) > index => {
+                Some(partner as usize)
+            }
             _ => None,
         }
     }
@@ -256,7 +271,12 @@ impl<'a> Walker<'a> {
         };
         let start_p = self.lexed.map.physical(start_l);
         let end_p = self.lexed.map.physical(end_l).max(start_p);
-        let owner = self.draft.node(node, scope.owner, (start_p, end_p), self.soften(Precision::Structural))?;
+        let owner = self.draft.node(
+            node,
+            scope.owner,
+            (start_p, end_p),
+            self.soften(Precision::Structural),
+        )?;
         Some(Scope {
             owner,
             name,
@@ -288,7 +308,11 @@ impl<'a> Walker<'a> {
             alias: None,
             lines: self.span_lines(start_l, end_l),
             start: self.lexed.map.physical(start_l),
-            end: self.lexed.map.physical(end_l).max(self.lexed.map.physical(start_l)),
+            end: self
+                .lexed
+                .map
+                .physical(end_l)
+                .max(self.lexed.map.physical(start_l)),
             precision: self.soften(precision),
         });
     }
@@ -304,7 +328,10 @@ impl<'a> Walker<'a> {
         [left, right.max(left)]
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn physical_slice(&self, start: u32, end: u32) -> &str {
         let from = self.lexed.map.physical(start) as usize;
         let to = self.lexed.map.physical(end).min(self.original.len() as u32) as usize;
@@ -415,9 +442,16 @@ fn sentence(value: &str) -> String {
 
 fn comment_body(text: &str) -> String {
     if let Some(rest) = text.strip_prefix("//") {
-        return rest.trim().trim_start_matches(['/', '!']).trim().to_string();
+        return rest
+            .trim()
+            .trim_start_matches(['/', '!'])
+            .trim()
+            .to_string();
     }
-    if let Some(inner) = text.strip_prefix("/*").and_then(|body| body.strip_suffix("*/")) {
+    if let Some(inner) = text
+        .strip_prefix("/*")
+        .and_then(|body| body.strip_suffix("*/"))
+    {
         let inner = inner.trim().trim_start_matches(['*', '!']);
         return inner
             .lines()
@@ -437,10 +471,15 @@ fn gap_ok(src: &str, from: u32, to: u32) -> bool {
         return false;
     };
     gap.bytes().filter(|byte| *byte == b'\n').count() <= 1
-        && gap.bytes().all(|byte| matches!(byte, b' ' | b'\t' | b'\r' | b'\n'))
+        && gap
+            .bytes()
+            .all(|byte| matches!(byte, b' ' | b'\t' | b'\r' | b'\n'))
 }
 
-#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+)]
 fn leading_doc(src: &str, comments: &[Comment], first: Option<&Token>) -> Option<String> {
     let limit = first.map_or(src.len() as u32, |token| token.start);
     let mut parts = Vec::new();
@@ -457,7 +496,10 @@ fn leading_doc(src: &str, comments: &[Comment], first: Option<&Token>) -> Option
         }
         if parts.is_empty() && !gap_ok(src, 0, comment.start) && comment.start != 0 {
             let prefix = src.get(..comment.start as usize).unwrap_or("");
-            if !prefix.bytes().all(|byte| matches!(byte, b' ' | b'\t' | b'\r' | b'\n')) {
+            if !prefix
+                .bytes()
+                .all(|byte| matches!(byte, b' ' | b'\t' | b'\r' | b'\n'))
+            {
                 break;
             }
         }
@@ -480,7 +522,11 @@ mod tests {
         let facts = CLexer::default()
             .extract("p.c", b"int F(void);\nint F(void) { return 1; }\n")
             .unwrap();
-        let ids: Vec<_> = facts.nodes.iter().map(|node| node.fact.id.as_str()).collect();
+        let ids: Vec<_> = facts
+            .nodes
+            .iter()
+            .map(|node| node.fact.id.as_str())
+            .collect();
         assert!(ids.contains(&"s:p.c#F~1"), "{ids:?}");
         assert!(ids.contains(&"s:p.c#F~2"), "{ids:?}");
         assert_eq!(facts.edges.len(), facts.nodes.len() - 1);

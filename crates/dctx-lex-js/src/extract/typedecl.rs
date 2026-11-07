@@ -86,7 +86,13 @@ impl Walker<'_> {
         Some(last + 1)
     }
 
-    pub fn enumeration(&mut self, k: usize, end: usize, scope: &Scope, decl: Decl) -> Option<usize> {
+    pub fn enumeration(
+        &mut self,
+        k: usize,
+        end: usize,
+        scope: &Scope,
+        decl: Decl,
+    ) -> Option<usize> {
         let keyword = k + usize::from(self.is(k, "const"));
         let name = keyword + 1;
         let body = name + 1;
@@ -147,7 +153,9 @@ mod tests {
     #[test]
     fn declarations_own_their_type_references() {
         let source = "export interface W<T extends Base> extends Other<T> { run(): T }\ntype R<K> = Map<K, ns.Value>;\nconst enum E { A = f(), B }\nnamespace N.M { export function g(): void {} }";
-        let facts = JsLexer::default().extract("d.ts", source.as_bytes()).unwrap();
+        let facts = JsLexer::default()
+            .extract("d.ts", source.as_bytes())
+            .unwrap();
         let nodes: Vec<_> = facts
             .nodes
             .iter()

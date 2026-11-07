@@ -19,7 +19,16 @@ pub(crate) fn index_prepared(
             index_symbols(path, path_span, module_index, symbols, nodes, edges, text);
             count
         }
-        Prepared::Config(lexed) => append_cfg(path, bytes, path_span, module_index, lexed, nodes, edges, text),
+        Prepared::Config(lexed) => append_cfg(
+            path,
+            bytes,
+            path_span,
+            module_index,
+            lexed,
+            nodes,
+            edges,
+            text,
+        ),
     }
 }
 
@@ -48,7 +57,11 @@ fn append_cfg(
     let mut kept = 0usize;
     for labeled in facts {
         let node = labeled.fact;
-        if matches!(node.kind, NodeKind::Module | NodeKind::Place | NodeKind::Package) || node.name.is_empty() {
+        if matches!(
+            node.kind,
+            NodeKind::Module | NodeKind::Place | NodeKind::Package
+        ) || node.name.is_empty()
+        {
             continue;
         }
         let graph = match node.kind {
@@ -65,7 +78,8 @@ fn append_cfg(
         let kind_label = if graph == NodeKind::Doc {
             "heading"
         } else {
-            node.symbol_kind.map_or("fn", dctx_map_model::SymbolKind::as_str)
+            node.symbol_kind
+                .map_or("fn", dctx_map_model::SymbolKind::as_str)
         };
         let source_label = node.summary.source.as_str();
         let lines = node.lines;
@@ -81,7 +95,12 @@ fn append_cfg(
             summary_source: reuse_label(node.path, source_label),
             signature: node.signature,
         });
-        edges.push(super::IndexedEdge { src: module_index, dst, edge, confidence });
+        edges.push(super::IndexedEdge {
+            src: module_index,
+            dst,
+            edge,
+            confidence,
+        });
         kept = kept.saturating_add(1);
     }
     kept
@@ -114,7 +133,8 @@ pub(crate) fn index_symbols(
     nodes.reserve(ordinals.len());
     edges.reserve(ordinals.len());
     for (symbol, ordinal) in symbols.into_iter().zip(ordinals) {
-        let Some(ordinal) = stored_ordinal(symbol.graph, path, &symbol.name, ordinal, path_ok) else {
+        let Some(ordinal) = stored_ordinal(symbol.graph, path, &symbol.name, ordinal, path_ok)
+        else {
             continue;
         };
         let Some(dst) = u32::try_from(nodes.len()).ok() else {
@@ -132,16 +152,31 @@ pub(crate) fn index_symbols(
             summary_source: symbol.summary_source,
             signature: symbol.signature,
         });
-        edges.push(super::IndexedEdge { src: module_index, dst, edge, confidence });
+        edges.push(super::IndexedEdge {
+            src: module_index,
+            dst,
+            edge,
+            confidence,
+        });
     }
 }
 
 /// First occurrence keeps an empty ordinal. Later copies use 2, 3, … in source order.
-#[allow(clippy::cast_possible_truncation, reason = "The hash is an intentionally native-word table index; truncation keeps its low bits before masking to a power-of-two capacity.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "The hash is an intentionally native-word table index; truncation keeps its low bits before masking to a power-of-two capacity."
+)]
 fn duplicate_ordinals(symbols: &[Symbol]) -> Vec<Option<u32>> {
     let capacity = table_len(symbols.len());
     let mask = capacity - 1;
-    let mut slots = vec![Slot { hash: 0, index: 0, count: 0 }; capacity];
+    let mut slots = vec![
+        Slot {
+            hash: 0,
+            index: 0,
+            count: 0
+        };
+        capacity
+    ];
     let mut ordinals = Vec::with_capacity(symbols.len());
     for (index, symbol) in symbols.iter().enumerate() {
         let mut hash = fx_hash(symbol.name.as_bytes());
@@ -159,7 +194,10 @@ fn duplicate_ordinals(symbols: &[Symbol]) -> Vec<Option<u32>> {
             }
             if entry.hash == hash {
                 let prior = usize::try_from(entry.index).unwrap_or(usize::MAX);
-                if symbols.get(prior).is_some_and(|other| other.name == symbol.name) {
+                if symbols
+                    .get(prior)
+                    .is_some_and(|other| other.name == symbol.name)
+                {
                     entry.count = entry.count.saturating_add(1);
                     break (entry.count > 1).then_some(entry.count);
                 }
@@ -172,7 +210,13 @@ fn duplicate_ordinals(symbols: &[Symbol]) -> Vec<Option<u32>> {
 }
 
 /// `0` when this is the first copy. [`StableId`] still rejects a name that cannot be stored.
-pub(super) fn stored_ordinal(kind: NodeKind, path: &str, name: &str, ordinal: Option<u32>, path_ok: bool) -> Option<u32> {
+pub(super) fn stored_ordinal(
+    kind: NodeKind,
+    path: &str,
+    name: &str,
+    ordinal: Option<u32>,
+    path_ok: bool,
+) -> Option<u32> {
     if ordinal == Some(0) {
         return None;
     }
@@ -203,7 +247,11 @@ struct Slot {
 }
 
 fn table_len(count: usize) -> usize {
-    count.saturating_mul(2).max(16).checked_next_power_of_two().unwrap_or(1_usize << (usize::BITS - 1))
+    count
+        .saturating_mul(2)
+        .max(16)
+        .checked_next_power_of_two()
+        .unwrap_or(1_usize << (usize::BITS - 1))
 }
 
 fn fx_hash(bytes: &[u8]) -> u64 {
@@ -212,7 +260,8 @@ fn fx_hash(bytes: &[u8]) -> u64 {
     while offset + 8 <= bytes.len() {
         let mut chunk = [0u8; 8];
         chunk.copy_from_slice(&bytes[offset..offset + 8]);
-        hash = (hash.rotate_left(5) ^ u64::from_le_bytes(chunk)).wrapping_mul(0x517c_c1b7_2722_0a95);
+        hash =
+            (hash.rotate_left(5) ^ u64::from_le_bytes(chunk)).wrapping_mul(0x517c_c1b7_2722_0a95);
         offset += 8;
     }
     if offset < bytes.len() {

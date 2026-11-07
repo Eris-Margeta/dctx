@@ -13,7 +13,8 @@ fn idents(source: &str) -> Vec<String> {
 
 #[test]
 fn strings_hide_declarations_and_templates_keep_code() {
-    let source = "val s = \"class B { }\"\nval t = \"\"\"class C { }\"\"\"\nval u = \"hi ${foo.bar()}\"\n";
+    let source =
+        "val s = \"class B { }\"\nval t = \"\"\"class C { }\"\"\"\nval u = \"hi ${foo.bar()}\"\n";
     let lexed = lex(source, &Limits::default()).expect("lex");
     assert!(lexed.diagnostics.is_empty(), "{:?}", lexed.diagnostics);
     let names = idents(source);
@@ -34,10 +35,12 @@ fn partners_recover_and_depth_refuses() {
         .position(|token| slice(source, token.start, token.end) == "{")
         .expect("brace");
     assert_ne!(lexed.partner[open], NONE);
-    assert!(lexed
-        .diagnostics
-        .iter()
-        .any(|item| item.reason == DiagnosticReason::UnbalancedBracket));
+    assert!(
+        lexed
+            .diagnostics
+            .iter()
+            .any(|item| item.reason == DiagnosticReason::UnbalancedBracket)
+    );
     let limits = Limits {
         max_depth: 2,
         ..Limits::default()

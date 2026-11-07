@@ -31,8 +31,15 @@ pub struct Delivered {
 /// Refuses a negotiated frame cap too small to carry a chunk.
 pub fn chunk_size(limits: &Limits) -> Result<u64, Failure> {
     let frame_fit = limits.frame_bytes.saturating_sub(ENVELOPE_BYTES) / 4 * 3;
-    let size = limits.chunk_bytes.min(frame_fit).min(MAX_CHUNK_BYTES as u64);
-    if size == 0 { Err(Failure::limit("frame-too-small", "frame_bytes")) } else { Ok(size) }
+    let size = limits
+        .chunk_bytes
+        .min(frame_fit)
+        .min(MAX_CHUNK_BYTES as u64);
+    if size == 0 {
+        Err(Failure::limit("frame-too-small", "frame_bytes"))
+    } else {
+        Ok(size)
+    }
 }
 
 fn protocol(reason: &'static str) -> Failure {
@@ -55,12 +62,26 @@ pub fn read_file(
     let mut precondition: Option<Token> = None;
     loop {
         let offset = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
-        let read = ChunkRead { handle: resource.clone(), offset, length: chunk, precondition: precondition.clone() };
-        let result = broker.file_read(&read).map_err(|failure| Failure::from_broker(failure, false, &[]))?;
-        let token = result.precondition.clone().ok_or_else(|| protocol("missing-precondition"))?;
+        let read = ChunkRead {
+            handle: resource.clone(),
+            offset,
+            length: chunk,
+            precondition: precondition.clone(),
+        };
+        let result = broker
+            .file_read(&read)
+            .map_err(|failure| Failure::from_broker(failure, false, &[]))?;
+        let token = result
+            .precondition
+            .clone()
+            .ok_or_else(|| protocol("missing-precondition"))?;
         match &precondition {
             Some(bound) if *bound != token => {
-                return Err(Failure::refused(ErrorCode::Conflict, Phase::Broker, "precondition-changed"));
+                return Err(Failure::refused(
+                    ErrorCode::Conflict,
+                    Phase::Broker,
+                    "precondition-changed",
+                ));
             }
             _ => precondition = Some(token),
         }
@@ -68,7 +89,10 @@ pub fn read_file(
             return Err(Failure::limit("ignore-oversized", "max_bytes"));
         }
         let delivered = u64::try_from(result.bytes.len()).unwrap_or(u64::MAX);
-        if result.offset != offset || delivered > chunk || offset.saturating_add(delivered) > result.size {
+        if result.offset != offset
+            || delivered > chunk
+            || offset.saturating_add(delivered) > result.size
+        {
             return Err(protocol("chunk-out-of-bounds"));
         }
         bytes.extend_from_slice(result.bytes.as_bytes());
@@ -87,7 +111,10 @@ pub fn read_file(
         }
     }
     let precondition = precondition.ok_or_else(|| protocol("missing-precondition"))?;
-    Ok(Delivered { bytes, precondition })
+    Ok(Delivered {
+        bytes,
+        precondition,
+    })
 }
 
 /// Uploads `bytes` in sealed chunks bound to `precondition`; returns the sealed upload ID.
@@ -115,10 +142,13 @@ pub fn upload(
             precondition: precondition.clone(),
             upload: upload.clone(),
             offset: u64::try_from(offset).unwrap_or(u64::MAX),
-            bytes: Chunk::new(&bytes[offset..end]).map_err(|_| Failure::limit("chunk-too-large", "chunk_bytes"))?,
+            bytes: Chunk::new(&bytes[offset..end])
+                .map_err(|_| Failure::limit("chunk-too-large", "chunk_bytes"))?,
             final_chunk,
         };
-        let staged = broker.file_stage(&stage).map_err(|failure| Failure::from_broker(failure, false, &[]))?;
+        let staged = broker
+            .file_stage(&stage)
+            .map_err(|failure| Failure::from_broker(failure, false, &[]))?;
         if upload.as_ref().is_some_and(|bound| *bound != staged.upload)
             || staged.next_offset != u64::try_from(end).unwrap_or(u64::MAX)
             || staged.complete != final_chunk
@@ -126,7 +156,12 @@ pub fn upload(
             return Err(protocol("upload-progress-mismatch"));
         }
         upload = Some(staged.upload);
-        broker.progress("stage-upload", staged.next_offset, Some(total), ProgressUnit::Bytes);
+        broker.progress(
+            "stage-upload",
+            staged.next_offset,
+            Some(total),
+            ProgressUnit::Bytes,
+        );
         if final_chunk {
             break;
         }

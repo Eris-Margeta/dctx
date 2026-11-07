@@ -1,10 +1,15 @@
 [package]
 name = "dctx-hash"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2024"
 description = "First-party safe-Rust SHA-256 content digests for dctx"
 license.workspace = true
 repository.workspace = true
+rust-version.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [dependencies]
 

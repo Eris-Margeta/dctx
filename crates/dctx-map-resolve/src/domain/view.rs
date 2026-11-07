@@ -4,9 +4,9 @@
 //! Depends on materialization, resolution and the reverse index.
 //! Callers inject the clock and ranking revision; this module reads neither.
 use super::{
-    AliasCollision, ExtractionContract, FactKey, NameCollision, Placement, Resolution, ResolveError,
-    ReverseIndex, SharedFact, alias_collisions, fact_key::identity_token, materialize, name_collisions,
-    resolve, reverse_index,
+    AliasCollision, ExtractionContract, FactKey, NameCollision, Placement, Resolution,
+    ResolveError, ReverseIndex, SharedFact, alias_collisions, fact_key::identity_token,
+    materialize, name_collisions, resolve, reverse_index,
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
@@ -49,7 +49,11 @@ impl View {
 
     /// Keeps placements whose path is authorized. Omitted paths are not served.
     /// An empty set authorizes nothing.
-    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn authorize(&self, included: &BTreeSet<String>) -> Self {
         let mut view = self.clone();
         view.placements
@@ -83,24 +87,33 @@ pub struct ViewResolution {
 
 impl ViewResolution {
     /// Canonical UTF-8 result. Equal inputs produce equal bytes.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     #[allow(clippy::expect_used, reason = "writing to a String cannot fail")]
     pub fn canonical_bytes(&self) -> String {
         let mut out = String::new();
-        writeln!(out, "root\t{}\nns\t{}\nresolver\t{}\nranking\t{}\nclock\t{}",
+        writeln!(
+            out,
+            "root\t{}\nns\t{}\nresolver\t{}\nranking\t{}\nclock\t{}",
             self.root,
             self.trust_namespace,
             self.resolver_revision,
             self.ranking_revision,
             self.frozen_clock
-        ).expect("writing to a String cannot fail");
+        )
+        .expect("writing to a String cannot fail");
         for collision in &self.alias_collisions {
-            writeln!(out, "alias\t{}\t{}\t{}\t{}",
+            writeln!(
+                out,
+                "alias\t{}\t{}\t{}\t{}",
                 collision.package,
                 collision.scope,
                 collision.binding,
                 collision.targets.join(",")
-            ).expect("writing to a String cannot fail");
+            )
+            .expect("writing to a String cannot fail");
         }
         for collision in &self.name_collisions {
             let ids = collision
@@ -109,21 +122,27 @@ impl ViewResolution {
                 .map(dctx_map_model::StableId::as_str)
                 .collect::<Vec<_>>()
                 .join(",");
-            writeln!(out, "name\t{}\t{}\t{ids}",
+            writeln!(
+                out,
+                "name\t{}\t{}\t{ids}",
                 collision.package, collision.name
-            ).expect("writing to a String cannot fail");
+            )
+            .expect("writing to a String cannot fail");
         }
         for edge in &self.resolution.edges {
-            writeln!(out, "edge\t{}\t{}\t{}\t{}\t{}",
+            writeln!(
+                out,
+                "edge\t{}\t{}\t{}\t{}\t{}",
                 edge.owner_path,
                 edge.src,
                 edge.kind.as_str(),
                 edge.dst,
                 edge.conf.as_str()
-            ).expect("writing to a String cannot fail");
+            )
+            .expect("writing to a String cannot fail");
         }
         for item in &self.resolution.unresolved {
-            write!(out,"open\t{}\t", item.owner_path).expect("writing to a String cannot fail");
+            write!(out, "open\t{}\t", item.owner_path).expect("writing to a String cannot fail");
             match &item.reason {
                 super::UnresolvedReason::Missing => out.push_str("missing"),
                 super::UnresolvedReason::Ambiguous(ids) => {
@@ -138,12 +157,14 @@ impl ViewResolution {
         }
         for ((package, name), paths) in &self.reverse.dependents {
             for path in paths {
-                writeln!(out, "dep\t{package}\t{name}\t{path}").expect("writing to a String cannot fail");
+                writeln!(out, "dep\t{package}\t{name}\t{path}")
+                    .expect("writing to a String cannot fail");
             }
         }
         for ((package, name), paths) in &self.reverse.users {
             for path in paths {
-                writeln!(out, "use\t{package}\t{name}\t{path}").expect("writing to a String cannot fail");
+                writeln!(out, "use\t{package}\t{name}\t{path}")
+                    .expect("writing to a String cannot fail");
             }
         }
         out
@@ -174,7 +195,10 @@ impl Default for FactStore {
 
 impl FactStore {
     /// Empty store. Nothing has been parsed.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new() -> Self {
         Self {
             retained: BTreeMap::new(),
@@ -183,19 +207,28 @@ impl FactStore {
     }
 
     /// Number of payloads inserted. Reuse and conflicts do not increment it.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn parses(&self) -> u64 {
         self.parses
     }
 
     /// Number of keys currently retained.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn retained_count(&self) -> usize {
         self.retained.len()
     }
 
     /// Whether this key still has a payload.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn contains(&self, key: &FactKey) -> bool {
         self.retained.contains_key(key)
     }
@@ -295,7 +328,11 @@ mod tests {
         rejected.root = "src/.git".into();
         assert!(rejected.validate().is_err());
         rejected.root = "root-app".into();
-        let key = FactKey::new(ContentId::of_bytes(b"fn work() {}").unwrap(), contract("p1", "plan").unwrap()).unwrap();
+        let key = FactKey::new(
+            ContentId::of_bytes(b"fn work() {}").unwrap(),
+            contract("p1", "plan").unwrap(),
+        )
+        .unwrap();
         let store = FactStore::new();
         assert!(matches!(
             store.resolve_view(&View {

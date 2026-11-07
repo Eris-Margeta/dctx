@@ -9,19 +9,31 @@ use super::ops_enablement::is_bundled_selection;
 use super::ops_output::{code_name, dist, done, fail, usage, Outcome};
 use super::{bundled, render, Env};
 
-pub(super) fn verify(env: &mut Env<'_>, raw_id: Option<&str>, refresh_trust: bool, json: bool) -> Outcome {
+pub(super) fn verify(
+    env: &mut Env<'_>,
+    raw_id: Option<&str>,
+    refresh_trust: bool,
+    json: bool,
+) -> Outcome {
     let text = raw_id.unwrap_or("dctx/git");
     let id = match PluginId::parse(text) {
         Ok(id) => id,
         Err(error) => return fail("verify", &error, json),
     };
     if refresh_trust {
-        if let Err(error) = env.trust.check_freshness(env.clock.now(), env.policy.freshness_ceiling_secs) {
+        if let Err(error) = env
+            .trust
+            .check_freshness(env.clock.now(), env.policy.freshness_ceiling_secs)
+        {
             return fail("verify", &error, json);
         }
     }
     if is_bundled_selection(env, &id) {
-        let worker = if bundled::worker_linked() { "same-binary" } else { "excluded" };
+        let worker = if bundled::worker_linked() {
+            "same-binary"
+        } else {
+            "excluded"
+        };
         return done("verify", json, env, |fields| {
             format!(
                 "{fields},\"id\":{},\"origin\":\"bundled\",\"worker\":{},\"executed\":false",
@@ -42,11 +54,18 @@ pub(super) fn verify(env: &mut Env<'_>, raw_id: Option<&str>, refresh_trust: boo
                 Ok(()) => "\"ok\"".to_owned(),
                 Err(error) => render::json_string(code_name(error)),
             };
-            format!("{{\"digest\":{},\"result\":{result}}}", render::json_string(&outcome.digest.to_string()))
+            format!(
+                "{{\"digest\":{},\"result\":{result}}}",
+                render::json_string(&outcome.digest.to_string())
+            )
         })
         .collect();
     let mut body = done("verify", json, env, |fields| {
-        format!("{fields},\"id\":{},\"outcomes\":[{}]", render::json_string(id.as_str()), rows.join(","))
+        format!(
+            "{fields},\"id\":{},\"outcomes\":[{}]",
+            render::json_string(id.as_str()),
+            rows.join(",")
+        )
     });
     if failed {
         body.code = 1;
@@ -54,7 +73,13 @@ pub(super) fn verify(env: &mut Env<'_>, raw_id: Option<&str>, refresh_trust: boo
     body
 }
 
-pub(super) fn route(env: &mut Env<'_>, raw_id: &str, args: &[String], command: &str, json: bool) -> Outcome {
+pub(super) fn route(
+    env: &mut Env<'_>,
+    raw_id: &str,
+    args: &[String],
+    command: &str,
+    json: bool,
+) -> Outcome {
     if raw_id == "dctx/git" && !bundled::worker_linked() {
         let error = super::worker::WorkerError::StrictBuild;
         return Outcome {
@@ -94,7 +119,12 @@ pub(super) fn route(env: &mut Env<'_>, raw_id: &str, args: &[String], command: &
     if let Err(error) = dist(env).release(&admission) {
         return fail(command, &error, json);
     }
-    let rest = args.iter().skip(1).map(|arg| render::json_string(arg)).collect::<Vec<_>>().join(",");
+    let rest = args
+        .iter()
+        .skip(1)
+        .map(|arg| render::json_string(arg))
+        .collect::<Vec<_>>()
+        .join(",");
     let spawns = env.host.spawns();
     let git_children = env.host.git_children();
     done(command, json, env, |fields| {

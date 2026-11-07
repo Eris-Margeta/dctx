@@ -24,11 +24,19 @@ impl<'a> Closed<'a> {
         allowed: &[&str],
         required: &[&str],
     ) -> Result<Self, DistributionError> {
-        let members = value.as_object().ok_or(DistributionError::malformed(document, "not-object"))?;
-        if members.iter().any(|(name, _)| !allowed.contains(&name.as_str())) {
+        let members = value
+            .as_object()
+            .ok_or(DistributionError::malformed(document, "not-object"))?;
+        if members
+            .iter()
+            .any(|(name, _)| !allowed.contains(&name.as_str()))
+        {
             return Err(DistributionError::malformed(document, "unknown-field"));
         }
-        if required.iter().any(|name| !members.iter().any(|(member, _)| member == name)) {
+        if required
+            .iter()
+            .any(|name| !members.iter().any(|(member, _)| member == name))
+        {
             return Err(DistributionError::malformed(document, "missing-field"));
         }
         Ok(Self { members, document })
@@ -36,7 +44,10 @@ impl<'a> Closed<'a> {
 
     /// Optional member.
     pub fn get(&self, name: &str) -> Option<&'a Json> {
-        self.members.iter().find(|(member, _)| member == name).map(|(_, value)| value)
+        self.members
+            .iter()
+            .find(|(member, _)| member == name)
+            .map(|(_, value)| value)
     }
 
     /// Required member (already checked by [`Closed::new`]).
@@ -57,11 +68,20 @@ impl<'a> Closed<'a> {
     /// Required integer in `1..=2^53-1`.
     pub fn positive(&self, name: &str) -> Result<u64, DistributionError> {
         let value = self.uint(name)?;
-        if value == 0 { Err(self.refuse("not-positive")) } else { Ok(value) }
+        if value == 0 {
+            Err(self.refuse("not-positive"))
+        } else {
+            Ok(value)
+        }
     }
 
     /// Required array with an item count in `min..=max`.
-    pub fn array(&self, name: &str, min: usize, max: usize) -> Result<&'a [Json], DistributionError> {
+    pub fn array(
+        &self,
+        name: &str,
+        min: usize,
+        max: usize,
+    ) -> Result<&'a [Json], DistributionError> {
         let items = self.req(name)?.as_array().ok_or(self.refuse("not-array"))?;
         if items.len() < min || items.len() > max {
             return Err(self.refuse("array-length"));
@@ -72,7 +92,10 @@ impl<'a> Closed<'a> {
     /// Required object member, unchecked beyond its type.
     pub fn object(&self, name: &str) -> Result<&'a Json, DistributionError> {
         let value = self.req(name)?;
-        value.as_object().map(|_| value).ok_or(self.refuse("not-object"))
+        value
+            .as_object()
+            .map(|_| value)
+            .ok_or(self.refuse("not-object"))
     }
 
     /// Refusal in this object's document.
@@ -95,7 +118,12 @@ mod tests {
     use super::*;
 
     fn object(members: Vec<(&str, Json)>) -> Json {
-        Json::Object(members.into_iter().map(|(k, v)| (k.to_owned(), v)).collect())
+        Json::Object(
+            members
+                .into_iter()
+                .map(|(k, v)| (k.to_owned(), v))
+                .collect(),
+        )
     }
 
     #[test]
@@ -114,6 +142,9 @@ mod tests {
     fn integers_stay_in_the_safe_range() {
         assert!(uint(&Json::Int(-1), Document::Index).is_err());
         assert!(uint(&Json::Int(9_007_199_254_740_992), Document::Index).is_err());
-        assert_eq!(uint(&Json::Int(9_007_199_254_740_991), Document::Index), Ok(9_007_199_254_740_991));
+        assert_eq!(
+            uint(&Json::Int(9_007_199_254_740_991), Document::Index),
+            Ok(9_007_199_254_740_991)
+        );
     }
 }

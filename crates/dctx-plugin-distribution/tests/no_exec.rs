@@ -8,34 +8,72 @@ const SOURCES: &[(&str, &str)] = &[
     ("ports.rs", include_str!("../src/ports.rs")),
     ("fakes.rs", include_str!("../src/fakes.rs")),
     ("service/mod.rs", include_str!("../src/service/mod.rs")),
-    ("service/download.rs", include_str!("../src/service/download.rs")),
-    ("service/install.rs", include_str!("../src/service/install.rs")),
-    ("service/manage.rs", include_str!("../src/service/manage.rs")),
+    (
+        "service/download.rs",
+        include_str!("../src/service/download.rs"),
+    ),
+    (
+        "service/install.rs",
+        include_str!("../src/service/install.rs"),
+    ),
+    (
+        "service/manage.rs",
+        include_str!("../src/service/manage.rs"),
+    ),
     ("domain/mod.rs", include_str!("../src/domain/mod.rs")),
-    ("domain/admission.rs", include_str!("../src/domain/admission.rs")),
+    (
+        "domain/admission.rs",
+        include_str!("../src/domain/admission.rs"),
+    ),
     ("domain/bundle.rs", include_str!("../src/domain/bundle.rs")),
-    ("domain/consent.rs", include_str!("../src/domain/consent.rs")),
+    (
+        "domain/consent.rs",
+        include_str!("../src/domain/consent.rs"),
+    ),
     ("domain/digest.rs", include_str!("../src/domain/digest.rs")),
     ("domain/fields.rs", include_str!("../src/domain/fields.rs")),
     ("domain/index.rs", include_str!("../src/domain/index.rs")),
-    ("domain/manifest.rs", include_str!("../src/domain/manifest.rs")),
+    (
+        "domain/manifest.rs",
+        include_str!("../src/domain/manifest.rs"),
+    ),
     ("domain/names.rs", include_str!("../src/domain/names.rs")),
     ("domain/origin.rs", include_str!("../src/domain/origin.rs")),
-    ("domain/registry.rs", include_str!("../src/domain/registry.rs")),
-    ("domain/registry_codec.rs", include_str!("../src/domain/registry_codec.rs")),
-    ("domain/signature.rs", include_str!("../src/domain/signature.rs")),
+    (
+        "domain/registry.rs",
+        include_str!("../src/domain/registry.rs"),
+    ),
+    (
+        "domain/registry_codec.rs",
+        include_str!("../src/domain/registry_codec.rs"),
+    ),
+    (
+        "domain/signature.rs",
+        include_str!("../src/domain/signature.rs"),
+    ),
     ("domain/sums.rs", include_str!("../src/domain/sums.rs")),
     ("domain/trust.rs", include_str!("../src/domain/trust.rs")),
 ];
 
 #[test]
 fn no_execution_primitives_in_the_crate() {
-    let forbidden = ["std::process", "process::Command", "Command::new", "libloading", "dlopen", "/bin/sh", "set_permissions", "PermissionsExt"];
+    let forbidden = [
+        "std::process",
+        "process::Command",
+        "Command::new",
+        "libloading",
+        "dlopen",
+        "/bin/sh",
+        "set_permissions",
+        "PermissionsExt",
+    ];
     for (file, source) in SOURCES {
         for needle in forbidden {
             assert!(!source.contains(needle), "{file} contains {needle}");
         }
-        let body = source.strip_prefix("// SPDX-License-Identifier: Apache-2.0\n").unwrap_or(source);
+        let body = source
+            .strip_prefix("// SPDX-License-Identifier: Apache-2.0\n")
+            .unwrap_or(source);
         assert!(body.starts_with("//!"), "{file} lacks its header doc");
     }
 }
@@ -51,7 +89,12 @@ fn every_source_file_is_listed() {
             if path.is_dir() {
                 stack.push(path);
             } else {
-                found.push(path.strip_prefix(root).unwrap().to_string_lossy().replace('\\', "/"));
+                found.push(
+                    path.strip_prefix(root)
+                        .unwrap()
+                        .to_string_lossy()
+                        .replace('\\', "/"),
+                );
             }
         }
     }

@@ -2,7 +2,7 @@
 //! Selection bounded context: which items a pack sees and whose content it may read.
 //! Implements the ignore/omit rule semantics of ARCHITECTURE-PROPOSAL §2 and PRODUCT-CONTRACTS C03.
 //! Depends on [`crate::datatypes`] and [`crate::domain`]; pure, with no filesystem or environment access.
-//! Used by the legacy ignore engine, the legacy formatter and the dctx-pack engine.
+//! Used by filesystem adapters, frontends and the dctx-pack engine.
 
 pub mod defaults;
 pub mod glob;

@@ -68,19 +68,28 @@ impl<'a> SymbolTable<'a> {
     }
 
     /// Node associated with an exact stable identity.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn node(&self, id: &StableId) -> Option<&'a Node> {
         self.nodes.get(id).map(|entry| &entry.definition.node)
     }
 
     /// Number of distinct graph nodes.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn len(&self) -> usize {
         self.nodes.len()
     }
 
     /// Whether the snapshot contains no graph nodes.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn is_empty(&self) -> bool {
         self.nodes.is_empty()
     }

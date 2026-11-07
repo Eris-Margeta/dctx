@@ -7,7 +7,7 @@
 
 use crate::domain::AnswerRecord;
 
-use super::{write_node_id, Generation, IndexedNode};
+use super::{Generation, IndexedNode, write_node_id};
 
 /// The definition extensions of `path`'s language family, or `None` when `path` is not a declaration-only file.
 ///
@@ -17,7 +17,11 @@ fn definition_extensions(path: &str) -> Option<&'static [&'static str]> {
     if lower.ends_with(".mli") {
         return Some(&["ml"][..]);
     }
-    if lower.ends_with(".hpp") || lower.ends_with(".hxx") || lower.ends_with(".hh") || lower.ends_with(".h") {
+    if lower.ends_with(".hpp")
+        || lower.ends_with(".hxx")
+        || lower.ends_with(".hh")
+        || lower.ends_with(".h")
+    {
         return Some(&["c", "cc", "cpp", "cxx", "m"][..]);
     }
     if lower.ends_with(".d.ts") || lower.ends_with(".d.mts") || lower.ends_with(".d.cts") {
@@ -28,15 +32,19 @@ fn definition_extensions(path: &str) -> Option<&'static [&'static str]> {
 
 /// The filename without its declaration-only extension, or `None` when no declaration extension applies.
 fn declaration_stem(file: &str) -> Option<&str> {
-    [".mli", ".d.ts", ".d.mts", ".d.cts", ".hpp", ".hxx", ".hh", ".h"]
-        .into_iter()
-        .find_map(|suffix| file.strip_suffix(suffix))
+    [
+        ".mli", ".d.ts", ".d.mts", ".d.cts", ".hpp", ".hxx", ".hh", ".h",
+    ]
+    .into_iter()
+    .find_map(|suffix| file.strip_suffix(suffix))
 }
 
 /// True when `path` ends with one of `extensions`, compared case-insensitively.
 fn has_definition_extension(path: &str, extensions: &[&str]) -> bool {
     let lower = path.to_ascii_lowercase();
-    extensions.iter().any(|extension| lower.ends_with(&format!(".{extension}")))
+    extensions
+        .iter()
+        .any(|extension| lower.ends_with(&format!(".{extension}")))
 }
 
 /// True when `node` is a declaration-only symbol: a `fn` in a header, `.mli` or `.d.ts` file.
@@ -63,7 +71,9 @@ pub(crate) fn paired_definition(generation: &Generation, node_index: u32) -> Opt
     }
     let path = text.get(node.path);
     let extensions = definition_extensions(path)?;
-    let (dir, file) = path.rsplit_once('/').map_or(("", path), |(dir, file)| (dir, file));
+    let (dir, file) = path
+        .rsplit_once('/')
+        .map_or(("", path), |(dir, file)| (dir, file));
     let stem = declaration_stem(file)?;
     let name = node.name.as_str();
     let mut sibling = Vec::new();
@@ -72,8 +82,14 @@ pub(crate) fn paired_definition(generation: &Generation, node_index: u32) -> Opt
             continue;
         }
         let other_path = text.get(other.path);
-        let (other_dir, other_file) = other_path.rsplit_once('/').map_or(("", other_path), |(dir, file)| (dir, file));
-        if other_dir == dir && extensions.iter().any(|extension| other_file == format!("{stem}.{extension}")) {
+        let (other_dir, other_file) = other_path
+            .rsplit_once('/')
+            .map_or(("", other_path), |(dir, file)| (dir, file));
+        if other_dir == dir
+            && extensions
+                .iter()
+                .any(|extension| other_file == format!("{stem}.{extension}"))
+        {
             sibling.push(index);
         }
     }
@@ -142,7 +158,12 @@ mod tests {
                 signature: String::new(),
             });
             let index = u32::try_from(nodes.len() - 1).unwrap_or(0);
-            edges.push(IndexedEdge { src: 0, dst: index, edge: calls, confidence: name });
+            edges.push(IndexedEdge {
+                src: 0,
+                dst: index,
+                edge: calls,
+                confidence: name,
+            });
             index
         };
         let decl = push(&mut nodes, header, "add", "fn");
@@ -185,13 +206,21 @@ mod tests {
         let index = u32::try_from(generation.nodes.len() - 1).unwrap_or(0);
         let calls = generation.edges[0].edge;
         let confidence = generation.edges[0].confidence;
-        generation.edges.push(IndexedEdge { src: 0, dst: index, edge: calls, confidence });
+        generation.edges.push(IndexedEdge {
+            src: 0,
+            dst: index,
+            edge: calls,
+            confidence,
+        });
         assert_eq!(paired_definition(&generation, decl), None);
     }
 
     #[test]
     fn a_definition_is_not_itself_declaration_only() {
         let (generation, _, def) = fixture();
-        assert!(!is_declaration_only(&generation, &generation.nodes[usize::try_from(def).unwrap_or(0)]));
+        assert!(!is_declaration_only(
+            &generation,
+            &generation.nodes[usize::try_from(def).unwrap_or(0)]
+        ));
     }
 }

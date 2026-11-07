@@ -21,7 +21,9 @@ pub use frame::{BOOTSTRAP_FRAME_CAP, FrameDecoder, MAX_FRAME_CAP, encode_frame};
 pub use json::decode::{DecodeLimits, decode_object};
 pub use json::encode::to_canonical;
 pub use json::value::Json;
-pub use negotiate::{Negotiated, SUPPORTED_VERSIONS, WorkerProfile, accept_answer, answer_hello, select_version};
+pub use negotiate::{
+    Negotiated, SUPPORTED_VERSIONS, WorkerProfile, accept_answer, answer_hello, select_version,
+};
 pub use records::envelope::{Outcome, PendingResult, SessionBody, SessionMessage, WireMessage};
 pub use records::failure::{EffectState, ErrorCode, Phase, WireError};
 pub use refusal::{Predicate, Refusal, Stage};

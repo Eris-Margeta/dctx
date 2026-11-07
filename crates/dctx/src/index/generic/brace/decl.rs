@@ -4,7 +4,7 @@
 //! enum values are answered by [`super::data`]. Pure functions of one line: nesting, spans and signatures belong to the caller.
 
 use super::super::{ident_at, is_denied, skip_modifiers};
-use super::{data, Lang};
+use super::{Lang, data};
 
 /// Where a line stands.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -33,10 +33,42 @@ pub(super) struct Scope<'a> {
 pub(super) type Found = (String, &'static str);
 
 /// Words that start a statement or a directive, never a Dart or Groovy type.
-const NOT_TYPES: &[&str] = &["import", "export", "part", "library", "typedef", "extends", "implements", "with", "super", "this", "package", "default", "show", "hide", "in", "is", "as", "on", "of"];
+const NOT_TYPES: &[&str] = &[
+    "import",
+    "export",
+    "part",
+    "library",
+    "typedef",
+    "extends",
+    "implements",
+    "with",
+    "super",
+    "this",
+    "package",
+    "default",
+    "show",
+    "hide",
+    "in",
+    "is",
+    "as",
+    "on",
+    "of",
+];
 
 /// Words that are never a member name after a type.
-const NOT_NAMES: &[&str] = &["operator", "extends", "implements", "with", "is", "in", "as", "on", "of", "show", "hide"];
+const NOT_NAMES: &[&str] = &[
+    "operator",
+    "extends",
+    "implements",
+    "with",
+    "is",
+    "in",
+    "as",
+    "on",
+    "of",
+    "show",
+    "hide",
+];
 
 /// Everything the masked, trimmed `line` declares (`original` is the same line unmasked, for names inside strings).
 /// Almost always zero or one; an enum value list and a Scala `case A, B` declare several.
@@ -52,7 +84,10 @@ pub(super) fn declarations(lang: &Lang, line: &str, original: &str, scope: &Scop
     let found = core(lang, rest);
     if scope.inside == Inside::Body {
         let wanted = if lang.const_type { "type" } else { "fn" };
-        return found.filter(|(_, kind)| *kind == wanted).into_iter().collect();
+        return found
+            .filter(|(_, kind)| *kind == wanted)
+            .into_iter()
+            .collect();
     }
     let found = found
         .or_else(|| zig_test(lang, line, original).map(|name| (name, "fn")))
@@ -66,7 +101,11 @@ pub(super) fn declarations(lang: &Lang, line: &str, original: &str, scope: &Scop
 pub(super) fn shape(lang: &Lang, signature: &str) -> Inside {
     let rest = skip_modifiers(signature, lang.modifiers);
     let word = ident_at(rest).unwrap_or("");
-    let keyword = if lang.const_type && word == "const" { const_kind(&rest[word.len()..]).map(|(_, kind)| kind) } else { Some(word) };
+    let keyword = if lang.const_type && word == "const" {
+        const_kind(&rest[word.len()..]).map(|(_, kind)| kind)
+    } else {
+        Some(word)
+    };
     match keyword {
         Some("enum") => Inside::Enum,
         Some("struct" | "union") => Inside::Struct,
@@ -130,7 +169,10 @@ fn name_after(after: &str, paren: bool, word: &str) -> Option<String> {
 fn const_kind(after: &str) -> Option<(&str, &str)> {
     let rest = after.trim_start();
     let name = ident_at(rest).filter(|name| !is_denied(name))?;
-    let mut value = rest[name.len()..].trim_start().strip_prefix('=')?.trim_start();
+    let mut value = rest[name.len()..]
+        .trim_start()
+        .strip_prefix('=')?
+        .trim_start();
     while let Some(word) = ident_at(value).filter(|word| matches!(*word, "packed" | "extern")) {
         value = value[word.len()..].trim_start();
     }
@@ -148,7 +190,9 @@ fn zig_test(lang: &Lang, line: &str, original: &str) -> Option<String> {
     if lang.tag != "zig" || !line.contains('{') {
         return None;
     }
-    line.strip_prefix("test").filter(|after| after.is_empty() || after.starts_with(char::is_whitespace) || after.starts_with('{'))?;
+    line.strip_prefix("test").filter(|after| {
+        after.is_empty() || after.starts_with(char::is_whitespace) || after.starts_with('{')
+    })?;
     let text = original.trim_start().strip_prefix("test")?.trim_start();
     if let Some(body) = text.strip_prefix('"') {
         let mut end = body.len();
@@ -181,7 +225,9 @@ fn constructor(lang: &Lang, rest: &str, scope: &Scope) -> Option<String> {
         return Some(first.to_string());
     }
     let named = after.strip_prefix('.').and_then(ident_at)?;
-    after[1 + named.len()..].starts_with('(').then(|| named.to_string())
+    after[1 + named.len()..]
+        .starts_with('(')
+        .then(|| named.to_string())
 }
 
 /// PowerShell class methods: `[type] Name(` inside a class body. Names may contain `-`.
@@ -214,7 +260,12 @@ fn read_powershell_name(text: &str) -> Option<&str> {
             } else {
                 return None;
             }
-        } else if byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'$' || byte == b'-' || byte >= 0x80 {
+        } else if byte.is_ascii_alphanumeric()
+            || byte == b'_'
+            || byte == b'$'
+            || byte == b'-'
+            || byte >= 0x80
+        {
             end = i + 1;
         } else {
             break;
@@ -246,7 +297,11 @@ fn dart_function(rest: &str) -> Option<String> {
 fn accessor_name(text: &str) -> Option<String> {
     let name = ident_at(text).filter(|name| !is_denied(name))?;
     let tail = text[name.len()..].trim_start();
-    (tail.is_empty() || tail.starts_with("=>") || tail.starts_with(['(', '{', ';']) || tail.starts_with("async")).then(|| name.to_string())
+    (tail.is_empty()
+        || tail.starts_with("=>")
+        || tail.starts_with(['(', '{', ';'])
+        || tail.starts_with("async"))
+    .then(|| name.to_string())
 }
 
 /// `Type name` or `Type<T>? name` (a dotted or array type too): the name and the text after it, trimmed.
@@ -256,7 +311,10 @@ pub(super) fn typed_member(rest: &str) -> Option<(String, &str)> {
         return None;
     }
     let mut after = &rest[first.len()..];
-    after = after.strip_prefix('.').and_then(ident_at).map_or(after, |segment| &after[1 + segment.len()..]);
+    after = after
+        .strip_prefix('.')
+        .and_then(ident_at)
+        .map_or(after, |segment| &after[1 + segment.len()..]);
     if after.starts_with('<') {
         let close = balanced_angle(after)?;
         after = &after[close..];
@@ -310,13 +368,19 @@ fn anonymous_shape(text: &str) -> Option<Inside> {
 pub(super) fn field_shape(line: &str) -> Option<Inside> {
     let line = line.trim_start();
     let name = ident_at(line)?;
-    let after = line[name.len()..].trim_start().strip_prefix(':').filter(|after| !after.starts_with(':'))?;
+    let after = line[name.len()..]
+        .trim_start()
+        .strip_prefix(':')
+        .filter(|after| !after.starts_with(':'))?;
     anonymous_shape(after)
 }
 
 /// Zig `return struct {` inside a function that returns a type: the body kind of the returned type.
 pub(super) fn returned_shape(line: &str) -> Option<Inside> {
-    let after = line.trim_start().strip_prefix("return").filter(|after| after.starts_with(char::is_whitespace))?;
+    let after = line
+        .trim_start()
+        .strip_prefix("return")
+        .filter(|after| after.starts_with(char::is_whitespace))?;
     anonymous_shape(after)
 }
 
@@ -331,7 +395,10 @@ pub(super) fn class_params(line: &str, mut depth: usize) -> Vec<Found> {
             b'(' => depth += 1,
             b')' => depth = depth.saturating_sub(1),
             b'{' if depth == 0 => break,
-            byte if byte.is_ascii_alphabetic() && (at == 0 || !(bytes[at - 1].is_ascii_alphanumeric() || bytes[at - 1] == b'_')) => {
+            byte if byte.is_ascii_alphabetic()
+                && (at == 0
+                    || !(bytes[at - 1].is_ascii_alphanumeric() || bytes[at - 1] == b'_')) =>
+            {
                 let word = ident_at(&line[at..]).unwrap_or("");
                 let after = &line[at + word.len()..];
                 let kind = match word {

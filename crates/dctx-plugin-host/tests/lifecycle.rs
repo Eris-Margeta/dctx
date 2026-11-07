@@ -9,17 +9,33 @@ use dctx_plugin_host::{LaunchFacts, ModelAction, Origin, Supervisor, WorkerPhase
 use dctx_plugin_protocol::ErrorCode;
 use dctx_plugin_protocol::records::capability::Liveness;
 
-const POLICY: Liveness = Liveness::UnattendedFailClosed { sample_ms: 10, cancel_grace_ms: 10 };
+const POLICY: Liveness = Liveness::UnattendedFailClosed {
+    sample_ms: 10,
+    cancel_grace_ms: 10,
+};
 
 fn supervisor(origin: Origin, confined: bool) -> Supervisor<FakeProcess> {
-    Supervisor::new(LaunchFacts { origin, verified: true, compatible: true, confined }, POLICY, FakeProcess::default())
+    Supervisor::new(
+        LaunchFacts {
+            origin,
+            verified: true,
+            compatible: true,
+            confined,
+        },
+        POLICY,
+        FakeProcess::default(),
+    )
 }
 
 #[test]
 fn unconfined_third_party_and_override_never_spawn() {
     for origin in [Origin::ThirdParty, Origin::OfficialOverride] {
         let mut refused = supervisor(origin, false);
-        assert_eq!(refused.launch().map_err(|e| e.code), Err(ErrorCode::UnsupportedPlatform), "{origin:?}");
+        assert_eq!(
+            refused.launch().map_err(|e| e.code),
+            Err(ErrorCode::UnsupportedPlatform),
+            "{origin:?}"
+        );
         assert_eq!(refused.process().spawns, 0);
         assert_eq!(refused.worker().phase(), WorkerPhase::Refused);
         let mut confined = supervisor(origin, true);
@@ -38,10 +54,19 @@ fn bundled_git_may_run_pending_os_confinement() {
     assert!(bundled.admits());
     let trace = bundled.worker().trace();
     for (a, b) in [
-        (ModelAction::LifecycleEnableOrRefuse, ModelAction::LifecycleStart),
+        (
+            ModelAction::LifecycleEnableOrRefuse,
+            ModelAction::LifecycleStart,
+        ),
         (ModelAction::LifecycleStart, ModelAction::LifecycleNegotiate),
-        (ModelAction::LifecycleNegotiate, ModelAction::LifecycleInitialize),
-        (ModelAction::LifecycleInitialize, ModelAction::LifecycleInvoke),
+        (
+            ModelAction::LifecycleNegotiate,
+            ModelAction::LifecycleInitialize,
+        ),
+        (
+            ModelAction::LifecycleInitialize,
+            ModelAction::LifecycleInvoke,
+        ),
     ] {
         assert!(trace.precedes(a, b), "{a:?} before {b:?}");
     }
@@ -51,16 +76,27 @@ fn bundled_git_may_run_pending_os_confinement() {
 fn no_provider_on_platform_is_unsupported_not_unrestricted() {
     let mut supervisor = supervisor(Origin::ThirdParty, true);
     supervisor.process_mut().platform_supported = false;
-    assert_eq!(supervisor.launch().map_err(|e| e.code), Err(ErrorCode::UnsupportedPlatform));
+    assert_eq!(
+        supervisor.launch().map_err(|e| e.code),
+        Err(ErrorCode::UnsupportedPlatform)
+    );
     assert_eq!(supervisor.process().spawns, 0);
     assert!(!supervisor.admits());
 }
 
 #[test]
 fn unverified_artifact_never_spawns() {
-    let facts = LaunchFacts { origin: Origin::BundledGit, verified: false, compatible: true, confined: true };
+    let facts = LaunchFacts {
+        origin: Origin::BundledGit,
+        verified: false,
+        compatible: true,
+        confined: true,
+    };
     let mut supervisor = Supervisor::new(facts, POLICY, FakeProcess::default());
-    assert_eq!(supervisor.launch().map_err(|e| e.code), Err(ErrorCode::IntegrityFailure));
+    assert_eq!(
+        supervisor.launch().map_err(|e| e.code),
+        Err(ErrorCode::IntegrityFailure)
+    );
     assert_eq!(supervisor.process().spawns, 0);
 }
 

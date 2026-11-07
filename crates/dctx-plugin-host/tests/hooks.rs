@@ -50,9 +50,21 @@ fn report_lists_ledger_receipts_and_rejects_forged_claims() {
     replace_with(&mut broker, b"abc\nx", "a:1").expect("effect");
     let ledger = broker.ledger().committed(&token("op:1"));
     assert_eq!(ledger.len(), 1);
-    let mut run = HookRun::plan(&[HookEntry { plugin: id(0), required: false }], &[]).expect("plan");
+    let mut run = HookRun::plan(
+        &[HookEntry {
+            plugin: id(0),
+            required: false,
+        }],
+        &[],
+    )
+    .expect("plan");
     let forged = Token::new("receipt:3").expect("forged");
-    run.record(true, ledger.clone(), vec![ledger[0].clone(), forged.clone()]).expect("ran");
+    run.record(
+        true,
+        ledger.clone(),
+        vec![ledger[0].clone(), forged.clone()],
+    )
+    .expect("ran");
     run.published();
     let report = run.report();
     assert_eq!(report.receipts, ledger);
@@ -69,10 +81,20 @@ fn report_lists_ledger_receipts_and_rejects_forged_claims() {
 
 #[test]
 fn post_boundary_failure_keeps_publication_and_effects() {
-    let mut run = HookRun::plan(&[HookEntry { plugin: id(0), required: true }], &[]).expect("plan");
+    let mut run = HookRun::plan(
+        &[HookEntry {
+            plugin: id(0),
+            required: true,
+        }],
+        &[],
+    )
+    .expect("plan");
     run.published();
     let receipt = Token::new("receipt:1").expect("receipt");
-    assert_eq!(run.record(false, vec![receipt.clone()], vec![]), Ok(HookStatus::RequiredFailure));
+    assert_eq!(
+        run.record(false, vec![receipt.clone()], vec![]),
+        Ok(HookStatus::RequiredFailure)
+    );
     let report = run.report();
     assert!(report.published);
     assert_eq!(report.receipts, vec![receipt]);
@@ -81,11 +103,22 @@ fn post_boundary_failure_keeps_publication_and_effects() {
 #[test]
 fn skipped_hooks_contribute_no_receipts_and_block_transitively() {
     let edges = [(id(0), id(1)), (id(1), id(2))];
-    let entries: Vec<HookEntry> = (0..3).map(|i| HookEntry { plugin: id(i), required: true }).collect();
+    let entries: Vec<HookEntry> = (0..3)
+        .map(|i| HookEntry {
+            plugin: id(i),
+            required: true,
+        })
+        .collect();
     let mut run = HookRun::plan(&entries, &edges).expect("plan");
     run.record(false, vec![], vec![]).expect("0");
     let stray = Token::new("receipt:9").expect("stray");
-    assert_eq!(run.record(true, vec![stray], vec![]), Ok(HookStatus::Skipped));
+    assert_eq!(
+        run.record(true, vec![stray], vec![]),
+        Ok(HookStatus::Skipped)
+    );
     assert_eq!(run.record(true, vec![], vec![]), Ok(HookStatus::Skipped));
-    assert_eq!(run.report().receipts, [] as [dctx_plugin_protocol::records::scalars::Token; 0]);
+    assert_eq!(
+        run.report().receipts,
+        [] as [dctx_plugin_protocol::records::scalars::Token; 0]
+    );
 }

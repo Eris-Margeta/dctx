@@ -7,7 +7,7 @@
 use dctx_plugin_distribution::{
     CapabilitySet, DistributionError, Document, InstalledVersion, PluginId, Sha256Hex, Version,
 };
-use dctx_plugin_protocol::{DecodeLimits, decode_object};
+use dctx_plugin_protocol::{decode_object, DecodeLimits};
 
 /// Public index locator. Refresh is explicit; this URL is not fetched by list or help.
 pub const DEFAULT_INDEX_URL: &str = "https://example.invalid/dctx/index.json";
@@ -42,8 +42,13 @@ pub fn id() -> Result<PluginId, DistributionError> {
 
 /// Requested capability set, canonicalized by the distribution crate.
 pub fn capabilities() -> Result<CapabilitySet, DistributionError> {
-    let value = decode_object(CAPABILITIES_JSON.as_bytes(), DecodeLimits::MANIFEST)
-        .map_err(|_| DistributionError::Malformed { document: Document::Manifest, reason: "capabilities" })?;
+    let value =
+        decode_object(CAPABILITIES_JSON.as_bytes(), DecodeLimits::MANIFEST).map_err(|_| {
+            DistributionError::Malformed {
+                document: Document::Manifest,
+                reason: "capabilities",
+            }
+        })?;
     CapabilitySet::from_manifest(&value)
 }
 
@@ -51,7 +56,9 @@ pub fn capabilities() -> Result<CapabilitySet, DistributionError> {
 pub fn installed_version() -> Result<InstalledVersion, DistributionError> {
     let catalog = catalog();
     let digest = catalog.digest.ok_or(DistributionError::IntegrityFailure)?;
-    let manifest = catalog.manifest_digest.ok_or(DistributionError::IntegrityFailure)?;
+    let manifest = catalog
+        .manifest_digest
+        .ok_or(DistributionError::IntegrityFailure)?;
     Ok(InstalledVersion {
         version: Version::parse(&catalog.version)?,
         release_sequence: 1,
@@ -85,7 +92,7 @@ mod tests {
         }
         assert_eq!(catalog().alias, "git");
         assert_eq!(catalog().id, "dctx/git");
-        assert_eq!(catalog().version, "1.1.0");
+        assert_eq!(catalog().version, "1.2.0");
         assert!(capabilities().unwrap().len() >= 3);
     }
 
@@ -100,6 +107,6 @@ mod tests {
     fn strict_build_keeps_catalog_metadata_without_linking_the_worker() {
         assert!(!worker_linked());
         assert_eq!(catalog().id, "dctx/git");
-        assert_eq!(installed_version().unwrap().version.as_str(), "1.1.0");
+        assert_eq!(installed_version().unwrap().version.as_str(), "1.2.0");
     }
 }

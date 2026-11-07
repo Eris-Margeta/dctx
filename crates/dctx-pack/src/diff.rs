@@ -32,7 +32,11 @@ pub fn diff_against(
     };
     let (version, major_reset) =
         version_after_diff(previous.map(PackSnapshot::version), &report, max_diff_files);
-    VersionedDiff { report, version, major_reset }
+    VersionedDiff {
+        report,
+        version,
+        major_reset,
+    }
 }
 
 #[cfg(test)]
@@ -81,9 +85,15 @@ mod tests {
     fn massive_change_and_limit_force_a_major_reset() {
         let previous = snapshot(&[("a", 1)], Version { major: 1, minor: 2 });
         let massive = diff_against(Some(&previous), &tree(&[("a", 9)]), 999);
-        assert_eq!((massive.version, massive.major_reset), (Version { major: 2, minor: 0 }, true));
+        assert_eq!(
+            (massive.version, massive.major_reset),
+            (Version { major: 2, minor: 0 }, true)
+        );
         let previous = snapshot(&[("a", 1), ("b", 1)], Version { major: 1, minor: 2 });
         let limited = diff_against(Some(&previous), &tree(&[("a", 1), ("b", 2)]), 2);
-        assert_eq!((limited.version, limited.major_reset), (Version { major: 2, minor: 0 }, true));
+        assert_eq!(
+            (limited.version, limited.major_reset),
+            (Version { major: 2, minor: 0 }, true)
+        );
     }
 }

@@ -4,18 +4,23 @@
 //! The file's module record comes first, then each symbol by start line. Nothing reads the source.
 //! A missing module is [`Collected::Outcome`]; a non-module id is refused.
 
-use super::query::{missing, record_of, require, Collected};
 use super::Generation;
+use super::query::{Collected, missing, record_of, require};
 use crate::domain::{AnswerRecord, DctxError, MapRequest};
 
 /// The module of the file named by `request.target`, then its symbols with their signatures.
-pub(super) fn skeleton(generation: &Generation, request: &MapRequest) -> Result<Collected, DctxError> {
+pub(super) fn skeleton(
+    generation: &Generation,
+    request: &MapRequest,
+) -> Result<Collected, DctxError> {
     let text = &generation.text;
     let Some(root) = require(generation, &request.target)? else {
         return Ok(missing(&request.target));
     };
     if root.kind != "module" {
-        return Err(DctxError::invalid("skeleton takes a file path or an m: module id"));
+        return Err(DctxError::invalid(
+            "skeleton takes a file path or an m: module id",
+        ));
     }
     let path = text.get(root.path);
     let mut rows = Vec::new();
@@ -80,6 +85,14 @@ mod tests {
         ];
         source_order(&mut rows);
         let ids: Vec<&str> = rows.iter().map(|r| r.id.as_str()).collect();
-        assert_eq!(ids, ["s:a.py#Repo", "s:a.py#Repo::get", "s:a.py#Repo::put", "s:a.py#helper"]);
+        assert_eq!(
+            ids,
+            [
+                "s:a.py#Repo",
+                "s:a.py#Repo::get",
+                "s:a.py#Repo::put",
+                "s:a.py#helper"
+            ]
+        );
     }
 }

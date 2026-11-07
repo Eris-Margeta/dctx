@@ -62,7 +62,10 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::too_many_lines, reason = "This table-driven test keeps the complete lockfile-extension matrix beside its shared depth-two checks.")]
+    #[allow(
+        clippy::too_many_lines,
+        reason = "This table-driven test keeps the complete lockfile-extension matrix beside its shared depth-two checks."
+    )]
     fn test_all_lockfile_types_at_depth_two() {
         let rules: Vec<IgnoreRule> = HARDCODED_OMIT_CONTENT_RULES
             .iter()

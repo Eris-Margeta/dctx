@@ -10,7 +10,10 @@ use crate::datatypes::DirContextTreeNode;
 
 /// Uspoređuje dva stabla i generira izvještaj.
 /// `old_root` može biti None (u slučaju prvog run-a, sve je Added).
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn compare_trees(
     old_root: Option<&DirContextTreeNode>,
     new_root: &DirContextTreeNode,
@@ -42,11 +45,8 @@ mod tests {
     use std::path::PathBuf;
 
     fn create_file_node(path: &str, size: u64, timestamp: u64) -> DirContextTreeNode {
-        let mut node = DirContextTreeNode::new(
-            NodeType::File,
-            path,
-            PathBuf::from(format!("/test/{path}")),
-        );
+        let mut node =
+            DirContextTreeNode::new(NodeType::File, path, PathBuf::from(format!("/test/{path}")));
         node.content_size = size;
         node.last_modified_timestamp = timestamp;
         node

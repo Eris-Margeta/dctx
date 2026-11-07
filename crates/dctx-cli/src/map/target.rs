@@ -17,7 +17,9 @@ pub(super) fn prepare(verb: QueryVerb, target: &str, place: &Path) -> Result<Str
     }
     match std::fs::metadata(place.join(relative)) {
         Ok(meta) if meta.is_file() => Ok(format!("m:{relative}")),
-        Ok(_) => Err(format!("{relative} is a directory; pass a file path or a stable id")),
+        Ok(_) => Err(format!(
+            "{relative} is a directory; pass a file path or a stable id"
+        )),
         Err(_) => Err(format!(
             "{relative} is not an existing file; pass a stable id or a place-relative file path"
         )),
@@ -27,7 +29,10 @@ pub(super) fn prepare(verb: QueryVerb, target: &str, place: &Path) -> Result<Str
 /// True for `@<6 hex>` and `<p|k|m|s|t|d>:<rest>` ids.
 fn is_stable_target(target: &str) -> bool {
     if let Some(hex) = target.strip_prefix('@') {
-        return hex.len() == 6 && hex.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte));
+        return hex.len() == 6
+            && hex
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte));
     }
     let Some((prefix, rest)) = target.split_once(':') else {
         return false;
@@ -41,5 +46,7 @@ fn is_relative_file(target: &str) -> bool {
         && !target.starts_with('/')
         && !target.contains(['\\', ':'])
         && !target.chars().any(char::is_control)
-        && target.split('/').all(|part| !part.is_empty() && part != "." && part != "..")
+        && target
+            .split('/')
+            .all(|part| !part.is_empty() && part != "." && part != "..")
 }

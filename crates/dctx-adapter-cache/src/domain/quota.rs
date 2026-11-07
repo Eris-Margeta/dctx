@@ -75,7 +75,10 @@ pub struct Quota {
 
 impl Quota {
     /// CACHE-v1 product defaults.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn product_default() -> Self {
         Self {
             hard_cap: HARD_CAP_BYTES,
@@ -89,7 +92,10 @@ impl Quota {
     }
 
     /// A small quota with the same 3/4 and 3/5 ratios and no metadata reserve.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn scaled(hard: u64) -> Self {
         let mut soft = hard / 4 * 3;
         if soft == 0 {
@@ -111,13 +117,12 @@ impl Quota {
     }
 
     /// Replaces the three root ceilings. Global watermarks stay.
-    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
-    pub const fn with_ceilings(
-        mut self,
-        view: u64,
-        pack: u64,
-        preview: u64,
-    ) -> Self {
+    #[allow(
+        clippy::must_use_candidate,
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
+    pub const fn with_ceilings(mut self, view: u64, pack: u64, preview: u64) -> Self {
         self.root_view_ceiling = view;
         self.root_pack_ceiling = pack;
         self.root_preview_ceiling = preview;
@@ -126,7 +131,9 @@ impl Quota {
 
     pub(super) fn check(self) -> Result<(), CacheError> {
         if self.soft_watermark > self.hard_cap || self.eviction_target > self.soft_watermark {
-            return Err(CacheError::InvalidRequest { reason: "quota watermarks are not ordered" });
+            return Err(CacheError::InvalidRequest {
+                reason: "quota watermarks are not ordered",
+            });
         }
         if self.emergency_metadata > self.hard_cap {
             return Err(CacheError::InvalidRequest {
@@ -159,7 +166,10 @@ pub struct AutoCleanPolicy {
 
 impl AutoCleanPolicy {
     /// Product defaults: enabled, daily, the CACHE-v1 TTLs, and the 2 GiB cap.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn product_default() -> Self {
         Self {
             enabled: true,
@@ -193,11 +203,17 @@ mod tests {
     fn product_figures_match_the_contract() {
         assert_eq!(HARD_CAP_BYTES, 2_147_483_648);
         assert_eq!(SOFT_WATERMARK_BYTES, 1_610_612_736);
-        assert_eq!(EVICTION_TARGET_BYTES, u64::try_from(12 * (1024u128 * 1024 * 1024) / 10).expect("fixture cap fits u64"));
+        assert_eq!(
+            EVICTION_TARGET_BYTES,
+            u64::try_from(12 * (1024u128 * 1024 * 1024) / 10).expect("fixture cap fits u64")
+        );
         assert_eq!(ROOT_VIEW_CEILING_BYTES, 805_306_368);
         assert_eq!(ROOT_PACK_CEILING_BYTES, 805_306_368);
         const {
-            assert!(ROOT_VIEW_CEILING_BYTES < HARD_CAP_BYTES && ROOT_PACK_CEILING_BYTES < HARD_CAP_BYTES);
+            assert!(
+                ROOT_VIEW_CEILING_BYTES < HARD_CAP_BYTES
+                    && ROOT_PACK_CEILING_BYTES < HARD_CAP_BYTES
+            );
         };
         assert_eq!(ROOT_PREVIEW_CEILING_BYTES, 67_108_864);
         let quota = Quota::product_default();
@@ -235,7 +251,9 @@ mod tests {
         raised.system_cap_bytes = HARD_CAP_BYTES + 1;
         assert!(matches!(
             raised.check(),
-            Err(CacheError::InvalidRequest { reason: "system cap cannot exceed the product hard cap" })
+            Err(CacheError::InvalidRequest {
+                reason: "system cap cannot exceed the product hard cap"
+            })
         ));
     }
 }

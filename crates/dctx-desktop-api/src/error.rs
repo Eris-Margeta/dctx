@@ -114,7 +114,10 @@ pub enum DesktopError {
 
 impl DesktopError {
     /// The only string the Tauri command layer returns for this error.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn command_string(&self) -> String {
         match self {
             Self::PluginNeedsConsent => "Plugin needs-consent: explicit approval required".to_string(),
@@ -174,27 +177,51 @@ mod tests {
             large.command_string(),
             "Directory too large: 3 files (limit: 2)\n\nPlease use filters or select a smaller directory."
         );
-        assert_eq!(String::from(large), DesktopError::DirectoryTooLarge { files: 3, limit: 2 }.to_string());
-        assert_eq!(DesktopError::PathMissing.command_string(), "Path does not exist");
         assert_eq!(
-            DesktopError::RecentPathMissing { path: "/missing".to_string() }.command_string(),
+            String::from(large),
+            DesktopError::DirectoryTooLarge { files: 3, limit: 2 }.to_string()
+        );
+        assert_eq!(
+            DesktopError::PathMissing.command_string(),
+            "Path does not exist"
+        );
+        assert_eq!(
+            DesktopError::RecentPathMissing {
+                path: "/missing".to_string()
+            }
+            .command_string(),
             "Path does not exist: /missing"
         );
-        assert_eq!(DesktopError::AllFiltered.command_string(), "All files filtered out");
         assert_eq!(
-            DesktopError::IgnoreRules { detail: "denied".to_string() }.command_string(),
+            DesktopError::AllFiltered.command_string(),
+            "All files filtered out"
+        );
+        assert_eq!(
+            DesktopError::IgnoreRules {
+                detail: "denied".to_string()
+            }
+            .command_string(),
             "Error loading ignore rules: denied"
         );
         assert_eq!(
-            DesktopError::Walk { detail: "root".to_string() }.command_string(),
+            DesktopError::Walk {
+                detail: "root".to_string()
+            }
+            .command_string(),
             "Failed to walk directory: root"
         );
         assert_eq!(
-            DesktopError::Format { detail: "utf-8".to_string() }.command_string(),
+            DesktopError::Format {
+                detail: "utf-8".to_string()
+            }
+            .command_string(),
             "Failed to format output: utf-8"
         );
         assert_eq!(
-            DesktopError::RecentMissing { path: "/p".to_string() }.command_string(),
+            DesktopError::RecentMissing {
+                path: "/p".to_string()
+            }
+            .command_string(),
             "Project not found in recent list: /p"
         );
     }
@@ -211,8 +238,14 @@ mod tests {
             parse.command_string(),
             "Failed to parse recent projects: recent_parse data line 1 column 19"
         );
-        let setting = DesktopError::InvalidSetting { field: "theme", reason: "enum" };
-        assert_eq!(setting.command_string(), "Invalid desktop setting: theme enum");
+        let setting = DesktopError::InvalidSetting {
+            field: "theme",
+            reason: "enum",
+        };
+        assert_eq!(
+            setting.command_string(),
+            "Invalid desktop setting: theme enum"
+        );
         assert!(!parse.command_string().contains("PRIVATE_SENTINEL"));
         assert!(!format!("{parse:?}").contains("PRIVATE_SENTINEL"));
     }

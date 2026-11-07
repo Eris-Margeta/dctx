@@ -7,9 +7,13 @@
 use crate::json::encode::to_canonical;
 use crate::json::fields::{Fields, Obj, array, constant_true, list, uint, unique_list};
 use crate::json::value::Json;
-use crate::records::broker::{ChunkRead, FileReplace, FileStage, GitAddIgnore, OutputList, StateReclaim, StateWrite};
+use crate::records::broker::{
+    ChunkRead, FileReplace, FileStage, GitAddIgnore, OutputList, StateReclaim, StateWrite,
+};
 use crate::records::capability::{Grant, Liveness};
-use crate::records::common::{Config, HookName, Identity, Limits, Resource, Wait, decode_config, encode_config};
+use crate::records::common::{
+    Config, HookName, Identity, Limits, Resource, Wait, decode_config, encode_config,
+};
 use crate::records::common::{decode_hook_decl, encode_hook_decl};
 use crate::records::invocation::Invocation;
 use crate::records::method::Method;
@@ -127,7 +131,10 @@ pub enum Request {
 
 impl Request {
     /// The request's method.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn method(&self) -> Method {
         match self {
             Self::Initialize(_) => Method::Initialize,
@@ -176,7 +183,9 @@ impl Request {
             }
             Method::Shutdown => {
                 let mut f = Fields::of(params)?;
-                let shutdown = Self::Shutdown { reason: ShutdownReason::decode(f.req("reason")?)? };
+                let shutdown = Self::Shutdown {
+                    reason: ShutdownReason::decode(f.req("reason")?)?,
+                };
                 f.finish()?;
                 shutdown
             }
@@ -204,24 +213,32 @@ impl Request {
                 .put("last_progress_seq", Json::uint(probe.last_progress_seq))
                 .maybe("wait", probe.wait.as_ref().map(Wait::encode))
                 .build(),
-            Self::Cancel { invocation, reason } => {
-                Obj::new().put("invocation", invocation.encode()).put("reason", reason.encode()).build()
-            }
+            Self::Cancel { invocation, reason } => Obj::new()
+                .put("invocation", invocation.encode())
+                .put("reason", reason.encode())
+                .build(),
             Self::Shutdown { reason } => Obj::new().put("reason", reason.encode()).build(),
             Self::OutputRead(read) | Self::StateRead(read) => read.encode("handle"),
             Self::OutputList(list) => list.encode(),
             Self::FileRead(read) => read.encode("resource"),
             Self::FileStage(stage) => stage.encode(),
-            Self::FileReplace(replace) => with_action(replace.encode_without_action(), &replace.action_id),
+            Self::FileReplace(replace) => {
+                with_action(replace.encode_without_action(), &replace.action_id)
+            }
             Self::ProgramRun(run) => with_action(run.encode_without_action(), &run.action_id),
             Self::StateWrite(write) => with_action(write.encode_without_action(), &write.action_id),
-            Self::StateReclaim(reclaim) => with_action(reclaim.encode_without_action(), &reclaim.action_id),
+            Self::StateReclaim(reclaim) => {
+                with_action(reclaim.encode_without_action(), &reclaim.action_id)
+            }
         }
     }
 
     /// Replay key and canonical argument bytes `{method, params}` without `action_id` (S-REPLAY).
     /// `None` for requests that carry no action ID.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn action_input(&self) -> Option<(&Token, Vec<u8>)> {
         let (action, params) = match self {
             Self::FileReplace(replace) => (&replace.action_id, replace.encode_without_action()),
@@ -230,7 +247,10 @@ impl Request {
             Self::StateReclaim(reclaim) => (&reclaim.action_id, reclaim.encode_without_action()),
             _ => return None,
         };
-        let input = Obj::new().put("method", self.method().encode()).put("params", params.build()).build();
+        let input = Obj::new()
+            .put("method", self.method().encode())
+            .put("params", params.build())
+            .build();
         Some((action, to_canonical(&input)))
     }
 }
@@ -282,22 +302,42 @@ mod tests {
     #[test]
     fn broker_requests_round_trip_and_refuse_extras() {
         let cases = [
-            (Method::FileRead, r#"{"resource":"file:ignore","offset":1,"length":2,"precondition":"pre:1"}"#),
-            (Method::OutputRead, r#"{"handle":"out:1","offset":0,"length":3}"#),
-            (Method::FileStage, r#"{"resource":"file:ignore","precondition":"pre:1","offset":0,"bytes":"","final":true}"#),
-            (Method::StateWrite, r#"{"handle":"state:1","precondition":"pre:s","bytes":"YWJj","provenance":["a"],"action_id":"a:1"}"#),
-            (Method::StateReclaim, r#"{"handle":"state:1","precondition":"pre:s","action_id":"a:1"}"#),
+            (
+                Method::FileRead,
+                r#"{"resource":"file:ignore","offset":1,"length":2,"precondition":"pre:1"}"#,
+            ),
+            (
+                Method::OutputRead,
+                r#"{"handle":"out:1","offset":0,"length":3}"#,
+            ),
+            (
+                Method::FileStage,
+                r#"{"resource":"file:ignore","precondition":"pre:1","offset":0,"bytes":"","final":true}"#,
+            ),
+            (
+                Method::StateWrite,
+                r#"{"handle":"state:1","precondition":"pre:s","bytes":"YWJj","provenance":["a"],"action_id":"a:1"}"#,
+            ),
+            (
+                Method::StateReclaim,
+                r#"{"handle":"state:1","precondition":"pre:s","action_id":"a:1"}"#,
+            ),
         ];
         for (method, text) in cases {
             let request = Request::decode(method, &params(text)).expect(text);
             assert_eq!(request.method(), method);
-            assert_eq!(Request::decode(method, &request.encode_params()), Ok(request));
+            assert_eq!(
+                Request::decode(method, &request.encode_params()),
+                Ok(request)
+            );
         }
-        let output_precondition = r#"{"handle":"out:1","offset":0,"length":3,"precondition":"pre:1"}"#;
+        let output_precondition =
+            r#"{"handle":"out:1","offset":0,"length":3,"precondition":"pre:1"}"#;
         assert!(Request::decode(Method::OutputRead, &params(output_precondition)).is_err());
         let zero = r#"{"resource":"file:ignore","offset":0,"length":0}"#;
         assert!(Request::decode(Method::FileRead, &params(zero)).is_err());
-        let argv = r#"{"operation":"git.add-ignore","args":["add","."],"action_id":"action:stage"}"#;
+        let argv =
+            r#"{"operation":"git.add-ignore","args":["add","."],"action_id":"action:stage"}"#;
         assert!(Request::decode(Method::ProgramRun, &params(argv)).is_err());
     }
 
@@ -309,7 +349,11 @@ mod tests {
         assert_eq!(action.as_str(), "action:replace");
         let expected = r#"{"method":"file.replace","params":{"precondition":"pre:1","resource":"file:ignore","upload":"upload:1"}}"#;
         assert_eq!(String::from_utf8(input).expect("utf8"), expected);
-        let read = Request::decode(Method::StateRead, &params(r#"{"handle":"s","offset":0,"length":1}"#)).expect("ok");
+        let read = Request::decode(
+            Method::StateRead,
+            &params(r#"{"handle":"s","offset":0,"length":1}"#),
+        )
+        .expect("ok");
         assert!(read.action_input().is_none());
     }
 }

@@ -2,10 +2,10 @@
 //! Source and revision boundaries for query freshness.
 //! Implements SPEC-MAP-MODE section 7 without choosing a filesystem.
 //! Used by index and query adapters to obtain current source facts.
-use std::fmt::Write as _;
 use crate::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::Write as _;
 
 /// One authorized file captured by the scanner.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -92,7 +92,10 @@ pub trait Source {
         let text = hashed
             .as_bytes()
             .iter()
-            .fold(String::new(), |mut text, byte| { write!(text, "{byte:02x}").expect("writing to a String cannot fail"); text });
+            .fold(String::new(), |mut text, byte| {
+                write!(text, "{byte:02x}").expect("writing to a String cannot fail");
+                text
+            });
         Ok(text == file.hash)
     }
     /// Rechecks privacy and returns current bytes for a selected source span.

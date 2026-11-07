@@ -2,7 +2,7 @@
 //! Reference and type scans: calls, uses-type, angles and statement ends.
 //! Call names keep `.` for both `.` and `?.`. Bare reads and `::` abstain.
 //! Angle brackets close only when the interior still looks like a type.
-use super::{decl_word, is_modifier, Scope, Walker};
+use super::{Scope, Walker, decl_word, is_modifier};
 use crate::lexer::keyword;
 use dctx_map_model::EdgeKind;
 
@@ -67,7 +67,9 @@ impl Walker<'_> {
         let mut last = start;
         loop {
             if self.is(index, "<") {
-                let Some(close) = self.generic_close(index, end) else { break };
+                let Some(close) = self.generic_close(index, end) else {
+                    break;
+                };
                 index = close + 1;
             }
             if self.is(index, ".") {
@@ -94,7 +96,9 @@ impl Walker<'_> {
             }
             break;
         }
-        if self.is(index, "<") && let Some(close) = self.generic_close(index, end) {
+        if self.is(index, "<")
+            && let Some(close) = self.generic_close(index, end)
+        {
             index = close + 1;
         }
         if index < end && (self.is(index, "(") || self.is(index, "{")) {
@@ -174,14 +178,23 @@ impl Walker<'_> {
     }
 
     fn expr_stop(&self, index: usize) -> bool {
-        if self.is_semi(index) || self.is(index, "}") || self.is(index, ")") || self.is(index, "]") {
+        if self.is_semi(index) || self.is(index, "}") || self.is(index, ")") || self.is(index, "]")
+        {
             return true;
         }
         self.ident(index)
             && matches!(
                 self.text(index),
-                "fun" | "class" | "interface" | "object" | "typealias" | "package" | "import"
-                    | "constructor" | "val" | "var"
+                "fun"
+                    | "class"
+                    | "interface"
+                    | "object"
+                    | "typealias"
+                    | "package"
+                    | "import"
+                    | "constructor"
+                    | "val"
+                    | "var"
             )
     }
 
@@ -221,7 +234,11 @@ impl Walker<'_> {
             index += 1;
             index = self.finish_type_name(index, end, &mut last);
         }
-        let byte = if started { self.end_byte(last) } else { self.start_byte(start) };
+        let byte = if started {
+            self.end_byte(last)
+        } else {
+            self.start_byte(start)
+        };
         (index, byte)
     }
 
@@ -230,7 +247,9 @@ impl Walker<'_> {
             *last = index + 1;
             index += 2;
         }
-        if self.is(index, "<") && let Some(close) = self.angles_end(index, end) {
+        if self.is(index, "<")
+            && let Some(close) = self.angles_end(index, end)
+        {
             *last = close;
             index = close + 1;
         }
@@ -265,7 +284,9 @@ impl Walker<'_> {
         let mut guard = 0usize;
         while index < end && guard <= end {
             guard += 1;
-            if self.is(index, "<") && let Some(close) = self.angles_end(index, end) {
+            if self.is(index, "<")
+                && let Some(close) = self.angles_end(index, end)
+            {
                 self.colon_types(index + 1, close, scope);
                 index = close + 1;
                 continue;
@@ -287,7 +308,9 @@ impl Walker<'_> {
         let mut guard = 0usize;
         while index < end && guard <= end {
             guard += 1;
-            if self.is(index, "<") && let Some(close) = self.angles_end(index, end.min(self.toks.len())) {
+            if self.is(index, "<")
+                && let Some(close) = self.angles_end(index, end.min(self.toks.len()))
+            {
                 self.emit_type_args(index + 1, close, scope);
                 index = close + 1;
                 continue;
@@ -399,11 +422,17 @@ impl Walker<'_> {
         let mut depth = 0i32;
         while index < end {
             if depth == 0
-                && (self.is(index, "{") || self.is(index, "=") || self.is_semi(index) || self.decl_at(index))
+                && (self.is(index, "{")
+                    || self.is(index, "=")
+                    || self.is_semi(index)
+                    || self.decl_at(index))
             {
                 return index;
             }
-            if self.is(index, "<") && depth == 0 && let Some(close) = self.angles_end(index, end) {
+            if self.is(index, "<")
+                && depth == 0
+                && let Some(close) = self.angles_end(index, end)
+            {
                 index = close + 1;
                 continue;
             }
@@ -424,7 +453,10 @@ impl Walker<'_> {
             if depth == 0 && (self.is(index, ",") || self.is_semi(index)) {
                 return index;
             }
-            if depth == 0 && self.is(index, "<") && let Some(end) = self.angles_end(index, close) {
+            if depth == 0
+                && self.is(index, "<")
+                && let Some(end) = self.angles_end(index, close)
+            {
                 index = end + 1;
                 continue;
             }
@@ -446,7 +478,11 @@ impl Walker<'_> {
             return index.min(end);
         }
         let stop = self.expr_end(index, end);
-        let stop = if stop <= index { (index + 1).min(end) } else { stop.min(end) };
+        let stop = if stop <= index {
+            (index + 1).min(end)
+        } else {
+            stop.min(end)
+        };
         if stop < end && (self.is(stop, "}") || self.decl_at(stop)) {
             stop
         } else {

@@ -19,19 +19,19 @@
 
 #[cfg(unix)]
 use std::fs::{self, File, OpenOptions};
+use std::io;
 #[cfg(unix)]
 use std::io::Read;
 #[cfg(target_os = "linux")]
 use std::io::Write;
-use std::io;
 #[cfg(unix)]
 use std::path::Path;
 use std::path::PathBuf;
 #[cfg(unix)]
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Mutex;
 #[cfg(target_os = "linux")]
 use std::sync::MutexGuard;
-use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use dctx_plugin_distribution::{
@@ -45,7 +45,11 @@ use dctx_plugin_distribution::{LockToken, SafeFileName, Store};
 pub struct SystemClock;
 
 impl Clock for SystemClock {
-    fn now(&self) -> u64 { SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_secs()) }
+    fn now(&self) -> u64 {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_or(0, |d| d.as_secs())
+    }
 }
 
 /// Network port that never connects. TLS is a separate reviewed adapter.
@@ -53,25 +57,44 @@ impl Clock for SystemClock {
 pub struct NoTls;
 
 impl Network for NoTls {
-    fn get(&self, _url: &HttpsUrl) -> Result<Response, NetworkError> { Err(NetworkError::Unreachable) }
+    fn get(&self, _url: &HttpsUrl) -> Result<Response, NetworkError> {
+        Err(NetworkError::Unreachable)
+    }
 }
 
 /// Compile-time host target; libc selection never probes the running system.
 pub fn host_target() -> Result<Target, super::UnsupportedTarget> {
-    let env = if cfg!(target_env = "gnu") { "gnu" }
-        else if cfg!(target_env = "musl") { "musl" }
-        else if cfg!(target_env = "msvc") { "msvc" }
-        else if cfg!(target_env = "uclibc") { "uclibc" }
-        else if cfg!(target_env = "") { "" } else { "unknown" };
+    let env = if cfg!(target_env = "gnu") {
+        "gnu"
+    } else if cfg!(target_env = "musl") {
+        "musl"
+    } else if cfg!(target_env = "msvc") {
+        "msvc"
+    } else if cfg!(target_env = "uclibc") {
+        "uclibc"
+    } else if cfg!(target_env = "") {
+        ""
+    } else {
+        "unknown"
+    };
     target_for(std::env::consts::OS, std::env::consts::ARCH, env)
 }
 
 /// Closed artifact mapping, independent of the machine running the command.
-pub(crate) fn target_for(os: &str, arch: &str, env: &str) -> Result<Target, super::UnsupportedTarget> {
+pub(crate) fn target_for(
+    os: &str,
+    arch: &str,
+    env: &str,
+) -> Result<Target, super::UnsupportedTarget> {
     use super::UnsupportedTarget::{Cpu, Libc, Os};
     let platform = || format!("{os}-{arch}-{env}");
-    if !matches!(os, "macos" | "linux" | "windows") { return Err(Os(platform())); }
-    if !matches!((os, arch), ("macos" | "linux", "aarch64" | "x86_64") | ("windows", "x86_64")) {
+    if !matches!(os, "macos" | "linux" | "windows") {
+        return Err(Os(platform()));
+    }
+    if !matches!(
+        (os, arch),
+        ("macos" | "linux", "aarch64" | "x86_64") | ("windows", "x86_64")
+    ) {
         return Err(Cpu(platform()));
     }
     match (os, arch, env) {
@@ -86,13 +109,20 @@ pub(crate) fn target_for(os: &str, arch: &str, env: &str) -> Result<Target, supe
 
 /// `DCTX_PLUGIN_ROOT`, or the platform config directory. Does not create it.
 pub fn default_root() -> PathBuf {
-    if let Some(root) = std::env::var_os("DCTX_PLUGIN_ROOT") { return PathBuf::from(root); }
+    if let Some(root) = std::env::var_os("DCTX_PLUGIN_ROOT") {
+        return PathBuf::from(root);
+    }
     let home = std::env::var_os("HOME").map_or_else(|| PathBuf::from("."), PathBuf::from);
     match std::env::consts::OS {
         "macos" => home.join("Library/Application Support/dctx/plugin-config"),
-        "windows" => std::env::var_os("APPDATA").map(PathBuf::from).unwrap_or(home).join("dctx").join("Plugins"),
+        "windows" => std::env::var_os("APPDATA")
+            .map(PathBuf::from)
+            .unwrap_or(home)
+            .join("dctx")
+            .join("Plugins"),
         _ => {
-            let config = std::env::var_os("XDG_CONFIG_HOME").map_or_else(|| home.join(".config"), PathBuf::from);
+            let config = std::env::var_os("XDG_CONFIG_HOME")
+                .map_or_else(|| home.join(".config"), PathBuf::from);
             config.join("dctx").join("plugins")
         }
     }
@@ -103,7 +133,9 @@ const FILE_LIMIT: u64 = dctx_plugin_distribution::DEFAULT_MAX_ARTIFACT_BYTES;
 #[cfg(unix)]
 static NEXT: AtomicU64 = AtomicU64::new(1);
 #[cfg(all(unix, not(target_os = "linux")))]
-fn next_token() -> u64 { NEXT.fetch_add(1, Ordering::Relaxed) }
+fn next_token() -> u64 {
+    NEXT.fetch_add(1, Ordering::Relaxed)
+}
 type Ownership = Option<(u64, String)>;
 
 /// Managed private root. Parents must not be controlled by hostile same-user code.
@@ -118,7 +150,12 @@ pub struct FsStore {
 
 impl FsStore {
     /// Binds `root` without creating it.
-    pub fn new(root: impl Into<PathBuf>) -> Self { Self { root: root.into(), held: Mutex::new(None) } }
+    pub fn new(root: impl Into<PathBuf>) -> Self {
+        Self {
+            root: root.into(),
+            held: Mutex::new(None),
+        }
+    }
 }
 
 #[cfg(target_os = "linux")]
@@ -127,24 +164,52 @@ impl FsStore {
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
-            let absolute = if self.root.is_absolute() { self.root.clone() } else { std::env::current_dir()?.join(&self.root) };
+            let absolute = if self.root.is_absolute() {
+                self.root.clone()
+            } else {
+                std::env::current_dir()?.join(&self.root)
+            };
             let root = descend(File::open("/")?, &absolute, create)?;
-            if create { root.set_permissions(fs::Permissions::from_mode(0o700))?; }
+            if create {
+                root.set_permissions(fs::Permissions::from_mode(0o700))?;
+            }
             Ok(root)
         }
         #[cfg(not(unix))]
-        { let _ = create; Err(io::Error::other("native store semantics are not qualified")) }
+        {
+            let _ = create;
+            Err(io::Error::other("native store semantics are not qualified"))
+        }
     }
 
-    #[allow(clippy::unused_self, reason = "Keep the store directory helper on FsStore alongside its retained-root and lock operations.")]
+    #[allow(
+        clippy::unused_self,
+        reason = "Keep the store directory helper on FsStore alongside its retained-root and lock operations."
+    )]
     fn key_dir(&self, root: &File, kind: &str, key: &InstallKey, create: bool) -> io::Result<File> {
-        descend(root.try_clone()?, &PathBuf::from(kind).join(key.components().iter().collect::<PathBuf>()), create)
+        descend(
+            root.try_clone()?,
+            &PathBuf::from(kind).join(key.components().iter().collect::<PathBuf>()),
+            create,
+        )
     }
 
-    fn check(&self, token: LockToken, root: &File) -> Result<MutexGuard<'_, Ownership>, DistributionError> {
-        let held = self.held.lock().map_err(|_| DistributionError::Interrupted)?;
-        let owner = held.as_ref().filter(|(value, _)| *value == token.value()).ok_or(DistributionError::Busy)?;
-        if bounded_read(&entry(root, "registry.lock")?, 128)? != owner.1.as_bytes() { return Err(DistributionError::Busy); }
+    fn check(
+        &self,
+        token: LockToken,
+        root: &File,
+    ) -> Result<MutexGuard<'_, Ownership>, DistributionError> {
+        let held = self
+            .held
+            .lock()
+            .map_err(|_| DistributionError::Interrupted)?;
+        let owner = held
+            .as_ref()
+            .filter(|(value, _)| *value == token.value())
+            .ok_or(DistributionError::Busy)?;
+        if bounded_read(&entry(root, "registry.lock")?, 128)? != owner.1.as_bytes() {
+            return Err(DistributionError::Busy);
+        }
         Ok(held)
     }
 }
@@ -152,12 +217,25 @@ impl FsStore {
 #[cfg(target_os = "linux")]
 impl Store for FsStore {
     fn try_lock(&self) -> Result<LockToken, DistributionError> {
-        let mut held = self.held.lock().map_err(|_| DistributionError::Interrupted)?;
-        if held.is_some() { return Err(DistributionError::Busy); }
+        let mut held = self
+            .held
+            .lock()
+            .map_err(|_| DistributionError::Interrupted)?;
+        if held.is_some() {
+            return Err(DistributionError::Busy);
+        }
         let root = disk(self.root(true))?;
         let token = NEXT.fetch_add(1, Ordering::Relaxed);
-        let owner = format!("v1 {} {} {}\n", std::process::id(), SystemClock.now(), token);
-        let mut file = private_options().create_new(true).open(entry(&root, "registry.lock")?).map_err(|_| DistributionError::Busy)?;
+        let owner = format!(
+            "v1 {} {} {}\n",
+            std::process::id(),
+            SystemClock.now(),
+            token
+        );
+        let mut file = private_options()
+            .create_new(true)
+            .open(entry(&root, "registry.lock")?)
+            .map_err(|_| DistributionError::Busy)?;
         disk(file.write_all(owner.as_bytes()))?;
         disk(file.sync_all())?;
         disk(root.sync_all())?;
@@ -167,9 +245,13 @@ impl Store for FsStore {
 
     fn unlock(&self, token: LockToken) {
         let Ok(root) = self.root(false) else { return };
-        let Ok(mut held) = self.check(token, &root) else { return };
+        let Ok(mut held) = self.check(token, &root) else {
+            return;
+        };
         if let Ok(path) = entry(&root, "registry.lock") {
-            if fs::remove_file(path).and_then(|()| root.sync_all()).is_ok() { *held = None; }
+            if fs::remove_file(path).and_then(|()| root.sync_all()).is_ok() {
+                *held = None;
+            }
         }
     }
 
@@ -181,7 +263,9 @@ impl Store for FsStore {
         };
         let path = entry(&root, "registry.json")?;
         if let Err(e) = fs::symlink_metadata(&path) {
-            if e.kind() == io::ErrorKind::NotFound { return Ok(None); }
+            if e.kind() == io::ErrorKind::NotFound {
+                return Ok(None);
+            }
             return Err(DistributionError::Interrupted);
         }
         bounded_read(&path, REGISTRY_LIMIT).map(Some)
@@ -203,22 +287,37 @@ impl Store for FsStore {
         disk(root.sync_all())
     }
 
-    fn stage_append(&self, token: LockToken, key: &InstallKey, file: &SafeFileName, bytes: &[u8]) -> Result<(), DistributionError> {
+    fn stage_append(
+        &self,
+        token: LockToken,
+        key: &InstallKey,
+        file: &SafeFileName,
+        bytes: &[u8],
+    ) -> Result<(), DistributionError> {
         let root = disk(self.root(false))?;
         let _held = self.check(token, &root)?;
         let directory = disk(self.key_dir(&root, "staging", key, true))?;
         let path = entry(&directory, file.as_str())?;
         let mut handle = match fs::symlink_metadata(&path) {
             Ok(meta) => {
-                if !meta.is_file() { return Err(DistributionError::Interrupted); }
+                if !meta.is_file() {
+                    return Err(DistributionError::Interrupted);
+                }
                 let handle = disk(private_options().append(true).open(&path))?;
                 same_file(&meta, &disk(handle.metadata())?)?;
                 handle
             }
-            Err(e) if e.kind() == io::ErrorKind::NotFound => disk(private_options().create_new(true).append(true).open(path))?,
+            Err(e) if e.kind() == io::ErrorKind::NotFound => {
+                disk(private_options().create_new(true).append(true).open(path))?
+            }
             Err(_) => return Err(DistributionError::Interrupted),
         };
-        limit(disk(handle.metadata())?.len().saturating_add(bytes.len() as u64), FILE_LIMIT)?;
+        limit(
+            disk(handle.metadata())?
+                .len()
+                .saturating_add(bytes.len() as u64),
+            FILE_LIMIT,
+        )?;
         disk(handle.write_all(bytes))?;
         disk(handle.sync_all())?;
         disk(directory.sync_all())
@@ -230,7 +329,9 @@ impl Store for FsStore {
         let staging = disk(self.key_dir(&root, "staging", key, false))?;
         for item in disk(fs::read_dir(entry(&staging, "")?))? {
             let item = disk(item)?;
-            if !disk(item.file_type())?.is_file() { return Err(DistributionError::Interrupted); }
+            if !disk(item.file_type())?.is_file() {
+                return Err(DistributionError::Interrupted);
+            }
             disk(File::open(item.path()).and_then(|file| file.sync_all()))?;
         }
         disk(staging.sync_all())?;
@@ -238,9 +339,15 @@ impl Store for FsStore {
         store_tests::crash_cut("install-synced");
         let parts = key.components();
         let suffix = parts[..3].iter().collect::<PathBuf>();
-        let destination = disk(descend(disk(root.try_clone())?, &PathBuf::from("installed").join(&suffix), true))?;
+        let destination = disk(descend(
+            disk(root.try_clone())?,
+            &PathBuf::from("installed").join(&suffix),
+            true,
+        ))?;
         let target = entry(&destination, &parts[3])?;
-        if fs::symlink_metadata(&target).is_ok() { return Err(DistributionError::Interrupted); }
+        if fs::symlink_metadata(&target).is_ok() {
+            return Err(DistributionError::Interrupted);
+        }
         let source = disk(descend(root, &PathBuf::from("staging").join(suffix), false))?;
         disk(fs::rename(entry(&source, &parts[3])?, target))?;
         #[cfg(test)]
@@ -249,51 +356,94 @@ impl Store for FsStore {
         disk(source.sync_all())
     }
 
-    fn discard_staging(&self, token: LockToken, key: &InstallKey) -> Result<(), DistributionError> { self.remove(token, "staging", key) }
-    fn staged(&self) -> Result<Vec<InstallKey>, DistributionError> { self.keys("staging") }
-    fn installed(&self) -> Result<Vec<InstallKey>, DistributionError> { self.keys("installed") }
+    fn discard_staging(&self, token: LockToken, key: &InstallKey) -> Result<(), DistributionError> {
+        self.remove(token, "staging", key)
+    }
+    fn staged(&self) -> Result<Vec<InstallKey>, DistributionError> {
+        self.keys("staging")
+    }
+    fn installed(&self) -> Result<Vec<InstallKey>, DistributionError> {
+        self.keys("installed")
+    }
 
-    fn read_installed(&self, key: &InstallKey, file: &SafeFileName) -> Result<Vec<u8>, DistributionError> {
+    fn read_installed(
+        &self,
+        key: &InstallKey,
+        file: &SafeFileName,
+    ) -> Result<Vec<u8>, DistributionError> {
         let root = disk(self.root(false))?;
-        let directory = self.key_dir(&root, "installed", key, false).map_err(|_| DistributionError::NotInstalled)?;
+        let directory = self
+            .key_dir(&root, "installed", key, false)
+            .map_err(|_| DistributionError::NotInstalled)?;
         bounded_read(&entry(&directory, file.as_str())?, FILE_LIMIT)
     }
 
-    fn remove_installed(&self, token: LockToken, key: &InstallKey) -> Result<(), DistributionError> { self.remove(token, "installed", key) }
+    fn remove_installed(
+        &self,
+        token: LockToken,
+        key: &InstallKey,
+    ) -> Result<(), DistributionError> {
+        self.remove(token, "installed", key)
+    }
 }
 
-fn disk<T>(result: io::Result<T>) -> Result<T, DistributionError> { result.map_err(|_| DistributionError::Interrupted) }
+fn disk<T>(result: io::Result<T>) -> Result<T, DistributionError> {
+    result.map_err(|_| DistributionError::Interrupted)
+}
 #[cfg(unix)]
 fn limit(size: u64, ceiling: u64) -> Result<(), DistributionError> {
-    if size > ceiling { Err(DistributionError::LimitExceeded { limit: ceiling }) } else { Ok(()) }
+    if size > ceiling {
+        Err(DistributionError::LimitExceeded { limit: ceiling })
+    } else {
+        Ok(())
+    }
 }
 #[cfg(unix)]
 fn private_options() -> OpenOptions {
     let mut options = OpenOptions::new();
     options.write(true);
     #[cfg(unix)]
-    { use std::os::unix::fs::OpenOptionsExt; options.mode(0o600); }
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
     options
 }
 #[cfg(target_os = "linux")]
-#[allow(clippy::unnecessary_wraps, reason = "Retain the shared platform entry interface: unsupported platforms refuse, while Linux constructs its descriptor-relative path infallibly.")]
+#[allow(
+    clippy::unnecessary_wraps,
+    reason = "Retain the shared platform entry interface: unsupported platforms refuse, while Linux constructs its descriptor-relative path infallibly."
+)]
 fn entry(directory: &File, name: impl AsRef<Path>) -> Result<PathBuf, DistributionError> {
     #[cfg(unix)]
     {
         use std::os::fd::AsRawFd;
-        let prefix = if cfg!(target_os = "linux") { "/proc/self/fd" } else { "/dev/fd" };
-        Ok(PathBuf::from(prefix).join(directory.as_raw_fd().to_string()).join(name))
+        let prefix = if cfg!(target_os = "linux") {
+            "/proc/self/fd"
+        } else {
+            "/dev/fd"
+        };
+        Ok(PathBuf::from(prefix)
+            .join(directory.as_raw_fd().to_string())
+            .join(name))
     }
     #[cfg(not(unix))]
-    { let _ = (directory, name); Err(DistributionError::Interrupted) }
+    {
+        let _ = (directory, name);
+        Err(DistributionError::Interrupted)
+    }
 }
 #[cfg(unix)]
 fn same_file(before: &fs::Metadata, after: &fs::Metadata) -> Result<(), DistributionError> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::MetadataExt;
-        if before.is_file() && before.nlink() != 1 { return Err(DistributionError::Interrupted); }
-        if before.dev() == after.dev() && before.ino() == after.ino() { return Ok(()); }
+        if before.is_file() && before.nlink() != 1 {
+            return Err(DistributionError::Interrupted);
+        }
+        if before.dev() == after.dev() && before.ino() == after.ino() {
+            return Ok(());
+        }
     }
     #[cfg(not(unix))]
     let _ = (before, after);
@@ -312,7 +462,10 @@ fn descend(mut directory: File, path: &Path, create: bool) -> io::Result<File> {
         if create {
             let mut builder = fs::DirBuilder::new();
             #[cfg(unix)]
-            { use std::os::unix::fs::DirBuilderExt; builder.mode(0o700); }
+            {
+                use std::os::unix::fs::DirBuilderExt;
+                builder.mode(0o700);
+            }
             match builder.create(&child) {
                 Ok(()) => directory.sync_all()?,
                 Err(e) if e.kind() == io::ErrorKind::AlreadyExists => (),
@@ -320,7 +473,9 @@ fn descend(mut directory: File, path: &Path, create: bool) -> io::Result<File> {
             }
         }
         let meta = fs::symlink_metadata(&child)?;
-        if !meta.is_dir() { return Err(io::Error::other("symlink or non-directory")); }
+        if !meta.is_dir() {
+            return Err(io::Error::other("symlink or non-directory"));
+        }
         let opened = File::open(child)?;
         same_file(&meta, &opened.metadata()?).map_err(|_| io::Error::other("directory changed"))?;
         directory = opened;
@@ -330,28 +485,44 @@ fn descend(mut directory: File, path: &Path, create: bool) -> io::Result<File> {
 #[cfg(unix)]
 fn bounded_read(path: &Path, ceiling: u64) -> Result<Vec<u8>, DistributionError> {
     let meta = disk(fs::symlink_metadata(path))?;
-    if !meta.is_file() { return Err(DistributionError::Interrupted); }
+    if !meta.is_file() {
+        return Err(DistributionError::Interrupted);
+    }
     limit(meta.len(), ceiling)?;
     let mut file = disk(File::open(path))?;
     let opened = disk(file.metadata())?;
     same_file(&meta, &opened)?;
     limit(opened.len(), ceiling)?;
-    let length = usize::try_from(opened.len()).map_err(|_| DistributionError::LimitExceeded { limit: ceiling })?;
+    let length = usize::try_from(opened.len())
+        .map_err(|_| DistributionError::LimitExceeded { limit: ceiling })?;
     let mut bytes = Vec::new();
-    bytes.try_reserve_exact(length).map_err(|_| DistributionError::Interrupted)?;
+    bytes
+        .try_reserve_exact(length)
+        .map_err(|_| DistributionError::Interrupted)?;
     bytes.resize(length, 0);
     disk(file.read_exact(&mut bytes))?;
     let mut extra = [0];
-    if disk(file.read(&mut extra))? != 0 { return Err(DistributionError::LimitExceeded { limit: ceiling }); }
+    if disk(file.read(&mut extra))? != 0 {
+        return Err(DistributionError::LimitExceeded { limit: ceiling });
+    }
     Ok(bytes)
 }
 #[cfg(target_os = "linux")]
 impl FsStore {
-    fn remove(&self, token: LockToken, kind: &str, key: &InstallKey) -> Result<(), DistributionError> {
+    fn remove(
+        &self,
+        token: LockToken,
+        kind: &str,
+        key: &InstallKey,
+    ) -> Result<(), DistributionError> {
         let root = disk(self.root(false))?;
         let _held = self.check(token, &root)?;
         let parts = key.components();
-        let parent = match descend(root, &PathBuf::from(kind).join(parts[..3].iter().collect::<PathBuf>()), false) {
+        let parent = match descend(
+            root,
+            &PathBuf::from(kind).join(parts[..3].iter().collect::<PathBuf>()),
+            false,
+        ) {
             Ok(parent) => parent,
             Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(()),
             Err(_) => return Err(DistributionError::Interrupted),
@@ -366,7 +537,10 @@ impl FsStore {
         disk(parent.sync_all())
     }
     fn keys(&self, kind: &str) -> Result<Vec<InstallKey>, DistributionError> {
-        let root = match self.root(false).and_then(|root| descend(root, Path::new(kind), false)) {
+        let root = match self
+            .root(false)
+            .and_then(|root| descend(root, Path::new(kind), false))
+        {
             Ok(root) => root,
             Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
             Err(_) => return Err(DistributionError::Interrupted),
@@ -377,7 +551,12 @@ impl FsStore {
     }
 }
 #[cfg(target_os = "linux")]
-fn walk_keys(root: &File, parts: &mut Vec<String>, keys: &mut Vec<InstallKey>, visited: &mut u64) -> Result<(), DistributionError> {
+fn walk_keys(
+    root: &File,
+    parts: &mut Vec<String>,
+    keys: &mut Vec<InstallKey>,
+    visited: &mut u64,
+) -> Result<(), DistributionError> {
     for item in disk(fs::read_dir(entry(root, "")?))? {
         *visited += 1;
         limit(*visited, 4096)?;
@@ -386,8 +565,13 @@ fn walk_keys(root: &File, parts: &mut Vec<String>, keys: &mut Vec<InstallKey>, v
         let Some(name) = name.to_str() else { continue };
         let child = disk(descend(disk(root.try_clone())?, Path::new(name), false))?;
         parts.push(name.to_owned());
-        if parts.len() < 4 { walk_keys(&child, parts, keys, visited)?; }
-        else if let Ok(key) = install_key(&format!("{}/{}", parts[0], parts[1]), &parts[2], &parts[3]) { keys.push(key); }
+        if parts.len() < 4 {
+            walk_keys(&child, parts, keys, visited)?;
+        } else if let Ok(key) =
+            install_key(&format!("{}/{}", parts[0], parts[1]), &parts[2], &parts[3])
+        {
+            keys.push(key);
+        }
         parts.pop();
     }
     Ok(())
@@ -413,23 +597,57 @@ impl FsStore {
 
 #[cfg(not(unix))]
 impl Store for FsStore {
-    fn try_lock(&self) -> Result<LockToken, DistributionError> { disk(self.unsupported()) }
-    fn unlock(&self, _token: LockToken) { let _ = self.unsupported::<()>(); }
-    fn load_registry(&self) -> Result<Option<Vec<u8>>, DistributionError> { disk(self.unsupported()) }
-    fn save_registry(&self, _token: LockToken, _bytes: &[u8]) -> Result<(), DistributionError> { disk(self.unsupported()) }
+    fn try_lock(&self) -> Result<LockToken, DistributionError> {
+        disk(self.unsupported())
+    }
+    fn unlock(&self, _token: LockToken) {
+        let _ = self.unsupported::<()>();
+    }
+    fn load_registry(&self) -> Result<Option<Vec<u8>>, DistributionError> {
+        disk(self.unsupported())
+    }
+    fn save_registry(&self, _token: LockToken, _bytes: &[u8]) -> Result<(), DistributionError> {
+        disk(self.unsupported())
+    }
     fn stage_append(
-        &self, _token: LockToken, _key: &InstallKey, _file: &SafeFileName, _bytes: &[u8],
+        &self,
+        _token: LockToken,
+        _key: &InstallKey,
+        _file: &SafeFileName,
+        _bytes: &[u8],
     ) -> Result<(), DistributionError> {
         disk(self.unsupported())
     }
-    fn publish(&self, _token: LockToken, _key: &InstallKey) -> Result<(), DistributionError> { disk(self.unsupported()) }
-    fn discard_staging(&self, _token: LockToken, _key: &InstallKey) -> Result<(), DistributionError> { disk(self.unsupported()) }
-    fn staged(&self) -> Result<Vec<InstallKey>, DistributionError> { disk(self.unsupported()) }
-    fn installed(&self) -> Result<Vec<InstallKey>, DistributionError> { disk(self.unsupported()) }
-    fn read_installed(&self, _key: &InstallKey, _file: &SafeFileName) -> Result<Vec<u8>, DistributionError> {
+    fn publish(&self, _token: LockToken, _key: &InstallKey) -> Result<(), DistributionError> {
         disk(self.unsupported())
     }
-    fn remove_installed(&self, _token: LockToken, _key: &InstallKey) -> Result<(), DistributionError> { disk(self.unsupported()) }
+    fn discard_staging(
+        &self,
+        _token: LockToken,
+        _key: &InstallKey,
+    ) -> Result<(), DistributionError> {
+        disk(self.unsupported())
+    }
+    fn staged(&self) -> Result<Vec<InstallKey>, DistributionError> {
+        disk(self.unsupported())
+    }
+    fn installed(&self) -> Result<Vec<InstallKey>, DistributionError> {
+        disk(self.unsupported())
+    }
+    fn read_installed(
+        &self,
+        _key: &InstallKey,
+        _file: &SafeFileName,
+    ) -> Result<Vec<u8>, DistributionError> {
+        disk(self.unsupported())
+    }
+    fn remove_installed(
+        &self,
+        _token: LockToken,
+        _key: &InstallKey,
+    ) -> Result<(), DistributionError> {
+        disk(self.unsupported())
+    }
 }
 
 #[cfg(all(unix, not(target_os = "linux")))]
@@ -441,4 +659,6 @@ mod disk_portable;
 mod store_tests;
 
 #[cfg(all(test, unix, not(target_os = "linux")))]
-fn crash_cut(phase: &str) { store_tests::crash_cut(phase); }
+fn crash_cut(phase: &str) {
+    store_tests::crash_cut(phase);
+}

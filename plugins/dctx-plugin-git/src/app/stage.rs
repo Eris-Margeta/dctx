@@ -12,7 +12,8 @@ use dctx_plugin_protocol::records::scalars::Token;
 use dctx_plugin_protocol::{EffectState, ErrorCode, Phase};
 
 use crate::app::failure::Failure;
-use crate::app::protect::{Run, action};
+use crate::app::failure::action;
+use crate::app::protect::Run;
 use crate::domain::outcome::Staging;
 use crate::ports::{Broker, BrokerFailure};
 
@@ -65,11 +66,21 @@ pub fn stage(
     let answer = broker.program_run(&run_request);
     broker.progress("stage-ignore", 1, Some(1), ProgressUnit::Actions);
     match answer {
-        Ok(ran) if ran.status == ProgramStatus::Succeeded => Ok((Staging::Staged, Some(ran.receipt))),
+        Ok(ran) if ran.status == ProgramStatus::Succeeded => {
+            Ok((Staging::Staged, Some(ran.receipt)))
+        }
         Ok(ran) => Ok((Staging::Failed, Some(ran.receipt))),
         Err(BrokerFailure::Refused(error)) => {
-            if matches!(error.effect_state, EffectState::Partial | EffectState::Unknown) || error.code == ErrorCode::EffectUnknown {
-                return Err(uncertain(receipts, error.receipt_ids.clone(), "staging-unknown"));
+            if matches!(
+                error.effect_state,
+                EffectState::Partial | EffectState::Unknown
+            ) || error.code == ErrorCode::EffectUnknown
+            {
+                return Err(uncertain(
+                    receipts,
+                    error.receipt_ids.clone(),
+                    "staging-unknown",
+                ));
             }
             let staging = match error.code {
                 ErrorCode::ExternalProgramMissing => Staging::GitMissing,

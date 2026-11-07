@@ -6,7 +6,9 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -17,6 +19,29 @@ import md  # noqa: E402
 from common import ROOT, demo, slugify  # noqa: E402
 from pages.news_content import NEWS  # noqa: E402
 from routes import DOCS, build_routes, doc_path  # noqa: E402
+
+
+class DeploymentCheck(unittest.TestCase):
+    def test_working_tree_comparison_detects_drift_and_extra_files(self):
+        import check
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            current, rebuilt = root / "website", root / "rebuilt"
+            current.mkdir()
+            rebuilt.mkdir()
+            (current / "index.html").write_text("same")
+            (rebuilt / "index.html").write_text("same")
+            with patch.object(check, "ROOT", root), patch.object(check, "git") as git_mock:
+                errors = []
+                self.assertEqual(check.staleness(rebuilt, errors, working_tree=True), 1)
+                self.assertEqual(errors, [])
+                (current / "index.html").write_text("different")
+                (current / "stale.txt").write_text("obsolete")
+                (rebuilt / "new.txt").write_text("missing in deployment")
+                check.staleness(rebuilt, errors, working_tree=True)
+                self.assertEqual(len(errors), 3)
+                git_mock.assert_not_called()
 
 
 class Routes(unittest.TestCase):

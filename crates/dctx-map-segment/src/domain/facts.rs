@@ -4,7 +4,7 @@
 //! Depends on [`super::kinds`] and [`super::dictionary`]. The record codec writes these values.
 //! A fact key stores no root, absolute path, or resolved target.
 
-use super::cursor::{push_bytes, push_u16, push_u32, push_u64, Cursor};
+use super::cursor::{Cursor, push_bytes, push_u16, push_u32, push_u64};
 use super::dictionary::dict_str;
 use super::error::SegmentError;
 use super::kinds::{Completion, Coverage, DeclarationKind, EdgeKind, Language, SummarySource};
@@ -167,14 +167,19 @@ pub(crate) fn parse_key(cursor: &mut Cursor<'_>) -> Result<FactKey, SegmentError
     })
 }
 
-pub(crate) fn validate_fact<S: AsRef<str>>(fact: &Fact, dictionary: &[S]) -> Result<(), SegmentError> {
+pub(crate) fn validate_fact<S: AsRef<str>>(
+    fact: &Fact,
+    dictionary: &[S],
+) -> Result<(), SegmentError> {
     dict_str(dictionary, fact.key.dialect)?;
     dict_str(dictionary, fact.key.parser_id)?;
     dict_str(dictionary, fact.key.parser_revision)?;
     for declaration in &fact.declarations {
         dict_str(dictionary, declaration.name)?;
         dict_str(dictionary, declaration.summary)?;
-        if declaration.span_end < declaration.span_start || declaration.span_end > fact.key.byte_length {
+        if declaration.span_end < declaration.span_start
+            || declaration.span_end > fact.key.byte_length
+        {
             return Err(SegmentError::Facts("span"));
         }
     }

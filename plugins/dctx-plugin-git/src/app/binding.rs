@@ -89,8 +89,11 @@ pub fn parse_config(config: &Config) -> Result<GitConfig, Failure> {
         match (key.as_str(), value) {
             ("stage", ConfigValue::Scalar(Scalar::Bool(stage))) => parsed.stage = *stage,
             ("create_missing", ConfigValue::Scalar(Scalar::Bool(false))) => {}
-            ("marker", ConfigValue::Scalar(Scalar::Text(text))) if text.as_str() == "host-version" => {}
-            ("stage" | "create_missing" | "marker", _) => return Err(invalid("config-value-outside-profile")),
+            ("marker", ConfigValue::Scalar(Scalar::Text(text)))
+                if text.as_str() == "host-version" => {}
+            ("stage" | "create_missing" | "marker", _) => {
+                return Err(invalid("config-value-outside-profile"));
+            }
             _ => return Err(invalid("unknown-config-key")),
         }
     }
@@ -101,35 +104,61 @@ pub fn parse_config(config: &Config) -> Result<GitConfig, Failure> {
 /// # Errors
 /// Refuses undeclared hooks, unsupported grants, duplicate ignore resources, or invalid configuration.
 pub fn bind(init: &Initialize, program_api: bool) -> Result<Binding, Failure> {
-    if init.hooks.iter().any(|hook| *hook != HookName::BeforePackOutputWritten) {
-        return Err(Failure::refused(ErrorCode::UnsupportedCapability, Phase::Initialize, "undeclared-hook"));
+    if init
+        .hooks
+        .iter()
+        .any(|hook| *hook != HookName::BeforePackOutputWritten)
+    {
+        return Err(Failure::refused(
+            ErrorCode::UnsupportedCapability,
+            Phase::Initialize,
+            "undeclared-hook",
+        ));
     }
     let mut grants = Vec::new();
     for grant in &init.grants {
         let limit = match &grant.capability {
             Capability::FileRead { path, max_bytes } if path.as_str() == ".gitignore" => {
-                GrantLimit::Read { max_bytes: (*max_bytes).min(MAX_IGNORE_BYTES) }
-            }
-            Capability::FileWrite { create: true, .. } => return Err(invalid("create-outside-profile")),
-            Capability::FileWrite { path, max_growth_bytes, max_bytes, .. } if path.as_str() == ".gitignore" => {
-                GrantLimit::Write {
-                    max_growth: (*max_growth_bytes).min(MAX_GROWTH_BYTES),
-                    max_bytes: (*max_bytes).min(MAX_REPLACEMENT_BYTES),
+                GrantLimit::Read {
+                    max_bytes: (*max_bytes).min(MAX_IGNORE_BYTES),
                 }
             }
+            Capability::FileWrite { create: true, .. } => {
+                return Err(invalid("create-outside-profile"));
+            }
+            Capability::FileWrite {
+                path,
+                max_growth_bytes,
+                max_bytes,
+                ..
+            } if path.as_str() == ".gitignore" => GrantLimit::Write {
+                max_growth: (*max_growth_bytes).min(MAX_GROWTH_BYTES),
+                max_bytes: (*max_bytes).min(MAX_REPLACEMENT_BYTES),
+            },
             Capability::GitAddIgnore { .. } => GrantLimit::Program,
             _ => return Err(invalid("capability-outside-profile")),
         };
-        grants.push(Bound { handle: grant.handle.clone(), epoch: grant.policy_epoch, limit });
+        grants.push(Bound {
+            handle: grant.handle.clone(),
+            epoch: grant.policy_epoch,
+            limit,
+        });
     }
     let mut ignore = None;
     let mut nested = Vec::new();
     let mut repositories = Vec::new();
     for resource in &init.resources {
-        let role = resource.role.as_ref().map(dctx_plugin_protocol::records::scalars::Role::as_str);
+        let role = resource
+            .role
+            .as_ref()
+            .map(dctx_plugin_protocol::records::scalars::Role::as_str);
         match (resource.kind, role) {
-            (ResourceKind::File, None | Some("ignore")) if ignore.is_none() => ignore = Some(resource.handle.clone()),
-            (ResourceKind::File, None | Some("ignore")) => return Err(invalid("duplicate-ignore-resource")),
+            (ResourceKind::File, None | Some("ignore")) if ignore.is_none() => {
+                ignore = Some(resource.handle.clone())
+            }
+            (ResourceKind::File, None | Some("ignore")) => {
+                return Err(invalid("duplicate-ignore-resource"));
+            }
             (ResourceKind::File, Some("nested-ignore")) => nested.push(resource.handle.clone()),
             (ResourceKind::Repository, role) => repositories.push(Repository {
                 handle: resource.handle.clone(),
@@ -138,18 +167,35 @@ pub fn bind(init: &Initialize, program_api: bool) -> Result<Binding, Failure> {
             _ => {}
         }
     }
-    Ok(Binding { grants, ignore, nested, repositories, program_api, config: parse_config(&init.config)? })
+    Ok(Binding {
+        grants,
+        ignore,
+        nested,
+        repositories,
+        program_api,
+        config: parse_config(&init.config)?,
+    })
 }
 
 impl Binding {
     /// Grants listed by an invocation at its policy epoch; anything else is not in force.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn grants(&self, listed: &[Token], epoch: u64) -> Grants {
         let mut grants = Grants::default();
-        for bound in self.grants.iter().filter(|bound| bound.epoch == epoch && listed.contains(&bound.handle)) {
+        for bound in self
+            .grants
+            .iter()
+            .filter(|bound| bound.epoch == epoch && listed.contains(&bound.handle))
+        {
             match bound.limit {
                 GrantLimit::Read { max_bytes } => grants.read = Some(max_bytes),
-                GrantLimit::Write { max_growth, max_bytes } => grants.write = Some((max_growth, max_bytes)),
+                GrantLimit::Write {
+                    max_growth,
+                    max_bytes,
+                } => grants.write = Some((max_growth, max_bytes)),
                 GrantLimit::Program => grants.program = self.program_api,
             }
         }
@@ -157,8 +203,13 @@ impl Binding {
     }
 
     /// The bound repository with this handle.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn repository(&self, handle: &Token) -> Option<&Repository> {
-        self.repositories.iter().find(|repository| &repository.handle == handle)
+        self.repositories
+            .iter()
+            .find(|repository| &repository.handle == handle)
     }
 }

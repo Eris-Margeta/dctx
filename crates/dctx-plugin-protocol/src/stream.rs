@@ -38,7 +38,12 @@ pub struct FrameReader<R> {
 impl<R: Read> FrameReader<R> {
     /// Wraps `reader` with a bootstrap-cap decoder.
     pub fn new(reader: R) -> Self {
-        Self { reader, decoder: FrameDecoder::new(), pending: Vec::new(), start: 0 }
+        Self {
+            reader,
+            decoder: FrameDecoder::new(),
+            pending: Vec::new(),
+            start: 0,
+        }
     }
 
     /// The frame decoder, for applying a negotiated cap.
@@ -80,8 +85,12 @@ impl<R: Read> FrameReader<R> {
 /// Returns a framing refusal for an invalid body/cap, or an I/O error when writing or flushing fails.
 pub fn write_frame<W: Write>(writer: &mut W, body: &[u8], cap: u32) -> Result<(), StreamError> {
     let frame = encode_frame(body, cap)?;
-    writer.write_all(&frame).map_err(|error| StreamError::Io(error.kind()))?;
-    writer.flush().map_err(|error| StreamError::Io(error.kind()))
+    writer
+        .write_all(&frame)
+        .map_err(|error| StreamError::Io(error.kind()))?;
+    writer
+        .flush()
+        .map_err(|error| StreamError::Io(error.kind()))
 }
 
 #[cfg(test)]
@@ -133,12 +142,20 @@ mod tests {
 
     #[test]
     fn short_writes_and_trickled_reads_reconstruct_frames() {
-        let mut writer = ShortWriter { out: Vec::new(), calls: 0 };
+        let mut writer = ShortWriter {
+            out: Vec::new(),
+            calls: 0,
+        };
         write_frame(&mut writer, b"{\"a\":1}", 64).expect("write");
         write_frame(&mut writer, b"{}", 64).expect("write");
         for step in 1..=12 {
             let data = writer.out.clone();
-            let mut reader = FrameReader::new(Trickle { data, pos: 0, step, interrupt: false });
+            let mut reader = FrameReader::new(Trickle {
+                data,
+                pos: 0,
+                step,
+                interrupt: false,
+            });
             assert_eq!(reader.next_frame(), Ok(Some(b"{\"a\":1}".to_vec())));
             assert_eq!(reader.next_frame(), Ok(Some(b"{}".to_vec())));
             assert_eq!(reader.next_frame(), Ok(None));
@@ -154,8 +171,13 @@ mod tests {
             }
         }
         let mut reader = FrameReader::new(&[3u8, 0, 0, 0, b'{'][..]);
-        assert!(matches!(reader.next_frame(), Err(StreamError::Protocol(r)) if r.reason == "truncated-body"));
-        assert_eq!(FrameReader::new(Broken).next_frame(), Err(StreamError::Io(ErrorKind::BrokenPipe)));
+        assert!(
+            matches!(reader.next_frame(), Err(StreamError::Protocol(r)) if r.reason == "truncated-body")
+        );
+        assert_eq!(
+            FrameReader::new(Broken).next_frame(),
+            Err(StreamError::Io(ErrorKind::BrokenPipe))
+        );
         let mut reader = FrameReader::new(&[0u8; 4][..]);
         reader.decoder_mut().set_cap(16).expect("cap");
         assert!(matches!(reader.next_frame(), Err(StreamError::Protocol(_))));

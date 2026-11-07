@@ -1,14 +1,19 @@
 [package]
 name = "dctx-lex-kt"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2024"
 license.workspace = true
 repository.workspace = true
+rust-version.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 description = "First-party hand-written Kotlin structural extractor for dctx map mode"
 
 [dependencies]
-dctx-hash = { path = "../dctx-hash" }
-dctx-map-model = { path = "../dctx-map-model" }
+dctx-hash = { version = "=1.2.0", path = "../dctx-hash" }
+dctx-map-model = { version = "=1.2.0", path = "../dctx-map-model" }
 
 [dev-dependencies]
 dctx-map-model = { path = "../dctx-map-model" }

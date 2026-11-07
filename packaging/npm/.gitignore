@@ -1,0 +1,5 @@
+**/bin/dctx
+**/bin/dctx.exe
+*.tgz
+!dctx/bin/
+!dctx/bin/dctx.js

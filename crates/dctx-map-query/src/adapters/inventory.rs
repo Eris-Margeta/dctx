@@ -13,12 +13,7 @@ use dctx_map_scan::ports::RuleSource;
 use dctx_map_scan::{FileHandlingDecision, IgnoreEngine, ItemContext};
 use std::{collections::BTreeMap, io, path::Path};
 
-const RULES: [&str; 4] = [
-    ".gitignore",
-    ".dctxignore",
-    ".legacyignore",
-    ".dctxomitcontent",
-];
+const RULES: [&str; 2] = [".gitignore", ".dctxignore"];
 
 pub(super) fn stamp_of(meta: EntryMeta) -> FileStamp {
     FileStamp {
@@ -140,7 +135,9 @@ fn capture_file(
         let disk = source.root.join(path);
         let content = source.read_bytes(&disk)?;
         if optional_stamp(source, &disk)?.as_ref() != Some(&current) {
-            return Err(Error::Request(format!("source changed during scan: {path}")));
+            return Err(Error::Request(format!(
+                "source changed during scan: {path}"
+            )));
         }
         let hash = digest(&content)?;
         if hash == old.hash {
@@ -157,7 +154,9 @@ fn capture_file(
         let disk = source.root.join(path);
         let content = source.read_bytes(&disk)?;
         if optional_stamp(source, &disk)?.as_ref() != Some(&current) {
-            return Err(Error::Request(format!("source changed during scan: {path}")));
+            return Err(Error::Request(format!(
+                "source changed during scan: {path}"
+            )));
         }
         hash = digest(&content)?;
         readable = readable_file(path, &content);
@@ -176,7 +175,13 @@ fn capture_file(
     })
 }
 
-fn sourced(path: &str, content: Vec<u8>, hash: String, allowed: bool, stamp: FileStamp) -> SourceFile {
+fn sourced(
+    path: &str,
+    content: Vec<u8>,
+    hash: String,
+    allowed: bool,
+    stamp: FileStamp,
+) -> SourceFile {
     let readable = readable_file(path, &content);
     SourceFile {
         bytes: readable.then_some(content),

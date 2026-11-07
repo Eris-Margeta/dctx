@@ -52,13 +52,21 @@ fn git(args: &[String]) -> u8 {
         Ok(()) => 0,
         Err(error) => {
             eprintln!("dctx --internal-plugin-worker: {error}");
-            if error.to_string().starts_with("usage:") { 2 } else { 1 }
+            if error.to_string().starts_with("usage:") {
+                2
+            } else {
+                1
+            }
         }
     }
 }
 
 /// Runs the git worker on `reader`/`writer`. The strict build refuses before any frame is read.
-pub fn serve_with<R: Read, W: Write>(reader: R, writer: W, args: &[String]) -> Result<(), WorkerError> {
+pub fn serve_with<R: Read, W: Write>(
+    reader: R,
+    writer: W,
+    args: &[String],
+) -> Result<(), WorkerError> {
     #[cfg(feature = "git-worker")]
     {
         serve_git(reader, writer, args).map_err(WorkerError::Protocol)
@@ -72,7 +80,7 @@ pub fn serve_with<R: Read, W: Write>(reader: R, writer: W, args: &[String]) -> R
 
 #[cfg(feature = "git-worker")]
 fn serve_git<R: Read, W: Write>(reader: R, writer: W, args: &[String]) -> Result<(), String> {
-    use dctx_plugin_git::adapters::worker::{LaunchIdentity, serve};
+    use dctx_plugin_git::adapters::worker::{serve, LaunchIdentity};
     let owned: Vec<String> = args.to_vec();
     let launch = LaunchIdentity::from_args(&owned).map_err(|usage| format!("usage: {usage}"))?;
     serve(reader, writer, &launch).map_err(|error| error.to_string())
@@ -82,7 +90,10 @@ fn serve_git<R: Read, W: Write>(reader: R, writer: W, args: &[String]) -> Result
 mod tests {
     use super::*;
     #[cfg(feature = "git-worker")]
-    use std::{sync::mpsc::{Receiver, Sender, channel}, thread};
+    use std::{
+        sync::mpsc::{channel, Receiver, Sender},
+        thread,
+    };
 
     #[test]
     fn strict_feature_does_not_link_the_worker_crate() {
@@ -92,14 +103,19 @@ mod tests {
         assert!(manifest.contains("git-worker = [\"dep:dctx-plugin-git\"]"));
         #[cfg(all(feature = "strict", not(feature = "git-worker")))]
         assert!(!super::super::bundled::worker_linked());
-        assert!(!manifest.contains("git-worker = [\"dep:dctx-plugin-git\", \"dep:dctx-plugin-git\"]"));
+        assert!(
+            !manifest.contains("git-worker = [\"dep:dctx-plugin-git\", \"dep:dctx-plugin-git\"]")
+        );
     }
 
     #[cfg(feature = "git-worker")]
     #[test]
     fn manual_entry_without_launch_identity_does_not_start_the_protocol() {
         let error = serve_with(std::io::empty(), std::io::sink(), &[]).unwrap_err();
-        assert!(matches!(error, WorkerError::Protocol(ref detail) if detail.starts_with("usage:")), "{error}");
+        assert!(
+            matches!(error, WorkerError::Protocol(ref detail) if detail.starts_with("usage:")),
+            "{error}"
+        );
     }
 
     #[cfg(not(feature = "git-worker"))]
@@ -119,10 +135,18 @@ mod tests {
                 panic!("strict worker flushed output");
             }
         }
-        let args = ["--publisher-key", "fixture-key-1", "--artifact-digest",
-            "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"].map(str::to_owned);
+        let args = [
+            "--publisher-key",
+            "fixture-key-1",
+            "--artifact-digest",
+            "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+        ]
+        .map(str::to_owned);
         for launch in [&[][..], args.as_slice()] {
-            assert_eq!(serve_with(Untouched, Untouched, launch), Err(WorkerError::StrictBuild));
+            assert_eq!(
+                serve_with(Untouched, Untouched, launch),
+                Err(WorkerError::StrictBuild)
+            );
         }
         assert_eq!(enter(&["git".to_owned()]), 1);
         assert_eq!(enter(&[]), 2);
@@ -132,7 +156,9 @@ mod tests {
     #[cfg(feature = "git-worker")]
     #[test]
     fn same_binary_worker_matches_the_standalone_handshake_and_lifecycle() {
-        use dctx_plugin_protocol::{DecodeLimits, FrameReader, WireMessage, write_frame, BOOTSTRAP_FRAME_CAP, MAX_FRAME_CAP};
+        use dctx_plugin_protocol::{
+            write_frame, DecodeLimits, FrameReader, WireMessage, BOOTSTRAP_FRAME_CAP, MAX_FRAME_CAP,
+        };
         let (to_worker, worker_in) = pipe();
         let (worker_out, from_worker) = pipe();
         let args = vec![
@@ -155,11 +181,22 @@ mod tests {
         write_frame(&mut to_worker.clone_send(), &init, MAX_FRAME_CAP).unwrap();
         let ready = from_worker.next_frame().unwrap().unwrap();
         let ready_message = WireMessage::decode(&ready, DecodeLimits::WIRE).unwrap();
-        let expected_ready = WireMessage::decode(&fixture("fixtures/valid/result-initialize.json"), DecodeLimits::WIRE).unwrap();
+        let expected_ready = WireMessage::decode(
+            &fixture("fixtures/valid/result-initialize.json"),
+            DecodeLimits::WIRE,
+        )
+        .unwrap();
         assert_eq!(ready_message, expected_ready);
 
-        let shutdown = String::from_utf8(fixture("fixtures/valid/request-shutdown.json")).unwrap().replace("h:1", "h:2");
-        write_frame(&mut to_worker.clone_send(), shutdown.as_bytes(), MAX_FRAME_CAP).unwrap();
+        let shutdown = String::from_utf8(fixture("fixtures/valid/request-shutdown.json"))
+            .unwrap()
+            .replace("h:1", "h:2");
+        write_frame(
+            &mut to_worker.clone_send(),
+            shutdown.as_bytes(),
+            MAX_FRAME_CAP,
+        )
+        .unwrap();
         let closing = from_worker.next_frame().unwrap().unwrap();
         let closing_text = String::from_utf8(closing).unwrap();
         assert!(closing_text.contains("h:2"), "{closing_text}");
@@ -170,7 +207,9 @@ mod tests {
 
     #[cfg(feature = "git-worker")]
     fn fixture(relative: &str) -> Vec<u8> {
-        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/design/plugin-api").join(relative);
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../docs/design/plugin-api")
+            .join(relative);
         std::fs::read(&path).unwrap_or_else(|error| panic!("read {}: {error}", path.display()))
     }
 
@@ -187,7 +226,9 @@ mod tests {
     #[cfg(feature = "git-worker")]
     impl Write for PipeWriter {
         fn write(&mut self, data: &[u8]) -> io::Result<usize> {
-            self.0.send(data.to_vec()).map_err(|_| io::Error::from(io::ErrorKind::BrokenPipe))?;
+            self.0
+                .send(data.to_vec())
+                .map_err(|_| io::Error::from(io::ErrorKind::BrokenPipe))?;
             Ok(data.len())
         }
         fn flush(&mut self) -> io::Result<()> {
@@ -224,6 +265,13 @@ mod tests {
     #[cfg(feature = "git-worker")]
     fn pipe() -> (PipeWriter, PipeReader) {
         let (tx, rx) = channel();
-        (PipeWriter(tx), PipeReader { rx, buffer: Vec::new(), position: 0 })
+        (
+            PipeWriter(tx),
+            PipeReader {
+                rx,
+                buffer: Vec::new(),
+                position: 0,
+            },
+        )
     }
 }

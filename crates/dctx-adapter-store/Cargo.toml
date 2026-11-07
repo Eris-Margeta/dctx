@@ -1,14 +1,19 @@
 [package]
 name = "dctx-adapter-store"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2024"
 license.workspace = true
 repository.workspace = true
+rust-version.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 description = "Filesystem-backed immutable segments and manifest publication"
 
 [dependencies]
-dctx-hash = { path = "../dctx-hash" }
-dctx-map-segment = { path = "../dctx-map-segment" }
+dctx-hash = { version = "=1.2.0", path = "../dctx-hash" }
+dctx-map-segment = { version = "=1.2.0", path = "../dctx-map-segment" }
 thiserror = "=2.0.18"
 
 [dev-dependencies]

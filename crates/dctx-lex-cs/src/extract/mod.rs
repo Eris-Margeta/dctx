@@ -8,8 +8,8 @@ mod members;
 mod references;
 
 use crate::domain::{
-    body_fingerprint, slice, Completion, Diagnostic, DiagnosticReason, Dialect, Labeled, LexError,
-    LexedFile, Limits, Precision, RawReference, normalize,
+    Completion, Diagnostic, DiagnosticReason, Dialect, Labeled, LexError, LexedFile, Limits,
+    Precision, RawReference, body_fingerprint, normalize, slice,
 };
 use crate::lexer::{Lexed, Token};
 use dctx_map_model::{
@@ -18,7 +18,10 @@ use dctx_map_model::{
 use std::collections::BTreeMap;
 
 /// Extracts facts from an already-lexed C# file.
-#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+)]
 pub(crate) fn extract(
     path: &str,
     source: &str,
@@ -230,7 +233,9 @@ impl Draft {
 
     fn finish(mut self, lexed: &Lexed, file_end: u32) -> Result<LexedFile, LexError> {
         if self.overflow || self.nodes.len() + self.refs.len() > self.max_facts {
-            return Err(LexError::TooManyFacts { limit: self.max_facts });
+            return Err(LexError::TooManyFacts {
+                limit: self.max_facts,
+            });
         }
         let module = &mut self.nodes[0].node;
         if module.signature.is_empty() {
@@ -249,7 +254,9 @@ impl Draft {
             reason,
         }));
         diagnostics.sort_by_key(|diagnostic| (diagnostic.byte, diagnostic.reason as u8));
-        let first = diagnostics.first().map_or(u32::MAX, |diagnostic| diagnostic.byte);
+        let first = diagnostics
+            .first()
+            .map_or(u32::MAX, |diagnostic| diagnostic.byte);
         let completion = if diagnostics.is_empty() {
             Completion::Complete
         } else {
@@ -314,16 +321,27 @@ impl Draft {
 fn assign_ordinals(nodes: &mut [DraftNode]) -> Result<(), LexError> {
     let mut total = BTreeMap::<(NodeKind, String), u32>::new();
     for draft in nodes.iter().skip(1).filter(|draft| named(draft.node.kind)) {
-        *total.entry((draft.node.kind, draft.node.name.clone())).or_insert(0) += 1;
+        *total
+            .entry((draft.node.kind, draft.node.name.clone()))
+            .or_insert(0) += 1;
     }
     let mut seen = BTreeMap::<(NodeKind, String), u32>::new();
-    for draft in nodes.iter_mut().skip(1).filter(|draft| named(draft.node.kind)) {
+    for draft in nodes
+        .iter_mut()
+        .skip(1)
+        .filter(|draft| named(draft.node.kind))
+    {
         let key = (draft.node.kind, draft.node.name.clone());
         let count = total[&key];
         let next = seen.entry(key).or_insert(0);
         *next += 1;
         let ordinal = (count > 1).then_some(*next);
-        draft.node.id = StableId::new(draft.node.kind, &draft.node.path, Some(&draft.node.name), ordinal)?;
+        draft.node.id = StableId::new(
+            draft.node.kind,
+            &draft.node.path,
+            Some(&draft.node.name),
+            ordinal,
+        )?;
     }
     Ok(())
 }
@@ -348,7 +366,10 @@ impl Walker<'_> {
         }
         let local = item.local.trim_start_matches('@');
         if local.is_empty() || local.contains(['~', '#']) {
-            self.problem(self.start_byte(item.first), DiagnosticReason::UnsupportedName);
+            self.problem(
+                self.start_byte(item.first),
+                DiagnosticReason::UnsupportedName,
+            );
             return None;
         }
         let parent_name = &parent.name;
@@ -359,7 +380,10 @@ impl Walker<'_> {
         };
         let path = self.draft.path.clone();
         let Ok(id) = StableId::new(NodeKind::Symbol, &path, Some(&name), None) else {
-            self.problem(self.start_byte(item.first), DiagnosticReason::UnsupportedName);
+            self.problem(
+                self.start_byte(item.first),
+                DiagnosticReason::UnsupportedName,
+            );
             return None;
         };
         let start = self.start_byte(item.first);
@@ -367,9 +391,16 @@ impl Walker<'_> {
         let sig_end = item.sig_end.clamp(start, end);
         let signature = normalize(slice(self.src, start, sig_end));
         let summary = match self.doc_before(item.first) {
-            Some(text) => Summary { text, source: SummarySource::Doc },
+            Some(text) => Summary {
+                text,
+                source: SummarySource::Doc,
+            },
             None => Summary {
-                text: if signature.is_empty() { name.clone() } else { signature.clone() },
+                text: if signature.is_empty() {
+                    name.clone()
+                } else {
+                    signature.clone()
+                },
                 source: SummarySource::Signature,
             },
         };
@@ -414,7 +445,11 @@ mod tests {
         let facts = CsLexer::default()
             .extract("p.cs", b"class A { void M() {} void M() {} }\n")
             .expect("extract");
-        let ids: Vec<_> = facts.nodes.iter().map(|node| node.fact.id.as_str()).collect();
+        let ids: Vec<_> = facts
+            .nodes
+            .iter()
+            .map(|node| node.fact.id.as_str())
+            .collect();
         assert!(ids.contains(&"s:p.cs#A::M~1"), "{ids:?}");
         assert!(ids.contains(&"s:p.cs#A::M~2"), "{ids:?}");
         assert_eq!(facts.edges.len(), facts.nodes.len() - 1);

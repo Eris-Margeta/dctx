@@ -10,7 +10,10 @@ use std::path::PathBuf;
 /// SHA-256 digest of exact file bytes.
 pub type ContentHash = [u8; 32];
 /// Hashes complete authorized content.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn content_hash(bytes: &[u8]) -> ContentHash {
     match Sha256::digest(bytes) {
         Ok(digest) => *digest.as_bytes(),
@@ -40,7 +43,9 @@ mod tests {
         let hex = |hash: ContentHash| {
             use std::fmt::Write as _;
             let mut text = String::with_capacity(64);
-            for byte in hash { write!(text, "{byte:02x}").expect("writing to a String cannot fail"); }
+            for byte in hash {
+                write!(text, "{byte:02x}").expect("writing to a String cannot fail");
+            }
             text
         };
         assert_eq!(

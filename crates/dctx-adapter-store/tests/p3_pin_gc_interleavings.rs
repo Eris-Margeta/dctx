@@ -64,11 +64,15 @@ fn omit_leases_unlinks_a_pinned_segment() {
     store.publish(req("main", 1, bytes)).unwrap();
     let pin = store.pin("main").unwrap();
     let digest = *pin.segments()[0].digest();
-    store.publish(req("main", 2, segment("replacement"))).unwrap();
+    store
+        .publish(req("main", 2, segment("replacement")))
+        .unwrap();
     store.drop_previous("main").unwrap();
     store.gc(GcBudget { objects: 64 }).unwrap();
     assert!(store.contains_segment(&digest).unwrap());
-    store.gc_with_mark(GcBudget { objects: 64 }, MarkMode::OmitLeases).unwrap();
+    store
+        .gc_with_mark(GcBudget { objects: 64 }, MarkMode::OmitLeases)
+        .unwrap();
     assert!(!store.contains_segment(&digest).unwrap());
     store.release(pin).unwrap();
 }

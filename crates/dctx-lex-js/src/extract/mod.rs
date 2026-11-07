@@ -97,10 +97,43 @@ pub(crate) struct Walker<'a> {
 
 /// Words that never name a callee or a declaration.
 const RESERVED: [&str; 37] = [
-    "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete",
-    "do", "else", "export", "extends", "finally", "for", "function", "if", "import", "in",
-    "instanceof", "new", "return", "super", "switch", "this", "throw", "try", "typeof", "var",
-    "void", "while", "with", "yield", "await", "null", "true", "false",
+    "break",
+    "case",
+    "catch",
+    "class",
+    "const",
+    "continue",
+    "debugger",
+    "default",
+    "delete",
+    "do",
+    "else",
+    "export",
+    "extends",
+    "finally",
+    "for",
+    "function",
+    "if",
+    "import",
+    "in",
+    "instanceof",
+    "new",
+    "return",
+    "super",
+    "switch",
+    "this",
+    "throw",
+    "try",
+    "typeof",
+    "var",
+    "void",
+    "while",
+    "with",
+    "yield",
+    "await",
+    "null",
+    "true",
+    "false",
 ];
 
 impl<'a> Walker<'a> {
@@ -145,14 +178,18 @@ impl<'a> Walker<'a> {
         (self.close(i, end) + 1).min(end)
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     pub fn start_byte(&self, i: usize) -> u32 {
-        self.toks
-            .get(i)
-            .map_or(self.src.len() as u32, |t| t.start)
+        self.toks.get(i).map_or(self.src.len() as u32, |t| t.start)
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     pub fn end_byte(&self, i: usize) -> u32 {
         self.toks.get(i).map_or(self.src.len() as u32, |t| t.end)
     }
@@ -239,7 +276,10 @@ impl<'a> Walker<'a> {
         } else {
             Precision::Structural
         };
-        let lines = [self.line(start), self.line(end.saturating_sub(1).max(start))];
+        let lines = [
+            self.line(start),
+            self.line(end.saturating_sub(1).max(start)),
+        ];
         let node = dctx_map_model::Node {
             id,
             kind: item.kind,
@@ -252,10 +292,7 @@ impl<'a> Walker<'a> {
             public: item.public,
             summary,
         };
-        match self
-            .draft
-            .node(node, scope.owner, (start, end), precision)
-        {
+        match self.draft.node(node, scope.owner, (start, end), precision) {
             Some(owner) => Scope {
                 owner,
                 name,

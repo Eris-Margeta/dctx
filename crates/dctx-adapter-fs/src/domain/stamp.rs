@@ -16,7 +16,10 @@ pub struct FileStamp {
 
 impl FileStamp {
     /// Builds a stamp from metadata the adapter has already read.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new(size: u64, modified_ns: u128, inode: Option<u64>) -> Self {
         Self {
             size,
@@ -28,7 +31,10 @@ impl FileStamp {
     /// Compares the pre-filter fields.
     ///
     /// A missing inode does not by itself count as a change. Two present inodes must be equal.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn metadata_matches(&self, previous: &Self) -> bool {
         if self.size != previous.size || self.modified_ns != previous.modified_ns {
             return false;

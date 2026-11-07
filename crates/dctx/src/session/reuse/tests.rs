@@ -9,7 +9,10 @@ use super::*;
 use crate::domain::{AutoCleanConfig, HostGrants, MapRequest, VecSink, Verb};
 use crate::{HostCeiling, RuleTexts, StoragePolicy};
 
-#[allow(clippy::field_reassign_with_default, reason = "Start from the public limit defaults and change only the limit exercised by this regression.")]
+#[allow(
+    clippy::field_reassign_with_default,
+    reason = "Start from the public limit defaults and change only the limit exercised by this regression."
+)]
 fn open(source: impl crate::ports::Source + Send + 'static, cache: &std::path::Path) -> Session {
     let mut auto = AutoCleanConfig::default();
     auto.enabled = false;
@@ -19,7 +22,9 @@ fn open(source: impl crate::ports::Source + Send + 'static, cache: &std::path::P
         .selection(SelectionPolicy::from_texts(&RuleTexts::default()))
         .ceiling(HostCeiling::base())
         .grants(HostGrants::PermitAll)
-        .storage(StoragePolicy::Ephemeral { max_bytes: 8 * 1024 * 1024 })
+        .storage(StoragePolicy::Ephemeral {
+            max_bytes: 8 * 1024 * 1024,
+        })
         .place("fixture")
         .view("default")
         .cache_root(cache, 1)
@@ -48,7 +53,9 @@ fn same_stamp_byte_change_rebuilds_and_a_match_reuses() {
     let cache = dir.path().join("cache");
     std::fs::create_dir(&cache).expect("dir");
     let mut session = open(source(b"fn kept() {}\n"), &cache);
-    let handle = session.snapshot_reusable(&SnapshotRequest::strict(), "/src").expect("cold");
+    let handle = session
+        .snapshot_reusable(&SnapshotRequest::strict(), "/src")
+        .expect("cold");
     assert!(!handle.reused());
     assert!(session.content_reads() >= 1);
     assert_eq!(session.cached_content_reads(), 0);
@@ -59,7 +66,9 @@ fn same_stamp_byte_change_rebuilds_and_a_match_reuses() {
     drop(session);
 
     let mut warm = open(source(b"fn kept() {}\n"), &cache);
-    let handle = warm.snapshot_reusable(&SnapshotRequest::strict(), "/src").expect("warm");
+    let handle = warm
+        .snapshot_reusable(&SnapshotRequest::strict(), "/src")
+        .expect("warm");
     assert!(handle.reused());
     assert_eq!(handle.generation(), 1);
     assert_eq!(warm.content_reads(), 0);
@@ -70,12 +79,17 @@ fn same_stamp_byte_change_rebuilds_and_a_match_reuses() {
     drop(warm);
 
     let mut third = open(source(b"fn lost() {}\n"), &cache);
-    let handle = third.snapshot_reusable(&SnapshotRequest::strict(), "/src").expect("third");
+    let handle = third
+        .snapshot_reusable(&SnapshotRequest::strict(), "/src")
+        .expect("third");
     assert!(!handle.reused());
     assert!(third.content_reads() >= 1);
     let lost = find_ids(&mut third, &handle, "lost");
     assert!(lost.iter().any(|id| id.contains("lost")), "{lost:?}");
-    assert_eq!(find_ids(&mut third, &handle, "kept"), [] as [std::string::String; 0]);
+    assert_eq!(
+        find_ids(&mut third, &handle, "kept"),
+        [] as [std::string::String; 0]
+    );
 }
 
 #[test]
@@ -84,20 +98,31 @@ fn a_different_source_key_does_not_reuse() {
     let cache = dir.path().join("cache");
     std::fs::create_dir(&cache).expect("dir");
     let mut session = open(source(b"fn kept() {}\n"), &cache);
-    let handle = session.snapshot_reusable(&SnapshotRequest::strict(), "/src").expect("cold");
+    let handle = session
+        .snapshot_reusable(&SnapshotRequest::strict(), "/src")
+        .expect("cold");
     assert!(!handle.reused());
     drop(handle);
     drop(session);
 
     let mut other = open(source(b"fn kept() {}\n"), &cache);
-    let handle = other.snapshot_reusable(&SnapshotRequest::strict(), "/other").expect("other");
+    let handle = other
+        .snapshot_reusable(&SnapshotRequest::strict(), "/other")
+        .expect("other");
     assert!(!handle.reused());
     assert!(other.content_reads() >= 1);
     assert_eq!(other.cached_content_reads(), 0);
 }
 
-#[allow(clippy::field_reassign_with_default, reason = "Start from the public limit defaults and change only the limit exercised by this regression.")]
-fn open_with_rules(source: MemorySource, cache: &std::path::Path, rules: crate::domain::RuleSources) -> Session {
+#[allow(
+    clippy::field_reassign_with_default,
+    reason = "Start from the public limit defaults and change only the limit exercised by this regression."
+)]
+fn open_with_rules(
+    source: MemorySource,
+    cache: &std::path::Path,
+    rules: crate::domain::RuleSources,
+) -> Session {
     let mut auto = AutoCleanConfig::default();
     auto.enabled = false;
     let selection = rules.policy();
@@ -108,7 +133,9 @@ fn open_with_rules(source: MemorySource, cache: &std::path::Path, rules: crate::
         .rule_sources(rules)
         .ceiling(HostCeiling::base())
         .grants(HostGrants::PermitAll)
-        .storage(StoragePolicy::Ephemeral { max_bytes: 8 * 1024 * 1024 })
+        .storage(StoragePolicy::Ephemeral {
+            max_bytes: 8 * 1024 * 1024,
+        })
         .place("fixture")
         .view("default")
         .cache_root(cache, 1)
@@ -122,24 +149,39 @@ fn a_comment_only_rule_edit_rebuilds_and_the_same_text_reuses() {
     let dir = tempfile::tempdir().expect("temp");
     let cache = dir.path().join("cache");
     std::fs::create_dir(&cache).expect("dir");
-    let first = crate::domain::RuleSources { local_ignore: Some("# one\n".to_string()), ..crate::domain::RuleSources::default() };
+    let first = crate::domain::RuleSources {
+        local_ignore: Some("# one\n".to_string()),
+        ..crate::domain::RuleSources::default()
+    };
     let mut session = open_with_rules(source(b"fn kept() {}\n"), &cache, first);
-    let handle = session.snapshot_reusable(&SnapshotRequest::strict(), "/src").expect("cold");
+    let handle = session
+        .snapshot_reusable(&SnapshotRequest::strict(), "/src")
+        .expect("cold");
     assert!(!handle.reused());
     drop(handle);
     drop(session);
 
-    let same = crate::domain::RuleSources { local_ignore: Some("# one\n".to_string()), ..crate::domain::RuleSources::default() };
+    let same = crate::domain::RuleSources {
+        local_ignore: Some("# one\n".to_string()),
+        ..crate::domain::RuleSources::default()
+    };
     let mut warm = open_with_rules(source(b"fn kept() {}\n"), &cache, same);
-    let handle = warm.snapshot_reusable(&SnapshotRequest::strict(), "/src").expect("warm");
+    let handle = warm
+        .snapshot_reusable(&SnapshotRequest::strict(), "/src")
+        .expect("warm");
     assert!(handle.reused());
     assert_eq!(warm.content_reads(), 0);
     drop(handle);
     drop(warm);
 
-    let edited = crate::domain::RuleSources { local_ignore: Some("# two\n".to_string()), ..crate::domain::RuleSources::default() };
+    let edited = crate::domain::RuleSources {
+        local_ignore: Some("# two\n".to_string()),
+        ..crate::domain::RuleSources::default()
+    };
     let mut third = open_with_rules(source(b"fn kept() {}\n"), &cache, edited);
-    let handle = third.snapshot_reusable(&SnapshotRequest::strict(), "/src").expect("edited");
+    let handle = third
+        .snapshot_reusable(&SnapshotRequest::strict(), "/src")
+        .expect("edited");
     assert!(!handle.reused());
     assert!(third.content_reads() >= 1);
 }
@@ -150,9 +192,9 @@ mod stamp {
     use std::sync::atomic::{AtomicU64, Ordering};
 
     use dctx_core::error::DctxError as CoreError;
+    use dctx_core::facts::EntryStamp;
     use dctx_core::facts::{EntryMeta, ReadGrant, SourceEntry};
     use dctx_core::ids::RelativePath;
-    use dctx_core::facts::EntryStamp;
     use dctx_ports::Source;
 
     use super::*;
@@ -204,7 +246,13 @@ mod stamp {
             let cache_dir = tempfile::tempdir().expect("cache");
             let cache = cache_dir.path().join("cache");
             std::fs::create_dir(&cache).expect("cache dir");
-            Self { tree, cache, _cache_dir: cache_dir, reads: Arc::new(AtomicU64::new(0)), bytes: Arc::new(AtomicU64::new(0)) }
+            Self {
+                tree,
+                cache,
+                _cache_dir: cache_dir,
+                reads: Arc::new(AtomicU64::new(0)),
+                bytes: Arc::new(AtomicU64::new(0)),
+            }
         }
 
         fn path(&self, name: &str) -> PathBuf {
@@ -221,21 +269,38 @@ mod stamp {
             self.reads.store(0, Ordering::Relaxed);
             self.bytes.store(0, Ordering::Relaxed);
             let inner = FsSource::open(self.tree.path()).expect("open");
-            open(Counting { inner, reads: Arc::clone(&self.reads), bytes: Arc::clone(&self.bytes) }, &self.cache)
+            open(
+                Counting {
+                    inner,
+                    reads: Arc::clone(&self.reads),
+                    bytes: Arc::clone(&self.bytes),
+                },
+                &self.cache,
+            )
         }
 
         fn served(&self) -> (u64, u64) {
-            (self.reads.load(Ordering::Relaxed), self.bytes.load(Ordering::Relaxed))
+            (
+                self.reads.load(Ordering::Relaxed),
+                self.bytes.load(Ordering::Relaxed),
+            )
         }
     }
 
     fn set_age(path: &Path, seconds: u64) {
         let when = std::time::SystemTime::now() - std::time::Duration::from_secs(seconds);
-        std::fs::File::options().write(true).open(path).expect("open").set_modified(when).expect("set mtime");
+        std::fs::File::options()
+            .write(true)
+            .open(path)
+            .expect("open")
+            .set_modified(when)
+            .expect("set mtime");
     }
 
     fn snapshot(session: &mut Session) -> SnapshotHandle {
-        session.snapshot_reusable(&SnapshotRequest::strict(), "/src").expect("snapshot")
+        session
+            .snapshot_reusable(&SnapshotRequest::strict(), "/src")
+            .expect("snapshot")
     }
 
     #[test]
@@ -249,26 +314,53 @@ mod stamp {
         drop(cold);
 
         let mut reader = fixture.session();
-        let bytes = reader.load_retained().expect("load").expect("retained segment");
+        let bytes = reader
+            .load_retained()
+            .expect("load")
+            .expect("retained segment");
         let decoded = decode_generation(&bytes).expect("decode");
-        let stamps: Vec<_> = decoded.generation.files.iter().map(|file| (file.path.as_str(), file.stamp)).collect();
+        let stamps: Vec<_> = decoded
+            .generation
+            .files
+            .iter()
+            .map(|file| (file.path.as_str(), file.stamp))
+            .collect();
         assert_eq!(stamps.len(), 3);
         for (path, stamp) in &stamps {
             match *path {
-                "c.rs" => assert_eq!(*stamp, None, "a file written just now is racy and carries no stamp"),
+                "c.rs" => assert_eq!(
+                    *stamp, None,
+                    "a file written just now is racy and carries no stamp"
+                ),
                 other => {
                     let stamp = stamp.unwrap_or_else(|| panic!("{other} must carry a stamp"));
                     let meta = std::fs::metadata(fixture.path(other)).expect("meta");
                     assert_eq!(stamp.size, meta.len());
-                    assert_eq!(stamp.modified_ns, meta.modified().expect("mtime").duration_since(std::time::UNIX_EPOCH).expect("epoch").as_nanos());
+                    assert_eq!(
+                        stamp.modified_ns,
+                        meta.modified()
+                            .expect("mtime")
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .expect("epoch")
+                            .as_nanos()
+                    );
                     assert_eq!(stamp.inode, std::os::unix::fs::MetadataExt::ino(&meta));
                 }
             }
         }
         // The stamp never reaches the canonical payload: the segment digest is the same whatever the inode is.
-        let again = encode_generation("/src", "default", &crate::domain::resolve_scan(&crate::domain::OperationLimits::default()).expect("limits"), &decoded.generation)
-            .expect("encode");
-        assert_eq!(again, bytes, "decode then encode reproduces the manifest bytes");
+        let again = encode_generation(
+            "/src",
+            "default",
+            &crate::domain::resolve_scan(&crate::domain::OperationLimits::default())
+                .expect("limits"),
+            &decoded.generation,
+        )
+        .expect("encode");
+        assert_eq!(
+            again, bytes,
+            "decode then encode reproduces the manifest bytes"
+        );
     }
 
     #[test]
@@ -286,7 +378,11 @@ mod stamp {
         let mut warm = fixture.session();
         let handle = snapshot(&mut warm);
         assert!(handle.reused());
-        assert_eq!(fixture.served(), (0, 0), "an untouched settled tree is not read at all");
+        assert_eq!(
+            fixture.served(),
+            (0, 0),
+            "an untouched settled tree is not read at all"
+        );
         assert_eq!(warm.stamp_skipped_reads(), 2);
         assert_eq!(warm.cached_content_reads(), 0);
         assert_eq!(find_ids(&mut warm, &handle, "alpha").len(), 1);
@@ -314,16 +410,32 @@ mod stamp {
         drop(cold);
 
         // A new file with the same bytes, size and nanosecond mtime, moved over the old one: only the inode differs.
-        let modified = std::fs::metadata(fixture.path("a.rs")).expect("meta").modified().expect("mtime");
+        let modified = std::fs::metadata(fixture.path("a.rs"))
+            .expect("meta")
+            .modified()
+            .expect("mtime");
         std::fs::write(fixture.path("a.tmp"), "fn alpha() {}\n").expect("copy");
-        std::fs::File::options().write(true).open(fixture.path("a.tmp")).expect("open").set_modified(modified).expect("mtime");
+        std::fs::File::options()
+            .write(true)
+            .open(fixture.path("a.tmp"))
+            .expect("open")
+            .set_modified(modified)
+            .expect("mtime");
         std::fs::rename(fixture.path("a.tmp"), fixture.path("a.rs")).expect("replace");
 
         let mut warm = fixture.session();
         let handle = snapshot(&mut warm);
         assert!(handle.reused(), "same bytes: the generation survives");
-        assert_eq!(warm.stamp_skipped_reads(), 1, "b.rs is trusted by its stamp");
-        assert_eq!(warm.cached_content_reads(), 1, "a.rs has a new inode and is hashed");
+        assert_eq!(
+            warm.stamp_skipped_reads(),
+            1,
+            "b.rs is trusted by its stamp"
+        );
+        assert_eq!(
+            warm.cached_content_reads(),
+            1,
+            "a.rs has a new inode and is hashed"
+        );
         assert_eq!(fixture.served().0, 1);
     }
 
@@ -340,8 +452,16 @@ mod stamp {
         let mut warm = fixture.session();
         let handle = snapshot(&mut warm);
         assert!(handle.reused());
-        assert_eq!(warm.stamp_skipped_reads(), 1, "only the settled file is trusted");
-        assert_eq!(warm.cached_content_reads(), 2, "both files inside the racy window are hashed");
+        assert_eq!(
+            warm.stamp_skipped_reads(),
+            1,
+            "only the settled file is trusted"
+        );
+        assert_eq!(
+            warm.cached_content_reads(),
+            2,
+            "both files inside the racy window are hashed"
+        );
         assert_eq!(fixture.served().0, 2);
     }
 

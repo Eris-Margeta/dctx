@@ -12,8 +12,8 @@ use dctx_ports::memory::{MemoryCache, MemoryFactStore};
 use dctx_ports::{Cache, Cancellation, Clock, FactStore, Source};
 use dctx_template::HostCeiling;
 
-use super::ledger::{AccountingCache, PersistedCache};
 use super::Session;
+use super::ledger::{AccountingCache, PersistedCache};
 use crate::domain::{AutoCleanConfig, DctxError, HostGrants, OperationLimits, RuleSources};
 use crate::plugins::{HookWarning, PluginHost};
 
@@ -75,56 +75,84 @@ impl SessionBuilder {
     }
 
     /// Injected clock. There is no system clock.
-    #[allow(clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn clock(mut self, clock: impl Clock + Send + 'static) -> Self {
         self.clock = Some(Box::new(clock));
         self
     }
 
     /// Cancellation checked at every directory and read.
-    #[allow(clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn cancellation(mut self, cancel: Arc<dyn Cancellation + Send + Sync>) -> Self {
         self.cancel = Some(cancel);
         self
     }
 
     /// Selection policy. The facade does not read rule files.
-    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn selection(mut self, selection: SelectionPolicy) -> Self {
         self.selection = Some(selection);
         self
     }
 
     /// Organization ceiling passed to template compile and to limit intersection.
-    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn ceiling(mut self, ceiling: HostCeiling) -> Self {
         self.ceiling = Some(ceiling);
         self
     }
 
     /// `PermitAll` or the ceiling's grant list.
-    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn grants(mut self, grants: HostGrants) -> Self {
         self.grants = Some(grants);
         self
     }
 
     /// Explicit storage. Ephemeral is not a fallback for a failed disk.
-    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn storage(mut self, storage: StoragePolicy) -> Self {
         self.storage = Some(storage);
         self
     }
 
     /// Optional caller store. Required for [`StoragePolicy::CallerOwned`].
-    #[allow(clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn store(mut self, store: impl FactStore + Send + 'static) -> Self {
         self.store = Some(Box::new(store));
         self
     }
 
     /// Optional caller cache. Required for [`StoragePolicy::CallerOwned`].
-    #[allow(clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn cache(mut self, cache: impl Cache + Send + 'static) -> Self {
         self.cache = Some(Box::new(cache));
         self
@@ -134,7 +162,10 @@ impl SessionBuilder {
     ///
     /// `path` must already be an absolute directory. The library does not create it and does not
     /// search a home directory. Omitting this method is library isolation: no ledger and no auto-clean.
-    #[allow(clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn cache_root(mut self, path: impl Into<PathBuf>, root_id: u64) -> Self {
         self.cache_root = Some((path.into(), root_id));
         self
@@ -142,28 +173,42 @@ impl SessionBuilder {
 
     /// Auto-clean policy used when a cache root is set. The default is enabled, daily and bounded.
     /// Isolation ignores this value. `enabled: false` skips the open-time slice.
-    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn auto_clean(mut self, policy: AutoCleanConfig) -> Self {
         self.auto_clean = policy;
         self
     }
 
     /// Extra caps intersected with verb caps. `None` fields do not raise anything.
-    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn limits(mut self, limits: OperationLimits) -> Self {
         self.limits = limits;
         self
     }
 
     /// Place name copied into every answer. Required.
-    #[allow(clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn place(mut self, place: impl Into<String>) -> Self {
         self.place = Some(place.into());
         self
     }
 
     /// View name inside an installed plan. Required. This is not discovered from disk.
-    #[allow(clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn view(mut self, view: impl Into<String>) -> Self {
         self.view = Some(view.into());
         self
@@ -171,14 +216,22 @@ impl SessionBuilder {
 
     /// Plugin ports. Absent means the session starts no plugin and no git child.
     /// Without `plugin-runtime`, the supplied host is unavailable: advisory hooks warn and required hooks refuse.
-    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn plugins(mut self, plugins: PluginHost) -> Self {
         self.plugins = Some(plugins);
         self
     }
 
     /// Owned rule texts. Required to rebuild selection after a `.gitignore` edit.
-    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn rule_sources(mut self, rules: RuleSources) -> Self {
         self.rules = Some(rules);
         self
@@ -188,14 +241,30 @@ impl SessionBuilder {
     /// # Errors
     /// Refuses missing/empty required builder inputs, incomplete caller-owned storage, or managed-cache setup failures.
     pub fn build(self) -> Result<Session, DctxError> {
-        let clock = self.clock.ok_or_else(|| DctxError::invalid("clock is required"))?;
-        let cancel = self.cancel.ok_or_else(|| DctxError::invalid("cancellation is required"))?;
-        let selection = self.selection.ok_or_else(|| DctxError::invalid("selection is required"))?;
-        let ceiling = self.ceiling.ok_or_else(|| DctxError::invalid("ceiling is required"))?;
-        let grants = self.grants.ok_or_else(|| DctxError::invalid("grants are required"))?;
-        let storage = self.storage.ok_or_else(|| DctxError::invalid("storage policy is required"))?;
-        let place = self.place.ok_or_else(|| DctxError::invalid("place is required"))?;
-        let view = self.view.ok_or_else(|| DctxError::invalid("view is required"))?;
+        let clock = self
+            .clock
+            .ok_or_else(|| DctxError::invalid("clock is required"))?;
+        let cancel = self
+            .cancel
+            .ok_or_else(|| DctxError::invalid("cancellation is required"))?;
+        let selection = self
+            .selection
+            .ok_or_else(|| DctxError::invalid("selection is required"))?;
+        let ceiling = self
+            .ceiling
+            .ok_or_else(|| DctxError::invalid("ceiling is required"))?;
+        let grants = self
+            .grants
+            .ok_or_else(|| DctxError::invalid("grants are required"))?;
+        let storage = self
+            .storage
+            .ok_or_else(|| DctxError::invalid("storage policy is required"))?;
+        let place = self
+            .place
+            .ok_or_else(|| DctxError::invalid("place is required"))?;
+        let view = self
+            .view
+            .ok_or_else(|| DctxError::invalid("view is required"))?;
         if place.is_empty() || view.is_empty() {
             return Err(DctxError::invalid("place and view must be non-empty"));
         }
@@ -203,13 +272,19 @@ impl SessionBuilder {
             StoragePolicy::Ephemeral { max_bytes } => max_bytes,
             StoragePolicy::CallerOwned { max_bytes } => {
                 if self.store.is_none() || self.cache.is_none() {
-                    return Err(DctxError::invalid("caller-owned storage requires a store and a cache"));
+                    return Err(DctxError::invalid(
+                        "caller-owned storage requires a store and a cache",
+                    ));
                 }
                 max_bytes
             }
         };
-        let store = self.store.unwrap_or_else(|| Box::new(MemoryFactStore::new()));
-        let inner = self.cache.unwrap_or_else(|| Box::new(MemoryCache::new(u64::MAX)));
+        let store = self
+            .store
+            .unwrap_or_else(|| Box::new(MemoryFactStore::new()));
+        let inner = self
+            .cache
+            .unwrap_or_else(|| Box::new(MemoryCache::new(u64::MAX)));
         let now_ms = clock.now().millis();
         let managed = open_managed(self.cache_root, self.auto_clean, now_ms)?;
         Ok(Session {

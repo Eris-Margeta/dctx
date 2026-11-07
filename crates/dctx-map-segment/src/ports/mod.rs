@@ -61,7 +61,9 @@ mod tests {
 
         fn read_at(&self, offset: u64, buf: &mut [u8]) -> Result<(), SegmentError> {
             let start = usize::try_from(offset).map_err(|_| SegmentError::OffsetOverflow)?;
-            let end = start.checked_add(buf.len()).ok_or(SegmentError::OffsetOverflow)?;
+            let end = start
+                .checked_add(buf.len())
+                .ok_or(SegmentError::OffsetOverflow)?;
             let src = self.0.get(start..end).ok_or(SegmentError::Truncated {
                 at: offset,
                 need: offset.saturating_add(u64::try_from(buf.len()).unwrap_or(u64::MAX)),
@@ -95,7 +97,9 @@ mod tests {
 
     impl SegmentRead for Boom {
         fn len(&self) -> u64 {
-            DecoderLimits::standard().max_segment_bytes.saturating_add(1)
+            DecoderLimits::standard()
+                .max_segment_bytes
+                .saturating_add(1)
         }
 
         fn is_empty(&self) -> bool {

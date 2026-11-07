@@ -7,8 +7,7 @@ mod limits;
 mod text;
 
 pub use facts::{
-    Completion, Diagnostic, DiagnosticReason, Dialect, Labeled, LexedFile, Precision,
-    RawReference,
+    Completion, Diagnostic, DiagnosticReason, Dialect, Labeled, LexedFile, Precision, RawReference,
 };
 pub use limits::{LexError, Limits};
 pub use text::body_fingerprint;

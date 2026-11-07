@@ -9,7 +9,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use dctx_core::FileHandlingDecision;
 
 use crate::error::{MAX_INSTRUCTIONS, MAX_PLAN_BYTES, MAX_SECTIONS};
-use crate::plugin::{ConfigEntry, KnownPlugin, Liveness, NetworkPolicy, PluginPlan, ResourceLimits};
+use crate::plugin::{
+    ConfigEntry, KnownPlugin, Liveness, NetworkPolicy, PluginPlan, ResourceLimits,
+};
 
 /// Render instruction: copy a string from the program table.
 pub const OP_TEXT: u16 = 1;
@@ -155,10 +157,21 @@ pub struct RenderProgram {
 
 impl RenderProgram {
     /// Number of instructions across partials and layouts.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn instruction_count(&self) -> usize {
-        let partials: usize = self.partials.iter().map(|code| code.instructions.len()).sum();
-        let layouts: usize = self.layouts.iter().map(|code| code.instructions.len()).sum();
+        let partials: usize = self
+            .partials
+            .iter()
+            .map(|code| code.instructions.len())
+            .sum();
+        let layouts: usize = self
+            .layouts
+            .iter()
+            .map(|code| code.instructions.len())
+            .sum();
         partials + layouts
     }
 }
@@ -197,7 +210,10 @@ pub struct ContextPlan {
 impl ContextPlan {
     /// Selection and extraction digests.
     /// These identify map facts. Plugin configuration is not part of either value.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn map_facts(&self) -> ([u8; 32], [u8; 32]) {
         (self.selection_digest, self.extraction_digest)
     }
@@ -259,7 +275,10 @@ pub struct HostCeiling {
 
 impl HostCeiling {
     /// Spec maximums, pure parsers, pack and map, no grants and no plugins.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn base() -> Self {
         let mut capabilities = BTreeSet::new();
         for name in [
@@ -298,7 +317,14 @@ impl HostCeiling {
 }
 
 /// Facts an INDEX may name.
-pub const KNOWN_FACTS: &[&str] = &["symbols", "imports", "calls", "headings", "docs", "references"];
+pub const KNOWN_FACTS: &[&str] = &[
+    "symbols",
+    "imports",
+    "calls",
+    "headings",
+    "docs",
+    "references",
+];
 
 /// Languages an INDEX or SELECT may name.
 pub const KNOWN_LANGUAGES: &[&str] = &["rust", "javascript", "typescript", "markdown", "opaque"];

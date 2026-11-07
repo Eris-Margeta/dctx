@@ -10,8 +10,8 @@ use std::sync::{Arc, Mutex};
 
 use dctx::memory::{CancelFlag, FixedClock, MemorySource};
 use dctx::{
-    Cancellation, HostCeiling, HostGrants, OperationLimits, RuleTexts, SelectionPolicy, Session, Source,
-    StoragePolicy, Timestamp,
+    Cancellation, HostCeiling, HostGrants, OperationLimits, RuleTexts, SelectionPolicy, Session,
+    Source, StoragePolicy, Timestamp,
 };
 use dctx_core::datatypes::NodeType;
 use dctx_core::error::DctxError as CoreError;
@@ -31,7 +31,9 @@ pub fn open_session(source: impl Source + Send + 'static) -> Session {
         source,
         Arc::new(CancelFlag::new()),
         HostGrants::PermitAll,
-        StoragePolicy::Ephemeral { max_bytes: 8 * 1024 * 1024 },
+        StoragePolicy::Ephemeral {
+            max_bytes: 8 * 1024 * 1024,
+        },
         SelectionPolicy::from_texts(&RuleTexts::default()),
     )
 }
@@ -63,8 +65,12 @@ pub fn repository() -> MemorySource {
     let mut source = MemorySource::new();
     source.insert_file("src/lib.rs", PING, 0).expect("lib");
     source.insert_file("README.md", README, 0).expect("readme");
-    source.insert_file(".gitignore", b"# kept\nsecrets.env\n", 0).expect("ignore");
-    source.insert_file("secrets.env", b"TOKEN=secret\n", 0).expect("secret");
+    source
+        .insert_file(".gitignore", b"# kept\nsecrets.env\n", 0)
+        .expect("ignore");
+    source
+        .insert_file("secrets.env", b"TOKEN=secret\n", 0)
+        .expect("secret");
     source
 }
 
@@ -76,7 +82,9 @@ pub struct SharedSource {
 impl SharedSource {
     /// Wraps `source`.
     pub fn new(source: MemorySource) -> Self {
-        Self { inner: Arc::new(Mutex::new(source)) }
+        Self {
+            inner: Arc::new(Mutex::new(source)),
+        }
     }
 
     /// Clone of the handle. Call this before moving the source into a session.
@@ -113,7 +121,10 @@ pub struct LoggedSource<S> {
 impl<S: Source> LoggedSource<S> {
     /// Wraps `inner` with an empty read log.
     pub fn new(inner: S) -> Self {
-        Self { inner, reads: Arc::new(Mutex::new(Vec::new())) }
+        Self {
+            inner,
+            reads: Arc::new(Mutex::new(Vec::new())),
+        }
     }
 
     /// Clone of the read log. Call this before moving the source into a session.
@@ -136,7 +147,10 @@ impl<S: Source> Source for LoggedSource<S> {
     }
 
     fn read(&self, grant: &ReadGrant, max_bytes: u64) -> Result<Vec<u8>, CoreError> {
-        self.reads.lock().expect("read log").push(grant.path().as_str().to_string());
+        self.reads
+            .lock()
+            .expect("read log")
+            .push(grant.path().as_str().to_string());
         self.inner.read(grant, max_bytes)
     }
 }
@@ -150,7 +164,10 @@ pub struct CancelAfter {
 impl CancelAfter {
     /// `allow` successful checks, then cancel.
     pub fn new(allow: u64) -> Self {
-        Self { allow, checks: AtomicU64::new(0) }
+        Self {
+            allow,
+            checks: AtomicU64::new(0),
+        }
     }
 }
 

@@ -56,7 +56,9 @@ pub(crate) fn check_root(root: &str) -> Result<(), StoreError> {
     if root.is_empty() || root.len() > 64 || root == ".git" {
         return Err(StoreError::InvalidRequest { reason: "root" });
     }
-    let ok = root.bytes().all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-'));
+    let ok = root
+        .bytes()
+        .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-'));
     if !ok {
         return Err(StoreError::InvalidRequest { reason: "root" });
     }
@@ -65,13 +67,17 @@ pub(crate) fn check_root(root: &str) -> Result<(), StoreError> {
 
 pub(crate) fn check_token(token: &str) -> Result<(), StoreError> {
     if token.is_empty() || token.len() > 64 || token == ".git" {
-        return Err(StoreError::InvalidRequest { reason: "namespace" });
+        return Err(StoreError::InvalidRequest {
+            reason: "namespace",
+        });
     }
     let ok = token
         .bytes()
         .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-'));
     if !ok {
-        return Err(StoreError::InvalidRequest { reason: "namespace" });
+        return Err(StoreError::InvalidRequest {
+            reason: "namespace",
+        });
     }
     Ok(())
 }
@@ -102,7 +108,9 @@ pub(crate) const fn cursor_path() -> &'static str {
 
 pub(crate) fn object_digest(path: &str) -> Option<[u8; 32]> {
     let name = path.rsplit('/').next()?;
-    let hex = name.strip_suffix(".seg").or_else(|| name.strip_suffix(".man"))?;
+    let hex = name
+        .strip_suffix(".seg")
+        .or_else(|| name.strip_suffix(".man"))?;
     hex_decode(hex).ok()
 }
 
@@ -121,9 +129,6 @@ mod tests {
         assert!(check_rel("../segments/aa.seg").is_err());
         assert!(check_root(".git").is_err());
         assert!(check_root("main").is_ok());
-        assert_eq!(
-            object_digest(&segment_path(&bytes)).unwrap(),
-            bytes
-        );
+        assert_eq!(object_digest(&segment_path(&bytes)).unwrap(), bytes);
     }
 }

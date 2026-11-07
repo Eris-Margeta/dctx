@@ -23,11 +23,23 @@ pub struct DecodeLimits {
 
 impl DecodeLimits {
     /// Session frame bodies: 1 MiB, depth 32, 4096 members.
-    pub const WIRE: Self = Self { max_bytes: 1_048_576, max_depth: 32, max_members: 4096 };
+    pub const WIRE: Self = Self {
+        max_bytes: 1_048_576,
+        max_depth: 32,
+        max_members: 4096,
+    };
     /// Bootstrap frame bodies before negotiation: 64 KiB, depth 32, 4096 members.
-    pub const BOOTSTRAP: Self = Self { max_bytes: 65_536, max_depth: 32, max_members: 4096 };
+    pub const BOOTSTRAP: Self = Self {
+        max_bytes: 65_536,
+        max_depth: 32,
+        max_members: 4096,
+    };
     /// Manifests (S-MANIFEST): 256 KiB, depth 32, 4096 members.
-    pub const MANIFEST: Self = Self { max_bytes: 262_144, max_depth: 32, max_members: 4096 };
+    pub const MANIFEST: Self = Self {
+        max_bytes: 262_144,
+        max_depth: 32,
+        max_members: 4096,
+    };
 }
 
 /// Decodes exactly one JSON object from `bytes` under `limits`.
@@ -35,7 +47,12 @@ impl DecodeLimits {
 /// Refuses invalid UTF-8/JSON, non-object roots, duplicate members, trailing data, or exceeded decode limits.
 pub fn decode_object(bytes: &[u8], limits: DecodeLimits) -> Result<Json, Refusal> {
     if bytes.len() > limits.max_bytes {
-        return Err(Refusal::new(ErrorCode::ResourceLimit, Stage::Frame, Predicate::WFrame, "document-too-large"));
+        return Err(Refusal::new(
+            ErrorCode::ResourceLimit,
+            Stage::Frame,
+            Predicate::WFrame,
+            "document-too-large",
+        ));
     }
     if bytes.starts_with(&[0xEF, 0xBB, 0xBF]) {
         return Err(Refusal::frame("byte-order-mark"));
@@ -43,7 +60,12 @@ pub fn decode_object(bytes: &[u8], limits: DecodeLimits) -> Result<Json, Refusal
     if std::str::from_utf8(bytes).is_err() {
         return Err(Refusal::frame("invalid-utf8"));
     }
-    let mut parser = Parser { input: bytes, pos: 0, members: 0, limits };
+    let mut parser = Parser {
+        input: bytes,
+        pos: 0,
+        members: 0,
+        limits,
+    };
     parser.skip_whitespace();
     if parser.peek() != Some(b'{') {
         return Err(Refusal::frame("non-object"));
@@ -58,7 +80,12 @@ pub fn decode_object(bytes: &[u8], limits: DecodeLimits) -> Result<Json, Refusal
 
 /// Depth and member caps are resource limits (catalog json-depth/json-members).
 fn limit(reason: &'static str) -> Refusal {
-    Refusal::new(ErrorCode::ResourceLimit, Stage::Decode, Predicate::WJson, reason)
+    Refusal::new(
+        ErrorCode::ResourceLimit,
+        Stage::Decode,
+        Predicate::WJson,
+        reason,
+    )
 }
 
 struct Parser<'a> {
@@ -80,7 +107,11 @@ impl Parser<'_> {
     }
 
     fn expect(&mut self, byte: u8) -> Result<(), Refusal> {
-        if self.next()? == byte { Ok(()) } else { Err(Refusal::decode("unexpected-token")) }
+        if self.next()? == byte {
+            Ok(())
+        } else {
+            Err(Refusal::decode("unexpected-token"))
+        }
     }
 
     fn skip_whitespace(&mut self) {
@@ -105,7 +136,11 @@ impl Parser<'_> {
     }
 
     fn enter(&self, depth: usize) -> Result<(), Refusal> {
-        if depth > self.limits.max_depth { Err(limit("depth-limit")) } else { Ok(()) }
+        if depth > self.limits.max_depth {
+            Err(limit("depth-limit"))
+        } else {
+            Ok(())
+        }
     }
 
     fn object(&mut self, depth: usize) -> Result<Json, Refusal> {
@@ -137,7 +172,7 @@ impl Parser<'_> {
             members.push((key, value));
             self.skip_whitespace();
             match self.next()? {
-                b',' => {},
+                b',' => {}
                 b'}' => return Ok(Json::Object(members)),
                 _ => return Err(Refusal::decode("unexpected-token")),
             }
@@ -157,7 +192,7 @@ impl Parser<'_> {
             items.push(self.value(depth)?);
             self.skip_whitespace();
             match self.next()? {
-                b',' => {},
+                b',' => {}
                 b']' => return Ok(Json::Array(items)),
                 _ => return Err(Refusal::decode("unexpected-token")),
             }
@@ -262,7 +297,9 @@ impl Parser<'_> {
     fn hex4(&mut self) -> Result<u32, Refusal> {
         let mut value = 0u32;
         for _ in 0..4 {
-            let digit = char::from(self.next()?).to_digit(16).ok_or(Refusal::decode("invalid-escape"))?;
+            let digit = char::from(self.next()?)
+                .to_digit(16)
+                .ok_or(Refusal::decode("invalid-escape"))?;
             value = value * 16 + digit;
         }
         Ok(value)
@@ -279,8 +316,11 @@ mod tests {
 
     #[test]
     fn accepts_objects_with_whitespace_and_escapes() {
-        let value = decode_object(b" {\"a\" : [1, true, null, \"x\\u00e9\\ud83d\\ude00\\n\"]}\n", DecodeLimits::WIRE)
-            .expect("valid");
+        let value = decode_object(
+            b" {\"a\" : [1, true, null, \"x\\u00e9\\ud83d\\ude00\\n\"]}\n",
+            DecodeLimits::WIRE,
+        )
+        .expect("valid");
         let items = value.get("a").and_then(Json::as_array).expect("array");
         assert_eq!(items[0], Json::Int(1));
         assert_eq!(items[3], Json::str("x\u{e9}\u{1F600}\n"));
@@ -325,7 +365,10 @@ mod tests {
         assert_eq!((bom.stage, bom.reason), (Stage::Frame, "byte-order-mark"));
         let bad = decode_object(b"{\"a\":\"\xC3\x28\"}", DecodeLimits::WIRE).unwrap_err();
         assert_eq!(bad.reason, "invalid-utf8");
-        let limits = DecodeLimits { max_bytes: 4, ..DecodeLimits::WIRE };
+        let limits = DecodeLimits {
+            max_bytes: 4,
+            ..DecodeLimits::WIRE
+        };
         let big = decode_object(b"{\"a\":1}", limits).unwrap_err();
         assert_eq!(big.code, ErrorCode::ResourceLimit);
     }

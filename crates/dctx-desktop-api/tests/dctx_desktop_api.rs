@@ -10,8 +10,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use dctx_desktop_api::{
-    generate_snapshot, load_desktop_config, reset_desktop_config, save_desktop_config, DesktopConfig, RecentStore,
-    DESKTOP_CONFIG_FILENAME, MAX_RECENT_PROJECTS,
+    generate_snapshot, load_desktop_config, reset_desktop_config, save_desktop_config,
+    DesktopConfig, RecentStore, DESKTOP_CONFIG_FILENAME, MAX_RECENT_PROJECTS,
 };
 
 static NEXT: AtomicU64 = AtomicU64::new(1);
@@ -23,7 +23,9 @@ struct TempDir {
 impl TempDir {
     fn new(label: &str) -> Self {
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
-        let nanos = SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_nanos());
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_or(0, |d| d.as_nanos());
         let path = std::env::temp_dir().join(format!("dctx-desktop-api-{label}-{n}-{nanos}"));
         fs::create_dir_all(&path).expect("temp");
         Self { path }
@@ -41,7 +43,10 @@ impl Drop for TempDir {
 }
 
 #[test]
-#[allow(clippy::field_reassign_with_default, reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions.")]
+#[allow(
+    clippy::field_reassign_with_default,
+    reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions."
+)]
 fn oversized_directory_is_refused_and_a_smaller_limit_succeeds() {
     let root = TempDir::new("oversize");
     fs::write(root.path().join("one.txt"), b"one").expect("one");
@@ -95,13 +100,18 @@ auto_copy_to_clipboard = maybe
 fn recent_projects_dedup_and_cap() {
     let root = TempDir::new("recent");
     let store = RecentStore::new(root.path().join("state"));
-    assert_eq!(store.get().expect("empty"), [] as [dctx_desktop_api::RecentProject; 0]);
+    assert_eq!(
+        store.get().expect("empty"),
+        [] as [dctx_desktop_api::RecentProject; 0]
+    );
 
     let first = root.path().join("proj");
     fs::create_dir(&first).expect("proj");
     let first_path = first.to_str().expect("utf8");
     store.add(first_path, "2026-02-01T00:00:00Z").expect("add");
-    store.add(first_path, "2026-02-03T00:00:00Z").expect("refresh");
+    store
+        .add(first_path, "2026-02-03T00:00:00Z")
+        .expect("refresh");
     let deduped = store.get().expect("deduped");
     assert_eq!(deduped.len(), 1);
     assert_eq!(deduped[0].access_count, 2);
@@ -128,7 +138,9 @@ fn recent_projects_dedup_and_cap() {
     let oldest_kept = &projects[0];
     assert_eq!(listed.last().expect("last").path, oldest_kept.0);
 
-    store.add(first_path, "2026-04-01T00:00:00Z").expect("readd");
+    store
+        .add(first_path, "2026-04-01T00:00:00Z")
+        .expect("readd");
     let refreshed = store.get().expect("refreshed");
     assert_eq!(refreshed.len(), MAX_RECENT_PROJECTS);
     assert_eq!(refreshed[0].path, first_path);
@@ -137,7 +149,10 @@ fn recent_projects_dedup_and_cap() {
 }
 
 #[test]
-#[allow(clippy::field_reassign_with_default, reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions.")]
+#[allow(
+    clippy::field_reassign_with_default,
+    reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions."
+)]
 fn settings_save_load_round_trip() {
     let dir = TempDir::new("round");
     let cache = TempDir::new("cache");

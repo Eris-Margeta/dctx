@@ -88,7 +88,10 @@ pub struct LivenessFeed {
 
 impl LivenessFeed {
     /// A feed for an invocation admitted at `now` under the caller's `policy`.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new(policy: Liveness, now: u64) -> Self {
         Self {
             policy,
@@ -113,7 +116,11 @@ impl LivenessFeed {
         if let Some(wait) = &sample.wait
             && !self.wait_known(wait)
         {
-            return Err(HostRefusal::new(ErrorCode::InvalidMessage, Phase::Invoke, "unknown-wait"));
+            return Err(HostRefusal::new(
+                ErrorCode::InvalidMessage,
+                Phase::Invoke,
+                "unknown-wait",
+            ));
         }
         let useful = self.accept(sample)?;
         if self.recent.len() == 2 {
@@ -158,7 +165,11 @@ impl LivenessFeed {
     /// `ResolveDependency`: resolved is useful progress; dead is stall evidence.
     pub fn settle_dependency(&mut self, dependency: &Token, alive: bool, now: u64) {
         if let Some(state) = self.dependencies.get_mut(dependency) {
-            *state = if alive { Dependency::Resolved } else { Dependency::Dead };
+            *state = if alive {
+                Dependency::Resolved
+            } else {
+                Dependency::Dead
+            };
             self.trace.push(ModelAction::LifecycleResolveDependency);
             if alive {
                 self.useful(now);
@@ -225,7 +236,10 @@ impl LivenessFeed {
     }
 
     /// Current observation.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn observation(&self) -> &Observation {
         &self.state
     }
@@ -236,14 +250,23 @@ impl LivenessFeed {
     }
 
     /// Model actions taken.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn trace(&self) -> &Trace {
         &self.trace
     }
 
     /// W-PROGRESS sequencing; useful when the phase is new or its completed count advanced.
     fn accept(&mut self, sample: &Progress) -> Result<bool, HostRefusal> {
-        let refuse = |reason| Err(HostRefusal::new(ErrorCode::InvalidMessage, Phase::Invoke, reason));
+        let refuse = |reason| {
+            Err(HostRefusal::new(
+                ErrorCode::InvalidMessage,
+                Phase::Invoke,
+                reason,
+            ))
+        };
         if sample.seq <= self.last_seq {
             return refuse("progress-sequence");
         }
@@ -261,12 +284,19 @@ impl LivenessFeed {
                 sample.completed > *completed
             }
             None if self.phases.len() >= MAX_TRACKED => {
-                return Err(HostRefusal::new(ErrorCode::ResourceLimit, Phase::Invoke, "too-many-phases"));
+                return Err(HostRefusal::new(
+                    ErrorCode::ResourceLimit,
+                    Phase::Invoke,
+                    "too-many-phases",
+                ));
             }
             None => true,
         };
         self.last_seq = sample.seq;
-        self.phases.insert(sample.phase.clone(), (sample.completed, sample.total, sample.unit));
+        self.phases.insert(
+            sample.phase.clone(),
+            (sample.completed, sample.total, sample.unit),
+        );
         Ok(useful)
     }
 
@@ -334,7 +364,10 @@ mod tests {
         }
     }
 
-    const FAIL_CLOSED: Liveness = Liveness::UnattendedFailClosed { sample_ms: 10, cancel_grace_ms: 10 };
+    const FAIL_CLOSED: Liveness = Liveness::UnattendedFailClosed {
+        sample_ms: 10,
+        cancel_grace_ms: 10,
+    };
 
     #[test]
     fn advancing_counter_is_useful_repeat_is_not() {
@@ -351,10 +384,17 @@ mod tests {
     #[test]
     fn cadence_is_not_a_deadline() {
         let mut feed = LivenessFeed::new(FAIL_CLOSED, 0);
-        assert_eq!(feed.sample(5, ProcessEvidence::Alive { activity: None }), Verdict::Continue);
+        assert_eq!(
+            feed.sample(5, ProcessEvidence::Alive { activity: None }),
+            Verdict::Continue
+        );
         for step in 1..100u64 {
-            feed.progress(&sample(step, "scan", step), step * 1_000_000).expect("progress");
-            let verdict = feed.sample(step * 1_000_000 + 1, ProcessEvidence::Alive { activity: Some(1) });
+            feed.progress(&sample(step, "scan", step), step * 1_000_000)
+                .expect("progress");
+            let verdict = feed.sample(
+                step * 1_000_000 + 1,
+                ProcessEvidence::Alive { activity: Some(1) },
+            );
             assert_eq!(verdict, Verdict::Continue);
         }
     }
@@ -365,7 +405,8 @@ mod tests {
         let mut waiting = sample(1, "scan", 0);
         waiting.wait = Some(Wait::Dependency(Token::new("dep:1").expect("dep")));
         assert!(feed.progress(&waiting, 0).is_err());
-        feed.register_dependency(Token::new("dep:1").expect("dep")).expect("registered");
+        feed.register_dependency(Token::new("dep:1").expect("dep"))
+            .expect("registered");
         assert_eq!(feed.progress(&waiting, 0), Ok(true));
     }
 }

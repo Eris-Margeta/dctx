@@ -3,13 +3,13 @@
 //! Implements CACHE-v1 scalar flags, writer locks, recovery pointers and id sets.
 //! Depends on ledger primitives and domain map codecs; restart frames this body.
 
+use super::Lifecycle;
 use super::ids::{GenerationId, ManifestId, ObjectId, SessionId};
 use super::restart::{
-    BOOT_ACCELERATES, CLOCK_FAULT, DEFERRED, DISK_FULL, INCOMPATIBLE, LEGACY_FROZEN, PASS_INCOMPLETE,
-    Put,
+    BOOT_ACCELERATES, CLOCK_FAULT, DEFERRED, DISK_FULL, INCOMPATIBLE, LEGACY_FROZEN,
+    PASS_INCOMPLETE, Put,
 };
 use super::writer::{WriterLock, WriterStep};
-use super::Lifecycle;
 use crate::error::CacheError;
 
 impl Lifecycle {

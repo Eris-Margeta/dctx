@@ -30,8 +30,12 @@ pub fn envelope_checksum(bytes: &[u8]) -> Result<[u8; 32], SegmentError> {
             need: 80,
         });
     }
-    let head = bytes.get(..48).ok_or(SegmentError::Truncated { at: 0, need: 48 })?;
-    let tail = bytes.get(80..).ok_or(SegmentError::Truncated { at: 80, need: 0 })?;
+    let head = bytes
+        .get(..48)
+        .ok_or(SegmentError::Truncated { at: 0, need: 48 })?;
+    let tail = bytes
+        .get(80..)
+        .ok_or(SegmentError::Truncated { at: 80, need: 0 })?;
     let mut hasher = dctx_hash::Sha256::new();
     absorb(&mut hasher, head)?;
     absorb(&mut hasher, &[0u8; 32])?;

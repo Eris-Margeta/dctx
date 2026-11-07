@@ -26,7 +26,10 @@ pub(super) fn bind_decl(
     aliases: &mut BTreeSet<String>,
 ) -> Result<PluginBinding, TemplateError> {
     if !canonical_id(&decl.id) {
-        return Err(TemplateError::InvalidSyntax { line: 0, detail: "plugin id".into() });
+        return Err(TemplateError::InvalidSyntax {
+            line: 0,
+            detail: "plugin id".into(),
+        });
     }
     screen_hooks(&decl.hooks)?;
     bounded(&decl.before, "before", 64)?;
@@ -42,45 +45,81 @@ pub(super) fn bind_decl(
     }
     let Some(catalog) = host.plugins.iter().find(|plugin| plugin.id == decl.id) else {
         if decl.required {
-            return Err(TemplateError::RequiredPluginMissing { id: decl.id.clone() });
+            return Err(TemplateError::RequiredPluginMissing {
+                id: decl.id.clone(),
+            });
         }
         return Ok(unavailable(&decl.id, UnavailableReason::NotInstalled));
     };
-    let version = decl.version.clone().ok_or_else(|| TemplateError::InvalidSyntax {
-        line: 0,
-        detail: "plugin version".into(),
-    })?;
+    let version = decl
+        .version
+        .clone()
+        .ok_or_else(|| TemplateError::InvalidSyntax {
+            line: 0,
+            detail: "plugin version".into(),
+        })?;
     require_semver(&catalog.version)?;
     if version != catalog.version {
-        return Err(TemplateError::InvalidSyntax { line: 0, detail: "plugin version".into() });
+        return Err(TemplateError::InvalidSyntax {
+            line: 0,
+            detail: "plugin version".into(),
+        });
     }
     confirm_digest(decl.digest.as_deref(), catalog.digest)?;
     let hooks = hooks_of(&decl.hooks, catalog)?;
     let denied = denied_set(host, &decl.id);
     let allow = expand_allow(&decl.allow, catalog, &denied)?;
-    let user = host.user_config.get(&decl.id).map_or(&[][..], Vec::as_slice);
+    let user = host
+        .user_config
+        .get(&decl.id)
+        .map_or(&[][..], Vec::as_slice);
     let config = merge_config(&decl.id, &catalog.fields, &decl.config, user)?;
     let alias = decl.alias.clone().unwrap_or_else(|| catalog.alias.clone());
     claim_alias(&alias, aliases)?;
     let listed = enabled.is_none_or(|set| set.contains(&decl.id));
     if host.disabled_plugins.contains(&decl.id) {
         if decl.required {
-            return Err(TemplateError::UserDisabled { id: decl.id.clone() });
+            return Err(TemplateError::UserDisabled {
+                id: decl.id.clone(),
+            });
         }
-        return Ok(locked(catalog, &version, alias, PluginState::Disabled, decl.required, &decl.before, &decl.after));
+        return Ok(locked(
+            catalog,
+            &version,
+            alias,
+            PluginState::Disabled,
+            decl.required,
+            &decl.before,
+            &decl.after,
+        ));
     }
     if !listed {
         if decl.required {
-            return Err(TemplateError::InvalidSyntax { line: 0, detail: "required plugin is not enabled".into() });
+            return Err(TemplateError::InvalidSyntax {
+                line: 0,
+                detail: "required plugin is not enabled".into(),
+            });
         }
-        return Ok(locked(catalog, &version, alias, PluginState::Disabled, decl.required, &decl.before, &decl.after));
+        return Ok(locked(
+            catalog,
+            &version,
+            alias,
+            PluginState::Disabled,
+            decl.required,
+            &decl.before,
+            &decl.after,
+        ));
     }
     Ok(active(
         catalog,
         &version,
         alias,
         decl.required,
-        Effect { hooks, allow, config },
+        Effect {
+            hooks,
+            allow,
+            config,
+        },
         &decl.before,
         &decl.after,
     ))
@@ -92,21 +131,47 @@ pub(super) fn bind_catalog(
     aliases: &mut BTreeSet<String>,
 ) -> Result<PluginBinding, TemplateError> {
     if !canonical_id(&catalog.id) {
-        return Err(TemplateError::InvalidSyntax { line: 0, detail: "plugin id".into() });
+        return Err(TemplateError::InvalidSyntax {
+            line: 0,
+            detail: "plugin id".into(),
+        });
     }
     require_semver(&catalog.version)?;
     check_alias(&catalog.alias)?;
     claim_alias(&catalog.alias, aliases)?;
     if host.disabled_plugins.contains(&catalog.id) {
-        return Ok(locked(catalog, &catalog.version, catalog.alias.clone(), PluginState::Disabled, false, &[], &[]));
+        return Ok(locked(
+            catalog,
+            &catalog.version,
+            catalog.alias.clone(),
+            PluginState::Disabled,
+            false,
+            &[],
+            &[],
+        ));
     }
     let denied = denied_set(host, &catalog.id);
     let selectors = granted_selectors(catalog, &denied);
     let allow = expand_allow(&selectors, catalog, &denied)?;
     let hooks = hooks_of(&catalog.hooks, catalog)?;
-    let user = host.user_config.get(&catalog.id).map_or(&[][..], Vec::as_slice);
+    let user = host
+        .user_config
+        .get(&catalog.id)
+        .map_or(&[][..], Vec::as_slice);
     let config = merge_config(&catalog.id, &catalog.fields, &[], user)?;
-    Ok(active(catalog, &catalog.version, catalog.alias.clone(), false, Effect { hooks, allow, config }, &[], &[]))
+    Ok(active(
+        catalog,
+        &catalog.version,
+        catalog.alias.clone(),
+        false,
+        Effect {
+            hooks,
+            allow,
+            config,
+        },
+        &[],
+        &[],
+    ))
 }
 
 fn unavailable(id: &str, reason: UnavailableReason) -> PluginBinding {
@@ -172,10 +237,17 @@ fn active(
     before: &[String],
     after: &[String],
 ) -> PluginBinding {
-    let mut binding = locked(catalog, version, alias, PluginState::Enabled, required, before, after);
+    let mut binding = locked(
+        catalog,
+        version,
+        alias,
+        PluginState::Enabled,
+        required,
+        before,
+        after,
+    );
     binding.hooks = effect.hooks;
     binding.allow = effect.allow;
     binding.config = effect.config;
     binding
 }
-

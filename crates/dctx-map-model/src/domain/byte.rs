@@ -10,13 +10,19 @@ pub struct ByteOffset(u64);
 
 impl ByteOffset {
     /// Offset in bytes from the start of the authorized input.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn new(value: u64) -> Self {
         Self(value)
     }
 
     /// Raw byte index.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn get(self) -> u64 {
         self.0
     }
@@ -28,13 +34,19 @@ pub struct ByteLength(u64);
 
 impl ByteLength {
     /// A length that was already checked by the caller.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn new(value: u64) -> Self {
         Self(value)
     }
 
     /// Raw byte count.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn get(self) -> u64 {
         self.0
     }
@@ -90,32 +102,48 @@ impl ByteSpan {
     ///
     /// # Errors
     /// Refuses inverted or out-of-range spans, endpoints inside UTF-8 scalars and line numbers that exceed `u32`.
-    pub fn on_utf8(text: &str, start: ByteOffset, end: ByteOffset) -> Result<Self, InvalidByteSpan> {
+    pub fn on_utf8(
+        text: &str,
+        start: ByteOffset,
+        end: ByteOffset,
+    ) -> Result<Self, InvalidByteSpan> {
         let span = Self::new(start, end)?;
         span.lines_in(text)?;
         Ok(span)
     }
 
     /// Inclusive start.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn start(self) -> ByteOffset {
         self.start
     }
 
     /// Exclusive end.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn end(self) -> ByteOffset {
         self.end
     }
 
     /// Number of bytes covered.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn len(self) -> ByteLength {
         ByteLength(self.end.0 - self.start.0)
     }
 
     /// True when the span covers no bytes.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn is_empty(self) -> bool {
         self.start.0 == self.end.0
     }

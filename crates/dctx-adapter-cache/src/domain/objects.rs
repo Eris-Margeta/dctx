@@ -8,12 +8,19 @@ use super::ids::ObjectId;
 use super::{CacheObject, Lifecycle, Spawn};
 
 impl Lifecycle {
-    #[allow(clippy::needless_pass_by_value, reason = "Object creation consumes an assembled Spawn record at the ledger mutation boundary.")]
+    #[allow(
+        clippy::needless_pass_by_value,
+        reason = "Object creation consumes an assembled Spawn record at the ledger mutation boundary."
+    )]
     pub(super) fn spawn(&mut self, spec: Spawn<'_>) -> Result<ObjectId, crate::error::CacheError> {
         let id = ObjectId::new(self.ids.object);
-        self.ids.object = self.ids.object.checked_add(1).ok_or(
-            crate::error::CacheError::InvalidRequest { reason: "object id space exhausted" },
-        )?;
+        self.ids.object =
+            self.ids
+                .object
+                .checked_add(1)
+                .ok_or(crate::error::CacheError::InvalidRequest {
+                    reason: "object id space exhausted",
+                })?;
         self.objects.insert(
             id,
             CacheObject {
@@ -74,7 +81,10 @@ impl Lifecycle {
         }
     }
 
-    #[allow(clippy::unused_self, reason = "Keep saturating ledger accounting on Lifecycle beside the quota and reachability computations that use it.")]
+    #[allow(
+        clippy::unused_self,
+        reason = "Keep saturating ledger accounting on Lifecycle beside the quota and reachability computations that use it."
+    )]
     pub(super) fn sum_iter(&self, values: impl Iterator<Item = u64>) -> u64 {
         values.fold(0u64, u64::saturating_add)
     }

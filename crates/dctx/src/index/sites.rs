@@ -8,7 +8,7 @@
 //! budget-cut first page covers the most calling files and call sites.
 
 use super::extract::language_of;
-use super::{query, Generation};
+use super::{Generation, query};
 use crate::domain::{AnswerRecord, MapRequest};
 
 /// Most call-site lines kept on one record.
@@ -39,7 +39,11 @@ pub(crate) struct SitePlan {
 }
 
 /// Plans the scans for `records`, or `None` when the page has no depth-one inbound `calls` record or the target has no plain name.
-pub(crate) fn plan(generation: &Generation, request: &MapRequest, records: &[AnswerRecord]) -> Option<SitePlan> {
+pub(crate) fn plan(
+    generation: &Generation,
+    request: &MapRequest,
+    records: &[AnswerRecord],
+) -> Option<SitePlan> {
     let root = query::lookup(generation, &request.target)?;
     let name = root.name.rsplit(['.', ':', '#']).next().unwrap_or("");
     if name.is_empty() || !name.chars().all(is_word) {
@@ -47,7 +51,11 @@ pub(crate) fn plan(generation: &Generation, request: &MapRequest, records: &[Ans
     }
     let mut jobs = Vec::new();
     for (index, record) in records.iter().enumerate() {
-        let (Some("calls"), Some("in"), Some(target)) = (record.edge.as_deref(), record.direction.as_deref(), record.target.as_deref()) else {
+        let (Some("calls"), Some("in"), Some(target)) = (
+            record.edge.as_deref(),
+            record.direction.as_deref(),
+            record.target.as_deref(),
+        ) else {
             continue;
         };
         // A deeper record calls an intermediate node, not the requested one.
@@ -58,38 +66,78 @@ pub(crate) fn plan(generation: &Generation, request: &MapRequest, records: &[Ans
             continue;
         };
         let own = caller.name.rsplit(['.', ':', '#']).next() == Some(name);
-        jobs.push(SiteJob { index, path: record.path.clone(), span: caller.span, first: caller.lines[0], own });
+        jobs.push(SiteJob {
+            index,
+            path: record.path.clone(),
+            span: caller.span,
+            first: caller.lines[0],
+            own,
+        });
     }
-    (!jobs.is_empty()).then(|| SitePlan { name: name.to_string(), jobs })
+    (!jobs.is_empty()).then(|| SitePlan {
+        name: name.to_string(),
+        jobs,
+    })
 }
 
 /// True for a depth-one neighbors record: its id is `{edge}:{direction}:{target}` with no depth in between.
 fn depth_one(record: &AnswerRecord) -> bool {
-    let (Some(edge), Some(direction), Some(target)) = (record.edge.as_deref(), record.direction.as_deref(), record.target.as_deref()) else {
+    let (Some(edge), Some(direction), Some(target)) = (
+        record.edge.as_deref(),
+        record.direction.as_deref(),
+        record.target.as_deref(),
+    ) else {
         return false;
     };
-    record.id.strip_prefix(edge).and_then(|rest| rest.strip_prefix(':')).and_then(|rest| rest.strip_prefix(direction)).and_then(|rest| rest.strip_prefix(':')) == Some(target)
+    record
+        .id
+        .strip_prefix(edge)
+        .and_then(|rest| rest.strip_prefix(':'))
+        .and_then(|rest| rest.strip_prefix(direction))
+        .and_then(|rest| rest.strip_prefix(':'))
+        == Some(target)
 }
 
 /// Stably reorders the leading depth-one records inside one edge kind: first the best caller of every (direction, file), then the other
 /// callers; each run with more call-site lines (`counts[i]` for record `i`) first. Ties keep their earlier order (target, then id).
 /// Deeper records stay where they are, after every depth-one record.
 pub(crate) fn rank(records: &mut Vec<AnswerRecord>, counts: &[usize]) {
-    let head = records.iter().take_while(|record| depth_one(record)).count();
+    let head = records
+        .iter()
+        .take_while(|record| depth_one(record))
+        .count();
     let count = |index: usize| counts.get(index).copied().unwrap_or(0);
     let mut order: Vec<usize> = (0..head).collect();
-    order.sort_by(|&left, &right| records[left].edge.cmp(&records[right].edge).then(count(right).cmp(&count(left))));
+    order.sort_by(|&left, &right| {
+        records[left]
+            .edge
+            .cmp(&records[right].edge)
+            .then(count(right).cmp(&count(left)))
+    });
     let repeat: Vec<bool> = {
         let mut seen = std::collections::HashSet::new();
         let mut flags = vec![false; head];
         for &index in &order {
             let record = &records[index];
-            flags[index] = !seen.insert((record.edge.as_deref(), record.direction.as_deref(), record.path.as_str()));
+            flags[index] = !seen.insert((
+                record.edge.as_deref(),
+                record.direction.as_deref(),
+                record.path.as_str(),
+            ));
         }
         flags
     };
-    order.sort_by(|&left, &right| records[left].edge.cmp(&records[right].edge).then(repeat[left].cmp(&repeat[right])));
-    if order.iter().enumerate().all(|(position, &index)| position == index) {
+    order.sort_by(|&left, &right| {
+        records[left]
+            .edge
+            .cmp(&records[right].edge)
+            .then(repeat[left].cmp(&repeat[right]))
+    });
+    if order
+        .iter()
+        .enumerate()
+        .all(|(position, &index)| position == index)
+    {
         return;
     }
     let ranked: Vec<AnswerRecord> = order.iter().map(|&index| records[index].clone()).collect();
@@ -102,16 +150,26 @@ pub(crate) fn scan(bytes: &[u8], job: &SiteJob, name: &str) -> Vec<u32> {
     let (Ok(start), Ok(end)) = (usize::try_from(job.span[0]), usize::try_from(job.span[1])) else {
         return Vec::new();
     };
-    let Some(text) = bytes.get(start..end).and_then(|slice| std::str::from_utf8(slice).ok()) else {
+    let Some(text) = bytes
+        .get(start..end)
+        .and_then(|slice| std::str::from_utf8(slice).ok())
+    else {
         return Vec::new();
     };
     let tokens = matches!(language_of(&job.path), "ocaml" | "haskell" | "shell");
     let mut lines = Vec::new();
     for (offset, line) in text.split('\n').enumerate() {
         // A recursive caller's first line holds its own declaration; any other first line is code (`onclick: () => target(x)`).
-        let line = if offset == 0 && job.own { after_first(line, name) } else { line };
+        let line = if offset == 0 && job.own {
+            after_first(line, name)
+        } else {
+            line
+        };
         if has_call(line, name, tokens) {
-            lines.push(job.first.saturating_add(u32::try_from(offset).unwrap_or(u32::MAX)));
+            lines.push(
+                job.first
+                    .saturating_add(u32::try_from(offset).unwrap_or(u32::MAX)),
+            );
         }
     }
     lines
@@ -120,7 +178,10 @@ pub(crate) fn scan(bytes: &[u8], job: &SiteJob, name: &str) -> Vec<u32> {
 /// The part of `line` after the first whole-word `name`, or an empty line when there is none.
 fn after_first<'a>(line: &'a str, name: &str) -> &'a str {
     line.match_indices(name)
-        .find(|(at, _)| !line[..*at].chars().next_back().is_some_and(is_word) && !line[at + name.len()..].chars().next().is_some_and(is_word))
+        .find(|(at, _)| {
+            !line[..*at].chars().next_back().is_some_and(is_word)
+                && !line[at + name.len()..].chars().next().is_some_and(is_word)
+        })
         .map_or("", |(at, _)| &line[at + name.len()..])
 }
 
@@ -150,26 +211,65 @@ mod tests {
 
     /// A job over the whole of `source`, whose first line is line `first`.
     fn job(path: &str, source: &str, first: u32) -> SiteJob {
-        SiteJob { index: 0, path: path.to_string(), span: [0, u64::try_from(source.len()).unwrap_or(0)], first, own: false }
+        SiteJob {
+            index: 0,
+            path: path.to_string(),
+            span: [0, u64::try_from(source.len()).unwrap_or(0)],
+            first,
+            own: false,
+        }
     }
 
     #[test]
     fn calls_are_found_by_name_and_open_paren_and_the_declaration_is_skipped() {
         let source = "def caller():\n    x = 1\n    y = target()\n    return target () + y\n    z = retarget(1) + target_b(2) + target\n    m = target!(1)\n    n = obj.target(2)\n";
-        assert_eq!(scan(source.as_bytes(), &job("a.py", source, 4), "target"), [6, 7, 9, 10]);
+        assert_eq!(
+            scan(source.as_bytes(), &job("a.py", source, 4), "target"),
+            [6, 7, 9, 10]
+        );
         let own = "fn target() {\n    target();\n}\n";
-        assert_eq!(scan(own.as_bytes(), &SiteJob { own: true, ..job("a.rs", own, 10) }, "target"), [11]);
+        assert_eq!(
+            scan(
+                own.as_bytes(),
+                &SiteJob {
+                    own: true,
+                    ..job("a.rs", own, 10)
+                },
+                "target"
+            ),
+            [11]
+        );
         let inline = "fn target() { target() }\n";
-        assert_eq!(scan(inline.as_bytes(), &SiteJob { own: true, ..job("a.rs", inline, 3) }, "target"), [3]);
+        assert_eq!(
+            scan(
+                inline.as_bytes(),
+                &SiteJob {
+                    own: true,
+                    ..job("a.rs", inline, 3)
+                },
+                "target"
+            ),
+            [3]
+        );
         let arrow = "onclick: () => target(data),";
-        assert_eq!(scan(arrow.as_bytes(), &job("a.js", arrow, 226), "target"), [226]);
+        assert_eq!(
+            scan(arrow.as_bytes(), &job("a.js", arrow, 226), "target"),
+            [226]
+        );
         let many = "f\n target(\n target(\n target(\n target(\n";
-        assert_eq!(scan(many.as_bytes(), &job("a.rs", many, 1), "target"), [2, 3, 4, 5]);
+        assert_eq!(
+            scan(many.as_bytes(), &job("a.rs", many, 1), "target"),
+            [2, 3, 4, 5]
+        );
     }
 
     /// A depth-one record `{edge}:{direction}:{target}`, or a depth-two one when `level` is 2.
     fn record(edge: &str, direction: &str, target: &str, level: u32) -> AnswerRecord {
-        let id = if level > 1 { format!("{edge}:{direction}:{level}:{target}") } else { format!("{edge}:{direction}:{target}") };
+        let id = if level > 1 {
+            format!("{edge}:{direction}:{level}:{target}")
+        } else {
+            format!("{edge}:{direction}:{target}")
+        };
         let mut record = AnswerRecord::basic(id, "fn", "a.rs");
         record.edge = Some(edge.to_string());
         record.direction = Some(direction.to_string());
@@ -189,7 +289,17 @@ mod tests {
         ];
         rank(&mut records, &[1, 5, 0, 1, 9, 7]);
         let ids: Vec<&str> = records.iter().map(|record| record.id.as_str()).collect();
-        assert_eq!(ids, ["calls:in:s:a.rs#b", "calls:in:s:a.rs#a", "calls:in:s:a.rs#d", "calls:in:s:a.rs#c", "imports:in:m:b.rs", "calls:in:2:s:a.rs#e"]);
+        assert_eq!(
+            ids,
+            [
+                "calls:in:s:a.rs#b",
+                "calls:in:s:a.rs#a",
+                "calls:in:s:a.rs#d",
+                "calls:in:s:a.rs#c",
+                "imports:in:m:b.rs",
+                "calls:in:2:s:a.rs#e"
+            ]
+        );
         let mut same = records.clone();
         rank(&mut same, &[0; 6]);
         assert_eq!(same, records, "equal counts keep the order");
@@ -202,25 +312,64 @@ mod tests {
             record.path = path.to_string();
             record
         };
-        let mut records = vec![at("a.go", "a1"), at("a.go", "a2"), at("a.go", "a3"), at("b.go", "b1"), at("c.go", "c1"), at("c.go", "c2")];
+        let mut records = vec![
+            at("a.go", "a1"),
+            at("a.go", "a2"),
+            at("a.go", "a3"),
+            at("b.go", "b1"),
+            at("c.go", "c1"),
+            at("c.go", "c2"),
+        ];
         rank(&mut records, &[1, 4, 2, 1, 1, 3]);
         let ids: Vec<&str> = records.iter().map(|record| record.id.as_str()).collect();
-        assert_eq!(ids, ["calls:in:s:a.go#a2", "calls:in:s:c.go#c2", "calls:in:s:b.go#b1", "calls:in:s:a.go#a3", "calls:in:s:a.go#a1", "calls:in:s:c.go#c1"]);
+        assert_eq!(
+            ids,
+            [
+                "calls:in:s:a.go#a2",
+                "calls:in:s:c.go#c2",
+                "calls:in:s:b.go#b1",
+                "calls:in:s:a.go#a3",
+                "calls:in:s:a.go#a1",
+                "calls:in:s:c.go#c1"
+            ]
+        );
     }
 
     #[test]
     fn ocaml_haskell_and_shell_count_whole_word_tokens() {
         let source = "let caller x =\n  let y = target x in\n  retarget y\n  target\n";
-        assert_eq!(scan(source.as_bytes(), &job("a.ml", source, 1), "target"), [2, 4]);
+        assert_eq!(
+            scan(source.as_bytes(), &job("a.ml", source, 1), "target"),
+            [2, 4]
+        );
         assert!(scan(source.as_bytes(), &job("a.py", source, 1), "target").is_empty());
         let shell = "caller() {\n  target \"$1\"\n}\n";
-        assert_eq!(scan(shell.as_bytes(), &job("run.sh", shell, 5), "target"), [6]);
+        assert_eq!(
+            scan(shell.as_bytes(), &job("run.sh", shell, 5), "target"),
+            [6]
+        );
     }
 
     #[test]
     fn a_span_outside_the_bytes_or_not_text_yields_no_sites() {
-        let bad = SiteJob { index: 0, path: "a.py".to_string(), span: [0, 99], first: 1, own: false };
+        let bad = SiteJob {
+            index: 0,
+            path: "a.py".to_string(),
+            span: [0, 99],
+            first: 1,
+            own: false,
+        };
         assert!(scan(b"x", &bad, "target").is_empty());
-        assert!(scan(&[0xff, 0xfe, b'\n', 0xff], &SiteJob { span: [0, 4], ..bad }, "target").is_empty());
+        assert!(
+            scan(
+                &[0xff, 0xfe, b'\n', 0xff],
+                &SiteJob {
+                    span: [0, 4],
+                    ..bad
+                },
+                "target"
+            )
+            .is_empty()
+        );
     }
 }

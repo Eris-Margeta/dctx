@@ -10,7 +10,7 @@ mod cache_bind;
 use std::path::{Component, Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use dctx_adapter_cache::adapters::{auto_clean, FsLedgerStore, FsObjectStore};
+use dctx_adapter_cache::adapters::{FsLedgerStore, FsObjectStore, auto_clean};
 use dctx_adapter_cache::ports::LedgerStore;
 use dctx_adapter_cache::{CacheError, ClockSample, Lifecycle, Quota, RootId, SessionId};
 
@@ -35,7 +35,13 @@ pub(crate) struct AccountingCache {
 impl AccountingCache {
     /// `inner` should be large enough that this wrapper is the real quota.
     pub(crate) fn new(capacity: u64, inner: Box<dyn Cache + Send>) -> Self {
-        Self { capacity, pack_committed: 0, pack_reserved: 0, segment_committed: 0, inner }
+        Self {
+            capacity,
+            pack_committed: 0,
+            pack_reserved: 0,
+            segment_committed: 0,
+            inner,
+        }
     }
 
     /// Bytes still available for a new admission.
@@ -65,7 +71,10 @@ impl AccountingCache {
     pub(crate) fn segment_admit(&mut self, bytes: u64) -> Result<(), DctxError> {
         let available = self.available();
         if bytes > available {
-            return Err(DctxError::CacheLimit { requested: bytes, available });
+            return Err(DctxError::CacheLimit {
+                requested: bytes,
+                available,
+            });
         }
         self.segment_committed = self.segment_committed.saturating_add(bytes);
         Ok(())
@@ -81,7 +90,10 @@ impl Cache for AccountingCache {
     fn reserve(&mut self, bytes: u64) -> Result<Reservation, CoreError> {
         let available = self.available();
         if bytes > available {
-            return Err(CoreError::CacheLimit { requested: bytes, available });
+            return Err(CoreError::CacheLimit {
+                requested: bytes,
+                available,
+            });
         }
         let reservation = self.inner.reserve(bytes)?;
         self.pack_reserved = self.pack_reserved.saturating_add(bytes);
@@ -103,7 +115,10 @@ impl Cache for AccountingCache {
     }
 }
 
-#[allow(clippy::missing_fields_in_debug, reason = "Debug intentionally reports aggregate accounting without exposing the wrapped cache implementation.")]
+#[allow(
+    clippy::missing_fields_in_debug,
+    reason = "Debug intentionally reports aggregate accounting without exposing the wrapped cache implementation."
+)]
 impl std::fmt::Debug for AccountingCache {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter
@@ -137,8 +152,17 @@ fn next_session() -> SessionId {
 
 impl PersistedCache {
     /// Loads `path`, runs auto-clean once when `config` is enabled, then registers `root_id`.
-    pub(crate) fn open(path: &Path, root_id: u64, config: AutoCleanConfig, now_ms: u64) -> Result<Self, DctxError> {
-        if !path.is_absolute() || path.components().any(|component| matches!(component, Component::ParentDir)) {
+    pub(crate) fn open(
+        path: &Path,
+        root_id: u64,
+        config: AutoCleanConfig,
+        now_ms: u64,
+    ) -> Result<Self, DctxError> {
+        if !path.is_absolute()
+            || path
+                .components()
+                .any(|component| matches!(component, Component::ParentDir))
+        {
             return Err(DctxError::invalid("cache root must be absolute"));
         }
         let policy = config.to_policy();
@@ -159,7 +183,12 @@ impl PersistedCache {
             }
             match auto_clean(&ledger, &objects, &mut life, sample, policy) {
                 Ok(report) => break (life, report.reclaimed_bytes),
-                Err(error) if cache_bind::is_conflict(&error) && attempt + 1 < cache_bind::COMMIT_ATTEMPTS => attempt += 1,
+                Err(error)
+                    if cache_bind::is_conflict(&error)
+                        && attempt + 1 < cache_bind::COMMIT_ATTEMPTS =>
+                {
+                    attempt += 1
+                }
                 Err(error) => return Err(map_cache(error)),
             }
         };
@@ -177,7 +206,10 @@ impl PersistedCache {
     }
 
     fn reload(&mut self) -> Result<(), DctxError> {
-        let loaded = self.ledger.load(Quota::product_default()).map_err(map_cache)?;
+        let loaded = self
+            .ledger
+            .load(Quota::product_default())
+            .map_err(map_cache)?;
         if let Some(fault) = loaded.fault {
             return Err(map_cache(fault));
         }
@@ -235,7 +267,10 @@ impl Session {
     }
 
     /// Persists `bytes` as a leased view of the configured root. Isolation stores nothing.
-    pub(super) fn store_cache_segment(&mut self, bytes: &[u8]) -> Result<Option<SnapshotLease>, DctxError> {
+    pub(super) fn store_cache_segment(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<Option<SnapshotLease>, DctxError> {
         let now = self.clock.now().millis();
         let Some(cache) = self.managed.as_mut() else {
             return Ok(None);
@@ -246,7 +281,11 @@ impl Session {
 }
 
 fn clock_sample(now_ms: u64) -> ClockSample {
-    ClockSample { wall: Timestamp(now_ms), monotonic_ms: now_ms, boot_id: 1 }
+    ClockSample {
+        wall: Timestamp(now_ms),
+        monotonic_ms: now_ms,
+        boot_id: 1,
+    }
 }
 
 fn map_cache(error: CacheError) -> DctxError {
@@ -262,14 +301,20 @@ mod persisted_tests {
     #[test]
     fn relative_and_raised_caps_are_refused_and_two_opens_share_the_root() {
         let relative = PersistedCache::open(Path::new("cache"), 1, AutoCleanConfig::default(), 0);
-        assert_eq!(relative.map(|_| ()).expect_err("relative").code(), ErrorCode::InvalidRequest);
+        assert_eq!(
+            relative.map(|_| ()).expect_err("relative").code(),
+            ErrorCode::InvalidRequest
+        );
         let mut raised = AutoCleanConfig::default();
         raised.system_cap_bytes = raised.system_cap_bytes.saturating_add(1);
         let dir = tempfile::tempdir().expect("temp");
         let root = dir.path().join("cache");
         std::fs::create_dir(&root).expect("dir");
         let raised = PersistedCache::open(&root, 4, raised, 0);
-        assert_eq!(raised.map(|_| ()).expect_err("cap").code(), ErrorCode::InvalidRequest);
+        assert_eq!(
+            raised.map(|_| ()).expect_err("cap").code(),
+            ErrorCode::InvalidRequest
+        );
 
         let first = PersistedCache::open(&root, 4, AutoCleanConfig::default(), 5).expect("first");
         assert_eq!(first.ledger_view().roots, 1);
@@ -281,7 +326,10 @@ mod persisted_tests {
         assert_eq!(second.ledger_view().last_auto_clean_ms, Some(5));
         assert_eq!(second.reclaimed(), 0);
 
-        let disabled = AutoCleanConfig { enabled: false, ..AutoCleanConfig::default() };
+        let disabled = AutoCleanConfig {
+            enabled: false,
+            ..AutoCleanConfig::default()
+        };
         let third = PersistedCache::open(&root, 4, disabled, 5 + 86_400_000).expect("disabled");
         assert_eq!(third.ledger_view().last_auto_clean_ms, Some(5));
         assert_eq!(third.reclaimed(), 0);

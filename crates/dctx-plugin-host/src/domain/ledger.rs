@@ -64,9 +64,18 @@ pub struct Ledger {
 
 impl Ledger {
     /// An empty ledger retaining at most `capacity` keys.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new(capacity: usize) -> Self {
-        Self { entries: BTreeMap::new(), capacity, next: 1, trace: Trace::default(), recovered: false }
+        Self {
+            entries: BTreeMap::new(),
+            capacity,
+            next: 1,
+            trace: Trace::default(),
+            recovered: false,
+        }
     }
 
     /// Atomically restores ordered durable transitions. Unfinished intents become unknown.
@@ -75,19 +84,29 @@ impl Ledger {
     /// Refuses malformed, duplicate, over-limit, unbound, or inconsistent recovery records, or restoration into a nonempty ledger.
     pub fn restore(&mut self, records: &[RecoveryRecord]) -> Result<(), HostRefusal> {
         let invalid = || HostRefusal::audit("invalid-recovery-evidence");
-        if records.len() > MAX_RECOVERY_RECORDS || (!records.is_empty() && !self.entries.is_empty()) {
+        if records.len() > MAX_RECOVERY_RECORDS || (!records.is_empty() && !self.entries.is_empty())
+        {
             return Err(invalid());
         }
         let mut restored = self.clone();
         let mut receipts = BTreeSet::new();
         for r in records {
-            let number = r.receipt.as_str().strip_prefix("receipt:").and_then(|s| s.parse::<u64>().ok()).ok_or_else(invalid)?;
-            restored.next = restored.next.max(number.checked_add(1).ok_or_else(invalid)?);
+            let number = r
+                .receipt
+                .as_str()
+                .strip_prefix("receipt:")
+                .and_then(|s| s.parse::<u64>().ok())
+                .ok_or_else(invalid)?;
+            restored.next = restored
+                .next
+                .max(number.checked_add(1).ok_or_else(invalid)?);
             if r.state == RecoveryState::Pending {
                 if !receipts.insert(r.receipt.clone()) || restored.entries.len() >= self.capacity {
                     return Err(invalid());
                 }
-                restored.intent(r.key.clone(), r.args, r.receipt.clone()).map_err(|_| invalid())?;
+                restored
+                    .intent(r.key.clone(), r.args, r.receipt.clone())
+                    .map_err(|_| invalid())?;
                 continue;
             }
             let entry = restored.entries.get_mut(&r.key).ok_or_else(invalid)?;
@@ -95,7 +114,9 @@ impl Ledger {
                 return Err(invalid());
             }
             match r.state {
-                RecoveryState::Committed | RecoveryState::Unknown | RecoveryState::Partial if entry.status == EntryStatus::Pending => {
+                RecoveryState::Committed | RecoveryState::Unknown | RecoveryState::Partial
+                    if entry.status == EntryStatus::Pending =>
+                {
                     entry.status = match r.state {
                         RecoveryState::Committed => EntryStatus::Committed,
                         RecoveryState::Partial => EntryStatus::Partial,
@@ -103,11 +124,18 @@ impl Ledger {
                     };
                     entry.executions = 1;
                 }
-                RecoveryState::Reconciled if matches!(entry.status, EntryStatus::Pending | EntryStatus::Unknown | EntryStatus::Partial) => {
+                RecoveryState::Reconciled
+                    if matches!(
+                        entry.status,
+                        EntryStatus::Pending | EntryStatus::Unknown | EntryStatus::Partial
+                    ) =>
+                {
                     entry.status = EntryStatus::Committed;
                     entry.executions = 1;
                 }
-                RecoveryState::Archived if entry.status == EntryStatus::Committed => entry.archived = true,
+                RecoveryState::Archived if entry.status == EntryStatus::Committed => {
+                    entry.archived = true
+                }
                 RecoveryState::NotRun if entry.status == EntryStatus::Pending => {
                     restored.entries.remove(&r.key);
                 }
@@ -128,17 +156,24 @@ impl Ledger {
     /// # Errors
     /// Refuses conflicting arguments for an existing key, in-flight actions, or uncertain effects that require reconciliation.
     pub fn lookup(&mut self, key: &ActionKey, args: &ArgDigest) -> Result<Lookup, HostRefusal> {
-        let Some(entry) = self.entries.get(key) else { return Ok(Lookup::Absent) };
+        let Some(entry) = self.entries.get(key) else {
+            return Ok(Lookup::Absent);
+        };
         self.trace.push(ModelAction::ReceiptsRepeat);
         if entry.args != *args {
-            return Err(HostRefusal::conflict("action-id-reused-with-different-arguments"));
+            return Err(HostRefusal::conflict(
+                "action-id-reused-with-different-arguments",
+            ));
         }
         match entry.status {
             EntryStatus::Committed => Ok(Lookup::Existing(entry.receipt.clone())),
-            EntryStatus::Pending | EntryStatus::Executed => Err(HostRefusal::conflict("action-in-flight")),
-            EntryStatus::Unknown | EntryStatus::Partial => {
-                Err(HostRefusal::unknown(entry.receipt.clone(), "uncertain-effect-needs-reconcile"))
+            EntryStatus::Pending | EntryStatus::Executed => {
+                Err(HostRefusal::conflict("action-in-flight"))
             }
+            EntryStatus::Unknown | EntryStatus::Partial => Err(HostRefusal::unknown(
+                entry.receipt.clone(),
+                "uncertain-effect-needs-reconcile",
+            )),
         }
     }
 
@@ -149,19 +184,37 @@ impl Ledger {
         if self.entries.len() >= self.capacity {
             return Err(HostRefusal::limit("ledger-full"));
         }
-        let receipt = Token::new(&format!("receipt:{}", self.next)).map_err(|_| HostRefusal::limit("receipt-id"))?;
-        self.next = self.next.checked_add(1).ok_or(HostRefusal::limit("receipt-id"))?;
+        let receipt = Token::new(&format!("receipt:{}", self.next))
+            .map_err(|_| HostRefusal::limit("receipt-id"))?;
+        self.next = self
+            .next
+            .checked_add(1)
+            .ok_or(HostRefusal::limit("receipt-id"))?;
         Ok(receipt)
     }
 
     /// `Receipts.Request`: record the durable intent under `receipt`.
     /// # Errors
     /// Refuses an action key that already has an intent.
-    pub fn intent(&mut self, key: ActionKey, args: ArgDigest, receipt: Token) -> Result<(), HostRefusal> {
+    pub fn intent(
+        &mut self,
+        key: ActionKey,
+        args: ArgDigest,
+        receipt: Token,
+    ) -> Result<(), HostRefusal> {
         if self.entries.contains_key(&key) {
             return Err(HostRefusal::conflict("intent-exists"));
         }
-        self.entries.insert(key, Entry { args, status: EntryStatus::Pending, receipt, executions: 0, archived: false });
+        self.entries.insert(
+            key,
+            Entry {
+                args,
+                status: EntryStatus::Pending,
+                receipt,
+                executions: 0,
+                archived: false,
+            },
+        );
         self.trace.push(ModelAction::ReceiptsRequest);
         Ok(())
     }
@@ -201,11 +254,18 @@ impl Ledger {
     /// # Errors
     /// Refuses unknown actions or actions that are not in flight.
     pub fn uncertain(&mut self, key: &ActionKey, partial: bool) -> Result<Token, HostRefusal> {
-        let entry = self.entries.get_mut(key).ok_or(HostRefusal::conflict("unknown-action"))?;
+        let entry = self
+            .entries
+            .get_mut(key)
+            .ok_or(HostRefusal::conflict("unknown-action"))?;
         if !matches!(entry.status, EntryStatus::Pending | EntryStatus::Executed) {
             return Err(HostRefusal::conflict("not-in-flight"));
         }
-        entry.status = if partial { EntryStatus::Partial } else { EntryStatus::Unknown };
+        entry.status = if partial {
+            EntryStatus::Partial
+        } else {
+            EntryStatus::Unknown
+        };
         let receipt = entry.receipt.clone();
         self.trace.push(ModelAction::ReceiptsCrashOrUncertain);
         Ok(receipt)
@@ -215,7 +275,10 @@ impl Ledger {
     /// # Errors
     /// Refuses unknown actions or actions without an uncertain effect to reconcile.
     pub fn reconcile(&mut self, key: &ActionKey) -> Result<Token, HostRefusal> {
-        let entry = self.entries.get_mut(key).ok_or(HostRefusal::conflict("unknown-action"))?;
+        let entry = self
+            .entries
+            .get_mut(key)
+            .ok_or(HostRefusal::conflict("unknown-action"))?;
         if !matches!(entry.status, EntryStatus::Unknown | EntryStatus::Partial) {
             return Err(HostRefusal::conflict("nothing-to-reconcile"));
         }
@@ -230,7 +293,10 @@ impl Ledger {
     /// # Errors
     /// Refuses unknown actions or unresolved intents whose evidence must remain pinned.
     pub fn rotate(&mut self, key: &ActionKey) -> Result<(), HostRefusal> {
-        let entry = self.entries.get_mut(key).ok_or(HostRefusal::conflict("unknown-action"))?;
+        let entry = self
+            .entries
+            .get_mut(key)
+            .ok_or(HostRefusal::conflict("unknown-action"))?;
         if entry.status != EntryStatus::Committed {
             return Err(HostRefusal::conflict("unresolved-intent-pinned"));
         }
@@ -245,23 +311,34 @@ impl Ledger {
     }
 
     /// Entry for `key`, if retained.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn get(&self, key: &ActionKey) -> Option<&Entry> {
         self.entries.get(key)
     }
 
     /// Committed receipts for `invocation` (the source of truth for reports).
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn committed(&self, invocation: &Token) -> Vec<Token> {
         self.entries
             .iter()
-            .filter(|(key, entry)| key.invocation == *invocation && entry.status == EntryStatus::Committed)
+            .filter(|(key, entry)| {
+                key.invocation == *invocation && entry.status == EntryStatus::Committed
+            })
             .map(|(_, entry)| entry.receipt.clone())
             .collect()
     }
 
     /// Model actions taken.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn trace(&self) -> &Trace {
         &self.trace
     }
@@ -295,11 +372,20 @@ mod tests {
     #[test]
     fn identical_replay_returns_existing_receipt_and_different_args_conflict() {
         let mut ledger = Ledger::new(4);
-        let (a, b) = (ArgDigest::of(b"a").expect("a"), ArgDigest::of(b"b").expect("b"));
+        let (a, b) = (
+            ArgDigest::of(b"a").expect("a"),
+            ArgDigest::of(b"b").expect("b"),
+        );
         assert_eq!(ledger.lookup(&key("op:1"), &a), Ok(Lookup::Absent));
         let receipt = commit(&mut ledger, &key("op:1"), a);
-        assert_eq!(ledger.lookup(&key("op:1"), &a), Ok(Lookup::Existing(receipt)));
-        assert_eq!(ledger.lookup(&key("op:1"), &b).map_err(|e| e.code), Err(dctx_plugin_protocol::ErrorCode::Conflict));
+        assert_eq!(
+            ledger.lookup(&key("op:1"), &a),
+            Ok(Lookup::Existing(receipt))
+        );
+        assert_eq!(
+            ledger.lookup(&key("op:1"), &b).map_err(|e| e.code),
+            Err(dctx_plugin_protocol::ErrorCode::Conflict)
+        );
         assert_eq!(ledger.get(&key("op:1")).map(|e| e.executions), Some(1));
         assert_eq!(ledger.lookup(&key("op:2"), &a), Ok(Lookup::Absent));
     }
@@ -317,9 +403,15 @@ mod tests {
         assert!(!refused.retryable());
         assert!(ledger.rotate(&key("op:1")).is_err());
         ledger.reconcile(&key("op:1")).expect("reconciled");
-        assert!(matches!(ledger.lookup(&key("op:1"), &a), Ok(Lookup::Existing(_))));
+        assert!(matches!(
+            ledger.lookup(&key("op:1"), &a),
+            Ok(Lookup::Existing(_))
+        ));
         ledger.rotate(&key("op:1")).expect("rotated");
-        assert!(matches!(ledger.lookup(&key("op:1"), &a), Ok(Lookup::Existing(_))));
+        assert!(matches!(
+            ledger.lookup(&key("op:1"), &a),
+            Ok(Lookup::Existing(_))
+        ));
     }
 
     #[test]

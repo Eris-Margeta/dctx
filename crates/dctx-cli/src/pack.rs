@@ -16,7 +16,7 @@ use crate::exit::Failure;
 use crate::host;
 
 mod filter;
-use filter::{Filters, parse_extensions, parse_megabytes, parse_pattern};
+use filter::{parse_extensions, parse_megabytes, parse_pattern, Filters};
 mod emit;
 use emit::emit;
 mod narrow;

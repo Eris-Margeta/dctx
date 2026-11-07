@@ -3,8 +3,8 @@
 //! Implements the PARSERS-v1 Rust row: items, modules, functions/methods, impls with trait
 //! and type, consts/statics, type aliases, `macro_rules`, tests and doc first lines.
 //! Uses proc-macro2/syn, the span helpers and `syntax_refs`; run on the parse worker.
-use super::spans::{between, first, node_span, source_span, text};
 use super::nesting;
+use super::spans::{between, first, node_span, source_span, text};
 use super::syntax_parts::{doc, fields_end, ident, is_test, public};
 use crate::domain::sink::Sink;
 use crate::domain::text::{compact, impl_scope, qualify};
@@ -14,8 +14,8 @@ use crate::{
 };
 use proc_macro2::{Span, TokenStream};
 use std::str::FromStr;
-use syn::visit::{self, Visit};
 use syn::Attribute;
+use syn::visit::{self, Visit};
 
 /// Lexical context of the node being visited.
 #[derive(Clone, Default)]
@@ -116,21 +116,48 @@ impl<'ast> Visit<'ast> for Extractor<'_> {
         let Some((brace, _)) = &node.content else {
             return super::syntax_refs::module_file(self, node);
         };
-        let span = between(&[&node.vis, &node.unsafety, &node.mod_token], brace.span.close());
+        let span = between(
+            &[&node.vis, &node.unsafety, &node.mod_token],
+            brace.span.close(),
+        );
         let walk = visit::visit_item_mod;
-        scoped!(self, node, walk, Kind::Module, ident(&node.ident), public(&node.vis), span);
+        scoped!(
+            self,
+            node,
+            walk,
+            Kind::Module,
+            ident(&node.ident),
+            public(&node.vis),
+            span
+        );
     }
 
     fn visit_item_fn(&mut self, node: &'ast syn::ItemFn) {
         let span = between(&[&node.vis, &node.sig], node.block.brace_token.span.close());
         let walk = visit::visit_item_fn;
-        scoped!(self, node, walk, Kind::Function, ident(&node.sig.ident), public(&node.vis), span);
+        scoped!(
+            self,
+            node,
+            walk,
+            Kind::Function,
+            ident(&node.sig.ident),
+            public(&node.vis),
+            span
+        );
     }
 
     fn visit_impl_item_fn(&mut self, node: &'ast syn::ImplItemFn) {
         let span = between(&[&node.vis, &node.sig], node.block.brace_token.span.close());
         let walk = visit::visit_impl_item_fn;
-        scoped!(self, node, walk, Kind::Function, ident(&node.sig.ident), public(&node.vis), span);
+        scoped!(
+            self,
+            node,
+            walk,
+            Kind::Function,
+            ident(&node.sig.ident),
+            public(&node.vis),
+            span
+        );
     }
 
     fn visit_trait_item_fn(&mut self, node: &'ast syn::TraitItemFn) {
@@ -138,13 +165,29 @@ impl<'ast> Visit<'ast> for Extractor<'_> {
         let end = end.or(node.semi_token.as_ref().map(|s| s.spans[0]));
         let span = between(&[&node.sig], end.unwrap_or_else(Span::call_site));
         let walk = visit::visit_trait_item_fn;
-        scoped!(self, node, walk, Kind::Function, ident(&node.sig.ident), false, span);
+        scoped!(
+            self,
+            node,
+            walk,
+            Kind::Function,
+            ident(&node.sig.ident),
+            false,
+            span
+        );
     }
 
     fn visit_foreign_item_fn(&mut self, node: &'ast syn::ForeignItemFn) {
         let span = between(&[&node.vis, &node.sig], node.semi_token.spans[0]);
         let walk = visit::visit_foreign_item_fn;
-        scoped!(self, node, walk, Kind::Function, ident(&node.sig.ident), public(&node.vis), span);
+        scoped!(
+            self,
+            node,
+            walk,
+            Kind::Function,
+            ident(&node.sig.ident),
+            public(&node.vis),
+            span
+        );
     }
 
     fn visit_item_struct(&mut self, node: &'ast syn::ItemStruct) {
@@ -152,87 +195,209 @@ impl<'ast> Visit<'ast> for Extractor<'_> {
         let end = fields_end(&node.fields, semi).unwrap_or(node.ident.span());
         let span = between(&[&node.vis, &node.struct_token], end);
         let walk = visit::visit_item_struct;
-        scoped!(self, node, walk, Kind::Struct, ident(&node.ident), public(&node.vis), span);
+        scoped!(
+            self,
+            node,
+            walk,
+            Kind::Struct,
+            ident(&node.ident),
+            public(&node.vis),
+            span
+        );
     }
 
     fn visit_item_union(&mut self, node: &'ast syn::ItemUnion) {
-        let span = between(&[&node.vis, &node.union_token], node.fields.brace_token.span.close());
+        let span = between(
+            &[&node.vis, &node.union_token],
+            node.fields.brace_token.span.close(),
+        );
         let walk = visit::visit_item_union;
-        scoped!(self, node, walk, Kind::Union, ident(&node.ident), public(&node.vis), span);
+        scoped!(
+            self,
+            node,
+            walk,
+            Kind::Union,
+            ident(&node.ident),
+            public(&node.vis),
+            span
+        );
     }
 
     fn visit_item_enum(&mut self, node: &'ast syn::ItemEnum) {
-        let span = between(&[&node.vis, &node.enum_token], node.brace_token.span.close());
+        let span = between(
+            &[&node.vis, &node.enum_token],
+            node.brace_token.span.close(),
+        );
         let walk = visit::visit_item_enum;
-        scoped!(self, node, walk, Kind::Enum, ident(&node.ident), public(&node.vis), span);
+        scoped!(
+            self,
+            node,
+            walk,
+            Kind::Enum,
+            ident(&node.ident),
+            public(&node.vis),
+            span
+        );
     }
 
     fn visit_item_trait(&mut self, node: &'ast syn::ItemTrait) {
-        let head: [&dyn quote::ToTokens; 4] =
-            [&node.vis, &node.unsafety, &node.modifiers.auto_token, &node.trait_token];
+        let head: [&dyn quote::ToTokens; 4] = [
+            &node.vis,
+            &node.unsafety,
+            &node.modifiers.auto_token,
+            &node.trait_token,
+        ];
         let span = between(&head, node.brace_token.span.close());
         let walk = visit::visit_item_trait;
-        scoped!(self, node, walk, Kind::Trait, ident(&node.ident), public(&node.vis), span);
+        scoped!(
+            self,
+            node,
+            walk,
+            Kind::Trait,
+            ident(&node.ident),
+            public(&node.vis),
+            span
+        );
     }
 
     fn visit_item_trait_alias(&mut self, node: &'ast syn::ItemTraitAlias) {
         let span = between(&[&node.vis, &node.trait_token], node.semi_token.spans[0]);
         let walk = visit::visit_item_trait_alias;
-        scoped!(self, node, walk, Kind::TraitAlias, ident(&node.ident), public(&node.vis), span);
+        scoped!(
+            self,
+            node,
+            walk,
+            Kind::TraitAlias,
+            ident(&node.ident),
+            public(&node.vis),
+            span
+        );
     }
 
     fn visit_item_type(&mut self, node: &'ast syn::ItemType) {
         let span = between(&[&node.vis, &node.type_token], node.semi_token.spans[0]);
         let walk = visit::visit_item_type;
-        scoped!(self, node, walk, Kind::TypeAlias, ident(&node.ident), public(&node.vis), span);
+        scoped!(
+            self,
+            node,
+            walk,
+            Kind::TypeAlias,
+            ident(&node.ident),
+            public(&node.vis),
+            span
+        );
     }
 
     fn visit_impl_item_type(&mut self, node: &'ast syn::ImplItemType) {
         let span = between(&[&node.vis, &node.type_token], node.semi_token.spans[0]);
         let walk = visit::visit_impl_item_type;
-        scoped!(self, node, walk, Kind::TypeAlias, ident(&node.ident), public(&node.vis), span);
+        scoped!(
+            self,
+            node,
+            walk,
+            Kind::TypeAlias,
+            ident(&node.ident),
+            public(&node.vis),
+            span
+        );
     }
 
     fn visit_trait_item_type(&mut self, node: &'ast syn::TraitItemType) {
         let span = between(&[&node.type_token], node.semi_token.spans[0]);
         let walk = visit::visit_trait_item_type;
-        scoped!(self, node, walk, Kind::TypeAlias, ident(&node.ident), false, span);
+        scoped!(
+            self,
+            node,
+            walk,
+            Kind::TypeAlias,
+            ident(&node.ident),
+            false,
+            span
+        );
     }
 
     fn visit_foreign_item_type(&mut self, node: &'ast syn::ForeignItemType) {
         let span = between(&[&node.vis, &node.type_token], node.semi_token.spans[0]);
         let walk = visit::visit_foreign_item_type;
-        scoped!(self, node, walk, Kind::TypeAlias, ident(&node.ident), public(&node.vis), span);
+        scoped!(
+            self,
+            node,
+            walk,
+            Kind::TypeAlias,
+            ident(&node.ident),
+            public(&node.vis),
+            span
+        );
     }
 
     fn visit_item_const(&mut self, node: &'ast syn::ItemConst) {
         let span = between(&[&node.vis, &node.const_token], node.semi_token.spans[0]);
         let walk = visit::visit_item_const;
-        scoped!(self, node, walk, Kind::Const, ident(&node.ident), public(&node.vis), span);
+        scoped!(
+            self,
+            node,
+            walk,
+            Kind::Const,
+            ident(&node.ident),
+            public(&node.vis),
+            span
+        );
     }
 
     fn visit_impl_item_const(&mut self, node: &'ast syn::ImplItemConst) {
         let span = between(&[&node.vis, &node.const_token], node.semi_token.spans[0]);
         let walk = visit::visit_impl_item_const;
-        scoped!(self, node, walk, Kind::Const, ident(&node.ident), public(&node.vis), span);
+        scoped!(
+            self,
+            node,
+            walk,
+            Kind::Const,
+            ident(&node.ident),
+            public(&node.vis),
+            span
+        );
     }
 
     fn visit_trait_item_const(&mut self, node: &'ast syn::TraitItemConst) {
         let span = between(&[&node.const_token], node.semi_token.spans[0]);
         let walk = visit::visit_trait_item_const;
-        scoped!(self, node, walk, Kind::Const, ident(&node.ident), false, span);
+        scoped!(
+            self,
+            node,
+            walk,
+            Kind::Const,
+            ident(&node.ident),
+            false,
+            span
+        );
     }
 
     fn visit_item_static(&mut self, node: &'ast syn::ItemStatic) {
         let span = between(&[&node.vis, &node.static_token], node.semi_token.spans[0]);
         let walk = visit::visit_item_static;
-        scoped!(self, node, walk, Kind::Static, ident(&node.ident), public(&node.vis), span);
+        scoped!(
+            self,
+            node,
+            walk,
+            Kind::Static,
+            ident(&node.ident),
+            public(&node.vis),
+            span
+        );
     }
 
     fn visit_foreign_item_static(&mut self, node: &'ast syn::ForeignItemStatic) {
         let span = between(&[&node.vis, &node.static_token], node.semi_token.spans[0]);
         let walk = visit::visit_foreign_item_static;
-        scoped!(self, node, walk, Kind::Static, ident(&node.ident), public(&node.vis), span);
+        scoped!(
+            self,
+            node,
+            walk,
+            Kind::Static,
+            ident(&node.ident),
+            public(&node.vis),
+            span
+        );
     }
 
     fn visit_item_impl(&mut self, node: &'ast syn::ItemImpl) {
@@ -245,19 +410,32 @@ impl<'ast> Visit<'ast> for Extractor<'_> {
             Some(t) => format!("{self_type}::impl<{t}>"),
             None => format!("{self_type}::impl"),
         };
-        let head: [&dyn quote::ToTokens; 3] =
-            [&node.modifiers.defaultness, &node.unsafety, &node.impl_token];
+        let head: [&dyn quote::ToTokens; 3] = [
+            &node.modifiers.defaultness,
+            &node.unsafety,
+            &node.impl_token,
+        ];
         let span = between(&head, node.brace_token.span.close());
         let implementation = Implementation {
             self_type,
             trait_path,
         };
-        let frame = self.declare(Kind::Impl, &local, &node.attrs, false, span, Some(implementation));
+        let frame = self.declare(
+            Kind::Impl,
+            &local,
+            &node.attrs,
+            false,
+            span,
+            Some(implementation),
+        );
         self.within(frame, |this| visit::visit_item_impl(this, node));
     }
 
     fn visit_item_macro(&mut self, node: &'ast syn::ItemMacro) {
-        let Some(name) = node.ident.as_ref().filter(|_| node.mac.path.is_ident("macro_rules"))
+        let Some(name) = node
+            .ident
+            .as_ref()
+            .filter(|_| node.mac.path.is_ident("macro_rules"))
         else {
             return;
         };

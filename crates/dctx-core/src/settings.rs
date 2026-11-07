@@ -16,9 +16,6 @@ pub const LLM_CONTEXT_EXTENSION: &str = "llmcontext.txt";
 /// Local ignore filename.
 pub const DEFAULT_IGNORE_FILENAME: &str = ".dctxignore";
 
-/// Local omit content filename.
-pub const DEFAULT_OMIT_CONTENT_FILENAME: &str = ".dctxomitcontent";
-
 /// Application name (folder for config/cache).
 pub const APP_NAME: &str = "dctx";
 
@@ -33,7 +30,10 @@ pub const CONFIG_FILENAME: &str = "config.toml";
 
 /// Application settings read from `config.toml`.
 #[derive(Debug, Clone)]
-#[allow(clippy::struct_excessive_bools, reason = "These independent serialized preferences retain the existing configuration schema and combinations.")]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "These independent serialized preferences retain the existing configuration schema and combinations."
+)]
 pub struct AppConfig {
     /// Controls whether text output files (.llmcontext.txt) are written to the
     /// local .dctx/ directory. Binary state is ALWAYS written to system cache.
@@ -75,7 +75,10 @@ impl Default for AppConfig {
 }
 
 /// Parses a whole `config.toml` text over the defaults.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn parse_config(text: &str) -> AppConfig {
     let mut config = AppConfig::default();
     for line in text.lines() {
@@ -141,7 +144,10 @@ mod tests {
 
     #[test]
     fn test_parse_text_output_enabled() {
-        let mut config = AppConfig { text_output_enabled: false, ..Default::default() };
+        let mut config = AppConfig {
+            text_output_enabled: false,
+            ..Default::default()
+        };
         parse_config_line("text_output_enabled = true", &mut config);
         assert!(config.text_output_enabled);
         parse_config_line("text_output_enabled = false", &mut config);

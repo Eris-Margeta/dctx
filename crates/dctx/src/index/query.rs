@@ -5,10 +5,10 @@
 //! A missing id is [`Collected::Outcome`], not an empty success.
 
 use super::concept;
-use super::outline_order;
 use super::extract::language_of;
-use super::{generic, write_node_id, Generation, IndexedNode, TextBlob};
-use crate::domain::{AnswerRecord, Direction, IdentityOutcome, MapRequest, Verb, DctxError};
+use super::outline_order;
+use super::{Generation, IndexedNode, TextBlob, generic, write_node_id};
+use crate::domain::{AnswerRecord, DctxError, Direction, IdentityOutcome, MapRequest, Verb};
 
 /// Records for a page, a verified read, or a normal identity outcome.
 #[derive(Debug)]
@@ -22,7 +22,11 @@ pub(crate) enum Collected {
 }
 
 /// Selects records for `request` from `generation`.
-pub(crate) fn collect(generation: &Generation, request: &MapRequest, depth: u32) -> Result<Collected, DctxError> {
+pub(crate) fn collect(
+    generation: &Generation,
+    request: &MapRequest,
+    depth: u32,
+) -> Result<Collected, DctxError> {
     match request.verb {
         Verb::Find => Ok(Collected::Records(find(generation, request))),
         Verb::Map => map_children(generation, request, depth),
@@ -44,7 +48,11 @@ fn node_at(nodes: &[IndexedNode], index: u32) -> Option<&IndexedNode> {
     nodes.get(usize::try_from(index).unwrap_or(usize::MAX))
 }
 
-fn map_children(generation: &Generation, request: &MapRequest, depth: u32) -> Result<Collected, DctxError> {
+fn map_children(
+    generation: &Generation,
+    request: &MapRequest,
+    depth: u32,
+) -> Result<Collected, DctxError> {
     let text = &generation.text;
     let Some(root) = require_index(generation, &request.target)? else {
         return Ok(missing(&request.target));
@@ -70,16 +78,27 @@ fn map_children(generation: &Generation, request: &MapRequest, depth: u32) -> Re
         if let Some(node) = node_at(&generation.nodes, id)
             && admit(text, node, request)
         {
-            let tier = if file_root { outline_order::tier(node, text.get(node.path), level) } else { 0 };
+            let tier = if file_root {
+                outline_order::tier(node, text.get(node.path), level)
+            } else {
+                0
+            };
             ranked.push((tier, record_of(text, node)));
         }
     }
     if file_root {
-        ranked.sort_by(|left, right| left.0.cmp(&right.0).then(left.1.lines[0].cmp(&right.1.lines[0])).then(left.1.id.cmp(&right.1.id)));
+        ranked.sort_by(|left, right| {
+            left.0
+                .cmp(&right.0)
+                .then(left.1.lines[0].cmp(&right.1.lines[0]))
+                .then(left.1.id.cmp(&right.1.id))
+        });
     } else {
         ranked.sort_by(|left, right| left.1.id.cmp(&right.1.id));
     }
-    Ok(Collected::Records(ranked.into_iter().map(|(_, record)| record).collect()))
+    Ok(Collected::Records(
+        ranked.into_iter().map(|(_, record)| record).collect(),
+    ))
 }
 
 fn find(generation: &Generation, request: &MapRequest) -> Vec<AnswerRecord> {
@@ -90,7 +109,9 @@ fn find(generation: &Generation, request: &MapRequest) -> Vec<AnswerRecord> {
         if node.kind == "module" || !admit(text, node, request) {
             continue;
         }
-        let mut score = score_of(text, node, &request.query).max(concept::score(&terms, &node.name, &node.summary, text.get(node.path)).unwrap_or(0));
+        let mut score = score_of(text, node, &request.query).max(
+            concept::score(&terms, &node.name, &node.summary, text.get(node.path)).unwrap_or(0),
+        );
         if !terms.is_empty() && concept::phrase(&request.query, &node.name) {
             score = score.max(concept::PHRASE);
         }
@@ -114,7 +135,11 @@ const DATA_KEY_PENALTY: i64 = 600;
 
 /// Breadth-first neighbors. Each node is listed once, at its smallest depth, levels in order, each level by edge, target and id.
 /// A line deeper than one carries its depth after the direction, as `calls:in:2:<id>`; depth-1 lines keep `calls:in:<id>`.
-fn neighbors(generation: &Generation, request: &MapRequest, depth: u32) -> Result<Collected, DctxError> {
+fn neighbors(
+    generation: &Generation,
+    request: &MapRequest,
+    depth: u32,
+) -> Result<Collected, DctxError> {
     let text = &generation.text;
     let Some(root) = require_index(generation, &request.target)? else {
         return Ok(missing(&request.target));
@@ -130,18 +155,21 @@ fn neighbors(generation: &Generation, request: &MapRequest, depth: u32) -> Resul
         let mut queued: std::collections::HashSet<u32> = std::collections::HashSet::new();
         for id in &frontier {
             for edge in &generation.edges {
-                let (direction, other) = if edge.src == *id && direction_ok(request.direction, "out") {
-                    ("out", edge.dst)
-                } else if edge.dst == *id {
-                    ("in", edge.src)
-                } else {
-                    continue;
-                };
+                let (direction, other) =
+                    if edge.src == *id && direction_ok(request.direction, "out") {
+                        ("out", edge.dst)
+                    } else if edge.dst == *id {
+                        ("in", edge.src)
+                    } else {
+                        continue;
+                    };
                 if !direction_ok(request.direction, direction) || seen.contains(&other) {
                     continue;
                 }
                 let edge_name = text.get(edge.edge);
-                if !request.edges.is_empty() && !request.edges.iter().any(|kind| kind.as_str() == edge_name) {
+                if !request.edges.is_empty()
+                    && !request.edges.iter().any(|kind| kind.as_str() == edge_name)
+                {
                     continue;
                 }
                 let Some(node) = node_at(&generation.nodes, other) else {
@@ -153,7 +181,11 @@ fn neighbors(generation: &Generation, request: &MapRequest, depth: u32) -> Resul
                 let mut record = record_of(text, node);
                 clip_summary(&mut record);
                 let node_id = record.id.clone();
-                record.id = if level > 1 { format!("{edge_name}:{direction}:{level}:{node_id}") } else { format!("{edge_name}:{direction}:{node_id}") };
+                record.id = if level > 1 {
+                    format!("{edge_name}:{direction}:{level}:{node_id}")
+                } else {
+                    format!("{edge_name}:{direction}:{node_id}")
+                };
                 record.edge = Some(edge_name.to_string());
                 record.direction = Some(direction.to_string());
                 record.target = Some(node_id);
@@ -164,7 +196,12 @@ fn neighbors(generation: &Generation, request: &MapRequest, depth: u32) -> Resul
                 }
             }
         }
-        found.sort_by(|left, right| left.edge.cmp(&right.edge).then(left.target.cmp(&right.target)).then(left.id.cmp(&right.id)));
+        found.sort_by(|left, right| {
+            left.edge
+                .cmp(&right.edge)
+                .then(left.target.cmp(&right.target))
+                .then(left.id.cmp(&right.id))
+        });
         found.dedup_by(|left, right| left.id == right.id);
         records.append(&mut spread_by_file(found));
         // The root stays listable at depth one (a self call); from depth two on it and every earlier node are settled.
@@ -179,8 +216,19 @@ fn neighbors(generation: &Generation, request: &MapRequest, depth: u32) -> Resul
 /// A first page then names every calling file before it lists more callers of one file. Both runs keep the sorted order.
 fn spread_by_file(found: Vec<AnswerRecord>) -> Vec<AnswerRecord> {
     let mut seen = std::collections::HashSet::new();
-    let mut keyed: Vec<(bool, AnswerRecord)> =
-        found.into_iter().map(|record| (!seen.insert((record.edge.clone(), record.direction.clone(), record.path.clone())), record)).collect();
+    let mut keyed: Vec<(bool, AnswerRecord)> = found
+        .into_iter()
+        .map(|record| {
+            (
+                !seen.insert((
+                    record.edge.clone(),
+                    record.direction.clone(),
+                    record.path.clone(),
+                )),
+                record,
+            )
+        })
+        .collect();
     keyed.sort_by(|left, right| left.1.edge.cmp(&right.1.edge).then(left.0.cmp(&right.0)));
     keyed.into_iter().map(|(_, record)| record).collect()
 }
@@ -219,7 +267,10 @@ fn read(generation: &Generation, request: &MapRequest) -> Result<Collected, Dctx
     Ok(Collected::Read(Box::new(record)))
 }
 
-pub(super) fn require<'a>(generation: &'a Generation, target: &str) -> Result<Option<&'a IndexedNode>, DctxError> {
+pub(super) fn require<'a>(
+    generation: &'a Generation,
+    target: &str,
+) -> Result<Option<&'a IndexedNode>, DctxError> {
     if target.is_empty() {
         return Err(DctxError::invalid("target is required"));
     }
@@ -237,17 +288,27 @@ fn require_index(generation: &Generation, target: &str) -> Result<Option<u32>, D
 }
 
 pub(super) fn missing(target: &str) -> Collected {
-    Collected::Outcome(IdentityOutcome::Gone { id: target.to_string() })
+    Collected::Outcome(IdentityOutcome::Gone {
+        id: target.to_string(),
+    })
 }
 
 fn admit(text: &TextBlob, node: &IndexedNode, request: &MapRequest) -> bool {
-    if !request.kinds.is_empty() && !request.kinds.iter().any(|kind| kind == &node.kind || (kind == "doc" && node.letter == b'd')) {
+    if !request.kinds.is_empty()
+        && !request
+            .kinds
+            .iter()
+            .any(|kind| kind == &node.kind || (kind == "doc" && node.letter == b'd'))
+    {
         return false;
     }
     match &request.within {
         Some(prefix) => {
             let path = text.get(node.path);
-            path == prefix || path.strip_prefix(prefix.as_str()).is_some_and(|rest| rest.starts_with('/'))
+            path == prefix
+                || path
+                    .strip_prefix(prefix.as_str())
+                    .is_some_and(|rest| rest.starts_with('/'))
         }
         None => true,
     }
@@ -265,7 +326,8 @@ pub(super) fn record_of(text: &TextBlob, node: &IndexedNode) -> AnswerRecord {
     let mut id = String::new();
     write_node_id(&mut id, text, node);
     // Files read by a heuristic family are labelled; lexed languages leave the field to neighbors.
-    let confidence = generic::handles(language_of(text.get(node.path))).then(|| generic::GUESS.to_string());
+    let confidence =
+        generic::handles(language_of(text.get(node.path))).then(|| generic::GUESS.to_string());
     AnswerRecord {
         id,
         kind: node.kind.clone(),
@@ -293,7 +355,11 @@ fn score_of(text: &TextBlob, node: &IndexedNode, query: &str) -> i64 {
         return 3000;
     }
     // A qualified name matches on its last part: `Type::name` for symbols, `table.key` for configuration keys.
-    if node.name.strip_suffix(query).is_some_and(|head| head.ends_with("::") || head.ends_with('.')) {
+    if node
+        .name
+        .strip_suffix(query)
+        .is_some_and(|head| head.ends_with("::") || head.ends_with('.'))
+    {
         return 2500;
     }
     if node.name.contains(query) {
@@ -332,9 +398,15 @@ mod tests {
         assert_eq!(score_of(&text, &node, "src/lib"), 100);
         assert_eq!(score_of(&text, &node, "Respond"), 10);
         assert_eq!(score_of(&text, &node, "missing"), 0);
-        let qualified = IndexedNode { name: "tests::ping".to_string(), ..node };
+        let qualified = IndexedNode {
+            name: "tests::ping".to_string(),
+            ..node
+        };
         assert_eq!(score_of(&text, &qualified, "ping"), 2500);
-        let key = IndexedNode { name: "server.max_upload_size".to_string(), ..qualified };
+        let key = IndexedNode {
+            name: "server.max_upload_size".to_string(),
+            ..qualified
+        };
         assert_eq!(score_of(&text, &key, "max_upload_size"), 2500);
         assert_eq!(score_of(&text, &key, "upload"), 1000);
     }
@@ -357,8 +429,14 @@ mod tests {
             summary_source: "sig".to_string(),
             signature: String::new(),
         };
-        assert_eq!(record_of(&text, &node(scala)).confidence.as_deref(), Some("guess"));
-        assert_eq!(record_of(&text, &node(infra)).confidence.as_deref(), Some("guess"));
+        assert_eq!(
+            record_of(&text, &node(scala)).confidence.as_deref(),
+            Some("guess")
+        );
+        assert_eq!(
+            record_of(&text, &node(infra)).confidence.as_deref(),
+            Some("guess")
+        );
         assert_eq!(record_of(&text, &node(python)).confidence, None);
     }
 }

@@ -3,7 +3,7 @@
 
 use std::path::Path;
 
-use crate::compat;
+use crate::clipboard;
 
 use super::{Destination, PackOutcome};
 
@@ -81,5 +81,5 @@ fn write_output(path: &Path, body: &[u8]) -> Result<(), String> {
 
 fn copy(body: &[u8]) -> Result<(), String> {
     let text = String::from_utf8_lossy(body);
-    compat::copy_to_clipboard(text.as_bytes())
+    clipboard::copy_to_clipboard(text.as_bytes())
 }

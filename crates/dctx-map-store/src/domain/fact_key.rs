@@ -89,7 +89,8 @@ impl FactKey {
             .map_err(|_| StoreError::InvalidKey("invalid content digest"))?;
         let content = ContentId::of_bytes(bytes)
             .map_err(|_| StoreError::InvalidKey("invalid content digest"))?;
-        let len = u64::try_from(bytes.len()).map_err(|_| StoreError::InvalidKey("invalid content digest"))?;
+        let len = u64::try_from(bytes.len())
+            .map_err(|_| StoreError::InvalidKey("invalid content digest"))?;
         if content.version() != 1
             || content.algorithm() != ContentAlgorithm::Sha256
             || content.algorithm().code() != dctx_hash::IdentityAlgorithm::SHA256
@@ -114,7 +115,10 @@ impl FactKey {
     }
 
     /// Algorithm-tagged content digest. This is not a git object id.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn content(&self) -> ContentId {
         self.content
     }
@@ -193,34 +197,44 @@ mod tests {
     #[test]
     fn own_digest_keys_facts_and_bare_hex_is_refused() {
         let key = FactKey::from_bytes(b"abc", contract("rev-1")).unwrap();
-        assert!(key.to_string().contains(
-            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad:3"
-        ));
+        assert!(
+            key.to_string()
+                .contains("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad:3")
+        );
         assert!(key.to_string().starts_with("dctx:object:v1:sha256:"));
         assert_eq!(key.content().byte_length(), 3);
         let empty = FactKey::from_bytes(b"", contract("rev-1")).unwrap();
-        assert!(empty.to_string().contains(
-            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855:0"
-        ));
-        assert!(ExtractionContract::new(
-            1,
-            "rust-2024",
-            "dctx-map-parse",
-            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            "plan-1",
-            1
-        )
-        .is_err());
-        assert!(ExtractionContract::new(
-            1,
-            "rust-2024",
-            "dctx-map-parse",
-            "rev-1",
-            "git:da39a3ee5e6b4b0d3255bfef95601890afd80709",
-            1
-        )
-        .is_err());
-        assert!(ExtractionContract::new(0, "rust-2024", "dctx-map-parse", "rev-1", "plan-1", 1).is_err());
+        assert!(
+            empty
+                .to_string()
+                .contains("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855:0")
+        );
+        assert!(
+            ExtractionContract::new(
+                1,
+                "rust-2024",
+                "dctx-map-parse",
+                "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "plan-1",
+                1
+            )
+            .is_err()
+        );
+        assert!(
+            ExtractionContract::new(
+                1,
+                "rust-2024",
+                "dctx-map-parse",
+                "rev-1",
+                "git:da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                1
+            )
+            .is_err()
+        );
+        assert!(
+            ExtractionContract::new(0, "rust-2024", "dctx-map-parse", "rev-1", "plan-1", 1)
+                .is_err()
+        );
         assert!(FactKey::from_bytes(b"abc", contract("rev-1")).is_ok());
     }
 
@@ -229,7 +243,13 @@ mod tests {
         let left = FactKey::from_bytes(b"fn a() {}", contract("rev-1")).unwrap();
         let right = FactKey::from_bytes(b"fn a() {}", contract("rev-2")).unwrap();
         assert_ne!(left, right);
-        assert_ne!(left, FactKey::from_bytes(b"fn b() {}", contract("rev-1")).unwrap());
-        assert_eq!(left, FactKey::from_bytes(b"fn a() {}", contract("rev-1")).unwrap());
+        assert_ne!(
+            left,
+            FactKey::from_bytes(b"fn b() {}", contract("rev-1")).unwrap()
+        );
+        assert_eq!(
+            left,
+            FactKey::from_bytes(b"fn a() {}", contract("rev-1")).unwrap()
+        );
     }
 }

@@ -4,15 +4,30 @@
 
 use std::collections::HashSet;
 
-use super::super::{ident_at, is_denied, mask, Decl, Syntax};
+use super::super::{Decl, Syntax, ident_at, is_denied, mask};
 use super::{Block, Tok};
 
 /// How Elixir reads: `#` comments, `do` blocks, no bracket flattening.
-pub(super) const SCAN: Block = Block { mask: mask_of, decl: decl_of, word: word_of, flat: false, nested: false };
+pub(super) const SCAN: Block = Block {
+    mask: mask_of,
+    decl: decl_of,
+    word: word_of,
+    flat: false,
+    nested: false,
+};
 
 /// Elixir: `#` comments, quoted strings and heredocs.
 fn mask_of(text: &str) -> String {
-    mask(text, &Syntax { line: &["#"], block: None, nested: false, quotes: b"\"'", triple: true })
+    mask(
+        text,
+        &Syntax {
+            line: &["#"],
+            block: None,
+            nested: false,
+            quotes: b"\"'",
+            triple: true,
+        },
+    )
 }
 
 /// Elixir blocks open at `do` and `fn`; `do:` and `fn:` are keyword arguments.
@@ -35,17 +50,25 @@ fn decl_of(line: &str, source: &str, owner: Option<&str>) -> Option<(String, &'s
         return ex_unit(word, line, source);
     }
     if matches!(word, "defstruct" | "defexception") {
-        let own = owner?.rsplit([':', '.']).next().filter(|last| !last.is_empty())?;
+        let own = owner?
+            .rsplit([':', '.'])
+            .next()
+            .filter(|last| !last.is_empty())?;
         return Some((own.to_string(), "type"));
     }
     let kind = match word {
         "defmodule" | "defprotocol" | "defimpl" => "type",
-        "def" | "defp" | "defmacro" | "defmacrop" | "defguard" | "defguardp" | "defdelegate" => "fn",
+        "def" | "defp" | "defmacro" | "defmacrop" | "defguard" | "defguardp" | "defdelegate" => {
+            "fn"
+        }
         _ => return None,
     };
-    let rest = line[word.len()..].strip_prefix(char::is_whitespace)?.trim_start();
+    let rest = line[word.len()..]
+        .strip_prefix(char::is_whitespace)?
+        .trim_start();
     let end = if kind == "type" {
-        rest.find(|c: char| !(c.is_alphanumeric() || c == '_' || c == '.')).unwrap_or(rest.len())
+        rest.find(|c: char| !(c.is_alphanumeric() || c == '_' || c == '.'))
+            .unwrap_or(rest.len())
     } else {
         let name = ident_at(rest)?;
         name.len() + usize::from(rest[name.len()..].starts_with(['?', '!']))
@@ -65,7 +88,9 @@ fn decl_of(line: &str, source: &str, owner: Option<&str>) -> Option<(String, &'s
 /// The module after `for:` in the rest of a `defimpl` line, when it is a module name (`for: [A, B]` and `for: __MODULE__` have none).
 fn impl_target(rest: &str) -> Option<&str> {
     let after = rest[rest.find("for:")? + 4..].trim_start();
-    let end = after.find(|c: char| !(c.is_alphanumeric() || c == '_' || c == '.')).unwrap_or(after.len());
+    let end = after
+        .find(|c: char| !(c.is_alphanumeric() || c == '_' || c == '.'))
+        .unwrap_or(after.len());
     let target = after[..end].trim_end_matches('.');
     target.starts_with(char::is_uppercase).then_some(target)
 }
@@ -78,9 +103,12 @@ fn attribute_decl(attribute: &str) -> Option<(String, &'static str)> {
         "spec" | "callback" | "macrocallback" => "spec",
         _ => return None,
     };
-    let rest = attribute[word.len()..].strip_prefix(char::is_whitespace)?.trim_start();
+    let rest = attribute[word.len()..]
+        .strip_prefix(char::is_whitespace)?
+        .trim_start();
     let name = ident_at(rest)?;
-    let end = name.len() + usize::from(kind == "spec" && rest[name.len()..].starts_with(['?', '!']));
+    let end =
+        name.len() + usize::from(kind == "spec" && rest[name.len()..].starts_with(['?', '!']));
     let name = &rest[..end];
     if is_denied(name) || name == "unquote" {
         return None;
@@ -90,7 +118,11 @@ fn attribute_decl(attribute: &str) -> Option<(String, &'static str)> {
 
 /// Settles the `spec` declarations: one that names a function defined in the file, or that repeats an earlier spec, is dropped; the rest are functions.
 pub(super) fn finish(decls: Vec<Decl>) -> Vec<Decl> {
-    let defined: HashSet<String> = decls.iter().filter(|decl| decl.kind != "spec").map(|decl| decl.name.clone()).collect();
+    let defined: HashSet<String> = decls
+        .iter()
+        .filter(|decl| decl.kind != "spec")
+        .map(|decl| decl.name.clone())
+        .collect();
     let mut seen: HashSet<String> = HashSet::new();
     decls
         .into_iter()
@@ -110,7 +142,10 @@ pub(super) fn finish(decls: Vec<Decl>) -> Vec<Decl> {
 /// `test "name"` from the unmasked line. A name over 80 characters is cut there.
 fn ex_unit(word: &str, line: &str, source: &str) -> Option<(String, &'static str)> {
     let after = source.get(word.len()..)?;
-    let body = after.strip_prefix(char::is_whitespace)?.trim_start().strip_prefix('"')?;
+    let body = after
+        .strip_prefix(char::is_whitespace)?
+        .trim_start()
+        .strip_prefix('"')?;
     let mut end = None;
     let mut escaped = false;
     for (at, c) in body.char_indices() {
@@ -124,6 +159,13 @@ fn ex_unit(word: &str, line: &str, source: &str) -> Option<(String, &'static str
         }
     }
     let name: String = body[..end?].chars().take(80).collect();
-    let block = line.split(|c: char| !(c.is_alphanumeric() || c == '_')).any(|part| part == "do");
-    block.then(|| (format!("{word} \"{name}\""), if word == "describe" { "type" } else { "fn" }))
+    let block = line
+        .split(|c: char| !(c.is_alphanumeric() || c == '_'))
+        .any(|part| part == "do");
+    block.then(|| {
+        (
+            format!("{word} \"{name}\""),
+            if word == "describe" { "type" } else { "fn" },
+        )
+    })
 }

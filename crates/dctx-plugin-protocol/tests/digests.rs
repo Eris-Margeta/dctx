@@ -15,10 +15,16 @@ fn sha256(bytes: &[u8]) -> (String, u64) {
     let digest = Sha256::digest(bytes).expect("digest");
     let mut incremental = Sha256::new();
     for byte in bytes {
-        incremental.update(std::slice::from_ref(byte)).expect("update");
+        incremental
+            .update(std::slice::from_ref(byte))
+            .expect("update");
     }
     let streamed = incremental.finalize();
-    assert_eq!(streamed.as_bytes(), digest.as_bytes(), "incremental equals one-shot");
+    assert_eq!(
+        streamed.as_bytes(),
+        digest.as_bytes(),
+        "incremental equals one-shot"
+    );
     assert_eq!(streamed.byte_length(), digest.byte_length());
     (hex(digest.as_bytes()), digest.byte_length())
 }
@@ -28,7 +34,11 @@ fn digests() -> Json {
 }
 
 fn expected(entry: &Json) -> (String, u64) {
-    let bytes = entry.get("bytes").and_then(Json::as_int).and_then(|n| u64::try_from(n).ok()).expect("bytes");
+    let bytes = entry
+        .get("bytes")
+        .and_then(Json::as_int)
+        .and_then(|n| u64::try_from(n).ok())
+        .expect("bytes");
     (text(entry, "sha256").to_owned(), bytes)
 }
 
@@ -44,8 +54,14 @@ fn action_argument_digest_excludes_action_id() {
     let (action, input) = request.action_input().expect("replay key");
     assert_eq!(action.as_str(), "action:replace");
     let preimage = Json::Object(vec![
-        ("method".to_owned(), argument.get("method").cloned().expect("method")),
-        ("params".to_owned(), argument.get("params").cloned().expect("params")),
+        (
+            "method".to_owned(),
+            argument.get("method").cloned().expect("method"),
+        ),
+        (
+            "params".to_owned(),
+            argument.get("params").cloned().expect("params"),
+        ),
     ]);
     assert_eq!(input, to_canonical(&preimage));
     assert_eq!(sha256(&input), expected(argument));
@@ -58,19 +74,33 @@ fn action_argument_digest_excludes_action_id() {
         .expect("json"),
     )
     .expect("request");
-    assert_ne!(changed.action_input().expect("key").1, input, "different arguments, different digest");
+    assert_ne!(
+        changed.action_input().expect("key").1,
+        input,
+        "different arguments, different digest"
+    );
 }
 
 #[test]
 fn plan_digest_is_the_canonical_compiled_plan() {
     let fixture = digests();
-    let entries = fixture.get("entries").and_then(Json::as_array).expect("entries");
-    let plan = entries.iter().find(|e| text(e, "path") == "fixtures/valid/dts-plan.json").expect("plan entry");
+    let entries = fixture
+        .get("entries")
+        .and_then(Json::as_array)
+        .expect("entries");
+    let plan = entries
+        .iter()
+        .find(|e| text(e, "path") == "fixtures/valid/dts-plan.json")
+        .expect("plan entry");
     assert_eq!(text(plan, "encoding"), "canonical-json");
     let canonical = to_canonical(&document("fixtures/valid/dts-plan.json"));
     let (hex_digest, length) = sha256(&canonical);
     assert_eq!((hex_digest.clone(), length), expected(plan));
-    let SessionBody::Request { request: Request::Initialize(init), .. } = session_message("initialize").body else {
+    let SessionBody::Request {
+        request: Request::Initialize(init),
+        ..
+    } = session_message("initialize").body
+    else {
         panic!("initialize");
     };
     assert_eq!(init.plan_digest.as_str(), format!("sha256:{hex_digest}"));
@@ -79,16 +109,27 @@ fn plan_digest_is_the_canonical_compiled_plan() {
 #[test]
 fn exact_bytes_and_injected_identities() {
     let fixture = digests();
-    let entries = fixture.get("entries").and_then(Json::as_array).expect("entries");
-    let manifest = entries.iter().find(|e| text(e, "encoding") == "exact-file-bytes").expect("manifest entry");
+    let entries = fixture
+        .get("entries")
+        .and_then(Json::as_array)
+        .expect("entries");
+    let manifest = entries
+        .iter()
+        .find(|e| text(e, "encoding") == "exact-file-bytes")
+        .expect("manifest entry");
     assert_eq!(sha256(&bytes(text(manifest, "path"))), expected(manifest));
     let selection = fixture.get("selection_fixture").expect("selection");
     assert_eq!(sha256(b""), expected(selection));
-    let SessionBody::Request { request: Request::Invoke(invocation), .. } =
-        session_message("invoke-before-index").body
+    let SessionBody::Request {
+        request: Request::Invoke(invocation),
+        ..
+    } = session_message("invoke-before-index").body
     else {
         panic!("invoke");
     };
     let digest = invocation.selection_digest.expect("selection digest");
-    assert_eq!(digest.as_str(), format!("sha256:{}", text(selection, "sha256")));
+    assert_eq!(
+        digest.as_str(),
+        format!("sha256:{}", text(selection, "sha256"))
+    );
 }

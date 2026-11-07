@@ -5,13 +5,20 @@
 #![forbid(unsafe_code)]
 
 use dctx_lex_rb::{
-    Completion, DiagnosticReason, Dialect, LexedFile, Precision, RubyLexer, PARSER_ID, PARSER_REVISION,
+    Completion, DiagnosticReason, Dialect, LexedFile, PARSER_ID, PARSER_REVISION, Precision,
+    RubyLexer,
 };
 use dctx_map_model::{EdgeKind, NodeKind, SummarySource, SymbolKind};
 use std::collections::BTreeSet;
 
-const BASIC: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/basic.rb"));
-const HEREDOC: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/heredoc.rb"));
+const BASIC: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/fixtures/basic.rb"
+));
+const HEREDOC: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/fixtures/heredoc.rb"
+));
 const INCOMPLETE: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/tests/fixtures/incomplete.rb"
@@ -28,7 +35,11 @@ fn extract(path: &str, source: &str) -> LexedFile {
 }
 
 fn names(facts: &LexedFile) -> Vec<&str> {
-    facts.nodes.iter().map(|node| node.fact.name.as_str()).collect()
+    facts
+        .nodes
+        .iter()
+        .map(|node| node.fact.name.as_str())
+        .collect()
 }
 
 fn node<'a>(facts: &'a LexedFile, name: &str) -> &'a dctx_map_model::Node {
@@ -96,10 +107,15 @@ fn check_invariants(path: &str, source: &str, facts: &LexedFile) {
             "{}",
             node.fact.id
         );
-        let identity = node.fact.id.as_str().split_once(':').map(|(_, rest)| match rest.split_once('#') {
-            Some((file, _)) => file,
-            None => rest,
-        });
+        let identity =
+            node.fact
+                .id
+                .as_str()
+                .split_once(':')
+                .map(|(_, rest)| match rest.split_once('#') {
+                    Some((file, _)) => file,
+                    None => rest,
+                });
         assert_eq!(identity, Some(path), "{}", node.fact.id);
         let [start, end] = node.fact.lines;
         assert!(
@@ -108,8 +124,15 @@ fn check_invariants(path: &str, source: &str, facts: &LexedFile) {
             node.fact.name
         );
         assert_eq!(node.fact.fingerprint.len(), 64, "{}", node.fact.name);
-        assert!(ids.insert(node.fact.id.as_str().to_owned()), "duplicate {}", node.fact.id);
-        assert!(!matches!(node.fact.kind, NodeKind::Place | NodeKind::Package));
+        assert!(
+            ids.insert(node.fact.id.as_str().to_owned()),
+            "duplicate {}",
+            node.fact.id
+        );
+        assert!(!matches!(
+            node.fact.kind,
+            NodeKind::Place | NodeKind::Package
+        ));
     }
     let mut owned = BTreeSet::from([facts.nodes[0].fact.id.as_str()]);
     loop {
@@ -129,7 +152,11 @@ fn check_invariants(path: &str, source: &str, facts: &LexedFile) {
         }
     }
     for node in &facts.nodes {
-        assert!(owned.contains(node.fact.id.as_str()), "{} is not owned by the file", node.fact.name);
+        assert!(
+            owned.contains(node.fact.id.as_str()),
+            "{} is not owned by the file",
+            node.fact.name
+        );
     }
     for reference in &facts.references {
         let [start, end] = reference.fact.lines;
@@ -139,7 +166,11 @@ fn check_invariants(path: &str, source: &str, facts: &LexedFile) {
             reference.fact.name
         );
         assert_eq!(reference.fact.owner_path, path);
-        assert!(ids.contains(reference.fact.src.as_str()), "{}", reference.fact.src);
+        assert!(
+            ids.contains(reference.fact.src.as_str()),
+            "{}",
+            reference.fact.src
+        );
         assert_ne!(reference.fact.kind, EdgeKind::Contains);
         assert_ne!(reference.fact.name, "");
     }
@@ -199,30 +230,67 @@ fn golden_basic_extracts_structure_and_abstains_from_metaprogramming() {
             "top",
         ]
     );
-    assert_eq!(node(&facts, "basic.rb").summary.text, "File demo is a sample.");
+    assert_eq!(
+        node(&facts, "basic.rb").summary.text,
+        "File demo is a sample."
+    );
     assert_eq!(node(&facts, "basic.rb").summary.source, SummarySource::Doc);
     assert_symbol(&facts, "Demo", SymbolKind::Type, true, "");
     assert_symbol(&facts, "Demo::MAX", SymbolKind::Const, true, "");
-    assert_symbol(&facts, "Demo::Box", SymbolKind::Class, true, "A boxed value.");
-    assert_eq!(node_precision(&facts, "Demo::Box::width"), Precision::Convention);
+    assert_symbol(
+        &facts,
+        "Demo::Box",
+        SymbolKind::Class,
+        true,
+        "A boxed value.",
+    );
+    assert_eq!(
+        node_precision(&facts, "Demo::Box::width"),
+        Precision::Convention
+    );
     assert_symbol(&facts, "Demo::Box::width", SymbolKind::Method, true, "");
     assert_symbol(&facts, "Demo::Box::width=", SymbolKind::Method, true, "");
-    assert_symbol(&facts, "Demo::Box::area", SymbolKind::Method, true, "Measures the box.");
-    assert_eq!(node_precision(&facts, "Demo::Box::area"), Precision::Structural);
-    assert!(node(&facts, "Demo::Box::area").signature.contains("def area"));
+    assert_symbol(
+        &facts,
+        "Demo::Box::area",
+        SymbolKind::Method,
+        true,
+        "Measures the box.",
+    );
+    assert_eq!(
+        node_precision(&facts, "Demo::Box::area"),
+        Precision::Structural
+    );
+    assert!(
+        node(&facts, "Demo::Box::area")
+            .signature
+            .contains("def area")
+    );
     assert_symbol(&facts, "Demo::Box::build", SymbolKind::Method, true, "");
     assert_symbol(&facts, "Demo::Box::<<self", SymbolKind::Class, true, "");
-    assert_eq!(node_precision(&facts, "Demo::Box::<<self"), Precision::Structural);
+    assert_eq!(
+        node_precision(&facts, "Demo::Box::<<self"),
+        Precision::Structural
+    );
     assert_symbol(&facts, "Demo::Box::register", SymbolKind::Method, true, "");
     assert_symbol(&facts, "Demo::Box::measure", SymbolKind::Method, true, "");
-    assert_eq!(node_precision(&facts, "Demo::Box::measure"), Precision::Convention);
+    assert_eq!(
+        node_precision(&facts, "Demo::Box::measure"),
+        Precision::Convention
+    );
     assert_symbol(&facts, "Demo::Box::size", SymbolKind::Method, true, "");
     assert_symbol(&facts, "Demo::Box::hidden", SymbolKind::Method, false, "");
     assert_symbol(&facts, "top", SymbolKind::Function, true, "");
     assert!(!names(&facts).iter().any(|name| {
-        matches!(*name, "nope" | "NOPE" | "injected" | "Demo::Box::NOPE" | "dynamic")
+        matches!(
+            *name,
+            "nope" | "NOPE" | "injected" | "Demo::Box::NOPE" | "dynamic"
+        )
     }));
-    assert_eq!(refs(&facts, EdgeKind::Imports), ["json", "helper", "extra.rb"]);
+    assert_eq!(
+        refs(&facts, EdgeKind::Imports),
+        ["json", "helper", "extra.rb"]
+    );
     assert_eq!(
         refs(&facts, EdgeKind::Calls),
         [
@@ -265,11 +333,21 @@ fn golden_heredoc_keeps_literals_and_end_data_out_of_the_graph() {
     assert!(!names(&facts).iter().any(|name| {
         matches!(
             *name,
-            "alpha" | "beta" | "not_called" | "hidden_q" | "gamma" | "commented" | "data_only" | "ghost"
+            "alpha"
+                | "beta"
+                | "not_called"
+                | "hidden_q"
+                | "gamma"
+                | "commented"
+                | "data_only"
+                | "ghost"
         )
     }));
     assert!(!refs(&facts, EdgeKind::Calls).iter().any(|name| {
-        matches!(*name, "alpha" | "beta" | "not_called" | "hidden_q" | "gamma" | "commented" | "ghost")
+        matches!(
+            *name,
+            "alpha" | "beta" | "not_called" | "hidden_q" | "gamma" | "commented" | "ghost"
+        )
     }));
 }
 
@@ -296,7 +374,11 @@ fn realworld_constructs_parse_completely() {
         "touch",
         "punct",
     ] {
-        assert!(names(&facts).contains(&name), "missing {name} in {:?}", names(&facts));
+        assert!(
+            names(&facts).contains(&name),
+            "missing {name} in {:?}",
+            names(&facts)
+        );
     }
     assert_symbol(&facts, "Certifi", SymbolKind::Class, true, "");
     assert_symbol(&facts, "Certifi::pythons", SymbolKind::Method, true, "");
@@ -310,7 +392,11 @@ fn realworld_constructs_parse_completely() {
     assert!(calls.contains(&"obj&.save"), "{calls:?}");
     assert!(!calls.contains(&"alpha"), "{calls:?}");
     assert!(!calls.contains(&"beta"), "{calls:?}");
-    assert!(refs(&facts, EdgeKind::UsesType).contains(&"Formula"), "{:?}", facts.references);
+    assert!(
+        refs(&facts, EdgeKind::UsesType).contains(&"Formula"),
+        "{:?}",
+        facts.references
+    );
 }
 
 #[test]
@@ -318,12 +404,28 @@ fn incomplete_fixture_keeps_partial_facts() {
     let facts = extract("incomplete.rb", INCOMPLETE);
     check_invariants("incomplete.rb", INCOMPLETE, &facts);
     assert_eq!(facts.completion, Completion::Partial);
-    assert!(facts.diagnostics.iter().any(|item| item.reason == DiagnosticReason::UnterminatedString));
-    assert!(facts.diagnostics.iter().any(|item| item.reason == DiagnosticReason::UnterminatedBlock));
-    assert_eq!(names(&facts), ["incomplete.rb", "ready", "Open", "Open::inner"]);
+    assert!(
+        facts
+            .diagnostics
+            .iter()
+            .any(|item| item.reason == DiagnosticReason::UnterminatedString)
+    );
+    assert!(
+        facts
+            .diagnostics
+            .iter()
+            .any(|item| item.reason == DiagnosticReason::UnterminatedBlock)
+    );
+    assert_eq!(
+        names(&facts),
+        ["incomplete.rb", "ready", "Open", "Open::inner"]
+    );
     assert_eq!(node(&facts, "ready").summary.text, "Ready is complete.");
     assert_eq!(node_precision(&facts, "ready"), Precision::Structural);
-    assert_eq!(node(&facts, "ready").symbol_kind, Some(SymbolKind::Function));
+    assert_eq!(
+        node(&facts, "ready").symbol_kind,
+        Some(SymbolKind::Function)
+    );
     assert_eq!(node_precision(&facts, "Open::inner"), Precision::Structural);
     assert_eq!(node(&facts, "Open").symbol_kind, Some(SymbolKind::Class));
     assert_eq!(node_precision(&facts, "Open"), Precision::Partial);
@@ -331,7 +433,10 @@ fn incomplete_fixture_keeps_partial_facts() {
 }
 
 #[test]
-#[allow(clippy::cast_possible_truncation, reason = "The fuzz length deliberately uses the PRNG's native low word before applying the 301-byte bound.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "The fuzz length deliberately uses the PRNG's native low word before applying the 301-byte bound."
+)]
 fn arbitrary_bytes_and_truncated_fixtures_stay_bounded() {
     let mut state = 0x1234_5678_9abc_def0_u64;
     for _ in 0..200 {
@@ -343,7 +448,11 @@ fn arbitrary_bytes_and_truncated_fixtures_stay_bounded() {
         assert_stable("f.rb", &bytes);
         assert_stable("f.rs", &bytes);
     }
-    for (path, source) in [("basic.rb", BASIC), ("heredoc.rb", HEREDOC), ("incomplete.rb", INCOMPLETE)] {
+    for (path, source) in [
+        ("basic.rb", BASIC),
+        ("heredoc.rb", HEREDOC),
+        ("incomplete.rb", INCOMPLETE),
+    ] {
         for len in 0..=source.len() {
             let prefix = &source.as_bytes()[..len];
             let facts = RubyLexer::default()

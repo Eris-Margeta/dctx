@@ -7,20 +7,20 @@
 mod concept;
 mod decl_pair;
 pub(crate) mod dotted_key;
-pub(crate) mod export_list;
-pub(crate) mod out_calls;
-mod extract;
 pub(crate) mod export;
+pub(crate) mod export_list;
+mod extract;
 mod generic;
-pub(crate) mod hubs;
-pub(crate) mod path;
 mod grep;
+pub(crate) mod hubs;
 mod id_index;
 mod key_rank;
 #[cfg(test)]
 mod languages_tests;
 mod lex_dispatch;
+pub(crate) mod out_calls;
 mod outline_order;
+pub(crate) mod path;
 pub(crate) mod profile;
 mod query;
 mod refs;
@@ -31,18 +31,18 @@ mod segment;
 pub(crate) mod sites;
 mod skeleton;
 mod span_index;
-mod text_docs;
 #[cfg(feature = "syntax-rust")]
 mod syn_extract;
+mod text_docs;
 mod walk;
 
 pub(crate) use decl_pair::pair_record;
 pub(crate) use grep::{grep_records, text_records};
 pub(crate) use id_index::IdIndex;
 pub(crate) use key_rank::{key_shaped, rank as rank_key};
-pub(crate) use query::{collect, Collected};
+pub(crate) use query::{Collected, collect};
 pub(crate) use segment::canonical_bytes;
-pub(crate) use walk::{walk_source, WalkArgs};
+pub(crate) use walk::{WalkArgs, walk_source};
 
 use dctx_core::FileHandlingDecision;
 use dctx_hash::ContentDigest;
@@ -115,7 +115,13 @@ pub(crate) fn write_stable_id(out: &mut String, letter: u8, path: &str, name: &s
 
 /// Writes the stable id of `node` into `out`.
 pub(crate) fn write_node_id(out: &mut String, text: &TextBlob, node: &IndexedNode) {
-    write_stable_id(out, node.letter, text.get(node.path), &node.name, node.ordinal);
+    write_stable_id(
+        out,
+        node.letter,
+        text.get(node.path),
+        &node.name,
+        node.ordinal,
+    );
 }
 
 /// Writes the stable id of node `index`, or nothing when the index is absent.

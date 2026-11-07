@@ -13,7 +13,9 @@ use dctx_desktop_api::{generate_snapshot, DesktopConfig, SourceSpy, MAX_RULE_FIL
 fn scratch(label: &str) -> PathBuf {
     static NEXT: AtomicU64 = AtomicU64::new(1);
     let n = NEXT.fetch_add(1, Ordering::Relaxed);
-    let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_nanos());
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_nanos());
     let path = std::env::temp_dir().join(format!("dctx-desktop-privacy-{label}-{n}-{nanos}"));
     fs::create_dir_all(&path).expect("temp");
     path
@@ -29,11 +31,19 @@ fn pack_files(output: &str) -> u64 {
 }
 
 fn assert_read(spy: &SourceSpy, path: &str) {
-    assert!(spy.reads().iter().any(|read| read == path), "missing read {path}: {:?}", spy.paths());
+    assert!(
+        spy.reads().iter().any(|read| read == path),
+        "missing read {path}: {:?}",
+        spy.paths()
+    );
 }
 
 fn assert_not_read(spy: &SourceSpy, path: &str) {
-    assert!(!spy.reads().iter().any(|read| read == path), "read forbidden {path}: {:?}", spy.paths());
+    assert!(
+        !spy.reads().iter().any(|read| read == path),
+        "read forbidden {path}: {:?}",
+        spy.paths()
+    );
 }
 
 fn finish(root: &PathBuf) {
@@ -42,7 +52,10 @@ fn finish(root: &PathBuf) {
 
 /// F01: extension, hidden, empty and size filters must exclude content reads.
 #[test]
-#[allow(clippy::field_reassign_with_default, reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions.")]
+#[allow(
+    clippy::field_reassign_with_default,
+    reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions."
+)]
 fn desktop_filters_block_content_reads_and_keep_a_match() {
     let extensions = scratch("ext");
     fs::write(extensions.join("main.rs"), b"fn main() {}").expect("rs");
@@ -54,7 +67,11 @@ fn desktop_filters_block_content_reads_and_keep_a_match() {
     assert!(allowed.success, "{:?}", allowed.error);
     assert_eq!(pack_files(&allowed.output), 1, "{}", allowed.output);
     assert_read(&spy, "main.rs");
-    assert!(!spy.touched("private.txt"), "filtered file was touched: {:?}", spy.paths());
+    assert!(
+        !spy.touched("private.txt"),
+        "filtered file was touched: {:?}",
+        spy.paths()
+    );
     assert!(!allowed.output.contains("PRIVATE_SENTINEL"));
     drop(spy);
     finish(&extensions);
@@ -106,9 +123,9 @@ fn desktop_filters_block_content_reads_and_keep_a_match() {
     finish(&refused_root);
 }
 
-/// F02: `.gitignore` excludes and `.dctxomitcontent` omits, with an included control.
+/// F02: project ignore files block reads, with an included control.
 #[test]
-fn project_ignore_and_omit_files_block_private_reads() {
+fn project_ignore_files_block_private_reads() {
     let ignored = scratch("gitignore");
     fs::write(ignored.join(".gitignore"), b"private.txt\n").expect("ignore");
     fs::write(ignored.join("keep.rs"), b"fn keep() {}\n").expect("keep");
@@ -116,26 +133,17 @@ fn project_ignore_and_omit_files_block_private_reads() {
     let spy = SourceSpy::arm();
     let response = generate_snapshot(&ignored, &DesktopConfig::default());
     assert!(response.success, "{:?}", response.error);
-    assert_eq!(pack_files(&response.output), 2, "gitignore + keep.rs, not private: {}", response.output);
+    assert_eq!(
+        pack_files(&response.output),
+        2,
+        "gitignore + keep.rs, not private: {}",
+        response.output
+    );
     assert_read(&spy, "keep.rs");
     assert!(!spy.touched("private.txt"), "{:?}", spy.paths());
     assert!(!response.output.contains("PRIVATE_SENTINEL"));
     drop(spy);
     finish(&ignored);
-
-    let omitted = scratch("omit");
-    fs::write(omitted.join(".dctxomitcontent"), b"private.txt\n").expect("omit");
-    fs::write(omitted.join("keep.rs"), b"fn keep() {}\n").expect("keep");
-    fs::write(omitted.join("private.txt"), b"PRIVATE_SENTINEL").expect("private");
-    let spy = SourceSpy::arm();
-    let response = generate_snapshot(&omitted, &DesktopConfig::default());
-    assert!(response.success, "{:?}", response.error);
-    assert_eq!(pack_files(&response.output), 3, "omit stays in the tree: {}", response.output);
-    assert_read(&spy, "keep.rs");
-    assert_not_read(&spy, "private.txt");
-    assert!(!response.output.contains("PRIVATE_SENTINEL"));
-    drop(spy);
-    finish(&omitted);
 
     // `.gitignore` then `.dctxignore`: last match re-includes keep.rs only.
     let ordered = scratch("order");
@@ -157,7 +165,11 @@ fn project_ignore_and_omit_files_block_private_reads() {
 fn git_negations_never_list_or_read_git() {
     assert_git_closed("literal", "!.git/\n", ".git/config");
     assert_git_closed("wildcard", "!.g*/\n", ".git/config");
-    assert_git_closed("nested", "!nested/.git/\n!nested/.git/**\n", "nested/.git/config");
+    assert_git_closed(
+        "nested",
+        "!nested/.git/\n!nested/.git/**\n",
+        "nested/.git/config",
+    );
 }
 
 fn assert_git_closed(label: &str, rules: &str, secret: &str) {
@@ -171,9 +183,18 @@ fn assert_git_closed(label: &str, rules: &str, secret: &str) {
     let spy = SourceSpy::arm();
     let response = generate_snapshot(&root, &DesktopConfig::default());
     assert!(response.success, "{label}: {:?}", response.error);
-    assert_eq!(pack_files(&response.output), 1, "{label}: {}", response.output);
+    assert_eq!(
+        pack_files(&response.output),
+        1,
+        "{label}: {}",
+        response.output
+    );
     assert_read(&spy, "keep.txt");
-    assert!(!spy.git_touched(), "{label} touched .git: {:?}", spy.paths());
+    assert!(
+        !spy.git_touched(),
+        "{label} touched .git: {:?}",
+        spy.paths()
+    );
     assert!(!response.output.contains("PRIVATE_SENTINEL"));
     drop(spy);
     finish(&root);
@@ -197,7 +218,11 @@ fn symlink_and_non_regular_rule_files_are_refused() {
         assert!(error.contains("symlink"), "{error}");
         assert!(error.contains(".dctxignore"), "{error}");
         assert!(!error.contains("OUTSIDE_SENTINEL"), "{error}");
-        assert!(!spy.touched("keep.txt"), "symlink rule still scanned the project: {:?}", spy.paths());
+        assert!(
+            !spy.touched("keep.txt"),
+            "symlink rule still scanned the project: {:?}",
+            spy.paths()
+        );
         drop(spy);
     }
     finish(&linked);

@@ -4,16 +4,16 @@
 //! Depends on [`super::store::SegmentStore`] and `dctx-map-segment` validation. Recovery reads the result.
 //! The pointer directory sync is the durable visibility point. A crash before it keeps the old generation.
 
+use crate::SegmentRole;
 use crate::domain::{
-    check_root, current_path, encode_manifest, encode_pointer, manifest_digest, manifest_path,
-    previous_path, segment_path, tmp_path, Boundary, Manifest, PublishRequest, Published,
-    SegmentBlob, SegmentRef, StoreError, StoreOptions, POINTER_LEN,
+    Boundary, Manifest, POINTER_LEN, PublishRequest, Published, SegmentBlob, SegmentRef,
+    StoreError, StoreOptions, check_root, current_path, encode_manifest, encode_pointer,
+    manifest_digest, manifest_path, previous_path, segment_path, tmp_path,
 };
 use crate::ports::StoreFs;
-use crate::SegmentRole;
 use dctx_map_segment::{decode, segment_object_digest};
 
-use super::store::{inspect, manifest_bytes_ok, newest, SegmentStore};
+use super::store::{SegmentStore, inspect, manifest_bytes_ok, newest};
 
 mod prepare;
 mod stage;
@@ -93,7 +93,10 @@ struct KeepPath<'a, F: StoreFs> {
 impl<'a, F: StoreFs> KeepPath<'a, F> {
     fn new(store: &'a SegmentStore<F>, path: &str) -> Self {
         store.protect_path(path);
-        Self { store, path: path.to_string() }
+        Self {
+            store,
+            path: path.to_string(),
+        }
     }
 }
 
@@ -113,7 +116,10 @@ impl<F: StoreFs> SegmentStore<F> {
     ///
     /// # Errors
     /// Refuses invalid requests, crashed or cancelled stores, unsupported durability, busy writers, conflicts and capacity limits; propagates codec, IO and injected-crash failures.
-    #[allow(clippy::needless_pass_by_value, reason = "Keep the public publication entry point consuming its request; borrowing would change its ownership contract.")]
+    #[allow(
+        clippy::needless_pass_by_value,
+        reason = "Keep the public publication entry point consuming its request; borrowing would change its ownership contract."
+    )]
     pub fn publish(&self, request: PublishRequest) -> Result<Published, StoreError> {
         self.ensure_live()?;
         self.require_durability()?;
@@ -133,7 +139,11 @@ impl<F: StoreFs> SegmentStore<F> {
     ///
     /// # Errors
     /// Refuses invalid roots, crashed stores or unsupported durability; propagates locking, IO, codec and injected-crash failures.
-    pub fn publish_unvalidated_pointer(&self, root: &str, generation: u64) -> Result<(), StoreError> {
+    pub fn publish_unvalidated_pointer(
+        &self,
+        root: &str,
+        generation: u64,
+    ) -> Result<(), StoreError> {
         self.ensure_live()?;
         self.require_durability()?;
         check_root(root)?;
@@ -145,7 +155,10 @@ impl<F: StoreFs> SegmentStore<F> {
                 "previous.partial",
                 &previous_path(root),
                 &bytes,
-                &Place { replace: true, protect: None },
+                &Place {
+                    replace: true,
+                    protect: None,
+                },
                 |_| Ok(()),
             )?;
         }
@@ -159,7 +172,10 @@ impl<F: StoreFs> SegmentStore<F> {
             "pointer.partial",
             &current_path(root),
             &pointer,
-            &Place { replace: true, protect: None },
+            &Place {
+                replace: true,
+                protect: None,
+            },
             |_| Ok(()),
         )?;
         drop(attempt);
@@ -175,7 +191,9 @@ impl<F: StoreFs> SegmentStore<F> {
             return Err(StoreError::UnsupportedDurability { capability: "sync" });
         }
         if !caps.atomic_replace {
-            return Err(StoreError::UnsupportedDurability { capability: "atomic-replace" });
+            return Err(StoreError::UnsupportedDurability {
+                capability: "atomic-replace",
+            });
         }
         if !caps.os_lock {
             return Err(StoreError::UnsupportedDurability { capability: "lock" });
@@ -194,15 +212,24 @@ impl<F: StoreFs> SegmentStore<F> {
         let current = newest(&self.fs, &request.root)?;
         match &current {
             Some(closure) if request.generation != closure.generation.saturating_add(1) => {
-                return Err(StoreError::InvalidRequest { reason: "generation" });
+                return Err(StoreError::InvalidRequest {
+                    reason: "generation",
+                });
             }
             None if request.generation != 1 => {
-                return Err(StoreError::InvalidRequest { reason: "generation" });
+                return Err(StoreError::InvalidRequest {
+                    reason: "generation",
+                });
             }
             _ => {}
         }
         let prepared = prepare(&request.segments)?;
-        let manifest = build_manifest(&self.options, request, &prepared, current.as_ref().map(|c| c.manifest));
+        let manifest = build_manifest(
+            &self.options,
+            request,
+            &prepared,
+            current.as_ref().map(|c| c.manifest),
+        );
         let man_bytes = encode_manifest(&manifest)?;
         let man_digest = manifest_digest(&man_bytes)?;
         let extra = self.extra_bytes(&prepared, man_bytes.len(), &request.root)?;
@@ -222,16 +249,26 @@ impl<F: StoreFs> SegmentStore<F> {
                 let bytes = segment.bytes.clone();
                 let digest = segment.digest;
                 let role = segment.role;
-                self.stage(attempt, &tmp, &dest, &bytes, &Place { replace: false, protect: Some(digest) }, |read| {
-                    decode(read, role).map_err(|_| StoreError::CorruptIndex { reason: "segment" })?;
-                    let actual = segment_object_digest(read).map_err(|_| StoreError::CorruptIndex {
-                        reason: "segment",
-                    })?;
-                    if actual != digest {
-                        return Err(StoreError::CorruptIndex { reason: "segment" });
-                    }
-                    Ok(())
-                })?;
+                self.stage(
+                    attempt,
+                    &tmp,
+                    &dest,
+                    &bytes,
+                    &Place {
+                        replace: false,
+                        protect: Some(digest),
+                    },
+                    |read| {
+                        decode(read, role)
+                            .map_err(|_| StoreError::CorruptIndex { reason: "segment" })?;
+                        let actual = segment_object_digest(read)
+                            .map_err(|_| StoreError::CorruptIndex { reason: "segment" })?;
+                        if actual != digest {
+                            return Err(StoreError::CorruptIndex { reason: "segment" });
+                        }
+                        Ok(())
+                    },
+                )?;
             }
             digests.push(segment.digest);
         }
@@ -248,7 +285,10 @@ impl<F: StoreFs> SegmentStore<F> {
                 "manifest.partial",
                 &manifest_dest,
                 &man_bytes,
-                &Place { replace: false, protect: Some(man_digest) },
+                &Place {
+                    replace: false,
+                    protect: Some(man_digest),
+                },
                 |read| manifest_bytes_ok(read, &man_digest).map(|_| ()),
             )?;
         }
@@ -260,7 +300,10 @@ impl<F: StoreFs> SegmentStore<F> {
                 "previous.partial",
                 &previous_path(&request.root),
                 &bytes,
-                &Place { replace: true, protect: None },
+                &Place {
+                    replace: true,
+                    protect: None,
+                },
                 |read| {
                     if decode_pointer_ok(read).is_err() {
                         return Err(StoreError::CorruptIndex { reason: "pointer" });
@@ -274,7 +317,8 @@ impl<F: StoreFs> SegmentStore<F> {
         let pointer = encode_pointer(&crate::domain::Pointer {
             generation: request.generation,
             digest: man_digest,
-            length: u64::try_from(man_bytes.len()).map_err(|_| StoreError::InvalidRequest { reason: "size" })?,
+            length: u64::try_from(man_bytes.len())
+                .map_err(|_| StoreError::InvalidRequest { reason: "size" })?,
         })?;
         self.stage_pointer(attempt, &request.root, &pointer)?;
         attempt.cut(Boundary::BeforeUnlock)?;
@@ -286,8 +330,14 @@ impl<F: StoreFs> SegmentStore<F> {
         })
     }
 
-    fn extra_bytes(&self, prepared: &[Prepared], manifest_len: usize, root: &str) -> Result<u64, StoreError> {
-        let mut extra = u64::try_from(manifest_len).map_err(|_| StoreError::InvalidRequest { reason: "size" })?;
+    fn extra_bytes(
+        &self,
+        prepared: &[Prepared],
+        manifest_len: usize,
+        root: &str,
+    ) -> Result<u64, StoreError> {
+        let mut extra = u64::try_from(manifest_len)
+            .map_err(|_| StoreError::InvalidRequest { reason: "size" })?;
         for segment in prepared {
             let path = segment_path(&segment.digest);
             if self.fs.exists(&path)? {
@@ -296,7 +346,8 @@ impl<F: StoreFs> SegmentStore<F> {
                     return Err(StoreError::CorruptIndex { reason: "segment" });
                 }
             } else {
-                extra = extra.saturating_add(u64::try_from(segment.bytes.len()).unwrap_or(u64::MAX));
+                extra =
+                    extra.saturating_add(u64::try_from(segment.bytes.len()).unwrap_or(u64::MAX));
             }
         }
         if !self.fs.exists(&current_path(root))? {

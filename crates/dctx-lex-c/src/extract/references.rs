@@ -5,7 +5,7 @@
 //! kept as convention-level type-name references because the model has no field edge.
 use super::{Scope, Walker};
 use crate::domain::Precision;
-use crate::lexer::{keyword, non_callee, type_word, Kind};
+use crate::lexer::{Kind, keyword, non_callee, type_word};
 use dctx_map_model::EdgeKind;
 
 impl Walker<'_> {
@@ -22,7 +22,14 @@ impl Walker<'_> {
         index + 1
     }
 
-    pub(crate) fn emit_types(&mut self, start: usize, end: usize, skip_lo: usize, skip_hi: usize, scope: &Scope) {
+    pub(crate) fn emit_types(
+        &mut self,
+        start: usize,
+        end: usize,
+        skip_lo: usize,
+        skip_hi: usize,
+        scope: &Scope,
+    ) {
         let mut index = start;
         let end = end.min(self.toks.len());
         while index < end && !self.stopped() {
@@ -44,7 +51,10 @@ impl Walker<'_> {
                     index = next.max(index + 1);
                     continue;
                 }
-                if self.is(next, "(") || self.bound_name(bare_at) || self.known_macro(self.text(bare_at)) {
+                if self.is(next, "(")
+                    || self.bound_name(bare_at)
+                    || self.known_macro(self.text(bare_at))
+                {
                     index = next.max(index + 1);
                     continue;
                 }
@@ -92,7 +102,14 @@ impl Walker<'_> {
             return;
         }
         let close = self.close(paren).unwrap_or(paren);
-        self.refer(scope.owner, scope, EdgeKind::Calls, name, (start, close), Precision::Structural);
+        self.refer(
+            scope.owner,
+            scope,
+            EdgeKind::Calls,
+            name,
+            (start, close),
+            Precision::Structural,
+        );
     }
 
     fn consider_member(&mut self, index: usize, scope: &Scope) {
@@ -125,12 +142,16 @@ impl Walker<'_> {
         if !matches!(self.text(index), "struct" | "class" | "union" | "enum") {
             return;
         }
-        let name_at = if matches!(self.text(index + 1), "class" | "struct") && self.is(index, "enum") {
-            index + 2
-        } else {
-            index + 1
-        };
-        if self.can_name(name_at) && !self.is(name_at + 1, "{") && !self.known_macro(self.text(name_at)) {
+        let name_at =
+            if matches!(self.text(index + 1), "class" | "struct") && self.is(index, "enum") {
+                index + 2
+            } else {
+                index + 1
+            };
+        if self.can_name(name_at)
+            && !self.is(name_at + 1, "{")
+            && !self.known_macro(self.text(name_at))
+        {
             self.refer(
                 scope.owner,
                 scope,
@@ -210,7 +231,10 @@ impl Walker<'_> {
     }
 
     fn bound_name(&self, index: usize) -> bool {
-        let stops = matches!(self.text(index + 1), "," | ")" | ";" | "=" | "[" | "{" | ":");
+        let stops = matches!(
+            self.text(index + 1),
+            "," | ")" | ";" | "=" | "[" | "{" | ":"
+        );
         if !stops || index == 0 {
             return false;
         }
@@ -225,9 +249,25 @@ impl Walker<'_> {
     fn is_noise(word: &str) -> bool {
         matches!(
             word,
-            "const" | "volatile" | "static" | "extern" | "inline" | "constexpr" | "consteval"
-                | "virtual" | "explicit" | "friend" | "mutable" | "register" | "typename"
-                | "public" | "private" | "protected" | "unsigned" | "signed" | "restrict"
+            "const"
+                | "volatile"
+                | "static"
+                | "extern"
+                | "inline"
+                | "constexpr"
+                | "consteval"
+                | "virtual"
+                | "explicit"
+                | "friend"
+                | "mutable"
+                | "register"
+                | "typename"
+                | "public"
+                | "private"
+                | "protected"
+                | "unsigned"
+                | "signed"
+                | "restrict"
         ) && !type_word(word)
     }
 }
@@ -241,7 +281,12 @@ mod tests {
     fn calls_members_and_macro_calls_follow_the_abstain_rule() {
         let src = b"#define SHOW(x) (x)\nint add(int a, int b);\nint main(void) {\n  struct Box box;\n  box.width = add(1, SHOW(2));\n  return box.width;\n}\n";
         let facts = CLexer::default().extract("r.c", src).unwrap();
-        assert_eq!(facts.completion, Completion::Complete, "{:?}", facts.diagnostics);
+        assert_eq!(
+            facts.completion,
+            Completion::Complete,
+            "{:?}",
+            facts.diagnostics
+        );
         let calls: Vec<_> = facts
             .references
             .iter()
@@ -256,6 +301,11 @@ mod tests {
             .map(|r| r.fact.name.as_str())
             .collect();
         assert_eq!(members, ["box.width", "box.width"]);
-        assert!(facts.references.iter().any(|r| r.fact.kind == EdgeKind::UsesType && r.fact.name == "Box"));
+        assert!(
+            facts
+                .references
+                .iter()
+                .any(|r| r.fact.kind == EdgeKind::UsesType && r.fact.name == "Box")
+        );
     }
 }

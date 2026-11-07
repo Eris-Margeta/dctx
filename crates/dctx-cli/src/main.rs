@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Command routing and legacy argument parsing (D3-LEGACY-REMOVAL §5 D3-04).
-//! Snapshot and TUI operations use the CLI host library and pure pack/render APIs.
+//! Explicit command routing for pack, map, plugins and host operations.
 //! Plugin and map commands retain their explicit routes and facade sessions.
 #![forbid(unsafe_code)]
 
@@ -9,13 +8,12 @@ mod mcp;
 mod pack_for;
 mod plugin;
 
-use dctx_cli::{cache, exit, help, host, languages, pack, run_headless_mode, template, tui, SnapshotConfig};
+use dctx_cli::{cache, exit, help, host, languages, pack, template, tui};
 use exit::Failure;
-use std::{env, ffi::OsString, path::{Path, PathBuf}};
+use std::{env, ffi::OsString};
 
 #[derive(Debug)]
 enum CliCommand {
-    Snapshot(SnapshotConfig),
     Help,
     Version,
 }
@@ -26,7 +24,10 @@ fn main() {
         Ok(raw) => raw,
         Err(failure) => fail(&failure),
     };
-    if raw.get(1).is_some_and(|arg| arg == "--internal-plugin-worker") {
+    if raw
+        .get(1)
+        .is_some_and(|arg| arg == "--internal-plugin-worker")
+    {
         std::process::exit(i32::from(plugin::enter_worker(&raw[2..])));
     }
     let allow_auto_clean = host::auto_clean_allowed(&raw);
@@ -36,7 +37,7 @@ fn main() {
         maybe_auto_clean(allow_auto_clean);
         std::process::exit(i32::from(plugin::enter(&args)));
     }
-    // map, pack, mcp, languages and unknown commands follow docs/CLI-EXIT-CODES.md; cache and template keep exit 1.
+    // map, pack, mcp, languages and unknown commands follow docs/CLI-EXIT-CODES.md; cache and template use exit 1.
     let result = match head {
         Some("map") => {
             maybe_auto_clean(allow_auto_clean);
@@ -44,6 +45,18 @@ fn main() {
         }
         // The MCP server answers on stdout in JSON-RPC lines only, so it never auto-cleans.
         Some("mcp") => mcp::run(&args[2..]).map_err(|failure| failure.within("mcp")),
+        Some("serve") => {
+            let words: Vec<_> = args[2..]
+                .iter()
+                .filter(|word| word.as_str() != "--mcp")
+                .cloned()
+                .collect();
+            mcp::run(&words).map_err(|failure| failure.within("serve"))
+        }
+        Some("read") => {
+            maybe_auto_clean(allow_auto_clean);
+            map::run(&args[1..])
+        }
         Some("pack") => {
             maybe_auto_clean(allow_auto_clean);
             // `--for`/`--budget` select the task-context page (map find, neighbors, read); everything else is the source page.
@@ -53,13 +66,19 @@ fn main() {
                 pack::run(&args[1..])
             }
         }
-        Some("cache") => cache::run(&args[1..]).map_err(|error| legacy(format!("cache: {error}"))),
+        Some("cache") => {
+            cache::run(&args[1..]).map_err(|error| command_error(format!("cache: {error}")))
+        }
         // Reads only the facade registry: no source, no cache, so no auto-clean either.
-        Some("languages") => languages::run(&args[2..])
-            .map_err(|error| Failure::usage(format!("languages: {error}"), "run `dctx languages --help` for the formats and an example")),
+        Some("languages") => languages::run(&args[2..]).map_err(|error| {
+            Failure::usage(
+                format!("languages: {error}"),
+                "run `dctx languages --help` for the formats and an example",
+            )
+        }),
         Some("template") => {
             maybe_auto_clean(allow_auto_clean);
-            template::run(&args[1..]).map_err(|error| legacy(format!("template: {error}")))
+            template::run(&args[1..]).map_err(|error| command_error(format!("template: {error}")))
         }
         None => {
             maybe_auto_clean(allow_auto_clean);
@@ -68,21 +87,24 @@ fn main() {
         }
         Some(word) if is_unknown_command(word) => Err(Failure::usage(
             format!("unknown command `{word}`"),
-            "run `dctx --help` for the commands; `dctx PATH` snapshots an existing directory",
+            "run `dctx --help` for commands; use `dctx pack PATH` to pack a directory",
         )),
         _ => parse_command(&args)
             .map(|command| match command {
                 CliCommand::Help => print!("{}", help::text()),
                 CliCommand::Version => {
                     // DCTX_GIT_SHA comes from build.rs: the short commit of the built tree, or `unknown`.
-                    println!("dctx {} ({})", env!("CARGO_PKG_VERSION"), env!("DCTX_GIT_SHA"));
+                    println!(
+                        "dctx {} ({})",
+                        env!("CARGO_PKG_VERSION"),
+                        env!("DCTX_GIT_SHA")
+                    );
                     if args.iter().any(|arg| arg == "--verbose") {
                         print!("{}", help::limits());
                     }
                 }
-                CliCommand::Snapshot(config) => run_headless_mode(config),
             })
-            .map_err(|error| Failure::usage(error, "run `dctx --help` for the snapshot options")),
+            .map_err(|error| Failure::usage(error, "run `dctx --help` for commands")),
     };
     if let Err(failure) = result {
         fail(&failure);
@@ -96,7 +118,10 @@ fn exit_quietly_on_broken_pipe() {
     let default = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
         let payload = info.payload();
-        let message = payload.downcast_ref::<String>().map(String::as_str).or_else(|| payload.downcast_ref::<&str>().copied());
+        let message = payload
+            .downcast_ref::<String>()
+            .map(String::as_str)
+            .or_else(|| payload.downcast_ref::<&str>().copied());
         if message.is_some_and(is_broken_stdout) {
             std::process::exit(0);
         }
@@ -106,7 +131,8 @@ fn exit_quietly_on_broken_pipe() {
 
 /// True for the std panic text of a stdout write that hit a closed pipe (Unix EPIPE, Windows ERROR_NO_DATA).
 fn is_broken_stdout(message: &str) -> bool {
-    message.starts_with("failed printing to stdout") && (message.contains("Broken pipe") || message.contains("os error 232"))
+    message.starts_with("failed printing to stdout")
+        && (message.contains("Broken pipe") || message.contains("os error 232"))
 }
 
 /// Prints `failure` (message, then hint) on stderr and exits with its code.
@@ -116,7 +142,7 @@ fn fail(failure: &Failure) -> ! {
 }
 
 /// A failure of a command outside the exit-code contract: exit 1 as before, with no hint.
-fn legacy(message: String) -> Failure {
+fn command_error(message: String) -> Failure {
     Failure::new(1, message, "")
 }
 
@@ -135,9 +161,9 @@ fn utf8_arguments(raw: impl Iterator<Item = OsString>) -> Result<Vec<String>, Fa
         .collect()
 }
 
-/// True for a first word that is neither a flag, `help`, `version` nor an existing path: the legacy `dctx PATH` cannot apply.
+/// True for a first word that is neither a flag, `help` nor `version`.
 fn is_unknown_command(word: &str) -> bool {
-    !word.starts_with('-') && !matches!(word, "help" | "version") && !Path::new(word).exists()
+    !word.starts_with('-') && !matches!(word, "help" | "version")
 }
 
 fn maybe_auto_clean(allow: bool) {
@@ -150,132 +176,69 @@ fn parse_command(args: &[String]) -> Result<CliCommand, String> {
     match args.get(1).map(String::as_str) {
         Some("-h" | "--help" | "help") => Ok(CliCommand::Help),
         Some("-v" | "--version" | "version") => Ok(CliCommand::Version),
-        _ => parse_snapshot_args(&args[1..]),
+        Some(other) => Err(format!("unknown option `{other}`")),
+        None => Err("a command is required".into()),
     }
-}
-
-fn parse_snapshot_args(args: &[String]) -> Result<CliCommand, String> {
-    let mut config = SnapshotConfig::default();
-    let mut path_set = false;
-    let mut empty = false;
-    let mut non_empty = false;
-    let mut index = 0;
-    while index < args.len() {
-        match args[index].as_str() {
-            "-c" | "--clipboard" => config.clipboard_mode = true,
-            "-d" | "--diff" => config.diff_mode = true,
-            "-t" | "--tree" => config.tree_only = true,
-            "-r" | "--reset" => config.force_reset = true,
-            "-h" | "--help" => return Ok(CliCommand::Help),
-            "-v" | "--version" => return Ok(CliCommand::Version),
-            "--binary" => config.filter_config = config.filter_config.with_include_binary(true),
-            "--empty" => {
-                empty = true;
-                config.filter_config = config.filter_config.with_only_empty(true);
-            }
-            "--non-empty" => {
-                non_empty = true;
-                config.filter_config = config.filter_config.with_only_non_empty(true);
-            }
-            "--hidden" => config.filter_config = config.filter_config.with_only_hidden(true),
-            "--debug-ignored" => {
-                config.debug_ignored = true;
-                config.filter_config = config.filter_config.with_collect_ignored(true);
-            }
-            "--debug-verbose" | "-V" => config.debug_verbose = true,
-            "--tree-stamps" => {
-                index += 1;
-                let value = args.get(index).ok_or("--tree-stamps requires on or off")?;
-                config.tree_stamps = dctx_template::TreeStamps::parse(value)?;
-            }
-            flag if flag.starts_with("--tree-stamps=") => {
-                config.tree_stamps = dctx_template::TreeStamps::parse(&flag["--tree-stamps=".len()..])?;
-            }
-            "--ext" => {
-                index += 1;
-                let value = args.get(index).ok_or("--ext requires a comma-separated list of extensions")?;
-                let extensions: Vec<_> =
-                    value.split(',').map(str::trim).filter(|part| !part.is_empty()).map(str::to_string).collect();
-                if extensions.is_empty() {
-                    return Err("--ext requires at least one extension".into());
-                }
-                config.filter_config = config.filter_config.with_extensions(extensions);
-            }
-            flag @ ("--large" | "--small") => {
-                index += 1;
-                let value = args.get(index).ok_or_else(|| format!("{flag} requires a size in megabytes"))?;
-                let size = value.parse::<f64>().map_err(|_| format!("Invalid size for {flag}: {value}"))?;
-                config.filter_config = if flag == "--large" {
-                    config.filter_config.with_min_size_mb(size)
-                } else {
-                    config.filter_config.with_max_size_mb(size)
-                };
-            }
-            value => {
-                if value.starts_with('-') {
-                    return Err(format!("Unknown flag: {value}"));
-                }
-                if path_set {
-                    return Err("Multiple target paths provided.".into());
-                }
-                config.target_path = PathBuf::from(value);
-                path_set = true;
-            }
-        }
-        index += 1;
-    }
-    if empty && non_empty {
-        return Err("Cannot use both --empty and --non-empty flags".into());
-    }
-    Ok(CliCommand::Snapshot(config))
 }
 
 #[cfg(test)]
-mod compatibility {
+mod arguments {
     #[test]
-    fn dot_alias_stays_a_snapshot() {
-        let args = vec!["dctx".to_string(), ".".to_string()];
-        assert!(matches!(super::parse_command(&args).expect("parse"), super::CliCommand::Snapshot(_)));
-    }
-
-    #[test]
-    fn plugin_and_git_are_not_snapshot_paths() {
-        assert!(super::plugin::is_early("plugin"));
-        assert!(super::plugin::is_early("git"));
-        assert!(!super::plugin::is_early("."));
-    }
-
-    #[test]
-    fn unknown_words_are_commands_and_paths_stay_snapshots() {
+    fn positional_paths_are_not_commands() {
+        assert!(super::is_unknown_command("."));
         assert!(super::is_unknown_command("frobnicate-dctx-v1-5"));
-        assert!(!super::is_unknown_command("."));
         assert!(!super::is_unknown_command("help"));
         assert!(!super::is_unknown_command("--bogus"));
+        assert!(super::plugin::is_early("plugin"));
+        assert!(super::plugin::is_early("git"));
     }
 
     #[cfg(unix)]
     #[test]
     fn a_non_utf8_argument_is_a_usage_error_not_a_panic() {
         use std::os::unix::ffi::OsStringExt;
-        let raw = vec![std::ffi::OsString::from("dctx"), "map".into(), "read".into(), std::ffi::OsString::from_vec(vec![0xff, 0xfe, b'.', b'p', b'y'])];
+        let raw = vec![
+            std::ffi::OsString::from("dctx"),
+            "map".into(),
+            "read".into(),
+            std::ffi::OsString::from_vec(vec![0xff, 0xfe, b'.', b'p', b'y']),
+        ];
         let failure = super::utf8_arguments(raw.into_iter()).expect_err("non-UTF-8");
         assert_eq!(failure.code, super::exit::USAGE);
-        assert!(failure.message.contains("argument 3 is not valid UTF-8"), "{}", failure.message);
+        assert!(
+            failure.message.contains("argument 3 is not valid UTF-8"),
+            "{}",
+            failure.message
+        );
         let program = vec![std::ffi::OsString::from_vec(vec![b'd', 0xff]), "map".into()];
-        assert_eq!(super::utf8_arguments(program.into_iter()).expect("lossy name")[1], "map");
+        assert_eq!(
+            super::utf8_arguments(program.into_iter()).expect("lossy name")[1],
+            "map"
+        );
     }
 
     #[test]
     fn only_a_closed_stdout_pipe_is_quiet() {
-        assert!(super::is_broken_stdout("failed printing to stdout: Broken pipe (os error 32)"));
-        assert!(!super::is_broken_stdout("failed printing to stdout: No space left on device (os error 28)"));
-        assert!(!super::is_broken_stdout("failed printing to stderr: Broken pipe (os error 32)"));
-        assert!(!super::is_broken_stdout("called `Option::unwrap()` on a `None` value"));
+        assert!(super::is_broken_stdout(
+            "failed printing to stdout: Broken pipe (os error 32)"
+        ));
+        assert!(!super::is_broken_stdout(
+            "failed printing to stdout: No space left on device (os error 28)"
+        ));
+        assert!(!super::is_broken_stdout(
+            "failed printing to stderr: Broken pipe (os error 32)"
+        ));
+        assert!(!super::is_broken_stdout(
+            "called `Option::unwrap()` on a `None` value"
+        ));
     }
 
     #[test]
     fn help_is_still_a_command() {
         let args = vec!["dctx".to_string(), "--help".to_string()];
-        assert!(matches!(super::parse_command(&args).expect("parse"), super::CliCommand::Help));
+        assert!(matches!(
+            super::parse_command(&args).expect("parse"),
+            super::CliCommand::Help
+        ));
     }
 }

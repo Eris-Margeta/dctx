@@ -131,11 +131,27 @@ pub struct WireError {
 
 impl WireError {
     /// A refusal with no effect and no receipts.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn refusal(code: ErrorCode, phase: Phase, reason: Name) -> Self {
-        let details =
-            ErrorDetails { reason, resource_handle: None, limit: None, output_committed: None, reap_pending: None, exit_code: None };
-        Self { code, phase, retryable: false, effect_state: EffectState::None, receipt_ids: Vec::new(), details }
+        let details = ErrorDetails {
+            reason,
+            resource_handle: None,
+            limit: None,
+            output_committed: None,
+            reap_pending: None,
+            exit_code: None,
+        };
+        Self {
+            code,
+            phase,
+            retryable: false,
+            effect_state: EffectState::None,
+            receipt_ids: Vec::new(),
+            details,
+        }
     }
 
     /// Decodes the closed error object and applies the S-REPLAY retry rule.
@@ -152,8 +168,16 @@ impl WireError {
             details: decode_details(fields.req("details")?)?,
         };
         fields.finish()?;
-        if error.retryable && matches!(error.effect_state, EffectState::Partial | EffectState::Unknown) {
-            return Err(Refusal::semantic(Predicate::SReplay, "uncertain-effect-retryable"));
+        if error.retryable
+            && matches!(
+                error.effect_state,
+                EffectState::Partial | EffectState::Unknown
+            )
+        {
+            return Err(Refusal::semantic(
+                Predicate::SReplay,
+                "uncertain-effect-retryable",
+            ));
         }
         Ok(error)
     }
@@ -163,11 +187,17 @@ impl WireError {
         let d = &self.details;
         let details = Obj::new()
             .put("reason", d.reason.encode())
-            .maybe("resource_handle", d.resource_handle.as_ref().map(Token::encode))
+            .maybe(
+                "resource_handle",
+                d.resource_handle.as_ref().map(Token::encode),
+            )
             .maybe("limit", d.limit.as_ref().map(Name::encode))
             .maybe("output_committed", d.output_committed.map(Json::Bool))
             .maybe("reap_pending", d.reap_pending.map(Json::Bool))
-            .maybe("exit_code", d.exit_code.map(|code| Json::uint(u64::from(code))))
+            .maybe(
+                "exit_code",
+                d.exit_code.map(|code| Json::uint(u64::from(code))),
+            )
             .build();
         Obj::new()
             .put("code", self.code.encode())
@@ -184,13 +214,19 @@ fn decode_details(value: &Json) -> Result<ErrorDetails, Refusal> {
     let mut fields = Fields::of(value)?;
     let details = ErrorDetails {
         reason: Name::decode(fields.req("reason")?)?,
-        resource_handle: fields.opt("resource_handle").map(Token::decode).transpose()?,
+        resource_handle: fields
+            .opt("resource_handle")
+            .map(Token::decode)
+            .transpose()?,
         limit: fields.opt("limit").map(Name::decode).transpose()?,
         output_committed: fields.opt("output_committed").map(boolean).transpose()?,
         reap_pending: fields.opt("reap_pending").map(boolean).transpose()?,
         exit_code: fields
             .opt("exit_code")
-            .map(|v| int_in(v, 0, u64::from(u32::MAX)).map(|code| u32::try_from(code).unwrap_or(u32::MAX)))
+            .map(|v| {
+                int_in(v, 0, u64::from(u32::MAX))
+                    .map(|code| u32::try_from(code).unwrap_or(u32::MAX))
+            })
             .transpose()?,
     };
     fields.finish()?;
@@ -221,8 +257,13 @@ mod tests {
         let base = r#"{"code":"EffectUnknown","phase":"broker","retryable":RETRY,"effect_state":"unknown","receipt_ids":[],"details":{"reason":"completion-unrecorded"}}"#;
         assert!(error(&base.replace("RETRY", "false")).is_ok());
         let refused = error(&base.replace("RETRY", "true")).unwrap_err();
-        assert_eq!((refused.predicate, refused.reason), (Predicate::SReplay, "uncertain-effect-retryable"));
-        let committed = base.replace("RETRY", "true").replace("\"unknown\"", "\"none\"");
+        assert_eq!(
+            (refused.predicate, refused.reason),
+            (Predicate::SReplay, "uncertain-effect-retryable")
+        );
+        let committed = base
+            .replace("RETRY", "true")
+            .replace("\"unknown\"", "\"none\"");
         assert!(error(&committed).is_ok());
     }
 
@@ -233,7 +274,11 @@ mod tests {
         assert_eq!(WireError::decode(&decoded.encode()), Ok(decoded));
         assert!(error(&text.replace("\"exit_code\":0", "\"stack\":\"x\"")).is_err());
         assert!(error(&text.replace("[\"receipt:replace\"]", "[\"a\",\"a\"]")).is_err());
-        let refusal = WireError::refusal(ErrorCode::Busy, Phase::Invoke, Name::new("busy").expect("name"));
+        let refusal = WireError::refusal(
+            ErrorCode::Busy,
+            Phase::Invoke,
+            Name::new("busy").expect("name"),
+        );
         assert_eq!(WireError::decode(&refusal.encode()), Ok(refusal));
     }
 }

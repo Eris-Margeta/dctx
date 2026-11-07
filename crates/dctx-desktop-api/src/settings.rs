@@ -35,7 +35,10 @@ const EXTENSION_MAX_COUNT: usize = 64;
 /// The core `dctx` config stays with the caller. This struct is the desktop file only,
 /// which is the JSON shape `settings-manager.ts` reads.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[allow(clippy::struct_excessive_bools, reason = "These serialized public settings are independent user preferences and filters; replacing them with state enums would change the configuration format and API.")]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "These serialized public settings are independent user preferences and filters; replacing them with state enums would change the configuration format and API."
+)]
 pub struct DesktopConfig {
     /// Last directory the user opened.
     pub last_directory: Option<String>,
@@ -90,9 +93,14 @@ impl Default for DesktopConfig {
 
 impl DesktopConfig {
     /// True when the snapshot should apply the desktop filter predicates.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn has_active_filters(&self) -> bool {
-        self.filter_extensions.as_ref().is_some_and(|ext| !ext.is_empty())
+        self.filter_extensions
+            .as_ref()
+            .is_some_and(|ext| !ext.is_empty())
             || self.include_binary
             || self.only_empty
             || self.only_non_empty
@@ -181,10 +189,12 @@ fn extension_ok(ext: &str) -> bool {
 /// # Errors
 /// Returns the named config-directory or cache-directory creation failure.
 pub fn ensure_config_dirs(config_dir: &Path, cache_dir: &Path) -> Result<(), DesktopError> {
-    fs::create_dir_all(config_dir)
-        .map_err(|error| DesktopError::CreateDesktopConfigDir { detail: error.to_string() })?;
-    fs::create_dir_all(cache_dir)
-        .map_err(|error| DesktopError::CreateDesktopCacheDir { detail: error.to_string() })?;
+    fs::create_dir_all(config_dir).map_err(|error| DesktopError::CreateDesktopConfigDir {
+        detail: error.to_string(),
+    })?;
+    fs::create_dir_all(cache_dir).map_err(|error| DesktopError::CreateDesktopCacheDir {
+        detail: error.to_string(),
+    })?;
     Ok(())
 }
 
@@ -193,7 +203,10 @@ pub fn ensure_config_dirs(config_dir: &Path, cache_dir: &Path) -> Result<(), Des
 /// Blank lines, comments, unknown keys and values that do not parse are ignored.
 /// A file carrying the `dctx-desktop-settings-v2` mark unescapes quotes, newlines and backslashes.
 /// Older files keep the original unescaped parse.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn load_desktop_config(config_dir: &Path) -> DesktopConfig {
     let mut config = DesktopConfig::default();
     let path = config_dir.join(DESKTOP_CONFIG_FILENAME);
@@ -215,11 +228,13 @@ pub fn load_desktop_config(config_dir: &Path) -> DesktopConfig {
 /// # Errors
 /// Returns config-directory creation or configuration-file write failures.
 pub fn save_desktop_config(config_dir: &Path, config: &DesktopConfig) -> Result<(), DesktopError> {
-    fs::create_dir_all(config_dir)
-        .map_err(|error| DesktopError::CreateConfigDir { detail: error.to_string() })?;
+    fs::create_dir_all(config_dir).map_err(|error| DesktopError::CreateConfigDir {
+        detail: error.to_string(),
+    })?;
     let path = config_dir.join(DESKTOP_CONFIG_FILENAME);
-    fs::write(path, render_config(config))
-        .map_err(|error| DesktopError::WriteConfig { detail: error.to_string() })
+    fs::write(path, render_config(config)).map_err(|error| DesktopError::WriteConfig {
+        detail: error.to_string(),
+    })
 }
 
 /// Saves [`DesktopConfig::default`] into `config_dir`.
@@ -244,7 +259,11 @@ fn apply_config_line(line: &str, config: &mut DesktopConfig, escaped: bool) {
         assign_extensions(raw_val, config, escaped);
         return;
     }
-    let val = if escaped { decode_scalar(raw_val) } else { legacy_scalar(raw_val) };
+    let val = if escaped {
+        decode_scalar(raw_val)
+    } else {
+        legacy_scalar(raw_val)
+    };
     match key {
         "last_directory" => config.last_directory = Some(val),
         "window_width" => assign_parsed(&val, &mut config.window_width),
@@ -267,7 +286,11 @@ fn assign_extensions(raw: &str, config: &mut DesktopConfig, escaped: bool) {
     let parts = if escaped {
         split_extensions(raw)
     } else {
-        legacy_scalar(raw).split(',').map(|part| part.trim().to_string()).filter(|part| !part.is_empty()).collect()
+        legacy_scalar(raw)
+            .split(',')
+            .map(|part| part.trim().to_string())
+            .filter(|part| !part.is_empty())
+            .collect()
     };
     if !parts.is_empty() {
         config.filter_extensions = Some(parts);
@@ -366,16 +389,36 @@ fn render_config(config: &DesktopConfig) -> String {
     if let Some(dir) = &config.last_directory {
         push_quoted(&mut content, "last_directory", dir);
     }
-    push_plain(&mut content, "window_width", &config.window_width.to_string());
-    push_plain(&mut content, "window_height", &config.window_height.to_string());
-    push_plain(&mut content, "file_count_limit", &config.file_count_limit.to_string());
+    push_plain(
+        &mut content,
+        "window_width",
+        &config.window_width.to_string(),
+    );
+    push_plain(
+        &mut content,
+        "window_height",
+        &config.window_height.to_string(),
+    );
+    push_plain(
+        &mut content,
+        "file_count_limit",
+        &config.file_count_limit.to_string(),
+    );
     push_quoted(&mut content, "theme", &config.theme);
-    push_plain(&mut content, "auto_copy_to_clipboard", bool_word(config.auto_copy_to_clipboard));
+    push_plain(
+        &mut content,
+        "auto_copy_to_clipboard",
+        bool_word(config.auto_copy_to_clipboard),
+    );
     content.push_str("\n# Filter settings\n");
     if let Some(exts) = &config.filter_extensions {
         push_extensions(&mut content, exts);
     }
-    push_plain(&mut content, "include_binary", bool_word(config.include_binary));
+    push_plain(
+        &mut content,
+        "include_binary",
+        bool_word(config.include_binary),
+    );
     push_plain(&mut content, "only_hidden", bool_word(config.only_hidden));
     if let Some(min) = config.min_size_mb {
         push_plain(&mut content, "min_size_mb", &min.to_string());
@@ -384,13 +427,21 @@ fn render_config(config: &DesktopConfig) -> String {
         push_plain(&mut content, "max_size_mb", &max.to_string());
     }
     push_plain(&mut content, "only_empty", bool_word(config.only_empty));
-    push_plain(&mut content, "only_non_empty", bool_word(config.only_non_empty));
+    push_plain(
+        &mut content,
+        "only_non_empty",
+        bool_word(config.only_non_empty),
+    );
     push_plain(&mut content, "tree_only", bool_word(config.tree_only));
     content
 }
 
 fn bool_word(value: bool) -> &'static str {
-    if value { "true" } else { "false" }
+    if value {
+        "true"
+    } else {
+        "false"
+    }
 }
 
 fn push_plain(content: &mut String, key: &str, value: &str) {

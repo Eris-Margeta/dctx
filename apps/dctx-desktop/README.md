@@ -292,7 +292,7 @@ bun run tauri:build
 
 ## Licensing
 
-dctx Desktop is **free, forever** — for individuals, teams and companies — and licensed under Apache-2.0 like the rest of this repository. See the root [LICENSE](../../LICENSE) and the announcement on [dctx.app](https://dctx.app/news/desktop-free-forever/).
+dctx Desktop is **free, forever** — for individuals, teams and companies — and licensed under Apache-2.0 like the rest of this repository. See the root [LICENSE](../../LICENSE) and the announcement on [the dctx website](https://www.dctx.internet.technology/).
 
 There is no proprietary edition. Organizations that want support or long-term maintenance can sign a maintenance agreement; see [MAINTENANCE.md](../../MAINTENANCE.md).
 
@@ -331,7 +331,7 @@ There is no proprietary edition. Organizations that want support or long-term ma
 - [ ] Auto-updater
 - [ ] License key system
 - [ ] Payment integration
-- [ ] Production release to dctx.app
+- [ ] Production release (downloads on https://www.dctx.internet.technology)
 
 ---
 
@@ -355,8 +355,8 @@ There is no proprietary edition. Organizations that want support or long-term ma
 
 - **Documentation**: See `docs/` folder
 - **Issues**: GitHub Issues (for bug reports)
-- **Email**: support@dctx.app
-- **Website**: https://dctx.app (coming soon)
+- **Email**: info@tejl.com
+- **Website**: https://www.dctx.internet.technology
 
 ---
 

@@ -34,7 +34,10 @@ fn references(facts: &ParsedFile) -> Vec<(&str, EdgeKind, &str, &str, Option<&st
 }
 
 #[test]
-#[allow(clippy::too_many_lines, reason = "Keep the complete JavaScript fixture and its exact ordered node/reference expectations together.")]
+#[allow(
+    clippy::too_many_lines,
+    reason = "Keep the complete JavaScript fixture and its exact ordered node/reference expectations together."
+)]
 fn javascript_fixture_has_exact_nodes_and_references() {
     use EdgeKind::{Calls, Imports, Reexports, Tests};
     use NodeKind::{Module, Symbol, Test};

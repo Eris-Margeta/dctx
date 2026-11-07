@@ -16,7 +16,10 @@ pub(super) struct Facts {
 }
 
 impl Facts {
-    #[allow(clippy::cast_possible_truncation, reason = "Both parser entry points cap source at 8 MiB before fact assembly, so its line count fits u32.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Both parser entry points cap source at 8 MiB before fact assembly, so its line count fits u32."
+    )]
     pub fn new(
         path: &str,
         source: &str,
@@ -122,7 +125,11 @@ pub(super) fn file_precision(
     completion: Completion,
     parser: &str,
 ) -> Result<Precision, ParseError> {
-    Ok(Precision::new(coverage, completion, EvidenceLabel::new(parser)?))
+    Ok(Precision::new(
+        coverage,
+        completion,
+        EvidenceLabel::new(parser)?,
+    ))
 }
 
 #[cfg(feature = "syntax-tree-sitter")]

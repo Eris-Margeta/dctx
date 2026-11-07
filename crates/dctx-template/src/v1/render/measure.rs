@@ -3,7 +3,7 @@
 //! Tree and file bodies are measured as run-length documents, so an oversized answer is refused without allocation.
 //! Depends on [`super::doc`]. Used by [`crate::legacy_output`] and the parity tests.
 
-use super::doc::{too_big, with_vars, Doc};
+use super::doc::{Doc, too_big, with_vars};
 use super::*;
 use crate::TemplateError;
 
@@ -20,7 +20,9 @@ impl Template {
         if !self.fit_node(root, mode, 0, &mut files, &mut tree) {
             return false;
         }
-        self.layout_upper(tree, files) <= RENDER_CEILING && files <= RENDER_CEILING && tree <= RENDER_CEILING
+        self.layout_upper(tree, files) <= RENDER_CEILING
+            && files <= RENDER_CEILING
+            && tree <= RENDER_CEILING
     }
 
     /// `(tree_raw, tree_trimmed, files_raw, layout_body)` byte lengths.
@@ -31,7 +33,11 @@ impl Template {
         root: &MarkerNode,
         mode: &FileMode<'_>,
     ) -> Result<(u64, u64, u64, u64), TemplateError> {
-        let mut built = Built { tree: Doc::default(), files: Doc::default(), counter: 1 };
+        let mut built = Built {
+            tree: Doc::default(),
+            files: Doc::default(),
+            counter: 1,
+        };
         self.measure_node(root, &mut built, 0, mode)?;
         let tree_raw = built.tree.len()?;
         let files_raw = built.files.len()?;
@@ -57,7 +63,11 @@ impl Template {
         if !node.is_dir && !node.is_ignored && mode.includes(node) {
             let content = match mode.omission(node) {
                 Some(message) => message.len() as u64,
-                None => node.content.as_ref().map_or(0, |bytes| bytes.len() as u64).saturating_mul(3),
+                None => node
+                    .content
+                    .as_ref()
+                    .map_or(0, |bytes| bytes.len() as u64)
+                    .saturating_mul(3),
             };
             let block = block_upper(
                 &self.partial_file_block,
@@ -74,25 +84,42 @@ impl Template {
                 return false;
             }
         }
-        node.children.iter().all(|child| self.fit_node(child, mode, depth + 1, files, tree))
+        node.children
+            .iter()
+            .all(|child| self.fit_node(child, mode, depth + 1, files, tree))
     }
 
     fn layout_upper(&self, tree: u64, files: u64) -> u64 {
         let layout = &self.layout;
         let mut upper = layout.len() as u64;
-        upper = upper.saturating_add((layout.matches("{{{comp.tree}}}").count() as u64).saturating_mul(tree));
-        upper = upper.saturating_add((layout.matches("{{{comp.files}}}").count() as u64).saturating_mul(files));
+        upper = upper.saturating_add(
+            (layout.matches("{{{comp.tree}}}").count() as u64).saturating_mul(tree),
+        );
+        upper = upper.saturating_add(
+            (layout.matches("{{{comp.files}}}").count() as u64).saturating_mul(files),
+        );
         if let Some(project) = self.variables.get("project") {
-            upper = upper.saturating_add((layout.matches("{{{project}}}").count() as u64).saturating_mul(project.len() as u64));
+            upper = upper.saturating_add(
+                (layout.matches("{{{project}}}").count() as u64)
+                    .saturating_mul(project.len() as u64),
+            );
         }
         for (key, value) in &self.variables {
             let pattern = format!("{{{{{key}}}}}");
-            upper = upper.saturating_add((layout.matches(&pattern).count() as u64).saturating_mul(value.len() as u64));
+            upper = upper.saturating_add(
+                (layout.matches(&pattern).count() as u64).saturating_mul(value.len() as u64),
+            );
         }
         upper
     }
 
-    fn measure_node(&self, node: &MarkerNode, built: &mut Built, depth: usize, mode: &FileMode<'_>) -> Result<(), TemplateError> {
+    fn measure_node(
+        &self,
+        node: &MarkerNode,
+        built: &mut Built,
+        depth: usize,
+        mode: &FileMode<'_>,
+    ) -> Result<(), TemplateError> {
         let current_id = if depth == 0 && node.is_dir {
             "ROOT".to_string()
         } else if node.is_dir {
@@ -118,9 +145,17 @@ impl Template {
         Ok(())
     }
 
-    fn tree_entry(&self, node: &MarkerNode, current_id: &str, depth: usize) -> Result<String, TemplateError> {
+    fn tree_entry(
+        &self,
+        node: &MarkerNode,
+        current_id: &str,
+        depth: usize,
+    ) -> Result<String, TemplateError> {
         let type_char = if node.is_dir { "[D]" } else { "[F]" };
-        let size_attr = self.variables.get("attr_size").map_or("SIZE", String::as_str);
+        let size_attr = self
+            .variables
+            .get("attr_size")
+            .map_or("SIZE", String::as_str);
         let size_part = if node.is_dir {
             String::new()
         } else {
@@ -153,12 +188,20 @@ impl Template {
         doc.materialize()
     }
 
-    fn file_block(&self, node: &MarkerNode, current_id: &str, mode: &FileMode<'_>) -> Result<Doc, TemplateError> {
+    fn file_block(
+        &self,
+        node: &MarkerNode,
+        current_id: &str,
+        mode: &FileMode<'_>,
+    ) -> Result<Doc, TemplateError> {
         let (line_count, content) = measured_body(node, mode);
         let mut block = Doc::from_str(&self.partial_file_block);
         block = block.replaced("{{{file.id}}}", &Doc::from_str(current_id))?;
         block = block.replaced("{{{file.path}}}", &Doc::from_str(&node.relative_path))?;
-        block = block.replaced("{{{file.size}}}", &Doc::from_str(&node.content_size.to_string()))?;
+        block = block.replaced(
+            "{{{file.size}}}",
+            &Doc::from_str(&node.content_size.to_string()),
+        )?;
         block = block.replaced("{{{file.lines}}}", &Doc::from_str(&line_count.to_string()))?;
         block = block.replaced("{{{file.content}}}", &Doc::from_string(content))?;
         with_vars(block, &self.variables)
@@ -184,7 +227,10 @@ fn block_upper(partial: &str, replacements: &[(&str, u64)]) -> u64 {
     upper.saturating_add(partial.len() as u64)
 }
 
-#[allow(clippy::naive_bytecount, reason = "Count newline bytes with standard iterators to preserve the renderer line-count convention without adding a byte-count dependency.")]
+#[allow(
+    clippy::naive_bytecount,
+    reason = "Count newline bytes with standard iterators to preserve the renderer line-count convention without adding a byte-count dependency."
+)]
 fn measured_body(node: &MarkerNode, mode: &FileMode<'_>) -> (usize, String) {
     if let Some(message) = mode.omission(node) {
         return (0, message);

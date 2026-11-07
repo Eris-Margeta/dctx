@@ -90,7 +90,11 @@ pub enum Sender {
 
 impl Sender {
     /// The other side of the session.
-    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn peer(self) -> Self {
         match self {
             Self::Host => Self::Plugin,
@@ -101,16 +105,25 @@ impl Sender {
 
 impl RequestId {
     /// Side that owns this ID.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn sender(&self) -> Sender {
-        if self.0.starts_with("h:") { Sender::Host } else { Sender::Plugin }
+        if self.0.starts_with("h:") {
+            Sender::Host
+        } else {
+            Sender::Plugin
+        }
     }
 }
 
-const RESERVED_ALIASES: [&str; 7] = ["plugin", "pack", "map", "cache", "template", "help", "version"];
+const RESERVED_ALIASES: [&str; 7] = [
+    "plugin", "pack", "map", "cache", "template", "help", "version",
+];
 const WINDOWS_DEVICES: [&str; 22] = [
-    "con", "prn", "aux", "nul", "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8", "com9", "lpt1",
-    "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
+    "con", "prn", "aux", "nul", "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8",
+    "com9", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
 ];
 
 fn bounded(value: &str, min: usize, max: usize) -> bool {
@@ -121,14 +134,21 @@ fn is_token(value: &str) -> bool {
     let bytes = value.as_bytes();
     bounded(value, 1, 128)
         && bytes[0].is_ascii_alphanumeric()
-        && bytes.iter().all(|b| b.is_ascii_alphanumeric() || matches!(b, b':' | b'.' | b'_' | b'-'))
+        && bytes
+            .iter()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b':' | b'.' | b'_' | b'-'))
 }
 
 fn is_request_id(value: &str) -> bool {
-    let rest = value.strip_prefix("h:").or_else(|| value.strip_prefix("p:"));
+    let rest = value
+        .strip_prefix("h:")
+        .or_else(|| value.strip_prefix("p:"));
     bounded(value, 1, 128)
         && rest.is_some_and(|rest| {
-            !rest.is_empty() && rest.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-'))
+            !rest.is_empty()
+                && rest
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-'))
         })
 }
 
@@ -136,28 +156,38 @@ fn is_id_component(part: &str) -> bool {
     let bytes = part.as_bytes();
     !bytes.is_empty()
         && (bytes[0].is_ascii_lowercase() || bytes[0].is_ascii_digit())
-        && bytes.iter().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'.' | b'_' | b'-'))
+        && bytes.iter().all(|b| {
+            b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'.' | b'_' | b'-')
+        })
         && !part.ends_with('.')
-        && !WINDOWS_DEVICES.iter().any(|device| part == *device || part.starts_with(&format!("{device}.")))
+        && !WINDOWS_DEVICES
+            .iter()
+            .any(|device| part == *device || part.starts_with(&format!("{device}.")))
 }
 
 fn is_plugin_id(value: &str) -> bool {
     bounded(value, 1, 128)
-        && value.split_once('/').is_some_and(|(publisher, name)| is_id_component(publisher) && is_id_component(name))
+        && value
+            .split_once('/')
+            .is_some_and(|(publisher, name)| is_id_component(publisher) && is_id_component(name))
 }
 
 fn is_name(value: &str) -> bool {
     let bytes = value.as_bytes();
     bounded(value, 1, 128)
         && bytes[0].is_ascii_lowercase()
-        && bytes.iter().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'.' | b'_' | b'-'))
+        && bytes.iter().all(|b| {
+            b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'.' | b'_' | b'-')
+        })
 }
 
 fn is_role(value: &str) -> bool {
     let bytes = value.as_bytes();
     bounded(value, 1, 64)
         && bytes[0].is_ascii_lowercase()
-        && bytes.iter().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || *b == b'-')
+        && bytes
+            .iter()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || *b == b'-')
 }
 
 fn is_alias(value: &str) -> bool {
@@ -165,14 +195,18 @@ fn is_alias(value: &str) -> bool {
 }
 
 fn is_numeric_identifier(part: &str) -> bool {
-    !part.is_empty() && part.bytes().all(|b| b.is_ascii_digit()) && (part == "0" || !part.starts_with('0'))
+    !part.is_empty()
+        && part.bytes().all(|b| b.is_ascii_digit())
+        && (part == "0" || !part.starts_with('0'))
 }
 
 fn is_dot_identifiers(text: &str, numeric_no_leading_zero: bool) -> bool {
     text.split('.').all(|part| {
         !part.is_empty()
             && part.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-')
-            && (!numeric_no_leading_zero || !part.bytes().all(|b| b.is_ascii_digit()) || is_numeric_identifier(part))
+            && (!numeric_no_leading_zero
+                || !part.bytes().all(|b| b.is_ascii_digit())
+                || is_numeric_identifier(part))
     })
 }
 
@@ -197,15 +231,20 @@ fn is_semver(value: &str) -> bool {
 
 fn is_digest(value: &str) -> bool {
     value.len() == 71
-        && value
-            .strip_prefix("sha256:")
-            .is_some_and(|hex| hex.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)))
+        && value.strip_prefix("sha256:").is_some_and(|hex| {
+            hex.bytes()
+                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        })
 }
 
 fn is_project_path(value: &str) -> bool {
     bounded(value, 1, 256)
-        && value.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'_' | b'.' | b'/' | b'-'))
-        && value.split('/').all(|part| !part.is_empty() && part != "." && part != "..")
+        && value
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'_' | b'.' | b'/' | b'-'))
+        && value
+            .split('/')
+            .all(|part| !part.is_empty() && part != "." && part != "..")
 }
 
 fn is_text(value: &str) -> bool {
@@ -225,7 +264,10 @@ mod tests {
         assert!(Token::new("").is_err());
         let id = RequestId::new("p:1").expect("valid");
         assert_eq!(id.sender(), Sender::Plugin);
-        assert_eq!(RequestId::new("h:hello").map(|id| id.sender()), Ok(Sender::Host));
+        assert_eq!(
+            RequestId::new("h:hello").map(|id| id.sender()),
+            Ok(Sender::Host)
+        );
         assert!(RequestId::new("x:1").is_err());
         assert!(RequestId::new("p:").is_err());
         assert!(RequestId::new("p:a:b").is_err());

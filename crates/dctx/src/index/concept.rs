@@ -23,7 +23,11 @@ fn words(value: &str) -> Vec<String> {
         }
         let prev = i.checked_sub(1).and_then(|p| chars.get(p)).copied();
         let next_lower = chars.get(i + 1).is_some_and(|c| c.is_lowercase());
-        if ch.is_uppercase() && prev.is_some_and(|p| p.is_lowercase() || p.is_numeric() || (p.is_uppercase() && next_lower)) {
+        if ch.is_uppercase()
+            && prev.is_some_and(|p| {
+                p.is_lowercase() || p.is_numeric() || (p.is_uppercase() && next_lower)
+            })
+        {
             split.push(' ');
         }
         split.extend(ch.to_lowercase());
@@ -117,27 +121,47 @@ mod tests {
     fn stop_words_and_single_terms_leave_find_alone() {
         assert_eq!(terms("where is the cache of it"), ["cache"]);
         assert_eq!(score(&terms("cache"), "x", "", "y.rs"), Some(0));
-        assert!(terms("parse_config").is_empty() && terms("HTTPServer").is_empty() && terms("src/lib").is_empty());
+        assert!(
+            terms("parse_config").is_empty()
+                && terms("HTTPServer").is_empty()
+                && terms("src/lib").is_empty()
+        );
         assert_eq!(terms("read settings file"), ["read", "settings", "file"]);
     }
 
     #[test]
     fn concept_words_match_by_stem_and_weigh_name_over_summary_over_path() {
         let query = terms("read settings file");
-        let found = score(&query, "parse_config_file", "Reads the settings file from disk.", "loader.py");
+        let found = score(
+            &query,
+            "parse_config_file",
+            "Reads the settings file from disk.",
+            "loader.py",
+        );
         assert_eq!(found, Some((3 + 2 + 2) * POINT));
         let poor = score(&query, "unrelated", "Something else.", "config/settings.py");
         assert_eq!(poor, None);
         let half = score(&terms("parse config"), "parse_config_file", "", "");
         assert_eq!(half, Some(6 * POINT));
         assert_eq!(score(&terms("parse config"), "unrelated", "", ""), None);
-        assert_eq!(score(&terms("retry backoff"), "retry-policy", "Requests are retried.", "docs/guide.md"), Some(3 * POINT));
+        assert_eq!(
+            score(
+                &terms("retry backoff"),
+                "retry-policy",
+                "Requests are retried.",
+                "docs/guide.md"
+            ),
+            Some(3 * POINT)
+        );
     }
 
     #[test]
     fn a_name_that_spells_the_whole_query_is_a_phrase_match() {
         assert!(phrase("wsgi app", "Flask::wsgi_app"));
-        assert!(phrase("check to fields composite pk", "Model::_check_to_fields_composite_pk"));
+        assert!(phrase(
+            "check to fields composite pk",
+            "Model::_check_to_fields_composite_pk"
+        ));
         assert!(phrase("baseline order", "baselineOrder"));
         assert!(phrase("prepare internal action", "prepareInternalAction"));
         assert!(!phrase("wsgi app", "Flask::wsgi_app_factory"));

@@ -12,7 +12,9 @@ mod fixture;
 
 use audit::{AuditStorage, DurableAudit};
 use dctx_plugin_host::fakes::{FakeFiles, FakeProcess};
-use dctx_plugin_host::ports::{AuditKind, AuditPort, AuditRecord, AuditUnavailable, FileFault, FileIdentity, FilePort};
+use dctx_plugin_host::ports::{
+    AuditKind, AuditPort, AuditRecord, AuditUnavailable, FileFault, FileIdentity, FilePort,
+};
 use dctx_plugin_host::{ArgDigest, Authority, Broker, HandleKind, Ledger, Reply};
 use dctx_plugin_protocol::records::broker::FileStage;
 use dctx_plugin_protocol::records::bytes::Chunk;
@@ -41,7 +43,11 @@ struct Memory(Rc<RefCell<Io>>);
 impl AuditStorage for Memory {
     fn read(&mut self, _: usize) -> Result<Vec<u8>, AuditUnavailable> {
         let io = self.0.borrow();
-        if io.read_fails { Err(AuditUnavailable) } else { Ok(io.bytes.clone()) }
+        if io.read_fails {
+            Err(AuditUnavailable)
+        } else {
+            Ok(io.bytes.clone())
+        }
     }
     fn append_sync(&mut self, frame: &[u8]) -> Result<(), AuditUnavailable> {
         let mut io = self.0.borrow_mut();
@@ -71,23 +77,55 @@ impl FilePort for ObservedFiles {
     fn identity(&mut self, p: &ProjectPath) -> Result<FileIdentity, FileFault> {
         self.inner.identity(p)
     }
-    fn read(&mut self, p: &ProjectPath, id: FileIdentity, offset: u64, len: u64) -> Result<Vec<u8>, FileFault> {
+    fn read(
+        &mut self,
+        p: &ProjectPath,
+        id: FileIdentity,
+        offset: u64,
+        len: u64,
+    ) -> Result<Vec<u8>, FileFault> {
         self.inner.read(p, id, offset, len)
     }
-    fn replace(&mut self, p: &ProjectPath, id: FileIdentity, bytes: &[u8]) -> Result<FileIdentity, FileFault> {
+    fn replace(
+        &mut self,
+        p: &ProjectPath,
+        id: FileIdentity,
+        bytes: &[u8],
+    ) -> Result<FileIdentity, FileFault> {
         (self.before)(bytes);
         self.inner.replace(p, id, bytes)
     }
 }
 
-fn prepared<A: AuditPort>(audit: A, before: impl FnMut(&[u8]) + 'static) -> (Broker<A, ObservedFiles, FakeProcess>, Request) {
-    let mut authority = Authority::new(fixture::layers(fixture::all_caps()), fixture::included(), fixture::binding("op:1"), 0);
+fn prepared<A: AuditPort>(
+    audit: A,
+    before: impl FnMut(&[u8]) + 'static,
+) -> (Broker<A, ObservedFiles, FakeProcess>, Request) {
+    let mut authority = Authority::new(
+        fixture::layers(fixture::all_caps()),
+        fixture::included(),
+        fixture::binding("op:1"),
+        0,
+    );
     authority.initialize().unwrap();
     let mut inner = FakeFiles::default();
     inner.put(&fixture::path(), SECRET);
-    let files = ObservedFiles { inner, before: Box::new(before) };
-    let mut broker = Broker::new(authority, Ledger::new(64), fixture::budget(8192, 8), 8192, (audit, files, FakeProcess::default()));
-    let handle = broker.register(HandleKind::File { path: fixture::path() }).unwrap();
+    let files = ObservedFiles {
+        inner,
+        before: Box::new(before),
+    };
+    let mut broker = Broker::new(
+        authority,
+        Ledger::new(64),
+        fixture::budget(8192, 8),
+        8192,
+        (audit, files, FakeProcess::default()),
+    );
+    let handle = broker
+        .register(HandleKind::File {
+            path: fixture::path(),
+        })
+        .unwrap();
     let precondition = broker.issue_precondition(&handle).unwrap();
     let staged = broker
         .handle(&Request::FileStage(FileStage {
@@ -99,8 +137,13 @@ fn prepared<A: AuditPort>(audit: A, before: impl FnMut(&[u8]) + 'static) -> (Bro
             final_chunk: true,
         }))
         .unwrap();
-    let Reply::Staged { upload, .. } = staged else { panic!("upload") };
-    (broker, fixture::replace_req(&handle, &precondition, &upload, "a:1"))
+    let Reply::Staged { upload, .. } = staged else {
+        panic!("upload")
+    };
+    (
+        broker,
+        fixture::replace_req(&handle, &precondition, &upload, "a:1"),
+    )
 }
 
 fn record(kind: AuditKind) -> AuditRecord {
@@ -114,7 +157,11 @@ fn record(kind: AuditKind) -> AuditRecord {
         args: Some(ArgDigest::of(SECRET).unwrap()),
         bytes: SECRET.len() as u64,
         receipt: Some(fixture::token("receipt:1")),
-        reason: if kind == AuditKind::Intent { "intent" } else { "committed" },
+        reason: if kind == AuditKind::Intent {
+            "intent"
+        } else {
+            "committed"
+        },
     }
 }
 
@@ -122,19 +169,35 @@ fn record(kind: AuditKind) -> AuditRecord {
 fn synced_intent_precedes_effect_and_completion_links_without_source_bytes() {
     let memory = Memory::default();
     let witness = memory.clone();
-    let (mut broker, request) = prepared(DurableAudit::new(memory.clone(), CAPACITY).unwrap(), move |_| {
-        let mut io = witness.0.borrow_mut();
-        assert_eq!(io.bytes, io.durable);
-        assert!(std::str::from_utf8(&io.durable).unwrap().contains("\tintent\t"));
-        io.trace.push("effect");
-    });
-    let Reply::Receipt { receipt, .. } = broker.handle(&request).unwrap() else { panic!("receipt") };
+    let (mut broker, request) = prepared(
+        DurableAudit::new(memory.clone(), CAPACITY).unwrap(),
+        move |_| {
+            let mut io = witness.0.borrow_mut();
+            assert_eq!(io.bytes, io.durable);
+            assert!(
+                std::str::from_utf8(&io.durable)
+                    .unwrap()
+                    .contains("\tintent\t")
+            );
+            io.trace.push("effect");
+        },
+    );
+    let Reply::Receipt { receipt, .. } = broker.handle(&request).unwrap() else {
+        panic!("receipt")
+    };
     let io = memory.0.borrow();
     assert_eq!(io.trace, ["append", "sync", "effect", "append", "sync"]);
     let text = std::str::from_utf8(&io.durable).unwrap();
     assert_eq!(text.matches(receipt.as_str()).count(), 2);
     assert!(!text.contains(std::str::from_utf8(SECRET).unwrap()));
-    assert_eq!(broker.audit().uncertain(), [] as [(std::string::String, std::string::String, std::string::String); 0]);
+    assert_eq!(
+        broker.audit().uncertain(),
+        [] as [(
+            std::string::String,
+            std::string::String,
+            std::string::String
+        ); 0]
+    );
 }
 
 #[test]
@@ -142,12 +205,19 @@ fn write_and_sync_failures_before_intent_refuse_effect_with_restore_control() {
     for cut in [0, 1, usize::MAX] {
         let memory = Memory::default();
         memory.0.borrow_mut().fail = Some(("\tintent\t", cut));
-        let (mut broker, request) = prepared(DurableAudit::new(memory.clone(), CAPACITY).unwrap(), |_| {});
+        let (mut broker, request) =
+            prepared(DurableAudit::new(memory.clone(), CAPACITY).unwrap(), |_| {});
         let error = broker.handle(&request).unwrap_err();
-        assert_eq!((error.code, error.effect_state), (ErrorCode::AuditUnavailable, EffectState::None));
+        assert_eq!(
+            (error.code, error.effect_state),
+            (ErrorCode::AuditUnavailable, EffectState::None)
+        );
         assert_eq!(broker.files().inner.replaces, 0);
         memory.0.borrow_mut().fail = None;
-        assert!(broker.handle(&request).is_err(), "failed writer stays closed");
+        assert!(
+            broker.handle(&request).is_err(),
+            "failed writer stays closed"
+        );
         memory.0.borrow_mut().bytes.clear(); // Simulated crash: no bytes were synced.
         *broker.audit_mut() = DurableAudit::new(memory.clone(), CAPACITY).unwrap();
         assert!(broker.handle(&request).is_ok());
@@ -160,9 +230,13 @@ fn completion_failure_and_missing_completion_recover_uncertain_without_retry() {
     for cut in [0, 1, usize::MAX] {
         let memory = Memory::default();
         memory.0.borrow_mut().fail = Some(("\tcompletion\t", cut));
-        let (mut broker, request) = prepared(DurableAudit::new(memory.clone(), CAPACITY).unwrap(), |_| {});
+        let (mut broker, request) =
+            prepared(DurableAudit::new(memory.clone(), CAPACITY).unwrap(), |_| {});
         let error = broker.handle(&request).unwrap_err();
-        assert_eq!((error.code, error.effect_state), (ErrorCode::EffectUnknown, EffectState::Unknown));
+        assert_eq!(
+            (error.code, error.effect_state),
+            (ErrorCode::EffectUnknown, EffectState::Unknown)
+        );
         assert_eq!(broker.files().inner.replaces, 1);
         assert!(broker.handle(&request).is_err());
         let mut io = memory.0.borrow_mut();
@@ -173,9 +247,19 @@ fn completion_failure_and_missing_completion_recover_uncertain_without_retry() {
         assert_eq!(reopened.uncertain()[0].2, error.receipt.unwrap().as_str());
         assert_eq!(broker.files().inner.replaces, 1);
     }
-    let (mut control, request) = prepared(DurableAudit::new(Memory::default(), CAPACITY).unwrap(), |_| {});
+    let (mut control, request) = prepared(
+        DurableAudit::new(Memory::default(), CAPACITY).unwrap(),
+        |_| {},
+    );
     assert!(control.handle(&request).is_ok());
-    assert_eq!(control.audit().uncertain(), [] as [(std::string::String, std::string::String, std::string::String); 0]);
+    assert_eq!(
+        control.audit().uncertain(),
+        [] as [(
+            std::string::String,
+            std::string::String,
+            std::string::String
+        ); 0]
+    );
 }
 
 #[test]
@@ -186,7 +270,10 @@ fn capacity_and_read_failures_refuse_with_restore_control() {
     memory.0.borrow_mut().read_fails = false;
     assert!(DurableAudit::new(memory.clone(), usize::MAX).is_err());
     let (mut broker, request) = prepared(DurableAudit::new(memory.clone(), 0).unwrap(), |_| {});
-    assert_eq!(broker.handle(&request).unwrap_err().code, ErrorCode::AuditUnavailable);
+    assert_eq!(
+        broker.handle(&request).unwrap_err().code,
+        ErrorCode::AuditUnavailable
+    );
     assert_eq!(broker.files().inner.replaces, 0);
     assert_eq!(memory.0.borrow().bytes, [] as [u8; 0]);
     *broker.audit_mut() = DurableAudit::new(memory.clone(), CAPACITY).unwrap();
@@ -198,7 +285,12 @@ fn capacity_and_read_failures_refuse_with_restore_control() {
     next.invocation = fixture::token("op:2");
     assert!(full.append(&next).is_err());
     assert_eq!(memory.0.borrow().bytes, bytes);
-    assert!(DurableAudit::new(memory, CAPACITY).unwrap().append(&next).is_ok());
+    assert!(
+        DurableAudit::new(memory, CAPACITY)
+            .unwrap()
+            .append(&next)
+            .is_ok()
+    );
 }
 
 #[test]
@@ -206,7 +298,10 @@ fn links_unknown_outcomes_and_metadata_validation_have_controls() {
     let memory = Memory::default();
     let mut audit = DurableAudit::new(memory.clone(), CAPACITY).unwrap();
     let mut completion = record(AuditKind::Completion);
-    assert!(audit.append(&completion).is_err(), "no unlinked completions");
+    assert!(
+        audit.append(&completion).is_err(),
+        "no unlinked completions"
+    );
     let mut intent = record(AuditKind::Intent);
     intent.method = "source\nbytes";
     assert!(audit.append(&intent).is_err());
@@ -223,7 +318,14 @@ fn links_unknown_outcomes_and_metadata_validation_have_controls() {
     completion.method = "reconcile";
     completion.reason = "reconciled";
     reopened.append(&completion).unwrap();
-    assert_eq!(DurableAudit::new(memory, CAPACITY).unwrap().uncertain(), [] as [(std::string::String, std::string::String, std::string::String); 0]);
+    assert_eq!(
+        DurableAudit::new(memory, CAPACITY).unwrap().uncertain(),
+        [] as [(
+            std::string::String,
+            std::string::String,
+            std::string::String
+        ); 0]
+    );
 }
 
 proptest! {
@@ -256,7 +358,8 @@ fn disk_effect_observes_intent_and_reopen_observes_completion() {
     let log = dir.path().join("effects.audit");
     let target = dir.path().join("effect");
     let (seen_log, seen_target) = (log.clone(), target.clone());
-    let durable = DurableAudit::new(audit::disk::Storage::open(dir.path()).unwrap(), CAPACITY).unwrap();
+    let durable =
+        DurableAudit::new(audit::disk::Storage::open(dir.path()).unwrap(), CAPACITY).unwrap();
     let (mut broker, request) = prepared(durable, move |bytes| {
         let text = fs::read_to_string(&seen_log).unwrap();
         assert!(text.contains("\tintent\t") && !text.contains("\tcompletion\t"));
@@ -264,20 +367,38 @@ fn disk_effect_observes_intent_and_reopen_observes_completion() {
     });
     assert!(broker.handle(&request).is_ok());
     assert_eq!(fs::read(target).unwrap(), SECRET);
-    assert_eq!(fs::metadata(&log).unwrap().permissions().mode() & 0o777, 0o600);
-    assert!(audit::open(dir.path(), CAPACITY).is_err(), "exclusive writer");
+    assert_eq!(
+        fs::metadata(&log).unwrap().permissions().mode() & 0o777,
+        0o600
+    );
+    assert!(
+        audit::open(dir.path(), CAPACITY).is_err(),
+        "exclusive writer"
+    );
     drop(broker);
-    let reopened = DurableAudit::new(audit::disk::Storage::open(dir.path()).unwrap(), CAPACITY).unwrap();
-    assert_eq!(reopened.uncertain(), [] as [(std::string::String, std::string::String, std::string::String); 0]);
+    let reopened =
+        DurableAudit::new(audit::disk::Storage::open(dir.path()).unwrap(), CAPACITY).unwrap();
+    assert_eq!(
+        reopened.uncertain(),
+        [] as [(
+            std::string::String,
+            std::string::String,
+            std::string::String
+        ); 0]
+    );
     drop(reopened);
     let host = dctx::PluginHost::platform_with_audit(dir.path(), CAPACITY).unwrap();
-    assert!(audit::open(dir.path(), CAPACITY).is_err(), "platform retains real audit");
+    assert!(
+        audit::open(dir.path(), CAPACITY).is_err(),
+        "platform retains real audit"
+    );
     drop(host);
     assert!(audit::open(dir.path(), CAPACITY).is_ok());
     let bytes = fs::read(&log).unwrap();
     assert!(!bytes.windows(SECRET.len()).any(|w| w == SECRET));
     fs::write(&log, &bytes[..bytes.len() - 1]).unwrap();
-    let mut torn = DurableAudit::new(audit::disk::Storage::open(dir.path()).unwrap(), CAPACITY).unwrap();
+    let mut torn =
+        DurableAudit::new(audit::disk::Storage::open(dir.path()).unwrap(), CAPACITY).unwrap();
     assert_eq!(torn.uncertain().len(), 1);
     assert!(torn.append(&record(AuditKind::Completion)).is_err());
 }

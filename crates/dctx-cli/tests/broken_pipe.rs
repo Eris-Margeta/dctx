@@ -7,6 +7,8 @@
 
 #![cfg(unix)]
 
+mod common;
+
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -39,16 +41,8 @@ impl Fixture {
             .current_dir(self.root.join("repo"))
             .env_clear()
             .args(args);
-        for (variable, folder) in [
-            ("HOME", "home"),
-            ("XDG_CONFIG_HOME", "config"),
-            ("XDG_CACHE_HOME", "cache"),
-            ("XDG_DATA_HOME", "data"),
-            ("DCTX_CACHE_DIR", "cache"),
-            ("TMPDIR", "tmp"),
-        ] {
-            command.env(variable, self.root.join(folder));
-        }
+        common::isolated_dirs(&mut command, &self.root);
+        command.env("DCTX_CACHE_DIR", self.root.join("cache"));
         command
             .env("DCTX_AUTO_CLEAN", "0")
             .env("NO_COLOR", "1")

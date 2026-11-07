@@ -11,8 +11,8 @@ mod extract;
 mod lexer;
 
 pub use domain::{
-    body_fingerprint, Completion, Diagnostic, DiagnosticReason, Dialect, Labeled, LexError,
-    LexedFile, Limits, Precision, RawReference,
+    Completion, Diagnostic, DiagnosticReason, Dialect, Labeled, LexError, LexedFile, Limits,
+    Precision, RawReference, body_fingerprint,
 };
 
 /// Parser identity recorded with every fact key (PARSERS-v1 provenance).
@@ -28,7 +28,10 @@ pub struct KotlinLexer {
 
 impl KotlinLexer {
     /// Builds an extractor. Limits above the ceilings are narrowed to them.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new(limits: Limits) -> Self {
         Self {
             limits: limits.narrowed(),
@@ -75,10 +78,18 @@ mod tests {
                     let facts = KotlinLexer::default()
                         .extract("Escape.kt", source.as_bytes())
                         .expect("extract escaped literal");
-                    let names: Vec<_> = facts.nodes.iter().map(|node| node.fact.name.as_str()).collect();
+                    let names: Vec<_> = facts
+                        .nodes
+                        .iter()
+                        .map(|node| node.fact.name.as_str())
+                        .collect();
                     assert_eq!(names, ["Escape.kt", "earlier", "x", "after"], "{source:?}");
                     assert_eq!(facts.completion, Completion::Complete, "{source:?}");
-                    assert!(facts.diagnostics.is_empty(), "{source:?}: {:?}", facts.diagnostics);
+                    assert!(
+                        facts.diagnostics.is_empty(),
+                        "{source:?}: {:?}",
+                        facts.diagnostics
+                    );
                 }
             }
         }

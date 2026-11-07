@@ -4,7 +4,7 @@
 //! Depends on the SQLite connection. Called on every [`super::super::SqliteStore`] open.
 //! Existing map tables are left in place. `user_version` stays 1.
 
-use crate::domain::{Result, StoreError, HARD_CAP_BYTES};
+use crate::domain::{HARD_CAP_BYTES, Result, StoreError};
 use rusqlite::Connection;
 
 pub(crate) fn ensure(connection: &mut Connection) -> Result<()> {

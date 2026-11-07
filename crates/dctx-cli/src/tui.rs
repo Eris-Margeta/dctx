@@ -1,13 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Terminal menus and snapshot actions, per D3-LEGACY-REMOVAL §5 D3-04.
-//! Uses the same compatibility host as the alias and managed cache requests for purge.
+//! Terminal menus for explicit pack, template and managed cache commands.
 //! Menu copy lives in help; terminal IO uses std without child processes.
 
-pub use crate::help::{
-    create_advanced_menu, create_cache_menu, create_filter_menu, create_main_menu, create_template_menu,
-};
-use crate::{compat, run_headless_mode, SnapshotConfig};
-use dctx_core::filter::FilterConfig;
+pub use crate::help::{create_cache_menu, create_main_menu, create_template_menu};
 use std::{
     io::{self, Write},
     path::PathBuf,
@@ -35,9 +30,16 @@ pub struct MenuItem {
 }
 impl MenuItem {
     /// Creates a menu row by copying its label and description.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new(key: char, label: &str, description: &str) -> Self {
-        Self { key, label: label.to_string(), description: description.to_string() }
+        Self {
+            key,
+            label: label.to_string(),
+            description: description.to_string(),
+        }
     }
 }
 
@@ -52,9 +54,16 @@ pub struct Menu {
 }
 impl Menu {
     /// Creates an empty menu with the supplied title.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new(title: &str) -> Self {
-        Self { title: title.to_string(), items: Vec::new(), footer: None }
+        Self {
+            title: title.to_string(),
+            items: Vec::new(),
+            footer: None,
+        }
     }
     /// Appends a selectable row and returns this menu for chaining.
     pub fn add_item(&mut self, key: char, label: &str, description: &str) -> &mut Self {
@@ -79,7 +88,13 @@ impl Menu {
             term::CYAN,
             term::RESET
         );
-        println!("{}{}  {}  {}", term::BOLD, term::CYAN, self.title, term::RESET);
+        println!(
+            "{}{}  {}  {}",
+            term::BOLD,
+            term::CYAN,
+            self.title,
+            term::RESET
+        );
         println!(
             "{}{}═══════════════════════════════════════════════════════════{}\n",
             term::BOLD,
@@ -113,33 +128,21 @@ impl Menu {
     }
 }
 
-/// Directory and last legacy snapshot revision displayed in the main menu.
+/// Directory displayed in the main menu.
 pub struct MenuContext {
     /// Directory label shown to the user.
     pub current_dir: String,
-    /// Last snapshot revision, or `None` for a fresh start.
-    pub last_version: Option<String>,
 }
 impl MenuContext {
-    /// Creates context for a directory with no previous revision.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    /// Creates context for a directory.
+    #[must_use]
     pub fn new(current_dir: String) -> Self {
-        Self { current_dir, last_version: None }
+        Self { current_dir }
     }
-    /// Sets the displayed snapshot revision.
-    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
-    pub fn with_version(mut self, version: String) -> Self {
-        self.last_version = Some(version);
-        self
-    }
-    /// Formats the directory and revision labels for display.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    /// Formats the directory label for display.
+    #[must_use]
     pub fn format(&self) -> String {
-        format!(
-            "Directory: {} | Last Snapshot: {}",
-            self.current_dir,
-            self.last_version.as_deref().unwrap_or("None (fresh start)")
-        )
+        format!("Directory: {}", self.current_dir)
     }
 }
 
@@ -178,142 +181,68 @@ fn notice(message: &str, color: &str) -> io::Result<()> {
     Ok(())
 }
 
-/// Run the interactive command loop using the alias's shared snapshot operation.
+/// Run the interactive command loop through the explicit command handlers.
 pub fn run() {
     let current = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-    let context =
-        MenuContext { current_dir: current.display().to_string(), last_version: compat::last_version(&current) };
+    let context = MenuContext::new(current.display().to_string());
     loop {
-        let key = match create_main_menu(&context).show() {
-            Ok(key) => key,
-            Err(error) => {
-                eprintln!("Error reading input: {error}");
-                std::process::exit(1);
+        let result = match create_main_menu(&context).show() {
+            Ok('1') => {
+                crate::pack::run(&["pack".into(), ".".into()]).map_err(|error| error.render())
             }
-        };
-        let (config, message) = match key {
-            '1' => (SnapshotConfig::default(), "Snapshot complete! Check .dctx/ directory."),
-            '2' => (SnapshotConfig { clipboard_mode: true, ..Default::default() }, "Snapshot copied to clipboard!"),
-            '3' => (SnapshotConfig { tree_only: true, ..Default::default() }, "Tree-only snapshot complete!"),
-            '4' => (
-                SnapshotConfig { clipboard_mode: true, diff_mode: true, ..Default::default() },
-                "Diff copied to clipboard!",
-            ),
-            '5' => {
-                advanced();
-                continue;
-            }
-            '0' | 'q' => {
-                println!("Goodbye!");
-                return;
-            }
-            _ => {
-                let _ = show_error("Invalid selection. Try again.");
-                continue;
-            }
-        };
-        run_headless_mode(config);
-        let _ = show_message(message);
-    }
-}
-
-fn advanced() {
-    loop {
-        match create_advanced_menu().show() {
-            Ok('1') => filters(),
-            Ok('2') => crate::template::run_menu(),
-            Ok('3') => compat::run_cache_menu(),
-            Ok('0') => return,
-            Ok(_) => {
-                let _ = show_error("Invalid selection. Try again.");
-            }
-            Err(error) => {
-                eprintln!("Error reading input: {error}");
-                return;
-            }
-        }
-    }
-}
-
-fn filters() {
-    let mut filter = FilterConfig::default();
-    loop {
-        let result = match create_filter_menu().show() {
-            Ok('1') => get_input("Enter extensions (comma-separated, e.g., rs,toml):").map(|input| {
-                let extensions: Vec<_> =
-                    input.split(',').map(str::trim).filter(|part| !part.is_empty()).map(str::to_string).collect();
-                if !extensions.is_empty() {
-                    let _ = show_message(&format!("Extension filter set: {}", extensions.join(", ")));
-                    filter.extensions = extensions;
-                }
-            }),
-            Ok('2') => size_filter(&mut filter),
+            Ok('2') => crate::pack::run(&["pack".into(), ".".into(), "--clipboard".into()])
+                .map_err(|error| error.render()),
             Ok('3') => {
-                get_input("Empty (E) or Non-Empty (N) files?").map(|input| match input.to_lowercase().as_str() {
-                    "e" | "empty" => {
-                        filter.only_empty = true;
-                        let _ = show_message("Empty files filter set.");
-                    }
-                    "n" | "non-empty" => {
-                        filter.only_non_empty = true;
-                        let _ = show_message("Non-empty files filter set.");
-                    }
-                    _ => {}
-                })
+                crate::template::run_menu();
+                continue;
             }
             Ok('4') => {
-                filter.only_hidden = true;
-                show_message("Hidden files only filter set.")
+                cache_menu();
+                continue;
             }
-            Ok('5') => {
-                filter.include_binary = true;
-                show_message("Binary files will be included.")
-            }
-            Ok('9') => {
-                filter = FilterConfig::default();
-                show_message("All filters cleared.")
-            }
-            Ok('0') => {
-                if filter.has_active_filters() {
-                    run_headless_mode(SnapshotConfig { filter_config: filter, ..Default::default() });
-                    let _ = show_message("Filtered snapshot generated!");
-                }
-                return;
-            }
-            Ok(_) => show_error("Invalid selection. Try again."),
+            Ok('0' | 'q' | '\0') => return,
+            Ok(_) => Err("Invalid selection. Try again.".into()),
             Err(error) => {
                 eprintln!("Error reading input: {error}");
                 return;
             }
         };
-        if let Err(error) = result {
-            let _ = show_error(&format!("Error: {error}"));
+        match result {
+            Ok(()) => {
+                let _ = show_message("Pack complete.");
+            }
+            Err(error) => {
+                let _ = show_error(&error);
+            }
         }
     }
 }
 
-#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, reason = "Match the existing public filter conversion: truncate fractional bytes, map negatives/NaN to zero, and saturate overflow at u64::MAX.")]
-fn size_filter(filter: &mut FilterConfig) -> io::Result<()> {
-    let input = get_input("Large (L) or Small (S) files?")?.to_lowercase();
-    let large = matches!(input.as_str(), "l" | "large");
-    if !large && !matches!(input.as_str(), "s" | "small") {
-        return Ok(());
-    }
-    let text = get_input(if large { "Minimum size in MB:" } else { "Maximum size in MB:" })?;
-    if let Ok(size) = text.parse::<f64>() {
-        let bytes = Some((size * 1_048_576.0) as u64);
-        if large {
-            filter.min_size_bytes = bytes;
-        } else {
-            filter.max_size_bytes = bytes;
+fn cache_menu() {
+    loop {
+        let args: &[&str] = match create_cache_menu().show() {
+            Ok('1') => &["cache", "status"],
+            Ok('2') => &["cache", "gc", "--dry-run"],
+            Ok('3') => &["cache", "gc"],
+            Ok('0' | '\0') => return,
+            Ok(_) => {
+                let _ = show_error("Invalid selection. Try again.");
+                continue;
+            }
+            Err(error) => {
+                eprintln!("Error reading input: {error}");
+                return;
+            }
+        };
+        let args: Vec<_> = args.iter().map(|arg| (*arg).to_string()).collect();
+        match crate::cache::run(&args) {
+            Ok(()) => {
+                let _ = show_message("Cache command complete.");
+            }
+            Err(error) => {
+                let _ = show_error(&error);
+            }
         }
-        show_message(&format!(
-            "{} file filter set: {}{size:.2}MB",
-            if large { "Large" } else { "Small" },
-            if large { ">" } else { "<" }
-        ))
-    } else {
-        show_error("Invalid size number.")
     }
 }
 

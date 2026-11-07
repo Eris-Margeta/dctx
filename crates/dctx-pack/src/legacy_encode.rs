@@ -6,8 +6,8 @@
 #![forbid(unsafe_code)]
 
 use crate::legacy_codec::{
-    LEGACY_HEADER_BYTES, LEGACY_MAGIC, LEGACY_MAX_DEPTH, LegacyError, LegacyLimits, LegacyNode, add, bounded,
-    check_version,
+    add, bounded, check_version, LegacyError, LegacyLimits, LegacyNode, LEGACY_HEADER_BYTES,
+    LEGACY_MAGIC, LEGACY_MAX_DEPTH,
 };
 use dctx_core::datatypes::NodeType;
 use dctx_core::version::Version;
@@ -19,7 +19,11 @@ use std::io::Write;
 ///
 /// # Errors
 /// Refuses invalid versions or tree shapes, unrepresentable sizes and exceeded encoding limits.
-pub fn encode_legacy(root: &LegacyNode, version: &Version, limits: LegacyLimits) -> Result<Vec<u8>, LegacyError> {
+pub fn encode_legacy(
+    root: &LegacyNode,
+    version: &Version,
+    limits: LegacyLimits,
+) -> Result<Vec<u8>, LegacyError> {
     let total = validate(root, version, limits)?;
     let mut bytes = Vec::with_capacity(total);
     write_document(root, version, &mut bytes)?;
@@ -48,7 +52,11 @@ fn size(node: &LegacyNode) -> Result<usize, LegacyError> {
     }
 }
 
-fn validate(root: &LegacyNode, version: &Version, limits: LegacyLimits) -> Result<usize, LegacyError> {
+fn validate(
+    root: &LegacyNode,
+    version: &Version,
+    limits: LegacyLimits,
+) -> Result<usize, LegacyError> {
     check_version(version)?;
     let mut stack = vec![(root, 0)];
     let mut nodes = 0;
@@ -58,7 +66,11 @@ fn validate(root: &LegacyNode, version: &Version, limits: LegacyLimits) -> Resul
         bounded(depth, limits.max_depth.min(LEGACY_MAX_DEPTH), "depth")?;
         nodes = add(nodes, 1)?;
         bounded(nodes, limits.max_nodes, "nodes")?;
-        bounded(node.relative_path.len(), limits.max_name_bytes.min(usize::from(u16::MAX)), "name bytes")?;
+        bounded(
+            node.relative_path.len(),
+            limits.max_name_bytes.min(usize::from(u16::MAX)),
+            "name bytes",
+        )?;
         let metadata = match node.node_type {
             NodeType::File => {
                 if !node.children.is_empty() {
@@ -72,7 +84,11 @@ fn validate(root: &LegacyNode, version: &Version, limits: LegacyLimits) -> Resul
                     return Err(LegacyError::InvalidTree);
                 }
                 u32::try_from(node.children.len()).map_err(|_| LegacyError::Overflow)?;
-                bounded(add(add(nodes, stack.len())?, node.children.len())?, limits.max_nodes, "nodes")?;
+                bounded(
+                    add(add(nodes, stack.len())?, node.children.len())?,
+                    limits.max_nodes,
+                    "nodes",
+                )?;
                 let next_depth = add(depth, 1)?;
                 stack.extend(node.children.iter().rev().map(|child| (child, next_depth)));
                 15
@@ -89,7 +105,11 @@ fn write<W: Write + ?Sized>(sink: &mut W, bytes: &[u8]) -> Result<(), LegacyErro
     sink.write_all(bytes).map_err(LegacyError::Sink)
 }
 
-fn write_document<W: Write + ?Sized>(root: &LegacyNode, version: &Version, sink: &mut W) -> Result<(), LegacyError> {
+fn write_document<W: Write + ?Sized>(
+    root: &LegacyNode,
+    version: &Version,
+    sink: &mut W,
+) -> Result<(), LegacyError> {
     write(sink, LEGACY_MAGIC)?;
     write(sink, &version.major.to_le_bytes())?;
     write(sink, &version.minor.to_le_bytes())?;
@@ -98,7 +118,11 @@ fn write_document<W: Write + ?Sized>(root: &LegacyNode, version: &Version, sink:
     write_bodies(root, sink)
 }
 
-fn write_node<W: Write + ?Sized>(node: &LegacyNode, sink: &mut W, offset: &mut u64) -> Result<(), LegacyError> {
+fn write_node<W: Write + ?Sized>(
+    node: &LegacyNode,
+    sink: &mut W,
+    offset: &mut u64,
+) -> Result<(), LegacyError> {
     let kind = u8::from(node.node_type != NodeType::File);
     write(sink, &[kind])?;
     let name_len = u16::try_from(node.relative_path.len()).map_err(|_| LegacyError::Overflow)?;

@@ -20,11 +20,9 @@ fn explicit_pack_writes_no_project_text_file() {
     assert!(text.contains("PATH=\"kept.rs\""), "{text}");
     assert!(text.contains("fn kept() {}"), "{text}");
     assert!(outcome.report_line.contains("retention=stdout"));
-    assert!(
-        outcome
-            .report_line
-            .contains(&format!("bytes={}", outcome.body.len()))
-    );
+    assert!(outcome
+        .report_line
+        .contains(&format!("bytes={}", outcome.body.len())));
     let listed: Vec<_> = std::fs::read_dir(&path).expect("list").flatten().collect();
     assert_eq!(listed.len(), 1);
     let _ = std::fs::remove_dir_all(&path);
@@ -62,11 +60,9 @@ fn output_flag_writes_only_the_requested_file() {
     assert!(!path.join(".dctx").exists());
     let saved = std::fs::read(&output).expect("saved");
     assert_eq!(saved, outcome.body);
-    assert!(
-        std::str::from_utf8(&saved)
-            .expect("utf8")
-            .contains("\"files\"")
-    );
+    assert!(std::str::from_utf8(&saved)
+        .expect("utf8")
+        .contains("\"files\""));
     assert!(outcome.report_line.contains("retention=explicit"));
     let _ = std::fs::remove_dir_all(&path);
 }

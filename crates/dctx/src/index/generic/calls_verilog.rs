@@ -7,15 +7,83 @@
 
 /// Words of the language that begin a statement, a declaration or a direction; none of them is an instantiation or a call.
 const KEYWORDS: &[&str] = &[
-    "module", "macromodule", "interface", "package", "class", "typedef", "enum", "struct", "function", "task", "input", "output",
-    "inout", "wire", "reg", "logic", "bit", "byte", "int", "integer", "longint", "shortint", "time", "real", "realtime", "signed",
-    "unsigned", "void", "string", "automatic", "static", "pure", "virtual", "parameter", "localparam", "assign", "import", "export",
-    "genvar", "generate", "initial", "always", "always_comb", "always_ff", "always_latch", "if", "else", "case", "casex", "casez",
-    "endcase", "wait", "for", "while", "repeat", "forever", "return", "begin", "end", "posedge", "negedge", "edge", "new", "this", "super",
+    "module",
+    "macromodule",
+    "interface",
+    "package",
+    "class",
+    "typedef",
+    "enum",
+    "struct",
+    "function",
+    "task",
+    "input",
+    "output",
+    "inout",
+    "wire",
+    "reg",
+    "logic",
+    "bit",
+    "byte",
+    "int",
+    "integer",
+    "longint",
+    "shortint",
+    "time",
+    "real",
+    "realtime",
+    "signed",
+    "unsigned",
+    "void",
+    "string",
+    "automatic",
+    "static",
+    "pure",
+    "virtual",
+    "parameter",
+    "localparam",
+    "assign",
+    "import",
+    "export",
+    "genvar",
+    "generate",
+    "initial",
+    "always",
+    "always_comb",
+    "always_ff",
+    "always_latch",
+    "if",
+    "else",
+    "case",
+    "casex",
+    "casez",
+    "endcase",
+    "wait",
+    "for",
+    "while",
+    "repeat",
+    "forever",
+    "return",
+    "begin",
+    "end",
+    "posedge",
+    "negedge",
+    "edge",
+    "new",
+    "this",
+    "super",
 ];
 
 /// Words that open a declaration line, whose name is a declaration and never a call.
-const DECLARATIONS: &[&str] = &["module", "macromodule", "interface", "package", "class", "function", "task"];
+const DECLARATIONS: &[&str] = &[
+    "module",
+    "macromodule",
+    "interface",
+    "package",
+    "class",
+    "function",
+    "task",
+];
 
 /// True for a byte that continues an identifier (SystemVerilog names may carry `$`).
 fn is_word(byte: u8) -> bool {
@@ -24,12 +92,16 @@ fn is_word(byte: u8) -> bool {
 
 /// True when `line` starts with a declaration opener followed by a name, so the whole line carries no calls.
 fn declares(line: &str) -> bool {
-    DECLARATIONS.iter().any(|word| line.starts_with(word) && line[word.len()..].starts_with([' ', '\t', '(', ';']))
+    DECLARATIONS
+        .iter()
+        .any(|word| line.starts_with(word) && line[word.len()..].starts_with([' ', '\t', '(', ';']))
 }
 
 /// The identifier that starts `text`, or `None`.
 fn word_at(text: &str) -> Option<&str> {
-    let end = text.find(|c: char| !(c.is_alphanumeric() || c == '_' || c == '$')).unwrap_or(text.len());
+    let end = text
+        .find(|c: char| !(c.is_alphanumeric() || c == '_' || c == '$'))
+        .unwrap_or(text.len());
     let word = &text[..end];
     (!word.is_empty() && !word.starts_with(|c: char| c.is_ascii_digit())).then_some(word)
 }
@@ -45,7 +117,7 @@ fn after_group(text: &str) -> &str {
                 if depth == 0 {
                     return &text[at + 1..];
                 }
-            },
+            }
             _ => {}
         }
     }
@@ -67,7 +139,10 @@ fn instantiation(line: &str) -> Option<&str> {
     if KEYWORDS.contains(&instance) || instance == module {
         return None;
     }
-    head[instance.len()..].trim_start().starts_with('(').then_some(module)
+    head[instance.len()..]
+        .trim_start()
+        .starts_with('(')
+        .then_some(module)
 }
 
 /// Called names in `body` (a comment- and string-masked span), in source order and without repeats.
@@ -114,9 +189,14 @@ fn line_calls<'a>(line: &'a str, own: &str, found: &mut Vec<&'a str>) {
         }
         let word = &line[start..at];
         let before = start.checked_sub(1).map(|index| bytes[index]);
-        let gap = bytes[at..].iter().position(|byte| !matches!(byte, b' ' | b'\t'));
+        let gap = bytes[at..]
+            .iter()
+            .position(|byte| !matches!(byte, b' ' | b'\t'));
         let open = gap.is_some_and(|gap| gap <= 1 && bytes.get(at + gap) == Some(&b'('));
-        let skipped = KEYWORDS.contains(&word) || word.starts_with(|c: char| c.is_ascii_digit() || c == '$') || before.is_some_and(|byte| byte == b'.' || byte == b'$') || word == own;
+        let skipped = KEYWORDS.contains(&word)
+            || word.starts_with(|c: char| c.is_ascii_digit() || c == '$')
+            || before.is_some_and(|byte| byte == b'.' || byte == b'$')
+            || word == own;
         if open && !skipped && !found.contains(&word) {
             found.push(word);
         }
@@ -131,9 +211,11 @@ mod tests {
     fn calls_and_instantiations_are_named_and_noise_is_quiet() {
         let module = "module alu\n  input p\n  add(p, q)\n  show(p)\n  alu #(.W(8)) u_alu (.a(p), .b(q), .y(r));\n  counter c0 (.clk(p));\nendmodule\n";
         assert_eq!(call_names(module, "alu"), ["add", "show", "counter"]);
-        let own_is_quiet = "module alu\n  alu(self)\n  .add(self)\n  $display(1)\n  3(add)\nendmodule\n";
+        let own_is_quiet =
+            "module alu\n  alu(self)\n  .add(self)\n  $display(1)\n  3(add)\nendmodule\n";
         assert_eq!(call_names(own_is_quiet, "alu"), Vec::<&str>::new());
-        let declaration = "module alu\n  function automatic logic add(input logic [W-1:0] x, z);\nendmodule\n";
+        let declaration =
+            "module alu\n  function automatic logic add(input logic [W-1:0] x, z);\nendmodule\n";
         assert_eq!(call_names(declaration, "alu"), Vec::<&str>::new());
         let broken = "module alu #(.W(8))\nfunction automatic logic [W-1:0] add(input\nal#(; $display(\"add(\", p);\nendmodule\n";
         assert_eq!(call_names(broken, "none"), Vec::<&str>::new());

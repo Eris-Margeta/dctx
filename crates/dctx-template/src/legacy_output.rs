@@ -10,9 +10,9 @@ use dctx_core::datatypes::NodeType;
 use dctx_core::diff::{ChangeType, DiffReport};
 use dctx_core::version::Version;
 
-use std::fmt::Write as _;
 use crate::error::TemplateError;
 use crate::{MarkerNode, Template};
+use std::fmt::Write as _;
 
 /// Legacy document layout selected by a pack caller.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -78,15 +78,26 @@ pub struct LegacyOutput {
 
 impl LegacyOutput {
     /// Explicit template and layout, omitting SVG content and hiding ignored entries.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new(template: Template, layout: LegacyLayout) -> Self {
-        Self { template, layout, omit_svg_content: true, debug_ignored: false }
+        Self {
+            template,
+            layout,
+            omit_svg_content: true,
+            debug_ignored: false,
+        }
     }
 }
 
 /// Renders a legacy snapshot, including its version signature and optional file blocks.
 /// The template already contains runtime variables; all bytes and decisions are injected.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn render_legacy_snapshot(
     template: &Template,
     root: &MarkerNode,
@@ -94,16 +105,27 @@ pub fn render_legacy_snapshot(
     tree_only: bool,
     omit_svg_content: bool,
 ) -> String {
-    let mode = FileMode::Snapshot { tree_only, omit_svg_content };
+    let mode = FileMode::Snapshot {
+        tree_only,
+        omit_svg_content,
+    };
     let (tree, files) = template.marker_components(root, &mode);
     let body = template.marker_layout(tree.trim(), files.trim());
     format!("[DCTX_LLM_CONTEXT_SNAPSHOT_{version}]\n{body}")
 }
 
 pub(crate) enum FileMode<'a> {
-    Markers { tree_only: bool },
-    Snapshot { tree_only: bool, omit_svg_content: bool },
-    Diff { changed: BTreeSet<&'a str>, omit_svg_content: bool },
+    Markers {
+        tree_only: bool,
+    },
+    Snapshot {
+        tree_only: bool,
+        omit_svg_content: bool,
+    },
+    Diff {
+        changed: BTreeSet<&'a str>,
+        omit_svg_content: bool,
+    },
 }
 
 impl FileMode<'_> {
@@ -118,20 +140,33 @@ impl FileMode<'_> {
         if let Some(label) = &node.binary_label {
             if label == "SVG file" {
                 match self {
-                    Self::Snapshot { omit_svg_content: true, .. } => {
-                        return Some("[SVG file (omit_svg_content=true), content omitted]".to_string());
+                    Self::Snapshot {
+                        omit_svg_content: true,
+                        ..
+                    } => {
+                        return Some(
+                            "[SVG file (omit_svg_content=true), content omitted]".to_string(),
+                        );
                     }
-                    Self::Diff { omit_svg_content: true, .. } => {
-                        return Some("[SVG file, content omitted (omit_svg_content=true)]".to_string());
+                    Self::Diff {
+                        omit_svg_content: true,
+                        ..
+                    } => {
+                        return Some(
+                            "[SVG file, content omitted (omit_svg_content=true)]".to_string(),
+                        );
                     }
                     Self::Snapshot { .. } | Self::Diff { .. } => {}
-                    Self::Markers { .. } => return Some(format!("[Binary file: {label}, content omitted]")),
+                    Self::Markers { .. } => {
+                        return Some(format!("[Binary file: {label}, content omitted]"));
+                    }
                 }
             } else {
                 return Some(format!("[Binary file: {label}, content omitted]"));
             }
         }
-        node.omit_content.then(|| "[Content omitted by pattern rules]".to_string())
+        node.omit_content
+            .then(|| "[Content omitted by pattern rules]".to_string())
     }
 }
 
@@ -151,9 +186,15 @@ impl Template {
         omit_svg_content: bool,
         limit: u64,
     ) -> Result<String, TemplateError> {
-        let mode = FileMode::Snapshot { tree_only, omit_svg_content };
+        let mode = FileMode::Snapshot {
+            tree_only,
+            omit_svg_content,
+        };
         if self.legacy_expansion_fits(root, &mode) {
-            return fit_page(render_legacy_snapshot(self, root, version, tree_only, omit_svg_content), limit);
+            return fit_page(
+                render_legacy_snapshot(self, root, version, tree_only, omit_svg_content),
+                limit,
+            );
         }
         let (tree_raw, _tree_trimmed, files_raw, layout_body) = self.measure_legacy(root, &mode)?;
         let header = format!("[DCTX_LLM_CONTEXT_SNAPSHOT_{version}]\n");
@@ -163,9 +204,14 @@ impl Template {
         }
         let intermediate = tree_raw.max(files_raw);
         if intermediate > limit {
-            return Err(TemplateError::BudgetTooSmall { minimum_bytes: intermediate });
+            return Err(TemplateError::BudgetTooSmall {
+                minimum_bytes: intermediate,
+            });
         }
-        fit_page(render_legacy_snapshot(self, root, version, tree_only, omit_svg_content), limit)
+        fit_page(
+            render_legacy_snapshot(self, root, version, tree_only, omit_svg_content),
+            limit,
+        )
     }
 
     /// Renders a legacy diff when the page and its changed file blocks fit in `limit`.
@@ -190,9 +236,22 @@ impl Template {
             .filter(|entry| entry.change_type != ChangeType::Removed)
             .map(|entry| entry.relative_path.as_str())
             .collect();
-        let mode = FileMode::Diff { changed, omit_svg_content };
+        let mode = FileMode::Diff {
+            changed,
+            omit_svg_content,
+        };
         if self.legacy_expansion_fits(root, &mode) {
-            return fit_page(crate::render_legacy_diff(self, root, diff, old_version, new_version, omit_svg_content), limit);
+            return fit_page(
+                crate::render_legacy_diff(
+                    self,
+                    root,
+                    diff,
+                    old_version,
+                    new_version,
+                    omit_svg_content,
+                ),
+                limit,
+            );
         }
         let (tree_raw, tree_trimmed, files_raw, _layout_body) = self.measure_legacy(root, &mode)?;
         let len = diff_document_len(diff, old_version, new_version, tree_trimmed, files_raw)?;
@@ -201,9 +260,14 @@ impl Template {
         }
         let intermediate = tree_raw.max(files_raw);
         if intermediate > limit {
-            return Err(TemplateError::BudgetTooSmall { minimum_bytes: intermediate });
+            return Err(TemplateError::BudgetTooSmall {
+                minimum_bytes: intermediate,
+            });
         }
-        fit_page(crate::render_legacy_diff(self, root, diff, old_version, new_version, omit_svg_content), limit)
+        fit_page(
+            crate::render_legacy_diff(self, root, diff, old_version, new_version, omit_svg_content),
+            limit,
+        )
     }
 }
 
@@ -217,7 +281,11 @@ fn fit_page(text: String, limit: u64) -> Result<String, TemplateError> {
 }
 
 fn add_len(total: u64, extra: u64) -> Result<u64, TemplateError> {
-    total.checked_add(extra).ok_or(TemplateError::BudgetTooSmall { minimum_bytes: u64::MAX })
+    total
+        .checked_add(extra)
+        .ok_or(TemplateError::BudgetTooSmall {
+            minimum_bytes: u64::MAX,
+        })
 }
 
 fn diff_document_len(
@@ -236,11 +304,18 @@ fn diff_document_len(
             ChangeType::Removed => "REMOVED",
             ChangeType::Modified => "MODIFIED",
         };
-        let suffix = if entry.node_type == NodeType::Directory { "/" } else { "" };
+        let suffix = if entry.node_type == NodeType::Directory {
+            "/"
+        } else {
+            ""
+        };
         let _ = writeln!(prefix, "[{change}] {}{suffix}", entry.relative_path);
     }
     prefix.push_str("</CHANGES_SUMMARY>\n\n<UPDATED_DIRECTORY_TREE>\n");
-    let glued = add_len(u64::try_from(prefix.len()).unwrap_or(u64::MAX), tree_trimmed)?;
+    let glued = add_len(
+        u64::try_from(prefix.len()).unwrap_or(u64::MAX),
+        tree_trimmed,
+    )?;
     let tail = "</UPDATED_DIRECTORY_TREE>\n\n".len() as u64;
     add_len(add_len(glued, tail)?, files_raw)
 }

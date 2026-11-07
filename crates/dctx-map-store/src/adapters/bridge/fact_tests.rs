@@ -4,14 +4,22 @@
 //! Uses the public store API. The five-verb rows are covered beside this bridge.
 
 use crate::{
-    accounted_bytes, ExtractionContract, FactKey, Retain, SqliteStore, StoreError, HARD_CAP_BYTES,
-    UNREACHABLE_GRACE_MS,
+    ExtractionContract, FactKey, HARD_CAP_BYTES, Retain, SqliteStore, StoreError,
+    UNREACHABLE_GRACE_MS, accounted_bytes,
 };
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 fn contract(language: u16, revision: &str) -> ExtractionContract {
-    ExtractionContract::new(language, "rust-2024", "dctx-map-parse", revision, "plan-1", 1).unwrap()
+    ExtractionContract::new(
+        language,
+        "rust-2024",
+        "dctx-map-parse",
+        revision,
+        "plan-1",
+        1,
+    )
+    .unwrap()
 }
 
 struct TempDb {
@@ -54,12 +62,22 @@ fn three_roots_parse_once_and_gc_reopen_reparses() {
     let mut store = SqliteStore::open(tmp.db()).unwrap();
     for root in ["root-a", "root-b", "root-c"] {
         let outcome = store.retain_fact("team", root, &key, payload).unwrap();
-        let expected = if root == "root-a" { Retain::Parsed } else { Retain::Reused };
+        let expected = if root == "root-a" {
+            Retain::Parsed
+        } else {
+            Retain::Reused
+        };
         assert_eq!(outcome, expected, "{root}");
     }
     assert_eq!(store.parse_count().unwrap(), 1);
-    assert_eq!(store.cached_bytes().unwrap(), accounted_bytes(payload.len() as u64).unwrap());
-    assert_eq!(store.retained_fact("team", &key).unwrap().as_deref(), Some(payload.as_slice()));
+    assert_eq!(
+        store.cached_bytes().unwrap(),
+        accounted_bytes(payload.len() as u64).unwrap()
+    );
+    assert_eq!(
+        store.retained_fact("team", &key).unwrap().as_deref(),
+        Some(payload.as_slice())
+    );
     store.release_root("team", "root-a").unwrap();
     assert!(store.retained_fact("team", &key).unwrap().is_some());
     assert_eq!(store.parse_count().unwrap(), 1);
@@ -82,21 +100,43 @@ fn three_roots_parse_once_and_gc_reopen_reparses() {
     let mut store = SqliteStore::open(tmp.db()).unwrap();
     store.set_clock(UNREACHABLE_GRACE_MS);
     assert!(store.retained_fact("team", &key).unwrap().is_none());
-    assert_eq!(store.retain_fact("team", "root-a", &key, payload).unwrap(), Retain::Parsed);
+    assert_eq!(
+        store.retain_fact("team", "root-a", &key, payload).unwrap(),
+        Retain::Parsed
+    );
     assert_eq!(store.parse_count().unwrap(), 2);
     let revised = FactKey::from_bytes(b"fn shared() {}", contract(1, "rev-2")).unwrap();
-    assert_eq!(store.retain_fact("team", "root-a", &revised, payload).unwrap(), Retain::Parsed);
+    assert_eq!(
+        store
+            .retain_fact("team", "root-a", &revised, payload)
+            .unwrap(),
+        Retain::Parsed
+    );
     let markdown = FactKey::from_bytes(b"fn shared() {}", contract(4, "rev-1")).unwrap();
-    assert_eq!(store.retain_fact("team", "root-a", &markdown, payload).unwrap(), Retain::Parsed);
-    assert_eq!(store.retain_fact("other", "root-a", &key, payload).unwrap(), Retain::Parsed);
-    assert_eq!(store.retain_fact("team", "root-b", &key, payload).unwrap(), Retain::Reused);
+    assert_eq!(
+        store
+            .retain_fact("team", "root-a", &markdown, payload)
+            .unwrap(),
+        Retain::Parsed
+    );
+    assert_eq!(
+        store.retain_fact("other", "root-a", &key, payload).unwrap(),
+        Retain::Parsed
+    );
+    assert_eq!(
+        store.retain_fact("team", "root-b", &key, payload).unwrap(),
+        Retain::Reused
+    );
     assert_eq!(store.parse_count().unwrap(), 5);
     assert!(matches!(
         store.retain_fact("team", "root-c", &key, b"different"),
         Err(StoreError::FactConflict)
     ));
     assert!(store.retain_fact("team", ".git", &key, payload).is_err());
-    assert_eq!(store.retain_fact("team", "root-c", &key, payload).unwrap(), Retain::Reused);
+    assert_eq!(
+        store.retain_fact("team", "root-c", &key, payload).unwrap(),
+        Retain::Reused
+    );
     assert_eq!(store.parse_count().unwrap(), 5);
     assert!(store.retained_fact("team", &revised).unwrap().is_some());
 }
@@ -125,11 +165,17 @@ fn cap_pressure_drops_unreferenced_facts_and_refuses_growth() {
     assert_eq!(accounted_bytes(144).unwrap(), 400);
     assert!(matches!(
         store.retain_fact("team", "root-c", &third, &too_big),
-        Err(StoreError::CacheLimit { requested: 400, available: 312 })
+        Err(StoreError::CacheLimit {
+            requested: 400,
+            available: 312
+        })
     ));
     assert_eq!(store.parse_count().unwrap(), 2);
     let fits = vec![9u8; 56];
-    assert_eq!(store.retain_fact("team", "root-c", &third, &fits).unwrap(), Retain::Parsed);
+    assert_eq!(
+        store.retain_fact("team", "root-c", &third, &fits).unwrap(),
+        Retain::Parsed
+    );
     assert_eq!(store.cached_bytes().unwrap(), 600);
     assert_eq!(store.parse_count().unwrap(), 3);
     assert!(store.retained_fact("team", &first).unwrap().is_some());
@@ -141,6 +187,9 @@ fn empty_namespace_is_refused_and_a_real_one_is_kept() {
     let key = FactKey::from_bytes(b"a", contract(1, "rev-1")).unwrap();
     assert!(store.retain_fact("", "root", &key, b"x").is_err());
     assert_eq!(store.parse_count().unwrap(), 0);
-    assert_eq!(store.retain_fact("team", "root", &key, b"x").unwrap(), Retain::Parsed);
+    assert_eq!(
+        store.retain_fact("team", "root", &key, b"x").unwrap(),
+        Retain::Parsed
+    );
     assert_eq!(store.parse_count().unwrap(), 1);
 }

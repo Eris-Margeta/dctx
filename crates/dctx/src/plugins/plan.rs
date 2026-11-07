@@ -4,14 +4,16 @@
 //! Depends on `dctx-template` and `dctx-plugin-host`. [`super::boundary`] executes the result.
 //! Invalid capability rows are dropped, which can only narrow the grant.
 
-use dctx_plugin_host::{Authority, Binding, Decision, GrantLayers, HookEntry, HostRefusal, Origin, Selection};
+use dctx_plugin_host::{
+    Authority, Binding, Decision, GrantLayers, HookEntry, HostRefusal, Origin, Selection,
+};
 use dctx_plugin_protocol::records::capability::{Capability as HostCap, OutputOperation};
 use dctx_plugin_protocol::records::scalars::{Digest, PluginId, ProjectPath, Role, Token};
 use dctx_plugin_protocol::{ErrorCode, Phase};
 use dctx_template::{Capability, PluginBinding, PluginOrigin, PluginPlan, Resolution};
 
-use super::{Boundary, PluginHost};
 use super::ports::bad_token;
+use super::{Boundary, PluginHost};
 
 /// Enabled plugins on `boundary`, in the plan's order.
 pub(crate) fn participants(plan: &PluginPlan, boundary: Boundary) -> Vec<&PluginBinding> {
@@ -20,7 +22,12 @@ pub(crate) fn participants(plan: &PluginPlan, boundary: Boundary) -> Vec<&Plugin
         .iter()
         .filter_map(|id| plan.plugins.iter().find(|plugin| &plugin.id == id))
         .filter(|plugin| plugin.state == dctx_template::PluginState::Enabled)
-        .filter(|plugin| plugin.hooks.iter().any(|decl| decl.name == hook && decl.version == 1))
+        .filter(|plugin| {
+            plugin
+                .hooks
+                .iter()
+                .any(|decl| decl.name == hook && decl.version == 1)
+        })
         .collect()
 }
 
@@ -28,7 +35,10 @@ pub(crate) fn entries(plugins: &[&PluginBinding]) -> Result<Vec<HookEntry>, Host
     plugins
         .iter()
         .map(|plugin| {
-            Ok(HookEntry { plugin: plugin_id(&plugin.id)?, required: plugin.required })
+            Ok(HookEntry {
+                plugin: plugin_id(&plugin.id)?,
+                required: plugin.required,
+            })
         })
         .collect()
 }
@@ -42,15 +52,28 @@ pub(crate) fn edges(plugins: &[&PluginBinding]) -> Result<Vec<(PluginId, PluginI
 }
 
 pub(crate) type PolicySnapshot = (Binding, GrantLayers, Selection);
-pub(crate) type AuthoritySource = dyn Fn(&str, &Token, u64) -> Result<PolicySnapshot, HostRefusal> + Send + Sync;
+pub(crate) type AuthoritySource =
+    dyn Fn(&str, &Token, u64) -> Result<PolicySnapshot, HostRefusal> + Send + Sync;
 
 pub(crate) fn authority(
-    host: &PluginHost, plugin: &PluginBinding, invocation: &Token, included: bool, epoch: u64,
+    host: &PluginHost,
+    plugin: &PluginBinding,
+    invocation: &Token,
+    included: bool,
+    epoch: u64,
 ) -> Result<Authority, HostRefusal> {
     let (binding, mut layers, selected) = (host.authority)(&plugin.id, invocation, epoch)?;
-    let digest = plugin.digest.ok_or(HostRefusal::new(ErrorCode::IntegrityFailure, Phase::Verify, "artifact-digest"))?;
+    let digest = plugin.digest.ok_or(HostRefusal::new(
+        ErrorCode::IntegrityFailure,
+        Phase::Verify,
+        "artifact-digest",
+    ))?;
     if binding.artifact != digest_text(digest)? {
-        return Err(HostRefusal::new(ErrorCode::IntegrityFailure, Phase::Verify, "artifact-mismatch"));
+        return Err(HostRefusal::new(
+            ErrorCode::IntegrityFailure,
+            Phase::Verify,
+            "artifact-mismatch",
+        ));
     }
     if binding.plugin != plugin_id(&plugin.id)? || &binding.invocation != invocation {
         return Err(HostRefusal::denied("binding-mismatch"));
@@ -58,7 +81,11 @@ pub(crate) fn authority(
     if !host.confined() {
         layers.adapter.clear();
     }
-    let selected = if included { selected } else { Selection::default() };
+    let selected = if included {
+        selected
+    } else {
+        Selection::default()
+    };
     let policy_epoch = binding.generation;
     let mut authority = Authority::new(layers, selected, binding, policy_epoch);
     authority.configure(&wire_caps(plugin));
@@ -67,7 +94,10 @@ pub(crate) fn authority(
 }
 
 pub(crate) fn fixture_authority(
-    plugin: &str, invocation: &Token, epoch: u64, confined: bool,
+    plugin: &str,
+    invocation: &Token,
+    epoch: u64,
+    confined: bool,
 ) -> Result<PolicySnapshot, HostRefusal> {
     let fixture = dctx_template::bundled_git_plugin();
     if plugin != fixture.id {
@@ -75,15 +105,24 @@ pub(crate) fn fixture_authority(
     }
     let digest = fixture.digest.ok_or(bad_token())?;
     let binding = Binding {
-        plugin: plugin_id(plugin)?, artifact: digest_text(digest)?, invocation: invocation.clone(),
+        plugin: plugin_id(plugin)?,
+        artifact: digest_text(digest)?,
+        invocation: invocation.clone(),
         root: Token::new("fixture:root").map_err(|_| bad_token())?,
         session: Token::new("fixture:session").map_err(|_| bad_token())?,
-        namespace: Token::new("fixture:git").map_err(|_| bad_token())?, generation: epoch,
+        namespace: Token::new("fixture:git").map_err(|_| bad_token())?,
+        generation: epoch,
     };
     let caps: Vec<_> = fixture.records.iter().filter_map(wire_cap).collect();
     let layers = if confined {
-        GrantLayers { manifest: caps.clone(), consent: caps.clone(), organization: caps.clone(),
-            host: caps.clone(), adapter: caps, denies: Vec::new() }
+        GrantLayers {
+            manifest: caps.clone(),
+            consent: caps.clone(),
+            organization: caps.clone(),
+            host: caps.clone(),
+            adapter: caps,
+            denies: Vec::new(),
+        }
     } else {
         GrantLayers::default()
     };
@@ -101,13 +140,19 @@ pub(crate) fn origin_of(origin: Option<PluginOrigin>) -> Origin {
 pub(crate) fn launch_kind(origin: Origin) -> dctx_plugin_platform::LaunchKind {
     match origin {
         Origin::BundledGit => dctx_plugin_platform::LaunchKind::BundledGit,
-        Origin::ThirdParty | Origin::OfficialOverride => dctx_plugin_platform::LaunchKind::ThirdParty,
+        Origin::ThirdParty | Origin::OfficialOverride => {
+            dctx_plugin_platform::LaunchKind::ThirdParty
+        }
     }
 }
 
 pub(crate) fn selection(included: bool) -> Result<Selection, HostRefusal> {
     let path = ProjectPath::new(".gitignore").map_err(|_| bad_token())?;
-    let decision = if included { Decision::Include } else { Decision::Exclude };
+    let decision = if included {
+        Decision::Include
+    } else {
+        Decision::Exclude
+    };
     Ok(Selection::new([(path, decision)]))
 }
 
@@ -121,24 +166,45 @@ fn wire_caps(plugin: &PluginBinding) -> Vec<HostCap> {
 
 fn wire_cap(cap: &Capability) -> Option<HostCap> {
     match cap {
-        Capability::FileRead { path, max_bytes } => {
-            Some(HostCap::FileRead { path: ProjectPath::new(path).ok()?, max_bytes: *max_bytes })
-        }
-        Capability::FileWrite { path, create, max_growth_bytes, max_bytes } => Some(HostCap::FileWrite {
+        Capability::FileRead { path, max_bytes } => Some(HostCap::FileRead {
+            path: ProjectPath::new(path).ok()?,
+            max_bytes: *max_bytes,
+        }),
+        Capability::FileWrite {
+            path,
+            create,
+            max_growth_bytes,
+            max_bytes,
+        } => Some(HostCap::FileWrite {
             path: ProjectPath::new(path).ok()?,
             create: *create,
             max_growth_bytes: *max_growth_bytes,
             max_bytes: *max_bytes,
         }),
-        Capability::Program { operation, resources, max_output_bytes } => {
-            if operation != "git.add-ignore" || !resources.iter().any(|item| item == "git-admin:stage-ignore") {
+        Capability::Program {
+            operation,
+            resources,
+            max_output_bytes,
+        } => {
+            if operation != "git.add-ignore"
+                || !resources
+                    .iter()
+                    .any(|item| item == "git-admin:stage-ignore")
+            {
                 return None;
             }
             let max_output_bytes = (*max_output_bytes).clamp(1, 65_536);
             Some(HostCap::GitAddIgnore { max_output_bytes })
         }
-        Capability::OutputsRead { roles, operations, max_bytes } => {
-            let roles = roles.iter().filter_map(|role| Role::new(role).ok()).collect::<Vec<_>>();
+        Capability::OutputsRead {
+            roles,
+            operations,
+            max_bytes,
+        } => {
+            let roles = roles
+                .iter()
+                .filter_map(|role| Role::new(role).ok())
+                .collect::<Vec<_>>();
             let operations = operations
                 .iter()
                 .filter_map(|op| match op.as_str() {
@@ -150,9 +216,19 @@ fn wire_cap(cap: &Capability) -> Option<HostCap> {
             if roles.is_empty() || operations.is_empty() {
                 return None;
             }
-            Some(HostCap::OutputsRead { roles, operations, max_bytes: *max_bytes })
+            Some(HostCap::OutputsRead {
+                roles,
+                operations,
+                max_bytes: *max_bytes,
+            })
         }
-        Capability::State { read, write, reclaim, max_bytes, source_content } => Some(HostCap::State {
+        Capability::State {
+            read,
+            write,
+            reclaim,
+            max_bytes,
+            source_content,
+        } => Some(HostCap::State {
             read: *read,
             write: *write,
             reclaim: *reclaim,
@@ -163,7 +239,8 @@ fn wire_cap(cap: &Capability) -> Option<HostCap> {
 }
 
 fn plugin_id(text: &str) -> Result<PluginId, HostRefusal> {
-    PluginId::new(text).map_err(|_| HostRefusal::new(ErrorCode::InvalidConfig, Phase::Resolve, "plugin-id"))
+    PluginId::new(text)
+        .map_err(|_| HostRefusal::new(ErrorCode::InvalidConfig, Phase::Resolve, "plugin-id"))
 }
 
 fn digest_text(bytes: [u8; 32]) -> Result<Digest, HostRefusal> {
@@ -173,18 +250,27 @@ fn digest_text(bytes: [u8; 32]) -> Result<Digest, HostRefusal> {
         text.push(HEX[(byte >> 4) as usize] as char);
         text.push(HEX[(byte & 0x0f) as usize] as char);
     }
-    Digest::new(&text).map_err(|_| HostRefusal::new(ErrorCode::IntegrityFailure, Phase::Verify, "artifact-digest"))
+    Digest::new(&text).map_err(|_| {
+        HostRefusal::new(
+            ErrorCode::IntegrityFailure,
+            Phase::Verify,
+            "artifact-digest",
+        )
+    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dctx_template::{compile, bundled_git_plugin, HostCeiling, KnownPlugin};
+    use dctx_template::{HostCeiling, KnownPlugin, bundled_git_plugin, compile};
 
     fn plan(extra: &str) -> PluginPlan {
         let mut host = HostCeiling::base();
         let mut plugin = bundled_git_plugin();
-        plugin.hooks = vec!["before-pack-output-written".to_string(), "cache-gc".to_string()];
+        plugin.hooks = vec![
+            "before-pack-output-written".to_string(),
+            "cache-gc".to_string(),
+        ];
         host.plugins.push(plugin);
         let mut other = KnownPlugin::named("ex/other", "1.0.0");
         other.hooks.push("before-pack-output-written".to_string());
@@ -216,16 +302,25 @@ budget = \"b\"
 version = \"1.0.0\"
 hooks = [\"before-pack-output-written\"]
 [PLUGIN:dctx/git]
-version = \"1.1.0\"
+version = \"1.2.0\"
 digest = \"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\"
 hooks = [\"before-pack-output-written\", \"cache-gc\"]
 ",
         );
-        let before: Vec<&str> = participants(&compiled, Boundary::BeforePack).iter().map(|plugin| plugin.id.as_str()).collect();
+        let before: Vec<&str> = participants(&compiled, Boundary::BeforePack)
+            .iter()
+            .map(|plugin| plugin.id.as_str())
+            .collect();
         assert_eq!(before, ["dctx/git", "ex/other"]);
-        let gc: Vec<&str> = participants(&compiled, Boundary::CacheGc).iter().map(|plugin| plugin.id.as_str()).collect();
+        let gc: Vec<&str> = participants(&compiled, Boundary::CacheGc)
+            .iter()
+            .map(|plugin| plugin.id.as_str())
+            .collect();
         assert_eq!(gc, ["dctx/git"]);
-        assert_eq!(participants(&compiled, Boundary::AfterIndex), [] as [&dctx_template::PluginBinding; 0]);
+        assert_eq!(
+            participants(&compiled, Boundary::AfterIndex),
+            [] as [&dctx_template::PluginBinding; 0]
+        );
     }
 
     #[test]

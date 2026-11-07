@@ -4,16 +4,22 @@
 //! Every node is owned by the file module and every span lies inside the file.
 #![forbid(unsafe_code)]
 
-use std::fmt::Write as _;
 use dctx_lex_c::{
-    Completion, DiagnosticReason, Dialect, LexError, LexedFile, Limits, Precision, CLexer, PARSER_ID,
-    PARSER_REVISION,
+    CLexer, Completion, DiagnosticReason, Dialect, LexError, LexedFile, Limits, PARSER_ID,
+    PARSER_REVISION, Precision,
 };
 use dctx_map_model::{EdgeKind, NodeKind, SummarySource, SymbolKind};
 use std::collections::BTreeSet;
+use std::fmt::Write as _;
 
-const BASIC: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/basic.c"));
-const HEADER: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/basic.hpp"));
+const BASIC: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/fixtures/basic.c"
+));
+const HEADER: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/fixtures/basic.hpp"
+));
 const INCOMPLETE: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/tests/fixtures/incomplete.c"
@@ -26,7 +32,11 @@ fn extract(path: &str, source: &str) -> LexedFile {
 }
 
 fn names(facts: &LexedFile) -> Vec<&str> {
-    facts.nodes.iter().map(|node| node.fact.name.as_str()).collect()
+    facts
+        .nodes
+        .iter()
+        .map(|node| node.fact.name.as_str())
+        .collect()
 }
 
 fn node<'a>(facts: &'a LexedFile, name: &str) -> &'a dctx_map_model::Node {
@@ -47,7 +57,13 @@ fn named<'a>(facts: &'a LexedFile, name: &str) -> Vec<&'a dctx_map_model::Node> 
         .collect()
 }
 
-fn assert_symbol(facts: &LexedFile, name: &str, symbol: Option<SymbolKind>, public: bool, doc: &str) {
+fn assert_symbol(
+    facts: &LexedFile,
+    name: &str,
+    symbol: Option<SymbolKind>,
+    public: bool,
+    doc: &str,
+) {
     let found = node(facts, name);
     assert_eq!(found.kind, NodeKind::Symbol, "{name}");
     assert_eq!(found.symbol_kind, symbol, "{name}");
@@ -77,7 +93,9 @@ fn refs(facts: &LexedFile, kind: EdgeKind) -> Vec<(&str, Precision)> {
 }
 
 fn file_lines(source: &str) -> u32 {
-    u32::try_from(source.bytes().filter(|byte| *byte == b'\n').count()).expect("bounded test coordinate") + 1
+    u32::try_from(source.bytes().filter(|byte| *byte == b'\n').count())
+        .expect("bounded test coordinate")
+        + 1
 }
 
 fn check_invariants(path: &str, source: &str, facts: &LexedFile) {
@@ -95,18 +113,37 @@ fn check_invariants(path: &str, source: &str, facts: &LexedFile) {
     let mut ids = BTreeSet::new();
     for node in &facts.nodes {
         assert_eq!(node.fact.path, path, "{}", node.fact.name);
-        assert!(node.fact.id.as_str().starts_with(node.fact.kind.letter()), "{}", node.fact.id);
-        let identity = node.fact.id.as_str().split_once(':').map(|(_, rest)| match rest.split_once('#') {
-            Some((file, _)) => file,
-            None => rest,
-        });
+        assert!(
+            node.fact.id.as_str().starts_with(node.fact.kind.letter()),
+            "{}",
+            node.fact.id
+        );
+        let identity =
+            node.fact
+                .id
+                .as_str()
+                .split_once(':')
+                .map(|(_, rest)| match rest.split_once('#') {
+                    Some((file, _)) => file,
+                    None => rest,
+                });
         assert_eq!(identity, Some(path), "{}", node.fact.id);
         let [start, end] = node.fact.lines;
         let name = &node.fact.name;
-        assert!(start >= 1 && start <= end && end <= lines, "{name} {start}..{end} of {lines}");
+        assert!(
+            start >= 1 && start <= end && end <= lines,
+            "{name} {start}..{end} of {lines}"
+        );
         assert_eq!(node.fact.fingerprint.len(), 64);
-        assert!(ids.insert(node.fact.id.as_str().to_owned()), "duplicate {}", node.fact.id);
-        assert!(!matches!(node.fact.kind, NodeKind::Place | NodeKind::Package));
+        assert!(
+            ids.insert(node.fact.id.as_str().to_owned()),
+            "duplicate {}",
+            node.fact.id
+        );
+        assert!(!matches!(
+            node.fact.kind,
+            NodeKind::Place | NodeKind::Package
+        ));
     }
     let mut owned = BTreeSet::from([facts.nodes[0].fact.id.as_str()]);
     loop {
@@ -125,13 +162,25 @@ fn check_invariants(path: &str, source: &str, facts: &LexedFile) {
         }
     }
     for node in &facts.nodes {
-        assert!(owned.contains(node.fact.id.as_str()), "{} is not owned by the file", node.fact.name);
+        assert!(
+            owned.contains(node.fact.id.as_str()),
+            "{} is not owned by the file",
+            node.fact.name
+        );
     }
     for reference in &facts.references {
         let [start, end] = reference.fact.lines;
-        assert!(start >= 1 && start <= end && end <= lines, "{}", reference.fact.name);
+        assert!(
+            start >= 1 && start <= end && end <= lines,
+            "{}",
+            reference.fact.name
+        );
         assert_eq!(reference.fact.owner_path, path);
-        assert!(ids.contains(reference.fact.src.as_str()), "{}", reference.fact.src);
+        assert!(
+            ids.contains(reference.fact.src.as_str()),
+            "{}",
+            reference.fact.src
+        );
         assert_ne!(reference.fact.kind, EdgeKind::Contains);
         assert_ne!(reference.fact.name, "");
     }
@@ -190,16 +239,28 @@ fn golden_c_fixture_extracts_includes_macros_and_calls() {
         "main",
     ];
     assert_eq!(names(&facts), expect);
-    assert_eq!(node(&facts, "basic.c").summary.text, "File demo is a sample.");
+    assert_eq!(
+        node(&facts, "basic.c").summary.text,
+        "File demo is a sample."
+    );
     assert_eq!(node(&facts, "basic.c").summary.source, SummarySource::Doc);
     assert_symbol(&facts, "LIMIT", Some(SymbolKind::Macro), true, "");
     assert_symbol(&facts, "SHOW", Some(SymbolKind::Macro), true, "");
     assert_symbol(&facts, "configured", Some(SymbolKind::Function), true, "");
     assert_eq!(node_precision(&facts, "configured"), Precision::Convention);
-    assert_symbol(&facts, "add", Some(SymbolKind::Function), true, "Add adds two ints.");
+    assert_symbol(
+        &facts,
+        "add",
+        Some(SymbolKind::Function),
+        true,
+        "Add adds two ints.",
+    );
     assert_eq!(node_precision(&facts, "add"), Precision::Structural);
     assert_symbol(&facts, "Box", Some(SymbolKind::Struct), true, "");
-    assert_eq!(names(&facts).iter().filter(|name| **name == "Box").count(), 1);
+    assert_eq!(
+        names(&facts).iter().filter(|name| **name == "Box").count(),
+        1
+    );
     assert_symbol(&facts, "Box::width", None, true, "");
     assert_symbol(&facts, "Color", Some(SymbolKind::Enum), true, "");
     assert_symbol(&facts, "Color::Red", Some(SymbolKind::Const), true, "");
@@ -209,7 +270,10 @@ fn golden_c_fixture_extracts_includes_macros_and_calls() {
     assert_symbol(&facts, "splice", Some(SymbolKind::Function), true, "");
     assert_symbol(&facts, "main", Some(SymbolKind::Function), true, "");
     assert!(!names(&facts).iter().any(|name| {
-        matches!(*name, "decoy" | "Hidden" | "hidden_in_comment" | "spl" | "ice")
+        matches!(
+            *name,
+            "decoy" | "Hidden" | "hidden_in_comment" | "spl" | "ice"
+        )
     }));
     assert_eq!(
         refs(&facts, EdgeKind::Imports),
@@ -221,7 +285,10 @@ fn golden_c_fixture_extracts_includes_macros_and_calls() {
     );
     assert_eq!(
         refs(&facts, EdgeKind::Calls),
-        [("add", Precision::Structural), ("printf", Precision::Structural)]
+        [
+            ("add", Precision::Structural),
+            ("printf", Precision::Structural)
+        ]
     );
     let members = refs(&facts, EdgeKind::UsesType)
         .into_iter()
@@ -263,11 +330,20 @@ fn golden_header_extracts_namespace_templates_and_methods() {
         "demo::run",
     ];
     assert_eq!(names(&facts), expect, "{:?}", signatures(&facts));
-    assert_eq!(node(&facts, "basic.hpp").summary.text, "Shapes live in demo.");
+    assert_eq!(
+        node(&facts, "basic.hpp").summary.text,
+        "Shapes live in demo."
+    );
     assert_symbol(&facts, "API", Some(SymbolKind::Macro), true, "");
     assert_symbol(&facts, "demo", None, true, "");
     assert!(node(&facts, "demo").signature.starts_with("namespace"));
-    assert_symbol(&facts, "demo::Box", Some(SymbolKind::Class), true, "A boxed value.");
+    assert_symbol(
+        &facts,
+        "demo::Box",
+        Some(SymbolKind::Class),
+        true,
+        "A boxed value.",
+    );
     assert!(node(&facts, "demo::Box").signature.contains("template"));
     assert!(node(&facts, "demo::Box").signature.contains("class Box"));
     assert_symbol(&facts, "demo::Box::Box", Some(SymbolKind::Method), true, "");
@@ -275,14 +351,35 @@ fn golden_header_extracts_namespace_templates_and_methods() {
     assert_symbol(&facts, "demo::Box::hidden", None, false, "");
     let areas = named(&facts, "demo::Box::area");
     assert_eq!(areas.len(), 2);
-    assert!(areas.iter().all(|area| area.symbol_kind == Some(SymbolKind::Method)));
+    assert!(
+        areas
+            .iter()
+            .all(|area| area.symbol_kind == Some(SymbolKind::Method))
+    );
     assert_eq!(areas[1].summary.text, "Area multiplies the sides.");
     assert_eq!(areas[1].summary.source, SummarySource::Doc);
-    assert!(facts.nodes.iter().any(|node| node.fact.id.as_str() == "s:basic.hpp#demo::Box::area~1"));
-    assert!(facts.nodes.iter().any(|node| node.fact.id.as_str() == "s:basic.hpp#demo::Box::area~2"));
+    assert!(
+        facts
+            .nodes
+            .iter()
+            .any(|node| node.fact.id.as_str() == "s:basic.hpp#demo::Box::area~1")
+    );
+    assert!(
+        facts
+            .nodes
+            .iter()
+            .any(|node| node.fact.id.as_str() == "s:basic.hpp#demo::Box::area~2")
+    );
     let class_id = node(&facts, "demo::Box").id.as_str();
     let demo_id = node(&facts, "demo").id.as_str();
-    let inline_id = facts.nodes.iter().find(|node| node.fact.name == "demo::Box::area").unwrap().fact.id.as_str();
+    let inline_id = facts
+        .nodes
+        .iter()
+        .find(|node| node.fact.name == "demo::Box::area")
+        .unwrap()
+        .fact
+        .id
+        .as_str();
     let outline_id = facts
         .nodes
         .iter()
@@ -292,16 +389,35 @@ fn golden_header_extracts_namespace_templates_and_methods() {
         .fact
         .id
         .as_str();
-    assert!(facts.edges.iter().any(|edge| edge.fact.src.as_str() == class_id && edge.fact.dst.as_str() == inline_id));
-    assert!(facts.edges.iter().any(|edge| edge.fact.src.as_str() == demo_id && edge.fact.dst.as_str() == outline_id));
+    assert!(
+        facts
+            .edges
+            .iter()
+            .any(|edge| edge.fact.src.as_str() == class_id && edge.fact.dst.as_str() == inline_id)
+    );
+    assert!(
+        facts
+            .edges
+            .iter()
+            .any(|edge| edge.fact.src.as_str() == demo_id && edge.fact.dst.as_str() == outline_id)
+    );
     assert_symbol(&facts, "demo::Name", Some(SymbolKind::Type), true, "");
     assert_symbol(&facts, "demo::Kind", Some(SymbolKind::Enum), true, "");
     assert_symbol(&facts, "demo::Kind::One", Some(SymbolKind::Const), true, "");
     assert_symbol(&facts, "demo::Bits", Some(SymbolKind::Type), true, "");
     assert!(node(&facts, "demo::Bits").signature.contains("union"));
     assert_symbol(&facts, "demo::run", Some(SymbolKind::Function), true, "");
-    assert_eq!(refs(&facts, EdgeKind::Imports), [("string", Precision::Structural), ("box.h", Precision::Structural)]);
-    assert_eq!(refs(&facts, EdgeKind::Calls), [("box.area", Precision::Structural)]);
+    assert_eq!(
+        refs(&facts, EdgeKind::Imports),
+        [
+            ("string", Precision::Structural),
+            ("box.h", Precision::Structural)
+        ]
+    );
+    assert_eq!(
+        refs(&facts, EdgeKind::Calls),
+        [("box.area", Precision::Structural)]
+    );
     assert!(facts.references.iter().any(|reference| {
         reference.fact.kind == EdgeKind::UsesType && reference.fact.name == "std::string"
     }));
@@ -310,17 +426,38 @@ fn golden_header_extracts_namespace_templates_and_methods() {
             && reference.fact.name == "node->value"
             && reference.precision == Precision::Convention
     }));
-    assert!(!names(&facts).iter().any(|name| name.contains("Hidden") || name.contains("fake")));
-    assert!(!refs(&facts, EdgeKind::Calls).iter().any(|(name, _)| *name == "fake" || *name == "Hidden"));
+    assert!(
+        !names(&facts)
+            .iter()
+            .any(|name| name.contains("Hidden") || name.contains("fake"))
+    );
+    assert!(
+        !refs(&facts, EdgeKind::Calls)
+            .iter()
+            .any(|(name, _)| *name == "fake" || *name == "Hidden")
+    );
 }
 
 #[test]
 fn incomplete_fixture_keeps_partial_facts() {
     let facts = extract("incomplete.c", INCOMPLETE);
     check_invariants("incomplete.c", INCOMPLETE, &facts);
-    assert!(facts.diagnostics.iter().any(|d| d.reason == DiagnosticReason::UnbalancedBracket));
-    assert!(facts.diagnostics.iter().any(|d| d.reason == DiagnosticReason::UnterminatedString));
-    assert_eq!(names(&facts), ["incomplete.c", "ready", "broken", "later", "tail"]);
+    assert!(
+        facts
+            .diagnostics
+            .iter()
+            .any(|d| d.reason == DiagnosticReason::UnbalancedBracket)
+    );
+    assert!(
+        facts
+            .diagnostics
+            .iter()
+            .any(|d| d.reason == DiagnosticReason::UnterminatedString)
+    );
+    assert_eq!(
+        names(&facts),
+        ["incomplete.c", "ready", "broken", "later", "tail"]
+    );
     assert_eq!(facts.nodes[0].precision, Precision::Structural);
     assert_eq!(node_precision(&facts, "ready"), Precision::Structural);
     assert_eq!(node(&facts, "ready").summary.text, "Ready is complete.");
@@ -328,19 +465,38 @@ fn incomplete_fixture_keeps_partial_facts() {
         assert_eq!(node_precision(&facts, name), Precision::Partial, "{name}");
     }
     assert_eq!(node(&facts, "tail").symbol_kind, None);
-    assert_eq!(node(&facts, "later").symbol_kind, Some(SymbolKind::Function));
+    assert_eq!(
+        node(&facts, "later").symbol_kind,
+        Some(SymbolKind::Function)
+    );
 }
 
 #[test]
 fn macro_names_and_macro_introduced_types_abstain() {
-    let source = "#define NAME name\nint NAME(void);\n#define STRUCT struct\nSTRUCT Hidden { int a; };\n";
+    let source =
+        "#define NAME name\nint NAME(void);\n#define STRUCT struct\nSTRUCT Hidden { int a; };\n";
     let facts = extract("hide.c", source);
     check_invariants("hide.c", source, &facts);
     assert_eq!(facts.completion, Completion::Partial);
-    assert!(facts.diagnostics.iter().any(|d| d.reason == DiagnosticReason::HiddenByMacro));
+    assert!(
+        facts
+            .diagnostics
+            .iter()
+            .any(|d| d.reason == DiagnosticReason::HiddenByMacro)
+    );
     assert_eq!(names(&facts), ["hide.c", "NAME", "STRUCT"]);
-    assert!(facts.nodes.iter().all(|node| node.fact.symbol_kind != Some(SymbolKind::Function)));
-    assert!(facts.nodes.iter().all(|node| node.fact.symbol_kind != Some(SymbolKind::Struct)));
+    assert!(
+        facts
+            .nodes
+            .iter()
+            .all(|node| node.fact.symbol_kind != Some(SymbolKind::Function))
+    );
+    assert!(
+        facts
+            .nodes
+            .iter()
+            .all(|node| node.fact.symbol_kind != Some(SymbolKind::Struct))
+    );
 }
 
 fn signatures(facts: &LexedFile) -> Vec<(&str, &str)> {
@@ -352,7 +508,10 @@ fn signatures(facts: &LexedFile) -> Vec<(&str, &str)> {
 }
 
 #[test]
-#[allow(clippy::cast_possible_truncation, reason = "The fuzz length deliberately uses the PRNG's native low word before applying the 301-byte bound.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "The fuzz length deliberately uses the PRNG's native low word before applying the 301-byte bound."
+)]
 fn arbitrary_bytes_and_truncated_fixtures_stay_bounded() {
     let mut state = 0x1234_5678_9abc_def0_u64;
     for _ in 0..200 {
@@ -364,7 +523,11 @@ fn arbitrary_bytes_and_truncated_fixtures_stay_bounded() {
         assert_stable("f.c", &bytes);
         assert_stable("f.rs", &bytes);
     }
-    for (path, source) in [("basic.c", BASIC), ("basic.hpp", HEADER), ("incomplete.c", INCOMPLETE)] {
+    for (path, source) in [
+        ("basic.c", BASIC),
+        ("basic.hpp", HEADER),
+        ("incomplete.c", INCOMPLETE),
+    ] {
         for len in 0..=source.len() {
             let prefix = &source.as_bytes()[..len];
             let facts = CLexer::default()
@@ -451,11 +614,41 @@ int after_stop(void);
     ] {
         assert!(found.contains(&name), "missing {name} in {found:?}");
     }
-    assert!(found.iter().filter(|name| **name == "demo::detail::Box::Box").count() >= 2);
-    assert_symbol(&facts, "demo::detail::answer", Some(SymbolKind::Function), true, "");
-    assert_symbol(&facts, "demo::detail::Box", Some(SymbolKind::Struct), true, "");
-    assert_symbol(&facts, "demo::detail::Box::get", Some(SymbolKind::Method), true, "");
-    assert_symbol(&facts, "demo::detail::constrained", Some(SymbolKind::Function), true, "");
+    assert!(
+        found
+            .iter()
+            .filter(|name| **name == "demo::detail::Box::Box")
+            .count()
+            >= 2
+    );
+    assert_symbol(
+        &facts,
+        "demo::detail::answer",
+        Some(SymbolKind::Function),
+        true,
+        "",
+    );
+    assert_symbol(
+        &facts,
+        "demo::detail::Box",
+        Some(SymbolKind::Struct),
+        true,
+        "",
+    );
+    assert_symbol(
+        &facts,
+        "demo::detail::Box::get",
+        Some(SymbolKind::Method),
+        true,
+        "",
+    );
+    assert_symbol(
+        &facts,
+        "demo::detail::constrained",
+        Some(SymbolKind::Function),
+        true,
+        "",
+    );
     assert_symbol(&facts, "brace_fn", Some(SymbolKind::Function), true, "");
     assert_symbol(&facts, "die", Some(SymbolKind::Function), true, "");
     assert_symbol(&facts, "live", Some(SymbolKind::Function), true, "");
@@ -466,7 +659,10 @@ int after_stop(void);
         [("stddef.h", Precision::Structural)]
     );
     assert!(found.iter().all(|name| {
-        !name.contains("Hidden") && !name.contains("fake") && !name.contains("leaked") && *name != "still"
+        !name.contains("Hidden")
+            && !name.contains("fake")
+            && !name.contains("leaked")
+            && *name != "still"
     }));
 }
 
@@ -496,8 +692,15 @@ int use_foo(void);
     for name in ["FOO", "wrapped", "use_foo"] {
         assert!(found.contains(&name), "missing {name} in {found:?}");
     }
-    assert!(!found.iter().any(|name| *name == "leaked" || *name == "still"));
-    assert_eq!(refs(&facts, EdgeKind::Imports), [("extra.h", Precision::Structural)]);
+    assert!(
+        !found
+            .iter()
+            .any(|name| *name == "leaked" || *name == "still")
+    );
+    assert_eq!(
+        refs(&facts, EdgeKind::Imports),
+        [("extra.h", Precision::Structural)]
+    );
     assert_symbol(&facts, "wrapped", Some(SymbolKind::Function), true, "");
     assert_symbol(&facts, "use_foo", Some(SymbolKind::Function), true, "");
 }

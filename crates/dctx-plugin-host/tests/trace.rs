@@ -10,7 +10,9 @@ use std::collections::BTreeSet;
 use common::*;
 use dctx_plugin_host::fakes::{FakeClock, FakeProcess};
 use dctx_plugin_host::ports::{AuditKind, Clock};
-use dctx_plugin_host::{HandleKind, HookEntry, HookRun, LaunchFacts, Layer, ModelAction, Origin, StopReason, Supervisor};
+use dctx_plugin_host::{
+    HandleKind, HookEntry, HookRun, LaunchFacts, Layer, ModelAction, Origin, StopReason, Supervisor,
+};
 use dctx_plugin_protocol::records::capability::Liveness;
 use dctx_plugin_protocol::records::common::Wait;
 use dctx_plugin_protocol::records::events::{Progress, ProgressUnit};
@@ -21,8 +23,16 @@ fn collect(into: &mut BTreeSet<String>, actions: &[ModelAction]) {
 }
 
 fn running(clock: &FakeClock) -> Supervisor<FakeProcess> {
-    let facts = LaunchFacts { origin: Origin::BundledGit, verified: true, compatible: true, confined: false };
-    let policy = Liveness::UnattendedFailClosed { sample_ms: 10, cancel_grace_ms: 5 };
+    let facts = LaunchFacts {
+        origin: Origin::BundledGit,
+        verified: true,
+        compatible: true,
+        confined: false,
+    };
+    let policy = Liveness::UnattendedFailClosed {
+        sample_ms: 10,
+        cancel_grace_ms: 5,
+    };
     let mut supervisor = Supervisor::new(facts, policy, FakeProcess::default());
     supervisor.launch().expect("launch");
     supervisor.negotiated().expect("negotiated");
@@ -39,7 +49,9 @@ fn every_model_action_is_reached_by_a_host_transition() {
     let handle = file_handle(&mut effects);
     let repo = effects.register(HandleKind::Repository).expect("repo");
     let pre = first_read(&mut effects, &handle);
-    effects.handle(&git_req(&handle, &pre, &repo, "g:1")).expect("admin");
+    effects
+        .handle(&git_req(&handle, &pre, &repo, "g:1"))
+        .expect("admin");
     let upload = stage(&mut effects, &handle, &pre, b"abc\nx");
     let request = replace_req(&handle, &pre, &upload, "a:1");
     effects.handle(&request).expect("commit");
@@ -62,7 +74,9 @@ fn every_model_action_is_reached_by_a_host_transition() {
     let mut policy = broker();
     policy.authority_mut().configure(&all_caps());
     policy.authority_mut().approve(Layer::Consent, all_caps());
-    policy.authority_mut().narrow(Layer::Organization, &all_caps());
+    policy
+        .authority_mut()
+        .narrow(Layer::Organization, &all_caps());
     policy.authority_mut().change_selection(included());
     policy.halt();
     collect(&mut seen, policy.authority().trace().actions());
@@ -101,17 +115,29 @@ fn every_model_action_is_reached_by_a_host_transition() {
 
     let mut halted = running(&clock);
     halted.finish().expect("finish");
-    halted.cancel(StopReason::Cancelled, clock.now()).expect("halt");
+    halted
+        .cancel(StopReason::Cancelled, clock.now())
+        .expect("halt");
     collect(&mut seen, halted.worker().trace().actions());
 
     let plugin = PluginId::new("dctx/git").expect("id");
-    let mut run = HookRun::plan(&[HookEntry { plugin, required: false }], &[]).expect("plan");
+    let mut run = HookRun::plan(
+        &[HookEntry {
+            plugin,
+            required: false,
+        }],
+        &[],
+    )
+    .expect("plan");
     run.record(true, vec![], vec![]).expect("run");
     run.published();
     run.report();
     collect(&mut seen, run.trace().actions());
 
-    let missing: Vec<String> =
-        ModelAction::ALL.iter().map(|a| format!("{a:?}")).filter(|name| !seen.contains(name)).collect();
+    let missing: Vec<String> = ModelAction::ALL
+        .iter()
+        .map(|a| format!("{a:?}"))
+        .filter(|name| !seen.contains(name))
+        .collect();
     assert!(missing.is_empty(), "unreached model actions: {missing:?}");
 }

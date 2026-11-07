@@ -9,7 +9,7 @@ use super::cursor::{put, read_array, read_u16, read_u32, read_u64};
 use super::error::SegmentError;
 use super::header::{ENTRY_LEN, HEADER_LEN};
 use super::kinds::{SectionKind, SegmentRole};
-use super::limits::{offset_of, DecoderLimits};
+use super::limits::{DecoderLimits, offset_of};
 
 pub(crate) const REQUIRED: u32 = 1;
 
@@ -63,7 +63,11 @@ pub(crate) fn parse(
         let record_count = read_u64(bytes, at + 24)?;
         let checksum = read_array::<32>(bytes, at + 32)?;
         if kind == 0 || kind <= previous_kind {
-            return Err(SegmentError::Directory(if kind == 0 { "kind" } else { "order" }));
+            return Err(SegmentError::Directory(if kind == 0 {
+                "kind"
+            } else {
+                "order"
+            }));
         }
         if flags & !REQUIRED != 0 {
             return Err(SegmentError::Directory("flag"));
@@ -74,7 +78,9 @@ pub(crate) fn parse(
         if length == 0 && record_count != 0 {
             return Err(SegmentError::Cardinality("count"));
         }
-        let end = offset.checked_add(length).ok_or(SegmentError::OffsetOverflow)?;
+        let end = offset
+            .checked_add(length)
+            .ok_or(SegmentError::OffsetOverflow)?;
         if offset < previous_end || end > file_len {
             return Err(SegmentError::OffsetOverflow);
         }
@@ -137,7 +143,10 @@ pub(crate) fn payload<'a>(bytes: &'a [u8], entry: &Entry) -> Result<&'a [u8], Se
     bytes.get(start..end).ok_or(SegmentError::OffsetOverflow)
 }
 
-pub(crate) fn assemble(sections: &[BuiltSection], limits: &DecoderLimits) -> Result<Vec<u8>, SegmentError> {
+pub(crate) fn assemble(
+    sections: &[BuiltSection],
+    limits: &DecoderLimits,
+) -> Result<Vec<u8>, SegmentError> {
     if sections.len() > usize::try_from(limits.max_sections).unwrap_or(usize::MAX) {
         return Err(SegmentError::Limit("sections"));
     }
@@ -148,7 +157,9 @@ pub(crate) fn assemble(sections: &[BuiltSection], limits: &DecoderLimits) -> Res
     }
     let count = u32::try_from(sections.len()).map_err(|_| SegmentError::Arithmetic)?;
     let dir_bytes = usize::try_from(u64::from(count) * 64).map_err(|_| SegmentError::Arithmetic)?;
-    let mut total = 80usize.checked_add(dir_bytes).ok_or(SegmentError::Arithmetic)?;
+    let mut total = 80usize
+        .checked_add(dir_bytes)
+        .ok_or(SegmentError::Arithmetic)?;
     for section in sections {
         total = total
             .checked_add(section.payload.len())

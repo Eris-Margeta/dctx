@@ -43,8 +43,16 @@ pub(crate) struct Draft {
 }
 
 impl Draft {
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
-    pub fn new(path: &str, source: &str, lexed: &Lexed, max_facts: usize) -> Result<Self, LexError> {
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
+    pub fn new(
+        path: &str,
+        source: &str,
+        lexed: &Lexed,
+        max_facts: usize,
+    ) -> Result<Self, LexError> {
         let id = StableId::new(NodeKind::Module, path, None, None)?;
         let mut text = source.lines().find_map(first_comment).unwrap_or_default();
         if let Some(&(start, end)) = lexed.comments.first()

@@ -5,20 +5,34 @@
 //! Over a budget the page drops hub lines and directory lines until it fits, or is refused when nothing fits.
 
 use super::Session;
-use crate::domain::{within_budget, BoundedSink, DctxError, MapRequest};
-use crate::index::hubs::{collect_hubs, encode, PageHead};
+use crate::domain::{BoundedSink, DctxError, MapRequest, within_budget};
+use crate::index::hubs::{PageHead, collect_hubs, encode};
 
 impl Session {
     /// Writes one hubs page for `handle`. The caps come from `request.limits` (records are hub lines, at most 60) and the format from `request.output_format` (1 text, 2 JSON).
     /// The request verb only picks the caps: pass [`crate::domain::Verb::Neighbors`]. Its target is ignored.
     /// # Errors
     /// Refuses invalid/stale handles or requests, unsupported formats, a budget too small for one line, or sink failures.
-    pub fn hubs(&mut self, handle: &super::SnapshotHandle, request: &MapRequest, sink: &mut dyn BoundedSink) -> Result<(), DctxError> {
+    pub fn hubs(
+        &mut self,
+        handle: &super::SnapshotHandle,
+        request: &MapRequest,
+        sink: &mut dyn BoundedSink,
+    ) -> Result<(), DctxError> {
         self.reject_transport(request)?;
         let resolved = self.query_limits(request)?;
         let generation = self.generation(handle)?;
-        let age_s = self.clock.now().millis().saturating_sub(generation.taken_at) / 1000;
-        let state = if generation.freshness == crate::domain::FreshnessMode::Metadata { "metadata" } else { "verified" };
+        let age_s = self
+            .clock
+            .now()
+            .millis()
+            .saturating_sub(generation.taken_at)
+            / 1000;
+        let state = if generation.freshness == crate::domain::FreshnessMode::Metadata {
+            "metadata"
+        } else {
+            "verified"
+        };
         let head = PageHead {
             place: &self.place,
             snapshot: &generation.digest,

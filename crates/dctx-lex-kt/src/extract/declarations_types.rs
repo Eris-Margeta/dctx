@@ -19,7 +19,13 @@ struct Header {
 }
 
 impl Walker<'_> {
-    pub(crate) fn type_decl(&mut self, begin: usize, prefix: &Prefix, end: usize, scope: &Scope) -> usize {
+    pub(crate) fn type_decl(
+        &mut self,
+        begin: usize,
+        prefix: &Prefix,
+        end: usize,
+        scope: &Scope,
+    ) -> usize {
         let keyword_at = prefix.next;
         let keyword = self.text(keyword_at);
         let Some((local, cursor)) = self.type_heading(keyword_at, end, keyword) else {
@@ -34,7 +40,12 @@ impl Walker<'_> {
         self.closed_type(begin, prefix, (local, angles), &header, end, scope)
     }
 
-    fn type_heading(&self, keyword_at: usize, end: usize, keyword: &str) -> Option<(String, usize)> {
+    fn type_heading(
+        &self,
+        keyword_at: usize,
+        end: usize,
+        keyword: &str,
+    ) -> Option<(String, usize)> {
         let cursor = keyword_at + 1;
         if self.is_decl_name(cursor) {
             return Some((self.bare(cursor), cursor + 1));
@@ -46,11 +57,17 @@ impl Walker<'_> {
     }
 
     fn anon_object(&self, index: usize, end: usize) -> bool {
-        index >= end || self.is(index, "{") || self.is(index, ":") || self.is(index, "where") || self.is_semi(index)
+        index >= end
+            || self.is(index, "{")
+            || self.is(index, ":")
+            || self.is(index, "where")
+            || self.is_semi(index)
     }
 
     fn type_angles(&self, cursor: usize, end: usize) -> (usize, Option<(usize, usize)>) {
-        if self.is(cursor, "<") && let Some(close) = self.angles_end(cursor, end) {
+        if self.is(cursor, "<")
+            && let Some(close) = self.angles_end(cursor, end)
+        {
             return (close + 1, Some((cursor, close)));
         }
         (cursor, None)
@@ -68,9 +85,13 @@ impl Walker<'_> {
         let (local, angles) = local;
         let open = header.paren.unwrap_or(begin);
         let sig_end = self.end_byte(open);
-        let Some(child) =
-            self.emit_type_symbol(begin, prefix, local, (open, sig_end, (self.start_byte(begin), sig_end)), scope)
-        else {
+        let Some(child) = self.emit_type_symbol(
+            begin,
+            prefix,
+            local,
+            (open, sig_end, (self.start_byte(begin), sig_end)),
+            scope,
+        ) else {
             return self.recover_open(open, end);
         };
         self.flush_anns(&child, &prefix.anns);
@@ -154,7 +175,14 @@ impl Walker<'_> {
         )
     }
 
-    fn emit_ctor(&mut self, owner: &Scope, local: &str, open: usize, last: usize, public: bool) -> Option<Scope> {
+    fn emit_ctor(
+        &mut self,
+        owner: &Scope,
+        local: &str,
+        open: usize,
+        last: usize,
+        public: bool,
+    ) -> Option<Scope> {
         let end = self.end_byte(last);
         self.emit(
             super::Symbol {
@@ -178,7 +206,11 @@ impl Walker<'_> {
             return (last, next, (self.start_byte(open), self.end_byte(last)));
         }
         let last = header.tail.saturating_sub(1).max(begin);
-        (last, self.stop_or_finish(header.tail, end), (self.start_byte(begin), header.sig_end))
+        (
+            last,
+            self.stop_or_finish(header.tail, end),
+            (self.start_byte(begin), header.sig_end),
+        )
     }
 
     fn type_header(&self, cursor: usize, end: usize, public: bool) -> Header {
@@ -205,12 +237,21 @@ impl Walker<'_> {
             return tail;
         }
         let _ = at_paren;
-        self.header_tail(cursor, end, self.end_byte(cursor.saturating_sub(1).max(cursor)))
+        self.header_tail(
+            cursor,
+            end,
+            self.end_byte(cursor.saturating_sub(1).max(cursor)),
+        )
     }
 
     /// Annotations and modifiers may sit between the type name and `constructor`,
     /// including across a newline. An inserted semicolon there is not a new statement.
-    fn peel_ctor(&self, cursor: usize, end: usize, public: bool) -> (usize, Option<usize>, bool, Vec<Ann>) {
+    fn peel_ctor(
+        &self,
+        cursor: usize,
+        end: usize,
+        public: bool,
+    ) -> (usize, Option<usize>, bool, Vec<Ann>) {
         let mut look = cursor;
         let mut ctor_public = public;
         let mut anns = Vec::new();
@@ -272,7 +313,11 @@ impl Walker<'_> {
             cursor = to;
         }
         let body = self.is(cursor, "{").then_some(cursor);
-        let sig_end = if cursor > 0 { self.end_byte(cursor.saturating_sub(1)) } else { fallback };
+        let sig_end = if cursor > 0 {
+            self.end_byte(cursor.saturating_sub(1))
+        } else {
+            fallback
+        };
         Header {
             paren: None,
             close: None,
@@ -289,7 +334,11 @@ impl Walker<'_> {
     fn skip_inert_mods(&self, mut cursor: usize, end: usize) -> usize {
         while self.modifier_word(cursor) {
             let next = cursor + 1;
-            if self.is(next, "{") || self.is(next, ":") || self.is(next, "where") || self.is_semi(next) {
+            if self.is(next, "{")
+                || self.is(next, ":")
+                || self.is(next, "where")
+                || self.is_semi(next)
+            {
                 cursor = next;
                 continue;
             }
@@ -305,7 +354,9 @@ impl Walker<'_> {
             if depth == 0 && self.super_stop(index) {
                 return index;
             }
-            if self.is(index, "<") && let Some(close) = self.angles_end(index, end) {
+            if self.is(index, "<")
+                && let Some(close) = self.angles_end(index, end)
+            {
                 index = close + 1;
                 continue;
             }
@@ -340,9 +391,18 @@ impl Walker<'_> {
     fn one_super(&mut self, index: usize, end: usize, scope: &Scope) -> usize {
         let (name, next) = self.read_dotted(index, end);
         let mut cursor = next;
-        if self.is(cursor, "<") && let Some(close) = self.angles_end(cursor, end) {
+        if self.is(cursor, "<")
+            && let Some(close) = self.angles_end(cursor, end)
+        {
             if !name.is_empty() {
-                self.refer(scope, EdgeKind::UsesType, name.clone(), None, index, cursor.saturating_sub(1).max(index));
+                self.refer(
+                    scope,
+                    EdgeKind::UsesType,
+                    name.clone(),
+                    None,
+                    index,
+                    cursor.saturating_sub(1).max(index),
+                );
             }
             self.emit_type_args(cursor + 1, close, scope);
             cursor = close + 1;
@@ -357,10 +417,24 @@ impl Walker<'_> {
         }
     }
 
-    fn super_call(&mut self, name: &str, index: usize, paren: usize, end: usize, scope: &Scope) -> usize {
+    fn super_call(
+        &mut self,
+        name: &str,
+        index: usize,
+        paren: usize,
+        end: usize,
+        scope: &Scope,
+    ) -> usize {
         if !name.is_empty() {
             let last = paren.saturating_sub(1).max(index);
-            self.refer(scope, EdgeKind::UsesType, name.to_string(), None, index, last);
+            self.refer(
+                scope,
+                EdgeKind::UsesType,
+                name.to_string(),
+                None,
+                index,
+                last,
+            );
             self.refer(scope, EdgeKind::Calls, name.to_string(), None, index, last);
         }
         let mut cursor = paren + 1;
@@ -380,7 +454,13 @@ impl Walker<'_> {
         cursor
     }
 
-    pub(crate) fn secondary_ctor(&mut self, begin: usize, prefix: &Prefix, end: usize, scope: &Scope) -> usize {
+    pub(crate) fn secondary_ctor(
+        &mut self,
+        begin: usize,
+        prefix: &Prefix,
+        end: usize,
+        scope: &Scope,
+    ) -> usize {
         let keyword_at = prefix.next;
         let paren = keyword_at + 1;
         if !self.is(paren, "(") {
@@ -414,8 +494,19 @@ impl Walker<'_> {
         next
     }
 
-    fn emit_secondary(&mut self, begin: usize, prefix: &Prefix, last: usize, sig_end: u32, scope: &Scope) -> Option<Scope> {
-        let local = if scope.simple.is_empty() { "constructor".to_string() } else { scope.simple.clone() };
+    fn emit_secondary(
+        &mut self,
+        begin: usize,
+        prefix: &Prefix,
+        last: usize,
+        sig_end: u32,
+        scope: &Scope,
+    ) -> Option<Scope> {
+        let local = if scope.simple.is_empty() {
+            "constructor".to_string()
+        } else {
+            scope.simple.clone()
+        };
         self.emit(
             super::Symbol {
                 kind: SymbolKind::Method,
@@ -430,14 +521,26 @@ impl Walker<'_> {
         )
     }
 
-    fn ctor_tail(&self, cursor: usize, end: usize, paren: usize) -> (usize, usize, Option<(usize, usize)>) {
+    fn ctor_tail(
+        &self,
+        cursor: usize,
+        end: usize,
+        paren: usize,
+    ) -> (usize, usize, Option<(usize, usize)>) {
         if self.is(cursor, "{") {
             let after = self.after(cursor).max(cursor + 1);
             let last = after.saturating_sub(1).max(cursor);
-            let scan = self.matched(cursor, end).filter(|close| *close > cursor).map(|close| (cursor + 1, close));
+            let scan = self
+                .matched(cursor, end)
+                .filter(|close| *close > cursor)
+                .map(|close| (cursor + 1, close));
             return (last, after.min(end.max(after)), scan);
         }
-        (cursor.saturating_sub(1).max(paren), self.stop_or_finish(cursor, end), None)
+        (
+            cursor.saturating_sub(1).max(paren),
+            self.stop_or_finish(cursor, end),
+            None,
+        )
     }
 
     pub(crate) fn init_block(&mut self, index: usize, end: usize, scope: &Scope) -> usize {

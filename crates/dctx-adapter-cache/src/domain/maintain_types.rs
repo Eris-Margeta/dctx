@@ -20,7 +20,10 @@ pub struct SliceBudget {
 
 impl SliceBudget {
     /// The startup slice: 128 objects and a 25 ms target.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn startup() -> Self {
         Self {
             max_objects: STARTUP_MAX_OBJECTS,
@@ -30,9 +33,16 @@ impl SliceBudget {
     }
 
     /// An explicit slice that stops on object count. Time is not sampled.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn explicit(max_objects: u32) -> Self {
-        Self { max_objects, max_millis: u64::MAX, millis_per_object: 0 }
+        Self {
+            max_objects,
+            max_millis: u64::MAX,
+            millis_per_object: 0,
+        }
     }
 }
 

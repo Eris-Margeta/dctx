@@ -13,7 +13,7 @@ use crate::plugin::{Liveness, ResourceLimits};
 mod io;
 mod values;
 
-use io::{count, Buf, Reader};
+use io::{Buf, Reader, count};
 use values::{
     flag, network_code, network_from, origin_code, origin_from, read_capability, read_config,
     read_digest, read_limits, read_liveness, read_resolution, state_code, state_from,
@@ -64,7 +64,14 @@ pub(crate) fn decode(payload: &[u8]) -> Result<PluginPlan, TemplateError> {
     }
     let order = reader.string_list()?;
     reader.finish()?;
-    Ok(PluginPlan { organization, groups, plugins, order, limits, liveness })
+    Ok(PluginPlan {
+        organization,
+        groups,
+        plugins,
+        order,
+        limits,
+        liveness,
+    })
 }
 
 fn write_plugin(buf: &mut Buf, plugin: &PluginBinding) -> Result<(), TemplateError> {
@@ -111,7 +118,10 @@ fn read_plugin(reader: &mut Reader<'_>) -> Result<PluginBinding, TemplateError> 
     let hook_count = reader.list_len()?;
     let mut hooks = Vec::with_capacity(hook_count);
     for _ in 0..hook_count {
-        hooks.push(HookDecl { name: reader.string()?, version: reader.u16()? });
+        hooks.push(HookDecl {
+            name: reader.string()?,
+            version: reader.u16()?,
+        });
     }
     let allow_count = reader.list_len()?;
     let mut allow = Vec::with_capacity(allow_count);
@@ -121,7 +131,10 @@ fn read_plugin(reader: &mut Reader<'_>) -> Result<PluginBinding, TemplateError> 
     let config_count = reader.list_len()?;
     let mut config = Vec::with_capacity(config_count);
     for _ in 0..config_count {
-        config.push(ConfigEntry { key: reader.string()?, value: read_config(reader)? });
+        config.push(ConfigEntry {
+            key: reader.string()?,
+            value: read_config(reader)?,
+        });
     }
     Ok(PluginBinding {
         id,

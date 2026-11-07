@@ -86,7 +86,10 @@ fn bootstrap() -> Result<(), PlatformError> {
     Ok(())
 }
 
-#[allow(clippy::cast_possible_wrap, reason = "RestrictedEntry::new has already checked that the parent PID is in 2..=i32::MAX.")]
+#[allow(
+    clippy::cast_possible_wrap,
+    reason = "RestrictedEntry::new has already checked that the parent PID is in 2..=i32::MAX."
+)]
 fn lifecycle(entry: RestrictedEntry) -> Result<(), PlatformError> {
     let expected = rustix::process::Pid::from_raw(entry.parent as i32)
         .ok_or_else(|| unsupported(Unsupported::Lifecycle))?;

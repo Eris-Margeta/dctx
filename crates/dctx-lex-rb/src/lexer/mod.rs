@@ -52,9 +52,14 @@ pub(crate) struct Lexed {
 
 impl Lexed {
     /// One-based line of a byte offset. Rows advance on `\n` only.
-    #[allow(clippy::cast_possible_truncation, reason = "At most one line per byte plus the initial line; RubyLexer::extract caps input at 8 MiB, well within u32.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "At most one line per byte plus the initial line; RubyLexer::extract caps input at 8 MiB, well within u32."
+    )]
     pub fn line(&self, byte: u32) -> u32 {
-        self.line_starts.partition_point(|&start| start <= byte).max(1) as u32
+        self.line_starts
+            .partition_point(|&start| start <= byte)
+            .max(1) as u32
     }
 }
 
@@ -128,7 +133,10 @@ fn line_starts(source: &str) -> Vec<u32> {
     starts
 }
 
-#[allow(clippy::cast_possible_truncation, reason = "At most one line per byte plus the initial line; RubyLexer::extract caps input at 8 MiB, well within u32.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "At most one line per byte plus the initial line; RubyLexer::extract caps input at 8 MiB, well within u32."
+)]
 fn line_of(starts: &[u32], byte: u32) -> u32 {
     starts.partition_point(|&start| start <= byte).max(1) as u32
 }
@@ -217,7 +225,10 @@ mod tests {
         assert!(div.iter().any(|text| text == "/"), "{div:?}");
         assert!(!div.iter().any(|text| text.starts_with("/2")), "{div:?}");
         let regex = texts("return /cd/\n");
-        assert!(regex.iter().any(|text| text.starts_with("/cd")), "{regex:?}");
+        assert!(
+            regex.iter().any(|text| text.starts_with("/cd")),
+            "{regex:?}"
+        );
     }
 
     #[test]
@@ -230,12 +241,21 @@ mod tests {
         ] {
             let source = format!("{prefix}\ndef real\nend\n");
             let lexed = lex(&source, &Limits::default()).expect("lex");
-            assert!(lexed.diagnostics.is_empty(), "{prefix}: {:?}", lexed.diagnostics);
-            assert!(lexed.tokens.iter().any(|token| {
-                token.kind == Kind::Str
-                    && &source[token.start as usize..token.end as usize] == "/class Ghost; end/"
-            }), "{prefix}");
-            let identifiers: Vec<_> = lexed.tokens.iter()
+            assert!(
+                lexed.diagnostics.is_empty(),
+                "{prefix}: {:?}",
+                lexed.diagnostics
+            );
+            assert!(
+                lexed.tokens.iter().any(|token| {
+                    token.kind == Kind::Str
+                        && &source[token.start as usize..token.end as usize] == "/class Ghost; end/"
+                }),
+                "{prefix}"
+            );
+            let identifiers: Vec<_> = lexed
+                .tokens
+                .iter()
                 .filter(|token| token.kind == Kind::Ident)
                 .map(|token| &source[token.start as usize..token.end as usize])
                 .collect();
@@ -244,14 +264,34 @@ mod tests {
         }
 
         for expression in [
-            "10 / 2", "value / divisor", "value/2", "value /= 2", "obj./(2)",
-            "@value /2", "$value /2", "VALUE /2", "self /2", "nil /2", "true /2", "false /2",
+            "10 / 2",
+            "value / divisor",
+            "value/2",
+            "value /= 2",
+            "obj./(2)",
+            "@value /2",
+            "$value /2",
+            "VALUE /2",
+            "self /2",
+            "nil /2",
+            "true /2",
+            "false /2",
         ] {
             let source = format!("{expression}\ndef real\nend\n");
             let lexed = lex(&source, &Limits::default()).expect("lex");
-            assert!(lexed.diagnostics.is_empty(), "{expression}: {:?}", lexed.diagnostics);
-            assert!(!lexed.tokens.iter().any(|token| token.kind == Kind::Str), "{expression}");
-            assert!(texts(&source).iter().any(|text| text == "real"), "{expression}");
+            assert!(
+                lexed.diagnostics.is_empty(),
+                "{expression}: {:?}",
+                lexed.diagnostics
+            );
+            assert!(
+                !lexed.tokens.iter().any(|token| token.kind == Kind::Str),
+                "{expression}"
+            );
+            assert!(
+                texts(&source).iter().any(|text| text == "real"),
+                "{expression}"
+            );
         }
     }
 
@@ -261,7 +301,10 @@ mod tests {
         assert!(assign.iter().any(|text| text == "%="), "{assign:?}");
         assert!(assign.iter().any(|text| text == "2"), "{assign:?}");
         let quoted = texts("x = %q=secret=\n");
-        assert!(quoted.iter().any(|text| text.contains("secret")), "{quoted:?}");
+        assert!(
+            quoted.iter().any(|text| text.contains("secret")),
+            "{quoted:?}"
+        );
         assert!(!quoted.iter().any(|text| text == "secret"), "{quoted:?}");
         let lambda = texts("f = ->(x) { x }\n");
         assert!(lambda.iter().any(|text| text == "->"), "{lambda:?}");

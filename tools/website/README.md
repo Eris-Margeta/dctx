@@ -13,6 +13,11 @@ DCTX_BIN=target/release/dctx-cli tools/website/.venv/bin/python tools/website/ch
 
 `just site`, `just site-capture`, `just site-serve` and `just site-fonts` wrap these.
 
+The deployment workflow builds first and uses `check.py --working-tree --no-capture`
+to compare that fresh `website/` against an independent rebuild. All content checks
+still run; only the reference bytes change from HEAD to the generated working tree.
+Normal CI retains the default HEAD comparison and full CLI capture drift check.
+
 ## Where everything comes from
 
 | Output | Source |

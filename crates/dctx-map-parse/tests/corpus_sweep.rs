@@ -167,7 +167,10 @@ fn inspect_file(path: &str, source: &[u8], repeat: bool) -> FileReport {
     report
 }
 
-#[allow(clippy::unnecessary_debug_formatting, reason = "Debug formatting quotes and escapes arbitrary corpus paths so diagnostic records remain unambiguous, including paths with control characters.")]
+#[allow(
+    clippy::unnecessary_debug_formatting,
+    reason = "Debug formatting quotes and escapes arbitrary corpus paths so diagnostic records remain unambiguous, including paths with control characters."
+)]
 fn run_file(file: &CorpusFile, source: Vec<u8>, repeat: bool) -> Option<(FileReport, Duration)> {
     let parser_path = file.parser_path.clone();
     let (finished, completion) = mpsc::channel();
@@ -301,13 +304,17 @@ fn budget_failures(
         .collect()
 }
 
-#[allow(clippy::unnecessary_debug_formatting, reason = "Debug formatting quotes and escapes arbitrary corpus paths so diagnostic records remain unambiguous, including paths with control characters.")]
+#[allow(
+    clippy::unnecessary_debug_formatting,
+    reason = "Debug formatting quotes and escapes arbitrary corpus paths so diagnostic records remain unambiguous, including paths with control characters."
+)]
 fn print_table(reports: &BTreeMap<String, LanguageReport>, budgets: &BTreeMap<String, usize>) {
     println!("language | files | ok | refused | slowest file (wall seconds)");
     for (language, report) in reports {
-        let slowest = report
-            .slowest
-            .as_ref().map_or_else(|| "-".into(), |(elapsed, path)| format!("{path:?} ({:.3})", elapsed.as_secs_f64()));
+        let slowest = report.slowest.as_ref().map_or_else(
+            || "-".into(),
+            |(elapsed, path)| format!("{path:?} ({:.3})", elapsed.as_secs_f64()),
+        );
         println!(
             "{language} | {} | {} | {} | {slowest}",
             report.files, report.ok, report.refused
@@ -326,7 +333,10 @@ fn print_table(reports: &BTreeMap<String, LanguageReport>, budgets: &BTreeMap<St
 }
 
 #[test]
-#[allow(clippy::too_many_lines, reason = "Keep the corpus traversal, refusal budgets and final report in one test so the acceptance sequence is visible together.")]
+#[allow(
+    clippy::too_many_lines,
+    reason = "Keep the corpus traversal, refusal budgets and final report in one test so the acceptance sequence is visible together."
+)]
 fn corpus_sweep() {
     let Some(value) = std::env::var_os("DCTX_SWEEP_ROOTS").filter(|value| !value.is_empty()) else {
         println!("no roots");
@@ -350,9 +360,8 @@ fn corpus_sweep() {
         );
     }
     let budgets = match optional_env_var("DCTX_SWEEP_REFUSAL_BUDGET") {
-        Some(value) => parse_refusal_budget(&value).unwrap_or_else(|error| {
-            panic!("invalid DCTX_SWEEP_REFUSAL_BUDGET: {error}")
-        }),
+        Some(value) => parse_refusal_budget(&value)
+            .unwrap_or_else(|error| panic!("invalid DCTX_SWEEP_REFUSAL_BUDGET: {error}")),
         None => BTreeMap::new(),
     };
     let unknown = unknown_languages(budgets.keys().map(String::as_str));
@@ -479,7 +488,10 @@ fn sweep_lang_filter_and_refusal_budget_parse() {
     assert!(language_selected(Some(&ruby_and_c), "Ruby"));
     assert!(!language_selected(Some(&ruby_and_c), "Swift"));
     assert!(!language_selected(Some(&BTreeSet::new()), "Ruby"));
-    assert_eq!(unknown_languages(ruby_and_c.iter().map(String::as_str)), [] as [&str; 0]);
+    assert_eq!(
+        unknown_languages(ruby_and_c.iter().map(String::as_str)),
+        [] as [&str; 0]
+    );
     assert_eq!(
         unknown_languages(["Unknown", "Swift", "COBOL", "COBOL"]),
         vec!["COBOL", "Unknown"]
@@ -493,14 +505,21 @@ fn sweep_lang_filter_and_refusal_budget_parse() {
         budgets
     );
     assert_eq!(
-        parse_refusal_budget("Swift=0").unwrap().get("Swift").copied(),
+        parse_refusal_budget("Swift=0")
+            .unwrap()
+            .get("Swift")
+            .copied(),
         Some(0)
     );
     assert!(parse_refusal_budget("").unwrap().is_empty());
     assert!(parse_refusal_budget(" , ").unwrap().is_empty());
     assert!(parse_refusal_budget("Ruby").unwrap_err().contains("Lang=N"));
     assert!(parse_refusal_budget("=12").unwrap_err().contains("Lang=N"));
-    assert!(parse_refusal_budget("Ruby=").unwrap_err().contains("Lang=N"));
+    assert!(
+        parse_refusal_budget("Ruby=")
+            .unwrap_err()
+            .contains("Lang=N")
+    );
     assert!(
         parse_refusal_budget("Ruby=many")
             .unwrap_err()
@@ -516,7 +535,10 @@ fn sweep_lang_filter_and_refusal_budget_parse() {
             .unwrap_err()
             .contains("duplicate")
     );
-    assert_eq!(unknown_languages(budgets.keys().map(String::as_str)), [] as [&str; 0]);
+    assert_eq!(
+        unknown_languages(budgets.keys().map(String::as_str)),
+        [] as [&str; 0]
+    );
 
     let mut reports = BTreeMap::new();
     reports.insert(
@@ -554,8 +576,14 @@ fn sweep_lang_filter_and_refusal_budget_parse() {
     );
     let mut within = budgets.clone();
     within.insert("C".to_owned(), 61);
-    assert_eq!(budget_failures(&reports, &within), [] as [std::string::String; 0]);
-    assert_eq!(budget_failures(&reports, &BTreeMap::new()), [] as [std::string::String; 0]);
+    assert_eq!(
+        budget_failures(&reports, &within),
+        [] as [std::string::String; 0]
+    );
+    assert_eq!(
+        budget_failures(&reports, &BTreeMap::new()),
+        [] as [std::string::String; 0]
+    );
     assert_eq!(
         format_budget_line("Swift", 0, 100),
         "BUDGET Swift refused=0 budget=100 ok"

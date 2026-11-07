@@ -439,6 +439,8 @@ def all_images(routes, geo: dict) -> dict[str, bytes]:
         geo_arg = geo if route.kind == "home" else None
         for theme in ("dark", "light"):
             files[f"/assets/og/{slug}.{theme}.png"] = og_png(theme, crumb, title, desc, seed=101 + i, geo=geo_arg)
+    # Owner 07.11: the classic pre-v2 card (2093ea4f website/assets/og.png) is the home share image.
+    files["/assets/og/home.png"] = (HERE / "data/og/home-classic.png").read_bytes()
     files["/assets/og/home.gif"] = home_gif(geo, "Context, engineered.", "Deterministic, bounded code context for agents and chat. Offline.")
     for theme in ("dark", "light"):
         files[f"/assets/og/scene.{theme}.png"] = poster_png(theme, geo)

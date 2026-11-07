@@ -5,14 +5,53 @@
 //! nesting, spans and signatures. Never panics on odd input.
 
 use super::super::{ident_at, is_denied, skip_modifiers};
-use super::decl::{typed_member, Found, Inside, Scope};
 use super::Lang;
+use super::decl::{Found, Inside, Scope, typed_member};
 
 /// Solidity words that start a line which is not a state variable, plus the attributes that never name one.
 const SOLIDITY_WORDS: &[&str] = &[
-    "function", "event", "modifier", "error", "struct", "enum", "contract", "interface", "library", "using", "pragma", "import", "constructor", "receive",
-    "fallback", "type", "returns", "return", "emit", "revert", "require", "delete", "assembly", "unchecked", "try", "catch", "abstract", "is", "public",
-    "private", "internal", "external", "view", "pure", "payable", "virtual", "override", "constant", "immutable", "memory", "storage", "calldata",
+    "function",
+    "event",
+    "modifier",
+    "error",
+    "struct",
+    "enum",
+    "contract",
+    "interface",
+    "library",
+    "using",
+    "pragma",
+    "import",
+    "constructor",
+    "receive",
+    "fallback",
+    "type",
+    "returns",
+    "return",
+    "emit",
+    "revert",
+    "require",
+    "delete",
+    "assembly",
+    "unchecked",
+    "try",
+    "catch",
+    "abstract",
+    "is",
+    "public",
+    "private",
+    "internal",
+    "external",
+    "view",
+    "pure",
+    "payable",
+    "virtual",
+    "override",
+    "constant",
+    "immutable",
+    "memory",
+    "storage",
+    "calldata",
 ];
 
 /// The data member (`const`, `var` or `field`) that the line declares in `lang`, if any. `rest` is the line without its
@@ -33,7 +72,12 @@ pub(super) fn member(lang: &Lang, rest: &str, mods: &str, scope: &Scope) -> Opti
 pub(super) fn enum_values(lang: &Lang, line: &str) -> Vec<Found> {
     let list = if lang.tag == "scala" {
         match line.strip_prefix("case") {
-            Some(after) if after.starts_with(char::is_whitespace) && !matches!(ident_at(after.trim_start()), Some("class" | "object")) => after,
+            Some(after)
+                if after.starts_with(char::is_whitespace)
+                    && !matches!(ident_at(after.trim_start()), Some("class" | "object")) =>
+            {
+                after
+            }
             _ => return Vec::new(),
         }
     } else if lang.tag == "powershell" {
@@ -58,7 +102,11 @@ pub(super) fn enum_values(lang: &Lang, line: &str) -> Vec<Found> {
                         } else {
                             return None;
                         }
-                    } else if byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'-' || byte >= 0x80 {
+                    } else if byte.is_ascii_alphanumeric()
+                        || byte == b'_'
+                        || byte == b'-'
+                        || byte >= 0x80
+                    {
                         end = i + 1;
                     } else {
                         break;
@@ -71,7 +119,10 @@ pub(super) fn enum_values(lang: &Lang, line: &str) -> Vec<Found> {
     } else {
         line
     };
-    value_list(list).into_iter().map(|name| (name, "const")).collect()
+    value_list(list)
+        .into_iter()
+        .map(|name| (name, "const"))
+        .collect()
 }
 
 /// The members of a type whose whole body sits on its declaration line: `enum E { A, B }`, `struct S { uint a; }`.
@@ -87,8 +138,21 @@ pub(super) fn inline_members(lang: &Lang, line: &str, inside: Inside) -> Vec<Fou
         Inside::Enum => enum_values(lang, inner),
         Inside::Struct | Inside::Type if matches!(lang.tag, "zig" | "solidity") => {
             let separator = if lang.tag == "zig" { ',' } else { ';' };
-            let scope = Scope { inside, owner: None };
-            split_top(inner, separator).into_iter().filter_map(|chunk| member(lang, skip_modifiers(chunk.trim(), lang.modifiers), "", &scope)).collect()
+            let scope = Scope {
+                inside,
+                owner: None,
+            };
+            split_top(inner, separator)
+                .into_iter()
+                .filter_map(|chunk| {
+                    member(
+                        lang,
+                        skip_modifiers(chunk.trim(), lang.modifiers),
+                        "",
+                        &scope,
+                    )
+                })
+                .collect()
         }
         _ => Vec::new(),
     }
@@ -116,7 +180,9 @@ fn declared_name(after: &str) -> Option<(&str, &str)> {
 
 /// The words of a modifier prefix.
 fn words(mods: &str) -> Vec<&str> {
-    mods.split(|c: char| !(c.is_alphanumeric() || c == '_')).filter(|word| !word.is_empty()).collect()
+    mods.split(|c: char| !(c.is_alphanumeric() || c == '_'))
+        .filter(|word| !word.is_empty())
+        .collect()
 }
 
 /// Scala `val name`, `lazy val name` (`const`) and `var name` (`var`).
@@ -140,8 +206,14 @@ fn dart(rest: &str, mods: &str, scope: &Scope) -> Option<Found> {
     let words = words(mods);
     let has = |word: &str| words.contains(&word);
     let declared = first == "var" || has("const") || has("final") || has("late");
-    let body = if first == "var" { rest[first.len()..].trim_start() } else { rest };
-    let untyped = ident_at(body).filter(|name| declared && !is_denied(name) && ends_data(body[name.len()..].trim_start(), false));
+    let body = if first == "var" {
+        rest[first.len()..].trim_start()
+    } else {
+        rest
+    };
+    let untyped = ident_at(body).filter(|name| {
+        declared && !is_denied(name) && ends_data(body[name.len()..].trim_start(), false)
+    });
     let name = match untyped {
         Some(name) => name.to_string(),
         None => {
@@ -172,11 +244,19 @@ fn zig(rest: &str, scope: &Scope) -> Option<Found> {
         if !(assigned(tail) || tail.starts_with(':')) {
             return None;
         }
-        let value = tail.split_once('=').map_or("", |(_, value)| value.trim_start());
-        if value.starts_with("@import") || value.starts_with("@cImport") || value.starts_with("@This") {
+        let value = tail
+            .split_once('=')
+            .map_or("", |(_, value)| value.trim_start());
+        if value.starts_with("@import")
+            || value.starts_with("@cImport")
+            || value.starts_with("@This")
+        {
             return None;
         }
-        return Some((name.to_string(), if word == "const" { "const" } else { "var" }));
+        return Some((
+            name.to_string(),
+            if word == "const" { "const" } else { "var" },
+        ));
     }
     if matches!(scope.inside, Inside::Struct | Inside::Enum) {
         let name = ident_at(rest).filter(|name| !is_denied(name))?;
@@ -196,12 +276,18 @@ fn solidity(rest: &str, scope: &Scope) -> Option<Found> {
     let [first, .., name] = tokens.as_slice() else {
         return None;
     };
-    let type_like = first.starts_with(|c: char| c.is_alphabetic() || c == '_') && first.chars().all(|c| c.is_alphanumeric() || matches!(c, '_' | '.' | '[' | ']' | '(' | ')' | '$'));
-    let name_like = ident_at(name) == Some(*name) && !SOLIDITY_WORDS.contains(name) && !is_denied(name);
+    let type_like = first.starts_with(|c: char| c.is_alphabetic() || c == '_')
+        && first
+            .chars()
+            .all(|c| c.is_alphanumeric() || matches!(c, '_' | '.' | '[' | ']' | '(' | ')' | '$'));
+    let name_like =
+        ident_at(name) == Some(*name) && !SOLIDITY_WORDS.contains(name) && !is_denied(name);
     if !type_like || !name_like || SOLIDITY_WORDS.contains(first) || is_denied(first) {
         return None;
     }
-    let constant = tokens.iter().any(|token| matches!(*token, "constant" | "immutable"));
+    let constant = tokens
+        .iter()
+        .any(|token| matches!(*token, "constant" | "immutable"));
     let kind = if scope.inside == Inside::Struct {
         "field"
     } else if constant {
@@ -222,7 +308,9 @@ fn cut_initializer(statement: &str) -> &str {
             b')' | b']' => depth = depth.saturating_sub(1),
             b'=' if depth == 0 => {
                 let before = at.checked_sub(1).map(|prior| bytes[prior]);
-                if !matches!(before, Some(b'=' | b'!' | b'<' | b'>')) && !matches!(bytes.get(at + 1), Some(b'=' | b'>')) {
+                if !matches!(before, Some(b'=' | b'!' | b'<' | b'>'))
+                    && !matches!(bytes.get(at + 1), Some(b'=' | b'>'))
+                {
                     return &statement[..at];
                 }
             }
@@ -265,12 +353,20 @@ fn groovy(rest: &str, mods: &str, scope: &Scope) -> Option<Found> {
         return None;
     }
     let first = ident_at(rest)?;
-    let (name, tail) = if first == "def" { declared_name(&rest[first.len()..]).map(|(name, tail)| (name.to_string(), tail))? } else { typed_member(rest)? };
+    let (name, tail) = if first == "def" {
+        declared_name(&rest[first.len()..]).map(|(name, tail)| (name.to_string(), tail))?
+    } else {
+        typed_member(rest)?
+    };
     if !ends_data(tail, true) {
         return None;
     }
     let words = words(mods);
-    let kind = if words.contains(&"static") && words.contains(&"final") { "const" } else { "field" };
+    let kind = if words.contains(&"static") && words.contains(&"final") {
+        "const"
+    } else {
+        "field"
+    };
     Some((name, kind))
 }
 
@@ -284,7 +380,11 @@ fn value_list(text: &str) -> Vec<String> {
             return Vec::new();
         };
         let tail = chunk[name.len()..].trim_start();
-        let after_args = if tail.starts_with('(') { after_group(tail) } else { tail };
+        let after_args = if tail.starts_with('(') {
+            after_group(tail)
+        } else {
+            tail
+        };
         if !(after_args.is_empty() || assigned(after_args) || after_args.starts_with("extends")) {
             return Vec::new();
         }

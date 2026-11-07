@@ -17,7 +17,10 @@ pub struct ReverseIndex {
 
 /// Indexes resolved edges and unresolved spellings for one snapshot.
 /// The changed file is recorded too; invalidation drops that path later.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn reverse_index(files: &[Facts], resolution: &Resolution) -> ReverseIndex {
     let mut definitions = BTreeMap::new();
     for file in files {
@@ -188,12 +191,8 @@ mod tests {
         let mut api_file = file("src/api.rs", vec![api]);
         api_file.references.push(reexport);
         let mut lib = file("src/lib.rs", vec![entry.clone()]);
-        lib.references.push(reference(
-            &entry,
-            "",
-            EdgeKind::Imports,
-            "api::execute",
-        ));
+        lib.references
+            .push(reference(&entry, "", EdgeKind::Imports, "api::execute"));
         lib.references
             .push(reference(&entry, "", EdgeKind::Calls, "worker::work"));
         lib.references
@@ -233,7 +232,12 @@ mod tests {
 
         let added = file(
             "src/lost.rs",
-            vec![definition("src/lost.rs", "item", "lost::item", NodeKind::Symbol)],
+            vec![definition(
+                "src/lost.rs",
+                "item",
+                "lost::item",
+                NodeKind::Symbol,
+            )],
         );
         let empty = file("src/lost.rs", vec![]);
         let found = invalidated_dependents(&index, &empty, &added).unwrap();

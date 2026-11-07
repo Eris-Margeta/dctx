@@ -8,10 +8,10 @@ use std::collections::{BTreeMap, HashMap};
 
 use dctx_map_model::EdgeKind;
 
+use super::decl_pair::is_declaration_only_path;
 use super::extract::language_of;
 use super::refs_names::{call_segments, import_segments, last_segment, module_keys};
-use super::decl_pair::is_declaration_only_path;
-use super::{write_node_id, IndexedEdge, IndexedNode, TextBlob};
+use super::{IndexedEdge, IndexedNode, TextBlob, write_node_id};
 
 /// One unresolved call or import exactly as a lexer reported it.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -30,11 +30,23 @@ pub(crate) struct RawRef {
 
 impl RawRef {
     /// Keeps calls and imports only. Other relations yield `None`.
-    pub(crate) fn new(src: &str, kind: EdgeKind, name: &str, scope: &str, alias: Option<&str>) -> Option<Self> {
+    pub(crate) fn new(
+        src: &str,
+        kind: EdgeKind,
+        name: &str,
+        scope: &str,
+        alias: Option<&str>,
+    ) -> Option<Self> {
         if !matches!(kind, EdgeKind::Calls | EdgeKind::Imports) {
             return None;
         }
-        Some(Self { src: src.to_string(), kind, name: name.to_string(), scope: scope.to_string(), alias: alias.map(str::to_string) })
+        Some(Self {
+            src: src.to_string(),
+            kind,
+            name: name.to_string(),
+            scope: scope.to_string(),
+            alias: alias.map(str::to_string),
+        })
     }
 }
 
@@ -83,11 +95,22 @@ struct Tables<'a> {
 /// Appends `calls` and `imports` edges for every resolvable reference in `files`.
 ///
 /// Unresolved and ambiguous references are dropped. Edges of one file are sorted, so a repeat walk is byte-stable.
-pub(crate) fn link(nodes: &[IndexedNode], edges: &mut Vec<IndexedEdge>, text: &mut TextBlob, files: &[FileRefs]) {
+pub(crate) fn link(
+    nodes: &[IndexedNode],
+    edges: &mut Vec<IndexedEdge>,
+    text: &mut TextBlob,
+    files: &[FileRefs],
+) {
     if files.iter().all(|file| file.refs.is_empty()) {
         return;
     }
-    let labels = [text.push("calls"), text.push("imports"), text.push("exact"), text.push("name"), text.push("guess")];
+    let labels = [
+        text.push("calls"),
+        text.push("imports"),
+        text.push("exact"),
+        text.push("name"),
+        text.push("guess"),
+    ];
     let tables = Tables::build(nodes, text, files);
     for file in files.iter().filter(|file| !file.refs.is_empty()) {
         let mut found: BTreeMap<(u32, bool, u32), Rank> = BTreeMap::new();
@@ -95,7 +118,12 @@ pub(crate) fn link(nodes: &[IndexedNode], edges: &mut Vec<IndexedEdge>, text: &m
         for ((src, call, dst), rank) in found {
             let edge = if call { labels[0] } else { labels[1] };
             let confidence = labels[2 + rank as usize];
-            edges.push(IndexedEdge { src, dst, edge, confidence });
+            edges.push(IndexedEdge {
+                src,
+                dst,
+                edge,
+                confidence,
+            });
         }
     }
 }
@@ -107,12 +135,16 @@ impl<'a> Tables<'a> {
         let mut bare: HashMap<&str, Vec<u32>> = HashMap::new();
         let mut modules: HashMap<String, Vec<(u32, bool)>> = HashMap::new();
         for file in files {
-            let Some(module) = nodes.get(file.first as usize) else { continue };
+            let Some(module) = nodes.get(file.first as usize) else {
+                continue;
+            };
             for (key, full) in module_keys(text.get(module.path)) {
                 modules.entry(key).or_default().push((file.first, full));
             }
             for index in file.first.saturating_add(1)..file.end {
-                let Some(node) = nodes.get(index as usize) else { break };
+                let Some(node) = nodes.get(index as usize) else {
+                    break;
+                };
                 if node.letter != b's' || node.name.is_empty() {
                     continue;
                 }
@@ -121,18 +153,32 @@ impl<'a> Tables<'a> {
                 if is_declaration_only_path(path, node) {
                     continue;
                 }
-                names.entry((file.first, node.name.as_str())).or_default().push(index);
-                bare.entry(last_segment(&node.name)).or_default().push(index);
+                names
+                    .entry((file.first, node.name.as_str()))
+                    .or_default()
+                    .push(index);
+                bare.entry(last_segment(&node.name))
+                    .or_default()
+                    .push(index);
             }
         }
-        Self { nodes, text, files, names, bare, modules }
+        Self {
+            nodes,
+            text,
+            files,
+            names,
+            bare,
+            modules,
+        }
     }
 
     /// Resolves the imports of `file` first, then its calls through the bindings they made.
     fn link_file(&self, file: &FileRefs, found: &mut BTreeMap<(u32, bool, u32), Rank>) {
         let mut ids: HashMap<String, u32> = HashMap::new();
         for index in file.first..file.end {
-            let Some(node) = self.nodes.get(index as usize) else { break };
+            let Some(node) = self.nodes.get(index as usize) else {
+                break;
+            };
             let mut id = String::new();
             write_node_id(&mut id, self.text, node);
             // Lexers number every copy of a duplicated name from `~1`; the index leaves the first copy bare and numbers the rest from `~2`.
@@ -142,33 +188,67 @@ impl<'a> Tables<'a> {
             ids.insert(id, index);
         }
         let mut bindings: Vec<Binding> = Vec::new();
-        for reference in file.refs.iter().filter(|reference| reference.kind == EdgeKind::Imports) {
-            let Some(&src) = ids.get(&reference.src) else { continue };
+        for reference in file
+            .refs
+            .iter()
+            .filter(|reference| reference.kind == EdgeKind::Imports)
+        {
+            let Some(&src) = ids.get(&reference.src) else {
+                continue;
+            };
             let segments = import_segments(&reference.name);
-            let Some((dst, module)) = self.import_target(&segments) else { continue };
+            let Some((dst, module)) = self.import_target(&segments) else {
+                continue;
+            };
             if dst == src {
                 continue;
             }
             note(found, src, false, dst, Rank::Exact);
             if let Some(alias) = &reference.alias {
-                bindings.push(Binding { name: alias.clone(), dst, module });
+                bindings.push(Binding {
+                    name: alias.clone(),
+                    dst,
+                    module,
+                });
             } else if let (Some(first), Some(last)) = (segments.first(), segments.last()) {
-                bindings.push(Binding { name: last.clone(), dst, module });
+                bindings.push(Binding {
+                    name: last.clone(),
+                    dst,
+                    module,
+                });
                 if module && first != last {
-                    bindings.push(Binding { name: first.clone(), dst, module });
+                    bindings.push(Binding {
+                        name: first.clone(),
+                        dst,
+                        module,
+                    });
                 }
             }
         }
         let module_node = self.nodes.get(file.first as usize);
         let language = module_node.map(|module| language_of(self.text.get(module.path)));
-        let receiver_only = module_node.is_some_and(|module| RECEIVER_ONLY.contains(&language_of(self.text.get(module.path))));
-        for reference in file.refs.iter().filter(|reference| reference.kind == EdgeKind::Calls) {
-            let Some(&src) = ids.get(&reference.src) else { continue };
+        let receiver_only = module_node
+            .is_some_and(|module| RECEIVER_ONLY.contains(&language_of(self.text.get(module.path))));
+        for reference in file
+            .refs
+            .iter()
+            .filter(|reference| reference.kind == EdgeKind::Calls)
+        {
+            let Some(&src) = ids.get(&reference.src) else {
+                continue;
+            };
             let segments = call_segments(&reference.name, language);
-            let Some((callee, qualifier)) = segments.split_last() else { continue };
+            let Some((callee, qualifier)) = segments.split_last() else {
+                continue;
+            };
             // `interpolate(..)` inside the method `Captures::interpolate` is the imported free function, not the method itself.
-            let free = receiver_only && reference.name.chars().all(|ch| ch.is_alphanumeric() || ch == '_' || ch == '$');
-            let (targets, rank) = self.call_targets(file, &reference.scope, qualifier, callee, &bindings, free);
+            let free = receiver_only
+                && reference
+                    .name
+                    .chars()
+                    .all(|ch| ch.is_alphanumeric() || ch == '_' || ch == '$');
+            let (targets, rank) =
+                self.call_targets(file, &reference.scope, qualifier, callee, &bindings, free);
             for dst in targets {
                 note(found, src, true, dst, rank);
             }
@@ -193,18 +273,35 @@ impl<'a> Tables<'a> {
         }
         let hits = self.modules.get(&segments.join("::"))?;
         let full: Vec<u32> = hits.iter().filter(|hit| hit.1).map(|hit| hit.0).collect();
-        let pool: Vec<u32> = if full.is_empty() { hits.iter().map(|hit| hit.0).collect() } else { full };
+        let pool: Vec<u32> = if full.is_empty() {
+            hits.iter().map(|hit| hit.0).collect()
+        } else {
+            full
+        };
         (pool.len() == 1).then(|| pool[0])
     }
 
     /// Targets of one call: lexical scope, then imports, then module paths, then a project-wide guess.
     ///
     /// A `free` call (a bare name in a [`RECEIVER_ONLY`] language) skips every candidate of kind `method`.
-    fn call_targets(&self, file: &FileRefs, scope: &str, qualifier: &[String], callee: &str, bindings: &[Binding], free: bool) -> (Vec<u32>, Rank) {
+    fn call_targets(
+        &self,
+        file: &FileRefs,
+        scope: &str,
+        qualifier: &[String],
+        callee: &str,
+        bindings: &[Binding],
+        free: bool,
+    ) -> (Vec<u32>, Rank) {
         let qualified = qualifier.join("::");
         let mut walk = scope;
         loop {
-            let name = [walk, qualified.as_str(), callee].iter().filter(|part| !part.is_empty()).copied().collect::<Vec<_>>().join("::");
+            let name = [walk, qualified.as_str(), callee]
+                .iter()
+                .filter(|part| !part.is_empty())
+                .copied()
+                .collect::<Vec<_>>()
+                .join("::");
             if let Some(hit) = self.names.get(&(file.first, name.as_str())) {
                 let hit = self.reachable(hit, free);
                 if !hit.is_empty() {
@@ -221,7 +318,12 @@ impl<'a> Tables<'a> {
                 if *first != binding.name {
                     continue;
                 }
-                let rest = qualifier[1..].iter().map(String::as_str).chain([callee]).collect::<Vec<_>>().join("::");
+                let rest = qualifier[1..]
+                    .iter()
+                    .map(String::as_str)
+                    .chain([callee])
+                    .collect::<Vec<_>>()
+                    .join("::");
                 let (owner, name) = match self.nodes.get(binding.dst as usize) {
                     _ if binding.module => (binding.dst, rest),
                     Some(node) => (self.file_of(binding.dst), format!("{}::{rest}", node.name)),
@@ -240,12 +342,24 @@ impl<'a> Tables<'a> {
         {
             return Self::pick(hit);
         }
-        (self.guess(file, callee, !qualifier.is_empty(), free), Rank::Guess)
+        (
+            self.guess(file, callee, !qualifier.is_empty(), free),
+            Rank::Guess,
+        )
     }
 
     /// The candidates a call can reach: all of `hits`, or for a `free` call those that are not methods.
     fn reachable(&self, hits: &[u32], free: bool) -> Vec<u32> {
-        hits.iter().copied().filter(|&hit| !free || self.nodes.get(hit as usize).is_some_and(|node| node.kind != "method")).collect()
+        hits.iter()
+            .copied()
+            .filter(|&hit| {
+                !free
+                    || self
+                        .nodes
+                        .get(hit as usize)
+                        .is_some_and(|node| node.kind != "method")
+            })
+            .collect()
     }
 
     /// Hits inside one file: a single one is a `name` match, overloads are guesses.
@@ -260,16 +374,25 @@ impl<'a> Tables<'a> {
     ///
     /// A call with a receiver (`recv.name()`) that still has several candidates resolves to the one candidate of kind `method`, so a lone method wins over same-named free functions, and a lone owned class method (`Owner::name`) wins over object-literal members. Two or more of the same standing stay ambiguous and emit nothing.
     fn guess(&self, file: &FileRefs, callee: &str, receiver: bool, free: bool) -> Vec<u32> {
-        let Some(hits) = self.bare.get(callee) else { return Vec::new() };
+        let Some(hits) = self.bare.get(callee) else {
+            return Vec::new();
+        };
         let hits = self.reachable(hits, free);
         if let [only] = hits.as_slice() {
             return vec![*only];
         }
-        let here = self.nodes.get(file.first as usize).map_or("", |module| dir_of(self.text.get(module.path)));
+        let here = self
+            .nodes
+            .get(file.first as usize)
+            .map_or("", |module| dir_of(self.text.get(module.path)));
         let near: Vec<u32> = hits
             .iter()
             .copied()
-            .filter(|&hit| self.nodes.get(hit as usize).is_some_and(|node| dir_of(self.text.get(node.path)) == here))
+            .filter(|&hit| {
+                self.nodes
+                    .get(hit as usize)
+                    .is_some_and(|node| dir_of(self.text.get(node.path)) == here)
+            })
             .collect();
         if near.len() == 1 {
             return near;
@@ -277,9 +400,25 @@ impl<'a> Tables<'a> {
         if !receiver {
             return Vec::new();
         }
-        let methods: Vec<u32> = hits.iter().copied().filter(|&hit| self.nodes.get(hit as usize).is_some_and(|node| node.kind == "method")).collect();
+        let methods: Vec<u32> = hits
+            .iter()
+            .copied()
+            .filter(|&hit| {
+                self.nodes
+                    .get(hit as usize)
+                    .is_some_and(|node| node.kind == "method")
+            })
+            .collect();
         // Object-literal members are methods too, but carry no owner prefix; a class method (`Owner::name`) outranks them.
-        let owned: Vec<u32> = methods.iter().copied().filter(|&hit| self.nodes.get(hit as usize).is_some_and(|node| node.name.contains("::"))).collect();
+        let owned: Vec<u32> = methods
+            .iter()
+            .copied()
+            .filter(|&hit| {
+                self.nodes
+                    .get(hit as usize)
+                    .is_some_and(|node| node.name.contains("::"))
+            })
+            .collect();
         match (methods.as_slice(), owned.as_slice()) {
             ([only], _) | (_, [only]) => vec![*only],
             _ => Vec::new(),
@@ -289,7 +428,9 @@ impl<'a> Tables<'a> {
     /// Module index of the file holding node `index`.
     fn file_of(&self, index: u32) -> u32 {
         let at = self.files.partition_point(|file| file.first <= index);
-        at.checked_sub(1).and_then(|at| self.files.get(at)).map_or(index, |file| file.first)
+        at.checked_sub(1)
+            .and_then(|at| self.files.get(at))
+            .map_or(index, |file| file.first)
     }
 }
 

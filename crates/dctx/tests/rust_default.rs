@@ -21,7 +21,9 @@ fn default_snapshot_uses_bounded_syn_and_rejects_comment_and_string_decoys() {
     let mut source = MemorySource::new();
     source.insert_file("a.rs", SOURCE, 0).expect("file");
     let mut session = open_session(source);
-    let handle = session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
+    let handle = session
+        .snapshot(&SnapshotRequest::immutable())
+        .expect("snapshot");
 
     let mut sink = VecSink::new();
     let real = session.find(&handle, "Real", &mut sink).expect("real");
@@ -36,7 +38,11 @@ fn default_snapshot_uses_bounded_syn_and_rejects_comment_and_string_decoys() {
         let mut sink = VecSink::new();
         let found = session.find(&handle, decoy, &mut sink).expect(decoy);
         // The literal fallback may list the text line, but never a symbol.
-        assert!(found.records.iter().all(|record| record.kind == "text"), "{decoy} was fabricated: {:?}", found.records);
+        assert!(
+            found.records.iter().all(|record| record.kind == "text"),
+            "{decoy} was fabricated: {:?}",
+            found.records
+        );
         if !found.records.is_empty() {
             assert_eq!(found.precision.coverage, "text", "{decoy} coverage");
         }

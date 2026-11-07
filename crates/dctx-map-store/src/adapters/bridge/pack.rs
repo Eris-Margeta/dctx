@@ -5,14 +5,14 @@
 //! Used by [`super::super::SqliteStore`]. Tree bytes are not a git object id.
 
 use super::ledger;
-use crate::domain::{view_label, Result, StoreError};
+use crate::domain::{Result, StoreError, view_label};
 use dctx_core::datatypes::{DirContextTreeNode, NodeType};
 use dctx_core::domain::FileHandlingDecision;
 use dctx_core::facts::{ContentDigests, PackSnapshot};
 use dctx_core::ids::{Timestamp, ViewKey};
 use dctx_core::version::Version;
 use dctx_hash::ContentDigest;
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 use std::path::PathBuf;
 
 const MAX_DEPTH: usize = 128;
@@ -52,7 +52,9 @@ pub(crate) fn publish(
     let replacing = previous.map_or(0, |(_, old)| old);
     ledger::admit(&transaction, bytes, replacing)?;
     let generation = match previous {
-        Some((current, _)) => current.checked_add(1).ok_or(StoreError::Corrupt("pack generation"))?,
+        Some((current, _)) => current
+            .checked_add(1)
+            .ok_or(StoreError::Corrupt("pack generation"))?,
         None => 1,
     };
     let used = i64::try_from(now).map_err(|_| StoreError::InvalidKey("clock is out of range"))?;
@@ -74,13 +76,18 @@ fn encode(snapshot: &PackSnapshot) -> Result<Vec<u8>> {
     push_u32(&mut body, snapshot.version().minor);
     push_u64(&mut body, snapshot.taken_at().millis());
     push_digest(&mut body, &snapshot.digest().0);
-    push_u64(&mut body, u64::try_from(snapshot.digests().len()).map_err(|_| StoreError::InvalidKey("pack field"))?);
+    push_u64(
+        &mut body,
+        u64::try_from(snapshot.digests().len())
+            .map_err(|_| StoreError::InvalidKey("pack field"))?,
+    );
     for (path, digest) in snapshot.digests() {
         push_blob(&mut body, path.as_bytes())?;
         push_digest(&mut body, digest);
     }
     encode_node(&mut body, snapshot.tree(), 0)?;
-    let checksum = dctx_hash::Sha256::digest(&body).map_err(|_| StoreError::InvalidKey("invalid content digest"))?;
+    let checksum = dctx_hash::Sha256::digest(&body)
+        .map_err(|_| StoreError::InvalidKey("invalid content digest"))?;
     body.extend_from_slice(checksum.as_bytes());
     Ok(body)
 }
@@ -111,7 +118,10 @@ fn encode_node(out: &mut Vec<u8>, node: &DirContextTreeNode, depth: usize) -> Re
     push_u64(out, node.content_offset_in_data_section);
     push_u64(out, node.content_size);
     push_blob(out, node.relative_path.as_bytes())?;
-    let disk = node.disk_path.to_str().ok_or(StoreError::InvalidKey("disk path is not utf-8"))?;
+    let disk = node
+        .disk_path
+        .to_str()
+        .ok_or(StoreError::InvalidKey("disk path is not utf-8"))?;
     push_blob(out, disk.as_bytes())?;
     push_blob(out, node.generated_id_for_llm.as_bytes())?;
     if let Some(content) = &node.file_content {
@@ -120,7 +130,10 @@ fn encode_node(out: &mut Vec<u8>, node: &DirContextTreeNode, depth: usize) -> Re
     if let Some(kind) = &node.binary_file_type {
         push_blob(out, kind.as_bytes())?;
     }
-    push_u64(out, u64::try_from(node.children.len()).map_err(|_| StoreError::InvalidKey("pack field"))?);
+    push_u64(
+        out,
+        u64::try_from(node.children.len()).map_err(|_| StoreError::InvalidKey("pack field"))?,
+    );
     for child in &node.children {
         encode_node(out, child, depth + 1)?;
     }
@@ -140,7 +153,10 @@ fn decode(bytes: &[u8]) -> Result<PackSnapshot> {
     if cursor.take(8)? != b"DCTXPK01".as_slice() {
         return Err(corrupt());
     }
-    let version = Version { major: cursor.u32()?, minor: cursor.u32()? };
+    let version = Version {
+        major: cursor.u32()?,
+        minor: cursor.u32()?,
+    };
     let taken_at = Timestamp(cursor.u64()?);
     let stored = cursor.digest()?;
     let count = cursor.u64()?;
@@ -218,7 +234,9 @@ impl<'a> Cursor<'a> {
         let mut bytes = [0; 32];
         bytes.copy_from_slice(self.take(32)?);
         let byte_length = self.u64()?;
-        if version != dctx_hash::IDENTITY_VERSION || algorithm != dctx_hash::IdentityAlgorithm::SHA256 {
+        if version != dctx_hash::IDENTITY_VERSION
+            || algorithm != dctx_hash::IdentityAlgorithm::SHA256
+        {
             return Err(corrupt());
         }
         Ok(ContentDigest::sha256(bytes, byte_length))
@@ -254,8 +272,16 @@ impl<'a> Cursor<'a> {
         let relative = self.text()?;
         let disk = self.text()?;
         let generated = self.text()?;
-        let content = if flags & 4 == 0 { None } else { Some(self.blob()?) };
-        let binary_type = if flags & 8 == 0 { None } else { Some(self.text()?) };
+        let content = if flags & 4 == 0 {
+            None
+        } else {
+            Some(self.blob()?)
+        };
+        let binary_type = if flags & 8 == 0 {
+            None
+        } else {
+            Some(self.text()?)
+        };
         let child_count = self.u64()?;
         let room = u64::from(MAX_NODES.saturating_sub(*nodes));
         if child_count > room {

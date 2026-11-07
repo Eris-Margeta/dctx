@@ -4,7 +4,7 @@
 //! or the parameter list; bodies are scanned for calls, not nested statements.
 use super::declarations_types::visible;
 use super::{Emit, Prefix, Scope, ScopeKind, Walker};
-use crate::domain::{slice, DiagnosticReason};
+use crate::domain::{DiagnosticReason, slice};
 use dctx_map_model::SymbolKind;
 
 struct MethodAt {
@@ -49,7 +49,12 @@ impl Walker<'_> {
         }
         if self.can_name(at) && self.text(at) == scope.simple && self.is(at + 1, "(") {
             return self.finish_method(
-                &MethodAt { start: index, type_from: at, name: at, ctor: true },
+                &MethodAt {
+                    start: index,
+                    type_from: at,
+                    name: at,
+                    ctor: true,
+                },
                 end,
                 scope,
                 &prefix,
@@ -89,7 +94,12 @@ impl Walker<'_> {
         }
         if self.is(after, "(") {
             return self.finish_method(
-                &MethodAt { start, type_from: type_at, name, ctor: false },
+                &MethodAt {
+                    start,
+                    type_from: type_at,
+                    name,
+                    ctor: false,
+                },
                 end,
                 scope,
                 prefix,
@@ -153,7 +163,11 @@ impl Walker<'_> {
             }
             break;
         }
-        if self.is(cursor, ";") { cursor + 1 } else { cursor.max(start + 1) }
+        if self.is(cursor, ";") {
+            cursor + 1
+        } else {
+            cursor.max(start + 1)
+        }
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -182,15 +196,22 @@ impl Walker<'_> {
             if self.is(cursor, ";") {
                 cursor += 1;
             }
-            let body = init
-                .map_or((self.start_byte(after), self.end_byte(close)), |(eq, stop)| (self.end_byte(eq), self.start_byte(stop)));
+            let body = init.map_or(
+                (self.start_byte(after), self.end_byte(close)),
+                |(eq, stop)| (self.end_byte(eq), self.start_byte(stop)),
+            );
             (close, body, cursor, Some((after + 1, close)))
         } else {
             let expr = after + 1;
             let stop = self.separator(expr, end);
             let last = stop.saturating_sub(1).max(after);
             let body = (self.start_byte(expr), self.start_byte(stop.min(end)));
-            (last, body, if self.is(stop, ";") { stop + 1 } else { stop }, Some((expr, stop)))
+            (
+                last,
+                body,
+                if self.is(stop, ";") { stop + 1 } else { stop },
+                Some((expr, stop)),
+            )
         };
         let child = self.emit(
             &Emit {
@@ -261,7 +282,11 @@ impl Walker<'_> {
         }
         while self.is(cursor, "where") {
             cursor += 1;
-            while cursor < end && !self.is(cursor, "{") && !self.is(cursor, "=>") && !self.is(cursor, ";") {
+            while cursor < end
+                && !self.is(cursor, "{")
+                && !self.is(cursor, "=>")
+                && !self.is(cursor, ";")
+            {
                 cursor += 1;
             }
             if cursor > 0 {
@@ -304,7 +329,13 @@ impl Walker<'_> {
         tail.next
     }
 
-    fn method_tail(&mut self, start: usize, cursor: usize, sig_last: usize, end: usize) -> MethodTail {
+    fn method_tail(
+        &mut self,
+        start: usize,
+        cursor: usize,
+        sig_last: usize,
+        end: usize,
+    ) -> MethodTail {
         if self.is(cursor, "{") {
             let close = self.close_of(cursor, end);
             return MethodTail {
@@ -333,7 +364,10 @@ impl Walker<'_> {
                 scan: None,
             };
         }
-        self.problem(self.start_byte(cursor.max(start)), DiagnosticReason::Malformed);
+        self.problem(
+            self.start_byte(cursor.max(start)),
+            DiagnosticReason::Malformed,
+        );
         MethodTail {
             last: sig_last,
             body: (self.start_byte(start), self.end_byte(sig_last)),

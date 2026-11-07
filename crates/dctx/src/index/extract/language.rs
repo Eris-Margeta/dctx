@@ -127,24 +127,37 @@ pub(crate) const RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
 /// Duplicate of `dctx-map-parse` `domain::facts::INFRA_BASENAMES`: files with no extension that are still a known format.
 ///
 /// Compared case-insensitively on the final path segment, like [`RUBY_BASENAMES`].
-pub(crate) const INFRA_BASENAMES: &[(&str, &str)] =
-    &[("Makefile", "make"), ("GNUmakefile", "make"), ("Dockerfile", "docker"), ("Containerfile", "docker")];
+pub(crate) const INFRA_BASENAMES: &[(&str, &str)] = &[
+    ("Makefile", "make"),
+    ("GNUmakefile", "make"),
+    ("Dockerfile", "docker"),
+    ("Containerfile", "docker"),
+];
 
 /// Language tag from the final path segment. Anything else is `opaque`.
 ///
 /// Extensions are case-insensitive. See [`EXTENSIONS`] and [`RUBY_BASENAMES`].
 pub(crate) fn language_of(path: &str) -> &'static str {
     let base = path.rsplit(['/', '\\']).next().unwrap_or(path);
-    if RUBY_BASENAMES.iter().any(|name| base.eq_ignore_ascii_case(name)) {
+    if RUBY_BASENAMES
+        .iter()
+        .any(|name| base.eq_ignore_ascii_case(name))
+    {
         return "ruby";
     }
-    if let Some((_, tag)) = INFRA_BASENAMES.iter().find(|(name, _)| base.eq_ignore_ascii_case(name)) {
+    if let Some((_, tag)) = INFRA_BASENAMES
+        .iter()
+        .find(|(name, _)| base.eq_ignore_ascii_case(name))
+    {
         return tag;
     }
     if is_sql_template(base) {
         return "sql";
     }
-    let Some(extension) = base.rsplit_once('.').map(|(_, extension)| extension.to_ascii_lowercase()) else {
+    let Some(extension) = base
+        .rsplit_once('.')
+        .map(|(_, extension)| extension.to_ascii_lowercase())
+    else {
         return "opaque";
     };
     EXTENSIONS
@@ -155,5 +168,8 @@ pub(crate) fn language_of(path: &str) -> &'static str {
 
 /// True for `pgtap.sql.in`: a SQL template that a build step turns into `.sql`. Duplicate of `dctx-map-parse` `facts.rs`.
 fn is_sql_template(base: &str) -> bool {
-    base.len() > ".sql.in".len() && base.get(base.len() - ".sql.in".len()..).is_some_and(|tail| tail.eq_ignore_ascii_case(".sql.in"))
+    base.len() > ".sql.in".len()
+        && base
+            .get(base.len() - ".sql.in".len()..)
+            .is_some_and(|tail| tail.eq_ignore_ascii_case(".sql.in"))
 }

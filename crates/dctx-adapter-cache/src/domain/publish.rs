@@ -69,12 +69,18 @@ impl Lifecycle {
         dead_ppm: u32,
     ) -> Result<ObjectId, CacheError> {
         if roots.is_empty() || roots.iter().any(|root| !self.roots.contains_key(root)) {
-            return Err(CacheError::InvalidRequest { reason: "fact root is not registered" });
+            return Err(CacheError::InvalidRequest {
+                reason: "fact root is not registered",
+            });
         }
         if self.disk_full {
             return Err(CacheError::DiskFull);
         }
-        let purpose = if kind == ObjectKind::Segment { Purpose::Segment } else { Purpose::Fact };
+        let purpose = if kind == ObjectKind::Segment {
+            Purpose::Segment
+        } else {
+            Purpose::Fact
+        };
         let reservation = self.reserve_for(None, purpose, bytes)?;
         self.reservations.remove(&reservation.id());
         let id = self.spawn(Spawn {
@@ -150,7 +156,9 @@ impl Lifecycle {
         refs: &[ObjectId],
     ) -> Result<GenerationId, CacheError> {
         if !self.roots.contains_key(&root) {
-            return Err(CacheError::InvalidRequest { reason: "unknown root" });
+            return Err(CacheError::InvalidRequest {
+                reason: "unknown root",
+            });
         }
         self.ensure_refs(refs)?;
         if self.disk_full {
@@ -206,9 +214,18 @@ impl Lifecycle {
                 .manifests
                 .values()
                 .filter(|manifest| {
-                    manifest.root == root && overflow.contains(&manifest.id) && self.can_retire(manifest)
+                    manifest.root == root
+                        && overflow.contains(&manifest.id)
+                        && self.can_retire(manifest)
                 })
-                .map(|manifest| (manifest.last_use.0, manifest.root.raw(), manifest.id.raw(), manifest.id))
+                .map(|manifest| {
+                    (
+                        manifest.last_use.0,
+                        manifest.root.raw(),
+                        manifest.id.raw(),
+                        manifest.id,
+                    )
+                })
                 .min();
             let Some((_, _, _, id)) = candidate else {
                 break;
@@ -292,7 +309,11 @@ pub(super) fn read_maps(inp: &mut Take<'_>) -> Result<Maps, CacheError> {
             return Err(super::restart::corrupt("duplicate"));
         }
     }
-    Ok(Maps { roots, objects, manifests })
+    Ok(Maps {
+        roots,
+        objects,
+        manifests,
+    })
 }
 
 fn inp_root(inp: &mut Take<'_>) -> Result<super::RootRecord, CacheError> {
@@ -358,7 +379,8 @@ fn read_object(inp: &mut Take<'_>) -> Result<super::CacheObject, CacheError> {
     let born = inp.u64()?;
     let kind = ObjectKind::from_tag(inp.u8()?).ok_or_else(|| super::restart::corrupt("object"))?;
     let state = Physical::from_tag(inp.u8()?).ok_or_else(|| super::restart::corrupt("object"))?;
-    let class = ChargeClass::from_tag(inp.u8()?).ok_or_else(|| super::restart::corrupt("object"))?;
+    let class =
+        ChargeClass::from_tag(inp.u8()?).ok_or_else(|| super::restart::corrupt("object"))?;
     let roots = read_roots(inp)?;
     let refs = read_objects(inp)?;
     let charged_root = inp.opt_u64()?.map(RootId::new);
@@ -407,7 +429,8 @@ fn object_flags(object: &super::CacheObject) -> u8 {
 fn read_manifest(inp: &mut Take<'_>, id: super::ManifestId) -> Result<Manifest, CacheError> {
     let root = RootId::new(inp.u64()?);
     let generation = GenerationId::new(inp.u64()?);
-    let kind = ManifestKind::from_tag(inp.u8()?).ok_or_else(|| super::restart::corrupt("manifest"))?;
+    let kind =
+        ManifestKind::from_tag(inp.u8()?).ok_or_else(|| super::restart::corrupt("manifest"))?;
     let object = ObjectId::new(inp.u64()?);
     let last_use = Timestamp(inp.u64()?);
     let flags = inp.u8()?;

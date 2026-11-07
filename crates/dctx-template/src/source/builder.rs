@@ -7,10 +7,12 @@ use std::collections::{BTreeSet, HashMap};
 
 use crate::error::TemplateError;
 use crate::model::Selection;
-use crate::v1::{replace_vars, Template};
+use crate::v1::{Template, replace_vars};
 
-use super::draft::{Draft, IndexDraft, BudgetDraft, ViewDraft, GroupDraft, PluginDecl};
-use super::fields::{apply_select, apply_index, apply_budget, apply_view, apply_group, apply_plugin};
+use super::draft::{BudgetDraft, Draft, GroupDraft, IndexDraft, PluginDecl, ViewDraft};
+use super::fields::{
+    apply_budget, apply_group, apply_index, apply_plugin, apply_select, apply_view,
+};
 use super::value::{check_ident, header, once, parse_version, split_key};
 
 /// Parses a v2 document. Call only after [`super::version_decl`] returned [`super::VersionDecl::V2`].
@@ -61,17 +63,27 @@ enum Current {
     Plugins(GroupDraft),
     Plugin(PluginDecl),
     Variables,
-    Text { name: String, layout: bool, body: String },
+    Text {
+        name: String,
+        layout: bool,
+        body: String,
+    },
 }
 
 impl Builder {
     fn open(&mut self, kind: &str, name: &str, line: u32) -> Result<(), TemplateError> {
         self.seen.clear();
-        let named = matches!(kind, "SELECT" | "INDEX" | "BUDGET" | "VIEW" | "PLUGINS" | "PLUGIN" | "PARTIAL" | "RENDER");
+        let named = matches!(
+            kind,
+            "SELECT" | "INDEX" | "BUDGET" | "VIEW" | "PLUGINS" | "PLUGIN" | "PARTIAL" | "RENDER"
+        );
         if named {
             check_ident(name, line)?;
         } else if !name.is_empty() {
-            return Err(TemplateError::InvalidSyntax { line, detail: "unexpected header name".into() });
+            return Err(TemplateError::InvalidSyntax {
+                line,
+                detail: "unexpected header name".into(),
+            });
         }
         self.current = match kind {
             "DTS" => Current::Dts,
@@ -129,17 +141,34 @@ impl Builder {
                 after: Vec::new(),
             }),
             "VARIABLES" => Current::Variables,
-            "PARTIAL" => Current::Text { name: name.to_string(), layout: false, body: String::new() },
-            "LAYOUT" => Current::Text { name: "main".to_string(), layout: true, body: String::new() },
-            "RENDER" => Current::Text { name: name.to_string(), layout: true, body: String::new() },
-            _ => return Err(TemplateError::InvalidSyntax { line, detail: "unknown section".into() }),
+            "PARTIAL" => Current::Text {
+                name: name.to_string(),
+                layout: false,
+                body: String::new(),
+            },
+            "LAYOUT" => Current::Text {
+                name: "main".to_string(),
+                layout: true,
+                body: String::new(),
+            },
+            "RENDER" => Current::Text {
+                name: name.to_string(),
+                layout: true,
+                body: String::new(),
+            },
+            _ => {
+                return Err(TemplateError::InvalidSyntax {
+                    line,
+                    detail: "unknown section".into(),
+                });
+            }
         };
         Ok(())
     }
 
     fn flush(&mut self) {
         match std::mem::replace(&mut self.current, Current::Empty) {
-            Current::Empty | Current::Variables | Current::Dts => {},
+            Current::Empty | Current::Variables | Current::Dts => {}
             Current::Select(section) => {
                 self.selections.push(section);
             }
@@ -172,7 +201,10 @@ impl Builder {
     fn line(&mut self, trimmed: &str, raw: &str, line: u32) -> Result<(), TemplateError> {
         let mut current = std::mem::replace(&mut self.current, Current::Empty);
         let result = match &mut current {
-            Current::Empty => Err(TemplateError::InvalidSyntax { line, detail: "text outside a section".into() }),
+            Current::Empty => Err(TemplateError::InvalidSyntax {
+                line,
+                detail: "text outside a section".into(),
+            }),
             Current::Text { body, .. } => {
                 body.push_str(raw);
                 body.push('\n');
@@ -181,7 +213,10 @@ impl Builder {
             Current::Variables => {
                 let (key, value) = split_key(trimmed, line)?;
                 if key.is_empty() {
-                    return Err(TemplateError::InvalidSyntax { line, detail: "variable name".into() });
+                    return Err(TemplateError::InvalidSyntax {
+                        line,
+                        detail: "variable name".into(),
+                    });
                 }
                 let value = value.trim().trim_matches('"').replace("\\n", "\n");
                 self.variables.insert(key, value);
@@ -203,7 +238,10 @@ impl Builder {
         let (key, value) = split_key(trimmed, line)?;
         once(&mut self.seen, &key)?;
         if key != "version" {
-            return Err(TemplateError::InvalidSyntax { line, detail: format!("unknown dts field {key}") });
+            return Err(TemplateError::InvalidSyntax {
+                line,
+                detail: format!("unknown dts field {key}"),
+            });
         }
         let version = parse_version(&value, line)?;
         if version != 2 {
@@ -215,9 +253,23 @@ impl Builder {
 
     fn finish(self) -> Result<Draft, TemplateError> {
         if !self.version_ok {
-            return Err(TemplateError::InvalidSyntax { line: 0, detail: "missing dts version".into() });
+            return Err(TemplateError::InvalidSyntax {
+                line: 0,
+                detail: "missing dts version".into(),
+            });
         }
-        let Self { variables, partials, layouts, selections, indexes, budgets, views, groups, plugins, .. } = self;
+        let Self {
+            variables,
+            partials,
+            layouts,
+            selections,
+            indexes,
+            budgets,
+            views,
+            groups,
+            plugins,
+            ..
+        } = self;
         let tree = body_named(&partials, "TREE_ENTRY");
         let file = body_named(&partials, "FILE_BLOCK");
         let layout = body_named(&layouts, "main");
@@ -239,7 +291,11 @@ impl Builder {
 }
 
 fn body_named(items: &[(String, String)], name: &str) -> String {
-    items.iter().find(|(item, _)| item == name).map(|(_, body)| body.clone()).unwrap_or_default()
+    items
+        .iter()
+        .find(|(item, _)| item == name)
+        .map(|(_, body)| body.clone())
+        .unwrap_or_default()
 }
 
 fn resolve_bodies(items: &[(String, String)], template: &Template) -> Vec<(String, String)> {

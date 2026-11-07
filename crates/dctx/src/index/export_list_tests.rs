@@ -20,19 +20,43 @@ fn python_all_tuple_and_plus_equals() {
 
 #[test]
 fn python_without_all_has_no_list() {
-    assert_eq!(names("python", "def zeta():\n    return 1\nall_items = [\"x\"]\n"), None);
+    assert_eq!(
+        names("python", "def zeta():\n    return 1\nall_items = [\"x\"]\n"),
+        None
+    );
 }
 
 #[test]
 fn commonjs_object_keys_and_assignments() {
-    assert_eq!(names("javascript", "function zed() {}\nfunction foo() {}\nmodule.exports = { zed, foo }\n"), set(&["foo", "zed"]));
-    assert_eq!(names("javascript", "module.exports = {\n  a: impl,\n  b,\n}\n"), set(&["a", "b"]));
-    assert_eq!(names("javascript", "exports.baz = function () {}\nmodule.exports.qux = 1\n"), set(&["baz", "qux"]));
+    assert_eq!(
+        names(
+            "javascript",
+            "function zed() {}\nfunction foo() {}\nmodule.exports = { zed, foo }\n"
+        ),
+        set(&["foo", "zed"])
+    );
+    assert_eq!(
+        names("javascript", "module.exports = {\n  a: impl,\n  b,\n}\n"),
+        set(&["a", "b"])
+    );
+    assert_eq!(
+        names(
+            "javascript",
+            "exports.baz = function () {}\nmodule.exports.qux = 1\n"
+        ),
+        set(&["baz", "qux"])
+    );
 }
 
 #[test]
 fn es_export_list_uses_local_names_and_skips_reexports() {
-    assert_eq!(names("typescript", "function a1() {}\nfunction b2() {}\nfunction c3() {}\nexport { c3, b2 as main }\n"), set(&["b2", "c3"]));
+    assert_eq!(
+        names(
+            "typescript",
+            "function a1() {}\nfunction b2() {}\nfunction c3() {}\nexport { c3, b2 as main }\n"
+        ),
+        set(&["b2", "c3"])
+    );
     assert_eq!(names("typescript", "export { x } from \"./y\"\n"), None);
 }
 

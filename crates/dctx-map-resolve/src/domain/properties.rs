@@ -33,9 +33,19 @@ fn call(target: &str, binding: Option<&str>, kind: EdgeKind) -> SharedReference 
     }
 }
 
-fn fact(bytes: &[u8], revision: &str, plan: &str, symbols: Vec<SharedSymbol>, references: Vec<SharedReference>) -> SharedFact {
+fn fact(
+    bytes: &[u8],
+    revision: &str,
+    plan: &str,
+    symbols: Vec<SharedSymbol>,
+    references: Vec<SharedReference>,
+) -> SharedFact {
     SharedFact::new(
-        FactKey::new(ContentId::of_bytes(bytes).unwrap(), contract(revision, plan).unwrap()).unwrap(),
+        FactKey::new(
+            ContentId::of_bytes(bytes).unwrap(),
+            contract(revision, plan).unwrap(),
+        )
+        .unwrap(),
         symbols,
         references,
     )
@@ -63,7 +73,13 @@ fn view(root: &str, placements: Vec<Placement>) -> View {
 }
 
 fn sample() -> (FactStore, View) {
-    let helper = fact(HELPER, "p1", "plan-1", vec![symbol("other"), symbol("work")], vec![]);
+    let helper = fact(
+        HELPER,
+        "p1",
+        "plan-1",
+        vec![symbol("other"), symbol("work")],
+        vec![],
+    );
     let lib = fact(
         LIB,
         "p1",
@@ -240,7 +256,11 @@ fn p7_non_vcs_reuse() {
     assert_eq!(store.retained_count(), 2);
     let plugin_key = |plugin: &str| {
         let _ = plugin;
-        FactKey::new(ContentId::of_bytes(LIB).unwrap(), contract("p1", "plan-1").unwrap()).unwrap()
+        FactKey::new(
+            ContentId::of_bytes(LIB).unwrap(),
+            contract("p1", "plan-1").unwrap(),
+        )
+        .unwrap()
     };
     assert_eq!(plugin_key("dctx-plugin-git"), plugin_key("none"));
     assert_eq!(plugin_key("dctx-plugin-git"), lib_key);
@@ -279,38 +299,80 @@ fn p7_non_vcs_reuse() {
     let moved = store.resolve_view(&root3).unwrap();
     assert_eq!(store.parses(), 2, "three roots share the retained keys");
     assert_eq!(hit.resolution.edges.len(), 1);
-    assert!(hit.resolution.edges[0].dst.as_str().contains("src/helper.rs#work"));
+    assert!(
+        hit.resolution.edges[0]
+            .dst
+            .as_str()
+            .contains("src/helper.rs#work")
+    );
     assert_eq!(miss.resolution.edges, [] as [dctx_map_model::Edge; 0]);
-    assert!(matches!(miss.resolution.unresolved[0].reason, UnresolvedReason::Missing));
+    assert!(matches!(
+        miss.resolution.unresolved[0].reason,
+        UnresolvedReason::Missing
+    ));
     assert_eq!(moved.resolution.edges.len(), 1);
-    assert!(moved.resolution.edges[0].dst.as_str().contains("other/src/helper.rs#work"));
+    assert!(
+        moved.resolution.edges[0]
+            .dst
+            .as_str()
+            .contains("other/src/helper.rs#work")
+    );
     assert_ne!(hit.resolution, miss.resolution);
     assert_ne!(hit.resolution, moved.resolution);
 
     let mut allowed = BTreeSet::new();
     allowed.insert("src/lib.rs".into());
     allowed.insert("src/helper.rs".into());
-    assert_eq!(store.resolve_view(&root1.authorize(&allowed)).unwrap().resolution, hit.resolution);
+    assert_eq!(
+        store
+            .resolve_view(&root1.authorize(&allowed))
+            .unwrap()
+            .resolution,
+        hit.resolution
+    );
     allowed.remove("src/helper.rs");
     let denied = store.resolve_view(&root1.authorize(&allowed)).unwrap();
     assert_eq!(denied.resolution.edges, [] as [dctx_map_model::Edge; 0]);
-    assert!(matches!(denied.resolution.unresolved[0].reason, UnresolvedReason::Missing));
-    assert!(denied.resolution.edges.iter().all(|edge| !edge.dst.as_str().contains("helper.rs")));
+    assert!(matches!(
+        denied.resolution.unresolved[0].reason,
+        UnresolvedReason::Missing
+    ));
+    assert!(
+        denied
+            .resolution
+            .edges
+            .iter()
+            .all(|edge| !edge.dst.as_str().contains("helper.rs"))
+    );
 
     let mut changed = helper.clone();
-    changed.key = FactKey::new(ContentId::of_bytes(HELPER).unwrap(), contract("p2", "plan-1").unwrap()).unwrap();
+    changed.key = FactKey::new(
+        ContentId::of_bytes(HELPER).unwrap(),
+        contract("p2", "plan-1").unwrap(),
+    )
+    .unwrap();
     assert_eq!(store.admit(changed).unwrap(), Admission::Parsed);
     let mut extracted = helper.clone();
-    extracted.key = FactKey::new(ContentId::of_bytes(HELPER).unwrap(), contract("p1", "plan-2").unwrap()).unwrap();
+    extracted.key = FactKey::new(
+        ContentId::of_bytes(HELPER).unwrap(),
+        contract("p1", "plan-2").unwrap(),
+    )
+    .unwrap();
     assert_eq!(store.admit(extracted).unwrap(), Admission::Parsed);
     assert_eq!(store.parses(), 4);
     let mut conflict = helper.clone();
     conflict.symbols[0].display_name = "renamed".into();
-    assert!(matches!(store.admit(conflict), Err(ResolveError::ConflictingFact)));
+    assert!(matches!(
+        store.admit(conflict),
+        Err(ResolveError::ConflictingFact)
+    ));
     assert_eq!(store.parses(), 4);
     assert!(store.reclaim(&helper_key));
     assert!(!store.contains(&helper_key));
     assert_eq!(store.admit(helper).unwrap(), Admission::Parsed);
     assert_eq!(store.parses(), 5);
-    assert_eq!(store.resolve_view(&root1).unwrap().resolution, hit.resolution);
+    assert_eq!(
+        store.resolve_view(&root1).unwrap().resolution,
+        hit.resolution
+    );
 }

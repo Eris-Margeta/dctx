@@ -183,15 +183,27 @@ impl fmt::Display for DistributionError {
             Self::Downgrade { candidate, floor } => {
                 write!(f, "release sequence {candidate} is below accepted {floor}")
             }
-            Self::Replay { sequence } => write!(f, "release sequence {sequence} already names another release"),
-            Self::SizeMismatch { expected } => write!(f, "payload size differs from signed {expected} bytes"),
+            Self::Replay { sequence } => write!(
+                f,
+                "release sequence {sequence} already names another release"
+            ),
+            Self::SizeMismatch { expected } => {
+                write!(f, "payload size differs from signed {expected} bytes")
+            }
             Self::LimitExceeded { limit } => write!(f, "limit of {limit} exceeded"),
             Self::Origin(reason) => write!(f, "origin refused: {reason:?}"),
             Self::Network(reason) => write!(f, "network failure: {reason:?}"),
-            Self::StaleRevocation { age_secs: Some(age) } => {
-                write!(f, "revocation state is {age} s old, beyond the freshness ceiling")
+            Self::StaleRevocation {
+                age_secs: Some(age),
+            } => {
+                write!(
+                    f,
+                    "revocation state is {age} s old, beyond the freshness ceiling"
+                )
             }
-            Self::StaleRevocation { age_secs: None } => f.write_str("revocation state was never refreshed"),
+            Self::StaleRevocation { age_secs: None } => {
+                f.write_str("revocation state was never refreshed")
+            }
             other => write!(f, "{other:?}"),
         }
     }
@@ -208,7 +220,11 @@ mod tests {
         let error = DistributionError::malformed(Document::Manifest, "unknown-field");
         assert_eq!(error.to_string(), "malformed Manifest: unknown-field");
         assert_eq!(
-            DistributionError::Downgrade { candidate: 1, floor: 2 }.to_string(),
+            DistributionError::Downgrade {
+                candidate: 1,
+                floor: 2
+            }
+            .to_string(),
             "release sequence 1 is below accepted 2"
         );
         assert_eq!(DistributionError::Busy.to_string(), "Busy");

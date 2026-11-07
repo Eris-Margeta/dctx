@@ -4,11 +4,11 @@
 //! Depends on [`super::facts`] for the fact-key bytes. View adjacency addresses these ids.
 //! Zero nodes still store the 116-byte view key. An empty section has no view key.
 
-use super::cursor::{push_bool, push_bytes, push_record, push_u32, push_u64, Cursor};
+use super::cursor::{Cursor, push_bool, push_bytes, push_record, push_u32, push_u64};
 use super::dictionary::dict_str;
 use super::error::SegmentError;
-use super::facts::{encode_key, parse_key, FactKey};
-use super::limits::{bounded_count, DecoderLimits};
+use super::facts::{FactKey, encode_key, parse_key};
+use super::limits::{DecoderLimits, bounded_count};
 
 /// View identity stored in front of the node records.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -91,7 +91,10 @@ pub(crate) fn encode<S: AsRef<str>>(
         push_bool(&mut body, node.tier0);
         push_record(&mut out, &body, limits.max_record_bytes)?;
     }
-    Ok((out, u64::try_from(nodes.len()).map_err(|_| SegmentError::Arithmetic)?))
+    Ok((
+        out,
+        u64::try_from(nodes.len()).map_err(|_| SegmentError::Arithmetic)?,
+    ))
 }
 
 pub(crate) fn decode<S: AsRef<str>>(
@@ -118,7 +121,8 @@ pub(crate) fn decode<S: AsRef<str>>(
         if rec_len > limits.max_record_bytes {
             return Err(SegmentError::Limit("record"));
         }
-        let record = cursor.take(usize::try_from(rec_len).map_err(|_| SegmentError::Arithmetic)?)?;
+        let record =
+            cursor.take(usize::try_from(rec_len).map_err(|_| SegmentError::Arithmetic)?)?;
         let node = read_node(record, dictionary)?;
         let dense = u32::try_from(nodes.len()).map_err(|_| SegmentError::Arithmetic)?;
         if node.dense_id != dense {
@@ -155,7 +159,10 @@ fn write_key(out: &mut Vec<u8>, key: &ViewKey) {
     push_bytes(out, &key.environment);
 }
 
-fn read_key<S: AsRef<str>>(cursor: &mut Cursor<'_>, dictionary: &[S]) -> Result<ViewKey, SegmentError> {
+fn read_key<S: AsRef<str>>(
+    cursor: &mut Cursor<'_>,
+    dictionary: &[S],
+) -> Result<ViewKey, SegmentError> {
     let key = ViewKey {
         trust: cursor.u32()?,
         root: cursor.u32()?,
@@ -171,7 +178,10 @@ fn read_key<S: AsRef<str>>(cursor: &mut Cursor<'_>, dictionary: &[S]) -> Result<
 
 fn validate_key<S: AsRef<str>>(key: &ViewKey, dictionary: &[S]) -> Result<(), SegmentError> {
     for id in [key.trust, key.root, key.resolver_revision] {
-        if dict_str(dictionary, id).map_err(|_| SegmentError::Nodes("key"))?.is_empty() {
+        if dict_str(dictionary, id)
+            .map_err(|_| SegmentError::Nodes("key"))?
+            .is_empty()
+        {
             return Err(SegmentError::Nodes("key"));
         }
     }

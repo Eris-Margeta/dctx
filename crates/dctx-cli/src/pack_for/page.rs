@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The budgeted page of `dctx pack --for`: whole lines only, sections in the order they are added, and an end line.
-//! A line that would push the page over the budget is dropped and counted; a later, shorter line may still fit.
+//! A section keeps a prefix of whole lines; its remaining lines are counted as dropped.
 //! The estimate is the `dctx map --budget` one, ceil(2 * UTF-8 bytes / 7); it is not a tokenizer guarantee.
 //! Pure: no index, no IO. Used by the parent module.
 
@@ -9,7 +9,10 @@ const END_RESERVE: usize = 96;
 
 /// Estimated tokens of `bytes` UTF-8 bytes: ceil(2 * bytes / 7), the estimate of `dctx map --budget`.
 pub(super) fn estimate_tokens(bytes: usize) -> u64 {
-    u64::try_from(bytes).unwrap_or(u64::MAX).saturating_mul(2).div_ceil(7)
+    u64::try_from(bytes)
+        .unwrap_or(u64::MAX)
+        .saturating_mul(2)
+        .div_ceil(7)
 }
 
 /// A page under construction. Every line it holds plus [`END_RESERVE`] stays inside `budget` estimated tokens.
@@ -22,23 +25,27 @@ pub(super) struct Page {
 impl Page {
     /// A page that starts with `header`. The caller's minimum budget leaves room for a short header.
     pub(super) fn new(budget: u32, header: &str) -> Self {
-        let mut page = Self { budget, text: String::new(), dropped: 0 };
+        let mut page = Self {
+            budget,
+            text: String::new(),
+            dropped: 0,
+        };
         if !page.push(header) {
             page.dropped += 1;
         }
         page
     }
 
-    /// Appends `title`, then each of `lines` that still fits. The title goes in only together with the first line that fits,
+    /// Appends `title`, then the prefix of `lines` that fits. The title goes in only together with the first line,
     /// so a section is never a bare title. Returns the number of lines kept.
     pub(super) fn section(&mut self, title: &str, lines: &[&str]) -> usize {
         let mut titled = false;
         let mut kept = 0;
-        for line in lines {
+        for (index, line) in lines.iter().enumerate() {
             if !titled {
                 if !self.fits(title.len() + 1 + line.len() + 1) {
-                    self.dropped += 1;
-                    continue;
+                    self.dropped += lines.len() - index;
+                    break;
                 }
                 self.append(title);
                 titled = true;
@@ -46,7 +53,8 @@ impl Page {
             if self.push(line) {
                 kept += 1;
             } else {
-                self.dropped += 1;
+                self.dropped += lines.len() - index;
+                break;
             }
         }
         kept
@@ -55,7 +63,10 @@ impl Page {
     /// The finished page: its lines and the end line, all inside the budget.
     pub(super) fn finish(mut self) -> String {
         let body_tokens = estimate_tokens(self.text.len());
-        let end = format!("# end body_tokens={body_tokens} budget={} dropped={}", self.budget, self.dropped);
+        let end = format!(
+            "# end body_tokens={body_tokens} budget={} dropped={}",
+            self.budget, self.dropped
+        );
         debug_assert!(end.len() < END_RESERVE);
         self.append(&end);
         self.text
@@ -100,16 +111,33 @@ mod tests {
         for budget in [100_u32, 101, 300, 1000, 3000] {
             let mut page = Page::new(budget, "# dctx pack --for budget=x terms=3");
             let long = "y".repeat(500);
-            let lines: Vec<String> = (0..400).map(|n| if n % 7 == 0 { long.clone() } else { format!("s:a.rs#f{n}\tfn\tL{n}") }).collect();
+            let lines: Vec<String> = (0..400)
+                .map(|n| {
+                    if n % 7 == 0 {
+                        long.clone()
+                    } else {
+                        format!("s:a.rs#f{n}\tfn\tL{n}")
+                    }
+                })
+                .collect();
             let refs: Vec<&str> = lines.iter().map(String::as_str).collect();
             page.section("## find f", &refs);
             let text = page.finish();
-            assert!(estimate_tokens(text.len()) <= u64::from(budget), "budget {budget}: {} tokens", estimate_tokens(text.len()));
+            assert!(
+                estimate_tokens(text.len()) <= u64::from(budget),
+                "budget {budget}: {} tokens",
+                estimate_tokens(text.len())
+            );
             assert!(text.ends_with('\n'));
             for line in text.lines().filter(|line| line.starts_with("s:")) {
                 assert!(lines.iter().any(|whole| whole == line), "cut line {line:?}");
             }
-            assert!(text.lines().last().is_some_and(|end| end.starts_with("# end body_tokens=")), "{text}");
+            assert!(
+                text.lines()
+                    .last()
+                    .is_some_and(|end| end.starts_with("# end body_tokens=")),
+                "{text}"
+            );
         }
     }
 
@@ -121,13 +149,33 @@ mod tests {
         assert_eq!(page.section("## big", &[big.as_str()]), 0);
         assert_eq!(page.section("## last", &["three"]), 1);
         let text = page.finish();
-        assert_eq!(text, "# h\n## first\none\ntwo\n## last\nthree\n# end body_tokens=10 budget=100 dropped=1\n");
+        assert_eq!(
+            text,
+            "# h\n## first\none\ntwo\n## last\nthree\n# end body_tokens=10 budget=100 dropped=1\n"
+        );
+    }
+
+    #[test]
+    fn a_cut_section_keeps_a_prefix_without_orphaned_closing_braces() {
+        let mut page = Page::new(100, "# h");
+        let long = "x".repeat(400);
+        assert_eq!(page.section("## read id", &["id\tfn", &long, "},", "}"]), 1);
+        let text = page.finish();
+        assert!(text.contains("## read id\nid\tfn\n"), "{text}");
+        assert!(
+            !text.lines().any(|line| matches!(line, "}," | "}")),
+            "{text}"
+        );
+        assert!(text.ends_with("dropped=3\n"), "{text}");
     }
 
     #[test]
     fn an_empty_section_adds_nothing() {
         let mut page = Page::new(100, "# h");
         assert_eq!(page.section("## none", &[]), 0);
-        assert_eq!(page.finish(), "# h\n# end body_tokens=2 budget=100 dropped=0\n");
+        assert_eq!(
+            page.finish(),
+            "# h\n# end body_tokens=2 budget=100 dropped=0\n"
+        );
     }
 }

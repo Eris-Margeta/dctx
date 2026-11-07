@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Search terms of `dctx pack --for`: the names a task text mentions, in the order the text mentions them.
 //! Code-like words come first (a single backticked word, snake_case, camelCase, PascalCase with an inner capital,
-//! the last segment of `a::b`), then plain words of five or more ASCII letters that are not common card English.
+//! the last segment of `a::b`, file paths), then plain words of five or more ASCII letters that are not common card English.
 //! Pure: no index, no IO. Used by the parent module, which runs `map find` on each term.
 
 /// Most terms one task text yields.
@@ -13,10 +13,11 @@ const MIN_PLAIN: usize = 5;
 
 /// Plain words that say what to do, not what to touch. Lower case.
 const STOP: &[&str] = &[
-    "about", "above", "after", "again", "against", "always", "before", "being", "below", "between", "build", "change",
-    "changes", "check", "could", "doing", "during", "every", "exactly", "exists", "first", "follow", "goal", "gates",
-    "never", "other", "output", "print", "prints", "should", "their", "there", "these", "those", "through", "under",
-    "until", "using", "where", "which", "while", "within", "without", "would", "write", "written",
+    "about", "above", "after", "again", "against", "always", "before", "being", "below", "between",
+    "build", "change", "changes", "check", "could", "doing", "during", "every", "exactly",
+    "exists", "first", "follow", "goal", "gates", "never", "other", "output", "print", "prints",
+    "should", "their", "there", "these", "those", "through", "under", "until", "using", "where",
+    "which", "while", "within", "without", "would", "write", "written",
 ];
 
 /// The search terms of `text`, deduplicated, code-like first, at most [`MAX_TERMS`].
@@ -48,12 +49,35 @@ pub(super) fn extract(text: &str) -> Vec<String> {
     code
 }
 
-/// Words of `text`: runs of ASCII letters, digits, `_` and `:`. A run holding `::` yields its last segment, flagged as pathed.
+/// Keep file names intact, including short stems such as `lib.rs`. Other words
+/// split at punctuation; a Rust `::` path yields its last segment.
 fn words(text: &str) -> Vec<(String, bool)> {
+    text.split(|ch: char| !(ch.is_ascii_alphanumeric() || "_:/.-".contains(ch)))
+        .flat_map(|run| {
+            let run = run.trim_end_matches('.').trim_start_matches("./");
+            let filename = run.rsplit('/').next().unwrap_or(run);
+            if !run.contains(':')
+                && filename.rsplit_once('.').is_some_and(|(stem, ext)| {
+                    !stem.is_empty()
+                        && !ext.is_empty()
+                        && ext.chars().all(|ch| ch.is_ascii_alphanumeric())
+                })
+            {
+                vec![(run.to_string(), true)]
+            } else {
+                symbol_words(run)
+            }
+        })
+        .collect()
+}
+
+fn symbol_words(text: &str) -> Vec<(String, bool)> {
     text.split(|ch: char| !(ch.is_ascii_alphanumeric() || ch == '_' || ch == ':'))
         .filter_map(|run| {
             let pathed = run.contains("::");
-            let last = run.rsplit("::").find(|part| !part.trim_matches(':').is_empty())?;
+            let last = run
+                .rsplit("::")
+                .find(|part| !part.trim_matches(':').is_empty())?;
             let word = last.trim_matches(':');
             (!word.contains(':')).then(|| (word.to_string(), pathed))
         })
@@ -72,7 +96,9 @@ fn is_name(word: &str) -> bool {
 fn is_code_like(word: &str) -> bool {
     let inner_underscore = word.trim_matches('_').contains('_');
     let bytes = word.as_bytes();
-    let inner_capital = bytes.windows(2).any(|pair| pair[0].is_ascii_lowercase() && pair[1].is_ascii_uppercase());
+    let inner_capital = bytes
+        .windows(2)
+        .any(|pair| pair[0].is_ascii_lowercase() && pair[1].is_ascii_uppercase());
     inner_underscore || inner_capital
 }
 
@@ -95,8 +121,20 @@ mod tests {
 
     #[test]
     fn code_like_names_come_first_in_text_order_then_plain_words() {
-        let terms = extract("Fix `alpha_body` so BetaStore reads the cache; see beta_helper and crate::pack::run.");
-        assert_eq!(terms, ["alpha_body", "BetaStore", "beta_helper", "run", "reads", "cache"]);
+        let terms = extract(
+            "Fix `alpha_body` so BetaStore reads the cache; see beta_helper and crate::pack::run.",
+        );
+        assert_eq!(
+            terms,
+            [
+                "alpha_body",
+                "BetaStore",
+                "beta_helper",
+                "run",
+                "reads",
+                "cache"
+            ]
+        );
     }
 
     #[test]
@@ -108,20 +146,38 @@ mod tests {
     #[test]
     fn stop_words_short_words_numbers_and_duplicates_are_dropped() {
         assert!(extract("Goal: never print before the check, 3000 and 42 a b").is_empty());
-        assert_eq!(extract("alpha_body alpha_body ALPHA_BODY"), ["alpha_body", "ALPHA_BODY"]);
+        assert_eq!(
+            extract("alpha_body alpha_body ALPHA_BODY"),
+            ["alpha_body", "ALPHA_BODY"]
+        );
         assert_eq!(extract("Cache cache CACHE"), ["cache"]);
-        assert_eq!(extract("DCTX_MAX_SOURCE_BYTES and parseArgs"), ["DCTX_MAX_SOURCE_BYTES", "parseArgs"]);
+        assert_eq!(
+            extract("DCTX_MAX_SOURCE_BYTES and parseArgs"),
+            ["DCTX_MAX_SOURCE_BYTES", "parseArgs"]
+        );
     }
 
     #[test]
-    fn paths_split_into_words_and_ids_are_not_terms() {
-        assert_eq!(extract("edit crates/dctx-cli/src/pack_for.rs"), ["pack_for", "crates"]);
+    fn paths_stay_whole_and_ids_are_not_terms() {
+        assert_eq!(
+            extract("edit crates/dctx-cli/src/pack_for.rs"),
+            ["crates/dctx-cli/src/pack_for.rs"]
+        );
         assert!(extract("s:a.rs").is_empty());
     }
 
     #[test]
+    fn file_targets_keep_the_filename_including_short_stems() {
+        assert_eq!(extract("src/lib.rs"), ["src/lib.rs"]);
+        assert_eq!(extract("lib.rs"), ["lib.rs"]);
+    }
+
+    #[test]
     fn at_most_eight_terms() {
-        let text = (0..20).map(|n| format!("name_{n}")).collect::<Vec<_>>().join(" ");
+        let text = (0..20)
+            .map(|n| format!("name_{n}"))
+            .collect::<Vec<_>>()
+            .join(" ");
         let terms = extract(&text);
         assert_eq!(terms.len(), MAX_TERMS);
         assert_eq!(terms[0], "name_0");

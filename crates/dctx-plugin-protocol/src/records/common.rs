@@ -6,10 +6,12 @@
 
 use std::collections::BTreeMap;
 
-use crate::json::fields::{Fields, Obj, array, constant, constant_int, int_in, list, positive, string, uint};
+use crate::json::fields::{
+    Fields, Obj, array, constant, constant_int, int_in, list, positive, string, uint,
+};
 use crate::json::value::Json;
-use crate::records::scalars::{Name, RequestId, Role, Text, Token};
 use crate::records::scalars::{Digest, PluginId, SemVer};
+use crate::records::scalars::{Name, RequestId, Role, Text, Token};
 use crate::refusal::Refusal;
 
 /// A protocol version `[major, minor]`.
@@ -28,7 +30,11 @@ impl ApiVersion {
     /// Decodes the schema `version` constant, which admits only `[1,0]`.
     pub(crate) fn decode(value: &Json) -> Result<Self, Refusal> {
         let parts = list(value, 2, 2, uint)?;
-        if parts == [1, 0] { Ok(Self::V1_0) } else { Err(Refusal::schema("unsupported-version")) }
+        if parts == [1, 0] {
+            Ok(Self::V1_0)
+        } else {
+            Err(Refusal::schema("unsupported-version"))
+        }
     }
 
     pub(crate) fn encode(self) -> Json {
@@ -93,9 +99,15 @@ pub(crate) fn decode_hook_decl(value: &Json) -> Result<HookName, Refusal> {
     Ok(name)
 }
 
-#[allow(clippy::trivially_copy_pass_by_ref, reason = "This encoder is passed as a callback over borrowed hook declarations, matching the other record encoders.")]
+#[allow(
+    clippy::trivially_copy_pass_by_ref,
+    reason = "This encoder is passed as a callback over borrowed hook declarations, matching the other record encoders."
+)]
 pub(crate) fn encode_hook_decl(name: &HookName) -> Json {
-    Obj::new().put("name", name.encode()).put("version", Json::Int(1)).build()
+    Obj::new()
+        .put("name", name.encode())
+        .put("version", Json::Int(1))
+        .build()
 }
 
 /// Resource ceilings (`limits`); every field is required.
@@ -150,7 +162,10 @@ impl Limits {
             .put("frame_bytes", Json::uint(self.frame_bytes))
             .put("read_bytes", Json::uint(self.read_bytes))
             .put("actions", Json::uint(self.actions))
-            .put("outstanding_requests", Json::uint(self.outstanding_requests))
+            .put(
+                "outstanding_requests",
+                Json::uint(self.outstanding_requests),
+            )
             .put("diagnostics_bytes", Json::uint(self.diagnostics_bytes))
             .put("chunk_bytes", Json::uint(self.chunk_bytes))
             .put("state_bytes", Json::uint(self.state_bytes))
@@ -191,7 +206,10 @@ impl Diagnostic {
         let diagnostic = Self {
             code: Name::decode(fields.req("code")?)?,
             severity: Severity::decode(fields.req("severity")?)?,
-            resource_handle: fields.opt("resource_handle").map(Token::decode).transpose()?,
+            resource_handle: fields
+                .opt("resource_handle")
+                .map(Token::decode)
+                .transpose()?,
         };
         fields.finish()?;
         Ok(diagnostic)
@@ -201,7 +219,10 @@ impl Diagnostic {
         Obj::new()
             .put("code", self.code.encode())
             .put("severity", self.severity.encode())
-            .maybe("resource_handle", self.resource_handle.as_ref().map(Token::encode))
+            .maybe(
+                "resource_handle",
+                self.resource_handle.as_ref().map(Token::encode),
+            )
             .build()
     }
 }
@@ -370,16 +391,29 @@ pub type Config = BTreeMap<Name, ConfigValue>;
 /// Envelope extensions: at most 16 named scalars.
 pub type Extensions = BTreeMap<Name, Scalar>;
 
-fn decode_map<T>(value: &Json, max: usize, item: impl Fn(&Json) -> Result<T, Refusal>) -> Result<BTreeMap<Name, T>, Refusal> {
-    let members = value.as_object().ok_or(Refusal::schema("expected-object"))?;
+fn decode_map<T>(
+    value: &Json,
+    max: usize,
+    item: impl Fn(&Json) -> Result<T, Refusal>,
+) -> Result<BTreeMap<Name, T>, Refusal> {
+    let members = value
+        .as_object()
+        .ok_or(Refusal::schema("expected-object"))?;
     if members.len() > max {
         return Err(Refusal::schema("too-many-properties"));
     }
-    members.iter().map(|(key, entry)| Ok((Name::new(key)?, item(entry)?))).collect()
+    members
+        .iter()
+        .map(|(key, entry)| Ok((Name::new(key)?, item(entry)?)))
+        .collect()
 }
 
 fn encode_map<T>(map: &BTreeMap<Name, T>, item: impl Fn(&T) -> Json) -> Json {
-    Json::Object(map.iter().map(|(key, entry)| (key.as_str().to_owned(), item(entry))).collect())
+    Json::Object(
+        map.iter()
+            .map(|(key, entry)| (key.as_str().to_owned(), item(entry)))
+            .collect(),
+    )
 }
 
 pub(crate) fn decode_config(value: &Json) -> Result<Config, Refusal> {
@@ -426,7 +460,10 @@ impl CommandRecord {
             Self::Text(Text::decode(fields.req("text")?)?)
         } else {
             constant(fields.req("type")?, "record")?;
-            Self::Record { name: Name::decode(fields.req("name")?)?, fields: decode_config(fields.req("fields")?)? }
+            Self::Record {
+                name: Name::decode(fields.req("name")?)?,
+                fields: decode_config(fields.req("fields")?)?,
+            }
         };
         fields.finish()?;
         Ok(record)
@@ -434,7 +471,10 @@ impl CommandRecord {
 
     pub(crate) fn encode(&self) -> Json {
         match self {
-            Self::Text(text) => Obj::new().put("type", Json::str("text")).put("text", text.encode()).build(),
+            Self::Text(text) => Obj::new()
+                .put("type", Json::str("text"))
+                .put("text", text.encode())
+                .build(),
             Self::Record { name, fields } => Obj::new()
                 .put("type", Json::str("record"))
                 .put("name", name.encode())

@@ -5,7 +5,7 @@
 mod literals;
 mod names;
 
-use super::{as_u32, Lx};
+use super::{Lx, as_u32};
 use crate::domain::{DiagnosticReason, LexError};
 
 const LONG_OPS: &[&str] = &[

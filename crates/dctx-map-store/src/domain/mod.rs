@@ -7,13 +7,13 @@ use dctx_map_model::{Edge, EdgeKind, Node, StableId};
 mod fact_key;
 mod retention;
 
-pub use fact_key::{ExtractionContract, FactKey, Retain, GIT_IDENTITY};
-pub use retention::{
-    accounted_bytes, cache_limits, MaintainReport, ACCOUNTING_UNIT, HARD_CAP_BYTES,
-    UNREACHABLE_GRACE_MS, VIEW_IDLE_MS,
-};
+pub use fact_key::{ExtractionContract, FactKey, GIT_IDENTITY, Retain};
 pub(crate) use fact_key::{plain_label, view_label};
-pub(crate) use retention::{expired, idle, observed_clock, Charge};
+pub use retention::{
+    ACCOUNTING_UNIT, HARD_CAP_BYTES, MaintainReport, UNREACHABLE_GRACE_MS, VIEW_IDLE_MS,
+    accounted_bytes, cache_limits,
+};
+pub(crate) use retention::{Charge, expired, idle, observed_clock};
 
 /// Indexed file identity and freshness prefilter.
 #[derive(Debug, Clone, PartialEq, Eq)]

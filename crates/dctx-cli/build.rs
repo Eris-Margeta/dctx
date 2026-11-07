@@ -20,7 +20,10 @@ fn main() {
         head_commit(&start, &mut watched)
     });
     let short = sha.map(|sha| sha.chars().take(SHORT).collect::<String>());
-    println!("cargo:rustc-env=DCTX_GIT_SHA={}", short.as_deref().unwrap_or("unknown"));
+    println!(
+        "cargo:rustc-env=DCTX_GIT_SHA={}",
+        short.as_deref().unwrap_or("unknown")
+    );
     // Watch only files that exist: Cargo reruns a script on every build when a watched path is missing.
     for path in watched.iter().filter(|path| path.is_file()) {
         println!("cargo:rerun-if-changed={}", path.display());
@@ -62,18 +65,29 @@ fn head_commit(start: &Path, watched: &mut Vec<PathBuf>) -> Option<String> {
 /// The git dir of the nearest `.git` at or above `start` and its common dir (the same, unless a `commondir` file says
 /// otherwise, as in a linked worktree).
 fn git_dirs(start: &Path) -> Option<(PathBuf, PathBuf)> {
-    let dot = start.ancestors().map(|dir| dir.join(".git")).find(|path| path.exists())?;
+    let dot = start
+        .ancestors()
+        .map(|dir| dir.join(".git"))
+        .find(|path| path.exists())?;
     let git_dir = if dot.is_dir() {
         dot
     } else {
         let text = fs::read_to_string(&dot).ok()?;
         let target = PathBuf::from(text.trim().strip_prefix("gitdir:")?.trim());
-        if target.is_absolute() { target } else { dot.parent()?.join(target) }
+        if target.is_absolute() {
+            target
+        } else {
+            dot.parent()?.join(target)
+        }
     };
     let common = match fs::read_to_string(git_dir.join("commondir")) {
         Ok(text) => {
             let target = PathBuf::from(text.trim());
-            if target.is_absolute() { target } else { git_dir.join(target) }
+            if target.is_absolute() {
+                target
+            } else {
+                git_dir.join(target)
+            }
         }
         Err(_) => git_dir.clone(),
     };

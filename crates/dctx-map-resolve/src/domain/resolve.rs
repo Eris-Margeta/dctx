@@ -168,7 +168,10 @@ mod tests {
         assert_eq!(missing.unresolved[0].reason, UnresolvedReason::Missing);
         files.push(file("a.rs", vec![a.clone()]));
         let unique = resolve(&files).unwrap();
-        assert_eq!(unique.unresolved, [] as [crate::domain::facts::Unresolved; 0]);
+        assert_eq!(
+            unique.unresolved,
+            [] as [crate::domain::facts::Unresolved; 0]
+        );
         assert_eq!(unique.edges[0].conf, Confidence::Guess);
         files.push(file("b.rs", vec![b.clone()]));
         let ambiguous = resolve(&files).unwrap();

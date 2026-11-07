@@ -12,7 +12,7 @@ mod common;
 use dctx::memory::MemorySource;
 use dctx::{MapRequest, PackRequest, SnapshotRequest, VecSink, Verb};
 
-use common::{open_session, PING};
+use common::{PING, open_session};
 
 /// Paths of the sensitive canary files, one per shape the deny-list must cover.
 const SENSITIVE: [&str; 10] = [
@@ -37,16 +37,23 @@ const LOOK_ALIKE: &[u8] = b"def load_credentials():\n    return 'PLAINV1CRED'\n"
 fn canary_source() -> MemorySource {
     let mut source = MemorySource::new();
     source.insert_file("src/lib.rs", PING, 0).expect("lib");
-    source.insert_file("src/credentials.py", LOOK_ALIKE, 0).expect("look-alike");
+    source
+        .insert_file("src/credentials.py", LOOK_ALIKE, 0)
+        .expect("look-alike");
     for path in SENSITIVE {
         let body = format!("api_key: {CANARY}\npassword = {CANARY}\n");
-        source.insert_file(path, body.as_bytes(), 0).expect("sensitive file");
+        source
+            .insert_file(path, body.as_bytes(), 0)
+            .expect("sensitive file");
     }
     source
 }
 
 fn assert_clean(label: &str, bytes: &[u8]) {
-    assert!(!String::from_utf8_lossy(bytes).contains(CANARY), "{label} leaked the canary");
+    assert!(
+        !String::from_utf8_lossy(bytes).contains(CANARY),
+        "{label} leaked the canary"
+    );
 }
 
 #[test]
@@ -55,7 +62,13 @@ fn no_map_answer_contains_a_sensitive_canary() {
         let mut session = open_session(canary_source());
         let handle = session.snapshot(&request).expect("snapshot");
         for path in SENSITIVE {
-            for verb in [Verb::Read, Verb::Map, Verb::Explain, Verb::Neighbors, Verb::Skeleton] {
+            for verb in [
+                Verb::Read,
+                Verb::Map,
+                Verb::Explain,
+                Verb::Neighbors,
+                Verb::Skeleton,
+            ] {
                 let mut query = MapRequest::new(verb);
                 query.target = format!("m:{path}");
                 let mut sink = VecSink::new();
@@ -64,7 +77,13 @@ fn no_map_answer_contains_a_sensitive_canary() {
             }
         }
         for literal in ["CANARYV1", "api_key", "password"] {
-            for within in [None, Some("config"), Some("deploy"), Some("keys"), Some("certs")] {
+            for within in [
+                None,
+                Some("config"),
+                Some("deploy"),
+                Some("keys"),
+                Some("certs"),
+            ] {
                 for ignore_case in [false, true] {
                     let mut grep = MapRequest::new(Verb::Grep);
                     grep.query = literal.to_string();
@@ -86,7 +105,9 @@ fn no_map_answer_contains_a_sensitive_canary() {
         let _ = session.hubs(&handle, &MapRequest::new(Verb::Neighbors), &mut sink);
         assert_clean("hubs", sink.as_bytes());
         for format in ["json", "mermaid"] {
-            let exported = session.export_graph(&handle, format, &MapRequest::new(Verb::Map)).expect("export");
+            let exported = session
+                .export_graph(&handle, format, &MapRequest::new(Verb::Map))
+                .expect("export");
             assert_clean(format, exported.as_bytes());
         }
     }
@@ -95,7 +116,9 @@ fn no_map_answer_contains_a_sensitive_canary() {
 #[test]
 fn a_snapshot_reads_only_the_ordinary_files() {
     let mut session = open_session(canary_source());
-    session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
+    session
+        .snapshot(&SnapshotRequest::immutable())
+        .expect("snapshot");
     // `src/lib.rs` and `src/credentials.py` are read; the ten sensitive files cost nothing.
     assert_eq!(session.content_reads(), 2);
 }
@@ -103,10 +126,14 @@ fn a_snapshot_reads_only_the_ordinary_files() {
 #[test]
 fn a_metadata_snapshot_refuses_to_read_any_sensitive_node() {
     let mut session = open_session(canary_source());
-    let handle = session.snapshot(&SnapshotRequest::metadata()).expect("snapshot");
+    let handle = session
+        .snapshot(&SnapshotRequest::metadata())
+        .expect("snapshot");
     for path in SENSITIVE {
         let mut sink = VecSink::new();
-        let error = session.read(&handle, &format!("m:{path}"), &mut sink).expect_err(path);
+        let error = session
+            .read(&handle, &format!("m:{path}"), &mut sink)
+            .expect_err(path);
         assert_eq!(error, dctx::DctxError::PolicyDenied, "{path}");
         assert!(sink.is_empty(), "{path}");
     }
@@ -115,9 +142,13 @@ fn a_metadata_snapshot_refuses_to_read_any_sensitive_node() {
 #[test]
 fn the_look_alike_source_file_stays_readable() {
     let mut session = open_session(canary_source());
-    let handle = session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
+    let handle = session
+        .snapshot(&SnapshotRequest::immutable())
+        .expect("snapshot");
     let mut sink = VecSink::new();
-    session.read(&handle, "m:src/credentials.py", &mut sink).expect("read look-alike");
+    session
+        .read(&handle, "m:src/credentials.py", &mut sink)
+        .expect("read look-alike");
     assert!(String::from_utf8_lossy(sink.as_bytes()).contains("PLAINV1CRED"));
 }
 

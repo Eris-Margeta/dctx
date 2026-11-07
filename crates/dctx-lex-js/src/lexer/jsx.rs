@@ -83,7 +83,9 @@ impl Lexer<'_> {
             match c {
                 '{' => return self.container(),
                 '<' if next == Some(b'/') => {
-                    if let Some(n) = self.src[self.pos..].find('>') { self.pos += n + 1 } else {
+                    if let Some(n) = self.src[self.pos..].find('>') {
+                        self.pos += n + 1
+                    } else {
                         self.unterminated();
                         return Ok(());
                     }
@@ -150,10 +152,7 @@ mod tests {
 
     #[test]
     fn nested_elements_fragments_and_containers_alternate() {
-        let tokens = texts(
-            "v = <><A.B x='{'>{f(<i/>)}</A.B></>;",
-            Dialect::JavaScript,
-        );
+        let tokens = texts("v = <><A.B x='{'>{f(<i/>)}</A.B></>;", Dialect::JavaScript);
         let kinds: Vec<Kind> = tokens.iter().map(|t| t.0).collect();
         assert_eq!(
             kinds,

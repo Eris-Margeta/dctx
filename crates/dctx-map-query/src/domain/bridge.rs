@@ -107,7 +107,10 @@ pub(crate) struct Bridged {
     pub structural: Vec<Node>,
     pub edges: Vec<Edge>,
 }
-#[allow(clippy::case_sensitive_file_extension_comparisons, reason = "Preserve the existing literal suffix policy for source language dispatch and privacy exclusions; case folding would change which paths are parsed or denied.")]
+#[allow(
+    clippy::case_sensitive_file_extension_comparisons,
+    reason = "Preserve the existing literal suffix policy for source language dispatch and privacy exclusions; case folding would change which paths are parsed or denied."
+)]
 pub(crate) fn bridge(files: &BTreeMap<String, CachedFile>) -> Result<Bridged> {
     let packages: BTreeSet<_> = files
         .keys()

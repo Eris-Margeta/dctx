@@ -9,8 +9,8 @@ use crate::{
     Error, ParseStatus, Result,
     domain::{cached::CachedFile, parse_status::PARSER_REVISION},
 };
-use dctx_adapter_fs::ports::SourceFs;
 use dctx_adapter_fs::StdFs;
+use dctx_adapter_fs::ports::SourceFs;
 use dctx_adapter_store::ports::StoreFs;
 use dctx_map_model::{Node, StableId};
 use dctx_map_store::{MapStore, SqliteStore};
@@ -93,7 +93,9 @@ impl Index {
         self.report = IndexReport::default();
         for (path, file) in &journal.files {
             if file.status != ParseStatus::Parsed {
-                self.report.diagnostics.insert(path.clone(), file.status.clone());
+                self.report
+                    .diagnostics
+                    .insert(path.clone(), file.status.clone());
             }
         }
         self.report.stale = journal.stale;
@@ -273,7 +275,11 @@ impl Index {
                 return Ok(false);
             }
             for (path, file) in &self.files {
-                if journal.files.get(path).is_none_or(|saved| saved.hash != file.hash) {
+                if journal
+                    .files
+                    .get(path)
+                    .is_none_or(|saved| saved.hash != file.hash)
+                {
                     return Ok(false);
                 }
             }

@@ -46,12 +46,25 @@ fn p2_publish_crash_matrix() {
         let err = writer.publish(req("main", 2, second.clone())).unwrap_err();
         stop.store(true, Ordering::SeqCst);
         reader.join().unwrap();
-        assert_eq!(err, StoreError::Crashed { boundary: boundary.as_str() });
-        assert!(errors.lock().unwrap().is_empty(), "{boundary:?} {:?}", errors.lock().unwrap());
+        assert_eq!(
+            err,
+            StoreError::Crashed {
+                boundary: boundary.as_str()
+            }
+        );
+        assert!(
+            errors.lock().unwrap().is_empty(),
+            "{boundary:?} {:?}",
+            errors.lock().unwrap()
+        );
 
         let store = open(fs);
         let recovery = store.recover().unwrap();
-        let expect = if boundary.publishes_new_generation() { 2 } else { 1 };
+        let expect = if boundary.publishes_new_generation() {
+            2
+        } else {
+            1
+        };
         assert_eq!(recovery.generation, Some(expect), "{boundary:?}");
         assert!(!recovery.repaired_pointer);
         assert!(store.current_pointer_closed("main").unwrap());
@@ -75,7 +88,9 @@ fn observe(
 ) {
     let pin = match store.pin("main") {
         Ok(pin) => pin,
-        Err(StoreError::Crashed { .. } | StoreError::Busy | StoreError::InvalidRequest { .. }) => return,
+        Err(StoreError::Crashed { .. } | StoreError::Busy | StoreError::InvalidRequest { .. }) => {
+            return;
+        }
         Err(err) => {
             errors.lock().unwrap().push(err.to_string());
             return;
@@ -97,14 +112,21 @@ fn observe(
     };
     match store.read_segment(&pin, &digest) {
         Ok(bytes) if bytes == expected => {}
-        Ok(_) => errors.lock().unwrap().push(format!("bytes {}", pin.generation())),
+        Ok(_) => errors
+            .lock()
+            .unwrap()
+            .push(format!("bytes {}", pin.generation())),
         Err(StoreError::Crashed { .. } | StoreError::Busy | StoreError::InvalidRequest { .. }) => {}
         Err(err) => errors.lock().unwrap().push(err.to_string()),
     }
     if let Err(err) = store.release(pin)
-        && !matches!(err, StoreError::Crashed { .. } | StoreError::Busy | StoreError::InvalidRequest { .. }) {
-            errors.lock().unwrap().push(err.to_string());
-        }
+        && !matches!(
+            err,
+            StoreError::Crashed { .. } | StoreError::Busy | StoreError::InvalidRequest { .. }
+        )
+    {
+        errors.lock().unwrap().push(err.to_string());
+    }
 }
 
 #[test]
@@ -118,7 +140,12 @@ fn pointer_first_mutation_is_not_a_committed_generation() {
     assert!(!store.current_pointer_closed("main").unwrap());
     let pin = store.pin("main").unwrap();
     assert_eq!(pin.generation(), 1);
-    assert_eq!(store.read_segment(&pin, pin.segments()[0].digest()).unwrap(), first);
+    assert_eq!(
+        store
+            .read_segment(&pin, pin.segments()[0].digest())
+            .unwrap(),
+        first
+    );
     drop(pin);
 
     let store = open(fs);
@@ -154,5 +181,11 @@ fn identical_segment_bytes_are_reused_and_a_collision_is_corrupt() {
     assert_eq!(store.committed("main").unwrap(), Some(2));
     let pin = store.pin("main").unwrap();
     assert_eq!(pin.generation(), 2);
-    decode(&store.read_segment(&pin, pin.segments()[0].digest()).unwrap(), SegmentRole::Fact).unwrap();
+    decode(
+        &store
+            .read_segment(&pin, pin.segments()[0].digest())
+            .unwrap(),
+        SegmentRole::Fact,
+    )
+    .unwrap();
 }

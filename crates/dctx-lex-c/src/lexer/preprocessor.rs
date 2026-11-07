@@ -38,8 +38,7 @@ pub(crate) fn classify(text: &str) -> Dir {
     match keyword {
         "include" | "include_next" => Dir::Include(include_path(rest)),
         "define" => Dir::Define(macro_def(rest)),
-        "undef" => ident_at(rest)
-            .map_or(Dir::Other, |name| Dir::Undef(name.to_string())),
+        "undef" => ident_at(rest).map_or(Dir::Other, |name| Dir::Undef(name.to_string())),
         "if" | "ifdef" | "ifndef" => Dir::Open,
         "elif" | "elifdef" | "elifndef" | "else" => Dir::Branch,
         "endif" => Dir::Close,

@@ -4,8 +4,8 @@
 //! Depends on [`crate::domain`]; pure data (`disk_path` is a path value, never opened here).
 //! Used by every pack module, legacy and new, and by dctx-cli and the desktop.
 
-use std::path::PathBuf;
 use crate::domain::FileHandlingDecision;
+use std::path::PathBuf;
 
 /// Ekvivalent za `NodeType` iz C-a
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -24,11 +24,11 @@ pub enum PatternType {
     /// Matches only the file or directory basename.
     Basename, // Matches only the file/dir name (e.g., "node_modules")
     /// Matches the full path relative to the root.
-    Path,     // Matches the full relative path (e.g., "src/main.c")
+    Path, // Matches the full relative path (e.g., "src/main.c")
     /// Matches a suffix wildcard such as `*.log`.
-    Suffix,   // Matches a suffix wildcard (e.g., "*.log")
+    Suffix, // Matches a suffix wildcard (e.g., "*.log")
     /// Matches a prefix wildcard such as `build/*`.
-    Prefix,   // Matches a prefix wildcard (e.g., "build/*")
+    Prefix, // Matches a prefix wildcard (e.g., "build/*")
 
     // NOVO: Za složene uzorke
     /// Matches a compound glob such as `foo/**/bar`.
@@ -61,7 +61,10 @@ impl Default for IgnoreRule {
 
 impl IgnoreRule {
     /// Konstruktor za stvaranje praznog pravila
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new() -> Self {
         Self::default()
     }
@@ -123,7 +126,10 @@ pub struct DirContextTreeNode {
 impl DirContextTreeNode {
     /// Creates an empty node with an include decision and no file content.
     /// All sizes, timestamps and offsets start at zero; `disk_path` is stored without IO.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new(node_type: NodeType, relative_path: &str, disk_path: PathBuf) -> Self {
         Self {
             node_type,
@@ -143,7 +149,10 @@ impl DirContextTreeNode {
     }
 
     /// Returns whether this node is a directory.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn is_dir(&self) -> bool {
         self.node_type == NodeType::Directory
     }

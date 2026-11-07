@@ -38,7 +38,11 @@ pub(super) fn type_members(line: &str, head: bool, depth: &mut i32) -> Vec<(Stri
             c if c.is_whitespace() => {}
             _ if start && parens == 0 => {
                 let rest = &text[at..];
-                let (word, member) = if *depth == 0 { constructor(rest) } else { field(rest) };
+                let (word, member) = if *depth == 0 {
+                    constructor(rest)
+                } else {
+                    field(rest)
+                };
                 // `type t = private A | B`: the constructors follow the `private`.
                 start = *depth == 0 && ident_run(rest) == "private";
                 skip_to = at + word;
@@ -62,7 +66,9 @@ fn top_level_equals(line: &str) -> Option<usize> {
             b')' | b']' => parens -= 1,
             b'=' if parens == 0 => {
                 let before = at.checked_sub(1).map(|prior| bytes[prior]);
-                if !matches!(before, Some(b'=' | b'<' | b'>' | b'!' | b':')) && bytes.get(at + 1) != Some(&b'=') {
+                if !matches!(before, Some(b'=' | b'<' | b'>' | b'!' | b':'))
+                    && bytes.get(at + 1) != Some(&b'=')
+                {
                     return Some(at);
                 }
             }
@@ -81,7 +87,9 @@ fn constructor(rest: &str) -> (usize, Option<(String, &'static str)>) {
     }
     let tail = &rest[word.len()..];
     let tail_trimmed = tail.trim_start();
-    let ends = tail_trimmed.is_empty() || tail_trimmed.starts_with(['|', ':', ';', ')', '[']) || ident_run(tail_trimmed) == "of";
+    let ends = tail_trimmed.is_empty()
+        || tail_trimmed.starts_with(['|', ':', ';', ')', '['])
+        || ident_run(tail_trimmed) == "of";
     let ok = word.starts_with(|c: char| c.is_uppercase()) && !tail.starts_with('.') && ends;
     (word.len(), ok.then(|| (word.to_string(), "const")))
 }
@@ -90,13 +98,22 @@ fn constructor(rest: &str) -> (usize, Option<(String, &'static str)>) {
 fn field(rest: &str) -> (usize, Option<(String, &'static str)>) {
     let mut skipped = 0usize;
     let mut text = rest;
-    if let Some(after) = text.strip_prefix("mutable").filter(|after| after.starts_with(char::is_whitespace)) {
+    if let Some(after) = text
+        .strip_prefix("mutable")
+        .filter(|after| after.starts_with(char::is_whitespace))
+    {
         skipped = rest.len() - after.trim_start().len();
         text = after.trim_start();
     }
     let word = ident_run(text);
-    let ok = word.starts_with(|c: char| c.is_lowercase() || c == '_') && word != "_" && !is_denied(word) && text[word.len()..].trim_start().starts_with(':');
-    (skipped + word.len(), ok.then(|| (word.to_string(), "field")))
+    let ok = word.starts_with(|c: char| c.is_lowercase() || c == '_')
+        && word != "_"
+        && !is_denied(word)
+        && text[word.len()..].trim_start().starts_with(':');
+    (
+        skipped + word.len(),
+        ok.then(|| (word.to_string(), "field")),
+    )
 }
 
 /// A function defined inside a body: `let [rec] name args =`, `let name = fun ..` or `let name = function`, and the same after
@@ -106,17 +123,27 @@ pub(super) fn nested_fn(line: &str) -> Option<(String, bool)> {
     if !matches!(word, "let" | "and") {
         return None;
     }
-    let mut rest = line[word.len()..].strip_prefix(char::is_whitespace)?.trim_start();
+    let mut rest = line[word.len()..]
+        .strip_prefix(char::is_whitespace)?
+        .trim_start();
     if ident_run(rest) == "rec" {
         rest = rest["rec".len()..].trim_start();
     }
     let name = ident_run(rest);
-    if !name.starts_with(|c: char| c.is_lowercase() || c == '_') || name == "_" || matches!(name, "open" | "module" | "exception" | "rec" | "in") || is_denied(name) {
+    if !name.starts_with(|c: char| c.is_lowercase() || c == '_')
+        || name == "_"
+        || matches!(name, "open" | "module" | "exception" | "rec" | "in")
+        || is_denied(name)
+    {
         return None;
     }
     let after = rest[name.len()..].trim_start();
-    let params = after.starts_with(|c: char| c.is_alphabetic() || matches!(c, '_' | '(' | '~' | '?')) && !after.starts_with("in ");
-    let lambda = after.strip_prefix('=').is_some_and(|value| matches!(ident_run(value.trim_start()), "fun" | "function"));
+    let params = after
+        .starts_with(|c: char| c.is_alphabetic() || matches!(c, '_' | '(' | '~' | '?'))
+        && !after.starts_with("in ");
+    let lambda = after
+        .strip_prefix('=')
+        .is_some_and(|value| matches!(ident_run(value.trim_start()), "fun" | "function"));
     let one_line = line.rsplit(|c: char| !is_ident_char(c)).next() == Some("in");
     (params || lambda).then(|| (name.to_string(), one_line))
 }

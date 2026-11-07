@@ -4,7 +4,7 @@
 //! Depends on generic declarators for parameters and thrown types.
 //! Called when a prefix is scanned or a member shape is a method or constructor.
 
-use super::{is_modifier_word, Ann, Prefix, Scope, ScopeKind, SymbolDraft, Walker};
+use super::{Ann, Prefix, Scope, ScopeKind, SymbolDraft, Walker, is_modifier_word};
 use crate::domain::Precision;
 use dctx_map_model::{EdgeKind, NodeKind, SymbolKind};
 
@@ -80,7 +80,9 @@ impl Walker<'_> {
         let mut private = false;
         while index < end {
             if self.is_annotation(index) {
-                let args = self.is_punct(self.annotation_args(index), "(").then(|| self.annotation_args(index));
+                let args = self
+                    .is_punct(self.annotation_args(index), "(")
+                    .then(|| self.annotation_args(index));
                 annotations.push(Ann {
                     name: self.annotation_name(index),
                     at: index,
@@ -289,7 +291,9 @@ impl Walker<'_> {
                 continue;
             }
             if angle == 0
-                && (self.is_punct(index, "(") || self.is_punct(index, "{") || self.is_punct(index, "["))
+                && (self.is_punct(index, "(")
+                    || self.is_punct(index, "{")
+                    || self.is_punct(index, "["))
                 && let Some(close) = self.close(index)
             {
                 index = close + 1;
@@ -342,7 +346,12 @@ mod tests {
             .find(|node| node.fact.name == "A::saves")
             .expect("saves");
         assert_eq!(test.fact.kind.as_str(), "test");
-        assert_eq!(test.fact.symbol_kind.map(dctx_map_model::SymbolKind::as_str), Some("method"));
+        assert_eq!(
+            test.fact
+                .symbol_kind
+                .map(dctx_map_model::SymbolKind::as_str),
+            Some("method")
+        );
         assert_eq!(test.precision, Precision::Convention);
         let calls: Vec<_> = facts
             .references

@@ -9,7 +9,7 @@ mod parse;
 mod render;
 
 pub use compiled::CompiledTemplate;
-pub use parse::{replace_vars, replace_vars_in_order, Template};
 pub(crate) use parse::finish;
-pub use render::{render_markers, MarkerNode};
+pub use parse::{Template, replace_vars, replace_vars_in_order};
 pub(crate) use render::end_marker_of;
+pub use render::{MarkerNode, render_markers};

@@ -13,9 +13,9 @@ pub mod domain;
 pub mod ports;
 
 pub use adapters::{MemoryFs, SegmentStore, StdFs};
+pub use dctx_map_segment::SegmentRole;
 pub use domain::{
     Boundary, DurabilityMode, GcBudget, GcReport, Manifest, MarkMode, Pin, PinnedSegment,
     PublishRequest, Published, Recovery, Revisions, SegmentBlob, SegmentRef, StoreError,
     StoreOptions,
 };
-pub use dctx_map_segment::SegmentRole;

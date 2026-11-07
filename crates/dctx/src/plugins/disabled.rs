@@ -67,6 +67,11 @@ pub(crate) fn participants(plan: &PluginPlan, boundary: Boundary) -> Vec<&Plugin
         .iter()
         .filter_map(|id| plan.plugins.iter().find(|plugin| &plugin.id == id))
         .filter(|plugin| plugin.state == PluginState::Enabled)
-        .filter(|plugin| plugin.hooks.iter().any(|hook| hook.name == boundary.as_str() && hook.version == 1))
+        .filter(|plugin| {
+            plugin
+                .hooks
+                .iter()
+                .any(|hook| hook.name == boundary.as_str() && hook.version == 1)
+        })
         .collect()
 }

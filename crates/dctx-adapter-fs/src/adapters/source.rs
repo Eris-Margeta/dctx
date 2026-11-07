@@ -62,7 +62,10 @@ impl<F: SourceFs> FsSource<F> {
     ///
     /// # Errors
     /// Refuses a non-absolute or non-directory root; propagates metadata, rule-read and invalid-rule failures.
-    #[allow(clippy::needless_pass_by_value, reason = "Keep the existing public load signature; the options value is the session configuration transferred by the caller.")]
+    #[allow(
+        clippy::needless_pass_by_value,
+        reason = "Keep the existing public load signature; the options value is the session configuration transferred by the caller."
+    )]
     pub fn load(root: PathBuf, options: SourceOptions, fs: F) -> Result<Self, SourceError> {
         if !root.is_absolute() {
             return Err(SourceError::InvalidPath { path: root });

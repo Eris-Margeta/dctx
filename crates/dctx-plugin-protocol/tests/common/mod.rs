@@ -12,7 +12,11 @@ use dctx_plugin_protocol::records::scalars::RequestId;
 use dctx_plugin_protocol::{DecodeLimits, Json, WireMessage, decode_object};
 
 /// Generous limits for the corpus's own index documents (not wire frames).
-pub const CORPUS: DecodeLimits = DecodeLimits { max_bytes: 4 << 20, max_depth: 64, max_members: 1 << 20 };
+pub const CORPUS: DecodeLimits = DecodeLimits {
+    max_bytes: 4 << 20,
+    max_depth: 64,
+    max_members: 1 << 20,
+};
 
 pub fn api_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs/design/plugin-api")
@@ -24,15 +28,23 @@ pub fn bytes(relative: &str) -> Vec<u8> {
 }
 
 pub fn document(relative: &str) -> Json {
-    decode_object(&bytes(relative), CORPUS).unwrap_or_else(|refusal| panic!("{relative}: {refusal}"))
+    decode_object(&bytes(relative), CORPUS)
+        .unwrap_or_else(|refusal| panic!("{relative}: {refusal}"))
 }
 
 pub fn catalog() -> Vec<Json> {
-    document("fixtures/catalog.json").get("cases").and_then(Json::as_array).expect("cases").to_vec()
+    document("fixtures/catalog.json")
+        .get("cases")
+        .and_then(Json::as_array)
+        .expect("cases")
+        .to_vec()
 }
 
 pub fn case(id: &str) -> Json {
-    catalog().into_iter().find(|case| text(case, "id") == id).unwrap_or_else(|| panic!("no case {id}"))
+    catalog()
+        .into_iter()
+        .find(|case| text(case, "id") == id)
+        .unwrap_or_else(|| panic!("no case {id}"))
 }
 
 pub fn text<'a>(value: &'a Json, key: &str) -> &'a str {
@@ -51,11 +63,16 @@ pub fn case_bytes(id: &str) -> Vec<u8> {
 /// Exact bytes of a fixture by file stem under valid/ or invalid/.
 pub fn fixture_bytes(stem: &str) -> Vec<u8> {
     let valid = api_dir().join(format!("fixtures/valid/{stem}.json"));
-    if valid.exists() { bytes(&format!("fixtures/valid/{stem}.json")) } else { bytes(&format!("fixtures/invalid/{stem}.json")) }
+    if valid.exists() {
+        bytes(&format!("fixtures/valid/{stem}.json"))
+    } else {
+        bytes(&format!("fixtures/invalid/{stem}.json"))
+    }
 }
 
 pub fn message(stem: &str) -> WireMessage {
-    WireMessage::decode(&fixture_bytes(stem), DecodeLimits::WIRE).unwrap_or_else(|refusal| panic!("{stem}: {refusal}"))
+    WireMessage::decode(&fixture_bytes(stem), DecodeLimits::WIRE)
+        .unwrap_or_else(|refusal| panic!("{stem}: {refusal}"))
 }
 
 pub fn session_message(stem: &str) -> SessionMessage {
@@ -78,10 +95,15 @@ pub fn with_id(mut message: SessionMessage, id: &str) -> SessionMessage {
 pub fn hex(bytes: &[u8]) -> String {
     use std::fmt::Write as _;
     let mut text = String::with_capacity(bytes.len() * 2);
-    for byte in bytes { let _ = write!(text, "{byte:02x}"); }
+    for byte in bytes {
+        let _ = write!(text, "{byte:02x}");
+    }
     text
 }
 
 pub fn unhex(text: &str) -> Vec<u8> {
-    (0..text.len()).step_by(2).map(|i| u8::from_str_radix(&text[i..i + 2], 16).expect("hex")).collect()
+    (0..text.len())
+        .step_by(2)
+        .map(|i| u8::from_str_radix(&text[i..i + 2], 16).expect("hex"))
+        .collect()
 }

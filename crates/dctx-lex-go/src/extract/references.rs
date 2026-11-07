@@ -2,14 +2,17 @@
 //! Call, selector and type-name references inside already-recognised spans.
 //! Implements SPEC-MAP-MODE 5.3 calls and uses-type. Index-versus-instantiation
 //! (`F[T](x)`) and bare field selectors are abstained. Called by declaration parsing.
-use super::{compact, Walker};
-use crate::lexer::{keyword, Kind};
+use super::{Walker, compact};
+use crate::lexer::{Kind, keyword};
 use dctx_map_model::EdgeKind;
 
 impl Walker<'_> {
     /// Walks a type starting at `index`. Named types, map keys and type arguments
     /// are emitted when `emit` is set. A slice or array bracket is a length, not a type.
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     pub(crate) fn skip_type(
         &mut self,
         mut index: usize,
@@ -77,18 +80,37 @@ impl Walker<'_> {
         index
     }
 
-    fn named_type(&mut self, start: usize, end: usize, emit: bool, owner: usize, scope: &str) -> usize {
+    fn named_type(
+        &mut self,
+        start: usize,
+        end: usize,
+        emit: bool,
+        owner: usize,
+        scope: &str,
+    ) -> usize {
         let mut index = start + 1;
-        while index < end && self.is(index, ".") && self.ident(index + 1) && !keyword(self.text(index + 1))
+        while index < end
+            && self.is(index, ".")
+            && self.ident(index + 1)
+            && !keyword(self.text(index + 1))
         {
             index += 2;
         }
         let name_end = index;
         if emit {
-            let bytes = self.src.get(self.start_byte(start) as usize..self.end_byte(name_end - 1) as usize);
+            let bytes = self
+                .src
+                .get(self.start_byte(start) as usize..self.end_byte(name_end - 1) as usize);
             let spelling = compact(bytes.unwrap_or(""));
             if !spelling.is_empty() {
-                self.refer(owner, scope, EdgeKind::UsesType, spelling, None, (start, name_end - 1));
+                self.refer(
+                    owner,
+                    scope,
+                    EdgeKind::UsesType,
+                    spelling,
+                    None,
+                    (start, name_end - 1),
+                );
             }
         }
         if self.is(index, "[") {
@@ -100,8 +122,18 @@ impl Walker<'_> {
     }
 
     /// Comma-separated types inside an instantiation. `end` is the closing bracket.
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
-    fn type_arguments(&mut self, mut index: usize, end: usize, emit: bool, owner: usize, scope: &str) {
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
+    fn type_arguments(
+        &mut self,
+        mut index: usize,
+        end: usize,
+        emit: bool,
+        owner: usize,
+        scope: &str,
+    ) {
         let limit = self.toks.len().saturating_add(1) as u32;
         let mut steps = 0_u32;
         while index < end && steps < limit {
@@ -147,12 +179,19 @@ impl Walker<'_> {
         }
         if type_at.is_none() && !self.type_starts(cursor) {
             if strict {
-                self.problem(self.start_byte(index), crate::domain::DiagnosticReason::Unrecognized);
+                self.problem(
+                    self.start_byte(index),
+                    crate::domain::DiagnosticReason::Unrecognized,
+                );
             }
             return self.skip_element(index, end);
         }
         let after_type = self.skip_type(cursor, end, true, owner, scope);
-        let mut next = if after_type > cursor { after_type } else { cursor + 1 };
+        let mut next = if after_type > cursor {
+            after_type
+        } else {
+            cursor + 1
+        };
         while matches!(self.kind(next), Some(Kind::Str | Kind::Raw)) {
             next += 1;
         }
@@ -251,20 +290,38 @@ impl Walker<'_> {
             if self.is(cursor, "(") {
                 let spelling = compact(self.span(start, cursor));
                 let close = self.close_of(cursor, end);
-                self.refer(owner, scope, EdgeKind::Calls, spelling, None, (start, close));
+                self.refer(
+                    owner,
+                    scope,
+                    EdgeKind::Calls,
+                    spelling,
+                    None,
+                    (start, close),
+                );
                 index = cursor + 1;
                 continue;
             }
             if self.is(cursor, "{") && !self.prev_control(start) {
                 let spelling = compact(self.span(start, cursor));
-                self.refer(owner, scope, EdgeKind::UsesType, spelling, None, (start, cursor - 1));
+                self.refer(
+                    owner,
+                    scope,
+                    EdgeKind::UsesType,
+                    spelling,
+                    None,
+                    (start, cursor - 1),
+                );
             }
             index = cursor;
         }
     }
 
     fn prev_control(&self, index: usize) -> bool {
-        index > 0 && matches!(self.text(index - 1), "if" | "for" | "switch" | "select" | "else")
+        index > 0
+            && matches!(
+                self.text(index - 1),
+                "if" | "for" | "switch" | "select" | "else"
+            )
     }
 
     fn span(&self, start: usize, end_exclusive: usize) -> &str {
@@ -285,7 +342,9 @@ mod tests {
     #[test]
     fn calls_keep_selectors_and_strings_do_not_invent_them() {
         let source = "package p\nfunc f() {\n\tfmt.Println(a)\n\t_ = \"func Hidden()\"\n}\n";
-        let facts = GoLexer::default().extract("p.go", source.as_bytes()).unwrap();
+        let facts = GoLexer::default()
+            .extract("p.go", source.as_bytes())
+            .unwrap();
         let calls: Vec<_> = facts
             .references
             .iter()

@@ -4,7 +4,9 @@
 //! Type bodies and functions live in sibling modules. Macros are never expanded.
 use super::{Item, Region, Scope, Walker};
 use crate::domain::{DiagnosticReason, Precision};
-use crate::lexer::{classify, define_attribute, define_brace, hidden_include, specifier, Dir, Kind};
+use crate::lexer::{
+    Dir, Kind, classify, define_attribute, define_brace, hidden_include, specifier,
+};
 use dctx_map_model::{EdgeKind, SymbolKind};
 
 impl Walker<'_> {
@@ -35,7 +37,10 @@ impl Walker<'_> {
         if self.is(start, "}") && self.kind(start) == Some(Kind::Punct) {
             return end;
         }
-        if matches!(self.text(start), "static_assert" | "_Static_assert" | "asm" | "__asm__") {
+        if matches!(
+            self.text(start),
+            "static_assert" | "_Static_assert" | "asm" | "__asm__"
+        ) {
             let stop = self.consume_semi(start, end);
             self.scan_range(start, stop, scope);
             return stop;
@@ -44,7 +49,8 @@ impl Walker<'_> {
         if let Some(next) = self.hidden_macro_type(at, end) {
             return next;
         }
-        if self.is(at, "extern") && self.kind(at + 1) == Some(Kind::String) && self.is(at + 2, "{") {
+        if self.is(at, "extern") && self.kind(at + 1) == Some(Kind::String) && self.is(at + 2, "{")
+        {
             let open = at + 2;
             let close = self.close(open).unwrap_or(end.saturating_sub(1).max(open));
             self.walk(open + 1, close.min(end), scope);
@@ -82,7 +88,14 @@ impl Walker<'_> {
         match classify(&text) {
             Dir::Include(path) => {
                 if let Some(path) = path {
-                    self.refer(scope.owner, scope, EdgeKind::Imports, path, (index, index), Precision::Structural);
+                    self.refer(
+                        scope.owner,
+                        scope,
+                        EdgeKind::Imports,
+                        path,
+                        (index, index),
+                        Precision::Structural,
+                    );
                 } else if hidden_include(&Dir::Include(None)) {
                     self.problem(at, DiagnosticReason::HiddenByMacro);
                 }
@@ -134,7 +147,9 @@ impl Walker<'_> {
     fn namespace(&mut self, sig: usize, keyword: usize, end: usize, scope: &Scope) -> usize {
         let name_at = self.skip_attributes(keyword + 1, end);
         if self.is(name_at, "{") {
-            let close = self.close(name_at).unwrap_or(end.saturating_sub(1).max(name_at));
+            let close = self
+                .close(name_at)
+                .unwrap_or(end.saturating_sub(1).max(name_at));
             let mut inner = scope.clone();
             inner.region = Region::Namespace;
             inner.public = false;
@@ -190,7 +205,14 @@ impl Walker<'_> {
         let last = stop.saturating_sub(1).max(keyword);
         if self.is(keyword + 1, "namespace") {
             if let Some(name) = self.qual_name(keyword + 2, stop) {
-                self.refer(scope.owner, scope, EdgeKind::Imports, name, (keyword + 2, last), Precision::Structural);
+                self.refer(
+                    scope.owner,
+                    scope,
+                    EdgeKind::Imports,
+                    name,
+                    (keyword + 2, last),
+                    Precision::Structural,
+                );
             }
             return stop;
         }
@@ -205,7 +227,14 @@ impl Walker<'_> {
             return stop;
         }
         if let Some(name) = self.qual_name(keyword + 1, stop) {
-            self.refer(scope.owner, scope, EdgeKind::Imports, name, (keyword + 1, last), Precision::Structural);
+            self.refer(
+                scope.owner,
+                scope,
+                EdgeKind::Imports,
+                name,
+                (keyword + 1, last),
+                Precision::Structural,
+            );
         }
         stop
     }
@@ -228,7 +257,10 @@ impl Walker<'_> {
                 first: sig,
                 last: stop.saturating_sub(1).max(sig),
                 sig_end: self.start_of(stop.saturating_sub(1).max(sig)),
-                body: (self.start_of(sig), self.end_of(stop.saturating_sub(1).max(sig))),
+                body: (
+                    self.start_of(sig),
+                    self.end_of(stop.saturating_sub(1).max(sig)),
+                ),
                 public: self.decl_public(sig, at, scope),
             };
             let _ = self.emit(item, scope);
@@ -243,9 +275,21 @@ impl Walker<'_> {
         stop
     }
 
-    fn emit_alias(&mut self, sig: usize, _name_at: usize, last: usize, name: &str, scope: &Scope, kind: &str) {
+    fn emit_alias(
+        &mut self,
+        sig: usize,
+        _name_at: usize,
+        last: usize,
+        name: &str,
+        scope: &Scope,
+        kind: &str,
+    ) {
         let item = Item {
-            symbol: if kind == "using" { Some(SymbolKind::Type) } else { None },
+            symbol: if kind == "using" {
+                Some(SymbolKind::Type)
+            } else {
+                None
+            },
             local: name.to_string(),
             first: sig,
             last,
@@ -257,7 +301,9 @@ impl Walker<'_> {
     }
 
     fn access(&mut self, index: usize, scope: &mut Scope) -> Option<usize> {
-        if !matches!(self.text(index), "public" | "private" | "protected") || !self.is(index + 1, ":") {
+        if !matches!(self.text(index), "public" | "private" | "protected")
+            || !self.is(index + 1, ":")
+        {
             return None;
         }
         scope.public = self.is(index, "public");
@@ -322,7 +368,11 @@ impl Walker<'_> {
                 index = self.after(index).min(end);
                 continue;
             }
-            if self.ident(index) && matches!(self.text(index), "alignas" | "_Alignas" | "__attribute__" | "__declspec")
+            if self.ident(index)
+                && matches!(
+                    self.text(index),
+                    "alignas" | "_Alignas" | "__attribute__" | "__declspec"
+                )
             {
                 index += 1;
                 if self.is(index, "(") {
@@ -337,7 +387,9 @@ impl Walker<'_> {
                 }
                 continue;
             }
-            if self.ident(index) && (specifier(self.text(index)) || self.known_macro(self.text(index))) {
+            if self.ident(index)
+                && (specifier(self.text(index)) || self.known_macro(self.text(index)))
+            {
                 index += 1;
                 if self.is(index, "(") {
                     index = self.after(index);
@@ -419,7 +471,11 @@ impl Walker<'_> {
             }
             if self.is(index, "{") || self.is(index, "(") || self.is(index, "[") {
                 let next = self.after(index);
-                index = if next > index { next.min(end) } else { index + 1 };
+                index = if next > index {
+                    next.min(end)
+                } else {
+                    index + 1
+                };
                 continue;
             }
             index += 1;
@@ -436,7 +492,10 @@ impl Walker<'_> {
     /// No diagnostic: a diagnostic refuses the whole file downstream, and real
     /// sources contain macros and forms this walker does not model. Hidden names
     /// and macro-introduced types still diagnose at their own sites.
-    #[allow(clippy::unused_self, reason = "This no-op recovery hook deliberately remains a Walker operation alongside the branches that report skipped spans.")]
+    #[allow(
+        clippy::unused_self,
+        reason = "This no-op recovery hook deliberately remains a Walker operation alongside the branches that report skipped spans."
+    )]
     pub(crate) fn note_skipped(&mut self, _start: usize, _end: usize) {}
 
     pub(crate) fn decl_public(&self, start: usize, name: usize, scope: &Scope) -> bool {
@@ -462,7 +521,10 @@ mod tests {
     #[test]
     fn includes_and_macros_are_facts_and_hidden_paths_abstain() {
         let facts = CLexer::default()
-            .extract("a.h", b"#include <stdio.h>\n#include NAME\n#define LIMIT 1\n")
+            .extract(
+                "a.h",
+                b"#include <stdio.h>\n#include NAME\n#define LIMIT 1\n",
+            )
             .unwrap();
         assert_eq!(facts.completion, Completion::Partial);
         let imports: Vec<_> = facts
@@ -473,7 +535,17 @@ mod tests {
             .collect();
         assert_eq!(imports, ["stdio.h"]);
         assert!(facts.nodes.iter().any(|n| n.fact.name == "LIMIT"));
-        assert!(facts.diagnostics.iter().any(|d| d.reason == crate::DiagnosticReason::HiddenByMacro));
-        assert!(facts.nodes.iter().any(|n| n.precision == Precision::Structural));
+        assert!(
+            facts
+                .diagnostics
+                .iter()
+                .any(|d| d.reason == crate::DiagnosticReason::HiddenByMacro)
+        );
+        assert!(
+            facts
+                .nodes
+                .iter()
+                .any(|n| n.precision == Precision::Structural)
+        );
     }
 }

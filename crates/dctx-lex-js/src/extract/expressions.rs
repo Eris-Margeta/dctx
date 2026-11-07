@@ -314,7 +314,10 @@ mod tests {
         let source = "const r = /function f\\(\\)/g; const s = 'g()'; t(r.test(s) / 2);";
         assert_eq!(
             calls("x.js", source),
-            [(String::new(), "t".into()), (String::new(), "r.test".into())]
+            [
+                (String::new(), "t".into()),
+                (String::new(), "r.test".into())
+            ]
         );
     }
 }

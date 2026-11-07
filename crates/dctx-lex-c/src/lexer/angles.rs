@@ -20,7 +20,10 @@ impl AngleDepth {
         }
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     pub(crate) fn depth(&self) -> u32 {
         self.opens.len() as u32
     }
@@ -31,8 +34,14 @@ impl AngleDepth {
     }
 
     /// Parentheses plus open template lists. Declarator names use one level of either.
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
-    #[allow(clippy::cast_possible_wrap, reason = "Template stack size is bounded by the 8 MiB input ceiling and therefore fits i32.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
+    #[allow(
+        clippy::cast_possible_wrap,
+        reason = "Template stack size is bounded by the 8 MiB input ceiling and therefore fits i32."
+    )]
     pub(crate) fn nest(&self) -> i32 {
         self.paren + self.opens.len() as i32
     }
@@ -177,8 +186,8 @@ mod tests {
         assert_eq!(peak(&deep, 3), Err(4));
         assert_eq!(peak(&deep, 4), Ok(4));
         let shifted = [
-            "template", "<", "int", "N", "=", "(", "1", ">>", "2", ")", ",", "class", "A", "=", "B",
-            "<", "C", "<", "int", ">>", ">",
+            "template", "<", "int", "N", "=", "(", "1", ">>", "2", ")", ",", "class", "A", "=",
+            "B", "<", "C", "<", "int", ">>", ">",
         ];
         assert_eq!(peak(&shifted, 2), Err(3));
         assert_eq!(peak(&shifted, 3), Ok(3));

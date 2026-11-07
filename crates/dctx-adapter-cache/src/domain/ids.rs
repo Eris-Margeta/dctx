@@ -10,13 +10,19 @@ pub struct RootId(u64);
 
 impl RootId {
     /// Wraps a caller-chosen id.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn new(raw: u64) -> Self {
         Self(raw)
     }
 
     /// The raw id.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn raw(self) -> u64 {
         self.0
     }
@@ -32,7 +38,10 @@ impl ObjectId {
     }
 
     /// The raw id.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn raw(self) -> u64 {
         self.0
     }
@@ -48,7 +57,10 @@ impl ManifestId {
     }
 
     /// The raw id.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn raw(self) -> u64 {
         self.0
     }
@@ -64,7 +76,10 @@ impl LeaseId {
     }
 
     /// The raw id.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn raw(self) -> u64 {
         self.0
     }
@@ -76,13 +91,19 @@ pub struct SessionId(u64);
 
 impl SessionId {
     /// Wraps the host session identity.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn new(raw: u64) -> Self {
         Self(raw)
     }
 
     /// The raw id.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn raw(self) -> u64 {
         self.0
     }
@@ -98,7 +119,10 @@ impl GenerationId {
     }
 
     /// The raw id.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn raw(self) -> u64 {
         self.0
     }

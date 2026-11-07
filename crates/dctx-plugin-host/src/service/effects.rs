@@ -17,8 +17,8 @@ use crate::domain::ledger::Lookup;
 use crate::domain::trace::ModelAction;
 use crate::error::HostRefusal;
 use crate::ports::{
-    AuditKind, AuditPort, AuditUnavailable, FileFault, FileIdentity, FilePort, MAX_RECOVERY_RECORDS, Recipe, RecipeOutcome, RecipePort,
-    RecoveryRecord, RecoveryState,
+    AuditKind, AuditPort, AuditUnavailable, FileFault, FileIdentity, FilePort,
+    MAX_RECOVERY_RECORDS, Recipe, RecipeOutcome, RecipePort, RecoveryRecord, RecoveryState,
 };
 use crate::service::broker::{Broker, Reply, fault};
 use crate::service::handles::HandleKind;
@@ -36,21 +36,36 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
     /// Refuses unavailable recovery evidence or records rejected by ledger restoration.
     pub fn recover(&mut self) -> Result<(), HostRefusal> {
         if !self.ledger.recovered {
-            let records = self.audit.recover(MAX_RECOVERY_RECORDS).map_err(|_| HostRefusal::audit("recovery-unavailable"))?;
+            let records = self
+                .audit
+                .recover(MAX_RECOVERY_RECORDS)
+                .map_err(|_| HostRefusal::audit("recovery-unavailable"))?;
             self.ledger.restore(&records)?;
         }
         Ok(())
     }
 
-    pub(crate) fn file_replace(&mut self, request: &Request, replace: &FileReplace) -> Result<Reply, HostRefusal> {
+    pub(crate) fn file_replace(
+        &mut self,
+        request: &Request,
+        replace: &FileReplace,
+    ) -> Result<Reply, HostRefusal> {
         self.recover()?;
         let (key, args) = self.replay_key(request)?;
         if let Lookup::Existing(receipt) = self.ledger.lookup(&key, &args)? {
-            return Ok(Reply::Receipt { receipt, precondition: None, replayed: true });
+            return Ok(Reply::Receipt {
+                receipt,
+                precondition: None,
+                replayed: true,
+            });
         }
         let record = self.handles.get(&replace.resource)?.clone();
-        let HandleKind::File { path } = &record.kind else { return Err(HostRefusal::denied("not-a-file-handle")) };
-        let identity = self.handles.check_precondition(&replace.resource, &replace.precondition)?;
+        let HandleKind::File { path } = &record.kind else {
+            return Err(HostRefusal::denied("not-a-file-handle"));
+        };
+        let identity = self
+            .handles
+            .check_precondition(&replace.resource, &replace.precondition)?;
         let upload = self.handles.upload_mut(&replace.upload)?.clone();
         if upload.resource != replace.resource
             || upload.precondition != replace.precondition
@@ -62,16 +77,27 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
             return Err(HostRefusal::conflict("upload-not-sealed"));
         }
         let size = upload.bytes.len() as u64;
-        let need = Need::FileWrite { path: path.clone(), size, growth: size.saturating_sub(identity.size), create: false };
+        let need = Need::FileWrite {
+            path: path.clone(),
+            size,
+            growth: size.saturating_sub(identity.size),
+            create: false,
+        };
         let admission = self.authority.admit(&record.binding, need)?;
         let path = path.clone();
-        let outcome = self.effect(key, args, "file.replace", size, &admission, |broker| {
-            match broker.files.replace(&path, identity, &upload.bytes) {
-                Ok(new) => Ran::Done(Some(new)),
-                Err(FileFault::Uncertain) => Ran::Uncertain,
-                Err(other) => Ran::NotRun(fault(other)),
-            }
-        })?;
+        let outcome =
+            self.effect(
+                key,
+                args,
+                "file.replace",
+                size,
+                &admission,
+                |broker| match broker.files.replace(&path, identity, &upload.bytes) {
+                    Ok(new) => Ran::Done(Some(new)),
+                    Err(FileFault::Uncertain) => Ran::Uncertain,
+                    Err(other) => Ran::NotRun(fault(other)),
+                },
+            )?;
         self.handles.retire_precondition(&replace.precondition);
         if self.handles.reclaim_upload(&replace.upload).is_some() {
             self.budget.release(Dimension::Upload, size);
@@ -80,14 +106,26 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
             Some(new) => Some(self.handles.precondition(&replace.resource, new)?),
             None => None,
         };
-        Ok(Reply::Receipt { receipt: outcome.0, precondition, replayed: false })
+        Ok(Reply::Receipt {
+            receipt: outcome.0,
+            precondition,
+            replayed: false,
+        })
     }
 
-    pub(crate) fn program_run(&mut self, request: &Request, run: &GitAddIgnore) -> Result<Reply, HostRefusal> {
+    pub(crate) fn program_run(
+        &mut self,
+        request: &Request,
+        run: &GitAddIgnore,
+    ) -> Result<Reply, HostRefusal> {
         self.recover()?;
         let (key, args) = self.replay_key(request)?;
         if let Lookup::Existing(receipt) = self.ledger.lookup(&key, &args)? {
-            return Ok(Reply::Receipt { receipt, precondition: None, replayed: true });
+            return Ok(Reply::Receipt {
+                receipt,
+                precondition: None,
+                replayed: true,
+            });
         }
         let record = self.handles.get(&run.resource)?.clone();
         let repository = self.handles.get(&run.repository)?.clone();
@@ -95,31 +133,63 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
             return Err(HostRefusal::denied("not-the-bound-repository"));
         }
         let path: ProjectPath = self.file_path(&run.resource)?;
-        let expected = self.handles.check_precondition(&run.resource, &run.precondition)?;
+        let expected = self
+            .handles
+            .check_precondition(&run.resource, &run.precondition)?;
         self.authority.check_content(&path)?;
-        let admission = self.authority.admit(&record.binding, Need::GitAddIgnore { path: path.clone() })?;
+        let admission = self
+            .authority
+            .admit(&record.binding, Need::GitAddIgnore { path: path.clone() })?;
         let current = self.files.identity(&path).map_err(fault)?;
         if current != expected {
             return Err(HostRefusal::conflict("file-changed"));
         }
         let recipe = Recipe::GitAddIgnore { path, expected };
-        let (receipt, _) = self.effect(key, args, "program.run", 0, &admission, |broker| match broker.recipes.run(&recipe) {
-            RecipeOutcome::Succeeded => Ran::Done(None),
-            RecipeOutcome::Failed => Ran::NotRun(HostRefusal::new(ErrorCode::ExternalProgramFailed, Phase::Broker, "recipe-failed")),
-            RecipeOutcome::Missing => Ran::NotRun(HostRefusal::new(ErrorCode::ExternalProgramMissing, Phase::Broker, "program-missing")),
-            RecipeOutcome::Uncertain => Ran::Uncertain,
-        })?;
+        let (receipt, _) =
+            self.effect(
+                key,
+                args,
+                "program.run",
+                0,
+                &admission,
+                |broker| match broker.recipes.run(&recipe) {
+                    RecipeOutcome::Succeeded => Ran::Done(None),
+                    RecipeOutcome::Failed => Ran::NotRun(HostRefusal::new(
+                        ErrorCode::ExternalProgramFailed,
+                        Phase::Broker,
+                        "recipe-failed",
+                    )),
+                    RecipeOutcome::Missing => Ran::NotRun(HostRefusal::new(
+                        ErrorCode::ExternalProgramMissing,
+                        Phase::Broker,
+                        "program-missing",
+                    )),
+                    RecipeOutcome::Uncertain => Ran::Uncertain,
+                },
+            )?;
         self.authority.record(ModelAction::AuthorityAdmin);
-        Ok(Reply::Receipt { receipt, precondition: None, replayed: false })
+        Ok(Reply::Receipt {
+            receipt,
+            precondition: None,
+            replayed: false,
+        })
     }
 
     /// `Receipts.Reconcile`: the host verified that the single uncertain execution committed.
     /// # Errors
     /// Refuses recovery failure, unverified commitment, an invalid ledger transition, or unavailable reconciliation audit.
-    pub fn reconcile(&mut self, key: &ActionKey, verified_committed: bool) -> Result<Token, HostRefusal> {
+    pub fn reconcile(
+        &mut self,
+        key: &ActionKey,
+        verified_committed: bool,
+    ) -> Result<Token, HostRefusal> {
         self.recover()?;
         if !verified_committed {
-            return Err(HostRefusal::new(ErrorCode::EffectUnknown, Phase::Broker, "explicit-retry-required"));
+            return Err(HostRefusal::new(
+                ErrorCode::EffectUnknown,
+                Phase::Broker,
+                "explicit-retry-required",
+            ));
         }
         let mut reconciled = self.ledger.clone();
         let receipt = reconciled.reconcile(key)?;
@@ -136,7 +206,8 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
         self.recover()?;
         let mut archived = self.ledger.clone();
         archived.rotate(key)?;
-        self.completion(key, "rotate", 0, "archived", RecoveryState::Archived).map_err(|_| HostRefusal::audit("rotation-not-audited"))?;
+        self.completion(key, "rotate", 0, "archived", RecoveryState::Archived)
+            .map_err(|_| HostRefusal::audit("rotation-not-audited"))?;
         self.ledger = archived;
         Ok(())
     }
@@ -153,7 +224,10 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
     }
 
     /// Intent → commit check → execute → completion; uncertain outcomes stay pinned and unknown.
-    #[allow(clippy::needless_pass_by_value, reason = "The effect transaction owns its action key across intent creation, execution and completion; retain that ownership boundary.")]
+    #[allow(
+        clippy::needless_pass_by_value,
+        reason = "The effect transaction owns its action key across intent creation, execution and completion; retain that ownership boundary."
+    )]
     fn effect(
         &mut self,
         key: ActionKey,
@@ -165,9 +239,20 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
     ) -> Result<(Token, Option<FileIdentity>), HostRefusal> {
         self.budget.charge(&[(Dimension::Actions, 1)])?;
         let receipt = self.ledger.reserve()?;
-        let mut intent = self.record(AuditKind::Intent, method, Some(receipt.clone()), bytes, "intent");
+        let mut intent = self.record(
+            AuditKind::Intent,
+            method,
+            Some(receipt.clone()),
+            bytes,
+            "intent",
+        );
         intent.args = Some(args);
-        let recovery = RecoveryRecord { key: key.clone(), args, receipt: receipt.clone(), state: RecoveryState::Pending };
+        let recovery = RecoveryRecord {
+            key: key.clone(),
+            args,
+            receipt: receipt.clone(),
+            state: RecoveryState::Pending,
+        };
         if self.audit.append_effect(&intent, &recovery).is_err() {
             self.ledger.audit_failed();
             self.budget.release(Dimension::Actions, 1);
@@ -187,7 +272,10 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
             }
             Ran::Done(identity) => {
                 self.ledger.executed(&key)?;
-                if self.completion(&key, method, bytes, "committed", RecoveryState::Committed).is_err() {
+                if self
+                    .completion(&key, method, bytes, "committed", RecoveryState::Committed)
+                    .is_err()
+                {
                     self.ledger.audit_failed();
                     let receipt = self.ledger.uncertain(&key, false)?;
                     return Err(HostRefusal::unknown(receipt, "completion-not-durable"));
@@ -198,10 +286,22 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
     }
 
     /// The effect provably did not run: log completion and drop the intent, or keep it pinned.
-    fn resolve_not_run(&mut self, key: &ActionKey, method: &'static str, receipt: Token, refusal: HostRefusal) -> HostRefusal {
-        if self.completion(key, method, 0, refusal.reason, RecoveryState::NotRun).is_err() {
+    fn resolve_not_run(
+        &mut self,
+        key: &ActionKey,
+        method: &'static str,
+        receipt: Token,
+        refusal: HostRefusal,
+    ) -> HostRefusal {
+        if self
+            .completion(key, method, 0, refusal.reason, RecoveryState::NotRun)
+            .is_err()
+        {
             self.ledger.audit_failed();
-            return HostRefusal { receipt: Some(receipt), ..HostRefusal::audit("refusal-not-durable") };
+            return HostRefusal {
+                receipt: Some(receipt),
+                ..HostRefusal::audit("refusal-not-durable")
+            };
         }
         let _ = self.ledger.abandon(key);
         self.budget.release(Dimension::Actions, 1);
@@ -220,8 +320,17 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
             return Err(AuditUnavailable);
         }
         let entry = self.ledger.get(key).ok_or(AuditUnavailable)?;
-        let recovery = RecoveryRecord { key: key.clone(), args: entry.args, receipt: entry.receipt.clone(), state };
-        let kind = if state == RecoveryState::Archived { AuditKind::Lifecycle } else { AuditKind::Completion };
+        let recovery = RecoveryRecord {
+            key: key.clone(),
+            args: entry.args,
+            receipt: entry.receipt.clone(),
+            state,
+        };
+        let kind = if state == RecoveryState::Archived {
+            AuditKind::Lifecycle
+        } else {
+            AuditKind::Completion
+        };
         let mut record = self.record(kind, method, Some(entry.receipt.clone()), bytes, reason);
         record.args = Some(entry.args);
         self.audit.append_effect(&record, &recovery)

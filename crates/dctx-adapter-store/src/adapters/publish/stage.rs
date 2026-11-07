@@ -91,7 +91,12 @@ impl<F: StoreFs> SegmentStore<F> {
         Ok(())
     }
 
-    pub(super) fn stage_pointer(&self, attempt: &mut Attempt<'_, F>, root: &str, bytes: &[u8]) -> Result<(), StoreError> {
+    pub(super) fn stage_pointer(
+        &self,
+        attempt: &mut Attempt<'_, F>,
+        root: &str,
+        bytes: &[u8],
+    ) -> Result<(), StoreError> {
         let tmp = tmp_path("pointer.partial");
         let _keep = KeepPath::new(self, &tmp);
         if self.fs.exists(&tmp)? {

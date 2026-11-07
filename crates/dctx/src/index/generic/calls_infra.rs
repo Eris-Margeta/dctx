@@ -9,35 +9,207 @@ use std::collections::{HashMap, HashSet};
 
 use dctx_map_model::EdgeKind;
 
-use super::{mask, Syntax};
+use super::{Syntax, mask};
 use crate::index::extract::Symbol;
 use crate::index::refs::RawRef;
 
 /// HCL: comments only. Strings stay readable because `"${var.x}"` interpolations are real references.
-const HCL: Syntax = Syntax { line: &["#", "//"], block: Some(("/*", "*/")), nested: false, quotes: b"", triple: false };
+const HCL: Syntax = Syntax {
+    line: &["#", "//"],
+    block: Some(("/*", "*/")),
+    nested: false,
+    quotes: b"",
+    triple: false,
+};
 /// Shell: `#` comments, single and double quotes.
-const SHELL: Syntax = Syntax { line: &["#"], block: None, nested: false, quotes: b"\"'", triple: false };
+const SHELL: Syntax = Syntax {
+    line: &["#"],
+    block: None,
+    nested: false,
+    quotes: b"\"'",
+    triple: false,
+};
 /// SQL: `--` and `/* */` comments, single-quoted strings.
-const SQL: Syntax = Syntax { line: &["--"], block: Some(("/*", "*/")), nested: false, quotes: b"'", triple: false };
+const SQL: Syntax = Syntax {
+    line: &["--"],
+    block: Some(("/*", "*/")),
+    nested: false,
+    quotes: b"'",
+    triple: false,
+};
 
 /// SQL words (lowercase) that may sit before a `(` without being a call: keywords, clauses, builtin types and common builtins.
 const SQL_WORDS: &[&str] = &[
-    "select", "from", "where", "values", "in", "exists", "count", "sum", "max", "min", "avg", "coalesce", "cast", "nullif", "int",
-    "integer", "bigint", "smallint", "tinyint", "varchar", "nvarchar", "char", "nchar", "text", "numeric", "decimal", "number", "float",
-    "double", "real", "timestamp", "timestamptz", "date", "time", "datetime", "boolean", "bool", "varbinary", "binary", "bit", "serial",
-    "primary", "foreign", "key", "references", "unique", "check", "default", "not", "null", "and", "or", "as", "on", "using", "join",
-    "left", "right", "inner", "outer", "cross", "group", "order", "by", "having", "limit", "offset", "union", "all", "distinct", "case",
-    "when", "then", "else", "end", "over", "partition", "insert", "into", "update", "set", "delete", "create", "table", "view",
-    "function", "procedure", "trigger", "returns", "return", "begin", "declare", "if", "elsif", "elseif", "loop", "while", "for", "each",
-    "row", "execute", "index", "with", "recursive", "any", "some", "between", "like", "ilike", "is", "array", "returning", "conflict",
-    "constraint", "generated", "identity", "lateral", "filter", "window", "interval", "extract", "lower", "upper", "length", "substring",
-    "trim", "concat", "round", "abs", "ceil", "floor", "now", "raise", "perform", "language", "after", "before", "instead", "of", "to",
-    "unnest", "row_number", "rank", "dense_rank", "lag", "lead", "first_value", "last_value", "greatest", "least", "replace", "exception",
-    "when_others", "using_index", "tablespace", "include", "storage", "engine", "temporary", "temp", "type",
+    "select",
+    "from",
+    "where",
+    "values",
+    "in",
+    "exists",
+    "count",
+    "sum",
+    "max",
+    "min",
+    "avg",
+    "coalesce",
+    "cast",
+    "nullif",
+    "int",
+    "integer",
+    "bigint",
+    "smallint",
+    "tinyint",
+    "varchar",
+    "nvarchar",
+    "char",
+    "nchar",
+    "text",
+    "numeric",
+    "decimal",
+    "number",
+    "float",
+    "double",
+    "real",
+    "timestamp",
+    "timestamptz",
+    "date",
+    "time",
+    "datetime",
+    "boolean",
+    "bool",
+    "varbinary",
+    "binary",
+    "bit",
+    "serial",
+    "primary",
+    "foreign",
+    "key",
+    "references",
+    "unique",
+    "check",
+    "default",
+    "not",
+    "null",
+    "and",
+    "or",
+    "as",
+    "on",
+    "using",
+    "join",
+    "left",
+    "right",
+    "inner",
+    "outer",
+    "cross",
+    "group",
+    "order",
+    "by",
+    "having",
+    "limit",
+    "offset",
+    "union",
+    "all",
+    "distinct",
+    "case",
+    "when",
+    "then",
+    "else",
+    "end",
+    "over",
+    "partition",
+    "insert",
+    "into",
+    "update",
+    "set",
+    "delete",
+    "create",
+    "table",
+    "view",
+    "function",
+    "procedure",
+    "trigger",
+    "returns",
+    "return",
+    "begin",
+    "declare",
+    "if",
+    "elsif",
+    "elseif",
+    "loop",
+    "while",
+    "for",
+    "each",
+    "row",
+    "execute",
+    "index",
+    "with",
+    "recursive",
+    "any",
+    "some",
+    "between",
+    "like",
+    "ilike",
+    "is",
+    "array",
+    "returning",
+    "conflict",
+    "constraint",
+    "generated",
+    "identity",
+    "lateral",
+    "filter",
+    "window",
+    "interval",
+    "extract",
+    "lower",
+    "upper",
+    "length",
+    "substring",
+    "trim",
+    "concat",
+    "round",
+    "abs",
+    "ceil",
+    "floor",
+    "now",
+    "raise",
+    "perform",
+    "language",
+    "after",
+    "before",
+    "instead",
+    "of",
+    "to",
+    "unnest",
+    "row_number",
+    "rank",
+    "dense_rank",
+    "lag",
+    "lead",
+    "first_value",
+    "last_value",
+    "greatest",
+    "least",
+    "replace",
+    "exception",
+    "when_others",
+    "using_index",
+    "tablespace",
+    "include",
+    "storage",
+    "engine",
+    "temporary",
+    "temp",
+    "type",
 ];
 
 /// Raw call references of `text` for `hcl`, `sql` and `shell`; every other tag yields none.
-pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symbol]) -> Vec<RawRef> {
+pub(super) fn references(
+    language: &str,
+    path: &str,
+    text: &str,
+    symbols: &[Symbol],
+) -> Vec<RawRef> {
     let syntax = match language {
         "hcl" => &HCL,
         "sql" => &SQL,
@@ -45,13 +217,21 @@ pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symb
         _ => return Vec::new(),
     };
     let masked = mask(text, syntax);
-    let functions: HashSet<&str> = symbols.iter().filter(|symbol| symbol.kind == "fn").map(|symbol| symbol.name.as_str()).collect();
+    let functions: HashSet<&str> = symbols
+        .iter()
+        .filter(|symbol| symbol.kind == "fn")
+        .map(|symbol| symbol.name.as_str())
+        .collect();
     // SQL is case-insensitive: a call spelled `Help(` reaches the declared `help`, by full name or by last segment.
     let mut declared: HashMap<String, &str> = HashMap::new();
     if language == "sql" {
         for symbol in symbols {
-            declared.entry(symbol.name.to_ascii_lowercase()).or_insert(&symbol.name);
-            declared.entry(tail(&symbol.name).to_ascii_lowercase()).or_insert(&symbol.name);
+            declared
+                .entry(symbol.name.to_ascii_lowercase())
+                .or_insert(&symbol.name);
+            declared
+                .entry(tail(&symbol.name).to_ascii_lowercase())
+                .or_insert(&symbol.name);
         }
     }
     let mut seen: HashMap<&str, u32> = HashMap::new();
@@ -59,7 +239,9 @@ pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symb
     for symbol in symbols {
         let copy = seen.entry(symbol.name.as_str()).or_insert(0);
         *copy += 1;
-        let Some(body) = body_of(&masked, symbol, language) else { continue };
+        let Some(body) = body_of(&masked, symbol, language) else {
+            continue;
+        };
         let callees = match language {
             "hcl" => hcl_calls(body),
             "sql" => sql_calls(body),
@@ -68,12 +250,22 @@ pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symb
         let src = id_text(path, &symbol.name, *copy);
         let mut done: HashSet<String> = HashSet::new();
         for callee in callees {
-            let callee = declared.get(&callee.to_ascii_lowercase()).or_else(|| declared.get(&tail(&callee).to_ascii_lowercase())).map_or(callee, |name| (*name).to_string());
-            let own = callee == symbol.name || (language == "sql" && tail(&callee).eq_ignore_ascii_case(tail(&symbol.name)));
+            let callee = declared
+                .get(&callee.to_ascii_lowercase())
+                .or_else(|| declared.get(&tail(&callee).to_ascii_lowercase()))
+                .map_or(callee, |name| (*name).to_string());
+            let own = callee == symbol.name
+                || (language == "sql" && tail(&callee).eq_ignore_ascii_case(tail(&symbol.name)));
             if own || !done.insert(callee.clone()) {
                 continue;
             }
-            refs.extend(RawRef::new(&src, EdgeKind::Calls, &callee, &symbol.name, None));
+            refs.extend(RawRef::new(
+                &src,
+                EdgeKind::Calls,
+                &callee,
+                &symbol.name,
+                None,
+            ));
         }
     }
     refs
@@ -104,14 +296,19 @@ fn body_of<'a>(masked: &'a str, symbol: &Symbol, language: &str) -> Option<&'a s
     if language == "sql" {
         return sql_has_body(&span[..first_end]).then_some(span);
     }
-    let skip = span[..first_end].find('{').map_or(first_end, |brace| brace + 1);
+    let skip = span[..first_end]
+        .find('{')
+        .map_or(first_end, |brace| brace + 1);
     span.get(skip..)
 }
 
 /// True when a masked `CREATE` line declares a view, function, procedure or trigger.
 fn sql_has_body(line: &str) -> bool {
     let mut words = line.split_whitespace();
-    if !words.next().is_some_and(|word| word.eq_ignore_ascii_case("create")) {
+    if !words
+        .next()
+        .is_some_and(|word| word.eq_ignore_ascii_case("create"))
+    {
         return false;
     }
     for word in words {
@@ -137,7 +334,12 @@ fn hcl_chain(body: &str, at: usize) -> (Vec<&str>, usize) {
     let mut end = at;
     while parts.len() < 3 {
         let mut stop = end;
-        while stop < bytes.len() && (is_hcl_word(bytes[stop]) || (bytes[stop] == b'-' && stop > end && bytes.get(stop + 1).is_some_and(|b| is_hcl_word(*b)))) {
+        while stop < bytes.len()
+            && (is_hcl_word(bytes[stop])
+                || (bytes[stop] == b'-'
+                    && stop > end
+                    && bytes.get(stop + 1).is_some_and(|b| is_hcl_word(*b))))
+        {
             stop += 1;
         }
         if stop == end || !(bytes[end].is_ascii_alphabetic() || bytes[end] == b'_') {
@@ -145,7 +347,11 @@ fn hcl_chain(body: &str, at: usize) -> (Vec<&str>, usize) {
         }
         parts.push(&body[end..stop]);
         end = stop;
-        if bytes.get(end) == Some(&b'.') && bytes.get(end + 1).is_some_and(|b| b.is_ascii_alphabetic() || *b == b'_') {
+        if bytes.get(end) == Some(&b'.')
+            && bytes
+                .get(end + 1)
+                .is_some_and(|b| b.is_ascii_alphabetic() || *b == b'_')
+        {
             end += 1;
         } else {
             break;
@@ -160,7 +366,8 @@ fn hcl_calls(body: &str) -> Vec<String> {
     let mut out = Vec::new();
     let mut at = 0usize;
     while at < bytes.len() {
-        let starts = (bytes[at].is_ascii_alphabetic() || bytes[at] == b'_') && (at == 0 || !(is_hcl_word(bytes[at - 1]) || matches!(bytes[at - 1], b'.' | b'-')));
+        let starts = (bytes[at].is_ascii_alphabetic() || bytes[at] == b'_')
+            && (at == 0 || !(is_hcl_word(bytes[at - 1]) || matches!(bytes[at - 1], b'.' | b'-')));
         if !starts {
             at += 1;
             continue;
@@ -169,7 +376,9 @@ fn hcl_calls(body: &str) -> Vec<String> {
         at = end.max(at + 1);
         match parts.as_slice() {
             ["var" | "module" | "local", name, ..] => out.push((*name).to_string()),
-            ["data", kind, name, ..] if kind.contains('_') => out.push(format!("data.{kind}.{name}")),
+            ["data", kind, name, ..] if kind.contains('_') => {
+                out.push(format!("data.{kind}.{name}"))
+            }
             [kind, name, ..] if kind.contains('_') => out.push(format!("{kind}.{name}")),
             _ => {}
         }
@@ -185,10 +394,15 @@ fn sql_calls(body: &str) -> Vec<String> {
         if !body[hi..].starts_with('(') {
             return;
         }
-        let name: String = body[lo..hi].chars().filter(|c| !matches!(c, '"' | '`')).collect();
+        let name: String = body[lo..hi]
+            .chars()
+            .filter(|c| !matches!(c, '"' | '`'))
+            .collect();
         let name = name.trim_matches('.');
         let word = tail(name).to_ascii_lowercase();
-        if name.starts_with(|c: char| c.is_alphabetic() || c == '_') && !SQL_WORDS.contains(&word.as_str()) {
+        if name.starts_with(|c: char| c.is_alphabetic() || c == '_')
+            && !SQL_WORDS.contains(&word.as_str())
+        {
             out.push(name.to_string());
         }
     };
@@ -234,11 +448,17 @@ fn shell_calls(body: &str, functions: &HashSet<&str>) -> Vec<String> {
                 end += 1;
             }
             let word = &body[at..end];
-            let declares = body[end..].trim_start().strip_prefix('(').is_some_and(|rest| rest.trim_start().starts_with(')'));
+            let declares = body[end..]
+                .trim_start()
+                .strip_prefix('(')
+                .is_some_and(|rest| rest.trim_start().starts_with(')'));
             if command && !declares && functions.contains(word) {
                 out.push(word.to_string());
             }
-            command = matches!(word, "then" | "do" | "else" | "elif" | "if" | "while" | "until" | "time");
+            command = matches!(
+                word,
+                "then" | "do" | "else" | "elif" | "if" | "while" | "until" | "time"
+            );
             at = end;
         } else {
             command = false;
@@ -255,7 +475,10 @@ mod tests {
     /// `(src, name, scope)` of every reference `text` yields for `language`.
     fn calls(language: &str, path: &str, text: &str) -> Vec<(String, String, String)> {
         let symbols = super::super::symbols(language, text);
-        references(language, path, text, &symbols).into_iter().map(|r| (r.src, r.name, r.scope)).collect()
+        references(language, path, text, &symbols)
+            .into_iter()
+            .map(|r| (r.src, r.name, r.scope))
+            .collect()
     }
 
     /// One expected `(src, name, scope)` row.
@@ -270,11 +493,31 @@ mod tests {
         assert_eq!(
             calls("hcl", "main.tf", text),
             [
-                row("s:main.tf#aws_s3_bucket.logs", "region", "aws_s3_bucket.logs"),
-                row("s:main.tf#aws_s3_bucket_policy.p", "aws_s3_bucket.logs", "aws_s3_bucket_policy.p"),
-                row("s:main.tf#aws_s3_bucket_policy.p", "net", "aws_s3_bucket_policy.p"),
-                row("s:main.tf#aws_s3_bucket_policy.p", "data.aws_ami.ubuntu", "aws_s3_bucket_policy.p"),
-                row("s:main.tf#aws_s3_bucket_policy.p", "tags", "aws_s3_bucket_policy.p"),
+                row(
+                    "s:main.tf#aws_s3_bucket.logs",
+                    "region",
+                    "aws_s3_bucket.logs"
+                ),
+                row(
+                    "s:main.tf#aws_s3_bucket_policy.p",
+                    "aws_s3_bucket.logs",
+                    "aws_s3_bucket_policy.p"
+                ),
+                row(
+                    "s:main.tf#aws_s3_bucket_policy.p",
+                    "net",
+                    "aws_s3_bucket_policy.p"
+                ),
+                row(
+                    "s:main.tf#aws_s3_bucket_policy.p",
+                    "data.aws_ami.ubuntu",
+                    "aws_s3_bucket_policy.p"
+                ),
+                row(
+                    "s:main.tf#aws_s3_bucket_policy.p",
+                    "tags",
+                    "aws_s3_bucket_policy.p"
+                ),
             ]
         );
     }
@@ -290,7 +533,13 @@ mod tests {
     #[test]
     fn shell_command_words_naming_functions_are_calls() {
         let text = "helper() {\n  echo hi\n}\nother() { :; }\nrun() {\n  helper\n  echo helper\n  x=$(other) && helper\n  if true; then other; fi\n  echo \"helper\" # helper\n  helper() { :; }\n}\nrecurse() {\n  recurse\n}\n";
-        assert_eq!(calls("shell", "b.sh", text), [row("s:b.sh#run", "helper", "run"), row("s:b.sh#run", "other", "run")]);
+        assert_eq!(
+            calls("shell", "b.sh", text),
+            [
+                row("s:b.sh#run", "helper", "run"),
+                row("s:b.sh#run", "other", "run")
+            ]
+        );
     }
 
     /// The second copy of a name carries the `~2` ordinal the index gives it, and other tags have no references.

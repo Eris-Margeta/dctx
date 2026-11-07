@@ -34,14 +34,28 @@ pub enum SessionCacheCall {
 /// Runs one cache operation on a fresh ephemeral session so the CLI calls the facade.
 /// # Errors
 /// Returns cache-session setup or collection/purge failures.
-#[allow(clippy::needless_pass_by_value, reason = "The public cache dispatcher consumes one command value; preserve its existing ownership contract.")]
+#[allow(
+    clippy::needless_pass_by_value,
+    reason = "The public cache dispatcher consumes one command value; preserve its existing ownership contract."
+)]
 pub fn session_cache(call: SessionCacheCall) -> Result<CacheReport, String> {
-    let mut session = build(MemorySource::new(), "cache", "status", RuleSources::default())?;
+    let mut session = build(
+        MemorySource::new(),
+        "cache",
+        "status",
+        RuleSources::default(),
+    )?;
     match call {
         SessionCacheCall::Status => Ok(session.cache_status()),
-        SessionCacheCall::Gc { apply } => session.cache_gc(GcRequest { apply }).map_err(|error| error.to_string()),
+        SessionCacheCall::Gc { apply } => session
+            .cache_gc(GcRequest { apply })
+            .map_err(|error| error.to_string()),
         SessionCacheCall::Purge { apply } => session
-            .cache_purge(PurgeRequest { confirm: true, apply, scope: PurgeScope::All })
+            .cache_purge(PurgeRequest {
+                confirm: true,
+                apply,
+                scope: PurgeScope::All,
+            })
             .map_err(|error| error.to_string()),
     }
 }
@@ -61,13 +75,19 @@ pub fn cache_root_dir() -> Result<PathBuf, String> {
 }
 
 /// True when this argv and `DCTX_AUTO_CLEAN` allow a piggy-back slice.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn auto_clean_allowed(args: &[String]) -> bool {
     auto_clean_enabled(args, std::env::var("DCTX_AUTO_CLEAN").ok().as_deref())
 }
 
 /// Pure form of [`auto_clean_allowed`]. `env_value` of `"0"` disables the slice.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn auto_clean_enabled(args: &[String], env_value: Option<&str>) -> bool {
     if args.iter().any(|arg| arg == "--no-auto-clean") {
         return false;
@@ -76,9 +96,14 @@ pub fn auto_clean_enabled(args: &[String], env_value: Option<&str>) -> bool {
 }
 
 /// Drops `--no-auto-clean` so command parsers keep their existing flag sets.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn without_auto_flag(args: Vec<String>) -> Vec<String> {
-    args.into_iter().filter(|arg| arg != "--no-auto-clean").collect()
+    args.into_iter()
+        .filter(|arg| arg != "--no-auto-clean")
+        .collect()
 }
 
 /// Creates the cache root when it is missing. A symlink root is refused.
@@ -112,7 +137,9 @@ pub fn load_ledger(root: &Path) -> Result<Lifecycle, String> {
 /// Returns cache-root, lock, ledger encoding, or durable persistence failures.
 pub fn store_ledger(root: &Path, life: &Lifecycle) -> Result<(), String> {
     debug_assert_eq!(LEDGER_FILE, dctx_adapter_cache::adapters::LEDGER_FILE);
-    FsLedgerStore::open(root).and_then(|store| store.store(life)).map_err(|error| error.to_string())
+    FsLedgerStore::open(root)
+        .and_then(|store| store.store(life))
+        .map_err(|error| error.to_string())
 }
 
 /// Loads, runs `body`, and stores through one [`FsLedgerStore`] while that store holds the cache lock.
@@ -123,11 +150,15 @@ pub(crate) fn with_ledger<T>(
     body: impl FnOnce(&mut Lifecycle) -> Result<(T, bool), String>,
 ) -> Result<T, String> {
     let store = FsLedgerStore::open(root).map_err(|error| error.to_string())?;
-    store.update(Quota::product_default(), body).map_err(|error| error.to_string())
+    store
+        .update(Quota::product_default(), body)
+        .map_err(|error| error.to_string())
 }
 
 fn read_opened(store: &FsLedgerStore) -> Result<Lifecycle, String> {
-    let loaded = store.load(Quota::product_default()).map_err(|error| error.to_string())?;
+    let loaded = store
+        .load(Quota::product_default())
+        .map_err(|error| error.to_string())?;
     match loaded.fault {
         Some(error) => Err(error.to_string()),
         None => Ok(loaded.lifecycle),
@@ -158,7 +189,9 @@ pub fn piggyback_at(root: &Path, allow: bool) -> Result<u64, String> {
     }
     let before = load_ledger(root)?.last_auto_clean().map(|stamp| stamp.0);
     let session = open_cache_session(root, policy.auto)?;
-    let view = session.cache_ledger().ok_or_else(|| "cache ledger is absent".to_string())?;
+    let view = session
+        .cache_ledger()
+        .ok_or_else(|| "cache ledger is absent".to_string())?;
     if view.last_auto_clean_ms != before {
         policy.last_reclaimed_bytes = view.reclaimed_bytes;
         store_policy(root, &policy)?;
@@ -176,7 +209,9 @@ fn open_cache_session(root: &Path, policy: AutoCleanConfig) -> Result<Session, S
         .selection(SelectionPolicy::from_texts(&RuleTexts::default()))
         .ceiling(HostCeiling::base())
         .grants(HostGrants::PermitAll)
-        .storage(StoragePolicy::Ephemeral { max_bytes: HARD_CAP_BYTES })
+        .storage(StoragePolicy::Ephemeral {
+            max_bytes: HARD_CAP_BYTES,
+        })
         .place("cache")
         .view("auto")
         .cache_root(root, CLI_ROOT_ID)
@@ -186,20 +221,33 @@ fn open_cache_session(root: &Path, policy: AutoCleanConfig) -> Result<Session, S
 }
 
 fn platform_cache_dir() -> Result<PathBuf, String> {
-    if cfg!(target_os = "windows") {
-        let base = std::env::var("LOCALAPPDATA").map_err(|_| "LOCALAPPDATA is not set".to_string())?;
+    platform_cache_dir_from_env(std::env::consts::OS, |key| std::env::var_os(key))
+}
+
+fn platform_cache_dir_from_env(
+    os: &str,
+    env: impl Fn(&str) -> Option<std::ffi::OsString>,
+) -> Result<PathBuf, String> {
+    if os == "windows" {
+        let base = env("LOCALAPPDATA")
+            .filter(|value| !value.is_empty())
+            .ok_or_else(|| "LOCALAPPDATA is not set or is empty".to_string())?;
         return Ok(PathBuf::from(base).join("dctx").join("Cache").join("v2"));
     }
-    if cfg!(target_os = "macos") {
-        let home = std::env::var("HOME").map_err(|_| "HOME is not set".to_string())?;
-        return Ok(PathBuf::from(home).join("Library").join("Caches").join("dctx").join("v2"));
+    if os == "macos" {
+        let home = env("HOME").ok_or_else(|| "HOME is not set".to_string())?;
+        return Ok(PathBuf::from(home)
+            .join("Library")
+            .join("Caches")
+            .join("dctx")
+            .join("v2"));
     }
-    if let Ok(xdg) = std::env::var("XDG_CACHE_HOME") {
+    if let Some(xdg) = env("XDG_CACHE_HOME") {
         if !xdg.is_empty() {
             return Ok(PathBuf::from(xdg).join("dctx").join("v2"));
         }
     }
-    let home = std::env::var("HOME").map_err(|_| "HOME is not set".to_string())?;
+    let home = env("HOME").ok_or_else(|| "HOME is not set".to_string())?;
     Ok(PathBuf::from(home).join(".cache").join("dctx").join("v2"))
 }
 
@@ -207,7 +255,10 @@ fn absolute_root(root: &Path) -> Result<(), String> {
     if !root.is_absolute() {
         return Err("cache root must be absolute".to_string());
     }
-    if root.components().any(|component| matches!(component, Component::ParentDir)) {
+    if root
+        .components()
+        .any(|component| matches!(component, Component::ParentDir))
+    {
         return Err("cache root must not contain ..".to_string());
     }
     Ok(())
@@ -220,10 +271,47 @@ fn create_private_dir(root: &Path) -> Result<(), String> {
         let mut builder = fs::DirBuilder::new();
         builder.recursive(true);
         builder.mode(0o700);
-        builder.create(root).map_err(|_| "failed to create the cache root".to_string())
+        builder
+            .create(root)
+            .map_err(|_| "failed to create the cache root".to_string())
     }
     #[cfg(not(unix))]
     {
         fs::create_dir_all(root).map_err(|_| "failed to create the cache root".to_string())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{collections::BTreeMap, ffi::OsString};
+
+    #[test]
+    fn windows_cache_uses_localappdata_and_refuses_missing_or_empty_values() {
+        let mut env = BTreeMap::from([
+            ("APPDATA", OsString::from("config")),
+            ("XDG_CACHE_HOME", OsString::from("cache")),
+            ("HOME", OsString::from("home")),
+        ]);
+        let resolve = |env: &BTreeMap<_, _>| {
+            platform_cache_dir_from_env("windows", |key| env.get(key).cloned())
+        };
+        assert_eq!(
+            resolve(&env),
+            Err("LOCALAPPDATA is not set or is empty".to_string())
+        );
+        env.insert("LOCALAPPDATA", OsString::new());
+        assert_eq!(
+            resolve(&env),
+            Err("LOCALAPPDATA is not set or is empty".to_string())
+        );
+        env.insert("LOCALAPPDATA", OsString::from("local-app-data"));
+        assert_eq!(
+            resolve(&env),
+            Ok(PathBuf::from("local-app-data")
+                .join("dctx")
+                .join("Cache")
+                .join("v2"))
+        );
     }
 }

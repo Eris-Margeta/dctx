@@ -28,7 +28,10 @@ pub enum CommandRefusal {
 
 impl CommandRefusal {
     /// Stable safe reason name.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn reason(self) -> &'static str {
         match self {
             Self::UnknownAlias => "unknown-alias",
@@ -61,12 +64,33 @@ mod tests {
     #[test]
     fn only_declared_verbs_and_the_stage_flag_parse() {
         assert_eq!(parse("git", "status", &[]), Ok(Command::Status));
-        assert_eq!(parse("git", "protect", &[]), Ok(Command::Protect { stage: false }));
-        assert_eq!(parse("git", "protect", &["--stage"]), Ok(Command::Protect { stage: true }));
-        assert_eq!(parse("git", "protect", &["--stage", "--stage"]), Err(CommandRefusal::UnknownArgument));
-        assert_eq!(parse("git", "status", &["--stage"]), Err(CommandRefusal::UnknownArgument));
-        assert_eq!(parse("git", "add", &["."]), Err(CommandRefusal::UnknownVerb));
-        assert_eq!(parse("git", "commit", &[]), Err(CommandRefusal::UnknownVerb));
-        assert_eq!(parse("svn", "status", &[]), Err(CommandRefusal::UnknownAlias));
+        assert_eq!(
+            parse("git", "protect", &[]),
+            Ok(Command::Protect { stage: false })
+        );
+        assert_eq!(
+            parse("git", "protect", &["--stage"]),
+            Ok(Command::Protect { stage: true })
+        );
+        assert_eq!(
+            parse("git", "protect", &["--stage", "--stage"]),
+            Err(CommandRefusal::UnknownArgument)
+        );
+        assert_eq!(
+            parse("git", "status", &["--stage"]),
+            Err(CommandRefusal::UnknownArgument)
+        );
+        assert_eq!(
+            parse("git", "add", &["."]),
+            Err(CommandRefusal::UnknownVerb)
+        );
+        assert_eq!(
+            parse("git", "commit", &[]),
+            Err(CommandRefusal::UnknownVerb)
+        );
+        assert_eq!(
+            parse("svn", "status", &[]),
+            Err(CommandRefusal::UnknownAlias)
+        );
     }
 }

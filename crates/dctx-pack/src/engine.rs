@@ -65,7 +65,10 @@ pub struct PackReport {
 ///
 /// # Errors
 /// Propagates source, cancellation, snapshot-validation, store and cache errors. Failed publication aborts its cache reservation.
-#[allow(clippy::needless_pass_by_value, reason = "Keep the existing public pack signature; the port bundle is passed as the capability set for one operation.")]
+#[allow(
+    clippy::needless_pass_by_value,
+    reason = "Keep the existing public pack signature; the port bundle is passed as the capability set for one operation."
+)]
 pub fn pack(ports: PackPorts<'_>, request: &PackRequest<'_>) -> Result<PackReport, DctxError> {
     let options = ScanOptions {
         policy: request.policy,
@@ -75,7 +78,12 @@ pub fn pack(ports: PackPorts<'_>, request: &PackRequest<'_>) -> Result<PackRepor
     let scanned = scan(ports.source, ports.cancel, options)?;
     let previous = ports.store.load(&request.view)?;
     let diff = diff_against(previous.as_ref(), &scanned.tree, request.max_diff_files);
-    let snapshot = PackSnapshot::new(scanned.tree, diff.version, ports.clock.now(), scanned.digests)?;
+    let snapshot = PackSnapshot::new(
+        scanned.tree,
+        diff.version,
+        ports.clock.now(),
+        scanned.digests,
+    )?;
     let must_publish = previous.is_none() || diff.report.has_changes;
 
     if must_publish {

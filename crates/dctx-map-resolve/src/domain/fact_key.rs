@@ -79,13 +79,19 @@ impl FactKey {
     }
 
     /// Algorithm-tagged content digest. This is not a git object id.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn content(&self) -> ContentId {
         self.content
     }
 
     /// Extraction contract that distinguishes otherwise equal bytes.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn contract(&self) -> &ExtractionContract {
         &self.contract
     }
@@ -102,8 +108,17 @@ impl Ord for FactKey {
         self.content
             .version()
             .cmp(&other.content.version())
-            .then(self.content.algorithm().code().cmp(&other.content.algorithm().code()))
-            .then(self.content.digest_bytes().cmp(other.content.digest_bytes()))
+            .then(
+                self.content
+                    .algorithm()
+                    .code()
+                    .cmp(&other.content.algorithm().code()),
+            )
+            .then(
+                self.content
+                    .digest_bytes()
+                    .cmp(other.content.digest_bytes()),
+            )
             .then(self.content.byte_length().cmp(&other.content.byte_length()))
             .then(self.contract.cmp(&other.contract))
     }
@@ -137,9 +152,7 @@ pub(crate) fn rejects_git_identity(value: &str) -> bool {
     let hex_object = (bare.len() == 40 || bare.len() == 64)
         && bare.bytes().all(|byte| byte.is_ascii_hexdigit())
         && !value.starts_with("dctx:");
-    hex_object
-        || value.split(['/', '\\']).any(|part| part == ".git")
-        || value.contains(".git/")
+    hex_object || value.split(['/', '\\']).any(|part| part == ".git") || value.contains(".git/")
 }
 
 pub(crate) fn portable_path(path: &str) -> bool {
@@ -173,7 +186,11 @@ mod tests {
         let key = FactKey::new(content, contract("p1", "plan-1")).unwrap();
         assert!(key.to_string().starts_with("dctx:object:v1:sha256:"));
         assert_eq!(key.content().byte_length(), bytes.len() as u64);
-        let again = FactKey::new(ContentId::of_bytes(bytes).unwrap(), contract("p1", "plan-1")).unwrap();
+        let again = FactKey::new(
+            ContentId::of_bytes(bytes).unwrap(),
+            contract("p1", "plan-1"),
+        )
+        .unwrap();
         assert_eq!(key, again);
         assert_ne!(
             key,
@@ -191,7 +208,13 @@ mod tests {
             assert!(ContentId::parse(rejected).is_err(), "{rejected}");
             assert!(rejects_git_identity(rejected), "{rejected}");
         }
-        assert!(FactKey::new(content, contract("git:da39a3ee5e6b4b0d3255bfef95601890afd80709", "plan")).is_err());
+        assert!(
+            FactKey::new(
+                content,
+                contract("git:da39a3ee5e6b4b0d3255bfef95601890afd80709", "plan")
+            )
+            .is_err()
+        );
         assert!(portable_path("src/lib.rs"));
         assert!(!portable_path(".git/HEAD"));
         assert!(!portable_path("src/.git/config"));

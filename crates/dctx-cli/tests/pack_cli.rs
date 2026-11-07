@@ -5,6 +5,8 @@
 //! Used by `cargo nextest run -p dctx-cli`.
 //! `--output` bytes equal the stdout payload; the status line stays on stdout.
 
+mod common;
+
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
@@ -18,8 +20,12 @@ struct Fixture {
 
 impl Fixture {
     fn new() -> Self {
-        let nonce = SystemTime::now().duration_since(UNIX_EPOCH).expect("clock").as_nanos();
-        let root = std::env::temp_dir().join(format!("dctx-pack-cli-{}-{nonce}", std::process::id()));
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("clock")
+            .as_nanos();
+        let root =
+            std::env::temp_dir().join(format!("dctx-pack-cli-{}-{nonce}", std::process::id()));
         let repo = root.join("repo");
         fs::create_dir_all(repo.join("nested")).expect("fixture");
         for folder in ["home", "config", "cache", "data", "tmp"] {
@@ -33,19 +39,8 @@ impl Fixture {
     fn run(&self, args: &[&str]) -> Vec<u8> {
         let mut command = Command::new(env!("CARGO_BIN_EXE_dctx-cli"));
         command.current_dir(&self.repo).env_clear().args(args);
-        for (variable, folder) in [
-            ("HOME", "home"),
-            ("USERPROFILE", "home"),
-            ("XDG_CONFIG_HOME", "config"),
-            ("XDG_CACHE_HOME", "cache"),
-            ("XDG_DATA_HOME", "data"),
-            ("DCTX_CACHE_DIR", "cache"),
-            ("TMPDIR", "tmp"),
-            ("TMP", "tmp"),
-            ("TEMP", "tmp"),
-        ] {
-            command.env(variable, self.root.join(folder));
-        }
+        common::isolated_dirs(&mut command, &self.root);
+        command.env("DCTX_CACHE_DIR", self.root.join("cache"));
         command.env("DCTX_AUTO_CLEAN", "0");
         command.env("NO_COLOR", "1");
         command.env("PATH", "");
@@ -60,7 +55,11 @@ impl Fixture {
             output.stdout.len(),
             String::from_utf8_lossy(&output.stderr),
         );
-        assert!(output.stderr.is_empty(), "{args:?}: {}", String::from_utf8_lossy(&output.stderr));
+        assert!(
+            output.stderr.is_empty(),
+            "{args:?}: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
         output.stdout
     }
 }
@@ -73,12 +72,17 @@ impl Drop for Fixture {
 
 fn payload(stdout: &[u8]) -> &[u8] {
     let marker = b"pack bytes=";
-    let pos = stdout.windows(marker.len()).rposition(|window| window == marker).expect("status line");
+    let pos = stdout
+        .windows(marker.len())
+        .rposition(|window| window == marker)
+        .expect("status line");
     &stdout[..pos]
 }
 
 fn contains(bytes: &[u8], text: &str) -> bool {
-    bytes.windows(text.len()).any(|window| window == text.as_bytes())
+    bytes
+        .windows(text.len())
+        .any(|window| window == text.as_bytes())
 }
 
 #[cfg(test)]
@@ -91,15 +95,32 @@ mod tests {
         let stdout = fixture.run(&["pack", "."]);
         let page = payload(&stdout);
         let status = &stdout[page.len()..];
-        assert!(status.starts_with(b"pack bytes="), "{}", String::from_utf8_lossy(status));
+        assert!(
+            status.starts_with(b"pack bytes="),
+            "{}",
+            String::from_utf8_lossy(status)
+        );
         assert!(contains(status, "retention=stdout"));
-        for text in ["alpha.rs", "fn alpha_body() { 11 }", "nested/beta.txt", "beta body line"] {
-            assert!(contains(page, text), "missing {text} in {}", String::from_utf8_lossy(page));
+        for text in [
+            "alpha.rs",
+            "fn alpha_body() { 11 }",
+            "nested/beta.txt",
+            "beta body line",
+        ] {
+            assert!(
+                contains(page, text),
+                "missing {text} in {}",
+                String::from_utf8_lossy(page)
+            );
         }
 
         let output = fixture.root.join("pack-out.txt");
         let reported = fixture.run(&["pack", ".", "--output", output.to_str().expect("utf8 path")]);
-        assert!(reported.starts_with(b"pack bytes="), "{}", String::from_utf8_lossy(&reported));
+        assert!(
+            reported.starts_with(b"pack bytes="),
+            "{}",
+            String::from_utf8_lossy(&reported)
+        );
         assert!(contains(&reported, "retention=explicit"));
         let saved = fs::read(&output).expect("output file");
         assert_eq!(saved, page);

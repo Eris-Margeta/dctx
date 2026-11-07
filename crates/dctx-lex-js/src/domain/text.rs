@@ -5,7 +5,10 @@
 use dctx_hash::Sha256;
 
 /// SHA-256 hex of the body with whitespace runs collapsed and edges trimmed.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn body_fingerprint(body: &str) -> String {
     let normalized = body.split_whitespace().collect::<Vec<_>>().join(" ");
     let mut hex = String::with_capacity(64);

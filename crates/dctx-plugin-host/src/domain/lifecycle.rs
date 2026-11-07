@@ -36,7 +36,10 @@ pub struct LaunchFacts {
 
 impl LaunchFacts {
     /// decision 080 admitted disposition: proven confinement, or the authenticated bundled-git exception.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn disposition_admitted(&self) -> bool {
         self.confined || self.origin == Origin::BundledGit
     }
@@ -95,9 +98,17 @@ pub struct Worker {
 
 impl Worker {
     /// An installed worker with host-established `facts`.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new(facts: LaunchFacts) -> Self {
-        Self { facts, phase: WorkerPhase::Installed, reap_pending: false, trace: Trace::default() }
+        Self {
+            facts,
+            phase: WorkerPhase::Installed,
+            reap_pending: false,
+            trace: Trace::default(),
+        }
     }
 
     /// `EnableOrRefuse`: verified, compatible and an admitted confinement disposition.
@@ -107,11 +118,23 @@ impl Worker {
         self.expect(WorkerPhase::Installed)?;
         self.trace.push(ModelAction::LifecycleEnableOrRefuse);
         let refusal = if !self.facts.verified {
-            Some(HostRefusal::new(ErrorCode::IntegrityFailure, WirePhase::Verify, "artifact-not-verified"))
+            Some(HostRefusal::new(
+                ErrorCode::IntegrityFailure,
+                WirePhase::Verify,
+                "artifact-not-verified",
+            ))
         } else if !self.facts.compatible {
-            Some(HostRefusal::new(ErrorCode::UnsupportedVersion, WirePhase::Resolve, "incompatible-artifact"))
+            Some(HostRefusal::new(
+                ErrorCode::UnsupportedVersion,
+                WirePhase::Resolve,
+                "incompatible-artifact",
+            ))
         } else if !self.facts.disposition_admitted() {
-            Some(HostRefusal::new(ErrorCode::UnsupportedPlatform, WirePhase::Confine, "confinement-not-proven"))
+            Some(HostRefusal::new(
+                ErrorCode::UnsupportedPlatform,
+                WirePhase::Confine,
+                "confinement-not-proven",
+            ))
         } else {
             None
         };
@@ -128,21 +151,33 @@ impl Worker {
     /// # Errors
     /// Refuses unless the worker is enabled.
     pub fn started(&mut self) -> Result<(), HostRefusal> {
-        self.step(WorkerPhase::Enabled, WorkerPhase::Spawned, ModelAction::LifecycleStart)
+        self.step(
+            WorkerPhase::Enabled,
+            WorkerPhase::Spawned,
+            ModelAction::LifecycleStart,
+        )
     }
 
     /// `Negotiate`: hello/answer selected a version.
     /// # Errors
     /// Refuses unless the worker has spawned.
     pub fn negotiated(&mut self) -> Result<(), HostRefusal> {
-        self.step(WorkerPhase::Spawned, WorkerPhase::Negotiated, ModelAction::LifecycleNegotiate)
+        self.step(
+            WorkerPhase::Spawned,
+            WorkerPhase::Negotiated,
+            ModelAction::LifecycleNegotiate,
+        )
     }
 
     /// `Initialize`: `initialize` returned ready.
     /// # Errors
     /// Refuses unless protocol negotiation has completed.
     pub fn initialized(&mut self) -> Result<(), HostRefusal> {
-        self.step(WorkerPhase::Negotiated, WorkerPhase::Ready, ModelAction::LifecycleInitialize)
+        self.step(
+            WorkerPhase::Negotiated,
+            WorkerPhase::Ready,
+            ModelAction::LifecycleInitialize,
+        )
     }
 
     /// `Invoke`: one invocation becomes active (one in flight per worker in v1).
@@ -150,16 +185,28 @@ impl Worker {
     /// Refuses an active invocation or any phase other than ready.
     pub fn invoke(&mut self) -> Result<(), HostRefusal> {
         if matches!(self.phase, WorkerPhase::Running) {
-            return Err(HostRefusal::new(ErrorCode::Busy, WirePhase::Invoke, "invocation-active"));
+            return Err(HostRefusal::new(
+                ErrorCode::Busy,
+                WirePhase::Invoke,
+                "invocation-active",
+            ));
         }
-        self.step(WorkerPhase::Ready, WorkerPhase::Running, ModelAction::LifecycleInvoke)
+        self.step(
+            WorkerPhase::Ready,
+            WorkerPhase::Running,
+            ModelAction::LifecycleInvoke,
+        )
     }
 
     /// `Finish`: the invocation's terminal response arrived; the session returns to ready.
     /// # Errors
     /// Refuses unless an invocation is running.
     pub fn finish(&mut self) -> Result<(), HostRefusal> {
-        self.step(WorkerPhase::Running, WorkerPhase::Ready, ModelAction::LifecycleFinish)
+        self.step(
+            WorkerPhase::Running,
+            WorkerPhase::Ready,
+            ModelAction::LifecycleFinish,
+        )
     }
 
     /// `CancelStalled`/`Halt`: close admission and request cancellation; idempotent once cancelling.
@@ -173,7 +220,9 @@ impl Worker {
             | WorkerPhase::Ready
             | WorkerPhase::Running => {
                 self.trace.push(match reason {
-                    StopReason::Stalled | StopReason::UnresolvedSuspicion => ModelAction::LifecycleCancelStalled,
+                    StopReason::Stalled | StopReason::UnresolvedSuspicion => {
+                        ModelAction::LifecycleCancelStalled
+                    }
                     _ => ModelAction::LifecycleHalt,
                 });
                 self.phase = WorkerPhase::Cancelling(reason);
@@ -202,7 +251,9 @@ impl Worker {
     /// # Errors
     /// Refuses unless an exit has been recorded.
     pub fn reap(&mut self, reaped: bool) -> Result<(), HostRefusal> {
-        let WorkerPhase::Exited(reason) = self.phase else { return Err(self.wrong_phase()) };
+        let WorkerPhase::Exited(reason) = self.phase else {
+            return Err(self.wrong_phase());
+        };
         if reaped {
             self.phase = WorkerPhase::Reaped(reason);
             self.reap_pending = false;
@@ -215,43 +266,71 @@ impl Worker {
     }
 
     /// Whether broker admission is open (PP8: never after cancel, halt or exit).
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn admits(&self) -> bool {
         self.phase == WorkerPhase::Running
     }
 
     /// Current phase.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn phase(&self) -> WorkerPhase {
         self.phase
     }
 
     /// Whether the OS has not yet reaped an exited tree.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn reap_pending(&self) -> bool {
         self.reap_pending
     }
 
     /// Model actions taken.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn trace(&self) -> &Trace {
         &self.trace
     }
 
     fn expect(&self, phase: WorkerPhase) -> Result<(), HostRefusal> {
-        if self.phase == phase { Ok(()) } else { Err(self.wrong_phase()) }
+        if self.phase == phase {
+            Ok(())
+        } else {
+            Err(self.wrong_phase())
+        }
     }
 
-    fn step(&mut self, from: WorkerPhase, to: WorkerPhase, action: ModelAction) -> Result<(), HostRefusal> {
+    fn step(
+        &mut self,
+        from: WorkerPhase,
+        to: WorkerPhase,
+        action: ModelAction,
+    ) -> Result<(), HostRefusal> {
         self.expect(from)?;
         self.phase = to;
         self.trace.push(action);
         Ok(())
     }
 
-    #[allow(clippy::unused_self, reason = "Keep lifecycle refusal construction on the worker alongside its phase-check helpers.")]
+    #[allow(
+        clippy::unused_self,
+        reason = "Keep lifecycle refusal construction on the worker alongside its phase-check helpers."
+    )]
     fn wrong_phase(&self) -> HostRefusal {
-        HostRefusal::new(ErrorCode::InvalidMessage, WirePhase::Invoke, "wrong-lifecycle-phase")
+        HostRefusal::new(
+            ErrorCode::InvalidMessage,
+            WirePhase::Invoke,
+            "wrong-lifecycle-phase",
+        )
     }
 }
 
@@ -260,24 +339,45 @@ mod tests {
     use super::*;
 
     fn facts(origin: Origin, confined: bool) -> LaunchFacts {
-        LaunchFacts { origin, verified: true, compatible: true, confined }
+        LaunchFacts {
+            origin,
+            verified: true,
+            compatible: true,
+            confined,
+        }
     }
 
     #[test]
     fn third_party_requires_proven_confinement() {
-        assert!(Worker::new(facts(Origin::ThirdParty, true)).enable().is_ok());
-        let refused = Worker::new(facts(Origin::ThirdParty, false)).enable().expect_err("unconfined");
+        assert!(
+            Worker::new(facts(Origin::ThirdParty, true))
+                .enable()
+                .is_ok()
+        );
+        let refused = Worker::new(facts(Origin::ThirdParty, false))
+            .enable()
+            .expect_err("unconfined");
         assert_eq!(refused.code, ErrorCode::UnsupportedPlatform);
         let override_refused = Worker::new(facts(Origin::OfficialOverride, false)).enable();
-        assert_eq!(override_refused.map_err(|e| e.reason), Err("confinement-not-proven"));
-        assert!(Worker::new(facts(Origin::BundledGit, false)).enable().is_ok());
+        assert_eq!(
+            override_refused.map_err(|e| e.reason),
+            Err("confinement-not-proven")
+        );
+        assert!(
+            Worker::new(facts(Origin::BundledGit, false))
+                .enable()
+                .is_ok()
+        );
     }
 
     #[test]
     fn unverified_or_incompatible_never_enable() {
         let mut unverified = facts(Origin::BundledGit, true);
         unverified.verified = false;
-        assert_eq!(Worker::new(unverified).enable().map_err(|e| e.code), Err(ErrorCode::IntegrityFailure));
+        assert_eq!(
+            Worker::new(unverified).enable().map_err(|e| e.code),
+            Err(ErrorCode::IntegrityFailure)
+        );
         let mut incompatible = facts(Origin::BundledGit, true);
         incompatible.compatible = false;
         assert!(Worker::new(incompatible).enable().is_err());

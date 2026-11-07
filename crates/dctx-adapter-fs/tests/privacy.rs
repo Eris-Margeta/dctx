@@ -30,8 +30,11 @@ fn ignored_and_omitted_paths_are_never_opened() {
     let root = root_dir.path();
     write(&global_dir.path().join("ignore"), b"from-global.txt\n");
     write(root.join(".gitignore").as_path(), b"*.rs\nfrom-git.txt\n");
-    write(root.join(".dctxignore").as_path(), b"!kept.rs\nfrom-dctx.txt\n");
-    write(root.join(".dctxomitcontent").as_path(), b"*.omit\n");
+    write(
+        root.join(".dctxignore").as_path(),
+        b"!kept.rs\nfrom-dctx.txt\n",
+    );
+    write(&global_dir.path().join("omitcontent"), b"*.omit\n");
     write(&root.join("kept.rs"), b"fn kept() {}\n");
     write(&root.join("other.rs"), b"fn other() {}\n");
     write(&root.join("from-git.txt"), b"git-secret");
@@ -54,13 +57,21 @@ fn ignored_and_omitted_paths_are_never_opened() {
         ".dctxignore",
     ];
     assert!(
-        files.iter().all(|file| !excluded.contains(&file.relative.as_str())),
+        files
+            .iter()
+            .all(|file| !excluded.contains(&file.relative.as_str())),
         "{files:?}"
     );
-    let kept = files.iter().find(|file| file.relative == "kept.rs").unwrap();
+    let kept = files
+        .iter()
+        .find(|file| file.relative == "kept.rs")
+        .unwrap();
     assert_eq!(kept.decision, FileHandlingDecision::Include);
     assert!(matches!(kept.body, FileBody::Digested { .. }));
-    let omitted = files.iter().find(|file| file.relative == "note.omit").unwrap();
+    let omitted = files
+        .iter()
+        .find(|file| file.relative == "note.omit")
+        .unwrap();
     assert_eq!(omitted.decision, FileHandlingDecision::OmitContent);
     assert!(matches!(omitted.body, FileBody::Metadata { .. }));
     for name in excluded.iter().chain(["note.omit"].iter()) {
@@ -91,22 +102,18 @@ fn plain_folder_and_git_folder_match() {
     let repo = tempfile::tempdir().unwrap();
     populate(plain.path(), false);
     populate(repo.path(), true);
-    let plain_source = FsSource::load(
-        plain.path().to_path_buf(),
-        options(None),
-        SpyFs::new(StdFs),
-    )
-    .unwrap();
-    let repo_source = FsSource::load(
-        repo.path().to_path_buf(),
-        options(None),
-        SpyFs::new(StdFs),
-    )
-    .unwrap();
+    let plain_source =
+        FsSource::load(plain.path().to_path_buf(), options(None), SpyFs::new(StdFs)).unwrap();
+    let repo_source =
+        FsSource::load(repo.path().to_path_buf(), options(None), SpyFs::new(StdFs)).unwrap();
     let plain_files = plain_source.inventory().unwrap();
     let repo_files = repo_source.inventory().unwrap();
     assert_eq!(project_view(&plain_files), project_view(&repo_files));
-    assert!(plain_files.iter().any(|file| file.relative == "src/main.rs"));
+    assert!(
+        plain_files
+            .iter()
+            .any(|file| file.relative == "src/main.rs")
+    );
     assert!(plain_files.iter().all(|file| file.relative != "secret.txt"));
     for operation in repo_source.filesystem().operations() {
         let path = match &operation {
@@ -117,7 +124,8 @@ fn plain_folder_and_git_folder_match() {
             | FsOp::ReadPolicy(path) => path,
         };
         assert!(
-            path.components().all(|component| component.as_os_str() != ".git"),
+            path.components()
+                .all(|component| component.as_os_str() != ".git"),
             "{path:?}"
         );
     }
@@ -125,18 +133,22 @@ fn plain_folder_and_git_folder_match() {
 
 fn populate(root: &Path, with_git: bool) {
     write(&root.join(".dctxignore"), b"secret.txt\n");
-    write(&root.join(".dctxomitcontent"), b"*.omit\n");
     write(&root.join("src/main.rs"), b"fn main() {}\n");
     write(&root.join("secret.txt"), b"hidden\n");
     write(&root.join("note.omit"), b"omit\n");
     if with_git {
         write(&root.join(".git/HEAD"), b"ref: refs/heads/main\n");
-        write(&root.join(".git/config"), b"[core]\n\trepositoryformatversion = 0\n");
+        write(
+            &root.join(".git/config"),
+            b"[core]\n\trepositoryformatversion = 0\n",
+        );
         write(&root.join(".git/objects/pack/pack.idx"), b"pack-bytes");
     }
 }
 
-fn project_view(files: &[dctx_adapter_fs::SourceFile]) -> Vec<(String, FileHandlingDecision, u64, Option<String>)> {
+fn project_view(
+    files: &[dctx_adapter_fs::SourceFile],
+) -> Vec<(String, FileHandlingDecision, u64, Option<String>)> {
     files
         .iter()
         .map(|file| {

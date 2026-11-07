@@ -55,13 +55,16 @@ mod tests {
 
     #[test]
     fn docs_tests_and_visibility_are_read_from_attributes() {
-        let item: syn::ItemFn = syn::parse_str("/// \n/// First.\n/// Second.\n#[tokio::test]\npub(crate) async fn r#check() {}")
-            .unwrap_or_else(|e| panic!("{e}"));
+        let item: syn::ItemFn = syn::parse_str(
+            "/// \n/// First.\n/// Second.\n#[tokio::test]\npub(crate) async fn r#check() {}",
+        )
+        .unwrap_or_else(|e| panic!("{e}"));
         assert_eq!(doc(&item.attrs).as_deref(), Some("First."));
         assert!(is_test(&item.attrs));
         assert!(public(&item.vis));
         assert_eq!(ident(&item.sig.ident), "check");
-        let plain: syn::ItemFn = syn::parse_str("#[inline] fn f() {}").unwrap_or_else(|e| panic!("{e}"));
+        let plain: syn::ItemFn =
+            syn::parse_str("#[inline] fn f() {}").unwrap_or_else(|e| panic!("{e}"));
         assert!(!is_test(&plain.attrs));
         assert_eq!(doc(&plain.attrs), None);
         assert!(!public(&plain.vis));

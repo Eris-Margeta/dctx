@@ -21,7 +21,10 @@ pub struct RuleSources {
 
 impl RuleSources {
     /// The selection policy these texts compile to, including the built-in layer.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn policy(&self) -> SelectionPolicy {
         SelectionPolicy::from_texts(&RuleTexts {
             global_ignore: self.global_ignore.as_deref(),
@@ -40,11 +43,25 @@ mod tests {
     #[test]
     fn local_ignore_rebuild_excludes_only_the_new_rule() {
         let open = RuleSources::default().policy();
-        let secret = ItemContext { relative_path: "src/secret.rs", name: "secret.rs", is_directory: false, debug_mode: false };
+        let secret = ItemContext {
+            relative_path: "src/secret.rs",
+            name: "secret.rs",
+            is_directory: false,
+            debug_mode: false,
+        };
         assert_eq!(open.decide(&secret), FileHandlingDecision::Include);
-        let closed = RuleSources { local_ignore: Some("secret.rs\n".to_string()), ..RuleSources::default() }.policy();
+        let closed = RuleSources {
+            local_ignore: Some("secret.rs\n".to_string()),
+            ..RuleSources::default()
+        }
+        .policy();
         assert_eq!(closed.decide(&secret), FileHandlingDecision::Exclude);
-        let kept = ItemContext { relative_path: "src/lib.rs", name: "lib.rs", is_directory: false, debug_mode: false };
+        let kept = ItemContext {
+            relative_path: "src/lib.rs",
+            name: "lib.rs",
+            is_directory: false,
+            debug_mode: false,
+        };
         assert_eq!(closed.decide(&kept), FileHandlingDecision::Include);
     }
 }

@@ -5,8 +5,8 @@
 //! List/help/check-update are read-only; no operation executes a plugin or Git.
 
 use dctx_plugin_distribution::{
-    Clock, Confinement, ConsentApproval, Distribution, DistributionError, Enablement, InstallPolicy, Network, Origin,
-    PluginId, Registry, Store, TrustStore, VerifiedIndex, Version,
+    Clock, Confinement, ConsentApproval, Distribution, DistributionError, Enablement,
+    InstallPolicy, Network, Origin, PluginId, Registry, Store, TrustStore, VerifiedIndex, Version,
 };
 
 use crate::plugins::{bundled_plugin_version, PluginUpdate};
@@ -50,14 +50,22 @@ impl<'a> PluginOps<'a> {
     }
 
     /// Supplies the platform adapter's confinement result for third-party enablement.
-    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn with_confinement(mut self, confinement: Confinement) -> Self {
         self.confinement = confinement;
         self
     }
 
     /// Supplies last operation failures for the UI. Later entries take precedence.
-    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn with_failures(mut self, failures: &'a [PluginFailure]) -> Self {
         self.failures = failures;
         self
@@ -75,11 +83,17 @@ impl<'a> PluginOps<'a> {
         if registry.get(&id).is_none() {
             registry.register_bundled(&id, bundled_plugin_version()?);
         }
-        registry.records().map(|(id, _)| self.view(&registry, id)).collect()
+        registry
+            .records()
+            .map(|(id, _)| self.view(&registry, id))
+            .collect()
     }
 
     /// Describes consent and update behavior without reading any port.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn help(&self) -> &'static str {
         "Bundled git is enabled by default; its disclosed grants require explicit consent. \
          Enable never grants consent. Disable persists through updates. \
@@ -118,7 +132,11 @@ impl<'a> PluginOps<'a> {
     ///
     /// # Errors
     /// Refuses invalid/absent plugins, missing confinement or insufficient reviewed consent; propagates activation, enablement and registry failures.
-    pub fn consent(&self, raw_id: &str, approval: &ConsentApproval) -> Result<PluginRow, DesktopError> {
+    pub fn consent(
+        &self,
+        raw_id: &str,
+        approval: &ConsentApproval,
+    ) -> Result<PluginRow, DesktopError> {
         let id = PluginId::parse(raw_id)?;
         self.prepare_bundled(&id)?;
         let registry = self.distribution.registry()?;
@@ -135,7 +153,8 @@ impl<'a> PluginOps<'a> {
             }
             self.distribution.activate(&id, &approval.digest)?;
         }
-        self.distribution.enable(&id, Some(approval), self.confinement)?;
+        self.distribution
+            .enable(&id, Some(approval), self.confinement)?;
         self.find(&id)
     }
 
@@ -153,7 +172,9 @@ impl<'a> PluginOps<'a> {
         let id = PluginId::parse(raw_id)?;
         let registry = self.distribution.registry()?;
         let bundled = id.as_str() == dctx::bundled_git_plugin().id
-            && registry.get(&id).is_none_or(|record| record.origin == Origin::Bundled);
+            && registry
+                .get(&id)
+                .is_none_or(|record| record.origin == Origin::Bundled);
         let candidate = if bundled {
             None
         } else {
@@ -175,8 +196,11 @@ impl<'a> PluginOps<'a> {
     }
 
     fn prepare_bundled(&self, id: &PluginId) -> Result<(), DesktopError> {
-        if id.as_str() == dctx::bundled_git_plugin().id && self.distribution.registry()?.get(id).is_none() {
-            self.distribution.register_bundled(id, bundled_plugin_version()?)?;
+        if id.as_str() == dctx::bundled_git_plugin().id
+            && self.distribution.registry()?.get(id).is_none()
+        {
+            self.distribution
+                .register_bundled(id, bundled_plugin_version()?)?;
         }
         Ok(())
     }
@@ -223,9 +247,15 @@ impl<'a> PluginOps<'a> {
             .find(|last| last.id == *id)
             .map(|last| last.reason)
             .or(failure);
-        let mut result = row(&status, capabilities, failure.map(|reason| reason.to_string()));
+        let mut result = row(
+            &status,
+            capabilities,
+            failure.map(|reason| reason.to_string()),
+        );
         if record.origin == Origin::Bundled && id.as_str() == dctx::bundled_git_plugin().id {
-            result.capabilities.extend(dctx::bundled_git_plugin().capabilities);
+            result
+                .capabilities
+                .extend(dctx::bundled_git_plugin().capabilities);
         }
         // NeverEnabled and Disabled both remain inactive even if consent is missing.
         result.enabled = record.enablement == Enablement::Enabled;

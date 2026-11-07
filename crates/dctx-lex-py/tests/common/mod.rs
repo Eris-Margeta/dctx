@@ -3,13 +3,12 @@
 //! Covers the Python structural extractor contract (decision 077/decision 078).
 //! Uses dctx-lex-py and dctx-map-model; fixtures remain inline in fixtures.rs.
 #![forbid(unsafe_code)]
-
 // Each test binary uses a different subset of the shared helpers and fixtures.
 #![allow(dead_code)]
 
 pub mod fixtures;
 
-use dctx_lex_py::{body_fingerprint, Completion, Labeled, LexedFile, Precision, PyLexer};
+use dctx_lex_py::{Completion, Labeled, LexedFile, Precision, PyLexer, body_fingerprint};
 use dctx_map_model::{Confidence, EdgeKind, Node, NodeKind};
 
 pub fn extract(path: &str, source: &str) -> LexedFile {
@@ -22,14 +21,18 @@ pub fn line_of(source: &str, needle: &str) -> u32 {
     let byte = source
         .find(needle)
         .unwrap_or_else(|| panic!("missing {needle}"));
-    u32::try_from(source[..byte].bytes().filter(|byte| *byte == b'\n').count()).expect("bounded test coordinate") + 1
+    u32::try_from(source[..byte].bytes().filter(|byte| *byte == b'\n').count())
+        .expect("bounded test coordinate")
+        + 1
 }
 
 pub fn last_line_of(source: &str, needle: &str) -> u32 {
     let byte = source
         .rfind(needle)
         .unwrap_or_else(|| panic!("missing {needle}"));
-    u32::try_from(source[..byte].bytes().filter(|byte| *byte == b'\n').count()).expect("bounded test coordinate") + 1
+    u32::try_from(source[..byte].bytes().filter(|byte| *byte == b'\n').count())
+        .expect("bounded test coordinate")
+        + 1
 }
 
 pub fn node<'a>(facts: &'a LexedFile, name: &str) -> &'a Labeled<Node> {
@@ -41,7 +44,11 @@ pub fn node<'a>(facts: &'a LexedFile, name: &str) -> &'a Labeled<Node> {
 }
 
 pub fn names(facts: &LexedFile) -> Vec<&str> {
-    facts.nodes.iter().map(|item| item.fact.name.as_str()).collect()
+    facts
+        .nodes
+        .iter()
+        .map(|item| item.fact.name.as_str())
+        .collect()
 }
 
 pub fn call_names(facts: &LexedFile) -> Vec<&str> {
@@ -72,7 +79,11 @@ pub fn check_invariants(source: &str, facts: &LexedFile) {
     assert_eq!(module.fact.fingerprint, body_fingerprint(source));
     assert_eq!(module.precision, Precision::Structural);
     let limit = line_limit(source);
-    let ids: Vec<&str> = facts.nodes.iter().map(|item| item.fact.id.as_str()).collect();
+    let ids: Vec<&str> = facts
+        .nodes
+        .iter()
+        .map(|item| item.fact.id.as_str())
+        .collect();
     for item in &facts.nodes {
         let [start, end] = item.fact.lines;
         assert!(start >= 1 && start <= end && end <= limit);
@@ -82,7 +93,10 @@ pub fn check_invariants(source: &str, facts: &LexedFile) {
         let [start, end] = item.fact.lines;
         assert!(start >= 1 && start <= end && end <= limit);
         assert!(ids.contains(&item.fact.src.as_str()));
-        assert!(matches!(item.fact.kind, EdgeKind::Imports | EdgeKind::Calls));
+        assert!(matches!(
+            item.fact.kind,
+            EdgeKind::Imports | EdgeKind::Calls
+        ));
         assert_eq!(item.fact.owner_path, facts.path);
     }
     for (index, edge) in facts.edges.iter().enumerate() {
@@ -102,8 +116,18 @@ pub fn check_invariants(source: &str, facts: &LexedFile) {
     }
     if facts.diagnostics.is_empty() {
         assert_eq!(facts.completion, Completion::Complete);
-        assert!(facts.nodes.iter().all(|item| item.precision != Precision::Partial));
-        assert!(facts.references.iter().all(|item| item.precision != Precision::Partial));
+        assert!(
+            facts
+                .nodes
+                .iter()
+                .all(|item| item.precision != Precision::Partial)
+        );
+        assert!(
+            facts
+                .references
+                .iter()
+                .all(|item| item.precision != Precision::Partial)
+        );
     } else {
         assert_eq!(facts.completion, Completion::Partial);
     }

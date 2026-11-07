@@ -13,7 +13,10 @@ pub use limits::{LexError, Limits};
 use dctx_hash::Sha256;
 
 /// SHA-256 hex of the body with whitespace runs collapsed and edges trimmed.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn body_fingerprint(body: &str) -> String {
     let normalized = body.split_whitespace().collect::<Vec<_>>().join(" ");
     let mut hex = String::with_capacity(64);
@@ -66,7 +69,10 @@ pub(crate) fn doc_body(text: &str) -> String {
     if let Some(rest) = text.strip_prefix("///") {
         return rest.trim().to_string();
     }
-    if let Some(inner) = text.strip_prefix("/*").and_then(|body| body.strip_suffix("*/")) {
+    if let Some(inner) = text
+        .strip_prefix("/*")
+        .and_then(|body| body.strip_suffix("*/"))
+    {
         return inner
             .lines()
             .map(|line| line.trim().trim_start_matches('*').trim())
@@ -116,7 +122,9 @@ pub(crate) fn gap_ok(src: &str, from: u32, to: u32) -> bool {
         return false;
     };
     gap.bytes().filter(|&byte| byte == b'\n').count() <= 1
-        && gap.bytes().all(|byte| matches!(byte, b' ' | b'\t' | b'\r' | b'\n'))
+        && gap
+            .bytes()
+            .all(|byte| matches!(byte, b' ' | b'\t' | b'\r' | b'\n'))
 }
 
 #[cfg(test)]
@@ -136,7 +144,11 @@ mod tests {
 
     #[test]
     fn xml_summary_keeps_the_first_summary_sentence() {
-        let parts = vec!["<summary>".into(), "A box of values. More.".into(), "</summary>".into()];
+        let parts = vec![
+            "<summary>".into(),
+            "A box of values. More.".into(),
+            "</summary>".into(),
+        ];
         assert_eq!(xml_summary(&parts).as_deref(), Some("A box of values."));
         assert_eq!(xml_summary(&["<param name=\"x\">no</param>".into()]), None);
         assert_eq!(normalize("a .\n b"), "a . b");

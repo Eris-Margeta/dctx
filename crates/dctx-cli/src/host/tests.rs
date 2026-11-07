@@ -24,7 +24,11 @@ fn relative_cache_roots_and_the_auto_clean_switch_are_refused() {
     assert!(!auto_clean_enabled(&["--no-auto-clean".to_string()], None));
     assert!(!auto_clean_enabled(&[], Some("0")));
     assert!(auto_clean_enabled(&[], Some("1")));
-    let kept = without_auto_flag(vec!["dctx".to_string(), "--no-auto-clean".to_string(), ".".to_string()]);
+    let kept = without_auto_flag(vec![
+        "dctx".to_string(),
+        "--no-auto-clean".to_string(),
+        ".".to_string(),
+    ]);
     assert_eq!(kept, vec!["dctx".to_string(), ".".to_string()]);
 }
 
@@ -40,7 +44,10 @@ fn disabled_auto_clean_keeps_staged_bytes_and_an_enabled_slice_reclaims_them() {
     let skipped = piggyback_at(&root, true).expect("disabled");
     assert_eq!(skipped, 0);
     assert_eq!(fs::read(root.join("ledger.v1")).expect("ledger"), before);
-    assert!(load_ledger(&root).expect("load").last_auto_clean().is_none());
+    assert!(load_ledger(&root)
+        .expect("load")
+        .last_auto_clean()
+        .is_none());
     let blocked = piggyback_at(&root, false).expect("flag");
     assert_eq!(blocked, 0);
     configure(&root, Some(true), None, None).expect("on");
@@ -63,7 +70,10 @@ fn disabled_auto_clean_keeps_staged_bytes_and_an_enabled_slice_reclaims_them() {
 
 #[test]
 fn nested_gitignore_lines_become_root_relative() {
-    assert_eq!(rewrite_nested_line("src", "generated.rs"), "src/**/generated.rs");
+    assert_eq!(
+        rewrite_nested_line("src", "generated.rs"),
+        "src/**/generated.rs"
+    );
     assert_eq!(rewrite_nested_line("src", "/only.rs"), "src/only.rs");
     assert_eq!(rewrite_nested_line("src", "build/"), "src/**/build/");
     assert_eq!(rewrite_nested_line("src", "!keep.rs"), "!src/**/keep.rs");
@@ -77,16 +87,29 @@ fn nested_rules_anchor_at_their_directory_and_a_leading_slash_is_root_only() {
     let mut local = String::new();
     append_text(&mut local, "/corpus/\n*.secret\n!keep.secret\n");
     append_nested(&mut local, "src", "generated.rs\n");
-    let policy = SelectionPolicy::from_texts(&RuleTexts { local_ignore: Some(&local), ..RuleTexts::default() });
+    let policy = SelectionPolicy::from_texts(&RuleTexts {
+        local_ignore: Some(&local),
+        ..RuleTexts::default()
+    });
     let decision = |path: &str, dir: bool| {
         let name = path.rsplit('/').next().unwrap_or(path);
-        policy.decide(&ItemContext { relative_path: path, name, is_directory: dir, debug_mode: false })
+        policy.decide(&ItemContext {
+            relative_path: path,
+            name,
+            is_directory: dir,
+            debug_mode: false,
+        })
     };
     let excluded = |path: &str, dir: bool| decision(path, dir) == FileHandlingDecision::Exclude;
     let described: Vec<String> = policy
         .ignore_rules()
         .iter()
-        .map(|rule| format!("{:?} {} dir={} neg={}", rule.pattern_type, rule.pattern, rule.is_dir_only, rule.is_negation))
+        .map(|rule| {
+            format!(
+                "{:?} {} dir={} neg={}",
+                rule.pattern_type, rule.pattern, rule.is_dir_only, rule.is_negation
+            )
+        })
         .collect();
     assert!(
         excluded("corpus", true),
@@ -128,7 +151,9 @@ fn an_ignored_unreadable_directory_is_not_listed() {
     fs::set_permissions(&corpus, perms).expect("chmod");
     {
         let _restore = Restore(corpus);
-        let text = local_ignore_text(&root, None).expect("rules").expect("text");
+        let text = local_ignore_text(&root, None)
+            .expect("rules")
+            .expect("text");
         assert!(text.contains("/corpus/"), "{text}");
     }
     let _ = fs::remove_dir_all(&root);

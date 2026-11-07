@@ -52,7 +52,10 @@ pub enum IdentityOutcome {
 
 impl IdentityOutcome {
     /// Wire tag: `gone`, `moved` or `ambiguous`.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn as_str(&self) -> &'static str {
         match self {
             Self::Gone { .. } => "gone",
@@ -62,7 +65,10 @@ impl IdentityOutcome {
     }
 
     /// The id the caller asked for.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn id(&self) -> &str {
         match self {
             Self::Gone { id } | Self::Ambiguous { id } => id,
@@ -158,7 +164,9 @@ mod tests {
 
     #[test]
     fn gone_is_an_outcome_with_a_stable_tag() {
-        let outcome = IdentityOutcome::Gone { id: "s:src/lib.rs#removed".to_string() };
+        let outcome = IdentityOutcome::Gone {
+            id: "s:src/lib.rs#removed".to_string(),
+        };
         assert_eq!(outcome.as_str(), "gone");
         assert_eq!(outcome.id(), "s:src/lib.rs#removed");
     }

@@ -147,7 +147,11 @@ impl fmt::Display for TemplateError {
             Self::InvalidSyntax { line, detail } => write!(f, "invalid syntax at {line}: {detail}"),
             Self::Cycle { kind, name } => write!(f, "cycle in {kind} {name}"),
             Self::UnknownCapability { name } => write!(f, "unknown capability {name}"),
-            Self::BudgetAboveCeiling { field, requested, ceiling } => {
+            Self::BudgetAboveCeiling {
+                field,
+                requested,
+                ceiling,
+            } => {
                 write!(f, "budget {field} {requested} exceeds ceiling {ceiling}")
             }
             Self::GrantExpansion { kind } => write!(f, "grant expansion ({kind})"),

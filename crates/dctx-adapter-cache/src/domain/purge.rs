@@ -47,7 +47,9 @@ impl Lifecycle {
             return Ok(self.plan_purge(request.scope));
         }
         if !request.confirm {
-            return Err(CacheError::InvalidRequest { reason: "purge requires explicit confirmation" });
+            return Err(CacheError::InvalidRequest {
+                reason: "purge requires explicit confirmation",
+            });
         }
         Ok(self.apply_purge(request.scope))
     }
@@ -65,7 +67,11 @@ impl Lifecycle {
                 dropped += 1;
             }
         }
-        PurgeReport { dropped, held_by_lease, dry_run: true }
+        PurgeReport {
+            dropped,
+            held_by_lease,
+            dry_run: true,
+        }
     }
 
     fn apply_purge(&mut self, scope: PurgeScope) -> PurgeReport {
@@ -94,7 +100,11 @@ impl Lifecycle {
         }
         self.bump();
         self.debug_check();
-        PurgeReport { dropped, held_by_lease, dry_run: false }
+        PurgeReport {
+            dropped,
+            held_by_lease,
+            dry_run: false,
+        }
     }
 
     /// Finishes a purge that only marked `deletion_requested` while a lease held the generation.
@@ -104,7 +114,9 @@ impl Lifecycle {
             .values()
             .filter(|manifest| manifest.generation == generation)
             .filter(|manifest| {
-                self.objects.get(&manifest.object).is_some_and(|object| object.deletion_requested)
+                self.objects
+                    .get(&manifest.object)
+                    .is_some_and(|object| object.deletion_requested)
             })
             .map(|manifest| manifest.id)
             .collect();
@@ -152,7 +164,10 @@ impl Lifecycle {
         }
     }
 
-    #[allow(clippy::unused_self, reason = "Keep purge-scope selection on Lifecycle alongside purge planning and application.")]
+    #[allow(
+        clippy::unused_self,
+        reason = "Keep purge-scope selection on Lifecycle alongside purge planning and application."
+    )]
     fn in_purge(&self, root: RootId, scope: PurgeScope) -> bool {
         match scope {
             PurgeScope::All => true,

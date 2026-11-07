@@ -5,8 +5,8 @@
 //! The ledger assigns source order, duplicate ordinals and containment edges.
 use super::{Item, Region, Scope, Walker};
 use crate::domain::{
-    body_fingerprint, Completion, Diagnostic, DiagnosticReason, Dialect, Labeled, LexError, LexedFile,
-    Precision, RawReference,
+    Completion, Diagnostic, DiagnosticReason, Dialect, Labeled, LexError, LexedFile, Precision,
+    RawReference, body_fingerprint,
 };
 use crate::lexer::Lexed;
 use dctx_map_model::{
@@ -16,7 +16,10 @@ use std::cmp::Reverse;
 use std::collections::{BTreeMap, BTreeSet};
 
 impl Walker<'_> {
-    #[allow(clippy::too_many_lines, reason = "Keep the ordered C/C++ declaration-kind dispatch together with its shared token boundaries and recovery.")]
+    #[allow(
+        clippy::too_many_lines,
+        reason = "Keep the ordered C/C++ declaration-kind dispatch together with its shared token boundaries and recovery."
+    )]
     pub(crate) fn type_decl(
         &mut self,
         sig: usize,
@@ -77,7 +80,10 @@ impl Walker<'_> {
             (None, index)
         };
         let stop = self.consume_semi(after_body, end);
-        let last = stop.saturating_sub(1).max(intro).min(self.toks.len().saturating_sub(1));
+        let last = stop
+            .saturating_sub(1)
+            .max(intro)
+            .min(self.toks.len().saturating_sub(1));
         let symbol = match keyword.as_str() {
             "class" => Some(SymbolKind::Class),
             "enum" => Some(SymbolKind::Enum),
@@ -120,7 +126,11 @@ impl Walker<'_> {
                 continue;
             }
             let item = Item {
-                symbol: if typedef { Some(SymbolKind::Type) } else { None },
+                symbol: if typedef {
+                    Some(SymbolKind::Type)
+                } else {
+                    None
+                },
                 local: bare.clone(),
                 first: sig,
                 last,
@@ -219,7 +229,10 @@ pub(super) struct Draft {
 }
 
 impl Draft {
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     pub(super) fn new(path: &str, source: &str, max_facts: usize) -> Result<Self, LexError> {
         let id = StableId::new(NodeKind::Module, path, None, None)?;
         let lines = source.bytes().filter(|byte| *byte == b'\n').count() as u32 + 1;
@@ -296,7 +309,10 @@ impl Draft {
         }
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     pub(super) fn finish(
         mut self,
         lexed: &Lexed,
@@ -323,7 +339,8 @@ impl Draft {
             node.parent = remap.get(node.parent).copied().unwrap_or(0);
         }
         assign_ordinals(&mut nodes)?;
-        self.refs.sort_by_key(|reference| (reference.start, Reverse(reference.end)));
+        self.refs
+            .sort_by_key(|reference| (reference.start, Reverse(reference.end)));
         let mut diagnostics = lexed.diagnostics.clone();
         let limit = original.len() as u32;
         diagnostics.extend(self.problems.iter().map(|&(logical, reason)| Diagnostic {
@@ -332,7 +349,9 @@ impl Draft {
             reason,
         }));
         diagnostics.sort_by_key(|diagnostic| (diagnostic.byte, diagnostic.reason as u8));
-        let first = diagnostics.first().map_or(u32::MAX, |diagnostic| diagnostic.byte);
+        let first = diagnostics
+            .first()
+            .map_or(u32::MAX, |diagnostic| diagnostic.byte);
         let completion = if diagnostics.is_empty() {
             Completion::Complete
         } else {
@@ -400,7 +419,9 @@ impl Draft {
 fn assign_ordinals(nodes: &mut [DraftNode]) -> Result<(), LexError> {
     let mut counts: BTreeMap<(NodeKind, String), u32> = BTreeMap::new();
     for draft in nodes.iter().skip(1) {
-        *counts.entry((draft.node.kind, draft.node.name.clone())).or_insert(0) += 1;
+        *counts
+            .entry((draft.node.kind, draft.node.name.clone()))
+            .or_insert(0) += 1;
     }
     let mut seen: BTreeMap<(NodeKind, String), u32> = BTreeMap::new();
     let mut used = BTreeSet::new();
@@ -412,10 +433,20 @@ fn assign_ordinals(nodes: &mut [DraftNode]) -> Result<(), LexError> {
         let next = seen.entry(key.clone()).or_insert(0);
         *next += 1;
         let ordinal = (counts[&key] > 1).then_some(*next);
-        let mut id = StableId::new(draft.node.kind, &draft.node.path, Some(&draft.node.name), ordinal)?;
+        let mut id = StableId::new(
+            draft.node.kind,
+            &draft.node.path,
+            Some(&draft.node.name),
+            ordinal,
+        )?;
         if !used.insert(id.as_str().to_string()) {
             let fallback = Some(ordinal.unwrap_or(1).saturating_add(1).max(1));
-            id = StableId::new(draft.node.kind, &draft.node.path, Some(&draft.node.name), fallback)?;
+            id = StableId::new(
+                draft.node.kind,
+                &draft.node.path,
+                Some(&draft.node.name),
+                fallback,
+            )?;
             used.insert(id.as_str().to_string());
         }
         draft.node.id = id;
@@ -445,6 +476,11 @@ mod tests {
         assert_eq!(kind("E"), Some(Some(SymbolKind::Enum)));
         assert_eq!(kind("E::A"), Some(Some(SymbolKind::Const)));
         assert_eq!(kind("U"), Some(Some(SymbolKind::Type)));
-        assert!(facts.nodes.iter().any(|node| node.fact.signature.contains("union U")));
+        assert!(
+            facts
+                .nodes
+                .iter()
+                .any(|node| node.fact.signature.contains("union U"))
+        );
     }
 }

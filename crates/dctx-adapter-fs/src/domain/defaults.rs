@@ -78,8 +78,8 @@ fn compile(lines: &[&str]) -> Vec<Rule> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::selection::{FileHandlingDecision, ItemContext};
     use crate::domain::SelectionPolicy;
+    use crate::domain::selection::{FileHandlingDecision, ItemContext};
 
     #[test]
     fn git_directory_is_a_plain_exclude_pattern() {

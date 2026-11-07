@@ -162,34 +162,52 @@ impl Trace {
     }
 
     /// Retained actions in order.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn actions(&self) -> &[ModelAction] {
         &self.actions
     }
 
     /// Whether `action` was recorded.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn contains(&self, action: ModelAction) -> bool {
         self.actions.contains(&action)
     }
 
     /// Number of times `action` was recorded.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn count(&self, action: ModelAction) -> usize {
         self.actions.iter().filter(|a| **a == action).count()
     }
 
     /// Whether `first` occurs before the first later `second`.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn precedes(&self, first: ModelAction, second: ModelAction) -> bool {
-        match (self.actions.iter().position(|a| *a == first), self.actions.iter().rposition(|a| *a == second)) {
+        match (
+            self.actions.iter().position(|a| *a == first),
+            self.actions.iter().rposition(|a| *a == second),
+        ) {
             (Some(a), Some(b)) => a < b,
             _ => false,
         }
     }
 
     /// Entries dropped because the trace was full.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn dropped(&self) -> u64 {
         self.dropped
     }

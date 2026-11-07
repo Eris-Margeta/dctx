@@ -37,7 +37,10 @@ pub(crate) struct Paragraph {
 
 /// Block structure of one document in source order.
 #[derive(Debug, Default)]
-#[allow(clippy::struct_field_names, reason = "code_blocks matches the public document vocabulary and distinguishes code blocks from paragraphs and headings.")]
+#[allow(
+    clippy::struct_field_names,
+    reason = "code_blocks matches the public document vocabulary and distinguishes code blocks from paragraphs and headings."
+)]
 pub(crate) struct Blocks {
     pub headings: Vec<RawHeading>,
     pub paragraphs: Vec<Paragraph>,

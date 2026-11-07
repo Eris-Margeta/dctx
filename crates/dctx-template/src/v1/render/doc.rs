@@ -7,7 +7,9 @@ use super::*;
 use crate::TemplateError;
 
 pub(super) fn too_big() -> TemplateError {
-    TemplateError::BudgetTooSmall { minimum_bytes: u64::MAX }
+    TemplateError::BudgetTooSmall {
+        minimum_bytes: u64::MAX,
+    }
 }
 
 fn expanded_len(hay_len: u64, count: u64, pattern_len: u64, replacement_len: u64) -> Option<u64> {
@@ -82,7 +84,9 @@ impl Doc {
         if text.is_empty() {
             return Self::default();
         }
-        Self { pieces: vec![Piece { text, times: 1 }] }
+        Self {
+            pieces: vec![Piece { text, times: 1 }],
+        }
     }
 
     fn push_times(&mut self, text: &str, times: u64) -> Result<(), TemplateError> {
@@ -95,7 +99,10 @@ impl Doc {
             last.times = last.times.checked_add(times).ok_or_else(too_big)?;
             return Ok(());
         }
-        self.pieces.push(Piece { text: text.to_string(), times });
+        self.pieces.push(Piece {
+            text: text.to_string(),
+            times,
+        });
         Ok(())
     }
 
@@ -103,7 +110,11 @@ impl Doc {
         self.push_times(text, 1)
     }
 
-    pub(super) fn push_repeated(&mut self, replacement: &Doc, times: u64) -> Result<(), TemplateError> {
+    pub(super) fn push_repeated(
+        &mut self,
+        replacement: &Doc,
+        times: u64,
+    ) -> Result<(), TemplateError> {
         if times == 0 || replacement.pieces.is_empty() {
             return Ok(());
         }
@@ -145,7 +156,9 @@ impl Doc {
         let Some(&first) = pattern.as_bytes().first() else {
             return true;
         };
-        self.pieces.iter().any(|piece| piece.text.as_bytes().contains(&first))
+        self.pieces
+            .iter()
+            .any(|piece| piece.text.as_bytes().contains(&first))
     }
 
     pub(super) fn replaced(&self, pattern: &str, replacement: &Doc) -> Result<Doc, TemplateError> {
@@ -185,10 +198,16 @@ impl Doc {
 
     fn trim_large(&self) -> Doc {
         let mut pieces = self.pieces.clone();
-        while pieces.first().is_some_and(|piece| whitespace_unit(&piece.text)) {
+        while pieces
+            .first()
+            .is_some_and(|piece| whitespace_unit(&piece.text))
+        {
             pieces.remove(0);
         }
-        while pieces.last().is_some_and(|piece| whitespace_unit(&piece.text)) {
+        while pieces
+            .last()
+            .is_some_and(|piece| whitespace_unit(&piece.text))
+        {
             pieces.pop();
         }
         if pieces.is_empty() {
@@ -225,9 +244,15 @@ fn trim_start_side(pieces: &mut Vec<Piece>) {
     let original = pieces[0].text.clone();
     let mut rebuilt = Vec::new();
     if !trimmed.is_empty() {
-        rebuilt.push(Piece { text: trimmed, times: 1 });
+        rebuilt.push(Piece {
+            text: trimmed,
+            times: 1,
+        });
     }
-    rebuilt.push(Piece { text: original, times: times - 1 });
+    rebuilt.push(Piece {
+        text: original,
+        times: times - 1,
+    });
     rebuilt.extend(pieces.drain(1..));
     *pieces = rebuilt;
 }
@@ -252,7 +277,10 @@ fn trim_end_side(pieces: &mut Vec<Piece>) {
     }
     pieces[index].times = times - 1;
     if !trimmed.is_empty() {
-        pieces.push(Piece { text: trimmed, times: 1 });
+        pieces.push(Piece {
+            text: trimmed,
+            times: 1,
+        });
     }
 }
 
@@ -265,7 +293,8 @@ fn replace_text(haystack: &str, pattern: &str, replacement: &Doc) -> Result<Doc,
     }
     let count = haystack.matches(pattern).count() as u64;
     let repl_len = replacement.len()?;
-    if let Some(new_len) = expanded_len(haystack.len() as u64, count, pattern.len() as u64, repl_len)
+    if let Some(new_len) =
+        expanded_len(haystack.len() as u64, count, pattern.len() as u64, repl_len)
         && new_len <= RENDER_CEILING
         && repl_len <= RENDER_CEILING
     {

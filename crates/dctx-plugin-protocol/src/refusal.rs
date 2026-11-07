@@ -25,7 +25,10 @@ pub enum Stage {
 
 impl Stage {
     /// Corpus spelling of the stage.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Frame => "frame",
@@ -70,7 +73,10 @@ pub enum Predicate {
 
 impl Predicate {
     /// Corpus spelling of the predicate.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::WFrame => "W-FRAME",
@@ -105,29 +111,62 @@ pub struct Refusal {
 
 impl Refusal {
     /// Builds a refusal from its parts.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
-    pub const fn new(code: ErrorCode, stage: Stage, predicate: Predicate, reason: &'static str) -> Self {
-        Self { code, stage, predicate, reason }
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
+    pub const fn new(
+        code: ErrorCode,
+        stage: Stage,
+        predicate: Predicate,
+        reason: &'static str,
+    ) -> Self {
+        Self {
+            code,
+            stage,
+            predicate,
+            reason,
+        }
     }
 
     /// Frame-layer `InvalidMessage`.
     pub(crate) const fn frame(reason: &'static str) -> Self {
-        Self::new(ErrorCode::InvalidMessage, Stage::Frame, Predicate::WFrame, reason)
+        Self::new(
+            ErrorCode::InvalidMessage,
+            Stage::Frame,
+            Predicate::WFrame,
+            reason,
+        )
     }
 
     /// Decode-layer `InvalidMessage`.
     pub(crate) const fn decode(reason: &'static str) -> Self {
-        Self::new(ErrorCode::InvalidMessage, Stage::Decode, Predicate::WJson, reason)
+        Self::new(
+            ErrorCode::InvalidMessage,
+            Stage::Decode,
+            Predicate::WJson,
+            reason,
+        )
     }
 
     /// Schema-layer `InvalidMessage`.
     pub(crate) const fn schema(reason: &'static str) -> Self {
-        Self::new(ErrorCode::InvalidMessage, Stage::Schema, Predicate::SBounds, reason)
+        Self::new(
+            ErrorCode::InvalidMessage,
+            Stage::Schema,
+            Predicate::SBounds,
+            reason,
+        )
     }
 
     /// Semantic-layer `InvalidMessage` for a named rule.
     pub(crate) const fn semantic(predicate: Predicate, reason: &'static str) -> Self {
-        Self::new(ErrorCode::InvalidMessage, Stage::Semantic, predicate, reason)
+        Self::new(
+            ErrorCode::InvalidMessage,
+            Stage::Semantic,
+            predicate,
+            reason,
+        )
     }
 
     /// Session-layer `InvalidMessage` for a named rule.
@@ -159,6 +198,9 @@ mod tests {
     fn refusal_is_small_and_names_its_layer() {
         assert!(std::mem::size_of::<Refusal>() <= 32);
         let refusal = Refusal::decode("duplicate-key");
-        assert_eq!(refusal.to_string(), "InvalidMessage at decode (W-JSON): duplicate-key");
+        assert_eq!(
+            refusal.to_string(),
+            "InvalidMessage at decode (W-JSON): duplicate-key"
+        );
     }
 }

@@ -13,11 +13,19 @@ impl Session {
     /// For a `map` whose target is one file root (`m:<path>`), moves the records whose name after `#` is exactly one of the
     /// file's explicitly exported names to the front, keeping the existing order inside both groups (a stable partition).
     /// A file without an export list keeps the order unchanged.
-    pub(super) fn order_by_exports(&self, generation: &Generation, request: &MapRequest, records: &mut [AnswerRecord]) {
+    pub(super) fn order_by_exports(
+        &self,
+        generation: &Generation,
+        request: &MapRequest,
+        records: &mut [AnswerRecord],
+    ) {
         let Some(path) = request.target.strip_prefix("m:") else {
             return;
         };
-        let module = generation.nodes.iter().find(|node| node.letter == b'm' && generation.text.get(node.path) == path);
+        let module = generation
+            .nodes
+            .iter()
+            .find(|node| node.letter == b'm' && generation.text.get(node.path) == path);
         if let Some(module) = module.filter(|module| !module.signature.is_empty()) {
             exports_first(records, &module.signature.split(' ').collect());
         }
@@ -40,12 +48,30 @@ mod tests {
 
     #[test]
     fn exported_names_move_first_and_both_groups_keep_their_order() {
-        let ids = ["m:a.py", "s:a.py#alpha", "s:a.py#beta", "s:a.py#Gamma", "s:a.py#Gamma.beta"];
-        let mut records: Vec<AnswerRecord> = ids.iter().map(|id| AnswerRecord::basic(*id, "fn", "a.py")).collect();
+        let ids = [
+            "m:a.py",
+            "s:a.py#alpha",
+            "s:a.py#beta",
+            "s:a.py#Gamma",
+            "s:a.py#Gamma.beta",
+        ];
+        let mut records: Vec<AnswerRecord> = ids
+            .iter()
+            .map(|id| AnswerRecord::basic(*id, "fn", "a.py"))
+            .collect();
         let names: BTreeSet<&str> = ["Gamma", "beta"].into_iter().collect();
         exports_first(&mut records, &names);
         let order: Vec<&str> = records.iter().map(|record| record.id.as_str()).collect();
-        assert_eq!(order, ["s:a.py#beta", "s:a.py#Gamma", "m:a.py", "s:a.py#alpha", "s:a.py#Gamma.beta"]);
+        assert_eq!(
+            order,
+            [
+                "s:a.py#beta",
+                "s:a.py#Gamma",
+                "m:a.py",
+                "s:a.py#alpha",
+                "s:a.py#Gamma.beta"
+            ]
+        );
     }
 
     #[test]

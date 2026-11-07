@@ -20,8 +20,8 @@ pub use boundary::Boundary;
 pub use error::StoreError;
 pub use manifest::{Manifest, SegmentRef};
 pub use options::{
-    DurabilityMode, GcBudget, GcReport, MarkMode, PublishRequest, Published, Recovery, Revisions,
-    SegmentBlob, StoreOptions, EMERGENCY_METADATA, MAX_ACQUIRE,
+    DurabilityMode, EMERGENCY_METADATA, GcBudget, GcReport, MAX_ACQUIRE, MarkMode, PublishRequest,
+    Published, Recovery, Revisions, SegmentBlob, StoreOptions,
 };
 pub use pin::{Pin, PinnedSegment};
 
@@ -31,4 +31,4 @@ pub(crate) use names::{
     check_rel, check_root, current_path, cursor_path, manifest_path, object_digest, previous_path,
     segment_path, tmp_path,
 };
-pub(crate) use pointer::{decode_pointer, encode_pointer, Pointer, POINTER_LEN};
+pub(crate) use pointer::{POINTER_LEN, Pointer, decode_pointer, encode_pointer};

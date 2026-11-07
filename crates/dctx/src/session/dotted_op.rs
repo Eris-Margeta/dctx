@@ -5,10 +5,10 @@
 
 use std::collections::{BTreeMap, HashSet};
 
-use super::grep_op::text_fallback_applies;
 use super::Session;
+use super::grep_op::text_fallback_applies;
 use crate::domain::{AnswerRecord, DctxError, MapRequest};
-use crate::index::{dotted_key, Generation};
+use crate::index::{Generation, dotted_key};
 
 /// Most read lines kept from one file.
 const READS_PER_FILE: usize = 8;
@@ -19,7 +19,13 @@ impl Session {
     /// per file, config files excluded), then the other `records`, each id once. The `bool` is true when no symbol is listed.
     /// A key that no config symbol of the index defines (`find os.path`, `find Gamma.method`) keeps the plain find:
     /// [`Self::find_literal`]. Definitions outside `--in` or the kind filter are dropped; the key still counts as defined.
-    pub(super) fn find_dotted(&mut self, generation: &Generation, request: &MapRequest, records: Vec<AnswerRecord>, segments: &[&str]) -> Result<(Vec<AnswerRecord>, bool), DctxError> {
+    pub(super) fn find_dotted(
+        &mut self,
+        generation: &Generation,
+        request: &MapRequest,
+        records: Vec<AnswerRecord>,
+        segments: &[&str],
+    ) -> Result<(Vec<AnswerRecord>, bool), DctxError> {
         let definitions = dotted_key::definitions(generation, segments);
         if definitions.is_empty() {
             return self.find_literal(generation, request, records);
@@ -33,21 +39,33 @@ impl Session {
             literal.query = (*last).to_string();
             reads = read_sites(self.text_hits(generation, &literal)?, segments);
         }
-        let definitions: Vec<AnswerRecord> = definitions.into_iter().filter(|record| admits(request, record)).collect();
+        let definitions: Vec<AnswerRecord> = definitions
+            .into_iter()
+            .filter(|record| admits(request, record))
+            .collect();
         let text_only = definitions.is_empty() && records.is_empty() && !reads.is_empty();
-        Ok((each_id_once(definitions.into_iter().chain(reads).chain(records)), text_only))
+        Ok((
+            each_id_once(definitions.into_iter().chain(reads).chain(records)),
+            text_only,
+        ))
     }
 }
 
 /// The lowercase extension of the last path component of `path`, if it has one.
 fn extension(path: &str) -> Option<String> {
     let base = path.rsplit('/').next().unwrap_or(path);
-    base.rsplit_once('.').map(|(_, extension)| extension.to_ascii_lowercase())
+    base.rsplit_once('.')
+        .map(|(_, extension)| extension.to_ascii_lowercase())
 }
 
 /// True for a YAML, TOML or JSON file (the `config` tag of `index::extract::language_of`, which the session cannot call).
 fn is_config(path: &str) -> bool {
-    extension(path).is_some_and(|extension| matches!(extension.as_str(), "yaml" | "yml" | "toml" | "json" | "jsonc"))
+    extension(path).is_some_and(|extension| {
+        matches!(
+            extension.as_str(),
+            "yaml" | "yml" | "toml" | "json" | "jsonc"
+        )
+    })
 }
 
 /// Place rank of a read line: 0 for code, 1 for a path containing `test`, 2 for a `.md`, `.rst` or `.txt` doc.
@@ -86,7 +104,12 @@ fn admits(request: &MapRequest, record: &AnswerRecord) -> bool {
     let kind = request.kinds.is_empty() || request.kinds.contains(&record.kind);
     let place = request.within.as_deref().is_none_or(|prefix| {
         let prefix = prefix.trim_end_matches('/');
-        prefix == "." || record.path == prefix || record.path.strip_prefix(prefix).is_some_and(|rest| rest.starts_with('/'))
+        prefix == "."
+            || record.path == prefix
+            || record
+                .path
+                .strip_prefix(prefix)
+                .is_some_and(|rest| rest.starts_with('/'))
     });
     kind && place
 }
@@ -94,7 +117,10 @@ fn admits(request: &MapRequest, record: &AnswerRecord) -> bool {
 /// `records` in order with every later record whose id was already listed dropped.
 fn each_id_once(records: impl IntoIterator<Item = AnswerRecord>) -> Vec<AnswerRecord> {
     let mut seen = HashSet::new();
-    records.into_iter().filter(|record| seen.insert(record.id.clone())).collect()
+    records
+        .into_iter()
+        .filter(|record| seen.insert(record.id.clone()))
+        .collect()
 }
 
 #[cfg(test)]

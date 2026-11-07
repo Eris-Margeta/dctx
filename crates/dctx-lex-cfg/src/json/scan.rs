@@ -62,7 +62,13 @@ impl<'a> Parser<'a> {
                 let end = self.cur.i + rel;
                 let text = self.cur.slice(start, end).to_string();
                 self.cur.i = end + 2;
-                let first = text.lines().next().unwrap_or("").trim().trim_start_matches('*').trim();
+                let first = text
+                    .lines()
+                    .next()
+                    .unwrap_or("")
+                    .trim()
+                    .trim_start_matches('*')
+                    .trim();
                 return Some(first.to_string());
             }
             self.diagnose(start, DiagnosticReason::UnterminatedComment);
@@ -90,7 +96,9 @@ impl<'a> Parser<'a> {
         }
         let save = self.cur.i;
         self.cur.skip_spaces();
-        if self.cur.byte() == Some(b'/') { self.comment() } else {
+        if self.cur.byte() == Some(b'/') {
+            self.comment()
+        } else {
             self.cur.i = save;
             None
         }

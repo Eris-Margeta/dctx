@@ -122,8 +122,12 @@ impl Lx<'_> {
             self.consume_digits();
         } else {
             self.consume_digits();
-            if self.at_char('x') || self.at_char('X') || self.at_char('o') || self.at_char('O')
-                || self.at_char('b') || self.at_char('B')
+            if self.at_char('x')
+                || self.at_char('X')
+                || self.at_char('o')
+                || self.at_char('O')
+                || self.at_char('b')
+                || self.at_char('B')
             {
                 self.bump();
                 self.consume_digits();
@@ -147,7 +151,10 @@ impl Lx<'_> {
     }
 
     fn consume_digits(&mut self) {
-        while self.peek().is_some_and(|ch| ch.is_ascii_hexdigit() || ch == '_') {
+        while self
+            .peek()
+            .is_some_and(|ch| ch.is_ascii_hexdigit() || ch == '_')
+        {
             self.bump();
         }
     }
@@ -183,7 +190,10 @@ impl Lx<'_> {
         Ok(emitted)
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn push_paren(&mut self, kind: u8) -> Result<(), LexError> {
         if self.parens.len() as u32 >= self.max_depth {
             return Err(LexError::TooDeep {
@@ -220,16 +230,37 @@ fn ident_cont(ch: char) -> bool {
 fn known_punct(ch: char) -> bool {
     matches!(
         ch,
-        '(' | ')' | '[' | ']' | '{' | '}' | ':' | ';' | ',' | '.' | '=' | '+' | '-' | '*'
-            | '/' | '%' | '&' | '|' | '^' | '~' | '<' | '>' | '@' | '\\'
+        '(' | ')'
+            | '['
+            | ']'
+            | '{'
+            | '}'
+            | ':'
+            | ';'
+            | ','
+            | '.'
+            | '='
+            | '+'
+            | '-'
+            | '*'
+            | '/'
+            | '%'
+            | '&'
+            | '|'
+            | '^'
+            | '~'
+            | '<'
+            | '>'
+            | '@'
+            | '\\'
     )
 }
 
 fn op_len(rest: &str) -> usize {
     const THREE: &[&str] = &["**=", "//=", "<<=", ">>=", "..."];
     const TWO: &[&str] = &[
-        "->", ":=", "==", "!=", "<=", ">=", "//", "**", "<<", ">>", "+=", "-=", "*=", "/=",
-        "%=", "&=", "|=", "^=", "@=",
+        "->", ":=", "==", "!=", "<=", ">=", "//", "**", "<<", ">>", "+=", "-=", "*=", "/=", "%=",
+        "&=", "|=", "^=", "@=",
     ];
     for op in THREE {
         if rest.starts_with(op) {

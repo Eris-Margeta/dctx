@@ -45,7 +45,10 @@ pub struct StoreOptions {
 
 impl StoreOptions {
     /// Durable options with the given cap and namespace `local`.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn capped(cap: u64) -> Self {
         Self {
             cap,
@@ -77,7 +80,10 @@ pub struct Revisions {
 
 impl Revisions {
     /// The structural extractor's revision label.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn structural() -> Self {
         Self {
             resolver: "1".into(),

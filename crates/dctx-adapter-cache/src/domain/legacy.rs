@@ -4,9 +4,9 @@
 //! Depends on nothing in the ledger except the adopted-export map for apply. GC does not call this.
 //! Unregistered, modified, unknown-version and arbitrary paths stay untouched.
 
+use super::Lifecycle;
 use super::quota::RECOGNIZED_LEGACY_VERSION;
 use super::restart::{Put, Take};
-use super::Lifecycle;
 use crate::error::CacheError;
 use std::collections::BTreeMap;
 
@@ -72,7 +72,10 @@ pub struct KnownExport {
 
 impl KnownExport {
     /// Ownership identity, when the evidence carries one.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn identity(&self) -> Option<u64> {
         match self.evidence {
             ExportEvidence::OwnedBinary { identity, .. }
@@ -162,7 +165,10 @@ pub(super) struct AdoptedExport {
 
 /// Classifies one record. A candidate needs place, ownership, a known version and unchanged bytes.
 pub fn classify_export(export: &KnownExport) -> Result<u64, LeaveReason> {
-    if !matches!(export.place, OutputPlace::Registry | OutputPlace::Configured) {
+    if !matches!(
+        export.place,
+        OutputPlace::Registry | OutputPlace::Configured
+    ) {
         return Err(LeaveReason::NotConfiguredPlace);
     }
     match export.evidence {
@@ -185,7 +191,10 @@ pub fn classify_export(export: &KnownExport) -> Result<u64, LeaveReason> {
 
 impl Lifecycle {
     /// Read-only plan. Does not retire, unlink, touch last-use, or move the cursor.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn legacy_dry_run(&self, exports: &[KnownExport]) -> LegacyDryRun {
         let mut candidates = Vec::new();
         let mut left_alone = Vec::new();
@@ -203,7 +212,10 @@ impl Lifecycle {
                 }),
             }
         }
-        LegacyDryRun { candidates, left_alone }
+        LegacyDryRun {
+            candidates,
+            left_alone,
+        }
     }
 
     /// Opts an already-classified candidate into the ownership manifest.
@@ -213,7 +225,13 @@ impl Lifecycle {
         let identity = classify_export(export).map_err(|_| CacheError::InvalidRequest {
             reason: "export is not an owned legacy artifact",
         })?;
-        self.exports.insert(export.label.clone(), AdoptedExport { bytes: export.bytes, identity });
+        self.exports.insert(
+            export.label.clone(),
+            AdoptedExport {
+                bytes: export.bytes,
+                identity,
+            },
+        );
         self.bump();
         Ok(())
     }
@@ -229,7 +247,10 @@ impl Lifecycle {
         let mut reclaimed = Vec::new();
         let mut untouched = Vec::new();
         for identity in selected {
-            let Some(export) = exports.iter().find(|export| export.identity() == Some(*identity)) else {
+            let Some(export) = exports
+                .iter()
+                .find(|export| export.identity() == Some(*identity))
+            else {
                 untouched.push(UntouchedExport {
                     label: String::new(),
                     identity: Some(*identity),
@@ -265,13 +286,22 @@ impl Lifecycle {
             self.exports.remove(&export.label);
             self.touches = self.touches.saturating_add(1);
             self.bump();
-            reclaimed.push(ReclaimedExport { label: export.label.clone(), bytes });
+            reclaimed.push(ReclaimedExport {
+                label: export.label.clone(),
+                bytes,
+            });
         }
-        Ok(LegacyApplyReport { reclaimed, untouched })
+        Ok(LegacyApplyReport {
+            reclaimed,
+            untouched,
+        })
     }
 
     /// Labels adopted into the ownership manifest.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn adopted_labels(&self) -> Vec<String> {
         self.exports.keys().cloned().collect()
     }
@@ -293,7 +323,10 @@ pub(super) fn read_exports(
     let mut exports = BTreeMap::new();
     for _ in 0..inp.count()? {
         let label = inp.text()?;
-        let export = AdoptedExport { bytes: inp.u64()?, identity: inp.u64()? };
+        let export = AdoptedExport {
+            bytes: inp.u64()?,
+            identity: inp.u64()?,
+        };
         if exports.insert(label, export).is_some() {
             return Err(super::restart::corrupt("duplicate"));
         }
@@ -306,18 +339,29 @@ mod tests {
     use super::*;
 
     fn export(place: OutputPlace, evidence: ExportEvidence) -> KnownExport {
-        KnownExport { place, label: "out".to_string(), bytes: 4, evidence }
+        KnownExport {
+            place,
+            label: "out".to_string(),
+            bytes: 4,
+            evidence,
+        }
     }
 
     #[test]
     fn extension_and_arbitrary_place_are_not_ownership() {
         let extension = export(OutputPlace::Registry, ExportEvidence::ExtensionOnly);
         assert_eq!(classify_export(&extension), Err(LeaveReason::ExtensionOnly));
-        let owned = ExportEvidence::OwnedBinary { version: RECOGNIZED_LEGACY_VERSION, identity: 9 };
+        let owned = ExportEvidence::OwnedBinary {
+            version: RECOGNIZED_LEGACY_VERSION,
+            identity: 9,
+        };
         assert_eq!(
             classify_export(&export(OutputPlace::Arbitrary, owned)),
             Err(LeaveReason::NotConfiguredPlace)
         );
-        assert_eq!(classify_export(&export(OutputPlace::Registry, owned)), Ok(9));
+        assert_eq!(
+            classify_export(&export(OutputPlace::Registry, owned)),
+            Ok(9)
+        );
     }
 }

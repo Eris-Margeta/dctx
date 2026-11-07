@@ -37,23 +37,36 @@ impl Distribution<'_> {
     /// # Errors
     /// Propagates stale revocation data, registry activation/consent refusals, and lock/storage failures.
     pub fn activate(&self, id: &PluginId, digest: &Sha256Hex) -> Result<(), DistributionError> {
-        self.trust.check_freshness(self.clock.now(), self.policy.freshness_ceiling_secs)?;
+        self.trust
+            .check_freshness(self.clock.now(), self.policy.freshness_ceiling_secs)?;
         self.mutate(|registry| registry.activate(id, digest, self.trust))
     }
 
     /// Explicit exact-digest rollback below the high-water mark, with a recorded reason.
     /// # Errors
     /// Propagates freshness, rollback reason/version/consent refusals, and lock/storage failures.
-    pub fn rollback(&self, id: &PluginId, digest: &Sha256Hex, reason: &str) -> Result<(), DistributionError> {
-        self.trust.check_freshness(self.clock.now(), self.policy.freshness_ceiling_secs)?;
+    pub fn rollback(
+        &self,
+        id: &PluginId,
+        digest: &Sha256Hex,
+        reason: &str,
+    ) -> Result<(), DistributionError> {
+        self.trust
+            .check_freshness(self.clock.now(), self.policy.freshness_ceiling_secs)?;
         self.mutate(|registry| registry.rollback(id, digest, reason, self.trust))
     }
 
     /// Enables the active version under existing or explicitly approved consent.
     /// # Errors
     /// Propagates freshness, version/trust/confinement/consent refusals, and lock/storage failures.
-    pub fn enable(&self, id: &PluginId, approval: Option<&ConsentApproval>, confinement: Confinement) -> Result<(), DistributionError> {
-        self.trust.check_freshness(self.clock.now(), self.policy.freshness_ceiling_secs)?;
+    pub fn enable(
+        &self,
+        id: &PluginId,
+        approval: Option<&ConsentApproval>,
+        confinement: Confinement,
+    ) -> Result<(), DistributionError> {
+        self.trust
+            .check_freshness(self.clock.now(), self.policy.freshness_ceiling_secs)?;
         self.mutate(|registry| registry.enable(id, approval, confinement, self.trust))
     }
 
@@ -71,7 +84,11 @@ impl Distribution<'_> {
         let held = self.lock()?;
         let mut registry = self.registry()?;
         let record = registry.get(id).ok_or(DistributionError::NotInstalled)?;
-        let keys: Vec<InstallKey> = record.versions.iter().map(|version| key(id, version)).collect();
+        let keys: Vec<InstallKey> = record
+            .versions
+            .iter()
+            .map(|version| key(id, version))
+            .collect();
         registry.remove_plugin(id)?;
         self.save(&held, &registry)?;
         for key in &keys {
@@ -83,10 +100,17 @@ impl Distribution<'_> {
     /// Unlinks one inactive version whose leases have ended.
     /// # Errors
     /// Refuses missing or leased versions and propagates lock/registry/storage failures.
-    pub fn remove_version(&self, id: &PluginId, digest: &Sha256Hex) -> Result<(), DistributionError> {
+    pub fn remove_version(
+        &self,
+        id: &PluginId,
+        digest: &Sha256Hex,
+    ) -> Result<(), DistributionError> {
         let held = self.lock()?;
         let mut registry = self.registry()?;
-        let version = registry.get(id).and_then(|record| record.version(digest)).ok_or(DistributionError::NotInstalled)?;
+        let version = registry
+            .get(id)
+            .and_then(|record| record.version(digest))
+            .ok_or(DistributionError::NotInstalled)?;
         let key = key(id, version);
         registry.remove_version(id, digest)?;
         self.save(&held, &registry)?;
@@ -99,14 +123,21 @@ impl Distribution<'_> {
     pub fn verify(&self, id: &PluginId) -> Result<Vec<VerifyOutcome>, DistributionError> {
         let held = self.lock()?;
         let mut registry = self.registry()?;
-        let versions = registry.get(id).ok_or(DistributionError::NotInstalled)?.versions.clone();
+        let versions = registry
+            .get(id)
+            .ok_or(DistributionError::NotInstalled)?
+            .versions
+            .clone();
         let mut outcomes = Vec::with_capacity(versions.len());
         for version in &versions {
             let result = self.reverify(id, version);
             if result.is_err() {
                 registry.quarantine(id, &version.digest)?;
             }
-            outcomes.push(VerifyOutcome { digest: version.digest, result });
+            outcomes.push(VerifyOutcome {
+                digest: version.digest,
+                result,
+            });
         }
         self.save(&held, &registry)?;
         Ok(outcomes)
@@ -119,7 +150,9 @@ impl Distribution<'_> {
         if Sha256Hex::of(&manifest)? != version.manifest_sha256 {
             return Err(DistributionError::IntegrityFailure);
         }
-        let verified = self.trust.authenticate(&manifest, &read("plugin.json.sig")?, id)?;
+        let verified = self
+            .trust
+            .authenticate(&manifest, &read("plugin.json.sig")?, id)?;
         if verified.signer != version.signer {
             return Err(DistributionError::SignerChanged);
         }
@@ -142,7 +175,9 @@ impl Distribution<'_> {
     /// Propagates plugin admission/trust/freshness refusals and lock/registry/storage failures.
     pub fn admit(&self, id: &PluginId) -> Result<Admission, DistributionError> {
         let now = self.clock.now();
-        self.mutate(|registry| registry.admit(id, self.trust, now, self.policy.freshness_ceiling_secs))
+        self.mutate(|registry| {
+            registry.admit(id, self.trust, now, self.policy.freshness_ceiling_secs)
+        })
     }
 
     /// Ends a worker lease.
@@ -158,7 +193,11 @@ impl Distribution<'_> {
     /// Records the bundled build the containing signed release authenticated; a sticky mask wins.
     /// # Errors
     /// Propagates lock/registry/storage failures while recording the bundled version.
-    pub fn register_bundled(&self, id: &PluginId, version: InstalledVersion) -> Result<(), DistributionError> {
+    pub fn register_bundled(
+        &self,
+        id: &PluginId,
+        version: InstalledVersion,
+    ) -> Result<(), DistributionError> {
         self.mutate(|registry| {
             registry.register_bundled(id, version);
             Ok(())
@@ -171,7 +210,10 @@ impl Distribution<'_> {
     pub fn list(&self) -> Result<Vec<PluginStatus>, DistributionError> {
         let registry = self.registry()?;
         let now = self.clock.now();
-        registry.records().map(|(id, _)| registry.status(id, self.trust, now)).collect()
+        registry
+            .records()
+            .map(|(id, _)| registry.status(id, self.trust, now))
+            .collect()
     }
 
     /// Discards partial staging and unreferenced published directories; the activation record is untouched.
@@ -186,7 +228,9 @@ impl Distribution<'_> {
             report.discarded_staging.push(key);
         }
         for key in self.store.installed()? {
-            let referenced = registry.get(&key.id).is_some_and(|record| record.version(&key.digest).is_some());
+            let referenced = registry
+                .get(&key.id)
+                .is_some_and(|record| record.version(&key.digest).is_some());
             if !referenced {
                 self.store.remove_installed(held.token, &key)?;
                 report.removed_orphans.push(key);
@@ -197,5 +241,9 @@ impl Distribution<'_> {
 }
 
 fn key(id: &PluginId, version: &InstalledVersion) -> InstallKey {
-    InstallKey { id: id.clone(), version: version.version.clone(), digest: version.digest }
+    InstallKey {
+        id: id.clone(),
+        version: version.version.clone(),
+        digest: version.digest,
+    }
 }

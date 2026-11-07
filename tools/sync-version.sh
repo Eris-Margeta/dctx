@@ -18,6 +18,7 @@ fi
 python3 - "$SCRIPT_DIR/.." "$MODE" <<'PYTHON'
 import re
 import sys
+import tomllib
 from pathlib import Path
 
 root = Path(sys.argv[1]).resolve()
@@ -44,6 +45,12 @@ for manifest in sorted([*root.glob("crates/*/Cargo.toml"), *root.glob("plugins/*
 # Workspace package names only; no registry crate shares a name with a workspace package.
 lock_pattern = r'(?m)(^\[\[package\]\]\nname = "(?:' + "|".join(map(re.escape, lock)) + r')"\nversion = ")[^"]+(")'
 
+# Registry requirements must follow the package versions for the next release.
+# Versionless dev-only path dependencies are intentionally omitted by Cargo when
+# packaging; adding registry versions there would create publication cycles.
+manifests = sorted([*root.glob("crates/*/Cargo.toml"), *root.glob("plugins/*/Cargo.toml")])
+local_dirs = {p.parent.resolve() for p in manifests}
+
 # Validate every expected field before writing any file.
 updates = []
 lock_path = root / "Cargo.lock"
@@ -59,6 +66,19 @@ for relative, (pattern, replacement) in patterns.items():
     after, count = re.subn(pattern, replacement, before)
     if count != 1:
         sys.exit(f"Expected exactly one version field in {relative}; found {count}")
+    if path in manifests:
+        section = ""
+        lines = []
+        for line in after.splitlines(keepends=True):
+            if line.startswith("["):
+                section = line.strip()
+            if "dependencies]" in section and "dev-dependencies]" not in section and "path = " in line:
+                dep = tomllib.loads(line)
+                spec = next(iter(dep.values()))
+                if (path.parent / spec["path"]).resolve() in local_dirs:
+                    line = re.sub(r'version = "[^"]+"', f'version = "={version}"', line)
+            lines.append(line)
+        after = "".join(lines)
     if before != after:
         updates.append((path, relative, after))
 

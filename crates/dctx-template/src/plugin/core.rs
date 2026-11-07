@@ -17,7 +17,10 @@ pub enum NetworkPolicy {
 
 impl NetworkPolicy {
     /// Width rank. A template may only move toward [`NetworkPolicy::None`].
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn rank(self) -> u8 {
         match self {
             Self::None => 0,
@@ -27,7 +30,10 @@ impl NetworkPolicy {
     }
 
     /// Canonical token stored on a group.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::None => "none",

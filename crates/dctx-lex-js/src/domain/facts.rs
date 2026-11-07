@@ -17,7 +17,10 @@ pub enum Dialect {
 
 impl Dialect {
     /// Selects a dialect case-insensitively; other extensions are unsupported.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn for_path(path: &str) -> Option<Self> {
         let extension = path.rsplit_once('.')?.1.to_ascii_lowercase();
         match extension.as_str() {
@@ -29,13 +32,19 @@ impl Dialect {
     }
 
     /// Whether type annotations and declarations are recognised.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn typed(self) -> bool {
         matches!(self, Self::TypeScript | Self::Tsx)
     }
 
     /// Whether `<` in expression position may open a JSX element.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn jsx(self) -> bool {
         matches!(self, Self::JavaScript | Self::Tsx)
     }

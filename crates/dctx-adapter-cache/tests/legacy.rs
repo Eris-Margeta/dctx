@@ -4,7 +4,8 @@
 //! Depends on [`Lifecycle::legacy_dry_run`]. Apply removes only an adopted candidate that still matches.
 
 use dctx_adapter_cache::{
-    ExportEvidence, KnownExport, LeaveReason, Lifecycle, OutputPlace, Quota, RECOGNIZED_LEGACY_VERSION,
+    ExportEvidence, KnownExport, LeaveReason, Lifecycle, OutputPlace, Quota,
+    RECOGNIZED_LEGACY_VERSION,
 };
 
 fn owned(place: OutputPlace, label: &str, identity: u64) -> KnownExport {
@@ -12,7 +13,10 @@ fn owned(place: OutputPlace, label: &str, identity: u64) -> KnownExport {
         place,
         label: label.to_string(),
         bytes: 12,
-        evidence: ExportEvidence::OwnedBinary { version: RECOGNIZED_LEGACY_VERSION, identity },
+        evidence: ExportEvidence::OwnedBinary {
+            version: RECOGNIZED_LEGACY_VERSION,
+            identity,
+        },
     }
 }
 
@@ -68,20 +72,58 @@ fn legacy_dry_run_never_touches_unowned_exports() {
     assert_eq!(plan.candidates.len(), 2);
     assert!(plan.candidates.iter().any(|row| row.identity == 9));
     assert!(plan.candidates.iter().any(|row| row.identity == 4));
-    assert!(plan.left_alone.iter().any(|row| row.reason == LeaveReason::ExtensionOnly));
-    assert!(plan.left_alone.iter().any(|row| row.reason == LeaveReason::Modified));
-    assert!(plan.left_alone.iter().any(|row| row.reason == LeaveReason::UnknownVersion));
-    assert!(plan.left_alone.iter().any(|row| row.reason == LeaveReason::Unregistered));
-    assert!(plan.left_alone.iter().any(|row| row.reason == LeaveReason::NotConfiguredPlace));
+    assert!(
+        plan.left_alone
+            .iter()
+            .any(|row| row.reason == LeaveReason::ExtensionOnly)
+    );
+    assert!(
+        plan.left_alone
+            .iter()
+            .any(|row| row.reason == LeaveReason::Modified)
+    );
+    assert!(
+        plan.left_alone
+            .iter()
+            .any(|row| row.reason == LeaveReason::UnknownVersion)
+    );
+    assert!(
+        plan.left_alone
+            .iter()
+            .any(|row| row.reason == LeaveReason::Unregistered)
+    );
+    assert!(
+        plan.left_alone
+            .iter()
+            .any(|row| row.reason == LeaveReason::NotConfiguredPlace)
+    );
 
     assert!(life.adopt_legacy(&extension).is_err());
     assert_eq!(life.logical_revision(), revision);
     let refused = life.legacy_apply(&exports, &[9, 5, 8]).expect("apply");
-    assert_eq!(refused.reclaimed, [] as [dctx_adapter_cache::ReclaimedExport; 0]);
+    assert_eq!(
+        refused.reclaimed,
+        [] as [dctx_adapter_cache::ReclaimedExport; 0]
+    );
     assert_eq!(life.touches(), 0);
-    assert!(refused.untouched.iter().any(|row| row.reason == LeaveReason::NotAdopted));
-    assert!(refused.untouched.iter().any(|row| row.reason == LeaveReason::Modified));
-    assert!(refused.untouched.iter().any(|row| row.reason == LeaveReason::NotConfiguredPlace));
+    assert!(
+        refused
+            .untouched
+            .iter()
+            .any(|row| row.reason == LeaveReason::NotAdopted)
+    );
+    assert!(
+        refused
+            .untouched
+            .iter()
+            .any(|row| row.reason == LeaveReason::Modified)
+    );
+    assert!(
+        refused
+            .untouched
+            .iter()
+            .any(|row| row.reason == LeaveReason::NotConfiguredPlace)
+    );
 
     life.adopt_legacy(&registry).expect("adopt");
     assert!(life.logical_revision() > revision);
@@ -92,10 +134,19 @@ fn legacy_dry_run_never_touches_unowned_exports() {
     assert_eq!(life.adopted_labels(), [] as [std::string::String; 0]);
 
     life.adopt_legacy(&registry).expect("adopt");
-    let changed = KnownExport { evidence: ExportEvidence::Modified { identity: 9 }, ..registry };
+    let changed = KnownExport {
+        evidence: ExportEvidence::Modified { identity: 9 },
+        ..registry
+    };
     let stayed = life.legacy_apply(&[changed], &[9]).expect("apply");
-    assert_eq!(stayed.reclaimed, [] as [dctx_adapter_cache::ReclaimedExport; 0]);
+    assert_eq!(
+        stayed.reclaimed,
+        [] as [dctx_adapter_cache::ReclaimedExport; 0]
+    );
     assert_eq!(stayed.untouched[0].reason, LeaveReason::Modified);
     assert_eq!(life.touches(), 1);
-    assert_eq!(life.adopted_labels(), vec!["registry/cache.bin".to_string()]);
+    assert_eq!(
+        life.adopted_labels(),
+        vec!["registry/cache.bin".to_string()]
+    );
 }

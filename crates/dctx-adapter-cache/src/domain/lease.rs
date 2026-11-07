@@ -6,9 +6,9 @@
 //! Depends on [`super::Lifecycle`] pointers and manifests. GC treats only an active lease as a root.
 //! An acquiring lease is not yet a pin, so a generation can disappear before confirm.
 
+use super::Lifecycle;
 use super::ids::{GenerationId, LeaseId, Physical, SessionId};
 use super::restart::{Put, Take};
-use super::Lifecycle;
 use crate::error::CacheError;
 use std::collections::BTreeMap;
 
@@ -37,18 +37,35 @@ impl Lifecycle {
         session: SessionId,
     ) -> Result<LeaseId, CacheError> {
         if !self.roots.contains_key(&root) {
-            return Err(CacheError::InvalidRequest { reason: "unknown root" });
+            return Err(CacheError::InvalidRequest {
+                reason: "unknown root",
+            });
         }
         let generation = self
             .pointers
             .get(&root)
             .and_then(|pointer| pointer.current)
-            .ok_or(CacheError::InvalidRequest { reason: "no generation" })?;
+            .ok_or(CacheError::InvalidRequest {
+                reason: "no generation",
+            })?;
         let id = LeaseId::new(self.ids.lease);
-        self.ids.lease = self.ids.lease.checked_add(1).ok_or(CacheError::InvalidRequest {
-            reason: "lease id space exhausted",
-        })?;
-        self.leases.insert(id, Lease { root, session, phase: LeasePhase::Acquiring { observed: generation } });
+        self.ids.lease = self
+            .ids
+            .lease
+            .checked_add(1)
+            .ok_or(CacheError::InvalidRequest {
+                reason: "lease id space exhausted",
+            })?;
+        self.leases.insert(
+            id,
+            Lease {
+                root,
+                session,
+                phase: LeasePhase::Acquiring {
+                    observed: generation,
+                },
+            },
+        );
         self.bump();
         Ok(id)
     }
@@ -58,10 +75,14 @@ impl Lifecycle {
     /// Refuses unknown/nonacquiring leases or generations no longer retained.
     pub fn reader_confirm(&mut self, id: LeaseId) -> Result<GenerationId, CacheError> {
         let Some(lease) = self.leases.get(&id) else {
-            return Err(CacheError::InvalidRequest { reason: "unknown lease" });
+            return Err(CacheError::InvalidRequest {
+                reason: "unknown lease",
+            });
         };
         let LeasePhase::Acquiring { observed } = lease.phase else {
-            return Err(CacheError::InvalidRequest { reason: "lease is not acquiring" });
+            return Err(CacheError::InvalidRequest {
+                reason: "lease is not acquiring",
+            });
         };
         let root = lease.root;
         if !self.generation_confirmable(root, observed) {
@@ -69,10 +90,14 @@ impl Lifecycle {
                 lease.phase = LeasePhase::Released;
             }
             self.bump();
-            return Err(CacheError::InvalidRequest { reason: "generation no longer retained" });
+            return Err(CacheError::InvalidRequest {
+                reason: "generation no longer retained",
+            });
         }
         if let Some(lease) = self.leases.get_mut(&id) {
-            lease.phase = LeasePhase::Active { generation: observed };
+            lease.phase = LeasePhase::Active {
+                generation: observed,
+            };
         }
         self.bump();
         Ok(observed)
@@ -84,11 +109,15 @@ impl Lifecycle {
     /// Refuses an unknown lease ID.
     pub fn reader_release(&mut self, id: LeaseId) -> Result<(), CacheError> {
         let Some(lease) = self.leases.get(&id) else {
-            return Err(CacheError::InvalidRequest { reason: "unknown lease" });
+            return Err(CacheError::InvalidRequest {
+                reason: "unknown lease",
+            });
         };
         let generation = match lease.phase {
             LeasePhase::Active { generation } => Some(generation),
-            LeasePhase::Acquiring { .. } | LeasePhase::Released | LeasePhase::OwnerProvenDead => None,
+            LeasePhase::Acquiring { .. } | LeasePhase::Released | LeasePhase::OwnerProvenDead => {
+                None
+            }
         };
         if let Some(lease) = self.leases.get_mut(&id) {
             lease.phase = LeasePhase::Released;
@@ -105,11 +134,19 @@ impl Lifecycle {
     }
 
     /// Leases that still protect a generation: confirmed pins and handshakes in flight.
-    #[allow(clippy::must_use_candidate, reason = "Read-only list for the adapter's liveness probe.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Read-only list for the adapter's liveness probe."
+    )]
     pub fn open_leases(&self) -> Vec<LeaseId> {
         self.leases
             .iter()
-            .filter(|(_, lease)| matches!(lease.phase, LeasePhase::Active { .. } | LeasePhase::Acquiring { .. }))
+            .filter(|(_, lease)| {
+                matches!(
+                    lease.phase,
+                    LeasePhase::Active { .. } | LeasePhase::Acquiring { .. }
+                )
+            })
             .map(|(id, _)| *id)
             .collect()
     }
@@ -120,11 +157,15 @@ impl Lifecycle {
     /// Refuses an unknown lease ID.
     pub fn reader_owner_dead(&mut self, id: LeaseId) -> Result<(), CacheError> {
         let Some(lease) = self.leases.get_mut(&id) else {
-            return Err(CacheError::InvalidRequest { reason: "unknown lease" });
+            return Err(CacheError::InvalidRequest {
+                reason: "unknown lease",
+            });
         };
         let held = match lease.phase {
             LeasePhase::Active { generation } => Some(generation),
-            LeasePhase::Acquiring { .. } | LeasePhase::Released | LeasePhase::OwnerProvenDead => None,
+            LeasePhase::Acquiring { .. } | LeasePhase::Released | LeasePhase::OwnerProvenDead => {
+                None
+            }
         };
         lease.phase = LeasePhase::OwnerProvenDead;
         if let Some(generation) = held
@@ -137,14 +178,23 @@ impl Lifecycle {
         Ok(())
     }
 
-    pub(super) fn generation_confirmable(&self, root: super::RootId, generation: GenerationId) -> bool {
+    pub(super) fn generation_confirmable(
+        &self,
+        root: super::RootId,
+        generation: GenerationId,
+    ) -> bool {
         self.manifests.values().any(|manifest| {
-            if manifest.root != root || manifest.generation != generation || !self.retained(manifest, false)
+            if manifest.root != root
+                || manifest.generation != generation
+                || !self.retained(manifest, false)
             {
                 return false;
             }
             self.objects.get(&manifest.object).is_some_and(|object| {
-                object.validated && object.complete && !object.corrupt && object.state != Physical::PendingUnlink
+                object.validated
+                    && object.complete
+                    && !object.corrupt
+                    && object.state != Physical::PendingUnlink
             })
         })
     }
@@ -152,7 +202,10 @@ impl Lifecycle {
     pub(super) fn root_has_open_lease(&self, root: super::RootId) -> bool {
         self.leases.values().any(|lease| {
             lease.root == root
-                && matches!(lease.phase, LeasePhase::Acquiring { .. } | LeasePhase::Active { .. })
+                && matches!(
+                    lease.phase,
+                    LeasePhase::Acquiring { .. } | LeasePhase::Active { .. }
+                )
         })
     }
 
@@ -163,7 +216,10 @@ impl Lifecycle {
     }
 
     pub(super) fn lease_active_count(&self) -> usize {
-        self.leases.values().filter(|lease| matches!(lease.phase, LeasePhase::Active { .. })).count()
+        self.leases
+            .values()
+            .filter(|lease| matches!(lease.phase, LeasePhase::Active { .. }))
+            .count()
     }
 }
 
@@ -208,13 +264,27 @@ pub(super) fn read_holds(inp: &mut Take<'_>) -> Result<Holds, CacheError> {
         let tag = inp.u8()?;
         let generation = inp.u64()?;
         let phase = match tag {
-            1 => LeasePhase::Acquiring { observed: GenerationId::new(generation) },
-            2 => LeasePhase::Active { generation: GenerationId::new(generation) },
+            1 => LeasePhase::Acquiring {
+                observed: GenerationId::new(generation),
+            },
+            2 => LeasePhase::Active {
+                generation: GenerationId::new(generation),
+            },
             3 => LeasePhase::Released,
             4 => LeasePhase::OwnerProvenDead,
             _ => return Err(super::restart::corrupt("lease")),
         };
-        if leases.insert(id, Lease { root, session, phase }).is_some() {
+        if leases
+            .insert(
+                id,
+                Lease {
+                    root,
+                    session,
+                    phase,
+                },
+            )
+            .is_some()
+        {
             return Err(super::restart::corrupt("duplicate"));
         }
     }
@@ -224,15 +294,28 @@ pub(super) fn read_holds(inp: &mut Take<'_>) -> Result<Holds, CacheError> {
         let left = inp.u64()?;
         let original = inp.u64()?;
         let root = inp.opt_u64()?.map(super::RootId::new);
-        let class = super::ids::ChargeClass::from_tag(inp.u8()?).ok_or_else(|| {
-            super::restart::corrupt("reservation")
-        })?;
-        let purpose = super::ids::Purpose::from_tag(inp.u8()?).ok_or_else(|| {
-            super::restart::corrupt("reservation")
-        })?;
-        if reservations.insert(id, super::Hold { left, original, root, class, purpose }).is_some() {
+        let class = super::ids::ChargeClass::from_tag(inp.u8()?)
+            .ok_or_else(|| super::restart::corrupt("reservation"))?;
+        let purpose = super::ids::Purpose::from_tag(inp.u8()?)
+            .ok_or_else(|| super::restart::corrupt("reservation"))?;
+        if reservations
+            .insert(
+                id,
+                super::Hold {
+                    left,
+                    original,
+                    root,
+                    class,
+                    purpose,
+                },
+            )
+            .is_some()
+        {
             return Err(super::restart::corrupt("duplicate"));
         }
     }
-    Ok(Holds { leases, reservations })
+    Ok(Holds {
+        leases,
+        reservations,
+    })
 }

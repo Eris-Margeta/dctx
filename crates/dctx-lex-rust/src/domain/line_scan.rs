@@ -269,7 +269,11 @@ impl<'a> Scan<'a> {
                 self.macro_bodies -= 1;
             }
         }
-        if self.pending.as_ref().is_some_and(|p| p.depth > self.delimiters.len()) {
+        if self
+            .pending
+            .as_ref()
+            .is_some_and(|p| p.depth > self.delimiters.len())
+        {
             self.pending = None;
         }
     }
@@ -314,7 +318,8 @@ mod tests {
 
     #[test]
     fn docs_tests_and_labels_are_kept() {
-        let source = "//! Module doc.\n/// Does work.\n#[tokio::test]\nasync fn checks() {\nmod support;\n";
+        let source =
+            "//! Module doc.\n/// Does work.\n#[tokio::test]\nasync fn checks() {\nmod support;\n";
         let facts = extract(source, &Limits::default(), Refusal::Syntax { line: 4 });
         assert_eq!(facts.module_doc.as_deref(), Some("Module doc."));
         let decl = &facts.declarations[0];
@@ -322,7 +327,10 @@ mod tests {
         assert_eq!(decl.doc.as_deref(), Some("Does work."));
         assert_eq!(decl.precision, Precision::LineScan);
         assert_eq!(decl.span.lines, [4, 4]);
-        assert_eq!(&source[decl.span.start..decl.span.end], "async fn checks() {");
+        assert_eq!(
+            &source[decl.span.start..decl.span.end],
+            "async fn checks() {"
+        );
         assert_eq!(facts.imports[0].path, "support");
         assert_eq!(facts.imports[0].scope, "checks");
         assert_eq!(facts.coverage, Coverage::Opaque);

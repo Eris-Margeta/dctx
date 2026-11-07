@@ -8,7 +8,10 @@ fn json(text: &str) -> Json {
 
 #[test]
 fn version_constant_is_exactly_one_zero() {
-    assert_eq!(ApiVersion::decode(&Json::Array(vec![Json::Int(1), Json::Int(0)])), Ok(ApiVersion::V1_0));
+    assert_eq!(
+        ApiVersion::decode(&Json::Array(vec![Json::Int(1), Json::Int(0)])),
+        Ok(ApiVersion::V1_0)
+    );
     assert!(ApiVersion::decode(&Json::Array(vec![Json::Int(1), Json::Int(1)])).is_err());
     assert!(ApiVersion::decode(&Json::Array(vec![Json::Int(1)])).is_err());
 }
@@ -25,14 +28,23 @@ fn limits_bounds_are_enforced() {
 
 #[test]
 fn waits_resources_and_records() {
-    assert!(matches!(Wait::decode(&json(r#"{"broker_request":"p:1"}"#)), Ok(Wait::BrokerRequest(_))));
-    assert!(matches!(Wait::decode(&json(r#"{"dependency":"dep:1"}"#)), Ok(Wait::Dependency(_))));
+    assert!(matches!(
+        Wait::decode(&json(r#"{"broker_request":"p:1"}"#)),
+        Ok(Wait::BrokerRequest(_))
+    ));
+    assert!(matches!(
+        Wait::decode(&json(r#"{"dependency":"dep:1"}"#)),
+        Ok(Wait::Dependency(_))
+    ));
     assert!(Wait::decode(&json(r#"{"broker_request":"p:1","dependency":"d"}"#)).is_err());
     assert!(Wait::decode(&json(r"{}")).is_err());
-    let resource = Resource::decode(&json(r#"{"handle":"file:ignore","kind":"file","bytes":3}"#)).expect("valid");
-    assert_eq!(Resource::decode(&resource.encode()), Ok(resource));
-    let record = CommandRecord::decode(&json(r#"{"type":"record","name":"protection","fields":{"protected":true,"n":[1,"x"]}}"#))
+    let resource = Resource::decode(&json(r#"{"handle":"file:ignore","kind":"file","bytes":3}"#))
         .expect("valid");
+    assert_eq!(Resource::decode(&resource.encode()), Ok(resource));
+    let record = CommandRecord::decode(&json(
+        r#"{"type":"record","name":"protection","fields":{"protected":true,"n":[1,"x"]}}"#,
+    ))
+    .expect("valid");
     assert_eq!(CommandRecord::decode(&record.encode()), Ok(record));
     assert!(CommandRecord::decode(&json(r#"{"type":"blob","text":"x"}"#)).is_err());
     assert!(decode_config(&json(r#"{"a":[[1]]}"#)).is_err());

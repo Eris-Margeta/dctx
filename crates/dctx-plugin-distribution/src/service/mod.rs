@@ -39,7 +39,10 @@ pub struct InstallPolicy {
 
 impl InstallPolicy {
     /// Defaults for `target`: 256 MiB per artifact, bundles up to 8 artifacts' worth, no ceiling.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new(target: Target) -> Self {
         Self {
             target,
@@ -69,7 +72,13 @@ impl<'a> Distribution<'a> {
         trust: &'a TrustStore,
         policy: &'a InstallPolicy,
     ) -> Self {
-        Self { network, store, clock, trust, policy }
+        Self {
+            network,
+            store,
+            clock,
+            trust,
+            policy,
+        }
     }
 
     /// Current registry, read without the lock (list/info/search never mutate).
@@ -83,15 +92,22 @@ impl<'a> Distribution<'a> {
     }
 
     fn lock(&self) -> Result<Held<'a>, DistributionError> {
-        Ok(Held { store: self.store, token: self.store.try_lock()? })
+        Ok(Held {
+            store: self.store,
+            token: self.store.try_lock()?,
+        })
     }
 
     fn save(&self, held: &Held<'_>, registry: &Registry) -> Result<(), DistributionError> {
-        self.store.save_registry(held.token, &registry_codec::encode(registry))
+        self.store
+            .save_registry(held.token, &registry_codec::encode(registry))
     }
 
     /// Loads, applies `change` and atomically saves under the lock; nothing is saved on refusal.
-    fn mutate<T>(&self, change: impl FnOnce(&mut Registry) -> Result<T, DistributionError>) -> Result<T, DistributionError> {
+    fn mutate<T>(
+        &self,
+        change: impl FnOnce(&mut Registry) -> Result<T, DistributionError>,
+    ) -> Result<T, DistributionError> {
         let held = self.lock()?;
         let mut registry = self.registry()?;
         let result = change(&mut registry)?;

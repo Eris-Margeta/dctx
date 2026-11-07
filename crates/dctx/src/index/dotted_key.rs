@@ -35,7 +35,8 @@ pub(crate) fn segments(query: &str) -> Option<Vec<&str>> {
 /// (`server::port` and `server.port` both match `["server", "port"]`). Case-sensitive.
 #[allow(clippy::collapsible_if, clippy::manual_pattern_char_comparison)]
 pub(crate) fn defines(name: &str, segments: &[&str]) -> bool {
-    let parts: Vec<&str> = name.split(|c: char| c == ':' || c == '.')
+    let parts: Vec<&str> = name
+        .split(|c: char| c == ':' || c == '.')
         .filter(|s| !s.is_empty())
         .collect();
     if parts.len() != segments.len() {
@@ -78,7 +79,9 @@ fn try_quoted_key(line: &str, segments: &[&str]) -> bool {
                 let content = &after_open[..close_pos];
                 if content == joined {
                     // A key quoted at the very start of the line has no byte before it.
-                    let before_char = abs_pos.checked_sub(1).and_then(|at| line.as_bytes().get(at));
+                    let before_char = abs_pos
+                        .checked_sub(1)
+                        .and_then(|at| line.as_bytes().get(at));
                     let after_char = line.as_bytes().get(abs_pos + 1 + close_pos);
                     let before_ok = before_char.is_none_or(|&b| !is_id_byte(b));
                     let after_ok = after_char.is_none_or(|&b| !is_id_byte(b));
@@ -110,10 +113,10 @@ fn try_bracket_subscripts(line: &str, segments: &[&str]) -> bool {
 
     // Possible quote combinations for the two brackets
     let combos = [
-        (&a_dq, &b_dq),   // ["a"]["b"]
-        (&a_sq, &b_sq),   // ['a']['b']
-        (&a_dq, &b_sq),   // ["a"]['b']
-        (&a_sq, &b_dq),   // ['a]["b"]
+        (&a_dq, &b_dq), // ["a"]["b"]
+        (&a_sq, &b_sq), // ['a']['b']
+        (&a_dq, &b_sq), // ["a"]['b']
+        (&a_sq, &b_dq), // ['a]["b"]
     ];
 
     for (pat_a, pat_b) in &combos {
@@ -169,12 +172,19 @@ fn try_attribute_form(line: &str, segments: &[&str]) -> bool {
 
 /// Config-language symbols of `generation` (files whose `extract::language_of` is `config`: YAML, TOML, JSON) whose qualified
 /// name spells `segments` (see [`defines`]), as find records (`query::record_of`) with score 3000, in index order.
-pub(crate) fn definitions(generation: &super::Generation, segments: &[&str]) -> Vec<crate::domain::AnswerRecord> {
+pub(crate) fn definitions(
+    generation: &super::Generation,
+    segments: &[&str],
+) -> Vec<crate::domain::AnswerRecord> {
     let text = &generation.text;
     generation
         .nodes
         .iter()
-        .filter(|node| node.letter == b's' && super::extract::language_of(text.get(node.path)) == "config" && defines(&node.name, segments))
+        .filter(|node| {
+            node.letter == b's'
+                && super::extract::language_of(text.get(node.path)) == "config"
+                && defines(&node.name, segments)
+        })
         .map(|node| {
             let mut record = super::query::record_of(text, node);
             record.score = DEFINITION_SCORE;

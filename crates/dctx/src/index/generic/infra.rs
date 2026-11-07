@@ -9,22 +9,54 @@ mod members;
 #[cfg(test)]
 mod tests;
 
-use super::{ident_at, is_denied, mask, signature_of, to_symbols, Decl, Syntax};
+use super::{Decl, Syntax, ident_at, is_denied, mask, signature_of, to_symbols};
 use crate::index::extract::Symbol;
 
 /// The language tags this family owns, as `extract::language_of` spells them.
-const TAGS: &[&str] = &["hcl", "sql", "shell", "make", "docker", "proto", "pascal", "graphql"];
+const TAGS: &[&str] = &[
+    "hcl", "sql", "shell", "make", "docker", "proto", "pascal", "graphql",
+];
 
 /// HCL: `#`, `//` and `/* */` comments; labels are quoted strings, masked here and read back from the original line.
-const HCL: Syntax = Syntax { line: &["#", "//"], block: Some(("/*", "*/")), nested: false, quotes: b"\"", triple: false };
+const HCL: Syntax = Syntax {
+    line: &["#", "//"],
+    block: Some(("/*", "*/")),
+    nested: false,
+    quotes: b"\"",
+    triple: false,
+};
 /// Shell: `#` comments, single and double quotes.
-const SHELL: Syntax = Syntax { line: &["#"], block: None, nested: false, quotes: b"\"'", triple: false };
+const SHELL: Syntax = Syntax {
+    line: &["#"],
+    block: None,
+    nested: false,
+    quotes: b"\"'",
+    triple: false,
+};
 /// Protobuf: C-style comments and both quotes.
-const PROTO: Syntax = Syntax { line: &["//"], block: Some(("/*", "*/")), nested: false, quotes: b"\"'", triple: false };
+const PROTO: Syntax = Syntax {
+    line: &["//"],
+    block: Some(("/*", "*/")),
+    nested: false,
+    quotes: b"\"'",
+    triple: false,
+};
 /// GraphQL: `#` comments and `"""` block descriptions.
-const GRAPHQL: Syntax = Syntax { line: &["#"], block: None, nested: false, quotes: b"\"", triple: true };
+const GRAPHQL: Syntax = Syntax {
+    line: &["#"],
+    block: None,
+    nested: false,
+    quotes: b"\"",
+    triple: true,
+};
 /// Dockerfile: `#` comments only.
-const DOCKER: Syntax = Syntax { line: &["#"], block: None, nested: false, quotes: b"", triple: false };
+const DOCKER: Syntax = Syntax {
+    line: &["#"],
+    block: None,
+    nested: false,
+    quotes: b"",
+    triple: false,
+};
 
 /// True when `language` is one of the eight infra tags.
 pub(super) fn handles(language: &str) -> bool {
@@ -48,12 +80,21 @@ pub(super) fn symbols(language: &str, text: &str) -> Vec<Symbol> {
 }
 
 /// 1-based line number, masked line and original line, for every line of `text`.
-pub(super) fn numbered<'a>(masked: &'a str, text: &'a str) -> impl Iterator<Item = (u32, &'a str, &'a str)> + 'a {
+pub(super) fn numbered<'a>(
+    masked: &'a str,
+    text: &'a str,
+) -> impl Iterator<Item = (u32, &'a str, &'a str)> + 'a {
     masked
         .split('\n')
         .zip(text.split('\n'))
         .enumerate()
-        .map(|(index, (shown, original))| (u32::try_from(index + 1).unwrap_or(u32::MAX), shown, original))
+        .map(|(index, (shown, original))| {
+            (
+                u32::try_from(index + 1).unwrap_or(u32::MAX),
+                shown,
+                original,
+            )
+        })
 }
 
 /// One open brace: the type whose body it opens (so members are visible) and the declaration it closes.
@@ -83,7 +124,13 @@ struct Walk {
 impl Walk {
     /// A walk that nests members under `type` declarations when `nest` is set.
     fn new(nest: bool) -> Self {
-        Self { decls: Vec::new(), stack: Vec::new(), pending: None, nest, inherit: false }
+        Self {
+            decls: Vec::new(),
+            stack: Vec::new(),
+            pending: None,
+            nest,
+            inherit: false,
+        }
     }
 
     /// The declaration waiting for this line's brace, if any. Call first on every non-blank line.
@@ -96,38 +143,70 @@ impl Walk {
 
     /// True at file level and directly inside a container, where declarations may appear.
     fn in_scope(&self) -> bool {
-        self.stack.last().is_none_or(|frame| frame.container.is_some())
+        self.stack
+            .last()
+            .is_none_or(|frame| frame.container.is_some())
     }
 
     /// The keyword of the container directly around this point (`message`, `enum`, `type`, ...), if any.
     fn container_word(&self) -> Option<&str> {
-        self.stack.last().filter(|frame| frame.container.is_some()).map(|frame| frame.word.as_str())
+        self.stack
+            .last()
+            .filter(|frame| frame.container.is_some())
+            .map(|frame| frame.word.as_str())
     }
 
     /// Records `found` (unless a brace-only line continues `open`) and follows the braces of the masked line.
-    fn finish(&mut self, number: u32, shown: &str, original: &str, mut open: Option<usize>, found: Option<(String, &'static str)>) {
+    fn finish(
+        &mut self,
+        number: u32,
+        shown: &str,
+        original: &str,
+        mut open: Option<usize>,
+        found: Option<(String, &'static str)>,
+    ) {
         if open.is_none()
             && let Some((name, kind)) = found
         {
-            let owner = self.stack.last().and_then(|frame| frame.container.as_deref());
+            let owner = self
+                .stack
+                .last()
+                .and_then(|frame| frame.container.as_deref());
             let name = match owner {
                 Some(owner) => format!("{owner}::{name}"),
                 None => name,
             };
-            self.decls.push(Decl { name, kind, lines: [number, number], signature: signature_of(original) });
+            self.decls.push(Decl {
+                name,
+                kind,
+                lines: [number, number],
+                signature: signature_of(original),
+            });
             open = Some(self.decls.len() - 1);
         }
         for byte in shown.bytes() {
             match byte {
                 b'{' => {
                     let decl = open.take();
-                    let container = decl.filter(|&at| self.nest && self.decls[at].kind == "type").map(|at| self.decls[at].name.clone());
-                    let word = decl.filter(|_| container.is_some()).and_then(|at| ident_at(&self.decls[at].signature)).unwrap_or("").to_string();
+                    let container = decl
+                        .filter(|&at| self.nest && self.decls[at].kind == "type")
+                        .map(|at| self.decls[at].name.clone());
+                    let word = decl
+                        .filter(|_| container.is_some())
+                        .and_then(|at| ident_at(&self.decls[at].signature))
+                        .unwrap_or("")
+                        .to_string();
                     let (container, word) = match self.stack.last() {
-                        Some(parent) if self.inherit && decl.is_none() => (parent.container.clone(), parent.word.clone()),
+                        Some(parent) if self.inherit && decl.is_none() => {
+                            (parent.container.clone(), parent.word.clone())
+                        }
                         _ => (container, word),
                     };
-                    self.stack.push(Frame { container, decl, word });
+                    self.stack.push(Frame {
+                        container,
+                        decl,
+                        word,
+                    });
                 }
                 b'}' => {
                     if let Some(frame) = self.stack.pop()
@@ -163,7 +242,11 @@ fn hcl(text: &str) -> Vec<Decl> {
             depth = 0;
         }
         let open = walk.begin(line);
-        let mut found = if open.is_none() { hcl_decl(shown, original) } else { None };
+        let mut found = if open.is_none() {
+            hcl_decl(shown, original)
+        } else {
+            None
+        };
         if found.is_none() && open.is_none() && locals && walk.stack.len() == 1 && depth == 0 {
             found = members::locals_key(line);
         }
@@ -180,7 +263,11 @@ fn hcl(text: &str) -> Vec<Decl> {
     }
     let mut decls = Vec::with_capacity(walk.decls.len());
     for decl in walk.decls {
-        let alias = decl.name.strip_prefix("data.").filter(|_| decl.signature.starts_with("data ")).map(str::to_string);
+        let alias = decl
+            .name
+            .strip_prefix("data.")
+            .filter(|_| decl.signature.starts_with("data "))
+            .map(str::to_string);
         decls.push(decl.clone());
         if let Some(name) = alias {
             decls.push(Decl { name, ..decl });
@@ -212,7 +299,12 @@ fn quoted_labels(mut rest: &str) -> Vec<String> {
         let Some((label, tail)) = body.split_once('"') else {
             return Vec::new();
         };
-        if labels.len() >= 3 || label.is_empty() || !label.chars().all(|c| c.is_alphanumeric() || matches!(c, '_' | '-' | '.')) {
+        if labels.len() >= 3
+            || label.is_empty()
+            || !label
+                .chars()
+                .all(|c| c.is_alphanumeric() || matches!(c, '_' | '-' | '.'))
+        {
             return Vec::new();
         }
         labels.push(label.to_string());
@@ -244,11 +336,20 @@ fn shell(text: &str) -> Vec<Decl> {
         if open.is_none() && walk.stack.is_empty() {
             for (name, kind) in members::shell_vars(line) {
                 if seen.insert(name.clone()) {
-                    walk.decls.push(Decl { name, kind, lines: [number, number], signature: signature_of(original) });
+                    walk.decls.push(Decl {
+                        name,
+                        kind,
+                        lines: [number, number],
+                        signature: signature_of(original),
+                    });
                 }
             }
         }
-        let found = if open.is_none() { shell_decl(line).or_else(|| members::bats_test(line, original.trim_start())) } else { None };
+        let found = if open.is_none() {
+            shell_decl(line).or_else(|| members::bats_test(line, original.trim_start()))
+        } else {
+            None
+        };
         walk.finish(number, shown, original, open, found);
         heredoc = heredoc_tag(shown, original);
     }
@@ -263,23 +364,35 @@ fn heredoc_tag(shown: &str, original: &str) -> Option<String> {
     }
     let rest = original.get(at + 2..)?.trim_start_matches('-').trim_start();
     let rest = rest.strip_prefix(['"', '\'']).unwrap_or(rest);
-    let end = rest.find(|c: char| !(c.is_alphanumeric() || c == '_')).unwrap_or(rest.len());
+    let end = rest
+        .find(|c: char| !(c.is_alphanumeric() || c == '_'))
+        .unwrap_or(rest.len());
     let word = &rest[..end];
     (word.starts_with(|c: char| c.is_alphabetic() || c == '_')).then(|| word.to_string())
 }
 
 /// Name when the masked, trimmed line declares a shell function.
 fn shell_decl(line: &str) -> Option<(String, &'static str)> {
-    let keyword = line.strip_prefix("function").filter(|rest| rest.starts_with(char::is_whitespace));
+    let keyword = line
+        .strip_prefix("function")
+        .filter(|rest| rest.starts_with(char::is_whitespace));
     let rest = keyword.map_or(line, str::trim_start);
-    let end = rest.find(|c: char| !(c.is_alphanumeric() || matches!(c, '_' | '-' | '.' | ':' | '@' | '+'))).unwrap_or(rest.len());
+    let end = rest
+        .find(|c: char| !(c.is_alphanumeric() || matches!(c, '_' | '-' | '.' | ':' | '@' | '+')))
+        .unwrap_or(rest.len());
     let name = &rest[..end];
     if !name.starts_with(|c: char| c.is_alphabetic() || c == '_') || is_denied(name) {
         return None;
     }
     let tail = rest[end..].trim_start();
-    let parens = tail.strip_prefix('(').is_some_and(|inner| inner.trim_start().starts_with(')'));
-    let ok = if keyword.is_some() { tail.is_empty() || tail.starts_with('{') || parens } else { parens };
+    let parens = tail
+        .strip_prefix('(')
+        .is_some_and(|inner| inner.trim_start().starts_with(')'));
+    let ok = if keyword.is_some() {
+        tail.is_empty() || tail.starts_with('{') || parens
+    } else {
+        parens
+    };
     ok.then(|| (name.to_string(), "fn"))
 }
 
@@ -294,7 +407,8 @@ fn proto(text: &str) -> Vec<Decl> {
         }
         let open = walk.begin(line);
         let found = if open.is_none() && walk.in_scope() {
-            keyword_decl(line, &["message", "enum", "service"], &["rpc"]).or_else(|| members::proto_member(line, walk.container_word()))
+            keyword_decl(line, &["message", "enum", "service"], &["rpc"])
+                .or_else(|| members::proto_member(line, walk.container_word()))
         } else {
             None
         };
@@ -318,7 +432,11 @@ fn graphql(text: &str) -> Vec<Decl> {
         let found = if open.is_some() {
             None
         } else if walk.stack.is_empty() {
-            keyword_decl(line, &["type", "input", "enum", "interface", "union", "scalar"], &[])
+            keyword_decl(
+                line,
+                &["type", "input", "enum", "interface", "union", "scalar"],
+                &[],
+            )
         } else if args == 0 {
             members::graphql_member(line, walk.container_word())
         } else {
@@ -367,16 +485,33 @@ fn docker(text: &str) -> Vec<Decl> {
                 None => name,
             };
             if seen.insert(name.clone()) {
-                decls.push(Decl { name, kind: "var", lines: [number, number], signature: signature_of(original) });
+                decls.push(Decl {
+                    name,
+                    kind: "var",
+                    lines: [number, number],
+                    signature: signature_of(original),
+                });
             }
         }
         if first.eq_ignore_ascii_case("from") {
             if let Some(at) = current.take() {
                 decls[at].lines[1] = last;
             }
-            let name = words.skip_while(|word| !word.eq_ignore_ascii_case("as")).nth(1);
-            if let Some(name) = name.filter(|name| !is_denied(name) && name.chars().all(|c| c.is_alphanumeric() || matches!(c, '_' | '-' | '.'))) {
-                decls.push(Decl { name: name.to_string(), kind: "type", lines: [number, number], signature: signature_of(original) });
+            let name = words
+                .skip_while(|word| !word.eq_ignore_ascii_case("as"))
+                .nth(1);
+            if let Some(name) = name.filter(|name| {
+                !is_denied(name)
+                    && name
+                        .chars()
+                        .all(|c| c.is_alphanumeric() || matches!(c, '_' | '-' | '.'))
+            }) {
+                decls.push(Decl {
+                    name: name.to_string(),
+                    kind: "type",
+                    lines: [number, number],
+                    signature: signature_of(original),
+                });
                 current = Some(decls.len() - 1);
             }
         }

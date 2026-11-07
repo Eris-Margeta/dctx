@@ -5,17 +5,16 @@
 //! Shared fact bytes are charged once. Referenced facts are not deleted.
 
 use crate::domain::{
-    accounted_bytes, cache_limits, expired, idle, observed_clock, Charge, MaintainReport, Result,
-    StoreError, UNREACHABLE_GRACE_MS, VIEW_IDLE_MS,
+    Charge, MaintainReport, Result, StoreError, UNREACHABLE_GRACE_MS, VIEW_IDLE_MS,
+    accounted_bytes, cache_limits, expired, idle, observed_clock,
 };
-use rusqlite::{params, Connection, OptionalExtension, Transaction};
+use rusqlite::{Connection, OptionalExtension, Transaction, params};
 
 pub(crate) fn parse_count(connection: &Connection) -> Result<u64> {
-    let parses: i64 = connection.query_row(
-        "SELECT parses FROM bridge_ledger WHERE id = 1",
-        [],
-        |row| row.get(0),
-    )?;
+    let parses: i64 =
+        connection.query_row("SELECT parses FROM bridge_ledger WHERE id = 1", [], |row| {
+            row.get(0)
+        })?;
     u64::try_from(parses).map_err(|_| StoreError::Corrupt("cache accounting"))
 }
 
@@ -28,9 +27,13 @@ pub(crate) fn cache_cap(connection: &Connection) -> Result<u64> {
 }
 
 pub(crate) fn set_cap(connection: &mut Connection, cap: u64) -> Result<()> {
-    let cap_i = i64::try_from(cap).map_err(|_| StoreError::InvalidKey("cache cap is out of range"))?;
+    let cap_i =
+        i64::try_from(cap).map_err(|_| StoreError::InvalidKey("cache cap is out of range"))?;
     let transaction = connection.transaction()?;
-    transaction.execute("UPDATE bridge_ledger SET hard_cap = ?1 WHERE id = 1", [cap_i])?;
+    transaction.execute(
+        "UPDATE bridge_ledger SET hard_cap = ?1 WHERE id = 1",
+        [cap_i],
+    )?;
     let now = clock_u64(&transaction)?;
     reclaim(&transaction, now, None)?;
     transaction.commit()?;
@@ -51,15 +54,22 @@ pub(crate) fn maintain(connection: &mut Connection, now_ms: u64) -> Result<Maint
 pub(crate) fn charge(len: usize) -> Result<i64> {
     let len = u64::try_from(len).map_err(|_| StoreError::InvalidKey("invalid fact identity"))?;
     let bytes = accounted_bytes(len).ok_or(StoreError::InvalidKey("invalid fact identity"))?;
-    i64::try_from(bytes).map_err(|_| StoreError::CacheLimit { requested: bytes, available: 0 })
+    i64::try_from(bytes).map_err(|_| StoreError::CacheLimit {
+        requested: bytes,
+        available: 0,
+    })
 }
 
 pub(crate) fn touch(transaction: &Transaction<'_>, now_ms: u64) -> Result<(u64, bool)> {
     let previous = clock_u64(transaction)?;
     let (observed, rewound) = observed_clock(previous, now_ms);
     if !rewound {
-        let stored = i64::try_from(observed).map_err(|_| StoreError::InvalidKey("clock is out of range"))?;
-        transaction.execute("UPDATE bridge_ledger SET last_clock = ?1 WHERE id = 1", [stored])?;
+        let stored =
+            i64::try_from(observed).map_err(|_| StoreError::InvalidKey("clock is out of range"))?;
+        transaction.execute(
+            "UPDATE bridge_ledger SET last_clock = ?1 WHERE id = 1",
+            [stored],
+        )?;
     }
     Ok((observed, rewound))
 }
@@ -103,10 +113,18 @@ fn report_after(
     let cap = cache_cap(transaction)?;
     let (soft, target) = cache_limits(cap);
     let after_u = u64::try_from(after).map_err(|_| StoreError::Corrupt("cache accounting"))?;
-    let blocked = if after_u > soft { after_u.saturating_sub(target) } else { 0 };
+    let blocked = if after_u > soft {
+        after_u.saturating_sub(target)
+    } else {
+        0
+    };
     let reclaimed = u64::try_from(before.saturating_sub(after).max(0))
         .map_err(|_| StoreError::Corrupt("cache accounting"))?;
-    Ok(MaintainReport { reclaimed_bytes: reclaimed, blocked_bytes: blocked, clock_rewound: rewound })
+    Ok(MaintainReport {
+        reclaimed_bytes: reclaimed,
+        blocked_bytes: blocked,
+        clock_rewound: rewound,
+    })
 }
 
 fn delete_expired(transaction: &Transaction<'_>, now_ms: u64) -> Result<()> {
@@ -120,12 +138,19 @@ fn delete_expired(transaction: &Transaction<'_>, now_ms: u64) -> Result<()> {
         )?;
         statement
             .query_map([], |row| {
-                Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?, row.get::<_, i64>(2)?))
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, i64>(2)?,
+                ))
             })?
             .collect::<std::result::Result<Vec<_>, _>>()?
     };
     for (namespace, key, retired) in rows {
-        let fact = Charge { retired_at: Some(nonneg(retired)?), referenced: false };
+        let fact = Charge {
+            retired_at: Some(nonneg(retired)?),
+            referenced: false,
+        };
         if expired(&fact, now_ms, UNREACHABLE_GRACE_MS) {
             delete_fact(transaction, &namespace, &key)?;
         }
@@ -139,9 +164,12 @@ fn delete_idle_views(
     exclude_view: Option<&str>,
 ) -> Result<()> {
     let rows = {
-        let mut statement = transaction.prepare("SELECT view_key, last_used FROM pack_snapshots")?;
+        let mut statement =
+            transaction.prepare("SELECT view_key, last_used FROM pack_snapshots")?;
         statement
-            .query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?)))?
+            .query_map([], |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?))
+            })?
             .collect::<std::result::Result<Vec<_>, _>>()?
     };
     for (view, last_used) in rows {
@@ -191,7 +219,11 @@ fn evict_one(transaction: &Transaction<'_>) -> Result<bool> {
     Ok(delete_fact(transaction, &namespace, &key)? > 0)
 }
 
-pub(crate) fn delete_fact(transaction: &Transaction<'_>, namespace: &str, key: &str) -> Result<usize> {
+pub(crate) fn delete_fact(
+    transaction: &Transaction<'_>,
+    namespace: &str,
+    key: &str,
+) -> Result<usize> {
     transaction.execute(
         "DELETE FROM blob_refs WHERE namespace = ?1 AND fact_key = ?2",
         params![namespace, key],
@@ -214,7 +246,11 @@ fn clock_u64(connection: &Connection) -> Result<u64> {
 
 fn cap_i64(connection: &Connection) -> Result<i64> {
     connection
-        .query_row("SELECT hard_cap FROM bridge_ledger WHERE id = 1", [], |row| row.get(0))
+        .query_row(
+            "SELECT hard_cap FROM bridge_ledger WHERE id = 1",
+            [],
+            |row| row.get(0),
+        )
         .map_err(StoreError::from)
 }
 

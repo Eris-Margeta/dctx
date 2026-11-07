@@ -5,8 +5,22 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 const FORBIDDEN: &[&str] = &[
-    "std::fs", "fs::", "std::env", "env::", "std::process", "process::", "std::net", "std::thread",
-    "thread::", "println!", "eprintln!", "print!(", "eprint!(", "dbg!(", "SystemTime", "Instant",
+    "std::fs",
+    "fs::",
+    "std::env",
+    "env::",
+    "std::process",
+    "process::",
+    "std::net",
+    "std::thread",
+    "thread::",
+    "println!",
+    "eprintln!",
+    "print!(",
+    "eprint!(",
+    "dbg!(",
+    "SystemTime",
+    "Instant",
     "Command::",
 ];
 
@@ -42,7 +56,11 @@ fn production_sources_name_no_io() {
     let src = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
     let mut files = Vec::new();
     rust_files(&src, &mut files);
-    assert!(files.len() >= 8, "expected the crate sources, found {}", files.len());
+    assert!(
+        files.len() >= 8,
+        "expected the crate sources, found {}",
+        files.len()
+    );
     let mut found = Vec::new();
     for file in &files {
         let text = fs::read_to_string(file).expect("read source");
@@ -50,7 +68,11 @@ fn production_sources_name_no_io() {
             found.push(format!("{}:{hit}", file.display()));
         }
     }
-    assert!(found.is_empty(), "IO in dctx-template:\n{}", found.join("\n"));
+    assert!(
+        found.is_empty(),
+        "IO in dctx-template:\n{}",
+        found.join("\n")
+    );
 }
 
 #[test]

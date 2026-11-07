@@ -114,7 +114,10 @@ impl Scanner<'_> {
         self.push_comment(start, false);
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn push_comment(&mut self, start: usize, javadoc: bool) {
         let index = u32::try_from(self.comments.len()).unwrap_or(u32::MAX);
         self.comments.push(Comment {
@@ -268,7 +271,9 @@ impl Scanner<'_> {
             self.pos += 2;
             self.eat_hex();
             if self.byte_at(self.pos) == Some(b'.')
-                && self.byte_at(self.pos + 1).is_some_and(|b| b.is_ascii_hexdigit())
+                && self
+                    .byte_at(self.pos + 1)
+                    .is_some_and(|b| b.is_ascii_hexdigit())
             {
                 self.pos += 1;
                 self.eat_hex();
@@ -297,7 +302,9 @@ impl Scanner<'_> {
             self.eat_dec();
         }
         if self.byte_at(self.pos) == Some(b'.')
-            && self.byte_at(self.pos + 1).is_some_and(|b| b.is_ascii_digit())
+            && self
+                .byte_at(self.pos + 1)
+                .is_some_and(|b| b.is_ascii_digit())
         {
             self.pos += 1;
             self.eat_dec();
@@ -364,7 +371,10 @@ impl Scanner<'_> {
         self.emit(Kind::Punct, start);
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn emit(&mut self, kind: Kind, start: usize) {
         if self.pos <= start {
             return;
@@ -378,7 +388,10 @@ impl Scanner<'_> {
         self.pending_doc = 0;
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn problem(&mut self, at: usize, reason: DiagnosticReason) {
         self.problems.push((at as u32, reason));
     }
@@ -398,7 +411,9 @@ impl Scanner<'_> {
     }
 
     fn starts_with(&self, prefix: &str) -> bool {
-        self.src.get(self.pos..).is_some_and(|rest| rest.starts_with(prefix))
+        self.src
+            .get(self.pos..)
+            .is_some_and(|rest| rest.starts_with(prefix))
     }
 
     fn byte_at(&self, index: usize) -> Option<u8> {

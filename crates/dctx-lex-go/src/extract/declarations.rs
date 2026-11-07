@@ -80,8 +80,10 @@ impl Walker<'_> {
                     Some(path) if !path.is_empty() => {
                         self.refer(0, "", EdgeKind::Imports, path, alias, (index, cursor));
                     }
-                    Some(_) | None => self.problem(self.start_byte(cursor), DiagnosticReason::Unrecognized),
+                    Some(_) | None => {
+                        self.problem(self.start_byte(cursor), DiagnosticReason::Unrecognized)
                     }
+                }
                 cursor += 1;
             }
             Some(Kind::BadStr) => cursor += 1,
@@ -135,11 +137,16 @@ impl Walker<'_> {
             names.push(cursor + 1);
             cursor += 2;
         }
-        let has_type = cursor < end && !self.is(cursor, "=") && !self.is_semi(cursor) && !self.is(cursor, ")");
+        let has_type =
+            cursor < end && !self.is(cursor, "=") && !self.is_semi(cursor) && !self.is(cursor, ")");
         let (type_at, expr_at, spec_end) = if has_type {
             let type_end = self.skip_type(cursor, end, false, 0, "");
             if self.is(type_end, "=") {
-                (Some(cursor), Some(type_end + 1), self.skip_expr(type_end + 1, end))
+                (
+                    Some(cursor),
+                    Some(type_end + 1),
+                    self.skip_expr(type_end + 1, end),
+                )
             } else {
                 (Some(cursor), None, type_end.max(cursor + 1))
             }
@@ -273,7 +280,11 @@ fn hex_char(bytes: &[u8], index: &mut usize, digits: usize) -> Option<char> {
 fn octal_char(bytes: &[u8], index: &mut usize, first: u8) -> Option<char> {
     let mut value = u32::from(first - b'0');
     let mut count = 1;
-    while count < 3 && bytes.get(*index).is_some_and(|byte| (b'0'..=b'7').contains(byte)) {
+    while count < 3
+        && bytes
+            .get(*index)
+            .is_some_and(|byte| (b'0'..=b'7').contains(byte))
+    {
         value = value * 8 + u32::from(bytes[*index] - b'0');
         *index += 1;
         count += 1;
@@ -289,7 +300,9 @@ mod tests {
     #[test]
     fn import_paths_decode_escapes_and_raw_strings() {
         let source = "package p\nimport \"a\\x2fb\"\nimport `c/d`\n";
-        let facts = GoLexer::default().extract("p.go", source.as_bytes()).unwrap();
+        let facts = GoLexer::default()
+            .extract("p.go", source.as_bytes())
+            .unwrap();
         let imports: Vec<_> = facts
             .references
             .iter()

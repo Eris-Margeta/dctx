@@ -11,7 +11,9 @@ use dctx_core::ids::{Timestamp, ViewKey};
 use dctx_core::selection::{RuleTexts, SelectionPolicy};
 use dctx_core::version::Version;
 use dctx_pack::{pack, PackPorts, PackReport, PackRequest};
-use dctx_ports::memory::{CancelAfter, CancelFlag, FixedClock, MemoryCache, MemoryFactStore, MemorySource};
+use dctx_ports::memory::{
+    CancelAfter, CancelFlag, FixedClock, MemoryCache, MemoryFactStore, MemorySource,
+};
 use dctx_ports::Cancellation;
 
 struct Rig {
@@ -22,11 +24,22 @@ struct Rig {
 
 impl Rig {
     fn new() -> Self {
-        let texts = RuleTexts { local_ignore: Some(".env\nprivate/\n"), ..RuleTexts::default() };
-        Self { store: MemoryFactStore::new(), cache: MemoryCache::new(1 << 20), policy: SelectionPolicy::from_texts(&texts) }
+        let texts = RuleTexts {
+            local_ignore: Some(".env\nprivate/\n"),
+            ..RuleTexts::default()
+        };
+        Self {
+            store: MemoryFactStore::new(),
+            cache: MemoryCache::new(1 << 20),
+            policy: SelectionPolicy::from_texts(&texts),
+        }
     }
 
-    fn run_with(&mut self, source: &MemorySource, cancel: &dyn Cancellation) -> Result<PackReport, DctxError> {
+    fn run_with(
+        &mut self,
+        source: &MemorySource,
+        cancel: &dyn Cancellation,
+    ) -> Result<PackReport, DctxError> {
         let request = PackRequest {
             view: ViewKey::parse("project").unwrap(),
             policy: &self.policy,
@@ -51,11 +64,17 @@ impl Rig {
 
 fn project() -> MemorySource {
     let mut source = MemorySource::new();
-    source.insert_file("src/lib.rs", b"pub fn a() {}\n", 100).unwrap();
+    source
+        .insert_file("src/lib.rs", b"pub fn a() {}\n", 100)
+        .unwrap();
     source.insert_file("README.md", b"# demo\n", 100).unwrap();
-    source.insert_file("Cargo.lock", b"[[package]]\n", 100).unwrap();
+    source
+        .insert_file("Cargo.lock", b"[[package]]\n", 100)
+        .unwrap();
     source.insert_file(".env", b"SECRET=1\n", 100).unwrap();
-    source.insert_file("private/notes.txt", b"do not read\n", 100).unwrap();
+    source
+        .insert_file("private/notes.txt", b"do not read\n", 100)
+        .unwrap();
     source
 }
 
@@ -83,7 +102,9 @@ fn unchanged_rerun_does_not_publish_and_change_bumps_minor() {
     assert!(!again.diff.has_changes);
     assert_eq!(rig.store.publishes(), 1);
 
-    source.insert_file("src/lib.rs", b"pub fn a() { 1 }\n", 200).unwrap();
+    source
+        .insert_file("src/lib.rs", b"pub fn a() { 1 }\n", 200)
+        .unwrap();
     let changed = rig.run(&source).unwrap();
     assert!(changed.published);
     assert_eq!(changed.previous_version, Some(Version::new_v1()));
@@ -103,8 +124,16 @@ fn p1_excluded_and_omitted_content_is_never_read_with_positive_twin() {
     assert_eq!(reads, ["README.md", "src/lib.rs"]);
     assert!(!source.touched(".env"));
     assert!(!source.touched("private"));
-    assert!(source.metadata_requests().contains(&"Cargo.lock".to_string()));
-    let names: Vec<&str> = report.snapshot.tree().children.iter().map(|c| c.relative_path.as_str()).collect();
+    assert!(source
+        .metadata_requests()
+        .contains(&"Cargo.lock".to_string()));
+    let names: Vec<&str> = report
+        .snapshot
+        .tree()
+        .children
+        .iter()
+        .map(|c| c.relative_path.as_str())
+        .collect();
     assert_eq!(names, ["Cargo.lock", "README.md", "src"]);
     assert!(report.snapshot.digests().contains_key("README.md"));
     assert!(!report.snapshot.digests().contains_key("Cargo.lock"));
@@ -135,8 +164,17 @@ fn cancellation_before_commit_keeps_store_and_cache_unchanged() {
 #[test]
 fn quota_and_store_refusals_abort_the_reservation() {
     let source = project();
-    let mut rig = Rig { cache: MemoryCache::new(20), ..Rig::new() };
-    assert_eq!(rig.run(&source).unwrap_err(), DctxError::CacheLimit { requested: 21, available: 20 });
+    let mut rig = Rig {
+        cache: MemoryCache::new(20),
+        ..Rig::new()
+    };
+    assert_eq!(
+        rig.run(&source).unwrap_err(),
+        DctxError::CacheLimit {
+            requested: 21,
+            available: 20
+        }
+    );
     assert_eq!(rig.store.publishes(), 0);
 
     let mut rig = Rig::new();
@@ -144,7 +182,10 @@ fn quota_and_store_refusals_abort_the_reservation() {
     assert!(matches!(rig.run(&source), Err(DctxError::Io { .. })));
     assert_eq!((rig.cache.committed(), rig.cache.reserved()), (0, 0));
 
-    let mut rig = Rig { cache: MemoryCache::new(21), ..Rig::new() };
+    let mut rig = Rig {
+        cache: MemoryCache::new(21),
+        ..Rig::new()
+    };
     assert!(rig.run(&source).is_ok());
 }
 
@@ -167,7 +208,13 @@ fn unreadable_items_become_diagnostics_not_failures() {
     source.fail_listing_of("src");
     let report = Rig::new().run(&source).unwrap();
     assert_eq!(report.diagnostics.len(), 2);
-    let readme = report.snapshot.tree().children.iter().find(|c| c.relative_path == "README.md").unwrap();
+    let readme = report
+        .snapshot
+        .tree()
+        .children
+        .iter()
+        .find(|c| c.relative_path == "README.md")
+        .unwrap();
     assert!(readme.file_content.is_none());
     assert_eq!(readme.content_size, 7);
 }

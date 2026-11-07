@@ -8,7 +8,10 @@ mod schema;
 mod tokens;
 mod write;
 
-use crate::{MapStore, domain::{Result, FactKey, Retain, MaintainReport, FileFacts, SearchHit, File}};
+use crate::{
+    MapStore,
+    domain::{FactKey, File, FileFacts, MaintainReport, Result, Retain, SearchHit},
+};
 use dctx_core::error::DctxError;
 use dctx_core::facts::PackSnapshot;
 use dctx_core::ids::ViewKey;
@@ -45,7 +48,10 @@ impl SqliteStore {
     fn from_connection(mut connection: Connection) -> Result<Self> {
         schema::initialize(&mut connection)?;
         bridge::ensure(&mut connection)?;
-        Ok(Self { connection, now_ms: 0 })
+        Ok(Self {
+            connection,
+            now_ms: 0,
+        })
     }
 
     /// Sets the clock used by publish, retain and cleaning. Time is never read from the OS.
@@ -98,7 +104,14 @@ impl SqliteStore {
         key: &FactKey,
         payload: &[u8],
     ) -> Result<Retain> {
-        bridge::retain(&mut self.connection, self.now_ms, namespace, root, key, payload)
+        bridge::retain(
+            &mut self.connection,
+            self.now_ms,
+            namespace,
+            root,
+            key,
+            payload,
+        )
     }
 
     /// Returns the retained payload for `key` after applying expiry and pressure.
@@ -169,7 +182,10 @@ impl MapStore for SqliteStore {
         Ok(removed)
     }
 
-    #[allow(clippy::cast_possible_wrap, reason = "The SQL result limit is clamped to 40 before converting it to i64.")]
+    #[allow(
+        clippy::cast_possible_wrap,
+        reason = "The SQL result limit is clamped to 40 before converting it to i64."
+    )]
     fn search(&self, expression: &str, limit: usize) -> Result<Vec<SearchHit>> {
         let mut statement = self.connection.prepare_cached(
             "SELECT id,bm25(fts) FROM fts WHERE fts MATCH ?1 ORDER BY bm25(fts),id LIMIT ?2",

@@ -31,12 +31,17 @@ impl Lifecycle {
 
     fn has_abandoned_staging(&self) -> bool {
         self.objects.keys().copied().any(|id| {
-            self.objects.get(&id).is_some_and(|object| object.state == Physical::Staged)
+            self.objects
+                .get(&id)
+                .is_some_and(|object| object.state == Physical::Staged)
                 && self.unowned(id)
         })
     }
 
-    pub(super) fn maintain(&mut self, request: GcRequest<'_>) -> Result<MaintainReport, CacheError> {
+    pub(super) fn maintain(
+        &mut self,
+        request: GcRequest<'_>,
+    ) -> Result<MaintainReport, CacheError> {
         if !self.pass_incomplete {
             self.cursor_mark = 0;
         }
@@ -68,7 +73,9 @@ impl Lifecycle {
             reclaimed = reclaimed.saturating_add(self.apply_action(action, request.bypass_grace));
             examined = examined.saturating_add(1);
         }
-        let more = self.next_action(request.root, request.bypass_grace).is_some();
+        let more = self
+            .next_action(request.root, request.bypass_grace)
+            .is_some();
         if more {
             self.pass_incomplete = true;
         } else {
@@ -101,7 +108,9 @@ impl Lifecycle {
 
     fn next_sweep(&self, only: Option<RootId>, bypass: bool) -> Option<ObjectId> {
         self.objects.keys().copied().find(|id| {
-            id.raw() >= self.cursor_mark && self.in_scope(*id, only) && self.sweep_ready(*id, bypass)
+            id.raw() >= self.cursor_mark
+                && self.in_scope(*id, only)
+                && self.sweep_ready(*id, bypass)
         })
     }
 
@@ -109,7 +118,9 @@ impl Lifecycle {
         let Some(root) = only else {
             return true;
         };
-        self.objects.get(&id).is_some_and(|object| object.roots.is_empty() || object.roots.contains(&root))
+        self.objects
+            .get(&id)
+            .is_some_and(|object| object.roots.is_empty() || object.roots.contains(&root))
     }
 
     fn sweep_ready(&self, id: ObjectId, bypass: bool) -> bool {
@@ -137,7 +148,10 @@ impl Lifecycle {
         }
     }
 
-    #[allow(clippy::needless_pass_by_value, reason = "Applying a selected maintenance action consumes that plan step; keep ownership at the mutation boundary.")]
+    #[allow(
+        clippy::needless_pass_by_value,
+        reason = "Applying a selected maintenance action consumes that plan step; keep ownership at the mutation boundary."
+    )]
     fn apply_action(&mut self, action: Action, bypass: bool) -> u64 {
         match action {
             Action::Retire(id) => {
@@ -202,7 +216,10 @@ impl Lifecycle {
             only.is_none_or(|root| root == *id)
                 && self.roots.get(id).is_some_and(|record| record.expired)
                 && !self.manifests.values().any(|manifest| manifest.root == *id)
-                && !self.objects.values().any(|object| object.roots.contains(id))
+                && !self
+                    .objects
+                    .values()
+                    .any(|object| object.roots.contains(id))
                 && !self.root_has_open_lease(*id)
         })
     }
@@ -223,7 +240,11 @@ impl Lifecycle {
                 blockers.push(Blocker::UnavailableGrace);
             }
         }
-        if self.unlink_failures.iter().any(|id| self.objects.contains_key(id)) {
+        if self
+            .unlink_failures
+            .iter()
+            .any(|id| self.objects.contains_key(id))
+        {
             blockers.push(Blocker::FailedUnlink);
         }
         let live = self.live_objects(true);

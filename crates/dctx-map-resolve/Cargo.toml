@@ -1,13 +1,18 @@
 [package]
 name = "dctx-map-resolve"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2024"
 license.workspace = true
 repository.workspace = true
+rust-version.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 description = "Pure symbol resolution and move detection for dctx map mode"
 
 [dependencies]
-dctx-map-model = { path = "../dctx-map-model" }
+dctx-map-model = { version = "=1.2.0", path = "../dctx-map-model" }
 thiserror = "2"
 
 [dev-dependencies]

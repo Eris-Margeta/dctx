@@ -5,11 +5,13 @@
 
 use dctx_hash::Sha256;
 
-use crate::error::{TemplateError, MAX_PLAN_BYTES};
+use crate::error::{MAX_PLAN_BYTES, TemplateError};
 use crate::model::ContextPlan;
 
 use super::io::Reader;
-use super::sections::{encode_selections, encode_indexes, encode_budgets, encode_views, encode_render};
+use super::sections::{
+    encode_budgets, encode_indexes, encode_render, encode_selections, encode_views,
+};
 use super::{IR_MAJOR, IR_MINOR, SCHEMA};
 
 pub(super) struct Body {
@@ -60,10 +62,19 @@ pub(super) fn hash_body(source_version: u16, body: &Body) -> Result<Digests, Tem
         (6, body.plugin.as_slice()),
     ];
     let plan = plan_digest(source_version, &parts)?;
-    Ok(Digests { selection, extraction, render, plugin, plan })
+    Ok(Digests {
+        selection,
+        extraction,
+        render,
+        plugin,
+        plan,
+    })
 }
 
-pub(super) fn plan_digest(source_version: u16, parts: &[(u16, &[u8])]) -> Result<[u8; 32], TemplateError> {
+pub(super) fn plan_digest(
+    source_version: u16,
+    parts: &[(u16, &[u8])],
+) -> Result<[u8; 32], TemplateError> {
     let mut pre = Vec::new();
     pre.extend_from_slice(&source_version.to_le_bytes());
     pre.extend_from_slice(&IR_MAJOR.to_le_bytes());
@@ -81,15 +92,25 @@ pub(super) fn plan_digest(source_version: u16, parts: &[(u16, &[u8])]) -> Result
     domain_digest(8, SCHEMA, &pre)
 }
 
-pub(super) fn domain_digest(kind: u16, schema: u16, payload: &[u8]) -> Result<[u8; 32], TemplateError> {
+pub(super) fn domain_digest(
+    kind: u16,
+    schema: u16,
+    payload: &[u8],
+) -> Result<[u8; 32], TemplateError> {
     let mut message = Vec::with_capacity(17 + payload.len());
     message.extend_from_slice(b"DCTX\0");
     message.extend_from_slice(&kind.to_le_bytes());
     message.extend_from_slice(&schema.to_le_bytes());
-    let len = u64::try_from(payload.len()).map_err(|_| TemplateError::Limit { what: "hash", limit: u64::MAX })?;
+    let len = u64::try_from(payload.len()).map_err(|_| TemplateError::Limit {
+        what: "hash",
+        limit: u64::MAX,
+    })?;
     message.extend_from_slice(&len.to_le_bytes());
     message.extend_from_slice(payload);
-    let digest = Sha256::digest(&message).map_err(|_| TemplateError::Limit { what: "hash", limit: u64::MAX })?;
+    let digest = Sha256::digest(&message).map_err(|_| TemplateError::Limit {
+        what: "hash",
+        limit: u64::MAX,
+    })?;
     Ok(*digest.as_bytes())
 }
 
@@ -97,7 +118,13 @@ pub(super) fn encode_provenance(source_version: u16, digests: &Digests) -> Vec<u
     let mut out = Vec::with_capacity(164);
     out.extend_from_slice(&source_version.to_le_bytes());
     out.extend_from_slice(&0u16.to_le_bytes());
-    for digest in [digests.selection, digests.extraction, digests.render, digests.plugin, digests.plan] {
+    for digest in [
+        digests.selection,
+        digests.extraction,
+        digests.render,
+        digests.plugin,
+        digests.plan,
+    ] {
         out.extend_from_slice(&digest);
     }
     out
@@ -105,12 +132,16 @@ pub(super) fn encode_provenance(source_version: u16, digests: &Digests) -> Vec<u
 
 pub(super) fn decode_provenance(payload: &[u8]) -> Result<(u16, Digests), TemplateError> {
     if payload.len() != 164 {
-        return Err(TemplateError::Corrupt { reason: "provenance" });
+        return Err(TemplateError::Corrupt {
+            reason: "provenance",
+        });
     }
     let mut reader = Reader::new(payload);
     let source_version = reader.u16()?;
     if reader.u16()? != 0 {
-        return Err(TemplateError::Corrupt { reason: "provenance" });
+        return Err(TemplateError::Corrupt {
+            reason: "provenance",
+        });
     }
     let mut raw = [[0u8; 32]; 5];
     for slot in &mut raw {
@@ -119,7 +150,12 @@ pub(super) fn decode_provenance(payload: &[u8]) -> Result<(u16, Digests), Templa
     reader.finish("provenance")?;
     Ok((
         source_version,
-        Digests { selection: raw[0], extraction: raw[1], render: raw[2], plugin: raw[3], plan: raw[4] },
+        Digests {
+            selection: raw[0],
+            extraction: raw[1],
+            render: raw[2],
+            plugin: raw[3],
+            plan: raw[4],
+        },
     ))
 }
-

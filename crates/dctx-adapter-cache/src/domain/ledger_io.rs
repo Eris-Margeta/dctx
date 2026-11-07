@@ -133,10 +133,16 @@ impl<'a> Take<'a> {
             return Err(corrupt("ledger is too large"));
         }
         let bytes = self.take(len as usize)?;
-        std::str::from_utf8(bytes).map(str::to_owned).map_err(|_| corrupt("text"))
+        std::str::from_utf8(bytes)
+            .map(str::to_owned)
+            .map_err(|_| corrupt("text"))
     }
 
     pub(super) fn finish(self) -> Result<(), CacheError> {
-        if self.rest.is_empty() { Ok(()) } else { Err(corrupt("trailing bytes")) }
+        if self.rest.is_empty() {
+            Ok(())
+        } else {
+            Err(corrupt("trailing bytes"))
+        }
     }
 }

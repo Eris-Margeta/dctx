@@ -2,7 +2,7 @@
 //! Heredoc openers and bodies, including several openers on one line.
 //! Implements Ruby `<<`, `<<-` and `<<~` forms with quoted and bare terminators.
 //! The walker sees a string token at the opener; only `#{}` inside becomes code.
-use super::{as_u32, Kind, Lx};
+use super::{Kind, Lx, as_u32};
 use crate::domain::DiagnosticReason;
 
 pub(super) struct Pending {
@@ -56,9 +56,15 @@ impl Lx<'_> {
 
     fn heredoc_term(&self, j: usize) -> Option<(String, bool, usize)> {
         match self.byte_at(j)? {
-            b'\'' => self.quoted_term(j, b'\'').map(|(term, end)| (term, false, end)),
-            b'"' => self.quoted_term(j, b'"').map(|(term, end)| (term, true, end)),
-            b'`' => self.quoted_term(j, b'`').map(|(term, end)| (term, true, end)),
+            b'\'' => self
+                .quoted_term(j, b'\'')
+                .map(|(term, end)| (term, false, end)),
+            b'"' => self
+                .quoted_term(j, b'"')
+                .map(|(term, end)| (term, true, end)),
+            b'`' => self
+                .quoted_term(j, b'`')
+                .map(|(term, end)| (term, true, end)),
             byte if is_ident_byte(byte) || byte >= 0x80 => {
                 let end = ident_end(self.src, j);
                 let term = self.src[j..end].to_owned();
@@ -289,10 +295,12 @@ fn is_ident_byte(byte: u8) -> bool {
 
 fn ident_end(src: &str, start: usize) -> usize {
     let rest = src.get(start..).unwrap_or("");
-    start + rest.chars()
-        .take_while(|ch| ch.is_ascii_alphanumeric() || *ch == '_' || !ch.is_ascii())
-        .map(char::len_utf8)
-        .sum::<usize>()
+    start
+        + rest
+            .chars()
+            .take_while(|ch| ch.is_ascii_alphanumeric() || *ch == '_' || !ch.is_ascii())
+            .map(char::len_utf8)
+            .sum::<usize>()
 }
 
 #[cfg(test)]
@@ -316,7 +324,11 @@ mod tests {
         let names = idents(source);
         assert!(names.contains(&"puts".to_owned()), "{names:?}");
         assert!(names.contains(&"real".to_owned()), "{names:?}");
-        assert!(!names.iter().any(|name| name == "alpha" || name == "beta" || name == "ghost"));
+        assert!(
+            !names
+                .iter()
+                .any(|name| name == "alpha" || name == "beta" || name == "ghost")
+        );
     }
 
     #[test]
@@ -338,9 +350,14 @@ mod tests {
             ("<<-\"É終\"", "\tÉ終"),
             ("<<~`終é`", "  終é"),
         ] {
-            let source = format!("puts {opener}\r\nclass Ghost; end\r\n{terminator}\r\ndef real\nend\n");
+            let source =
+                format!("puts {opener}\r\nclass Ghost; end\r\n{terminator}\r\ndef real\nend\n");
             let lexed = lex(&source, &Limits::default()).expect("lex");
-            assert!(lexed.diagnostics.is_empty(), "{opener}: {:?}", lexed.diagnostics);
+            assert!(
+                lexed.diagnostics.is_empty(),
+                "{opener}: {:?}",
+                lexed.diagnostics
+            );
             assert_eq!(idents(&source), ["puts", "def", "real", "end"], "{opener}");
             for token in lexed.tokens {
                 assert!(source.is_char_boundary(token.start as usize));
@@ -357,8 +374,11 @@ mod tests {
         assert_eq!(idents(source), ["puts", "kept", "def", "real", "end"]);
 
         let incomplete = lex("puts <<'終'\nbody\n終x\n", &Limits::default()).expect("lex");
-        assert!(incomplete.diagnostics.iter().any(|item| {
-            item.reason == crate::domain::DiagnosticReason::UnterminatedString
-        }));
+        assert!(
+            incomplete
+                .diagnostics
+                .iter()
+                .any(|item| { item.reason == crate::domain::DiagnosticReason::UnterminatedString })
+        );
     }
 }

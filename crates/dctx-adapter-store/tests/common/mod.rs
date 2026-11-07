@@ -5,10 +5,12 @@
 //! Empty labels are not used. The store namespace stays `local`.
 #![allow(dead_code)]
 
-use dctx_adapter_store::{MemoryFs, PublishRequest, Revisions, SegmentBlob, SegmentRole, SegmentStore, StoreOptions};
+use dctx_adapter_store::{
+    MemoryFs, PublishRequest, Revisions, SegmentBlob, SegmentRole, SegmentStore, StoreOptions,
+};
 use dctx_map_segment::{
-    segment_object_digest, Completion, Coverage, DeclarationDraft, DeclarationKind, FactDraft, Language,
-    SegmentBuilder, SummarySource,
+    Completion, Coverage, DeclarationDraft, DeclarationKind, FactDraft, Language, SegmentBuilder,
+    SummarySource, segment_object_digest,
 };
 
 pub fn segment(label: &str) -> Vec<u8> {
@@ -54,7 +56,10 @@ pub fn req(root: &str, generation: u64, bytes: Vec<u8>) -> PublishRequest {
         snapshot: [4; 32],
         view: [5; 32],
         policy_epoch: 1,
-        segments: vec![SegmentBlob { role: SegmentRole::Fact, bytes }],
+        segments: vec![SegmentBlob {
+            role: SegmentRole::Fact,
+            bytes,
+        }],
         revisions: Revisions::structural(),
     }
 }

@@ -6,8 +6,8 @@
 
 use std::collections::HashMap;
 
-use crate::error::{TemplateError, MAX_STRING_BYTES};
-use crate::model::{Inst, NamedCode, RenderProgram, OP_DATA, OP_MAX, OP_PARTIAL, OP_TEXT};
+use crate::error::{MAX_STRING_BYTES, TemplateError};
+use crate::model::{Inst, NamedCode, OP_DATA, OP_MAX, OP_PARTIAL, OP_TEXT, RenderProgram};
 use crate::v1::replace_vars_in_order;
 
 /// Field ids stored in [`OP_DATA`] arguments.
@@ -31,27 +31,38 @@ pub fn field_id(name: &str) -> Option<u16> {
 }
 
 /// True when `opcode` is one this IR executes and `arg` is in range for it.
-pub fn instruction_ok(opcode: u16, arg: u16, strings: usize, partials: usize) -> Result<(), TemplateError> {
+pub fn instruction_ok(
+    opcode: u16,
+    arg: u16,
+    strings: usize,
+    partials: usize,
+) -> Result<(), TemplateError> {
     match opcode {
         OP_TEXT => {
             if usize::from(arg) < strings {
                 Ok(())
             } else {
-                Err(TemplateError::Corrupt { reason: "string index" })
+                Err(TemplateError::Corrupt {
+                    reason: "string index",
+                })
             }
         }
         OP_DATA => {
             if (1..=13).contains(&arg) {
                 Ok(())
             } else {
-                Err(TemplateError::Corrupt { reason: "data field" })
+                Err(TemplateError::Corrupt {
+                    reason: "data field",
+                })
             }
         }
         OP_PARTIAL => {
             if usize::from(arg) < partials {
                 Ok(())
             } else {
-                Err(TemplateError::Corrupt { reason: "partial index" })
+                Err(TemplateError::Corrupt {
+                    reason: "partial index",
+                })
             }
         }
         _ => Err(TemplateError::UnknownOpcode { opcode }),
@@ -63,9 +74,16 @@ pub fn validate_program(program: &RenderProgram) -> Result<(), TemplateError> {
     for code in program.partials.iter().chain(program.layouts.iter()) {
         for inst in &code.instructions {
             if inst.opcode == 0 || inst.opcode > OP_MAX {
-                return Err(TemplateError::UnknownOpcode { opcode: inst.opcode });
+                return Err(TemplateError::UnknownOpcode {
+                    opcode: inst.opcode,
+                });
             }
-            instruction_ok(inst.opcode, inst.arg, program.strings.len(), program.partials.len())?;
+            instruction_ok(
+                inst.opcode,
+                inst.arg,
+                program.strings.len(),
+                program.partials.len(),
+            )?;
         }
     }
     Ok(())
@@ -80,7 +98,10 @@ pub fn compile_program(
     let mut strings = Vec::new();
     let mut index = HashMap::new();
     for (offset, (name, _)) in partials.iter().enumerate() {
-        let id = u16::try_from(offset).map_err(|_| TemplateError::Limit { what: "partials", limit: 65535 })?;
+        let id = u16::try_from(offset).map_err(|_| TemplateError::Limit {
+            what: "partials",
+            limit: 65535,
+        })?;
         index.insert(name.as_str(), id);
     }
     let mut compiled_partials = Vec::new();
@@ -97,9 +118,17 @@ pub fn compile_program(
             instructions: compile_text(body, &mut strings, &index)?,
         });
     }
-    let mut variables: Vec<(String, String)> = variables.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+    let mut variables: Vec<(String, String)> = variables
+        .iter()
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect();
     variables.sort();
-    Ok(RenderProgram { strings, variables, partials: compiled_partials, layouts: compiled_layouts })
+    Ok(RenderProgram {
+        strings,
+        variables,
+        partials: compiled_partials,
+        layouts: compiled_layouts,
+    })
 }
 
 fn compile_text(
@@ -117,8 +146,13 @@ fn compile_text(
         {
             push_text(&mut out, strings, &text[lit..i])?;
             let name = &text[i + 3..i + 3 + end];
-            let id = field_id(name).ok_or_else(|| TemplateError::UnresolvedVariable { name: name.to_string() })?;
-            out.push(Inst { opcode: OP_DATA, arg: id });
+            let id = field_id(name).ok_or_else(|| TemplateError::UnresolvedVariable {
+                name: name.to_string(),
+            })?;
+            out.push(Inst {
+                opcode: OP_DATA,
+                arg: id,
+            });
             i += 3 + end + 3;
             lit = i;
             continue;
@@ -128,10 +162,16 @@ fn compile_text(
         {
             let name = &text[i + 3..i + 3 + end];
             let Some(&id) = partials.get(name) else {
-                return Err(TemplateError::UnresolvedRef { kind: "partial", name: name.to_string() });
+                return Err(TemplateError::UnresolvedRef {
+                    kind: "partial",
+                    name: name.to_string(),
+                });
             };
             push_text(&mut out, strings, &text[lit..i])?;
-            out.push(Inst { opcode: OP_PARTIAL, arg: id });
+            out.push(Inst {
+                opcode: OP_PARTIAL,
+                arg: id,
+            });
             i += 3 + end + 2;
             lit = i;
             continue;
@@ -141,7 +181,9 @@ fn compile_text(
         {
             let name = &text[i + 2..i + 2 + end];
             if !name.is_empty() && !name.contains('{') && !name.starts_with('>') {
-                return Err(TemplateError::UnresolvedVariable { name: name.to_string() });
+                return Err(TemplateError::UnresolvedVariable {
+                    name: name.to_string(),
+                });
             }
         }
         i += text[i..].chars().next().map_or(1, char::len_utf8);
@@ -150,16 +192,29 @@ fn compile_text(
     Ok(out)
 }
 
-fn push_text(out: &mut Vec<Inst>, strings: &mut Vec<String>, text: &str) -> Result<(), TemplateError> {
+fn push_text(
+    out: &mut Vec<Inst>,
+    strings: &mut Vec<String>,
+    text: &str,
+) -> Result<(), TemplateError> {
     if text.is_empty() {
         return Ok(());
     }
     if text.len() > MAX_STRING_BYTES || strings.len() >= usize::from(u16::MAX) {
-        return Err(TemplateError::Limit { what: "strings", limit: MAX_STRING_BYTES as u64 });
+        return Err(TemplateError::Limit {
+            what: "strings",
+            limit: MAX_STRING_BYTES as u64,
+        });
     }
-    let arg = u16::try_from(strings.len()).map_err(|_| TemplateError::Limit { what: "strings", limit: 65535 })?;
+    let arg = u16::try_from(strings.len()).map_err(|_| TemplateError::Limit {
+        what: "strings",
+        limit: 65535,
+    })?;
     strings.push(text.to_string());
-    out.push(Inst { opcode: OP_TEXT, arg });
+    out.push(Inst {
+        opcode: OP_TEXT,
+        arg,
+    });
     Ok(())
 }
 
@@ -171,24 +226,33 @@ pub fn execute(
     depth: u32,
 ) -> Result<String, TemplateError> {
     if depth > 32 {
-        return Err(TemplateError::Limit { what: "include-depth", limit: 32 });
+        return Err(TemplateError::Limit {
+            what: "include-depth",
+            limit: 32,
+        });
     }
     let mut buf = String::new();
     for inst in code {
         match inst.opcode {
             OP_TEXT => {
-                let text = program
-                    .strings
-                    .get(usize::from(inst.arg))
-                    .ok_or(TemplateError::Corrupt { reason: "string index" })?;
+                let text =
+                    program
+                        .strings
+                        .get(usize::from(inst.arg))
+                        .ok_or(TemplateError::Corrupt {
+                            reason: "string index",
+                        })?;
                 buf.push_str(text);
             }
             OP_DATA => buf.push_str(&data(inst.arg)?),
             OP_PARTIAL => {
-                let partial = program
-                    .partials
-                    .get(usize::from(inst.arg))
-                    .ok_or(TemplateError::Corrupt { reason: "partial index" })?;
+                let partial =
+                    program
+                        .partials
+                        .get(usize::from(inst.arg))
+                        .ok_or(TemplateError::Corrupt {
+                            reason: "partial index",
+                        })?;
                 let nested = execute(program, &partial.instructions, data, depth + 1)?;
                 buf.push_str(&nested);
             }

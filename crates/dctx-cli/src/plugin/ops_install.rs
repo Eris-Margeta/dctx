@@ -16,12 +16,23 @@ use super::{render, Env};
 
 pub(super) fn install_cmd(env: &mut Env<'_>, install: &Install, json: bool) -> Outcome {
     let report = match install {
-        Install::Index { repository, version, enable, approve } => {
+        Install::Index {
+            repository,
+            version,
+            enable,
+            approve,
+        } => {
             let index = match cached_index(env) {
                 Ok(index) => index,
                 Err(error) => return fail("install", &error, json),
             };
-            let Some(entry) = index.entries.iter().find(|entry| entry.repository.eq_ignore_ascii_case(repository)) else { return fail("install", &DistributionError::NotFound, json) };
+            let Some(entry) = index
+                .entries
+                .iter()
+                .find(|entry| entry.repository.eq_ignore_ascii_case(repository))
+            else {
+                return fail("install", &DistributionError::NotFound, json);
+            };
             let parsed = match version.as_deref().map(Version::parse).transpose() {
                 Ok(version) => version,
                 Err(error) => return fail("install", &error, json),
@@ -32,7 +43,12 @@ pub(super) fn install_cmd(env: &mut Env<'_>, install: &Install, json: bool) -> O
                 Err(error) => return fail("install", &error, json),
             }
         }
-        Install::Url { url, id, enable, approve } => {
+        Install::Url {
+            url,
+            id,
+            enable,
+            approve,
+        } => {
             let parsed_url = match HttpsUrl::parse(url) {
                 Ok(url) => url,
                 Err(error) => return fail("install", &DistributionError::from(error), json),
@@ -46,8 +62,15 @@ pub(super) fn install_cmd(env: &mut Env<'_>, install: &Install, json: bool) -> O
                 Err(error) => return fail("install", &error, json),
             }
         }
-        Install::File { path, id, enable, approve } => {
-            let Ok(bytes) = fs::read(Path::new(path)) else { return fail("install", &DistributionError::NotFound, json) };
+        Install::File {
+            path,
+            id,
+            enable,
+            approve,
+        } => {
+            let Ok(bytes) = fs::read(Path::new(path)) else {
+                return fail("install", &DistributionError::NotFound, json);
+            };
             let parsed_id = match PluginId::parse(id) {
                 Ok(id) => id,
                 Err(error) => return fail("install", &error, json),
@@ -76,7 +99,13 @@ pub(super) fn install_cmd(env: &mut Env<'_>, install: &Install, json: bool) -> O
     })
 }
 
-pub(super) fn update(env: &mut Env<'_>, raw_id: Option<&str>, version: Option<&str>, check: bool, json: bool) -> Outcome {
+pub(super) fn update(
+    env: &mut Env<'_>,
+    raw_id: Option<&str>,
+    version: Option<&str>,
+    check: bool,
+    json: bool,
+) -> Outcome {
     let text = raw_id.unwrap_or("dctx/git");
     let id = match PluginId::parse(text) {
         Ok(id) => id,

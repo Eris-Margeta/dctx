@@ -5,7 +5,10 @@
 
 /// Bounds on one extraction. Caller values can only narrow [`Limits::CEILING`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[allow(clippy::struct_field_names, reason = "The max prefix distinguishes extraction ceilings from observed byte, nesting and record counts.")]
+#[allow(
+    clippy::struct_field_names,
+    reason = "The max prefix distinguishes extraction ceilings from observed byte, nesting and record counts."
+)]
 pub struct Limits {
     max_bytes: usize,
     max_nesting: u32,
@@ -21,7 +24,10 @@ impl Limits {
     };
 
     /// Limits clamped to [`Limits::CEILING`].
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior for the limits constructor.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior for the limits constructor."
+    )]
     pub fn narrowed(max_bytes: usize, max_nesting: u32, max_records: usize) -> Self {
         Self {
             max_bytes: max_bytes.min(Self::CEILING.max_bytes),
@@ -31,19 +37,28 @@ impl Limits {
     }
 
     /// Largest accepted input in bytes.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior for the limits accessor.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior for the limits accessor."
+    )]
     pub fn max_bytes(&self) -> usize {
         self.max_bytes
     }
 
     /// Largest nesting cost: tokens on the open syntactic path (see the nesting adapter).
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior for the limits accessor.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior for the limits accessor."
+    )]
     pub fn max_nesting(&self) -> u32 {
         self.max_nesting
     }
 
     /// Largest number of declarations, imports and references together.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior for the limits accessor.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior for the limits accessor."
+    )]
     pub fn max_records(&self) -> usize {
         self.max_records
     }
@@ -99,7 +114,9 @@ pub enum Refusal {
         limit: usize,
     },
     /// The bounded parse worker could not start or did not finish.
-    #[error("parse worker failed")]
+    #[error(
+        "Rust parse worker could not start or failed; check OS thread/process and memory limits"
+    )]
     Worker,
 }
 
@@ -113,7 +130,11 @@ mod tests {
         assert_eq!(wide, Limits::CEILING);
         let narrow = Limits::narrowed(10, 3, 1);
         assert_eq!(
-            (narrow.max_bytes(), narrow.max_nesting(), narrow.max_records()),
+            (
+                narrow.max_bytes(),
+                narrow.max_nesting(),
+                narrow.max_records()
+            ),
             (10, 3, 1)
         );
         assert_eq!(Limits::default(), Limits::CEILING);

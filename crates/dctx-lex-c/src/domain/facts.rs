@@ -17,7 +17,10 @@ impl Dialect {
     /// Selects C or C++ from the final extension. Other extensions are unsupported.
     ///
     /// GCC treats the exact suffix `.C` as C++. `.c` and `.h` stay C.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn for_path(path: &str) -> Option<Self> {
         let extension = path.rsplit_once('.')?.1;
         if extension == "C" {

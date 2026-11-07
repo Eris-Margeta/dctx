@@ -1,0 +1,34 @@
+{
+  "name": "dctx",
+  "version": "1.1.0",
+  "description": "dctx CLI: compact code context for people and agents",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Eris-Margeta/dctx.git",
+    "directory": "packaging/npm/dctx"
+  },
+  "homepage": "https://www.dctx.internet.technology",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "bin/",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "bin": {
+    "dctx": "bin/dctx.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "optionalDependencies": {
+    "@dctx/cli-linux-x64": "1.1.0",
+    "@dctx/cli-linux-arm64": "1.1.0",
+    "@dctx/cli-darwin-x64": "1.1.0",
+    "@dctx/cli-darwin-arm64": "1.1.0",
+    "@dctx/cli-win32-x64": "1.1.0"
+  }
+}

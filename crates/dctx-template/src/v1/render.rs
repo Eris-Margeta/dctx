@@ -9,7 +9,7 @@ mod measure;
 
 use std::collections::HashMap;
 
-use super::parse::{replace_vars, Template};
+use super::parse::{Template, replace_vars};
 use crate::legacy_output::FileMode;
 
 const RENDER_CEILING: u64 = 16 * 1024 * 1024;
@@ -39,7 +39,10 @@ pub struct MarkerNode {
 
 impl MarkerNode {
     /// A directory node with no children.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn dir(path: &str, modified: u64) -> Self {
         Self {
             relative_path: path.to_string(),
@@ -55,7 +58,10 @@ impl MarkerNode {
     }
 
     /// A file node. `content` is rendered only when the node is included.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn file(path: &str, content: &[u8], modified: u64) -> Self {
         Self {
             relative_path: path.to_string(),
@@ -72,14 +78,21 @@ impl MarkerNode {
 }
 
 /// Renders `root` with the v1 marker rules. `template.variables` must already hold `project` when the layout uses it.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn render_markers(template: &Template, root: &MarkerNode, tree_only: bool) -> String {
     let (tree, files) = template.marker_components(root, &FileMode::Markers { tree_only });
     template.marker_layout(tree.trim(), files.trim())
 }
 
 impl Template {
-    pub(crate) fn marker_components(&self, root: &MarkerNode, mode: &FileMode<'_>) -> (String, String) {
+    pub(crate) fn marker_components(
+        &self,
+        root: &MarkerNode,
+        mode: &FileMode<'_>,
+    ) -> (String, String) {
         let mut tree = String::new();
         let mut files = String::new();
         let mut counter = 1usize;
@@ -120,7 +133,10 @@ fn render_node(
     };
 
     let type_char = if node.is_dir { "[D]" } else { "[F]" };
-    let size_attr = template.variables.get("attr_size").map_or("SIZE", String::as_str);
+    let size_attr = template
+        .variables
+        .get("attr_size")
+        .map_or("SIZE", String::as_str);
     let size_part = if node.is_dir {
         String::new()
     } else {
@@ -157,11 +173,22 @@ fn render_node(
     }
 
     for child in &node.children {
-        render_node(child, template, tree_buf, files_buf, counter, depth + 1, mode);
+        render_node(
+            child,
+            template,
+            tree_buf,
+            files_buf,
+            counter,
+            depth + 1,
+            mode,
+        );
     }
 }
 
-#[allow(clippy::naive_bytecount, reason = "Count newline bytes with standard iterators to preserve the renderer line-count convention without adding a byte-count dependency.")]
+#[allow(
+    clippy::naive_bytecount,
+    reason = "Count newline bytes with standard iterators to preserve the renderer line-count convention without adding a byte-count dependency."
+)]
 fn file_body(node: &MarkerNode, mode: &FileMode<'_>) -> (usize, String) {
     if let Some(message) = mode.omission(node) {
         return (0, message);
@@ -178,17 +205,23 @@ fn file_body(node: &MarkerNode, mode: &FileMode<'_>) -> (usize, String) {
 
 /// End-marker prefix used when a plan render escapes file content.
 pub fn end_marker_of(variables: &HashMap<String, String>) -> String {
-    let open = variables.get("end_marker_open").map_or("</", String::as_str);
-    let name = variables.get("file_end_marker").map_or("FILE", String::as_str);
-    let close = variables.get("end_marker_close").map_or(">", String::as_str);
+    let open = variables
+        .get("end_marker_open")
+        .map_or("</", String::as_str);
+    let name = variables
+        .get("file_end_marker")
+        .map_or("FILE", String::as_str);
+    let close = variables
+        .get("end_marker_close")
+        .map_or(">", String::as_str);
     format!("{open}{name}{close}")
 }
 
 #[cfg(test)]
 mod measure_tests {
     use super::*;
-    use crate::legacy_output::FileMode;
     use crate::Template;
+    use crate::legacy_output::FileMode;
     use dctx_core::version::Version;
 
     fn repeated(times: usize) -> Template {
@@ -206,8 +239,12 @@ mod measure_tests {
         root.children.push(MarkerNode::file("a.txt", b"ABC", 1));
         let version = Version::new_v1();
         let real = crate::render_legacy_snapshot(&template, &root, &version, false, true);
-        let mode = FileMode::Snapshot { tree_only: false, omit_svg_content: true };
-        let (_tree_raw, _tree_trimmed, _files_raw, body) = template.measure_legacy(&root, &mode).expect("measure");
+        let mode = FileMode::Snapshot {
+            tree_only: false,
+            omit_svg_content: true,
+        };
+        let (_tree_raw, _tree_trimmed, _files_raw, body) =
+            template.measure_legacy(&root, &mode).expect("measure");
         let header = format!("[DCTX_LLM_CONTEXT_SNAPSHOT_{version}]\n");
         assert_eq!(header.len() as u64 + body, real.len() as u64);
         assert_eq!(real, format!("{header}{}", "ABC".repeat(5)));
@@ -219,10 +256,18 @@ mod measure_tests {
         let unit = 8192u64;
         let template = repeated(usize::try_from(times).unwrap());
         let mut root = MarkerNode::dir("", 0);
-        root.children.push(MarkerNode::file("a.txt", &vec![b'Q'; usize::try_from(unit).unwrap()], 1));
-        let mode = FileMode::Snapshot { tree_only: false, omit_svg_content: true };
+        root.children.push(MarkerNode::file(
+            "a.txt",
+            &vec![b'Q'; usize::try_from(unit).unwrap()],
+            1,
+        ));
+        let mode = FileMode::Snapshot {
+            tree_only: false,
+            omit_svg_content: true,
+        };
         assert!(!template.legacy_expansion_fits(&root, &mode));
-        let (_tree_raw, _tree_trimmed, files_raw, body) = template.measure_legacy(&root, &mode).expect("measure");
+        let (_tree_raw, _tree_trimmed, files_raw, body) =
+            template.measure_legacy(&root, &mode).expect("measure");
         assert_eq!(body, times * unit);
         assert_eq!(files_raw, times * unit + 1);
     }
@@ -232,14 +277,23 @@ mod measure_tests {
         let mut template = Template::parse(include_str!("../../templates/default.dctx_template"));
         template.insert_variable("project", "Corpus");
         let mut root = MarkerNode::dir("", 0);
-        root.children.push(MarkerNode::file("src/main.rs", b"fn main() {}\n", 1));
+        root.children
+            .push(MarkerNode::file("src/main.rs", b"fn main() {}\n", 1));
         let version = Version::new_v1();
         for tree_only in [false, true] {
             let real = crate::render_legacy_snapshot(&template, &root, &version, tree_only, true);
-            let mode = FileMode::Snapshot { tree_only, omit_svg_content: true };
-            let (_tree_raw, _tree_trimmed, _files_raw, body) = template.measure_legacy(&root, &mode).expect("measure");
+            let mode = FileMode::Snapshot {
+                tree_only,
+                omit_svg_content: true,
+            };
+            let (_tree_raw, _tree_trimmed, _files_raw, body) =
+                template.measure_legacy(&root, &mode).expect("measure");
             let header = format!("[DCTX_LLM_CONTEXT_SNAPSHOT_{version}]\n");
-            assert_eq!(header.len() as u64 + body, real.len() as u64, "tree_only={tree_only}");
+            assert_eq!(
+                header.len() as u64 + body,
+                real.len() as u64,
+                "tree_only={tree_only}"
+            );
         }
     }
 }

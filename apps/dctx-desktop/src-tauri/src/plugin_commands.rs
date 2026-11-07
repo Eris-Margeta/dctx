@@ -35,11 +35,21 @@ enum ApprovalScope {
 
 fn reviewable(rows: Vec<PluginRow>) -> Result<Vec<PluginRow>, String> {
     let store = FsStore::new(crate::config::desktop_config_dir()?.join("plugins"));
-    let registry = store.load_registry()
-        .and_then(|bytes| bytes.map_or_else(|| Ok(Registry::default()), |bytes| registry_codec::decode(&bytes)))
+    let registry = store
+        .load_registry()
+        .and_then(|bytes| {
+            bytes.map_or_else(
+                || Ok(Registry::default()),
+                |bytes| registry_codec::decode(&bytes),
+            )
+        })
         .map_err(|reason| DesktopError::from(reason).command_string())?;
-    rows.into_iter().map(|row| row.with_consent(&registry)
-        .map_err(|error| error.command_string())).collect()
+    rows.into_iter()
+        .map(|row| {
+            row.with_consent(&registry)
+                .map_err(|error| error.command_string())
+        })
+        .collect()
 }
 
 impl ConsentRequest {

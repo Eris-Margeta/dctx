@@ -7,6 +7,8 @@
 
 #![forbid(unsafe_code)]
 
+mod common;
+
 use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Output};
@@ -15,7 +17,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 static NEXT: AtomicU64 = AtomicU64::new(1);
 
 /// The card text every budget test packs for: two backticked or code-like names, one PascalCase type and a plain word.
-const CARD: &str = "Fix `alpha_body` so BetaStore reads the TOKEN once; keep beta_helper unchanged.";
+const CARD: &str =
+    "Fix `alpha_body` so BetaStore reads the TOKEN once; keep beta_helper unchanged.";
 
 struct Place {
     root: PathBuf,
@@ -24,10 +27,20 @@ struct Place {
 impl Place {
     fn new(label: &str) -> Self {
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
-        let root = std::env::temp_dir().join(format!("dctx-packfor-{label}-{}-{n}", std::process::id()));
+        let root =
+            std::env::temp_dir().join(format!("dctx-packfor-{label}-{}-{n}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
         fs::create_dir_all(root.join("repo/src")).expect("repo");
-        for folder in ["home", "config", "cache", "plugins", "map-cache", "local-app-data", "empty-path", "tmp"] {
+        for folder in [
+            "home",
+            "config",
+            "cache",
+            "plugins",
+            "map-cache",
+            "local-app-data",
+            "empty-path",
+            "tmp",
+        ] {
             fs::create_dir(root.join(folder)).expect("isolated directory");
         }
         let repo = root.join("repo");
@@ -43,20 +56,18 @@ impl Place {
 
     fn output(&self, args: &[&str]) -> Output {
         let mut command = Command::new(env!("CARGO_BIN_EXE_dctx-cli"));
-        command.current_dir(self.repo()).env_clear().args(args).env("DCTX_AUTO_CLEAN", "0").env("NO_COLOR", "1");
+        command
+            .current_dir(self.repo())
+            .env_clear()
+            .args(args)
+            .env("DCTX_AUTO_CLEAN", "0")
+            .env("NO_COLOR", "1");
+        common::isolated_dirs(&mut command, &self.root);
         for (variable, folder) in [
-            ("HOME", "home"),
-            ("USERPROFILE", "home"),
-            ("XDG_CONFIG_HOME", "config"),
-            ("XDG_CACHE_HOME", "cache"),
-            ("LOCALAPPDATA", "local-app-data"),
             ("DCTX_PLUGIN_ROOT", "plugins"),
             ("DCTX_CACHE_DIR", "cache"),
             ("DCTX_MAP_CACHE", "map-cache"),
             ("PATH", "empty-path"),
-            ("TMPDIR", "tmp"),
-            ("TMP", "tmp"),
-            ("TEMP", "tmp"),
         ] {
             command.env(variable, self.root.join(folder));
         }
@@ -68,7 +79,11 @@ impl Place {
         let output = self.output(args);
         let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
         let stderr = String::from_utf8_lossy(&output.stderr);
-        assert!(output.status.success(), "{args:?}: status {}; stdout: {stdout}; stderr: {stderr}", output.status);
+        assert!(
+            output.status.success(),
+            "{args:?}: status {}; stdout: {stdout}; stderr: {stderr}",
+            output.status
+        );
         assert!(stderr.is_empty(), "{args:?}: {stderr}");
         stdout
     }
@@ -82,7 +97,8 @@ impl Drop for Place {
 
 /// A struct with 200 methods that each call `alpha_body`: a large read and many callers, so a budget must cut.
 fn store_source() -> String {
-    let mut text = String::from("pub struct BetaStore {\n    pub slots: Vec<u32>,\n}\n\nimpl BetaStore {\n");
+    let mut text =
+        String::from("pub struct BetaStore {\n    pub slots: Vec<u32>,\n}\n\nimpl BetaStore {\n");
     for n in 0..200 {
         text.push_str(&format!("    pub fn slot_{n:03}(&self) -> u32 {{\n        crate::alpha::alpha_body() + {n}\n    }}\n"));
     }
@@ -99,23 +115,49 @@ fn estimate(text: &str) -> u64 {
 fn dropped(page: &str) -> u64 {
     let end = page.lines().last().expect("end line");
     assert!(end.starts_with("# end body_tokens="), "{end}");
-    end.rsplit("dropped=").next().and_then(|n| n.parse().ok()).unwrap_or_else(|| panic!("no dropped count in {end}"))
+    end.rsplit("dropped=")
+        .next()
+        .and_then(|n| n.parse().ok())
+        .unwrap_or_else(|| panic!("no dropped count in {end}"))
 }
 
 #[test]
 fn budget_3000_fits_and_names_the_card_symbols() {
     let place = Place::new("fits");
     let page = place.page(&["pack", "--for", CARD, "--budget", "3000"]);
-    assert!(estimate(&page) <= 3000, "{} estimated tokens", estimate(&page));
-    assert!(page.starts_with("# dctx pack --for budget=3000 terms="), "{page}");
-    for named in ["s:src/alpha.rs#alpha_body", "src/store.rs#BetaStore", "s:src/alpha.rs#beta_helper"] {
+    assert!(
+        estimate(&page) <= 3000,
+        "{} estimated tokens",
+        estimate(&page)
+    );
+    assert!(
+        page.starts_with("# dctx pack --for budget=3000 terms="),
+        "{page}"
+    );
+    for named in [
+        "s:src/alpha.rs#alpha_body",
+        "src/store.rs#BetaStore",
+        "s:src/alpha.rs#beta_helper",
+    ] {
         assert!(page.contains(named), "missing {named} in {page}");
     }
     assert!(page.contains("## find alpha_body\n"), "{page}");
-    assert!(page.contains("## neighbors s:src/alpha.rs#alpha_body\n"), "{page}");
-    assert!(page.contains("## read s:src/alpha.rs#alpha_body\n"), "{page}");
-    assert!(page.contains("beta_helper() + 1"), "the read section carries the source: {page}");
-    assert!(!page.contains("CANARY_PACK_FOR_9"), "a sensitive file reached the page: {page}");
+    assert!(
+        page.contains("## neighbors s:src/alpha.rs#alpha_body\n"),
+        "{page}"
+    );
+    assert!(
+        page.contains("## read s:src/alpha.rs#alpha_body\n"),
+        "{page}"
+    );
+    assert!(
+        page.contains("beta_helper() + 1"),
+        "the read section carries the source: {page}"
+    );
+    assert!(
+        !page.contains("CANARY_PACK_FOR_9"),
+        "a sensitive file reached the page: {page}"
+    );
     assert!(page.ends_with('\n'));
 }
 
@@ -131,10 +173,23 @@ fn the_default_budget_is_3000() {
 fn a_small_budget_cuts_whole_lines_and_counts_them() {
     let place = Place::new("small");
     let page = place.page(&["pack", ".", "--for", CARD, "--budget", "300"]);
-    assert!(estimate(&page) <= 300, "{} estimated tokens: {page}", estimate(&page));
-    assert!(page.contains("s:src/alpha.rs#alpha_body"), "the first named symbol must survive a small budget: {page}");
-    assert!(dropped(&page) > 0, "a 300-token budget cannot hold 200 callers and a 200-method read: {page}");
-    for line in page.lines().filter(|line| line.starts_with("s:") || line.starts_with("calls:")) {
+    assert!(
+        estimate(&page) <= 300,
+        "{} estimated tokens: {page}",
+        estimate(&page)
+    );
+    assert!(
+        page.contains("s:src/alpha.rs#alpha_body"),
+        "the first named symbol must survive a small budget: {page}"
+    );
+    assert!(
+        dropped(&page) > 0,
+        "a 300-token budget cannot hold 200 callers and a 200-method read: {page}"
+    );
+    for line in page
+        .lines()
+        .filter(|line| line.starts_with("s:") || line.starts_with("calls:"))
+    {
         assert!(line.contains('\t'), "a record line was cut: {line:?}");
     }
     let large = place.page(&["pack", ".", "--for", CARD, "--budget", "100000"]);

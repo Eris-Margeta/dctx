@@ -10,6 +10,41 @@ dctx Enterprise.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-07
+
+### Added
+
+- Prebuilt release archives for Linux x64/ARM64 (static musl), macOS x64/ARM64 and Windows x64, with SHA256SUMS.
+- Install from npm (`npx dctx`, platform packages under `@dctx/cli-*`) and crates.io (`cargo install dctx-cli`).
+- Cross-platform CI: every push and pull request runs the full test suite on Linux, macOS (ARM64 and x64)
+  and Windows, on stable Rust and the minimum supported version. See [docs/TESTING.md](docs/TESTING.md).
+- The website redeploys automatically from `main`.
+- GitHub Sponsors: individuals can support dctx at <https://github.com/sponsors/Eris-Margeta>.
+
+### Changed
+
+- Minimum supported Rust version is now declared: 1.91.
+- The source tree is formatted with `cargo fmt`; no behaviour change.
+
+### Removed
+
+- The two internal pre-1.0 project rule files. Project ignore inputs are
+  `.gitignore` and `.dctxignore`; built-in and explicit/global omission rules remain.
+- The implicit `dctx PATH` snapshot command and its top-level flags, including
+  `-d`/`--diff`, `-t`/`--tree` and `-r`/`--reset`. Use `dctx pack PATH`.
+  The TUI now uses explicit pack commands without the old registry, state or project exports.
+- `dctx cache gc --legacy` and its export-selection flags. Cache collection uses the managed ledger.
+- Legacy-named selection test paths; current pure selection and privacy coverage remains.
+
+### Fixed
+
+- Windows CLI test environments now map `APPDATA` to the fixture config directory and provide `LOCALAPPDATA` for cache/data; missing or empty Windows directory variables return clear errors.
+- Rust parser worker startup failures now stop indexing with a clear error instead of silently degrading source spans.
+- `pack --for` keeps each section in source order when its budget runs out and recognizes file targets such as `src/lib.rs`.
+- `serve` (including `serve --mcp`) uses the stdio MCP server in the current directory, including fixture folders; `read` routes to `map read`.
+- Budget-cut reads move trailing closing delimiters and separators into the continuation, preserving every source line.
+- The release recipe checks the current root `CHANGELOG.md` path.
+
 ## [1.1.0] - 2026-11-06
 
 Release **1.1.0** (`v1.1.0`; release candidate `v1.1.0-rc1` 2026-11-04). It folds in the 1.0.1 line, which was never released on its own.

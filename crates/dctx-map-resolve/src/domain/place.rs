@@ -117,7 +117,9 @@ fn ordinals(symbols: &[super::SharedSymbol]) -> Result<Vec<Option<u32>>, Resolve
 }
 
 fn ordinal(number: usize) -> Result<u32, ResolveError> {
-    u32::try_from(number).ok().and_then(|n| n.checked_add(1))
+    u32::try_from(number)
+        .ok()
+        .and_then(|n| n.checked_add(1))
         .ok_or_else(|| ResolveError::InvalidScope("duplicate symbol ordinal overflow".into()))
 }
 
@@ -130,15 +132,16 @@ fn symbol_id(
         NodeKind::Module => None,
         _ => Some(symbol.display_name.as_str()),
     };
-    StableId::new(symbol.kind, path, name, ordinal).map_err(|_| ResolveError::InvalidPath(path.to_owned()))
+    StableId::new(symbol.kind, path, name, ordinal)
+        .map_err(|_| ResolveError::InvalidPath(path.to_owned()))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{FactKey, Placement, SharedFact, SharedReference, SharedSymbol, Target};
     use crate::domain::ExtractionContract;
     use crate::resolve;
+    use crate::{FactKey, Placement, SharedFact, SharedReference, SharedSymbol, Target};
     use dctx_map_model::{ContentId, EdgeKind, NodeKind, SymbolKind};
     use std::collections::BTreeMap;
 
@@ -177,7 +180,10 @@ mod tests {
         assert_eq!(ordinal(last - 1).unwrap(), u32::MAX);
         assert!(matches!(ordinal(last), Err(ResolveError::InvalidScope(_))));
         if let Some(beyond) = last.checked_add(1) {
-            assert!(matches!(ordinal(beyond), Err(ResolveError::InvalidScope(_))));
+            assert!(matches!(
+                ordinal(beyond),
+                Err(ResolveError::InvalidScope(_))
+            ));
         }
     }
 

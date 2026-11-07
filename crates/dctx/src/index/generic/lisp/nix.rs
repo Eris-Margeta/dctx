@@ -6,7 +6,7 @@
 //! Comments are `#` and `/* */`; strings are `"..."` and `''...''`, blanked before scanning.
 
 use super::Lines;
-use crate::index::generic::{is_denied, signature_of, Decl};
+use crate::index::generic::{Decl, is_denied, signature_of};
 
 /// Declarations of the top-level attribute set of `text`; none when the file has no such set.
 pub(super) fn decls(text: &str) -> Vec<Decl> {
@@ -24,16 +24,46 @@ pub(super) fn decls(text: &str) -> Vec<Decl> {
             break;
         }
         let end = statement_end(bytes, at, close);
-        let path_end = bytes[at..end].iter().position(|byte| !is_attr_byte(*byte)).map_or(end, |offset| at + offset);
+        let path_end = bytes[at..end]
+            .iter()
+            .position(|byte| !is_attr_byte(*byte))
+            .map_or(end, |offset| at + offset);
         let path = masked.get(at..path_end).unwrap_or("");
         let value = skip_space(bytes, path_end);
         let assigns = bytes.get(value) == Some(&b'=') && bytes.get(value + 1) != Some(&b'=');
-        if assigns && !path.is_empty() && path != "inherit" && !is_denied(path) && !path.starts_with(|c: char| c.is_ascii_digit() || c == '.' || c == '-') && !path.ends_with('.') {
+        if assigns
+            && !path.is_empty()
+            && path != "inherit"
+            && !is_denied(path)
+            && !path.starts_with(|c: char| c.is_ascii_digit() || c == '.' || c == '-')
+            && !path.ends_with('.')
+        {
             let start = skip_space(bytes, value + 1);
-            let kind = if is_function(bytes, start) { "fn" } else { "var" };
-            let last = if end < close { end } else { bytes[..end].iter().rposition(|byte| !byte.is_ascii_whitespace()).unwrap_or(at).max(at) };
-            let signature = signature_of(text.get(at..).and_then(|rest| rest.lines().next()).unwrap_or(""));
-            out.push(Decl { name: path.to_string(), kind, lines: [lines.of(at), lines.of(last)], signature });
+            let kind = if is_function(bytes, start) {
+                "fn"
+            } else {
+                "var"
+            };
+            let last = if end < close {
+                end
+            } else {
+                bytes[..end]
+                    .iter()
+                    .rposition(|byte| !byte.is_ascii_whitespace())
+                    .unwrap_or(at)
+                    .max(at)
+            };
+            let signature = signature_of(
+                text.get(at..)
+                    .and_then(|rest| rest.lines().next())
+                    .unwrap_or(""),
+            );
+            out.push(Decl {
+                name: path.to_string(),
+                kind,
+                lines: [lines.of(at), lines.of(last)],
+                signature,
+            });
         }
         at = end + 1;
     }
@@ -81,7 +111,10 @@ fn word_at(bytes: &[u8], at: usize) -> Option<&[u8]> {
     if at > 0 && is_word(bytes[at - 1]) {
         return None;
     }
-    let end = bytes[at..].iter().position(|byte| !is_word(*byte)).map_or(bytes.len(), |offset| at + offset);
+    let end = bytes[at..]
+        .iter()
+        .position(|byte| !is_word(*byte))
+        .map_or(bytes.len(), |offset| at + offset);
     (end > at).then(|| &bytes[at..end])
 }
 
@@ -201,9 +234,18 @@ fn mask_nix(text: &str) -> String {
     while at < bytes.len() {
         let rest = &bytes[at..];
         let end = if rest.starts_with(b"#") {
-            Some(rest.iter().position(|byte| *byte == b'\n').map_or(bytes.len(), |offset| at + offset))
+            Some(
+                rest.iter()
+                    .position(|byte| *byte == b'\n')
+                    .map_or(bytes.len(), |offset| at + offset),
+            )
         } else if rest.starts_with(b"/*") {
-            Some(rest.windows(2).skip(2).position(|pair| pair == b"*/").map_or(bytes.len(), |offset| at + offset + 4))
+            Some(
+                rest.windows(2)
+                    .skip(2)
+                    .position(|pair| pair == b"*/")
+                    .map_or(bytes.len(), |offset| at + offset + 4),
+            )
         } else if rest.starts_with(b"\"") {
             Some(quoted_end(bytes, at))
         } else if rest.starts_with(b"''") && (at == 0 || !is_word(bytes[at - 1])) {

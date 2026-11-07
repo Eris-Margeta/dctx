@@ -62,7 +62,11 @@ pub fn page(arguments: &[String]) -> Result<String, String> {
             "-h" | "--help" => return Ok(HELP.to_string()),
             "--json" => Format::Json,
             "--markdown" => Format::Markdown,
-            other => return Err(format!("unknown argument `{other}`; see `dctx languages --help`")),
+            other => {
+                return Err(format!(
+                    "unknown argument `{other}`; see `dctx languages --help`"
+                ))
+            }
         };
         if format.replace(next).is_some() {
             return Err("give at most one of --json and --markdown".to_string());
@@ -77,16 +81,35 @@ pub fn page(arguments: &[String]) -> Result<String, String> {
 
 /// File-name cells of one language: `.ext` for each extension, then each whole file name or `*` suffix.
 fn file_names(language: &Language) -> Vec<String> {
-    language.extensions.iter().map(|extension| format!(".{extension}")).chain(language.files.iter().map(|file| (*file).to_string())).collect()
+    language
+        .extensions
+        .iter()
+        .map(|extension| format!(".{extension}"))
+        .chain(language.files.iter().map(|file| (*file).to_string()))
+        .collect()
 }
 
 /// Aligned text table, then one line per tier.
 #[must_use]
 pub fn text() -> String {
-    let tag_width = LANGUAGES.iter().map(|language| language.tag.len()).max().unwrap_or(0).max("tag".len());
-    let name_width = LANGUAGES.iter().map(|language| language.name.len()).max().unwrap_or(0).max("language".len());
+    let tag_width = LANGUAGES
+        .iter()
+        .map(|language| language.tag.len())
+        .max()
+        .unwrap_or(0)
+        .max("tag".len());
+    let name_width = LANGUAGES
+        .iter()
+        .map(|language| language.name.len())
+        .max()
+        .unwrap_or(0)
+        .max("language".len());
     let mut out = String::from("# dctx languages\n");
-    let _ = writeln!(out, "{:<7}  {:<10}  {:<tag_width$}  {:<name_width$}  files", "tier", "confidence", "tag", "language");
+    let _ = writeln!(
+        out,
+        "{:<7}  {:<10}  {:<tag_width$}  {:<name_width$}  files",
+        "tier", "confidence", "tag", "language"
+    );
     for language in LANGUAGES {
         let _ = writeln!(
             out,
@@ -102,7 +125,9 @@ pub fn text() -> String {
     for tier in Tier::ALL {
         let _ = writeln!(out, "{}: {}", tier.as_str(), tier.meaning());
     }
-    out.push_str("guess: heuristic outline; every record of these files carries confidence `guess`.\n");
+    out.push_str(
+        "guess: heuristic outline; every record of these files carries confidence `guess`.\n",
+    );
     out
 }
 
@@ -146,9 +171,13 @@ pub fn json() -> String {
 /// The README language table: the exact text between [`README_BEGIN`] and [`README_END`].
 #[must_use]
 pub fn markdown() -> String {
-    let mut out = String::from("| Language | Tag | Files | Tier | Confidence |\n|---|---|---|---|---|\n");
+    let mut out =
+        String::from("| Language | Tag | Files | Tier | Confidence |\n|---|---|---|---|---|\n");
     for language in LANGUAGES {
-        let files: Vec<String> = file_names(language).iter().map(|name| format!("`{name}`")).collect();
+        let files: Vec<String> = file_names(language)
+            .iter()
+            .map(|name| format!("`{name}`"))
+            .collect();
         let _ = writeln!(
             out,
             "| {} | `{}` | {} | {} | {} |",
@@ -213,16 +242,32 @@ mod tests {
     fn readme_block_is_the_rendered_registry() {
         let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../README.md");
         let readme = std::fs::read_to_string(path).expect("README.md");
-        let block = readme_block(&readme).expect("README needs one languages:begin and one languages:end marker");
-        assert_eq!(block, markdown(), "README language table is stale: regenerate it with `dctx languages --markdown`");
+        let block = readme_block(&readme)
+            .expect("README needs one languages:begin and one languages:end marker");
+        assert_eq!(
+            block,
+            markdown(),
+            "README language table is stale: regenerate it with `dctx languages --markdown`"
+        );
     }
 
     #[test]
     fn readme_block_needs_one_ordered_marker_pair() {
-        assert_eq!(readme_block("a\n<!-- languages:begin -->\n| x |\n<!-- languages:end -->\nb"), Some("| x |\n"));
+        assert_eq!(
+            readme_block("a\n<!-- languages:begin -->\n| x |\n<!-- languages:end -->\nb"),
+            Some("| x |\n")
+        );
         assert_eq!(readme_block("no markers"), None);
-        assert_eq!(readme_block("<!-- languages:end -->\n<!-- languages:begin -->\n"), None);
-        assert_eq!(readme_block("<!-- languages:begin -->\n<!-- languages:begin -->\n<!-- languages:end -->"), None);
+        assert_eq!(
+            readme_block("<!-- languages:end -->\n<!-- languages:begin -->\n"),
+            None
+        );
+        assert_eq!(
+            readme_block(
+                "<!-- languages:begin -->\n<!-- languages:begin -->\n<!-- languages:end -->"
+            ),
+            None
+        );
     }
 
     #[test]
@@ -237,7 +282,9 @@ mod tests {
         assert_eq!(page(&[]).expect("text"), text());
         assert_eq!(page(&args(&["--json"])).expect("json"), json());
         assert_eq!(page(&args(&["--markdown"])).expect("markdown"), markdown());
-        assert!(page(&args(&["--bogus"])).expect_err("unknown").contains("--help"));
+        assert!(page(&args(&["--bogus"]))
+            .expect_err("unknown")
+            .contains("--help"));
         assert!(page(&args(&["--json", "--markdown"])).is_err());
         assert!(page(&args(&["--json", "--json"])).is_err());
     }
@@ -247,7 +294,14 @@ mod tests {
         let (text, json, markdown) = (text(), json(), markdown());
         assert_eq!(json.matches("\"tag\":").count(), LANGUAGES.len());
         assert_eq!(markdown.lines().count(), LANGUAGES.len() + 2);
-        assert_eq!(text.lines().filter(|line| LANGUAGES.iter().any(|language| line.split_whitespace().nth(2) == Some(language.tag))).count(), LANGUAGES.len());
+        assert_eq!(
+            text.lines()
+                .filter(|line| LANGUAGES
+                    .iter()
+                    .any(|language| line.split_whitespace().nth(2) == Some(language.tag)))
+                .count(),
+            LANGUAGES.len()
+        );
         assert!(json.contains(
             "{\"name\":\"Shell\",\"tag\":\"shell\",\"extensions\":[\"sh\",\"bash\",\"zsh\",\"bats\"],\"files\":[],\"tier\":\"outline\",\"confidence\":\"guess\"}"
         ));
@@ -256,14 +310,25 @@ mod tests {
         ));
         assert!(json.contains("\"files\":[\"Dockerfile\",\"Containerfile\"]"));
         assert!(markdown.contains("| Rust | `rust` | `.rs` | full | structural |\n"));
-        assert!(markdown.contains("| Markdown | `markdown` | `.md`, `.markdown` | docs | structural |\n"));
-        assert!(text.contains("Perl") && json.contains("Perl") && markdown.contains("Perl"), "Perl is listed");
-        assert!(markdown.contains("| Perl | `perl` | `.pl`, `.pm`, `.t`, `.psgi` | full | guess |
-"));
-        assert!(text.contains("Fortran") && json.contains("Fortran") && markdown.contains("Fortran"), "Fortran is listed");
+        assert!(markdown
+            .contains("| Markdown | `markdown` | `.md`, `.markdown` | docs | structural |\n"));
+        assert!(
+            text.contains("Perl") && json.contains("Perl") && markdown.contains("Perl"),
+            "Perl is listed"
+        );
+        assert!(markdown.contains(
+            "| Perl | `perl` | `.pl`, `.pm`, `.t`, `.psgi` | full | guess |
+"
+        ));
+        assert!(
+            text.contains("Fortran") && json.contains("Fortran") && markdown.contains("Fortran"),
+            "Fortran is listed"
+        );
         assert!(markdown.contains("| Fortran | `fortran` | `.f90`, `.f95`, `.f03`, `.f08`, `.f`, `.for` | full | guess |\n"));
-        assert!(markdown.contains("| Verilog/SystemVerilog | `verilog` | `.v`, `.vh`, `.sv`, `.svh` | full | guess |
-"));
+        assert!(markdown.contains(
+            "| Verilog/SystemVerilog | `verilog` | `.v`, `.vh`, `.sv`, `.svh` | full | guess |
+"
+        ));
     }
 
     #[test]

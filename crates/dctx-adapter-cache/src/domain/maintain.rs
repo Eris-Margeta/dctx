@@ -170,7 +170,9 @@ impl Lifecycle {
                 self.bump();
                 Ok(())
             }
-            _ => Err(CacheError::InvalidRequest { reason: "maintenance lock is not held by this session" }),
+            _ => Err(CacheError::InvalidRequest {
+                reason: "maintenance lock is not held by this session",
+            }),
         }
     }
 
@@ -191,8 +193,8 @@ impl Lifecycle {
 mod tests {
     use super::SliceBudget;
     use crate::{
-        AutoCleanPolicy, FakeClock, Lifecycle, Physical, Quota, RootId, SessionId, HARD_CAP_BYTES,
-        STARTUP_MAX_OBJECTS, STARTUP_TARGET_MILLIS,
+        AutoCleanPolicy, FakeClock, HARD_CAP_BYTES, Lifecycle, Physical, Quota, RootId,
+        STARTUP_MAX_OBJECTS, STARTUP_TARGET_MILLIS, SessionId,
     };
 
     fn policy() -> AutoCleanPolicy {
@@ -202,7 +204,8 @@ mod tests {
     }
 
     fn state(life: &Lifecycle, root: RootId, generation: crate::GenerationId) -> Option<Physical> {
-        life.manifest_of(root, generation).and_then(|id| life.manifest_state(id))
+        life.manifest_of(root, generation)
+            .and_then(|id| life.manifest_state(id))
     }
 
     #[test]
@@ -215,13 +218,18 @@ mod tests {
         let mut disabled = policy();
         disabled.enabled = false;
         disabled.staging_ttl_ms = 1;
-        let report = life.auto_clean(FakeClock::at(10_000).sample(), disabled).expect("clean");
+        let report = life
+            .auto_clean(FakeClock::at(10_000).sample(), disabled)
+            .expect("clean");
         assert!(!report.ran);
         assert_eq!(life.logical_revision(), revision);
         assert_eq!(life.object_state(staged), Some(Physical::Staged));
         assert!(life.last_auto_clean().is_none());
         disabled.system_cap_bytes = HARD_CAP_BYTES + 1;
-        assert!(life.auto_clean(FakeClock::at(10_000).sample(), disabled).is_err());
+        assert!(
+            life.auto_clean(FakeClock::at(10_000).sample(), disabled)
+                .is_err()
+        );
         assert_eq!(life.logical_revision(), revision);
         let legal = AutoCleanPolicy::product_default();
         assert!(legal.check().is_ok());
@@ -251,13 +259,16 @@ mod tests {
         let mut loose = policy();
         loose.min_interval_ms = 0;
         loose.system_cap_bytes = HARD_CAP_BYTES;
-        life.auto_clean(FakeClock::at(0).sample(), loose).expect("clean");
+        life.auto_clean(FakeClock::at(0).sample(), loose)
+            .expect("clean");
         assert_eq!(life.status().hard_cap, 100);
         loose.system_cap_bytes = 40;
-        life.auto_clean(FakeClock::at(1).sample(), loose).expect("clean");
+        life.auto_clean(FakeClock::at(1).sample(), loose)
+            .expect("clean");
         assert_eq!(life.status().hard_cap, 40);
         loose.system_cap_bytes = 80;
-        life.auto_clean(FakeClock::at(2).sample(), loose).expect("clean");
+        life.auto_clean(FakeClock::at(2).sample(), loose)
+            .expect("clean");
         assert_eq!(life.status().hard_cap, 40);
 
         let mut life = Lifecycle::new(Quota::scaled(10_000)).expect("quota");
@@ -268,11 +279,13 @@ mod tests {
         let mut ttl = policy();
         ttl.overlay_ttl_ms = 1_000;
         ttl.preview_ttl_ms = 1_000;
-        life.auto_clean(FakeClock::at(999).sample(), ttl).expect("early");
+        life.auto_clean(FakeClock::at(999).sample(), ttl)
+            .expect("early");
         assert_eq!(state(&life, root, overlay), Some(Physical::Published));
         assert_eq!(state(&life, root, preview), Some(Physical::Published));
         assert!(!life.root_expired(root));
-        life.auto_clean(FakeClock::at(1_000).sample(), ttl).expect("due");
+        life.auto_clean(FakeClock::at(1_000).sample(), ttl)
+            .expect("due");
         assert_eq!(state(&life, root, overlay), Some(Physical::Retired));
         assert_eq!(state(&life, root, preview), Some(Physical::Retired));
         assert!(!life.root_expired(root));
@@ -286,9 +299,11 @@ mod tests {
         policy.min_interval_ms = 0;
         policy.staging_ttl_ms = 5;
         policy.system_cap_bytes = 100;
-        life.auto_clean(FakeClock::at(4).sample(), policy).expect("early");
+        life.auto_clean(FakeClock::at(4).sample(), policy)
+            .expect("early");
         assert_eq!(life.object_state(staged), Some(Physical::Staged));
-        life.auto_clean(FakeClock::at(5).sample(), policy).expect("due");
+        life.auto_clean(FakeClock::at(5).sample(), policy)
+            .expect("due");
         assert_eq!(life.object_state(staged), None);
 
         let mut life = Lifecycle::new(Quota::scaled(4_000)).expect("quota");
@@ -298,7 +313,12 @@ mod tests {
             life.insert_fact(8, &[root]).expect("fact");
         }
         let admitted = life.admitted();
-        let report = life.auto_clean(FakeClock::at(0).sample(), AutoCleanPolicy::product_default()).expect("clean");
+        let report = life
+            .auto_clean(
+                FakeClock::at(0).sample(),
+                AutoCleanPolicy::product_default(),
+            )
+            .expect("clean");
         assert!(report.ran);
         assert_eq!(report.examined, STARTUP_MAX_OBJECTS);
         assert_eq!(SliceBudget::startup().max_objects, STARTUP_MAX_OBJECTS);
@@ -311,7 +331,9 @@ mod tests {
     fn a_held_maintenance_lock_defers_auto_clean() {
         let mut life = Lifecycle::new(Quota::scaled(50)).expect("quota");
         life.hold_maintenance(SessionId::new(3)).expect("hold");
-        let report = life.auto_clean(FakeClock::at(0).sample(), policy()).expect("clean");
+        let report = life
+            .auto_clean(FakeClock::at(0).sample(), policy())
+            .expect("clean");
         assert!(report.deferred);
         assert!(!report.ran);
         assert!(life.last_auto_clean().is_none());

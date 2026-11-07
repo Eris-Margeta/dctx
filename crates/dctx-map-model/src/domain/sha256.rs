@@ -11,8 +11,8 @@ pub(crate) fn alias_digest(input: &[u8]) -> Result<[u8; 32], dctx_hash::HashErro
 
 #[cfg(test)]
 mod tests {
-    use std::fmt::Write as _;
     use super::*;
+    use std::fmt::Write as _;
 
     #[test]
     fn published_vectors_come_from_dctx_hash() {
@@ -30,10 +30,13 @@ mod tests {
                 "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1",
             ),
         ] {
-            let actual: String = alias_digest(input.as_bytes())
-                .unwrap()
-                .iter()
-                .fold(String::new(), |mut text, byte| { write!(text, "{byte:02x}").unwrap(); text });
+            let actual: String = alias_digest(input.as_bytes()).unwrap().iter().fold(
+                String::new(),
+                |mut text, byte| {
+                    write!(text, "{byte:02x}").unwrap();
+                    text
+                },
+            );
             assert_eq!(actual, expected);
         }
     }

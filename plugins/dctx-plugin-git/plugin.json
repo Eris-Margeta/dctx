@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "dctx/git",
   "name": "dctx-plugin-git",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "release_sequence": 1,
   "publisher_key": "dctx-release-key-1",
   "license": "Apache-2.0",

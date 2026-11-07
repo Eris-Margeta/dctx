@@ -7,9 +7,9 @@
 mod support;
 
 use dctx_adapter_cache::{
-    Blocker, CacheError, FakeClock, GcRequest, Lifecycle, Physical, Purpose, Quota, RootId,
-    SessionId, SliceBudget, DAY_MS, LAST_USE_COALESCE_MS, MISSING_GRACE_MS, OVERLAY_TTL_MS,
-    ROOT_TTL_MS,
+    Blocker, CacheError, DAY_MS, FakeClock, GcRequest, LAST_USE_COALESCE_MS, Lifecycle,
+    MISSING_GRACE_MS, OVERLAY_TTL_MS, Physical, Purpose, Quota, ROOT_TTL_MS, RootId, SessionId,
+    SliceBudget,
 };
 use dctx_ports::memory::CancelAfter;
 
@@ -17,8 +17,13 @@ fn ledger(hard: u64) -> Lifecycle {
     Lifecycle::new(Quota::scaled(hard)).expect("quota")
 }
 
-fn state(life: &Lifecycle, root: RootId, generation: dctx_adapter_cache::GenerationId) -> Option<Physical> {
-    life.manifest_of(root, generation).and_then(|id| life.manifest_state(id))
+fn state(
+    life: &Lifecycle,
+    root: RootId,
+    generation: dctx_adapter_cache::GenerationId,
+) -> Option<Physical> {
+    life.manifest_of(root, generation)
+        .and_then(|id| life.manifest_state(id))
 }
 
 #[test]
@@ -95,7 +100,8 @@ fn missing_root_grace_blocks_eviction_until_it_elapses() {
     assert_eq!(open.admitted(), 80);
     support::drain(&mut open, true);
     assert!(open.admitted() < 80);
-    open.reserve_for(None, Purpose::Payload, 1).expect("reclaimed room");
+    open.reserve_for(None, Purpose::Payload, 1)
+        .expect("reclaimed room");
 
     let mut life = ledger(80);
     life.register_root(root).expect("root");
@@ -124,7 +130,8 @@ fn missing_root_grace_blocks_eviction_until_it_elapses() {
     life.follow(&clock);
     support::drain(&mut life, true);
     assert!(life.admitted() < 80);
-    life.reserve_for(None, Purpose::Payload, 1).expect("grace ended");
+    life.reserve_for(None, Purpose::Payload, 1)
+        .expect("grace ended");
     assert!(life.p4_holds());
 }
 
@@ -149,7 +156,8 @@ fn explicit_pin_blocks_expiry_but_not_the_hard_cap() {
     support::drain(&mut life, true);
     assert!(life.current_generation(root).is_none());
     assert!(life.admitted() < 50);
-    life.reserve_for(None, Purpose::Payload, 1).expect("unpinned expiry");
+    life.reserve_for(None, Purpose::Payload, 1)
+        .expect("unpinned expiry");
     assert!(life.p3_holds());
 }
 
@@ -170,7 +178,10 @@ fn last_use_persists_at_most_once_per_five_minutes() {
     life.follow(&clock);
     life.touch(left).expect("touch");
     assert_eq!(life.persist_writes(left), Some(1));
-    assert_eq!(life.last_use(left).expect("use").0, LAST_USE_COALESCE_MS - 1);
+    assert_eq!(
+        life.last_use(left).expect("use").0,
+        LAST_USE_COALESCE_MS - 1
+    );
     clock.advance(1);
     life.follow(&clock);
     life.touch(left).expect("touch");
@@ -186,7 +197,11 @@ fn last_use_persists_at_most_once_per_five_minutes() {
     pressured.publish_overlay(right, 40, &[]).expect("view");
     let once = GcRequest {
         root: None,
-        budget: SliceBudget { max_objects: 1, max_millis: u64::MAX, millis_per_object: 0 },
+        budget: SliceBudget {
+            max_objects: 1,
+            max_millis: u64::MAX,
+            millis_per_object: 0,
+        },
         bypass_grace: false,
         max_bytes: None,
         cancel: None,
@@ -236,7 +251,9 @@ fn startup_defers_when_maintenance_is_busy() {
     let mut life = Lifecycle::product_default();
     let session = SessionId::new(3);
     life.hold_maintenance(session).expect("lock");
-    let report = life.startup(FakeClock::at(0).sample(), None).expect("startup");
+    let report = life
+        .startup(FakeClock::at(0).sample(), None)
+        .expect("startup");
     assert!(report.deferred);
     assert!(!report.ran);
     assert!(life.status().blockers.contains(&Blocker::MaintenanceBusy));
@@ -251,7 +268,9 @@ fn startup_defers_when_maintenance_is_busy() {
         Err(CacheError::Busy)
     ));
     life.release_maintenance(session).expect("release");
-    let report = life.startup(FakeClock::at(0).sample(), None).expect("startup");
+    let report = life
+        .startup(FakeClock::at(0).sample(), None)
+        .expect("startup");
     assert!(report.ran);
     assert!(!life.maintenance_held());
 }
@@ -277,6 +296,10 @@ fn cancelled_gc_leaves_admission_unchanged() {
     assert_eq!(life.object_bytes(fact), Some(10));
     assert_eq!(life.logical_revision(), revision);
     let cancel = CancelAfter::new(8);
-    life.gc(GcRequest { cancel: Some(&cancel), ..request }).expect("gc");
+    life.gc(GcRequest {
+        cancel: Some(&cancel),
+        ..request
+    })
+    .expect("gc");
     assert!(life.p4_holds());
 }

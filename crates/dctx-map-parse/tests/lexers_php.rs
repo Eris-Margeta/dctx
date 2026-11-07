@@ -11,7 +11,10 @@ use std::collections::BTreeSet;
 const PHP: &[u8] = include_bytes!("fixtures/sample.php");
 
 /// Mirrors store validation, including the indexer's structural-node insertion.
-#[allow(clippy::naive_bytecount, reason = "Standard iterator newline counts keep fixture and bounded 8 MiB corpus checks dependency-free; this is test validation rather than a parser hot path.")]
+#[allow(
+    clippy::naive_bytecount,
+    reason = "Standard iterator newline counts keep fixture and bounded 8 MiB corpus checks dependency-free; this is test validation rather than a parser hot path."
+)]
 fn assert_store_accepts(facts: &ParsedFile, source: &[u8]) {
     let file_end = u32::try_from(source.iter().filter(|byte| **byte == b'\n').count()).unwrap() + 1;
     let mut nodes = facts.nodes.clone();

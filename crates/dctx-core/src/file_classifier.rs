@@ -25,7 +25,10 @@ pub enum FileContentHandling {
 }
 
 /// Classifies a file to determine content handling strategy
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn classify_file(path: &Path, content: &[u8]) -> FileContentHandling {
     // Extension first (most reliable); unrecognized extensions fall through to a byte sniff.
     if let Some(ext) = path.extension().and_then(|s| s.to_str()) {

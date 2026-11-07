@@ -7,11 +7,13 @@ mod declarations;
 mod mod_helpers;
 mod references;
 
-use crate::domain::{body_fingerprint, DiagnosticReason, Dialect, LexError, LexedFile, Limits, Precision};
-use crate::lexer::{keyword, Kind, Lexed, Token, NONE};
+use crate::domain::{
+    DiagnosticReason, Dialect, LexError, LexedFile, Limits, Precision, body_fingerprint,
+};
+use crate::lexer::{Kind, Lexed, NONE, Token, keyword};
 use dctx_map_model::{EdgeKind, Node, NodeKind, StableId, Summary, SummarySource, SymbolKind};
 pub(crate) use mod_helpers::compact;
-use mod_helpers::{comment_body, exported, gap_ok, normalize, sentence, Draft, DraftRef};
+use mod_helpers::{Draft, DraftRef, comment_body, exported, gap_ok, normalize, sentence};
 
 /// Extracts facts from an already-lexed Go file.
 pub(crate) fn extract(
@@ -109,7 +111,9 @@ impl<'a> Walker<'a> {
 
     pub(crate) fn text(&self, index: usize) -> &'a str {
         self.toks.get(index).map_or("", |token| {
-            self.src.get(token.start as usize..token.end as usize).unwrap_or("")
+            self.src
+                .get(token.start as usize..token.end as usize)
+                .unwrap_or("")
         })
     }
 
@@ -142,14 +146,24 @@ impl<'a> Walker<'a> {
         self.ident(index) || matches!(self.text(index), "*" | "[" | "<-")
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     pub(crate) fn start_byte(&self, index: usize) -> u32 {
-        self.toks.get(index).map_or(self.src.len() as u32, |token| token.start)
+        self.toks
+            .get(index)
+            .map_or(self.src.len() as u32, |token| token.start)
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     pub(crate) fn end_byte(&self, index: usize) -> u32 {
-        self.toks.get(index).map_or(self.src.len() as u32, |token| token.end)
+        self.toks
+            .get(index)
+            .map_or(self.src.len() as u32, |token| token.end)
     }
 
     pub(crate) fn line(&self, byte: u32) -> u32 {
@@ -159,7 +173,9 @@ impl<'a> Walker<'a> {
     /// Partner of an opener, or the last in-range token when it is unmatched.
     pub(crate) fn close_of(&self, index: usize, end: usize) -> usize {
         match self.partner.get(index).copied() {
-            Some(partner) if partner != NONE && (partner as usize) > index && (partner as usize) < end => {
+            Some(partner)
+                if partner != NONE && (partner as usize) > index && (partner as usize) < end =>
+            {
                 partner as usize
             }
             _ => end.saturating_sub(1).max(index),
@@ -232,7 +248,10 @@ impl<'a> Walker<'a> {
             format!("{}::{}", scope.name, item.local)
         };
         if name.is_empty() || name.contains('~') {
-            self.problem(self.start_byte(item.first), DiagnosticReason::UnsupportedName);
+            self.problem(
+                self.start_byte(item.first),
+                DiagnosticReason::UnsupportedName,
+            );
             return scope.clone();
         }
         let path = self.draft.path.clone();
@@ -242,7 +261,10 @@ impl<'a> Walker<'a> {
             StableId::new(item.node_kind, &path, Some(&name), None)
         };
         let Ok(id) = id else {
-            self.problem(self.start_byte(item.first), DiagnosticReason::UnsupportedName);
+            self.problem(
+                self.start_byte(item.first),
+                DiagnosticReason::UnsupportedName,
+            );
             return scope.clone();
         };
         let start = self.start_byte(item.first);
@@ -265,8 +287,14 @@ impl<'a> Walker<'a> {
         {
             self.draft.nodes[0].node.summary = summary.clone();
         }
-        let body = self.src.get(item.body.0 as usize..item.body.1 as usize).unwrap_or("");
-        let lines = [self.line(start), self.line(end.saturating_sub(1).max(start))];
+        let body = self
+            .src
+            .get(item.body.0 as usize..item.body.1 as usize)
+            .unwrap_or("");
+        let lines = [
+            self.line(start),
+            self.line(end.saturating_sub(1).max(start)),
+        ];
         let node = Node {
             id,
             kind: item.node_kind,
@@ -279,7 +307,10 @@ impl<'a> Walker<'a> {
             public: exported(&item.bare),
             summary,
         };
-        match self.draft.node(node, scope.owner, (start, end), Precision::Structural) {
+        match self
+            .draft
+            .node(node, scope.owner, (start, end), Precision::Structural)
+        {
             Some(owner) => Scope { owner, name },
             None => scope.clone(),
         }

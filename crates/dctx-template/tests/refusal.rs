@@ -3,8 +3,8 @@
 
 use dctx_core::FileHandlingDecision;
 use dctx_template::{
-    authorize_path, bundled_git_plugin, compile, narrow_decision, GrantRule, HostCeiling, KnownPlugin, PluginState,
-    Selection, Template, TemplateError,
+    GrantRule, HostCeiling, KnownPlugin, PluginState, Selection, Template, TemplateError,
+    authorize_path, bundled_git_plugin, compile, narrow_decision,
 };
 
 fn v2(body: &str) -> String {
@@ -64,17 +64,30 @@ b = \"{{a}}\"
 {{a}}
 ";
     let template = Template::parse(cyclic);
-    assert!(template.validate().iter().any(|err| matches!(err, dctx_template::TemplateValidationError::Cycle(_))));
+    assert!(
+        template
+            .validate()
+            .iter()
+            .any(|err| matches!(err, dctx_template::TemplateValidationError::Cycle(_)))
+    );
     let err = compile(cyclic, &HostCeiling::base()).expect_err("cycle");
-    assert!(matches!(err, TemplateError::Cycle { kind: "variable", .. }));
-    let chain = Template::parse("\
+    assert!(matches!(
+        err,
+        TemplateError::Cycle {
+            kind: "variable",
+            ..
+        }
+    ));
+    let chain = Template::parse(
+        "\
 [VARIABLES]
 a = \"A\"
 b = \"{{a}}B\"
 c = \"{{b}}C\"
 [LAYOUT]
 {{c}}
-");
+",
+    );
     assert_eq!(chain.variables.get("c").map(String::as_str), Some("ABC"));
     assert_eq!(chain.cycles, [] as [std::string::String; 0]);
 }
@@ -87,19 +100,23 @@ fn expressions_are_not_evaluated() {
 {{1+1}}
 ";
     assert!(compile(expr, &HostCeiling::base()).is_err());
-    let named = Template::parse("\
+    let named = Template::parse(
+        "\
 [VARIABLES]
 name = \"2\"
 [LAYOUT]
 {{name}}
-");
+",
+    );
     assert_eq!(named.compile("t").expect("name").layout, "2");
-    let literal = Template::parse("\
+    let literal = Template::parse(
+        "\
 [VARIABLES]
 expr = \"1+1\"
 [LAYOUT]
 {{expr}}
-");
+",
+    );
     assert_eq!(literal.compile("t").expect("expr").layout, "1+1");
 }
 
@@ -108,14 +125,24 @@ fn unknown_parser_and_fact_are_refused() {
     let host = HostCeiling::base();
     let tree = skeleton("").replace("parser = \"opaque\"", "parser = \"tree-sitter\"");
     let err = compile(&tree, &host).expect_err("tree-sitter");
-    assert!(matches!(err, TemplateError::UnknownCapability { name } if name.contains("tree-sitter")));
+    assert!(
+        matches!(err, TemplateError::UnknownCapability { name } if name.contains("tree-sitter"))
+    );
     let mut granted = host.clone();
-    granted.capabilities.insert("parser:tree-sitter".to_string());
+    granted
+        .capabilities
+        .insert("parser:tree-sitter".to_string());
     assert!(compile(&tree, &granted).is_ok());
-    let fact = skeleton("").replace("parser = \"opaque\"", "facts = [\"bytecode\"]\nparser = \"opaque\"");
+    let fact = skeleton("").replace(
+        "parser = \"opaque\"",
+        "facts = [\"bytecode\"]\nparser = \"opaque\"",
+    );
     let err = compile(&fact, &host).expect_err("fact");
     assert!(matches!(err, TemplateError::UnknownCapability { name } if name.contains("bytecode")));
-    let symbols = skeleton("").replace("parser = \"opaque\"", "facts = [\"symbols\"]\nparser = \"opaque\"");
+    let symbols = skeleton("").replace(
+        "parser = \"opaque\"",
+        "facts = [\"symbols\"]\nparser = \"opaque\"",
+    );
     assert!(compile(&symbols, &host).is_ok());
 }
 
@@ -124,11 +151,18 @@ fn budgets_above_the_host_ceiling_are_refused() {
     let mut host = HostCeiling::base();
     host.max_hard_estimated_tokens = 2000;
     host.max_estimated_tokens = 2000;
-    let over = skeleton("").replace("[BUDGET:b]\nrecords = 4", "[BUDGET:b]\nhard_estimated_tokens = 2001\nrecords = 4");
+    let over = skeleton("").replace(
+        "[BUDGET:b]\nrecords = 4",
+        "[BUDGET:b]\nhard_estimated_tokens = 2001\nrecords = 4",
+    );
     let err = compile(&over, &host).expect_err("over");
     assert!(matches!(
         err,
-        TemplateError::BudgetAboveCeiling { field: "hard_estimated_tokens", requested: 2001, ceiling: 2000 }
+        TemplateError::BudgetAboveCeiling {
+            field: "hard_estimated_tokens",
+            requested: 2001,
+            ceiling: 2000
+        }
     ));
     let exact = over.replace("2001", "2000");
     assert!(compile(&exact, &host).is_ok());
@@ -136,7 +170,14 @@ fn budgets_above_the_host_ceiling_are_refused() {
     host.max_bytes = 100;
     let bytes = skeleton("").replace("records = 4", "bytes = 101\nrecords = 4");
     let err = compile(&bytes, &host).expect_err("bytes");
-    assert!(matches!(err, TemplateError::BudgetAboveCeiling { field: "bytes", requested: 101, .. }));
+    assert!(matches!(
+        err,
+        TemplateError::BudgetAboveCeiling {
+            field: "bytes",
+            requested: 101,
+            ..
+        }
+    ));
     assert!(compile(&bytes.replace("101", "100"), &host).is_ok());
 }
 
@@ -159,11 +200,21 @@ version = 2
 [LAYOUT]
 ok
 ";
-    assert_eq!(compile(variable, &HostCeiling::base()).expect("var").source_version, 1);
+    assert_eq!(
+        compile(variable, &HostCeiling::base())
+            .expect("var")
+            .source_version,
+        1
+    );
     let missing = compile("[DTS]\n[LAYOUT]\nok\n", &HostCeiling::base()).expect_err("dts");
-    assert!(matches!(missing, TemplateError::InvalidSyntax { detail, .. } if detail.contains("version")));
+    assert!(
+        matches!(missing, TemplateError::InvalidSyntax { detail, .. } if detail.contains("version"))
+    );
     let future = compile("[DTS]\nversion = 9\n", &HostCeiling::base()).expect_err("version");
-    assert!(matches!(future, TemplateError::UnsupportedVersion { found: 9 }));
+    assert!(matches!(
+        future,
+        TemplateError::UnsupportedVersion { found: 9 }
+    ));
     let nul = compile("ok\0", &HostCeiling::base()).expect_err("nul");
     assert!(matches!(nul, TemplateError::InvalidSyntax { detail, .. } if detail.contains("nul")));
     assert!(compile("[LAYOUT]\nok\n", &HostCeiling::base()).is_ok());
@@ -174,25 +225,55 @@ fn host_size_caps_are_refused_when_narrowed_below_the_plan() {
     let source = skeleton("[LAYOUT]\nhello {{{comp.tree}}}\n");
     let mut host = HostCeiling::base();
     host.max_sections = 6;
-    assert!(matches!(compile(&source, &host), Err(TemplateError::Limit { what: "sections", .. })));
+    assert!(matches!(
+        compile(&source, &host),
+        Err(TemplateError::Limit {
+            what: "sections",
+            ..
+        })
+    ));
     host.max_sections = 64;
     host.max_plan_bytes = 32;
-    assert!(matches!(compile(&source, &host), Err(TemplateError::Limit { what: "plan", .. })));
+    assert!(matches!(
+        compile(&source, &host),
+        Err(TemplateError::Limit { what: "plan", .. })
+    ));
     host.max_plan_bytes = dctx_template::HostCeiling::base().max_plan_bytes;
     host.max_instructions = 1;
-    assert!(matches!(compile(&source, &host), Err(TemplateError::Limit { what: "instructions", .. })));
+    assert!(matches!(
+        compile(&source, &host),
+        Err(TemplateError::Limit {
+            what: "instructions",
+            ..
+        })
+    ));
     host.max_instructions = 10_000;
     assert!(compile(&source, &host).is_ok());
 }
 
 #[test]
 fn permissions_only_narrow() {
-    let empty = Selection { name: String::new(), roots: Vec::new(), languages: Vec::new(), kinds: Vec::new(), rules: Vec::new() };
+    let empty = Selection {
+        name: String::new(),
+        roots: Vec::new(),
+        languages: Vec::new(),
+        kinds: Vec::new(),
+        rules: Vec::new(),
+    };
     let mut host = HostCeiling::base();
     let err = authorize_path(&host, &empty, "src/main.rs").expect_err("deny");
-    assert!(matches!(err, TemplateError::GrantExpansion { kind: "decision" }));
-    host.grants.push(GrantRule { pattern: "src/**".to_string(), decision: FileHandlingDecision::Include });
-    assert_eq!(authorize_path(&host, &empty, "src/main.rs").expect("allow"), FileHandlingDecision::Include);
+    assert!(matches!(
+        err,
+        TemplateError::GrantExpansion { kind: "decision" }
+    ));
+    host.grants.push(GrantRule {
+        pattern: "src/**".to_string(),
+        decision: FileHandlingDecision::Include,
+    });
+    assert_eq!(
+        authorize_path(&host, &empty, "src/main.rs").expect("allow"),
+        FileHandlingDecision::Include
+    );
     assert!(matches!(
         narrow_decision(FileHandlingDecision::Include, FileHandlingDecision::Exclude),
         Ok(FileHandlingDecision::Exclude)
@@ -202,19 +283,31 @@ fn permissions_only_narrow() {
         Err(TemplateError::GrantExpansion { kind: "decision" })
     ));
     assert!(matches!(
-        narrow_decision(FileHandlingDecision::OmitContent, FileHandlingDecision::Include),
+        narrow_decision(
+            FileHandlingDecision::OmitContent,
+            FileHandlingDecision::Include
+        ),
         Err(TemplateError::GrantExpansion { kind: "decision" })
     ));
     assert!(matches!(
-        narrow_decision(FileHandlingDecision::Include, FileHandlingDecision::OmitContent),
+        narrow_decision(
+            FileHandlingDecision::Include,
+            FileHandlingDecision::OmitContent
+        ),
         Ok(FileHandlingDecision::OmitContent)
     ));
     assert!(matches!(
-        narrow_decision(FileHandlingDecision::DebugVisible, FileHandlingDecision::OmitContent),
+        narrow_decision(
+            FileHandlingDecision::DebugVisible,
+            FileHandlingDecision::OmitContent
+        ),
         Err(TemplateError::GrantExpansion { kind: "decision" })
     ));
     assert!(matches!(
-        narrow_decision(FileHandlingDecision::OmitContent, FileHandlingDecision::DebugVisible),
+        narrow_decision(
+            FileHandlingDecision::OmitContent,
+            FileHandlingDecision::DebugVisible
+        ),
         Ok(FileHandlingDecision::DebugVisible)
     ));
 }
@@ -232,7 +325,13 @@ fn partial_cycles_are_refused_and_a_real_include_compiles() {
 ",
     );
     let err = compile(&cycle, &HostCeiling::base()).expect_err("cycle");
-    assert!(matches!(err, TemplateError::Cycle { kind: "partial", .. }));
+    assert!(matches!(
+        err,
+        TemplateError::Cycle {
+            kind: "partial",
+            ..
+        }
+    ));
     let ok = skeleton(
         "\
 [PARTIAL:A]
@@ -248,7 +347,10 @@ from-a
 {{{not_a_field}}}
 ",
     );
-    assert!(matches!(compile(&unknown, &HostCeiling::base()), Err(TemplateError::UnresolvedVariable { .. })));
+    assert!(matches!(
+        compile(&unknown, &HostCeiling::base()),
+        Err(TemplateError::UnresolvedVariable { .. })
+    ));
 }
 
 #[test]
@@ -258,7 +360,7 @@ fn plugin_declarations_narrow_the_catalog() {
     let good = skeleton(
         r#"
 [PLUGIN:dctx/git]
-version = "1.1.0"
+version = "1.2.0"
 hooks = ["before-pack-output-written"]
 required = true
 allow = ["file.read:.gitignore", "file.write:.gitignore", "program:git.add-ignore", "resource:git-admin:stage-ignore"]
@@ -276,33 +378,56 @@ config.stage = true
     );
     assert!(compile(&subset, &host).is_ok());
     let extra = good.replace("file.read:.gitignore", "file.read:secret");
-    assert!(matches!(compile(&extra, &host), Err(TemplateError::GrantExpansion { kind: "plugin" })));
+    assert!(matches!(
+        compile(&extra, &host),
+        Err(TemplateError::GrantExpansion { kind: "plugin" })
+    ));
     let nope = good.replace("config.stage = true", "config.nope = true");
-    assert!(matches!(compile(&nope, &host), Err(TemplateError::UnknownField { .. })));
+    assert!(matches!(
+        compile(&nope, &host),
+        Err(TemplateError::UnknownField { .. })
+    ));
     let hook = good.replace("before-pack-output-written", "not-a-hook");
-    assert!(matches!(compile(&hook, &host), Err(TemplateError::UnknownCapability { .. })));
+    assert!(matches!(
+        compile(&hook, &host),
+        Err(TemplateError::UnknownCapability { .. })
+    ));
 
-    let missing = skeleton("[PLUGIN:dctx/git]\nversion = \"1.1.0\"\nrequired = true\n");
-    assert!(matches!(compile(&missing, &HostCeiling::base()), Err(TemplateError::RequiredPluginMissing { .. })));
+    let missing = skeleton("[PLUGIN:dctx/git]\nversion = \"1.2.0\"\nrequired = true\n");
+    assert!(matches!(
+        compile(&missing, &HostCeiling::base()),
+        Err(TemplateError::RequiredPluginMissing { .. })
+    ));
     let optional = skeleton("[PLUGIN:dctx/git]\nrequired = false\n");
     let unavailable = compile(&optional, &HostCeiling::base()).expect("optional");
-    assert_eq!(unavailable.plugins.plugins[0].state, PluginState::Unavailable);
+    assert_eq!(
+        unavailable.plugins.plugins[0].state,
+        PluginState::Unavailable
+    );
 
     host.disabled_plugins.insert("dctx/git".to_string());
-    assert!(matches!(compile(&good, &host), Err(TemplateError::UserDisabled { .. })));
+    assert!(matches!(
+        compile(&good, &host),
+        Err(TemplateError::UserDisabled { .. })
+    ));
     let optional_off = good.replace("required = true", "required = false");
     let disabled = compile(&optional_off, &host).expect("disabled");
     assert_eq!(disabled.plugins.plugins[0].state, PluginState::Disabled);
 
     let reserved = good.replace("required = true", "required = true\nalias = \"pack\"");
     host.disabled_plugins.clear();
-    assert!(matches!(compile(&reserved, &host), Err(TemplateError::ReservedAlias { .. })));
+    assert!(matches!(
+        compile(&reserved, &host),
+        Err(TemplateError::ReservedAlias { .. })
+    ));
     let aliased = good.replace("required = true", "required = true\nalias = \"git\"");
     assert!(compile(&aliased, &host).is_ok());
 
-    let bad_version = good.replace("1.1.0", "9.9.9");
+    let bad_version = good.replace("1.2.0", "9.9.9");
     let err = compile(&bad_version, &host).expect_err("version");
-    assert!(matches!(err, TemplateError::InvalidSyntax { detail, .. } if detail.contains("version")));
+    assert!(
+        matches!(err, TemplateError::InvalidSyntax { detail, .. } if detail.contains("version"))
+    );
     let mut pinned = bundled_git_plugin();
     pinned.digest = Some([0x11; 32]);
     host.plugins = vec![pinned];
@@ -311,7 +436,9 @@ config.stage = true
         "required = true\ndigest = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"",
     );
     let err = compile(&digest, &host).expect_err("digest");
-    assert!(matches!(err, TemplateError::InvalidSyntax { detail, .. } if detail.contains("plugin digest")));
+    assert!(
+        matches!(err, TemplateError::InvalidSyntax { detail, .. } if detail.contains("plugin digest"))
+    );
 }
 
 #[test]
@@ -329,7 +456,10 @@ version = "1.0.0"
 alias = "tool"
 "#,
     );
-    assert!(matches!(compile(&dup, &host), Err(TemplateError::Duplicate { kind: "alias", .. })));
+    assert!(matches!(
+        compile(&dup, &host),
+        Err(TemplateError::Duplicate { kind: "alias", .. })
+    ));
 
     let cycle = skeleton(
         r#"
@@ -341,7 +471,10 @@ version = "1.0.0"
 before = ["ex/a"]
 "#,
     );
-    assert!(matches!(compile(&cycle, &host), Err(TemplateError::Cycle { kind: "plugin", .. })));
+    assert!(matches!(
+        compile(&cycle, &host),
+        Err(TemplateError::Cycle { kind: "plugin", .. })
+    ));
 
     let after = skeleton(
         r#"
@@ -353,7 +486,10 @@ version = "1.0.0"
 "#,
     );
     let plan = compile(&after, &host).expect("after");
-    assert_eq!(plan.plugins.order, vec!["ex/a".to_string(), "ex/b".to_string()]);
+    assert_eq!(
+        plan.plugins.order,
+        vec!["ex/a".to_string(), "ex/b".to_string()]
+    );
 
     let ordered = skeleton(
         r#"
@@ -367,7 +503,10 @@ version = "1.0.0"
 "#,
     );
     let plan = compile(&ordered, &host).expect("order");
-    assert_eq!(plan.plugins.order, vec!["ex/a".to_string(), "ex/b".to_string()]);
+    assert_eq!(
+        plan.plugins.order,
+        vec!["ex/a".to_string(), "ex/b".to_string()]
+    );
 
     host.plugins.push(bundled_git_plugin());
     let external = skeleton(
@@ -376,11 +515,14 @@ version = "1.0.0"
 network = "external"
 enabled = ["dctx/git"]
 [PLUGIN:dctx/git]
-version = "1.1.0"
+version = "1.2.0"
 required = true
 "#,
     );
-    assert!(matches!(compile(&external, &host), Err(TemplateError::GrantExpansion { kind: "network" })));
+    assert!(matches!(
+        compile(&external, &host),
+        Err(TemplateError::GrantExpansion { kind: "network" })
+    ));
     let none = external.replace("external", "none");
     assert!(compile(&none, &host).is_ok());
 }

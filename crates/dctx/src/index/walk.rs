@@ -4,19 +4,19 @@
 //! Depends on the source port, the effective policy and the structural extractor.
 //! The session turns a [`Walked`] tree into one generation. Cancellation leaves no generation.
 
+use dctx_core::FileHandlingDecision;
 use dctx_core::facts::ReadGrant;
 use dctx_core::ids::RelativePath;
-use dctx_core::FileHandlingDecision;
 use dctx_map_model::{NodeKind, StableId};
 use dctx_ports::{Cancellation, Source};
 
-use super::extract::{index_prepared, language_of, prepare_structural, Prepared, Symbol};
+use super::extract::{Prepared, Symbol, index_prepared, language_of, prepare_structural};
 use super::profile::{self, FileWatch, Stage, WalkSpan};
 use super::refs::{self, FileRefs, RawRef};
 use super::{IndexedEdge, IndexedFile, IndexedNode, TextBlob, TextSpan};
 use crate::domain::{
-    ancestors_include, check_deadline, digest_text, FreshnessMode, ParserChoice, PolicyView, ScanLimits, DctxError,
-    Resource, STRUCTURAL_PARSER,
+    DctxError, FreshnessMode, ParserChoice, PolicyView, Resource, STRUCTURAL_PARSER, ScanLimits,
+    ancestors_include, check_deadline, digest_text,
 };
 
 /// What one snapshot read from the source.
@@ -100,13 +100,28 @@ pub(crate) fn walk_source(args: &WalkArgs<'_>) -> Result<Walked, DctxError> {
     if state.entries > args.limits.entries {
         return Err(limit(Resource::Entries, args.limits.entries));
     }
-    visit_dir(args, languages.as_deref(), &RelativePath::root(), &mut state)?;
-    refs::link(&state.nodes, &mut state.edges, &mut state.text, &state.file_refs);
+    visit_dir(
+        args,
+        languages.as_deref(),
+        &RelativePath::root(),
+        &mut state,
+    )?;
+    refs::link(
+        &state.nodes,
+        &mut state.edges,
+        &mut state.text,
+        &state.file_refs,
+    );
     check_records(args, &state)?;
     Ok(finish(args, state))
 }
 
-fn visit_dir(args: &WalkArgs<'_>, languages: Option<&[String]>, dir: &RelativePath, state: &mut State) -> Result<(), DctxError> {
+fn visit_dir(
+    args: &WalkArgs<'_>,
+    languages: Option<&[String]>,
+    dir: &RelativePath,
+    state: &mut State,
+) -> Result<(), DctxError> {
     checkpoint(args)?;
     let mut entries = args.source.entries(dir).map_err(DctxError::from_core)?;
     entries.sort_by(|left, right| left.name.cmp(&right.name));
@@ -119,7 +134,10 @@ fn visit_dir(args: &WalkArgs<'_>, languages: Option<&[String]>, dir: &RelativePa
             continue;
         };
         let mut decision = args.policy.decide(path.as_str(), entry.is_dir())?;
-        if !entry.is_dir() && decision == FileHandlingDecision::Include && !language_ok(languages, path.as_str()) {
+        if !entry.is_dir()
+            && decision == FileHandlingDecision::Include
+            && !language_ok(languages, path.as_str())
+        {
             decision = FileHandlingDecision::OmitContent;
         }
         if decision == FileHandlingDecision::Exclude {
@@ -142,30 +160,54 @@ fn visit_dir(args: &WalkArgs<'_>, languages: Option<&[String]>, dir: &RelativePa
     Ok(())
 }
 
-fn visit_file(args: &WalkArgs<'_>, path: &RelativePath, decision: FileHandlingDecision, state: &mut State) -> Result<(), DctxError> {
+fn visit_file(
+    args: &WalkArgs<'_>,
+    path: &RelativePath,
+    decision: FileHandlingDecision,
+    state: &mut State,
+) -> Result<(), DctxError> {
     // The stamp is taken with the stat, before any byte is read: an edit after the stat changes it.
     let (meta, stamp) = match args.source.stat(path).map_err(DctxError::from_core) {
         Ok(pair) => pair,
         Err(error @ (DctxError::Cancelled | DctxError::ResourceLimit { .. })) => return Err(error),
         Err(_) => {
             state.partial = true;
-            state.files.push(file_row(path.as_str(), decision, None, 0, 0, None));
+            state
+                .files
+                .push(file_row(path.as_str(), decision, None, 0, 0, None));
             return Ok(());
         }
     };
     let readable = decision == FileHandlingDecision::Include
         && args.freshness != FreshnessMode::Metadata
-        && ancestors_include(|item, is_dir| args.policy.decide(item, is_dir), path.as_str())?;
+        && ancestors_include(
+            |item, is_dir| args.policy.decide(item, is_dir),
+            path.as_str(),
+        )?;
     if !readable {
         if args.freshness == FreshnessMode::Metadata {
             push_module(&mut state.nodes, &mut state.text, path.as_str(), 0, [1, 1]);
         }
-        state.files.push(file_row(path.as_str(), decision, None, meta.size, meta.modified.millis(), stamp));
+        state.files.push(file_row(
+            path.as_str(),
+            decision,
+            None,
+            meta.size,
+            meta.modified.millis(),
+            stamp,
+        ));
         return check_records(args, state);
     }
     if meta.size > args.limits.file_bytes {
         state.partial = true;
-        state.files.push(file_row(path.as_str(), decision, None, meta.size, meta.modified.millis(), stamp));
+        state.files.push(file_row(
+            path.as_str(),
+            decision,
+            None,
+            meta.size,
+            meta.modified.millis(),
+            stamp,
+        ));
         return Ok(());
     }
     if state.source_bytes.saturating_add(meta.size) > args.limits.source_bytes {
@@ -179,10 +221,19 @@ fn visit_file(args: &WalkArgs<'_>, path: &RelativePath, decision: FileHandlingDe
     let bytes = match read {
         Ok(bytes) => bytes,
         Err(DctxError::Cancelled) => return Err(DctxError::Cancelled),
-        Err(DctxError::ResourceLimit { resource, limit }) => return Err(DctxError::ResourceLimit { resource, limit }),
+        Err(DctxError::ResourceLimit { resource, limit }) => {
+            return Err(DctxError::ResourceLimit { resource, limit });
+        }
         Err(_) => {
             state.partial = true;
-            state.files.push(file_row(path.as_str(), decision, None, meta.size, meta.modified.millis(), stamp));
+            state.files.push(file_row(
+                path.as_str(),
+                decision,
+                None,
+                meta.size,
+                meta.modified.millis(),
+                stamp,
+            ));
             return Ok(());
         }
     };
@@ -199,10 +250,17 @@ fn visit_file(args: &WalkArgs<'_>, path: &RelativePath, decision: FileHandlingDe
     let span_mark = profile::start();
     let lines = line_span(&bytes);
     watch.charge(Stage::SpanConversion, span_mark);
-    let module = push_module(&mut state.nodes, &mut state.text, path.as_str(), len, [1, lines]);
+    let module = push_module(
+        &mut state.nodes,
+        &mut state.text,
+        path.as_str(),
+        len,
+        [1, lines],
+    );
     if let Some((module_id, path_span)) = module {
         // The export list rides on the module node, so `map` orders an outline without a second read (DCX-55c).
-        state.nodes[module_id as usize].signature = super::outline_order::export_signature(path.as_str(), &bytes);
+        state.nodes[module_id as usize].signature =
+            super::outline_order::export_signature(path.as_str(), &bytes);
         let parse_mark = profile::start();
         let parsed = prepare_file(args, path.as_str(), &bytes);
         watch.charge(Stage::ParseLex, parse_mark);
@@ -225,12 +283,26 @@ fn visit_file(args: &WalkArgs<'_>, path: &RelativePath, decision: FileHandlingDe
         );
         watch.set_symbols(u64::try_from(count).unwrap_or(u64::MAX));
         // Files without references stay in the list: a call elsewhere may resolve to their symbols.
-        if let Some(end) = u32::try_from(state.nodes.len()).ok().filter(|end| !raw_refs.is_empty() || *end > module_id.saturating_add(1)) {
-            state.file_refs.push(FileRefs { first: module_id, end, refs: raw_refs });
+        if let Some(end) = u32::try_from(state.nodes.len())
+            .ok()
+            .filter(|end| !raw_refs.is_empty() || *end > module_id.saturating_add(1))
+        {
+            state.file_refs.push(FileRefs {
+                first: module_id,
+                end,
+                refs: raw_refs,
+            });
         }
         watch.charge(Stage::GraphAssembly, graph_mark);
     }
-    state.files.push(file_row(path.as_str(), decision, Some(digest), meta.size, meta.modified.millis(), stamp));
+    state.files.push(file_row(
+        path.as_str(),
+        decision,
+        Some(digest),
+        meta.size,
+        meta.modified.millis(),
+        stamp,
+    ));
     check_records(args, state)
 }
 
@@ -244,14 +316,25 @@ fn check_records(args: &WalkArgs<'_>, state: &State) -> Result<(), DctxError> {
     Ok(())
 }
 
-fn read_file(args: &WalkArgs<'_>, path: &RelativePath, state: &mut State) -> Result<Vec<u8>, DctxError> {
+fn read_file(
+    args: &WalkArgs<'_>,
+    path: &RelativePath,
+    state: &mut State,
+) -> Result<Vec<u8>, DctxError> {
     checkpoint(args)?;
-    let grant = ReadGrant::authorize(path, FileHandlingDecision::Include, true).ok_or(DctxError::PolicyDenied)?;
+    let grant = ReadGrant::authorize(path, FileHandlingDecision::Include, true)
+        .ok_or(DctxError::PolicyDenied)?;
     state.reads += 1;
-    args.source.read(&grant, args.limits.file_bytes).map_err(DctxError::from_core)
+    args.source
+        .read(&grant, args.limits.file_bytes)
+        .map_err(DctxError::from_core)
 }
 
-fn prepare_file(args: &WalkArgs<'_>, path: &str, bytes: &[u8]) -> Result<(Prepared, bool, Vec<RawRef>), DctxError> {
+fn prepare_file(
+    args: &WalkArgs<'_>,
+    path: &str,
+    bytes: &[u8],
+) -> Result<(Prepared, bool, Vec<RawRef>), DctxError> {
     if bytes.contains(&0) || args.parser == ParserChoice::Opaque || language_of(path) == "opaque" {
         return Ok((Prepared::Symbols(Vec::new()), false, Vec::new()));
     }
@@ -263,7 +346,11 @@ fn prepare_file(args: &WalkArgs<'_>, path: &str, bytes: &[u8]) -> Result<(Prepar
     Ok((prepared, false, raw_refs))
 }
 
-fn extract_syn(path: &str, bytes: &[u8], max_file: u64) -> Result<(Vec<Symbol>, Vec<RawRef>, bool), DctxError> {
+fn extract_syn(
+    path: &str,
+    bytes: &[u8],
+    max_file: u64,
+) -> Result<(Vec<Symbol>, Vec<RawRef>, bool), DctxError> {
     #[cfg(feature = "syntax-rust")]
     {
         super::syn_extract::extract(path, bytes, max_file)
@@ -308,7 +395,14 @@ fn file_row(
     modified: u64,
     stamp: Option<dctx_core::facts::EntryStamp>,
 ) -> IndexedFile {
-    IndexedFile { path: path.to_string(), decision, digest, size, modified, stamp }
+    IndexedFile {
+        path: path.to_string(),
+        decision,
+        digest,
+        size,
+        modified,
+        stamp,
+    }
 }
 
 fn finish(args: &WalkArgs<'_>, state: State) -> Walked {
@@ -366,7 +460,10 @@ fn line_span(bytes: &[u8]) -> u32 {
     u32::try_from(lines).unwrap_or(u32::MAX).max(1)
 }
 
-#[allow(clippy::naive_bytecount, reason = "Line counting uses standard iterators over the already bounded source buffer without another dependency.")]
+#[allow(
+    clippy::naive_bytecount,
+    reason = "Line counting uses standard iterators over the already bounded source buffer without another dependency."
+)]
 fn bytecount(bytes: &[u8], needle: u8) -> usize {
     bytes.iter().filter(|byte| **byte == needle).count()
 }

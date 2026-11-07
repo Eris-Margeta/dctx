@@ -1,9 +1,14 @@
 [package]
 name = "dctx-cli"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2021"
 license.workspace = true
 repository.workspace = true
+rust-version.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 description = "Command-line interface for dctx context packs, structural maps, templates and cache management"
 
 [features]
@@ -17,16 +22,16 @@ strict = ["dctx/pack", "dctx/map", "dctx/templates", "dctx/fs", "dctx/segments",
 
 [dependencies]
 # syntax-rust is explicit: this crate disables dctx defaults, and without it every .rs file is refused.
-dctx = { path = "../dctx", default-features = false, features = ["pack", "map", "templates", "fs", "segments", "cache", "syntax-rust"] }
-dctx-adapter-cache = { path = "../dctx-adapter-cache" }
-dctx-adapter-fs = { path = "../dctx-adapter-fs" }
-dctx-core = { path = "../dctx-core" }
-dctx-pack = { path = "../dctx-pack" }
-dctx-map-query = { path = "../dctx-map-query" }
-dctx-plugin-distribution = { path = "../dctx-plugin-distribution" }
-dctx-plugin-protocol = { path = "../dctx-plugin-protocol" }
-dctx-template = { path = "../dctx-template" }
-dctx-plugin-git = { path = "../../plugins/dctx-plugin-git", optional = true }
+dctx = { version = "=1.2.0", path = "../dctx", default-features = false, features = ["pack", "map", "templates", "fs", "segments", "cache", "syntax-rust"] }
+dctx-adapter-cache = { version = "=1.2.0", path = "../dctx-adapter-cache" }
+dctx-adapter-fs = { version = "=1.2.0", path = "../dctx-adapter-fs" }
+dctx-core = { version = "=1.2.0", path = "../dctx-core" }
+dctx-pack = { version = "=1.2.0", path = "../dctx-pack" }
+dctx-map-query = { version = "=1.2.0", path = "../dctx-map-query" }
+dctx-plugin-distribution = { version = "=1.2.0", path = "../dctx-plugin-distribution" }
+dctx-plugin-protocol = { version = "=1.2.0", path = "../dctx-plugin-protocol" }
+dctx-template = { version = "=1.2.0", path = "../dctx-template" }
+dctx-plugin-git = { version = "=1.2.0", path = "../../plugins/dctx-plugin-git", optional = true }
 
 [dev-dependencies]
 ed25519-dalek = { version = "=2.2.0", default-features = false, features = ["std"] }

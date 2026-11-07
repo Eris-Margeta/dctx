@@ -4,16 +4,23 @@
 //! `data` or `newtype` are read from its braces. A declaration runs to the last line indented under it; bodies are never entered.
 //! Names inside a type read `Type::member`; an instance is `Class.Type`, so its methods stay apart from the class's own signatures.
 
-use super::super::{is_denied, mask, signature_of, Decl, Syntax};
+use super::super::{Decl, Syntax, is_denied, mask, signature_of};
 use super::layout::{ident_run, indent_of, is_ident_char};
 
 /// Haskell: `--` comments, nested `{- -}` comments and double-quoted strings.
-const SYNTAX: Syntax = Syntax { line: &["--"], block: Some(("{-", "-}")), nested: true, quotes: b"\"", triple: false };
+const SYNTAX: Syntax = Syntax {
+    line: &["--"],
+    block: Some(("{-", "-}")),
+    nested: true,
+    quotes: b"\"",
+    triple: false,
+};
 
 /// Words that start a line of a `where` body without naming a function.
 const KEYWORDS: &[&str] = &[
-    "where", "let", "in", "if", "then", "else", "case", "of", "do", "deriving", "module", "import", "type", "data", "newtype", "class",
-    "instance", "infix", "infixl", "infixr", "default", "foreign",
+    "where", "let", "in", "if", "then", "else", "case", "of", "do", "deriving", "module", "import",
+    "type", "data", "newtype", "class", "instance", "infix", "infixl", "infixr", "default",
+    "foreign",
 ];
 
 /// The `where` body of a class or an instance being read: its declaration, the column of its members and the last member.
@@ -47,7 +54,14 @@ struct Record {
 impl Record {
     /// A reader for the type declared at `owner`.
     fn new(owner: usize) -> Self {
-        Self { owner, braces: 0, parens: 0, segment: String::new(), pending: Vec::new(), seen: Vec::new() }
+        Self {
+            owner,
+            braces: 0,
+            parens: 0,
+            segment: String::new(),
+            pending: Vec::new(),
+            seen: Vec::new(),
+        }
     }
 
     /// Field names that the masked, trimmed `line` completes.
@@ -93,7 +107,9 @@ impl Record {
             None => (segment.as_str(), false),
         };
         let name = names.trim();
-        let valid = ident_run(name) == name && name.starts_with(|c: char| c.is_lowercase() || c == '_') && !is_denied(name);
+        let valid = ident_run(name) == name
+            && name.starts_with(|c: char| c.is_lowercase() || c == '_')
+            && !is_denied(name);
         if !valid {
             if typed {
                 self.pending.clear();
@@ -104,7 +120,11 @@ impl Record {
             self.pending.push(name.to_string());
             return;
         }
-        for field in self.pending.drain(..).chain(std::iter::once(name.to_string())) {
+        for field in self
+            .pending
+            .drain(..)
+            .chain(std::iter::once(name.to_string()))
+        {
             if !self.seen.contains(&field) {
                 self.seen.push(field.clone());
                 fields.push(field);
@@ -135,19 +155,41 @@ pub(super) fn haskell(text: &str) -> Vec<Decl> {
             if found.is_empty() {
                 // Further equations of the function named by the signature extend it.
                 let word = ident_run(line);
-                if !group.iter().any(|&at| decls[at].kind == "fn" && decls[at].name == word) {
+                if !group
+                    .iter()
+                    .any(|&at| decls[at].kind == "fn" && decls[at].name == word)
+                {
                     group.clear();
                 }
             } else {
                 group.clear();
                 for (name, kind) in found {
-                    decls.push(Decl { name, kind, lines: [number, number], signature: signature_of(original) });
+                    decls.push(Decl {
+                        name,
+                        kind,
+                        lines: [number, number],
+                        signature: signature_of(original),
+                    });
                     group.push(decls.len() - 1);
                 }
                 let owner = decls.len() - 1;
                 match ident_run(line) {
-                    "class" => body = Some(Body { owner, child: None, last: None, instance: false }),
-                    "instance" => body = Some(Body { owner, child: None, last: None, instance: true }),
+                    "class" => {
+                        body = Some(Body {
+                            owner,
+                            child: None,
+                            last: None,
+                            instance: false,
+                        })
+                    }
+                    "instance" => {
+                        body = Some(Body {
+                            owner,
+                            child: None,
+                            last: None,
+                            instance: true,
+                        })
+                    }
                     "data" | "newtype" => record = Some(Record::new(owner)),
                     _ => {}
                 }
@@ -161,7 +203,14 @@ pub(super) fn haskell(text: &str) -> Vec<Decl> {
                 }
                 Some(column) if indent < column => {}
                 _ => {
-                    let members: Vec<(String, &'static str)> = if open.instance { equation_name(line).map(|name| (name, "fn")).into_iter().collect() } else { signature_names(line) };
+                    let members: Vec<(String, &'static str)> = if open.instance {
+                        equation_name(line)
+                            .map(|name| (name, "fn"))
+                            .into_iter()
+                            .collect()
+                    } else {
+                        signature_names(line)
+                    };
                     if !members.is_empty() {
                         open.child = Some(indent);
                     }
@@ -172,7 +221,12 @@ pub(super) fn haskell(text: &str) -> Vec<Decl> {
                             let last = decls.len() - 1;
                             decls[last].lines[1] = number;
                         } else {
-                            decls.push(Decl { name, kind, lines: [number, number], signature: signature_of(original) });
+                            decls.push(Decl {
+                                name,
+                                kind,
+                                lines: [number, number],
+                                signature: signature_of(original),
+                            });
                         }
                         open.last = Some(decls.len() - 1);
                     }
@@ -183,7 +237,12 @@ pub(super) fn haskell(text: &str) -> Vec<Decl> {
             let owner = reader.owner;
             for field in reader.feed(line) {
                 let name = format!("{}::{field}", decls[owner].name);
-                decls.push(Decl { name, kind: "field", lines: [number, number], signature: signature_of(original) });
+                decls.push(Decl {
+                    name,
+                    kind: "field",
+                    lines: [number, number],
+                    signature: signature_of(original),
+                });
             }
         }
         for &at in &group {
@@ -200,7 +259,10 @@ fn haskell_top(line: &str) -> Vec<(String, &'static str)> {
     match word {
         "data" | "newtype" | "class" | "type" if rest.starts_with(char::is_whitespace) => {
             let mut rest = rest.trim_start();
-            if let Some(after) = rest.strip_prefix("family").filter(|after| after.starts_with(char::is_whitespace)) {
+            if let Some(after) = rest
+                .strip_prefix("family")
+                .filter(|after| after.starts_with(char::is_whitespace))
+            {
                 rest = after.trim_start();
             }
             if rest.starts_with("instance") {
@@ -209,13 +271,21 @@ fn haskell_top(line: &str) -> Vec<(String, &'static str)> {
             // A context `Eq a =>` comes before the name. After a `data` constructor's `=` it is the constructor's own.
             let head = rest.split(" where").next().unwrap_or(rest);
             let head = match head.find("=>") {
-                Some(arrow) if word == "class" || head.find('=') == Some(arrow) => head[arrow + 2..].trim_start(),
+                Some(arrow) if word == "class" || head.find('=') == Some(arrow) => {
+                    head[arrow + 2..].trim_start()
+                }
                 _ => head,
             };
             let name = ident_run(head);
-            if name.starts_with(char::is_uppercase) { vec![(name.to_string(), "type")] } else { Vec::new() }
+            if name.starts_with(char::is_uppercase) {
+                vec![(name.to_string(), "type")]
+            } else {
+                Vec::new()
+            }
         }
-        "instance" if rest.starts_with(char::is_whitespace) => instance_name(rest).map(|name| vec![(name, "type")]).unwrap_or_default(),
+        "instance" if rest.starts_with(char::is_whitespace) => instance_name(rest)
+            .map(|name| vec![(name, "type")])
+            .unwrap_or_default(),
         _ => signature_names(line),
     }
 }
@@ -224,23 +294,39 @@ fn haskell_top(line: &str) -> Vec<(String, &'static str)> {
 fn instance_name(rest: &str) -> Option<String> {
     let head = rest.split(" where").next().unwrap_or(rest);
     let head = head.rfind("=>").map_or(head, |arrow| &head[arrow + 2..]);
-    let mut words = head.split(|c: char| !(is_ident_char(c) || c == '.')).filter(|word| !word.is_empty());
-    let class = words.next().filter(|class| class.starts_with(char::is_uppercase))?;
-    Some(match words.find(|word| word.starts_with(char::is_uppercase)) {
-        Some(target) => format!("{class}.{target}"),
-        None => class.to_string(),
-    })
+    let mut words = head
+        .split(|c: char| !(is_ident_char(c) || c == '.'))
+        .filter(|word| !word.is_empty());
+    let class = words
+        .next()
+        .filter(|class| class.starts_with(char::is_uppercase))?;
+    Some(
+        match words.find(|word| word.starts_with(char::is_uppercase)) {
+            Some(target) => format!("{class}.{target}"),
+            None => class.to_string(),
+        },
+    )
 }
 
 /// The function an equation line of an instance body defines: its first word, unless an operator or a keyword takes that place.
 fn equation_name(line: &str) -> Option<String> {
     let name = ident_run(line);
-    if !name.starts_with(|c: char| c.is_lowercase() || c == '_') || is_denied(name) || KEYWORDS.contains(&name) {
+    if !name.starts_with(|c: char| c.is_lowercase() || c == '_')
+        || is_denied(name)
+        || KEYWORDS.contains(&name)
+    {
         return None;
     }
     let tail = line[name.len()..].trim_start();
-    let symbolic = tail.starts_with(|c: char| c.is_ascii_punctuation() && !matches!(c, '(' | '[' | '{' | '_' | '\'' | '"' | '|' | '=' | '~' | '@' | ':'));
-    let operator = symbolic || tail.starts_with("==") || (tail.starts_with(':') && !tail.starts_with("::"));
+    let symbolic = tail.starts_with(|c: char| {
+        c.is_ascii_punctuation()
+            && !matches!(
+                c,
+                '(' | '[' | '{' | '_' | '\'' | '"' | '|' | '=' | '~' | '@' | ':'
+            )
+    });
+    let operator =
+        symbolic || tail.starts_with("==") || (tail.starts_with(':') && !tail.starts_with("::"));
     (!operator).then(|| name.to_string())
 }
 
@@ -254,7 +340,9 @@ fn signature_names(line: &str) -> Vec<(String, &'static str)> {
     }
     let mut names = Vec::new();
     for name in line[..split].split(',').map(str::trim) {
-        let valid = ident_run(name) == name && name.starts_with(|c: char| c.is_lowercase() || c == '_') && !is_denied(name);
+        let valid = ident_run(name) == name
+            && name.starts_with(|c: char| c.is_lowercase() || c == '_')
+            && !is_denied(name);
         if !valid {
             return Vec::new();
         }

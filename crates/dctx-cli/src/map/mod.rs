@@ -10,8 +10,8 @@ mod export_verb;
 mod failure;
 mod file_page;
 mod hubs;
-mod skeleton;
 mod path_verb;
+mod skeleton;
 mod target;
 mod verb_help;
 
@@ -23,7 +23,8 @@ use crate::host;
 
 /// Runs one map verb and prints its page. A `gone` page is printed, then the run fails with exit 1 (docs/CLI-EXIT-CODES.md).
 pub(crate) fn run(arguments: &[String]) -> Result<(), Failure> {
-    let answered = answer_with(arguments, host::open_mapped).map_err(|failure| failure.within("map"))?;
+    let answered =
+        answer_with(arguments, host::open_mapped).map_err(|failure| failure.within("map"))?;
     print!("{}", answered.page);
     match answered.missing {
         Some(failure) => Err(failure.within("map")),
@@ -45,7 +46,9 @@ fn execute_with(
     arguments: &[String],
     open: impl FnOnce(&std::path::Path) -> Result<(dctx::Session, String), String>,
 ) -> Result<String, String> {
-    answer_with(arguments, open).map(|answered| answered.page).map_err(|failure| failure.message)
+    answer_with(arguments, open)
+        .map(|answered| answered.page)
+        .map_err(|failure| failure.message)
 }
 
 /// One answered map verb: the page, and the exit-1 failure that follows a `gone` page.
@@ -59,11 +62,17 @@ struct Answered {
 impl Answered {
     /// A page with no failure after it.
     fn page(page: String) -> Self {
-        Self { page, missing: None }
+        Self {
+            page,
+            missing: None,
+        }
     }
 }
 
-#[allow(clippy::too_many_lines, reason = "Keep the ordered parse, target, snapshot and query transaction with its existing error ordering.")]
+#[allow(
+    clippy::too_many_lines,
+    reason = "Keep the ordered parse, target, snapshot and query transaction with its existing error ordering."
+)]
 fn answer_with(
     arguments: &[String],
     open: impl FnOnce(&std::path::Path) -> Result<(dctx::Session, String), String>,
@@ -71,7 +80,10 @@ fn answer_with(
     if arguments.is_empty() || arguments == ["--help"] || arguments == ["-h"] {
         return Ok(Answered::page(args::HELP.to_string()));
     }
-    if arguments[1..].iter().any(|argument| argument == "--help" || argument == "-h") {
+    if arguments[1..]
+        .iter()
+        .any(|argument| argument == "--help" || argument == "-h")
+    {
         if let Some(help) = verb_help::text(&arguments[0]) {
             return Ok(Answered::page(help));
         }
@@ -85,24 +97,38 @@ fn answer_with(
             .filter(|path| !path.is_empty())
             .map(str::to_owned)
             .collect();
-        options.request.validate().map_err(|error| usage(error.to_string()))?;
+        options
+            .request
+            .validate()
+            .map_err(|error| usage(error.to_string()))?;
     }
     if options.request.revision.is_some() {
-        return Err(usage("git revisions are not available; this build has no git capability".to_string()));
+        return Err(usage(
+            "git revisions are not available; this build has no git capability".to_string(),
+        ));
     }
     if options.request.offset > 0 {
-        return Err(usage("the facade pages with the next cursor, not --offset".to_string()));
+        return Err(usage(
+            "the facade pages with the next cursor, not --offset".to_string(),
+        ));
     }
     if !options.hubs && options.export.is_none() {
-        options.request.target = target::prepare(options.request.verb, &options.request.target, &options.place).map_err(usage)?;
+        options.request.target = target::prepare(
+            options.request.verb,
+            &options.request.target,
+            &options.place,
+        )
+        .map_err(usage)?;
         if let Some(to) = options.to.take() {
-            options.to = Some(target::prepare(options.request.verb, &to, &options.place).map_err(usage)?);
+            options.to =
+                Some(target::prepare(options.request.verb, &to, &options.place).map_err(usage)?);
         }
         failure::targets(&options)?;
     }
     file_page::widen(&mut options).map_err(usage)?;
     let profiling = profile_requested(options.profile);
-    let (mut session, key) = open(&options.place).map_err(|message| failure::place(&options.place, &message))?;
+    let (mut session, key) =
+        open(&options.place).map_err(|message| failure::place(&options.place, &message))?;
     if profiling {
         session.enable_profile();
     }
@@ -123,22 +149,37 @@ fn answer_with(
         }
     };
     if host::reuse_report_enabled() {
-        let status = if handle.reused() { "generation reused" } else { "generation built" };
+        let status = if handle.reused() {
+            "generation reused"
+        } else {
+            "generation built"
+        };
         eprintln!("{status}");
         eprintln!("content_reads {}", session.content_reads());
         eprintln!("cached_content_reads {}", session.cached_content_reads());
         eprintln!("stamp_skipped_reads {}", session.stamp_skipped_reads());
     }
     if options.hubs {
-        return hubs::answer(&mut session, &handle, &options).map(Answered::page).map_err(failure::answer);
+        return hubs::answer(&mut session, &handle, &options)
+            .map(Answered::page)
+            .map_err(failure::answer);
     }
     if options.export.is_some() {
-        return export_verb::answer(&mut session, &handle, &options).map(Answered::page).map_err(failure::answer);
+        return export_verb::answer(&mut session, &handle, &options)
+            .map(Answered::page)
+            .map_err(failure::answer);
     }
     if options.to.is_some() {
-        return path_verb::answer(&mut session, &handle, &options).map(Answered::page).map_err(failure::answer);
+        return path_verb::answer(&mut session, &handle, &options)
+            .map(Answered::page)
+            .map_err(failure::answer);
     }
-    let mut request = facade_request(&options.request, options.format, options.continuation, options.budget_set);
+    let mut request = facade_request(
+        &options.request,
+        options.format,
+        options.continuation,
+        options.budget_set,
+    );
     request.meta = options.meta;
     if options.grep {
         // The CLI parses grep as a find-shaped request; the facade knows the real verb.
@@ -172,7 +213,10 @@ fn answer_with(
         Some(IdentityOutcome::Gone { id }) => Some(failure::gone(id)),
         _ => None,
     };
-    Ok(Answered { page: String::from_utf8_lossy(sink.as_bytes()).into_owned(), missing })
+    Ok(Answered {
+        page: String::from_utf8_lossy(sink.as_bytes()).into_owned(),
+        missing,
+    })
 }
 
 /// `--profile` or `DCTX_PROFILE=1`. Map switches are flags; this env matches `DCTX_REUSE_REPORT`.
@@ -200,7 +244,11 @@ fn facade_request(
         mapped.target.clone_from(&request.target);
     }
     mapped.kinds.clone_from(&request.kinds);
-    mapped.edges = request.edges.iter().map(|edge| edge.as_str().to_string()).collect();
+    mapped.edges = request
+        .edges
+        .iter()
+        .map(|edge| edge.as_str().to_string())
+        .collect();
     mapped.direction = match request.direction {
         QueryDirection::In => Direction::In,
         QueryDirection::Out => Direction::Out,
@@ -217,7 +265,8 @@ fn facade_request(
     // read default (its hard cap) applies. An explicit --budget is forwarded unchanged.
     if request.verb != QueryVerb::Read || budget_set {
         mapped.limits.estimated_tokens = Some(u64::from(request.budget.tokens()));
-        mapped.limits.encoded_bytes = Some(u64::try_from(request.budget.bytes()).unwrap_or(u64::MAX));
+        mapped.limits.encoded_bytes =
+            Some(u64::try_from(request.budget.bytes()).unwrap_or(u64::MAX));
     }
     mapped.output_format = if matches!(format, Format::Json) { 2 } else { 1 };
     mapped.within.clone_from(&request.within);
@@ -255,17 +304,32 @@ mod tests {
         let path = fixture.path().join("place");
         let cache = fixture.path().join("cache");
         std::fs::create_dir_all(&path).expect("temp");
-        std::fs::write(path.join("a.py"), b"def alpha():\n    x = \"NEEDLE one\"\n\ndef beta():\n    return \"needle two\"\n").expect("source");
+        std::fs::write(
+            path.join("a.py"),
+            b"def alpha():\n    x = \"NEEDLE one\"\n\ndef beta():\n    return \"needle two\"\n",
+        )
+        .expect("source");
         std::fs::write(path.join(".env"), b"NEEDLE=secret\n").expect("env");
         let run = |extra: &[&str]| {
-            let mut arguments: Vec<String> = vec!["grep".into(), "NEEDLE".into(), "--place".into(), path.display().to_string()];
+            let mut arguments: Vec<String> = vec![
+                "grep".into(),
+                "NEEDLE".into(),
+                "--place".into(),
+                path.display().to_string(),
+            ];
             arguments.extend(extra.iter().map(ToString::to_string));
-            execute_with(&arguments, |place| host::open_mapped_at(place, Some(&cache))).expect("grep")
+            execute_with(&arguments, |place| {
+                host::open_mapped_at(place, Some(&cache))
+            })
+            .expect("grep")
         };
         let page = run(&[]);
         assert!(page.starts_with("# "), "{page}");
         assert!(page.contains(" grep\n"), "{page}");
-        assert!(page.contains("s:a.py#alpha\t") && page.contains("\ta.py\n  L2: x = \"NEEDLE one\"\n"), "{page}");
+        assert!(
+            page.contains("s:a.py#alpha\t") && page.contains("\ta.py\n  L2: x = \"NEEDLE one\"\n"),
+            "{page}"
+        );
         assert!(!page.contains("beta") && !page.contains("secret"), "{page}");
         assert!(page.ends_with("1 hits in 1 symbols\n"), "{page}");
         assert!(run(&["-i"]).contains("s:a.py#beta"));
@@ -274,15 +338,22 @@ mod tests {
 
     #[test]
     fn git_revision_and_offset_are_refused_before_a_scan() {
-        let revision = execute(&["find".into(), "name".into(), "--rev".into(), "abc".into()]).expect_err("rev");
+        let revision = execute(&["find".into(), "name".into(), "--rev".into(), "abc".into()])
+            .expect_err("rev");
         assert!(revision.contains("git"));
-        let offset = execute(&["find".into(), "name".into(), "--offset".into(), "1".into()]).expect_err("offset");
+        let offset = execute(&["find".into(), "name".into(), "--offset".into(), "1".into()])
+            .expect_err("offset");
         assert!(offset.contains("--offset"));
     }
 
     #[test]
     fn map_without_a_target_is_refused_before_a_scan() {
-        let error = execute(&["map".into(), "--place".into(), "/no/such/dctx-e02c-place".into()]).expect_err("target");
+        let error = execute(&[
+            "map".into(),
+            "--place".into(),
+            "/no/such/dctx-e02c-place".into(),
+        ])
+        .expect_err("target");
         assert!(error.contains("requires a target"), "{error}");
         assert!(!error.contains("os error"), "{error}");
     }
@@ -302,7 +373,10 @@ mod tests {
         assert_eq!(mapped.limits.records, Some(1));
         assert_eq!(mapped.lines, Some(2));
         assert_eq!(mapped.line_start, Some(35));
-        assert!(mapped.depth.is_none(), "absolute lines must leave depth unset");
+        assert!(
+            mapped.depth.is_none(),
+            "absolute lines must leave depth unset"
+        );
         assert!(mapped.limits.depth.is_none());
         assert_eq!(mapped.continuation.as_deref(), Some("v1|1|read|m:a.rs"));
         assert!(mapped.limits.estimated_tokens.is_none());
@@ -312,16 +386,39 @@ mod tests {
     #[test]
     fn an_explicit_read_budget_is_forwarded_and_the_default_is_not_500() {
         let plain = args::parse(&["read".into(), "m:a.rs".into()]).expect("parse");
-        let mapped = facade_request(&plain.request, plain.format, plain.continuation, plain.budget_set);
-        assert!(mapped.limits.estimated_tokens.is_none(), "default read must not send 500 tokens");
+        let mapped = facade_request(
+            &plain.request,
+            plain.format,
+            plain.continuation,
+            plain.budget_set,
+        );
+        assert!(
+            mapped.limits.estimated_tokens.is_none(),
+            "default read must not send 500 tokens"
+        );
         assert!(mapped.limits.encoded_bytes.is_none());
 
-        let tiny = args::parse(&["read".into(), "m:a.rs".into(), "--budget".into(), "8".into()]).expect("tiny");
-        let mapped = facade_request(&tiny.request, tiny.format, tiny.continuation, tiny.budget_set);
+        let tiny = args::parse(&[
+            "read".into(),
+            "m:a.rs".into(),
+            "--budget".into(),
+            "8".into(),
+        ])
+        .expect("tiny");
+        let mapped = facade_request(
+            &tiny.request,
+            tiny.format,
+            tiny.continuation,
+            tiny.budget_set,
+        );
         assert_eq!(mapped.limits.estimated_tokens, Some(8));
-        assert_eq!(mapped.limits.encoded_bytes, Some(u64::try_from(tiny.request.budget.bytes()).unwrap_or(0)));
+        assert_eq!(
+            mapped.limits.encoded_bytes,
+            Some(u64::try_from(tiny.request.budget.bytes()).unwrap_or(0))
+        );
 
-        let map = args::parse(&["map".into(), "m:a.rs".into(), "--depth".into(), "2".into()]).expect("map");
+        let map = args::parse(&["map".into(), "m:a.rs".into(), "--depth".into(), "2".into()])
+            .expect("map");
         let mapped = facade_request(&map.request, map.format, map.continuation, map.budget_set);
         assert_eq!(mapped.limits.estimated_tokens, Some(500));
         assert_eq!(mapped.depth, Some(2));
@@ -339,15 +436,35 @@ mod tests {
         std::fs::create_dir_all(path.join("nested")).expect("temp");
         std::fs::write(path.join("kept.rs"), b"fn kept() {}\n").expect("source");
         let place = path.display().to_string();
-        let by_id = execute(&["map".into(), "m:kept.rs".into(), "--json".into(), "--place".into(), place.clone()]).expect("id");
-        let by_path = execute(&["map".into(), "kept.rs".into(), "--json".into(), "--place".into(), place]).expect("path");
+        let by_id = execute(&[
+            "map".into(),
+            "m:kept.rs".into(),
+            "--json".into(),
+            "--place".into(),
+            place.clone(),
+        ])
+        .expect("id");
+        let by_path = execute(&[
+            "map".into(),
+            "kept.rs".into(),
+            "--json".into(),
+            "--place".into(),
+            place,
+        ])
+        .expect("path");
         let without_age = |page: &str| {
             use dctx_plugin_protocol::{decode_object, DecodeLimits, Json};
 
-            let Json::Object(mut fields) = decode_object(page.as_bytes(), DecodeLimits::WIRE).expect("JSON page") else {
+            let Json::Object(mut fields) =
+                decode_object(page.as_bytes(), DecodeLimits::WIRE).expect("JSON page")
+            else {
                 panic!("page must be an object");
             };
-            let (_, Json::Object(freshness)) = fields.iter_mut().find(|(key, _)| key == "freshness").expect("freshness") else {
+            let (_, Json::Object(freshness)) = fields
+                .iter_mut()
+                .find(|(key, _)| key == "freshness")
+                .expect("freshness")
+            else {
                 panic!("freshness must be an object");
             };
             // Separate calls can straddle a second boundary; all other page fields must match.
@@ -357,7 +474,13 @@ mod tests {
         assert_eq!(without_age(&by_path), without_age(&by_id));
         assert!(by_path.contains("\"id\":\"s:kept.rs#kept\""), "{by_path}");
         assert!(!by_path.contains("gone"), "{by_path}");
-        let directory = execute(&["map".into(), "nested".into(), "--place".into(), path.display().to_string()]).expect_err("dir");
+        let directory = execute(&[
+            "map".into(),
+            "nested".into(),
+            "--place".into(),
+            path.display().to_string(),
+        ])
+        .expect_err("dir");
         assert!(directory.contains("directory"), "{directory}");
     }
 
@@ -391,6 +514,9 @@ mod tests {
         assert!(!path.join(".dctx").exists());
         let listed: Vec<_> = std::fs::read_dir(&path).expect("list").flatten().collect();
         assert_eq!(listed.len(), 1);
-        assert!(cache.join("ledger.v1").is_file(), "the facade must use the isolated persistent cache");
+        assert!(
+            cache.join("ledger.v1").is_file(),
+            "the facade must use the isolated persistent cache"
+        );
     }
 }

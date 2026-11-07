@@ -35,7 +35,10 @@ pub struct MaintainReport {
 }
 
 /// Payload length plus [`ACCOUNTING_UNIT`]. `None` when the sum overflows.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn accounted_bytes(payload_len: u64) -> Option<u64> {
     payload_len.checked_add(ACCOUNTING_UNIT)
 }
@@ -43,9 +46,15 @@ pub fn accounted_bytes(payload_len: u64) -> Option<u64> {
 /// Soft watermark and eviction target for `hard_cap`, using the stage-0 ratios.
 ///
 /// Soft is `floor(3/4 · cap)` (1.5/2). Target is `floor(3/5 · cap)` (1.2/2).
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn cache_limits(hard_cap: u64) -> (u64, u64) {
-    (hard_cap.saturating_mul(3) / 4, hard_cap.saturating_mul(3) / 5)
+    (
+        hard_cap.saturating_mul(3) / 4,
+        hard_cap.saturating_mul(3) / 5,
+    )
 }
 
 pub(crate) fn observed_clock(previous: u64, now: u64) -> (u64, bool) {
@@ -85,14 +94,23 @@ mod tests {
 
     #[test]
     fn backward_clock_does_not_expire_and_the_grace_boundary_does() {
-        let fact = Charge { retired_at: Some(100), referenced: false };
+        let fact = Charge {
+            retired_at: Some(100),
+            referenced: false,
+        };
         assert!(!expired(&fact, 50, 10));
         assert!(!expired(&fact, 109, 10));
         assert!(expired(&fact, 110, 10));
-        let pinned = Charge { referenced: true, ..fact };
+        let pinned = Charge {
+            referenced: true,
+            ..fact
+        };
         assert!(!expired(&pinned, 10_000, 0));
         assert!(!expired(
-            &Charge { retired_at: None, ..fact },
+            &Charge {
+                retired_at: None,
+                ..fact
+            },
             10_000,
             0
         ));

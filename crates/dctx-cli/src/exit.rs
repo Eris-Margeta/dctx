@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The CLI exit-code contract of docs/CLI-EXIT-CODES.md: 0 ok, 1 no result, 2 usage, 3 index error.
 //! `map`, `pack`, `mcp`, `languages`, unknown commands and non-UTF-8 arguments return a [`Failure`]; `main` prints it and exits with its code.
-//! Every failure carries a hint the user can act on. The legacy snapshot, cache, template, plugin and git commands keep their exit 1.
+//! Every failure carries a hint the user can act on. Cache and template command failures use exit 1.
 
 use dctx::{DctxError, ErrorCode, Resource};
 
@@ -17,7 +17,7 @@ pub const INDEX: i32 = 3;
 /// One failed command: its exit code, what went wrong and what the user can do next.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Failure {
-    /// [`NO_RESULT`], [`USAGE`], [`INDEX`], or 1 for a legacy command.
+    /// [`NO_RESULT`], [`USAGE`], [`INDEX`], or 1 for a cache or template command.
     pub code: i32,
     /// What went wrong, one line, no trailing newline.
     pub message: String,
@@ -28,7 +28,11 @@ pub struct Failure {
 impl Failure {
     /// A failure with an explicit code.
     pub fn new(code: i32, message: impl Into<String>, hint: impl Into<String>) -> Self {
-        Self { code, message: message.into(), hint: hint.into() }
+        Self {
+            code,
+            message: message.into(),
+            hint: hint.into(),
+        }
     }
 
     /// Exit 1: the target or input has no answer.
@@ -54,7 +58,10 @@ impl Failure {
     }
 
     /// The stderr text: `❌ Error: <message>`, then `hint: <hint>` when there is a hint. Ends with a newline.
-    #[allow(clippy::must_use_candidate, reason = "A rendering accessor; callers print it or compare it.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "A rendering accessor; callers print it or compare it."
+    )]
     pub fn render(&self) -> String {
         if self.hint.is_empty() {
             format!("❌ Error: {}\n", self.message)
@@ -66,7 +73,10 @@ impl Failure {
 
 /// Maps a facade error to the contract: request refusals are usage, a denied target is no result, the rest is an index error.
 /// `help` is the help command to name in a usage hint, such as `dctx map find --help`.
-#[allow(clippy::must_use_candidate, reason = "A pure mapping; the caller returns the failure.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "A pure mapping; the caller returns the failure."
+)]
 pub fn from_facade(error: &DctxError, help: &str) -> Failure {
     let message = error.to_string();
     match error.code() {
@@ -122,28 +132,69 @@ mod tests {
     #[test]
     fn render_prints_the_message_then_the_hint() {
         let failure = Failure::usage("bad flag", "run `dctx map --help`").within("map");
-        assert_eq!(failure.render(), "❌ Error: map: bad flag\nhint: run `dctx map --help`\n");
+        assert_eq!(
+            failure.render(),
+            "❌ Error: map: bad flag\nhint: run `dctx map --help`\n"
+        );
         assert_eq!(Failure::new(1, "legacy", "").render(), "❌ Error: legacy\n");
     }
 
     #[test]
     fn facade_errors_map_to_the_contract() {
-        assert_eq!(from_facade(&DctxError::StaleContinuation, "dctx map find --help").code, USAGE);
-        assert!(from_facade(&DctxError::StaleContinuation, "x").hint.contains("without --cursor"));
-        assert_eq!(from_facade(&DctxError::invalid("target is required"), "dctx map read --help").code, USAGE);
-        assert!(from_facade(&DctxError::invalid("x"), "dctx map read --help").hint.contains("dctx map read --help"));
-        assert_eq!(from_facade(&DctxError::BudgetTooSmall { minimum_bytes: 9 }, "x").code, USAGE);
+        assert_eq!(
+            from_facade(&DctxError::StaleContinuation, "dctx map find --help").code,
+            USAGE
+        );
+        assert!(from_facade(&DctxError::StaleContinuation, "x")
+            .hint
+            .contains("without --cursor"));
+        assert_eq!(
+            from_facade(
+                &DctxError::invalid("target is required"),
+                "dctx map read --help"
+            )
+            .code,
+            USAGE
+        );
+        assert!(
+            from_facade(&DctxError::invalid("x"), "dctx map read --help")
+                .hint
+                .contains("dctx map read --help")
+        );
+        assert_eq!(
+            from_facade(&DctxError::BudgetTooSmall { minimum_bytes: 9 }, "x").code,
+            USAGE
+        );
         assert_eq!(from_facade(&DctxError::PolicyDenied, "x").code, NO_RESULT);
         assert_eq!(from_facade(&DctxError::SourceUnavailable, "x").code, INDEX);
-        assert_eq!(from_facade(&DctxError::CorruptIndex { reason: "digest" }, "x").code, INDEX);
+        assert_eq!(
+            from_facade(&DctxError::CorruptIndex { reason: "digest" }, "x").code,
+            INDEX
+        );
         assert_eq!(from_facade(&DctxError::Busy, "x").code, INDEX);
-        let cap = DctxError::ResourceLimit { resource: Resource::SourceBytes, limit: 1 };
-        assert!(from_facade(&cap, "x").hint.contains("DCTX_MAX_SOURCE_BYTES"));
-        let records = DctxError::ResourceLimit { resource: Resource::Records, limit: 1 };
+        let cap = DctxError::ResourceLimit {
+            resource: Resource::SourceBytes,
+            limit: 1,
+        };
+        assert!(from_facade(&cap, "x")
+            .hint
+            .contains("DCTX_MAX_SOURCE_BYTES"));
+        let records = DctxError::ResourceLimit {
+            resource: Resource::Records,
+            limit: 1,
+        };
         assert!(from_facade(&records, "x").hint.contains("DCTX_MAX_RECORDS"));
-        let entries = DctxError::ResourceLimit { resource: Resource::Entries, limit: 1 };
+        let entries = DctxError::ResourceLimit {
+            resource: Resource::Entries,
+            limit: 1,
+        };
         assert!(from_facade(&entries, "x").hint.contains("DCTX_MAX_ENTRIES"));
-        for error in [DctxError::SourceUnavailable, DctxError::io("disk"), DctxError::StaleContinuation, DctxError::PolicyDenied] {
+        for error in [
+            DctxError::SourceUnavailable,
+            DctxError::io("disk"),
+            DctxError::StaleContinuation,
+            DctxError::PolicyDenied,
+        ] {
             assert!(!from_facade(&error, "x").hint.is_empty(), "{error}");
         }
     }

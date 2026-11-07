@@ -9,9 +9,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use crate::domain::{
-    check_root, current_path, decode_manifest, decode_pointer, manifest_digest, manifest_path,
-    previous_path, segment_path, DurabilityMode, Manifest, Pin, PinnedSegment, SegmentRef,
-    StoreError, StoreOptions, EMERGENCY_METADATA, MAX_ACQUIRE, POINTER_LEN,
+    DurabilityMode, EMERGENCY_METADATA, MAX_ACQUIRE, Manifest, POINTER_LEN, Pin, PinnedSegment,
+    SegmentRef, StoreError, StoreOptions, check_root, current_path, decode_manifest,
+    decode_pointer, manifest_digest, manifest_path, previous_path, segment_path,
 };
 use crate::ports::{self, StoreFs};
 use dctx_map_segment::{decode, segment_object_digest};
@@ -153,7 +153,10 @@ impl<F: StoreFs> SegmentStore<F> {
     pub fn current_pointer_closed(&self, root: &str) -> Result<bool, StoreError> {
         self.ensure_live()?;
         check_root(root)?;
-        Ok(!matches!(inspect(&self.fs, &current_path(root))?, PointerView::Broken))
+        Ok(!matches!(
+            inspect(&self.fs, &current_path(root))?,
+            PointerView::Broken
+        ))
     }
 
     /// Generation inside the current pointer file, even when its closure is missing.
@@ -233,7 +236,10 @@ impl<F: StoreFs> SegmentStore<F> {
     ///
     /// # Errors
     /// Refuses a crashed store or a pin without an active lease.
-    #[allow(clippy::needless_pass_by_value, reason = "Releasing a pin consumes the public lease token so callers cannot accidentally reuse it without an explicit clone.")]
+    #[allow(
+        clippy::needless_pass_by_value,
+        reason = "Releasing a pin consumes the public lease token so callers cannot accidentally reuse it without an explicit clone."
+    )]
     pub fn release(&self, pin: Pin) -> Result<(), StoreError> {
         self.ensure_live()?;
         let mut coord = self.coord();
@@ -251,9 +257,12 @@ impl<F: StoreFs> SegmentStore<F> {
     /// Refuses a crashed store, a digest outside the pin or corrupt segment data; propagates bounded-read failures.
     pub fn read_segment(&self, pin: &Pin, digest: &[u8; 32]) -> Result<Vec<u8>, StoreError> {
         self.ensure_live()?;
-        let role = pin.role_of(digest).ok_or(StoreError::InvalidRequest { reason: "pin" })?;
+        let role = pin
+            .role_of(digest)
+            .ok_or(StoreError::InvalidRequest { reason: "pin" })?;
         let bytes = load_limited(&self.fs, &segment_path(digest), ports::OBJECT_MAX)?;
-        let actual = segment_object_digest(&bytes).map_err(|_| StoreError::CorruptIndex { reason: "segment" })?;
+        let actual = segment_object_digest(&bytes)
+            .map_err(|_| StoreError::CorruptIndex { reason: "segment" })?;
         if actual != *digest {
             return Err(StoreError::CorruptIndex { reason: "segment" });
         }
@@ -395,7 +404,9 @@ pub(crate) fn inspect<F: StoreFs>(fs: &F, path: &str) -> Result<PointerView, Sto
         return Ok(PointerView::Broken);
     }
     let bytes = load_limited(fs, path, POINTER_LEN)?;
-    let Ok(pointer) = decode_pointer(&bytes) else { return Ok(PointerView::Broken); };
+    let Ok(pointer) = decode_pointer(&bytes) else {
+        return Ok(PointerView::Broken);
+    };
     let man_path = manifest_path(&pointer.digest);
     if !fs.exists(&man_path)? {
         return Ok(PointerView::Broken);
@@ -411,11 +422,15 @@ pub(crate) fn inspect<F: StoreFs>(fs: &F, path: &str) -> Result<PointerView, Sto
         return Ok(PointerView::Broken);
     }
     let man_bytes = load_limited(fs, &man_path, pointer.length)?;
-    let Ok(digest) = manifest_digest(&man_bytes) else { return Ok(PointerView::Broken); };
+    let Ok(digest) = manifest_digest(&man_bytes) else {
+        return Ok(PointerView::Broken);
+    };
     if digest != pointer.digest {
         return Ok(PointerView::Broken);
     }
-    let Ok(manifest) = decode_manifest(&man_bytes) else { return Ok(PointerView::Broken); };
+    let Ok(manifest) = decode_manifest(&man_bytes) else {
+        return Ok(PointerView::Broken);
+    };
     if manifest.generation != pointer.generation {
         return Ok(PointerView::Broken);
     }
@@ -454,7 +469,9 @@ fn segment_ok<F: StoreFs>(fs: &F, segment: &SegmentRef) -> Result<bool, StoreErr
         return Ok(false);
     }
     let bytes = load_limited(fs, &path, segment.length)?;
-    let Ok(digest) = segment_object_digest(&bytes) else { return Ok(false); };
+    let Ok(digest) = segment_object_digest(&bytes) else {
+        return Ok(false);
+    };
     if digest != segment.digest || decode(&bytes, segment.role).is_err() {
         return Ok(false);
     }

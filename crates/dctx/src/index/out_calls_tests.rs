@@ -10,7 +10,16 @@ fn names(found: &[(String, Vec<u32>)]) -> Vec<&str> {
 fn python_receiver_methods_builtins_and_comments() {
     let text = "    def get_filters(self, request):\n        # fake_comment(1)\n        if self.lookup_allowed(request):\n            helper(1)\n        for f in request.items():\n            if callable(f):\n                f.has_output()\n        return helper(2)\n";
     let found = calls_in("python", text, 5, "get_filters");
-    assert_eq!(names(&found), ["lookup_allowed", "helper", "items", "callable", "has_output"]);
+    assert_eq!(
+        names(&found),
+        [
+            "lookup_allowed",
+            "helper",
+            "items",
+            "callable",
+            "has_output"
+        ]
+    );
     assert_eq!(found[0].1, vec![7]);
     assert_eq!(found[1].1, vec![8, 12]);
     assert_eq!(found[4].1, vec![11]);
@@ -20,7 +29,17 @@ fn python_receiver_methods_builtins_and_comments() {
 fn rust_paths_and_method_chains() {
     let text = "pub fn is_fast(&self) -> bool {\n    let lt = self.config.line_terminator();\n    lt.is_some() && self.non_matching_bytes().len() == 0 && match lt { _ => true } && String::new().is_empty()\n}\n";
     let found = calls_in("rust", text, 3, "is_fast");
-    assert_eq!(names(&found), ["line_terminator", "is_some", "non_matching_bytes", "len", "new", "is_empty"]);
+    assert_eq!(
+        names(&found),
+        [
+            "line_terminator",
+            "is_some",
+            "non_matching_bytes",
+            "len",
+            "new",
+            "is_empty"
+        ]
+    );
     assert_eq!(found[0].1, vec![4]);
 }
 

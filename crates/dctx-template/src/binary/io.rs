@@ -3,18 +3,26 @@
 //! Implements contracts/DTS-v2.md compiled IR and IDENTITY-v1.
 //! Depends on typed template errors and binary size limits; used by the `ContextPlan` binary codec.
 
-use crate::error::{TemplateError, MAX_PLAN_BYTES, MAX_STRING_BYTES};
+use crate::error::{MAX_PLAN_BYTES, MAX_STRING_BYTES, TemplateError};
 
 pub(super) fn count(len: usize) -> Result<u32, TemplateError> {
-    u32::try_from(len).map_err(|_| TemplateError::Limit { what: "count", limit: 100_000 })
+    u32::try_from(len).map_err(|_| TemplateError::Limit {
+        what: "count",
+        limit: 100_000,
+    })
 }
 
-pub(super) fn read_section<'a>(reader: &mut Reader<'a>) -> Result<(u16, u16, &'a [u8]), TemplateError> {
+pub(super) fn read_section<'a>(
+    reader: &mut Reader<'a>,
+) -> Result<(u16, u16, &'a [u8]), TemplateError> {
     let kind = reader.u16()?;
     let schema = reader.u16()?;
     let len = usize::try_from(reader.u32()?).unwrap_or(usize::MAX);
     if len > usize::try_from(MAX_PLAN_BYTES).unwrap_or(usize::MAX) {
-        return Err(TemplateError::Limit { what: "section", limit: u64::from(MAX_PLAN_BYTES) });
+        return Err(TemplateError::Limit {
+            what: "section",
+            limit: u64::from(MAX_PLAN_BYTES),
+        });
     }
     Ok((kind, schema, reader.take(len)?))
 }
@@ -48,7 +56,10 @@ impl Buf {
 
     pub(super) fn str(&mut self, text: &str) -> Result<(), TemplateError> {
         if text.len() > MAX_STRING_BYTES {
-            return Err(TemplateError::Limit { what: "string", limit: MAX_STRING_BYTES as u64 });
+            return Err(TemplateError::Limit {
+                what: "string",
+                limit: MAX_STRING_BYTES as u64,
+            });
         }
         self.u32(u32::try_from(text.len()).map_err(|_| TemplateError::Limit {
             what: "string",
@@ -82,9 +93,13 @@ impl<'a> Reader<'a> {
     }
 
     pub(super) fn take(&mut self, len: usize) -> Result<&'a [u8], TemplateError> {
-        let end = self.at.checked_add(len).ok_or(TemplateError::Corrupt { reason: "truncated" })?;
+        let end = self.at.checked_add(len).ok_or(TemplateError::Corrupt {
+            reason: "truncated",
+        })?;
         if end > self.data.len() {
-            return Err(TemplateError::Corrupt { reason: "truncated" });
+            return Err(TemplateError::Corrupt {
+                reason: "truncated",
+            });
         }
         let out = &self.data[self.at..end];
         self.at = end;
@@ -108,16 +123,23 @@ impl<'a> Reader<'a> {
 
     pub(super) fn u64(&mut self) -> Result<u64, TemplateError> {
         let bytes = self.take(8)?;
-        Ok(u64::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7]]))
+        Ok(u64::from_le_bytes([
+            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+        ]))
     }
 
     pub(super) fn string(&mut self) -> Result<String, TemplateError> {
         let len = usize::try_from(self.u32()?).unwrap_or(usize::MAX);
         if len > MAX_STRING_BYTES {
-            return Err(TemplateError::Limit { what: "string", limit: MAX_STRING_BYTES as u64 });
+            return Err(TemplateError::Limit {
+                what: "string",
+                limit: MAX_STRING_BYTES as u64,
+            });
         }
         let bytes = self.take(len)?;
-        std::str::from_utf8(bytes).map(str::to_string).map_err(|_| TemplateError::Corrupt { reason: "utf8" })
+        std::str::from_utf8(bytes)
+            .map(str::to_string)
+            .map_err(|_| TemplateError::Corrupt { reason: "utf8" })
     }
 
     pub(super) fn string_list(&mut self) -> Result<Vec<String>, TemplateError> {
@@ -132,7 +154,10 @@ impl<'a> Reader<'a> {
     pub(super) fn count(&mut self) -> Result<usize, TemplateError> {
         let n = usize::try_from(self.u32()?).unwrap_or(usize::MAX);
         if n > 100_000 {
-            return Err(TemplateError::Limit { what: "count", limit: 100_000 });
+            return Err(TemplateError::Limit {
+                what: "count",
+                limit: 100_000,
+            });
         }
         Ok(n)
     }
@@ -145,4 +170,3 @@ impl<'a> Reader<'a> {
         }
     }
 }
-

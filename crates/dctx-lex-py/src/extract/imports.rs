@@ -31,7 +31,15 @@ impl Walker<'_> {
             }
             let alias = self.read_alias();
             let end = self.i.saturating_sub(1).max(lo);
-            self.emit_ref(scope, EdgeKind::Imports, module, alias, lo, end, Precision::Structural);
+            self.emit_ref(
+                scope,
+                EdgeKind::Imports,
+                module,
+                alias,
+                lo,
+                end,
+                Precision::Structural,
+            );
             if !self.eat_op(",") {
                 break;
             }

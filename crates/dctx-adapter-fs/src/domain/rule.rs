@@ -33,7 +33,11 @@ impl Rule {
             Pattern::Prefix(pattern) => relative.starts_with(pattern.as_str()),
             Pattern::Path(pattern) => relative == pattern,
             Pattern::Glob(pattern) => {
-                let text = if pattern.contains('/') { relative } else { name };
+                let text = if pattern.contains('/') {
+                    relative
+                } else {
+                    name
+                };
                 glob_match(pattern.as_bytes(), text.as_bytes())
             }
         }
@@ -46,7 +50,10 @@ impl Rule {
 
 /// Parses one rule line. Blank lines and comments are `None`.
 /// `[` is a literal byte, matching the existing plain matcher.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn parse_rule(line: &str) -> Option<Rule> {
     let mut text = line.trim();
     if text.is_empty() || text.starts_with('#') {

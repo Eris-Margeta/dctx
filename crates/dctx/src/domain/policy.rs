@@ -6,7 +6,7 @@
 
 use dctx_core::domain::{FileHandlingDecision, ItemContext};
 use dctx_core::filter::{has_git_segment, is_secret_shaped_name};
-use dctx_core::selection::{glob_match, SelectionPolicy};
+use dctx_core::selection::{SelectionPolicy, glob_match};
 use dctx_template::{ContextPlan, HostCeiling, SelectRule};
 
 use super::error::DctxError;
@@ -131,7 +131,9 @@ impl PolicyView<'_> {
     pub(crate) fn check(&self) -> Result<(), DctxError> {
         match self.parser()? {
             ParserChoice::TreeSitter => Err(DctxError::unsupported("syntax-tree-sitter")),
-            ParserChoice::Syn if !cfg!(feature = "syntax-rust") => Err(DctxError::unsupported("syntax-rust")),
+            ParserChoice::Syn if !cfg!(feature = "syntax-rust") => {
+                Err(DctxError::unsupported("syntax-rust"))
+            }
             ParserChoice::Structural | ParserChoice::Opaque | ParserChoice::Syn => {
                 let _ = self.languages()?;
                 Ok(())
@@ -155,11 +157,19 @@ fn host_decision(grants: HostGrants, ceiling: &HostCeiling, path: &str) -> FileH
     }
 }
 
-fn plan_decision(plan: Option<&ContextPlan>, view_name: &str, path: &str) -> Result<FileHandlingDecision, DctxError> {
+fn plan_decision(
+    plan: Option<&ContextPlan>,
+    view_name: &str,
+    path: &str,
+) -> Result<FileHandlingDecision, DctxError> {
     let Some(plan) = plan else {
         return Ok(FileHandlingDecision::Include);
     };
-    let view = plan.views.iter().find(|view| view.name == view_name).ok_or(DctxError::PolicyUnavailable)?;
+    let view = plan
+        .views
+        .iter()
+        .find(|view| view.name == view_name)
+        .ok_or(DctxError::PolicyUnavailable)?;
     if view.selection.is_empty() {
         return Ok(FileHandlingDecision::Include);
     }
@@ -168,7 +178,10 @@ fn plan_decision(plan: Option<&ContextPlan>, view_name: &str, path: &str) -> Res
         .iter()
         .find(|selection| selection.name == view.selection)
         .ok_or(DctxError::PolicyUnavailable)?;
-    if !selection.roots.is_empty() && !path.is_empty() && !selection.roots.iter().any(|root| under_root(path, root)) {
+    if !selection.roots.is_empty()
+        && !path.is_empty()
+        && !selection.roots.iter().any(|root| under_root(path, root))
+    {
         return Ok(FileHandlingDecision::Exclude);
     }
     Ok(apply_rules(&selection.rules, path))
@@ -184,8 +197,13 @@ fn apply_rules(rules: &[SelectRule], path: &str) -> FileHandlingDecision {
     decision
 }
 
-pub(crate) fn narrower(host: FileHandlingDecision, requested: FileHandlingDecision) -> FileHandlingDecision {
-    if content_rank(requested) > content_rank(host) || visibility_rank(requested) > visibility_rank(host) {
+pub(crate) fn narrower(
+    host: FileHandlingDecision,
+    requested: FileHandlingDecision,
+) -> FileHandlingDecision {
+    if content_rank(requested) > content_rank(host)
+        || visibility_rank(requested) > visibility_rank(host)
+    {
         host
     } else {
         requested
@@ -209,11 +227,18 @@ fn visibility_rank(decision: FileHandlingDecision) -> u8 {
 }
 
 fn under_root(path: &str, root: &str) -> bool {
-    path == root || path.strip_prefix(root).is_some_and(|rest| rest.starts_with('/'))
+    path == root
+        || path
+            .strip_prefix(root)
+            .is_some_and(|rest| rest.starts_with('/'))
 }
 
 fn pattern_usable(pattern: &str) -> bool {
-    if pattern.is_empty() || pattern.len() > 4096 || pattern.contains('\0') || pattern.contains('\\') {
+    if pattern.is_empty()
+        || pattern.len() > 4096
+        || pattern.contains('\0')
+        || pattern.contains('\\')
+    {
         return false;
     }
     !pattern.split('/').any(|segment| segment == "..")
@@ -227,7 +252,8 @@ fn path_matches(pattern: &str, path: &str) -> bool {
             Some(index) => &path[index + 1..],
             None => path,
         };
-        glob_match(pattern.as_bytes(), base.as_bytes()) || glob_match(pattern.as_bytes(), path.as_bytes())
+        glob_match(pattern.as_bytes(), base.as_bytes())
+            || glob_match(pattern.as_bytes(), path.as_bytes())
     }
 }
 
@@ -267,11 +293,26 @@ mod tests {
         assert_eq!(narrower(OmitContent, Include), OmitContent);
         assert_eq!(narrower(DebugVisible, OmitContent), DebugVisible);
         let mut ceiling = HostCeiling::base();
-        assert_eq!(host_decision(HostGrants::PermitAll, &ceiling, "src/lib.rs"), Include);
-        assert_eq!(host_decision(HostGrants::Ceiling, &ceiling, "src/lib.rs"), Exclude);
-        ceiling.grants.push(GrantRule { pattern: "src/**".to_string(), decision: Include });
-        assert_eq!(host_decision(HostGrants::Ceiling, &ceiling, "src/lib.rs"), Include);
-        assert_eq!(host_decision(HostGrants::Ceiling, &ceiling, "README.md"), Exclude);
+        assert_eq!(
+            host_decision(HostGrants::PermitAll, &ceiling, "src/lib.rs"),
+            Include
+        );
+        assert_eq!(
+            host_decision(HostGrants::Ceiling, &ceiling, "src/lib.rs"),
+            Exclude
+        );
+        ceiling.grants.push(GrantRule {
+            pattern: "src/**".to_string(),
+            decision: Include,
+        });
+        assert_eq!(
+            host_decision(HostGrants::Ceiling, &ceiling, "src/lib.rs"),
+            Include
+        );
+        assert_eq!(
+            host_decision(HostGrants::Ceiling, &ceiling, "README.md"),
+            Exclude
+        );
     }
 
     #[test]
@@ -293,7 +334,13 @@ mod tests {
             checked.expect("syn is linked");
         } else {
             let error = checked.expect_err("minimal build");
-            assert!(matches!(error, DctxError::UnsupportedCapability { capability: "syntax-rust", .. }));
+            assert!(matches!(
+                error,
+                DctxError::UnsupportedCapability {
+                    capability: "syntax-rust",
+                    ..
+                }
+            ));
         }
     }
 
@@ -304,12 +351,28 @@ mod tests {
 
         let selection = SelectionPolicy::from_texts(&RuleTexts::default());
         let ceiling = HostCeiling::base();
-        let view = PolicyView { selection: &selection, ceiling: &ceiling, grants: HostGrants::PermitAll, plan: None, view: "map" };
+        let view = PolicyView {
+            selection: &selection,
+            ceiling: &ceiling,
+            grants: HostGrants::PermitAll,
+            plan: None,
+            view: "map",
+        };
         for path in [".env", "config/prod.env", ".env.local", "deploy/.envrc"] {
-            assert_eq!(view.decide(path, false).expect("decide"), FileHandlingDecision::OmitContent, "{path}");
+            assert_eq!(
+                view.decide(path, false).expect("decide"),
+                FileHandlingDecision::OmitContent,
+                "{path}"
+            );
         }
-        assert_eq!(view.decide("src/lib.rs", false).expect("decide"), FileHandlingDecision::Include);
-        assert_eq!(view.decide("settings.env", true).expect("decide"), FileHandlingDecision::Include);
+        assert_eq!(
+            view.decide("src/lib.rs", false).expect("decide"),
+            FileHandlingDecision::Include
+        );
+        assert_eq!(
+            view.decide("settings.env", true).expect("decide"),
+            FileHandlingDecision::Include
+        );
     }
 
     /// v1 card 1: key, credential and token files are content-omitted too; a look-alike source file is not.
@@ -319,11 +382,32 @@ mod tests {
 
         let selection = SelectionPolicy::from_texts(&RuleTexts::default());
         let ceiling = HostCeiling::base();
-        let view = PolicyView { selection: &selection, ceiling: &ceiling, grants: HostGrants::PermitAll, plan: None, view: "map" };
-        for path in ["certs/server.pem", "id_rsa", "keys/id_ed25519", "credentials", "config/credentials.json", ".npmrc", "deploy/secrets.yaml"] {
-            assert_eq!(view.decide(path, false).expect("decide"), FileHandlingDecision::OmitContent, "{path}");
+        let view = PolicyView {
+            selection: &selection,
+            ceiling: &ceiling,
+            grants: HostGrants::PermitAll,
+            plan: None,
+            view: "map",
+        };
+        for path in [
+            "certs/server.pem",
+            "id_rsa",
+            "keys/id_ed25519",
+            "credentials",
+            "config/credentials.json",
+            ".npmrc",
+            "deploy/secrets.yaml",
+        ] {
+            assert_eq!(
+                view.decide(path, false).expect("decide"),
+                FileHandlingDecision::OmitContent,
+                "{path}"
+            );
         }
-        assert_eq!(view.decide("src/credentials.py", false).expect("decide"), FileHandlingDecision::Include);
+        assert_eq!(
+            view.decide("src/credentials.py", false).expect("decide"),
+            FileHandlingDecision::Include
+        );
     }
 
     /// v1 card 1: `!.git/` and wildcard or nested negations cannot re-include a `.git` path.
@@ -333,12 +417,34 @@ mod tests {
 
         let ceiling = HostCeiling::base();
         for rules in ["!.git/\n", "!.g*/\n", "!nested/.git/\n!nested/.git/**\n"] {
-            let selection = SelectionPolicy::from_texts(&RuleTexts { local_ignore: Some(rules), ..RuleTexts::default() });
-            let view = PolicyView { selection: &selection, ceiling: &ceiling, grants: HostGrants::PermitAll, plan: None, view: "map" };
-            for (path, is_dir) in [(".git", true), (".git/config", false), ("nested/.git", true), ("nested/.git/config", false)] {
-                assert_eq!(view.decide(path, is_dir).expect("decide"), FileHandlingDecision::Exclude, "{rules} {path}");
+            let selection = SelectionPolicy::from_texts(&RuleTexts {
+                local_ignore: Some(rules),
+                ..RuleTexts::default()
+            });
+            let view = PolicyView {
+                selection: &selection,
+                ceiling: &ceiling,
+                grants: HostGrants::PermitAll,
+                plan: None,
+                view: "map",
+            };
+            for (path, is_dir) in [
+                (".git", true),
+                (".git/config", false),
+                ("nested/.git", true),
+                ("nested/.git/config", false),
+            ] {
+                assert_eq!(
+                    view.decide(path, is_dir).expect("decide"),
+                    FileHandlingDecision::Exclude,
+                    "{rules} {path}"
+                );
             }
-            assert_eq!(view.decide(".github/ci.yml", false).expect("decide"), FileHandlingDecision::Include, "{rules}");
+            assert_eq!(
+                view.decide(".github/ci.yml", false).expect("decide"),
+                FileHandlingDecision::Include,
+                "{rules}"
+            );
         }
     }
 }

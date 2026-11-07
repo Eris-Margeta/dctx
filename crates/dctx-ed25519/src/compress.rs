@@ -86,7 +86,10 @@ const K: [u64; 80] = [
     0x6c44_198c_4a47_5817,
 ];
 
-#[allow(clippy::many_single_char_names, reason = "Keep the a-h working variables aligned with FIPS 180-4 section 6.4.2.")]
+#[allow(
+    clippy::many_single_char_names,
+    reason = "Keep the a-h working variables aligned with FIPS 180-4 section 6.4.2."
+)]
 pub(crate) fn compress(state: &mut [u64; 8], block: &[u8; 128]) {
     let mut schedule = [0u64; 80];
     for (word, chunk) in schedule.iter_mut().zip(block.as_chunks::<8>().0) {

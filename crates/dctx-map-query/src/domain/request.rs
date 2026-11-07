@@ -2,9 +2,9 @@
 //! Validated traversal options and continuation commands.
 //! Implements SPEC-MAP-MODE sections 3 and 4 with explicit hard bounds.
 //! Uses model budgets; the CLI and library share these request rules.
-use std::fmt::Write as _;
 use crate::{Error, Result};
 use dctx_map_model::{AnswerBudget, EdgeKind, Verb};
+use std::fmt::Write as _;
 
 /// Which directions to traverse from a node.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -134,19 +134,21 @@ impl Request {
             self.budget.tokens()
         );
         if matches!(self.verb, Verb::Map | Verb::Find | Verb::Neighbors) {
-            write!(out," --limit {} --offset {offset}", self.limit).expect("writing to a String cannot fail");
+            write!(out, " --limit {} --offset {offset}", self.limit)
+                .expect("writing to a String cannot fail");
         }
         if matches!(self.verb, Verb::Map | Verb::Neighbors) {
-            write!(out," --depth {}", self.depth).expect("writing to a String cannot fail");
+            write!(out, " --depth {}", self.depth).expect("writing to a String cannot fail");
         }
         if !self.kinds.is_empty() {
-            write!(out," --kind {}", quote(&self.kinds.join(","))).expect("writing to a String cannot fail");
+            write!(out, " --kind {}", quote(&self.kinds.join(",")))
+                .expect("writing to a String cannot fail");
         }
         if let Some(path) = &self.within {
-            write!(out," --in {}", quote(path)).expect("writing to a String cannot fail");
+            write!(out, " --in {}", quote(path)).expect("writing to a String cannot fail");
         }
         if let Some(rev) = &self.revision {
-            write!(out," --rev {}", quote(rev)).expect("writing to a String cannot fail");
+            write!(out, " --rev {}", quote(rev)).expect("writing to a String cannot fail");
         }
         if self.verb == Verb::Neighbors {
             out.push_str(match self.direction {
@@ -155,18 +157,20 @@ impl Request {
                 Direction::Both => " --dir both",
             });
             if !self.edges.is_empty() {
-                write!(out,
+                write!(
+                    out,
                     " --edge {}",
                     self.edges
                         .iter()
                         .map(|e| e.as_str())
                         .collect::<Vec<_>>()
                         .join(",")
-                ).expect("writing to a String cannot fail");
+                )
+                .expect("writing to a String cannot fail");
             }
         }
         if let Some([a, b]) = self.lines {
-            write!(out," --lines {a}-{b}").expect("writing to a String cannot fail");
+            write!(out, " --lines {a}-{b}").expect("writing to a String cannot fail");
         }
         if self.full {
             out.push_str(" --full");

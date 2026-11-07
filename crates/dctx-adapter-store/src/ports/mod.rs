@@ -4,7 +4,7 @@
 //! Depends on [`crate::domain::Boundary`] and [`crate::domain::StoreError`]. [`crate::adapters`] implement it.
 //! `checkpoint` is the crash cut. A real disk treats it as a no-op. Std confinement lives below the trait.
 
-use crate::domain::{Boundary, StoreError, POINTER_LEN};
+use crate::domain::{Boundary, POINTER_LEN, StoreError};
 
 /// Largest object a writer behind this store can leave on disk, in bytes.
 /// The segment codec ceiling and the map index 512 MiB admission cap both apply; the greater one wins.
@@ -154,7 +154,10 @@ pub(crate) fn io_err(err: std::io::Error) -> StoreError {
 }
 
 /// Refuses a symlink component. A parent replaced by a symlink after this walk is a residual race.
-pub(crate) fn confine_under(root: &std::path::Path, rel: &str) -> Result<std::path::PathBuf, StoreError> {
+pub(crate) fn confine_under(
+    root: &std::path::Path,
+    rel: &str,
+) -> Result<std::path::PathBuf, StoreError> {
     crate::domain::check_rel(rel)?;
     let parts: Vec<&str> = rel.split('/').collect();
     let mut base = root.to_path_buf();
@@ -174,7 +177,11 @@ pub(crate) fn confine_under(root: &std::path::Path, rel: &str) -> Result<std::pa
             Ok(meta) if meta.is_file() && last => return path_inside(root, &next),
             Ok(_) => return Err(StoreError::InvalidRequest { reason: "path" }),
             Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
-                let rest = if last { next } else { base.join(parts[index..].join("/")) };
+                let rest = if last {
+                    next
+                } else {
+                    base.join(parts[index..].join("/"))
+                };
                 return Ok(rest);
             }
             Err(err) => return Err(io_err(err)),
@@ -187,7 +194,9 @@ pub(crate) fn ensure_dir(root: &std::path::Path, dir: &std::path::Path) -> Resul
     if !dir.starts_with(root) {
         return Err(StoreError::InvalidRequest { reason: "path" });
     }
-    let rel = dir.strip_prefix(root).map_err(|_| StoreError::InvalidRequest { reason: "path" })?;
+    let rel = dir
+        .strip_prefix(root)
+        .map_err(|_| StoreError::InvalidRequest { reason: "path" })?;
     let mut cursor = root.to_path_buf();
     for part in rel.components() {
         cursor.push(part);
@@ -269,7 +278,10 @@ fn create_dir(dir: &std::path::Path) -> Result<(), StoreError> {
     Ok(())
 }
 
-fn path_inside(root: &std::path::Path, path: &std::path::Path) -> Result<std::path::PathBuf, StoreError> {
+fn path_inside(
+    root: &std::path::Path,
+    path: &std::path::Path,
+) -> Result<std::path::PathBuf, StoreError> {
     let got = std::fs::canonicalize(path).map_err(io_err)?;
     if got.starts_with(root) {
         Ok(got)
@@ -306,8 +318,12 @@ fn walk(
         if !kind.is_file() {
             continue;
         }
-        let rel = path.strip_prefix(root).map_err(|_| StoreError::InvalidRequest { reason: "path" })?;
-        let text = rel.to_str().ok_or(StoreError::InvalidRequest { reason: "path" })?;
+        let rel = path
+            .strip_prefix(root)
+            .map_err(|_| StoreError::InvalidRequest { reason: "path" })?;
+        let text = rel
+            .to_str()
+            .ok_or(StoreError::InvalidRequest { reason: "path" })?;
         if text.replace('\\', "/").starts_with(prefix) {
             out.push(text.replace('\\', "/"));
         }
@@ -317,7 +333,12 @@ fn walk(
 
 #[cfg(any(target_os = "linux", target_os = "android"))]
 const NOFOLLOW: i32 = 0x20000;
-#[cfg(any(target_os = "macos", target_os = "ios", target_os = "tvos", target_os = "watchos"))]
+#[cfg(any(
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "tvos",
+    target_os = "watchos"
+))]
 const NOFOLLOW: i32 = 0x100;
 #[cfg(all(
     unix,

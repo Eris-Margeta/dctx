@@ -25,7 +25,10 @@ pub struct Template {
 
 impl Template {
     /// Parses v1 source. Unknown headers do not change the current section.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn parse(raw: &str) -> Self {
         let mut variables = HashMap::new();
         let mut partial_tree = String::new();
@@ -79,11 +82,16 @@ impl Template {
     }
 
     /// Reports empty layouts, unresolved `{{var}}` references and variable cycles.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn validate(&self) -> Vec<TemplateValidationError> {
         let mut errors = Vec::new();
         if self.layout.is_empty() {
-            errors.push(TemplateValidationError::EmptySection("[LAYOUT]".to_string()));
+            errors.push(TemplateValidationError::EmptySection(
+                "[LAYOUT]".to_string(),
+            ));
         }
         for name in &self.cycles {
             errors.push(TemplateValidationError::Cycle(name.clone()));
@@ -122,8 +130,14 @@ pub(crate) fn finish(
 }
 
 /// Replaces `{{key}}` using `HashMap` iteration order, matching the v1 renderer.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
-#[allow(clippy::implicit_hasher, reason = "Keep the public v1 HashMap signature and its documented default-hasher iteration contract; generalizing it would change the API.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
+#[allow(
+    clippy::implicit_hasher,
+    reason = "Keep the public v1 HashMap signature and its documented default-hasher iteration contract; generalizing it would change the API."
+)]
 pub fn replace_vars(text: &str, vars: &HashMap<String, String>) -> String {
     let mut result = text.to_string();
     if !result.contains("{{") {
@@ -149,9 +163,17 @@ pub fn replace_vars_in_order(text: &str, vars: &[(String, String)]) -> String {
     result
 }
 
-fn collect_unresolved(text: &str, vars: &HashMap<String, String>, errors: &mut Vec<TemplateValidationError>) {
+fn collect_unresolved(
+    text: &str,
+    vars: &HashMap<String, String>,
+    errors: &mut Vec<TemplateValidationError>,
+) {
     for name in brace_names(text) {
-        if !name.is_empty() && !name.contains('{') && !name.contains('}') && !vars.contains_key(&name) {
+        if !name.is_empty()
+            && !name.contains('{')
+            && !name.contains('}')
+            && !vars.contains_key(&name)
+        {
             errors.push(TemplateValidationError::UnresolvedVariable(name));
         }
     }
@@ -191,9 +213,7 @@ fn find_cycles(vars: &HashMap<String, String>) -> Vec<String> {
         let deps: Vec<&str> = brace_names(value)
             .into_iter()
             .filter(|name| vars.contains_key(name))
-            .map(|name| {
-                vars.get_key_value(&name).map_or("", |(k, _)| k.as_str())
-            })
+            .map(|name| vars.get_key_value(&name).map_or("", |(k, _)| k.as_str()))
             .filter(|name| !name.is_empty())
             .collect();
         edges.insert(key.as_str(), deps);
@@ -248,6 +268,11 @@ mod tests {
         let cyclic = "[VARIABLES]\na = \"{{b}}\"\nb = \"{{a}}\"\n[LAYOUT]\n{{a}}\n";
         let template = Template::parse(cyclic);
         assert_ne!(template.cycles, [] as [std::string::String; 0]);
-        assert!(template.validate().iter().any(|err| matches!(err, TemplateValidationError::Cycle(_))));
+        assert!(
+            template
+                .validate()
+                .iter()
+                .any(|err| matches!(err, TemplateValidationError::Cycle(_)))
+        );
     }
 }

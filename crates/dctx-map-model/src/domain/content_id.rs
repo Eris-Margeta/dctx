@@ -15,7 +15,10 @@ pub enum ContentAlgorithm {
 
 impl ContentAlgorithm {
     /// Stable code stored with the digest.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn code(self) -> u16 {
         match self {
             Self::Sha256 => dctx_hash::IdentityAlgorithm::SHA256,
@@ -23,7 +26,10 @@ impl ContentAlgorithm {
     }
 
     /// Short name used in the textual identity.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn name(self) -> &'static str {
         match self {
             Self::Sha256 => "sha256",
@@ -69,13 +75,19 @@ impl ContentId {
     }
 
     /// Identity layout version. SHA-256 v1 returns 1.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn version(self) -> u8 {
         self.0.version()
     }
 
     /// Algorithm tag.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn algorithm(self) -> ContentAlgorithm {
         match self.0.algorithm() {
             dctx_hash::IdentityAlgorithm::Sha256 => ContentAlgorithm::Sha256,
@@ -83,13 +95,19 @@ impl ContentId {
     }
 
     /// Number of content bytes that were hashed.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn byte_length(self) -> u64 {
         self.0.byte_length()
     }
 
     /// Raw digest bytes. The algorithm tag is [`Self::algorithm`].
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn digest_bytes(&self) -> &[u8; 32] {
         self.0.as_bytes()
     }
@@ -122,9 +140,10 @@ impl ContentId {
         }
         let mut bytes = [0u8; 32];
         for (index, chunk) in hex.as_bytes().chunks(2).enumerate() {
-            let pair = std::str::from_utf8(chunk).map_err(|_| InvalidContentId::UnsupportedIdentity)?;
-            bytes[index] = u8::from_str_radix(pair, 16)
-                .map_err(|_| InvalidContentId::UnsupportedIdentity)?;
+            let pair =
+                std::str::from_utf8(chunk).map_err(|_| InvalidContentId::UnsupportedIdentity)?;
+            bytes[index] =
+                u8::from_str_radix(pair, 16).map_err(|_| InvalidContentId::UnsupportedIdentity)?;
         }
         let byte_length = canonical_u64(length).ok_or(InvalidContentId::UnsupportedIdentity)?;
         Ok(Self(dctx_hash::ContentDigest::sha256(bytes, byte_length)))
@@ -166,8 +185,8 @@ impl FromStr for ContentId {
 
 #[cfg(test)]
 mod tests {
-    use std::fmt::Write as _;
     use super::*;
+    use std::fmt::Write as _;
 
     #[test]
     fn own_digest_is_tagged_and_untagged_hex_is_refused() {
@@ -185,7 +204,10 @@ mod tests {
         assert_eq!(
             abc.digest_bytes()
                 .iter()
-                .fold(String::new(), |mut text, byte| { write!(text, "{byte:02x}").unwrap(); text }),
+                .fold(String::new(), |mut text, byte| {
+                    write!(text, "{byte:02x}").unwrap();
+                    text
+                }),
             "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
         );
         assert!(abc.to_string().ends_with(":3"));

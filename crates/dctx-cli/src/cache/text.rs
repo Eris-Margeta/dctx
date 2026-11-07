@@ -4,9 +4,9 @@
 //! Depends on adapter status types and the facade [`dctx::CacheReport`]. The command module prints this text.
 //! JSON is hand-built so the CLI does not add a serializer.
 
-use std::fmt::Write as _;
 use dctx::CacheReport;
 use dctx_adapter_cache::{Blocker, MaintainReport, PurgeReport, Status, DAY_MS};
+use std::fmt::Write as _;
 
 use crate::host::{AutoReport, CachePolicy};
 
@@ -134,29 +134,6 @@ held_by_lease: {}
     )
 }
 
-pub fn legacy(dry_run: bool, candidates: u64, candidate_bytes: u64, left_alone: u64, reclaimed: u64, session: &CacheReport, json: bool) -> String {
-    if json {
-        return format!(
-            "{{\"command\":\"gc\",\"legacy\":true,\"dry_run\":{},\"home_scan\":false,\"candidates\":{candidates},\"candidate_bytes\":{candidate_bytes},\"left_alone\":{left_alone},\"reclaimed_bytes\":{reclaimed},{}}}",
-            bool_json(dry_run),
-            session_json(session)
-        );
-    }
-    format!(
-        "\
-command: gc
-legacy: true
-dry_run: {dry_run}
-home_scan: false
-candidates: {candidates}
-candidate_bytes: {candidate_bytes}
-left_alone: {left_alone}
-reclaimed_bytes: {reclaimed}
-{}",
-        session_lines(session)
-    )
-}
-
 pub fn config_text(policy: &CachePolicy, json: bool) -> String {
     let ttl_days = policy.auto.overlay_ttl_ms / DAY_MS;
     if json {
@@ -219,20 +196,23 @@ last_auto_clean_ms: {last}
 reclaimed_bytes: {}
 next_due_ms: {}
 ",
-        report.enabled,
-        report.reclaimed_bytes,
-        report.next_due_ms
+        report.enabled, report.reclaimed_bytes, report.next_due_ms
     )
 }
 
 fn on_off(enabled: bool) -> &'static str {
-    if enabled { "on" } else { "off" }
+    if enabled {
+        "on"
+    } else {
+        "off"
+    }
 }
 
 fn root_lines(report: &Status) -> String {
     let mut out = String::new();
     for root in &report.roots {
-        let _ = writeln!(out,
+        let _ = writeln!(
+            out,
             "root {} exclusive={} shared={}",
             root.id.raw(),
             root.exclusive_bytes,
@@ -292,7 +272,11 @@ fn blocker_list(blockers: &[Blocker]) -> String {
 }
 
 fn bool_json(value: bool) -> &'static str {
-    if value { "true" } else { "false" }
+    if value {
+        "true"
+    } else {
+        "false"
+    }
 }
 
 fn escape(value: &str) -> String {

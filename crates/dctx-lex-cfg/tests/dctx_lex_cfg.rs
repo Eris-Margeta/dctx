@@ -5,19 +5,40 @@
 #![forbid(unsafe_code)]
 
 use dctx_lex_cfg::{
-    body_fingerprint, Completion, CfgLexer, DiagnosticReason, Dialect, LexedFile, Precision,
-    PARSER_ID, PARSER_REVISION,
+    CfgLexer, Completion, DiagnosticReason, Dialect, LexedFile, PARSER_ID, PARSER_REVISION,
+    Precision, body_fingerprint,
 };
 use dctx_map_model::{EdgeKind, NodeKind, SummarySource, SymbolKind};
 use std::collections::BTreeSet;
 
-const JSON: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/basic.json"));
-const TOML: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/basic.toml"));
-const YAML: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/basic.yaml"));
-const PARTIAL: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/incomplete.yaml"));
-const WORKFLOWS: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/workflows.yaml"));
-const SETTINGS: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/settings.json"));
-const EDGE_TOML: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/edge.toml"));
+const JSON: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/fixtures/basic.json"
+));
+const TOML: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/fixtures/basic.toml"
+));
+const YAML: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/fixtures/basic.yaml"
+));
+const PARTIAL: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/fixtures/incomplete.yaml"
+));
+const WORKFLOWS: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/fixtures/workflows.yaml"
+));
+const SETTINGS: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/fixtures/settings.json"
+));
+const EDGE_TOML: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/fixtures/edge.toml"
+));
 
 fn extract(path: &str, source: &str) -> LexedFile {
     CfgLexer::default()
@@ -26,7 +47,11 @@ fn extract(path: &str, source: &str) -> LexedFile {
 }
 
 fn names(facts: &LexedFile) -> Vec<&str> {
-    facts.nodes.iter().map(|node| node.fact.name.as_str()).collect()
+    facts
+        .nodes
+        .iter()
+        .map(|node| node.fact.name.as_str())
+        .collect()
 }
 
 fn node<'a>(facts: &'a LexedFile, name: &str) -> &'a dctx_map_model::Node {
@@ -39,36 +64,66 @@ fn node<'a>(facts: &'a LexedFile, name: &str) -> &'a dctx_map_model::Node {
 }
 
 fn refs(facts: &LexedFile) -> Vec<&str> {
-    facts.references.iter().map(|reference| reference.fact.name.as_str()).collect()
+    facts
+        .references
+        .iter()
+        .map(|reference| reference.fact.name.as_str())
+        .collect()
 }
 
 fn assert_store(facts: &LexedFile, source: &str) {
-    let file_end = u32::try_from(source.bytes().filter(|byte| *byte == b'\n').count()).expect("bounded test coordinate") + 1;
+    let file_end = u32::try_from(source.bytes().filter(|byte| *byte == b'\n').count())
+        .expect("bounded test coordinate")
+        + 1;
     assert_ne!(facts.nodes, []);
     assert_eq!(facts.nodes[0].fact.kind, NodeKind::Module, "{}", facts.path);
     assert_eq!(facts.edges.len(), facts.nodes.len() - 1);
     assert!(facts.diagnostics.len() <= LexedFile::MAX_DIAGNOSTICS);
-    let expect = if facts.diagnostics.is_empty() { Completion::Complete } else { Completion::Partial };
+    let expect = if facts.diagnostics.is_empty() {
+        Completion::Complete
+    } else {
+        Completion::Partial
+    };
     assert_eq!(facts.completion, expect);
     let mut ids = BTreeSet::new();
     for labeled in &facts.nodes {
         let node = &labeled.fact;
-        assert!(!matches!(node.kind, NodeKind::Place | NodeKind::Package), "{}", node.name);
+        assert!(
+            !matches!(node.kind, NodeKind::Place | NodeKind::Package),
+            "{}",
+            node.name
+        );
         assert_eq!(node.path, facts.path, "{}", node.name);
-        let identity = node.id.as_str().split_once(':').map(|(_, rest)| match rest.split_once('#') {
-            Some((path, _)) => path,
-            None => rest,
-        });
+        let identity =
+            node.id
+                .as_str()
+                .split_once(':')
+                .map(|(_, rest)| match rest.split_once('#') {
+                    Some((path, _)) => path,
+                    None => rest,
+                });
         assert_eq!(identity, Some(facts.path.as_str()), "{}", node.id);
-        assert!(node.id.as_str().starts_with(node.kind.letter()), "{}", node.id);
-        assert!(node.lines[0] >= 1 && node.lines[1] >= node.lines[0] && node.lines[1] <= file_end, "{}", node.name);
+        assert!(
+            node.id.as_str().starts_with(node.kind.letter()),
+            "{}",
+            node.id
+        );
+        assert!(
+            node.lines[0] >= 1 && node.lines[1] >= node.lines[0] && node.lines[1] <= file_end,
+            "{}",
+            node.name
+        );
         assert_eq!(node.fingerprint.len(), 64, "{}", node.name);
         assert!(!node.summary.text.contains(['\n', '\r']));
         assert!(node.summary.text.chars().count() <= 100, "{}", node.name);
         assert!(!node.signature.contains(['\n', '\r']));
         assert!(node.signature.chars().count() <= 160, "{}", node.name);
         assert!(!node.public);
-        assert!(ids.insert(node.id.as_str().to_owned()), "duplicate {}", node.id);
+        assert!(
+            ids.insert(node.id.as_str().to_owned()),
+            "duplicate {}",
+            node.id
+        );
     }
     let mut owned = BTreeSet::from([facts.nodes[0].fact.id.as_str()]);
     loop {
@@ -87,16 +142,28 @@ fn assert_store(facts: &LexedFile, source: &str) {
         }
     }
     for node in &facts.nodes {
-        assert!(owned.contains(node.fact.id.as_str()), "{} is not owned by the file", node.fact.name);
+        assert!(
+            owned.contains(node.fact.id.as_str()),
+            "{} is not owned by the file",
+            node.fact.name
+        );
     }
     for reference in &facts.references {
         assert_eq!(reference.fact.kind, EdgeKind::Imports);
         assert!(reference.fact.alias.is_none());
         assert_eq!(reference.fact.owner_path, facts.path);
-        assert!(ids.contains(reference.fact.src.as_str()), "{}", reference.fact.name);
+        assert!(
+            ids.contains(reference.fact.src.as_str()),
+            "{}",
+            reference.fact.name
+        );
         assert_ne!(reference.fact.name, "");
         let [start, end] = reference.fact.lines;
-        assert!(start >= 1 && end >= start && end <= file_end, "{}", reference.fact.name);
+        assert!(
+            start >= 1 && end >= start && end <= file_end,
+            "{}",
+            reference.fact.name
+        );
     }
 }
 
@@ -115,9 +182,24 @@ fn parser_identity_and_json_golden() {
     assert_eq!(facts.dialect, Dialect::Json);
     assert_eq!(facts.completion, Completion::Complete);
     assert_eq!(facts.diagnostics, []);
-    assert!(facts.nodes.iter().all(|node| node.precision == Precision::Structural));
-    assert!(facts.edges.iter().all(|edge| edge.precision == Precision::Structural));
-    assert!(facts.references.iter().all(|reference| reference.precision == Precision::Convention));
+    assert!(
+        facts
+            .nodes
+            .iter()
+            .all(|node| node.precision == Precision::Structural)
+    );
+    assert!(
+        facts
+            .edges
+            .iter()
+            .all(|edge| edge.precision == Precision::Structural)
+    );
+    assert!(
+        facts
+            .references
+            .iter()
+            .all(|reference| reference.precision == Precision::Convention)
+    );
     assert_eq!(
         names(&facts),
         [
@@ -134,23 +216,40 @@ fn parser_identity_and_json_golden() {
             "workspaces.1",
         ]
     );
-    assert_eq!(refs(&facts), ["serde", "local", "../local", "crates/core", "crates/cli"]);
+    assert_eq!(
+        refs(&facts),
+        ["serde", "local", "../local", "crates/core", "crates/cli"]
+    );
     assert_eq!(facts.nodes[0].fact.id.as_str(), "m:basic.json");
     assert_eq!(facts.nodes[0].fact.fingerprint, body_fingerprint(JSON));
-    assert_eq!(node(&facts, "package").symbol_kind, Some(SymbolKind::Struct));
+    assert_eq!(
+        node(&facts, "package").symbol_kind,
+        Some(SymbolKind::Struct)
+    );
     assert_eq!(node(&facts, "package.name").symbol_kind, None);
     assert_eq!(node(&facts, "package.name").signature, "demo");
     assert_eq!(node(&facts, "package.version").signature, "0.1.0");
-    assert_eq!(node(&facts, "dependencies.local.path").signature, "../local");
+    assert_eq!(
+        node(&facts, "dependencies.local.path").signature,
+        "../local"
+    );
     assert_eq!(node(&facts, "workspaces.0").signature, "crates/core");
-    assert_eq!(node(&facts, "package.name").id.as_str(), "s:basic.json#package.name");
+    assert_eq!(
+        node(&facts, "package.name").id.as_str(),
+        "s:basic.json#package.name"
+    );
 }
 
 #[test]
 fn toml_golden_comments_tables_and_paths() {
     let facts = load("basic.toml", TOML);
     assert_eq!(facts.dialect, Dialect::Toml);
-    assert_eq!(facts.completion, Completion::Complete, "{:?}", facts.diagnostics);
+    assert_eq!(
+        facts.completion,
+        Completion::Complete,
+        "{:?}",
+        facts.diagnostics
+    );
     assert_eq!(
         names(&facts),
         [
@@ -175,11 +274,32 @@ fn toml_golden_comments_tables_and_paths() {
             "profile.release.lto",
         ]
     );
-    assert_eq!(refs(&facts), ["serde", "local", "../local", "crates/core", "crates/cli", "src/main.rs"]);
-    assert!(facts.references.iter().all(|reference| reference.precision == Precision::Convention));
-    assert_eq!(facts.nodes[0].fact.summary.text, "Package demo is a sample.");
+    assert_eq!(
+        refs(&facts),
+        [
+            "serde",
+            "local",
+            "../local",
+            "crates/core",
+            "crates/cli",
+            "src/main.rs"
+        ]
+    );
+    assert!(
+        facts
+            .references
+            .iter()
+            .all(|reference| reference.precision == Precision::Convention)
+    );
+    assert_eq!(
+        facts.nodes[0].fact.summary.text,
+        "Package demo is a sample."
+    );
     assert_eq!(facts.nodes[0].fact.summary.source, SummarySource::Doc);
-    assert_eq!(node(&facts, "package").summary.text, "Package demo is a sample.");
+    assert_eq!(
+        node(&facts, "package").summary.text,
+        "Package demo is a sample."
+    );
     let version = node(&facts, "package.version");
     assert_eq!(version.summary.text, "semver");
     assert_eq!(version.summary.source, SummarySource::Doc);
@@ -193,7 +313,12 @@ fn toml_golden_comments_tables_and_paths() {
 fn yaml_golden_anchors_are_not_expanded() {
     let facts = load("basic.yaml", YAML);
     assert_eq!(facts.dialect, Dialect::Yaml);
-    assert_eq!(facts.completion, Completion::Complete, "{:?}", facts.diagnostics);
+    assert_eq!(
+        facts.completion,
+        Completion::Complete,
+        "{:?}",
+        facts.diagnostics
+    );
     assert_eq!(
         names(&facts),
         [
@@ -214,7 +339,10 @@ fn yaml_golden_anchors_are_not_expanded() {
             "workspace.members.1",
         ]
     );
-    assert_eq!(refs(&facts), ["serde", "local", "../local", "crates/core", "crates/cli"]);
+    assert_eq!(
+        refs(&facts),
+        ["serde", "local", "../local", "crates/core", "crates/cli"]
+    );
     assert_eq!(facts.nodes[0].fact.summary.text, "Service demo.");
     assert_eq!(node(&facts, "package").summary.text, "Service demo.");
     let version = node(&facts, "package.version");
@@ -223,7 +351,12 @@ fn yaml_golden_anchors_are_not_expanded() {
     assert_eq!(version.signature, "0.1.0");
     assert!(node(&facts, "anchor").signature.contains("&base"));
     assert_eq!(node(&facts, "use").signature, "*base");
-    assert!(facts.nodes.iter().all(|node| node.fact.name != "use.enabled"));
+    assert!(
+        facts
+            .nodes
+            .iter()
+            .all(|node| node.fact.name != "use.enabled")
+    );
 }
 
 #[test]
@@ -243,10 +376,21 @@ fn yaml_documents_are_indexed_and_a_single_marker_is_not() {
 
 #[test]
 fn urls_globs_and_bare_members_abstain() {
-    let yaml = load("a.yaml", "site: https://example.com/a\ninclude: crates/*\nmembers:\n  - crates/core\n");
+    let yaml = load(
+        "a.yaml",
+        "site: https://example.com/a\ninclude: crates/*\nmembers:\n  - crates/core\n",
+    );
     assert!(yaml.references.is_empty(), "{:?}", refs(&yaml));
-    assert_eq!(yaml.completion, Completion::Complete, "{:?}", yaml.diagnostics);
-    let toml = load("a.toml", "site = \"https://example.com/a\"\ninclude = \"crates/*\"\nmembers = [\"crates/core\"]\n");
+    assert_eq!(
+        yaml.completion,
+        Completion::Complete,
+        "{:?}",
+        yaml.diagnostics
+    );
+    let toml = load(
+        "a.toml",
+        "site = \"https://example.com/a\"\ninclude = \"crates/*\"\nmembers = [\"crates/core\"]\n",
+    );
     assert!(toml.references.is_empty(), "{:?}", refs(&toml));
 }
 
@@ -254,13 +398,34 @@ fn urls_globs_and_bare_members_abstain() {
 fn incomplete_yaml_keeps_partial_facts() {
     let facts = load("incomplete.yaml", PARTIAL);
     assert_eq!(facts.completion, Completion::Partial);
-    assert!(facts.diagnostics.iter().any(|item| item.reason == DiagnosticReason::UnterminatedString));
-    assert!(facts.diagnostics.iter().any(|item| item.reason == DiagnosticReason::UnbalancedBracket));
+    assert!(
+        facts
+            .diagnostics
+            .iter()
+            .any(|item| item.reason == DiagnosticReason::UnterminatedString)
+    );
+    assert!(
+        facts
+            .diagnostics
+            .iter()
+            .any(|item| item.reason == DiagnosticReason::UnbalancedBracket)
+    );
     for name in ["ok", "nested", "nested.child"] {
-        assert!(names(&facts).contains(&name), "{name} missing in {:?}", names(&facts));
+        assert!(
+            names(&facts).contains(&name),
+            "{name} missing in {:?}",
+            names(&facts)
+        );
     }
     assert_eq!(facts.nodes[0].precision, Precision::Structural);
-    let precision = |name: &str| facts.nodes.iter().find(|node| node.fact.name == name).unwrap().precision;
+    let precision = |name: &str| {
+        facts
+            .nodes
+            .iter()
+            .find(|node| node.fact.name == name)
+            .unwrap()
+            .precision
+    };
     assert_eq!(precision("ok"), Precision::Structural);
     assert_eq!(precision("nested.child"), Precision::Structural);
 }
@@ -282,10 +447,18 @@ fn assert_stable(path: &str, bytes: &[u8]) {
 }
 
 #[test]
-#[allow(clippy::too_many_lines, reason = "This test keeps the real-world dialect samples beside their common extraction and invariant checks.")]
+#[allow(
+    clippy::too_many_lines,
+    reason = "This test keeps the real-world dialect samples beside their common extraction and invariant checks."
+)]
 fn real_world_dialects_parse_completely() {
     let yaml = load("workflows.yaml", WORKFLOWS);
-    assert_eq!(yaml.completion, Completion::Complete, "{:?}", yaml.diagnostics);
+    assert_eq!(
+        yaml.completion,
+        Completion::Complete,
+        "{:?}",
+        yaml.diagnostics
+    );
     assert_eq!(
         names(&yaml),
         [
@@ -336,7 +509,10 @@ fn real_world_dialects_parse_completely() {
     assert_eq!(node(&yaml, "on.push.branches.0").signature, "master");
     assert_eq!(node(&yaml, "on.schedule.0.cron").signature, "00 01 * * *");
     assert_eq!(node(&yaml, "jobs.test.include.1.build").signature, "stable");
-    assert_eq!(node(&yaml, "jobs.test.steps.0.run").signature, "echo one echo two");
+    assert_eq!(
+        node(&yaml, "jobs.test.steps.0.run").signature,
+        "echo one echo two"
+    );
     assert_eq!(node(&yaml, "jobs.test.steps.1.run").signature, "echo done");
     assert_eq!(node(&yaml, "patterns.0").signature, "*");
     assert_eq!(node(&yaml, "patterns.1").signature, "80:80");
@@ -349,7 +525,12 @@ fn real_world_dialects_parse_completely() {
 
     let json = load("settings.json", SETTINGS);
     assert_eq!(json.dialect, Dialect::Json);
-    assert_eq!(json.completion, Completion::Complete, "{:?}", json.diagnostics);
+    assert_eq!(
+        json.completion,
+        Completion::Complete,
+        "{:?}",
+        json.diagnostics
+    );
     assert_eq!(
         names(&json),
         [
@@ -359,11 +540,19 @@ fn real_world_dialects_parse_completely() {
             "editor.tabSize",
         ]
     );
-    assert_eq!(node(&json, "rust-analyzer.linkedProjects.0").signature, "Cargo.toml");
+    assert_eq!(
+        node(&json, "rust-analyzer.linkedProjects.0").signature,
+        "Cargo.toml"
+    );
     assert_eq!(node(&json, "editor.tabSize").signature, "4");
 
     let toml = load("edge.toml", EDGE_TOML);
-    assert_eq!(toml.completion, Completion::Complete, "{:?}", toml.diagnostics);
+    assert_eq!(
+        toml.completion,
+        Completion::Complete,
+        "{:?}",
+        toml.diagnostics
+    );
     assert_eq!(
         names(&toml),
         [
@@ -376,38 +565,79 @@ fn real_world_dialects_parse_completely() {
             "package.name.full",
         ]
     );
-    assert_eq!(node(&toml, "target.cfg(windows).dependencies.winapi").signature, "0.3");
+    assert_eq!(
+        node(&toml, "target.cfg(windows).dependencies.winapi").signature,
+        "0.3"
+    );
     assert_eq!(node(&toml, "package.name.full").signature, "demo");
 
     let paired = load("a.yaml", "a:\n- 1\nb:\n- 2\n");
-    assert_eq!(paired.completion, Completion::Complete, "{:?}", paired.diagnostics);
+    assert_eq!(
+        paired.completion,
+        Completion::Complete,
+        "{:?}",
+        paired.diagnostics
+    );
     assert_eq!(names(&paired), ["a.yaml", "a", "a.0", "b", "b.0"]);
 
     let block = load("a.yaml", "lines:\n- |\n  one\n\n  two\nnext: 1\n");
-    assert_eq!(block.completion, Completion::Complete, "{:?}", block.diagnostics);
+    assert_eq!(
+        block.completion,
+        Completion::Complete,
+        "{:?}",
+        block.diagnostics
+    );
     assert_eq!(node(&block, "lines.0").signature, "one two");
     assert_eq!(node(&block, "next").signature, "1");
 
     let commented = load("a.yaml", "steps: # build\n- run: test\n");
-    assert_eq!(commented.completion, Completion::Complete, "{:?}", commented.diagnostics);
+    assert_eq!(
+        commented.completion,
+        Completion::Complete,
+        "{:?}",
+        commented.diagnostics
+    );
     assert_eq!(node(&commented, "steps").summary.text, "build");
     assert_eq!(node(&commented, "steps.0.run").signature, "test");
 
     let tabbed = load("a.yaml", "a:\tb # note\nb: 1\n");
-    assert_eq!(tabbed.completion, Completion::Complete, "{:?}", tabbed.diagnostics);
+    assert_eq!(
+        tabbed.completion,
+        Completion::Complete,
+        "{:?}",
+        tabbed.diagnostics
+    );
     assert_eq!(node(&tabbed, "a").signature, "b");
     assert_eq!(node(&tabbed, "a").summary.text, "note");
 
     let dashed = load("a.yaml", "items:\n-\t\"*\"\n");
-    assert_eq!(dashed.completion, Completion::Complete, "{:?}", dashed.diagnostics);
+    assert_eq!(
+        dashed.completion,
+        Completion::Complete,
+        "{:?}",
+        dashed.diagnostics
+    );
     assert_eq!(node(&dashed, "items.0").signature, "*");
 
     let directive = load("a.yaml", "%YAML 1.1\n--- # generated\na: 1\n");
-    assert_eq!(directive.completion, Completion::Complete, "{:?}", directive.diagnostics);
+    assert_eq!(
+        directive.completion,
+        Completion::Complete,
+        "{:?}",
+        directive.diagnostics
+    );
     assert_eq!(names(&directive), ["a.yaml", "a"]);
 
-    let flow = load("a.yaml", "schedule: [cron: \"40 1 * * *\"]\nrust: [nightly, stable]\n");
-    assert_eq!(flow.completion, Completion::Complete, "{:?}", flow.diagnostics);
+    let flow = load(
+        "a.yaml",
+        "schedule: [cron: \"40 1 * * *\"]\nrust: [nightly, stable]\n",
+    );
+    assert_eq!(
+        flow.completion,
+        Completion::Complete,
+        "{:?}",
+        flow.diagnostics
+    );
     assert!(names(&flow).contains(&"schedule.0"));
     assert_eq!(node(&flow, "rust.1").signature, "stable");
 }
@@ -422,7 +652,10 @@ fn xorshift(state: &mut u64) -> u64 {
 }
 
 #[test]
-#[allow(clippy::cast_possible_truncation, reason = "The fuzz length deliberately uses the PRNG's native low word before applying the 301-byte bound.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "The fuzz length deliberately uses the PRNG's native low word before applying the 301-byte bound."
+)]
 fn arbitrary_bytes_and_truncated_fixtures_stay_bounded() {
     let mut state = 0x1234_5678_9abc_def0_u64;
     for _ in 0..200 {

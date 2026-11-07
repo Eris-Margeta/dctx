@@ -18,7 +18,7 @@ order = ["dctx/git"]
 network = "none"
 
 [PLUGIN:dctx/git]
-version = "1.1.0"
+version = "1.2.0"
 hooks = ["before-pack-output-written"]
 required = false
 allow = ["file.read:.gitignore", "file.write:.gitignore", "program:git.add-ignore", "resource:git-admin:stage-ignore"]

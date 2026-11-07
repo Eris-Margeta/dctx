@@ -76,9 +76,15 @@ Exit codes: 0 ok, 1 no result (an id not in the index, a binary file), 2 usage, 
 ";
 
 /// Flags of the five verbs, grep and skeleton that take a value. Any other `-` word is unknown.
-const VALUE_FLAGS: &[&str] = &["--place", "--budget", "--cursor", "--depth", "--limit", "--offset", "--kind", "--in", "--edge", "--dir", "--lines", "--rev"];
+const VALUE_FLAGS: &[&str] = &[
+    "--place", "--budget", "--cursor", "--depth", "--limit", "--offset", "--kind", "--in",
+    "--edge", "--dir", "--lines", "--rev",
+];
 
-#[allow(clippy::too_many_lines, reason = "Keep this ordered command transaction or flag dispatch with its shared validation state and existing error ordering.")]
+#[allow(
+    clippy::too_many_lines,
+    reason = "Keep this ordered command transaction or flag dispatch with its shared validation state and existing error ordering."
+)]
 pub(super) fn parse(args: &[String]) -> Result<Options, String> {
     if args.first().map(String::as_str) == Some("hubs") {
         return super::hubs::parse(args);
@@ -146,7 +152,9 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
         }
         // An unknown flag is named as unknown, not as one missing its value.
         if !VALUE_FLAGS.contains(&flag.as_str()) {
-            return Err(format!("unknown or inapplicable option {flag}; try: dctx map --help"));
+            return Err(format!(
+                "unknown or inapplicable option {flag}; try: dctx map --help"
+            ));
         }
         let value = args
             .get(index)
@@ -169,7 +177,12 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
             "--depth" if !skeleton && matches!(verb, Verb::Map | Verb::Neighbors) => {
                 request.depth = number(value)?;
             }
-            "--limit" if matches!(verb, Verb::Map | Verb::Find | Verb::Neighbors | Verb::Explain | Verb::Read) => {
+            "--limit"
+                if matches!(
+                    verb,
+                    Verb::Map | Verb::Find | Verb::Neighbors | Verb::Explain | Verb::Read
+                ) =>
+            {
                 let limit = number(value)?;
                 if matches!(verb, Verb::Explain | Verb::Read) && limit != 1 {
                     return Err("limit exceeds the verb hard cap: records".into());
@@ -277,7 +290,12 @@ fn edge(value: &str) -> Result<EdgeKind, String> {
 mod tests {
     use super::*;
     fn options(args: &[&str]) -> Result<Options, String> {
-        parse(&args.iter().map(std::string::ToString::to_string).collect::<Vec<_>>())
+        parse(
+            &args
+                .iter()
+                .map(std::string::ToString::to_string)
+                .collect::<Vec<_>>(),
+        )
     }
     #[test]
     fn five_verbs_and_bounds() {
@@ -314,7 +332,10 @@ mod tests {
         let skeleton = options(&["skeleton", "a.py", "--json"]).expect("skeleton");
         assert!(skeleton.skeleton && skeleton.request.verb == Verb::Map);
         assert!(!options(&["map", "a.py"]).expect("map").skeleton);
-        assert!(options(&["skeleton"]).err().expect("target").contains("skeleton requires a target"));
+        assert!(options(&["skeleton"])
+            .err()
+            .expect("target")
+            .contains("skeleton requires a target"));
         assert!(options(&["skeleton", "a.py", "--depth", "2"]).is_err());
         assert!(HELP.contains("|skeleton|grep>"));
         assert_eq!(

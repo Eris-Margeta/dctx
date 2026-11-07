@@ -33,7 +33,10 @@ impl Eq for PendingResult {}
 
 impl PendingResult {
     /// Wraps a typed result for sending.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn from_body(body: &ResultBody) -> Self {
         Self(body.encode())
     }
@@ -46,7 +49,10 @@ impl PendingResult {
     }
 
     /// The validated union value.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn as_json(&self) -> &Json {
         &self.0
     }
@@ -126,7 +132,10 @@ impl WireMessage {
     }
 
     /// Canonical JSON value.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn to_json(&self) -> Json {
         match self {
             Self::Bootstrap(message) => message.encode(),
@@ -135,7 +144,10 @@ impl WireMessage {
     }
 
     /// Canonical frame body bytes.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn encode(&self) -> Vec<u8> {
         to_canonical(&self.to_json())
     }
@@ -149,8 +161,12 @@ fn decode_session(value: &Json) -> Result<SessionMessage, Refusal> {
     let body = match string(f.req("kind")?)? {
         "request" => {
             let id = RequestId::decode(f.req("id")?)?;
-            let method = Method::decode(f.req("method")?).map_err(|_| Refusal::schema("unknown-method"))?;
-            SessionBody::Request { id, request: Request::decode(method, f.req("params")?)? }
+            let method =
+                Method::decode(f.req("method")?).map_err(|_| Refusal::schema("unknown-method"))?;
+            SessionBody::Request {
+                id,
+                request: Request::decode(method, f.req("params")?)?,
+            }
         }
         "response" => {
             let id = RequestId::decode(f.req("id")?)?;
@@ -169,16 +185,25 @@ fn decode_session(value: &Json) -> Result<SessionMessage, Refusal> {
         "event" => {
             let seq = positive(f.req("seq")?)?;
             let method = string(f.req("method")?)?;
-            SessionBody::Event { seq, event: Event::decode(method, f.req("params")?)? }
+            SessionBody::Event {
+                seq,
+                event: Event::decode(method, f.req("params")?)?,
+            }
         }
         _ => return Err(Refusal::schema("unknown-kind")),
     };
     f.finish()?;
-    Ok(SessionMessage { session, extensions, body })
+    Ok(SessionMessage {
+        session,
+        extensions,
+        body,
+    })
 }
 
 fn encode_session(message: &SessionMessage) -> Json {
-    let base = Obj::new().put("v", ApiVersion::V1_0.encode()).put("session", message.session.encode());
+    let base = Obj::new()
+        .put("v", ApiVersion::V1_0.encode())
+        .put("session", message.session.encode());
     let base = match &message.body {
         SessionBody::Request { id, request } => base
             .put("kind", Json::str("request"))
@@ -186,7 +211,9 @@ fn encode_session(message: &SessionMessage) -> Json {
             .put("method", request.method().encode())
             .put("params", request.encode_params()),
         SessionBody::Response { id, outcome } => {
-            let base = base.put("kind", Json::str("response")).put("id", id.encode());
+            let base = base
+                .put("kind", Json::str("response"))
+                .put("id", id.encode());
             match outcome {
                 Outcome::Result(result) => base.put("result", result.0.clone()),
                 Outcome::Error(error) => base.put("error", error.encode()),
@@ -198,7 +225,11 @@ fn encode_session(message: &SessionMessage) -> Json {
             .put("method", Json::str(event.method()))
             .put("params", event.encode_params()),
     };
-    base.maybe("extensions", message.extensions.as_ref().map(encode_extensions)).build()
+    base.maybe(
+        "extensions",
+        message.extensions.as_ref().map(encode_extensions),
+    )
+    .build()
 }
 
 #[cfg(test)]
@@ -215,10 +246,18 @@ mod tests {
     #[test]
     fn request_envelope_round_trips_canonically() {
         let message = decode(READ).expect("valid");
-        let canonical = to_canonical(&decode_object(READ.as_bytes(), DecodeLimits::WIRE).expect("json"));
+        let canonical =
+            to_canonical(&decode_object(READ.as_bytes(), DecodeLimits::WIRE).expect("json"));
         assert_eq!(message.encode(), canonical);
-        assert!(String::from_utf8(canonical).expect("utf8").starts_with("{\"id\":\"p:1\",\"kind\":\"request\""));
-        assert_eq!(WireMessage::decode(&message.encode(), DecodeLimits::WIRE), Ok(message));
+        assert!(
+            String::from_utf8(canonical)
+                .expect("utf8")
+                .starts_with("{\"id\":\"p:1\",\"kind\":\"request\"")
+        );
+        assert_eq!(
+            WireMessage::decode(&message.encode(), DecodeLimits::WIRE),
+            Ok(message)
+        );
     }
 
     #[test]
@@ -238,10 +277,16 @@ mod tests {
     #[test]
     fn responses_need_exactly_one_outcome_and_events_no_id() {
         let neither = r#"{"v":[1,0],"session":"s:1","kind":"response","id":"p:1"}"#;
-        assert_eq!(decode(neither).unwrap_err().reason, "response-needs-one-outcome");
+        assert_eq!(
+            decode(neither).unwrap_err().reason,
+            "response-needs-one-outcome"
+        );
         let ready = r#"{"v":[1,0],"session":"s:1","kind":"response","id":"h:1","result":{"status":"ready"}}"#;
         let message = decode(ready).expect("valid");
-        assert_eq!(decode(&String::from_utf8(message.encode()).expect("utf8")), Ok(message));
+        assert_eq!(
+            decode(&String::from_utf8(message.encode()).expect("utf8")),
+            Ok(message)
+        );
         let unknown = ready.replace("ready", "done");
         assert_eq!(decode(&unknown).unwrap_err().reason, "unknown-result-shape");
         let event = r#"{"v":[1,0],"session":"s:1","kind":"event","id":"p:1","seq":1,"method":"cancelled","params":{"invocation":"op:1"}}"#;

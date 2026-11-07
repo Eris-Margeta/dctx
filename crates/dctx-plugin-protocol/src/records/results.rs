@@ -3,7 +3,9 @@
 //! Implements results.schema.json and wire.md §Bootstrap "the pending request's method selects the exact
 //! result schema" (W-RESULT). Depends on json, common, invocation, bytes, method; used by envelope/session.
 
-use crate::json::fields::{Fields, Obj, array, boolean, constant, constant_true, int_in, list, uint, unique_list};
+use crate::json::fields::{
+    Fields, Obj, array, boolean, constant, constant_true, int_in, list, uint, unique_list,
+};
 use crate::json::value::Json;
 use crate::records::bytes::Chunk;
 use crate::records::common::{CommandRecord, Diagnostic, Wait};
@@ -236,23 +238,43 @@ impl ResultBody {
     }
 
     /// Whether `value` matches at least one result shape (the generic `anyOf` union).
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn matches_any(value: &Json) -> bool {
-        Method::ALL.iter().any(|method| Self::decode(*method, value).is_ok())
+        Method::ALL
+            .iter()
+            .any(|method| Self::decode(*method, value).is_ok())
     }
 
     /// Encodes the closed result object.
     pub fn encode(&self) -> Json {
         match self {
             Self::Ready => Obj::new().put("status", Json::str("ready")).build(),
-            Self::Invoke { status, reason, receipts, diagnostics, command_output } => Obj::new()
+            Self::Invoke {
+                status,
+                reason,
+                receipts,
+                diagnostics,
+                command_output,
+            } => Obj::new()
                 .put("status", status.encode())
                 .put("reason", reason.encode())
                 .put("receipts", array(receipts, Token::encode))
                 .put("diagnostics", array(diagnostics, Diagnostic::encode))
-                .put("command_output", array(command_output, CommandRecord::encode))
+                .put(
+                    "command_output",
+                    array(command_output, CommandRecord::encode),
+                )
                 .build(),
-            Self::Probe { invocation, challenge, last_progress_seq, state, wait } => Obj::new()
+            Self::Probe {
+                invocation,
+                challenge,
+                last_progress_seq,
+                state,
+                wait,
+            } => Obj::new()
                 .put("invocation", invocation.encode())
                 .put("challenge", challenge.encode())
                 .put("last_progress_seq", Json::uint(*last_progress_seq))
@@ -266,7 +288,10 @@ impl ResultBody {
                 .put("offset", Json::uint(chunk.offset))
                 .put("size", Json::uint(chunk.size))
                 .put("eof", Json::Bool(chunk.eof))
-                .maybe("precondition", chunk.precondition.as_ref().map(Token::encode))
+                .maybe(
+                    "precondition",
+                    chunk.precondition.as_ref().map(Token::encode),
+                )
                 .put("receipt", chunk.receipt.encode())
                 .build(),
             Self::OutputList { outputs, next } => Obj::new()
@@ -279,22 +304,39 @@ impl ResultBody {
                 )
                 .maybe("next", next.as_ref().map(Token::encode))
                 .build(),
-            Self::FileStage { upload, next_offset, complete, receipt } => Obj::new()
+            Self::FileStage {
+                upload,
+                next_offset,
+                complete,
+                receipt,
+            } => Obj::new()
                 .put("upload", upload.encode())
                 .put("next_offset", Json::uint(*next_offset))
                 .put("complete", Json::Bool(*complete))
                 .put("receipt", receipt.encode())
                 .build(),
-            Self::Replaced { precondition, receipt } => {
-                Obj::new().put("precondition", precondition.encode()).put("receipt", receipt.encode()).build()
-            }
-            Self::ProgramRun { status, exit_code, diagnostics, receipt } => Obj::new()
+            Self::Replaced {
+                precondition,
+                receipt,
+            } => Obj::new()
+                .put("precondition", precondition.encode())
+                .put("receipt", receipt.encode())
+                .build(),
+            Self::ProgramRun {
+                status,
+                exit_code,
+                diagnostics,
+                receipt,
+            } => Obj::new()
                 .put("status", status.encode())
                 .put("exit_code", Json::uint(u64::from(*exit_code)))
                 .put("diagnostics", array(diagnostics, Diagnostic::encode))
                 .put("receipt", receipt.encode())
                 .build(),
-            Self::StateReclaim { reclaimed_bytes, receipt } => Obj::new()
+            Self::StateReclaim {
+                reclaimed_bytes,
+                receipt,
+            } => Obj::new()
                 .put("reclaimed_bytes", Json::uint(*reclaimed_bytes))
                 .put("receipt", receipt.encode())
                 .build(),
@@ -314,7 +356,10 @@ mod tests {
     #[test]
     fn pending_method_selects_the_exact_shape() {
         let ready = json(r#"{"status":"ready"}"#);
-        assert_eq!(ResultBody::decode(Method::Initialize, &ready), Ok(ResultBody::Ready));
+        assert_eq!(
+            ResultBody::decode(Method::Initialize, &ready),
+            Ok(ResultBody::Ready)
+        );
         assert!(ResultBody::decode(Method::FileRead, &ready).is_err());
         assert!(ResultBody::decode(Method::Shutdown, &ready).is_err());
         assert!(ResultBody::matches_any(&ready));
@@ -329,13 +374,22 @@ mod tests {
 
     #[test]
     fn listed_outputs_are_planned_xor_committed() {
-        let page = json(r#"{"outputs":[{"handle":"a","role":"pack-text","bytes":3},{"handle":"b","role":"x","location":"stdout"}],"next":"c:2"}"#);
+        let page = json(
+            r#"{"outputs":[{"handle":"a","role":"pack-text","bytes":3},{"handle":"b","role":"x","location":"stdout"}],"next":"c:2"}"#,
+        );
         let body = ResultBody::decode(Method::OutputList, &page).expect("valid");
-        assert_eq!(ResultBody::decode(Method::OutputList, &body.encode()), Ok(body));
+        assert_eq!(
+            ResultBody::decode(Method::OutputList, &body.encode()),
+            Ok(body)
+        );
         let neither = json(r#"{"outputs":[{"handle":"a","role":"x"}]}"#);
         assert!(ResultBody::decode(Method::OutputList, &neither).is_err());
-        let program = json(r#"{"status":"failed","exit_code":4294967295,"diagnostics":[],"receipt":"r"}"#);
+        let program =
+            json(r#"{"status":"failed","exit_code":4294967295,"diagnostics":[],"receipt":"r"}"#);
         let body = ResultBody::decode(Method::ProgramRun, &program).expect("valid");
-        assert_eq!(ResultBody::decode(Method::ProgramRun, &body.encode()), Ok(body));
+        assert_eq!(
+            ResultBody::decode(Method::ProgramRun, &body.encode()),
+            Ok(body)
+        );
     }
 }

@@ -34,7 +34,6 @@ pub use adjacency::{ForwardEdge, ResolvedReverse, Target, UnresolvedReverse};
 pub use builder::SegmentBuilder;
 pub use checksum::{envelope_checksum, segment_object_digest};
 pub use decode::{decode, decode_with_limits};
-pub use prefix::PrefixEntry;
 pub use draft::{
     DeclarationDraft, DocId, EdgeDraft, EdgeEnd, FactDraft, NodeDraft, PostingDraft, RawRefDraft,
     TermDraft, ViewKeyDraft,
@@ -48,8 +47,9 @@ pub use kinds::{
 pub use limits::DecoderLimits;
 pub use nodes::{ViewKey, ViewNode};
 pub use postings::{Postings, TermHit, TermRow};
+pub use prefix::PrefixEntry;
 pub use ranking::{
-    average_document_tokens, cmp_ranked, rank_score, FieldHit, RankInput, RANKING_REVISION,
-    SCORE_SCALE,
+    FieldHit, RANKING_REVISION, RankInput, SCORE_SCALE, average_document_tokens, cmp_ranked,
+    rank_score,
 };
 pub use validated::ValidatedSegment;

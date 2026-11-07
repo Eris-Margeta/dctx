@@ -1,10 +1,15 @@
 [package]
 name = "dctx-ports"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2021"
 description = "dctx boundary ports: Source, FactStore, Cache, Clock and Cancellation over core types"
 license.workspace = true
 repository.workspace = true
+rust-version.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [dependencies]
-dctx-core = { path = "../dctx-core" }
+dctx-core = { version = "=1.2.0", path = "../dctx-core" }

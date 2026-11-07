@@ -115,7 +115,11 @@ pub(crate) fn mask(source: &str) -> Masked {
 
 /// `r"`, `r#"`, `br##"` ...: the number of hashes when the quote at `quote` opens a raw string.
 fn raw_hashes(bytes: &[u8], quote: usize) -> Option<usize> {
-    let hashes = bytes[..quote].iter().rev().take_while(|&&b| b == b'#').count();
+    let hashes = bytes[..quote]
+        .iter()
+        .rev()
+        .take_while(|&&b| b == b'#')
+        .count();
     let r = quote.checked_sub(hashes + 1)?;
     if bytes[r] != b'r' {
         return None;
@@ -136,13 +140,12 @@ fn is_ident_byte(b: u8) -> bool {
 fn char_literal(rest: &str) -> Option<usize> {
     let mut chars = rest.chars();
     match chars.next()? {
-        '\\' => {
-            rest.char_indices()
-                .skip(2)
-                .take(12)
-                .find(|&(_, c)| c == '\'')
-                .map(|(end, _)| rest[..=end].chars().count())
-        }
+        '\\' => rest
+            .char_indices()
+            .skip(2)
+            .take(12)
+            .find(|&(_, c)| c == '\'')
+            .map(|(end, _)| rest[..=end].chars().count()),
         _ => (chars.next()? == '\'').then_some(2),
     }
 }

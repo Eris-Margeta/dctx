@@ -3,7 +3,7 @@
 //! Implements SPEC-MAP-MODE 5.3 references for Ruby without resolving them.
 //! A bare word is not a call. A non-literal `require` emits no import edge.
 use super::{OutRef, Scope, Walker};
-use crate::domain::{comment_summary, Precision};
+use crate::domain::{Precision, comment_summary};
 use crate::lexer::Kind;
 use dctx_map_model::EdgeKind;
 
@@ -105,7 +105,10 @@ impl Walker<'_> {
     fn open_ender(&mut self, scope: &Scope, ends: &mut i32) -> bool {
         let word = self.cur().to_owned();
         self.bump();
-        if matches!(word.as_str(), "while" | "until" | "for" | "if" | "unless" | "case") {
+        if matches!(
+            word.as_str(),
+            "while" | "until" | "for" | "if" | "unless" | "case"
+        ) {
             self.skip_header(scope);
         }
         *ends += 1;
@@ -375,7 +378,9 @@ pub(super) fn symbol_name(text: &str) -> Option<String> {
 }
 
 fn is_const_name(name: &str) -> bool {
-    name.chars().next().is_some_and(|ch| ch.is_ascii_uppercase())
+    name.chars()
+        .next()
+        .is_some_and(|ch| ch.is_ascii_uppercase())
 }
 
 fn decode_string(src: &str) -> Option<String> {

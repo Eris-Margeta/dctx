@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Project rule files for a desktop snapshot.
-//! Implements ADR-014 and decision 078: plain-text `.gitignore`, `.dctxignore` and `.dctxomitcontent`
+//! Implements ADR-014 and decision 078: plain-text `.gitignore` and `.dctxignore`
 //! are host inputs. The facade does not discover them.
 //! Depends on [`crate::error::DesktopError`] and the standard library. [`crate::snapshot`] supplies
 //! the loaded texts to the selection policy before any project content read.
@@ -24,14 +24,15 @@ pub const MAX_RULE_FILE_BYTES: u64 = 1_048_576;
 pub(crate) struct ProjectRules {
     /// `.gitignore` followed by `.dctxignore`, with literal builtin negations removed.
     pub(crate) ignore: Option<String>,
-    /// `.dctxomitcontent`.
-    pub(crate) omit: Option<String>,
 }
 
 impl ProjectRules {
     /// Borrows the texts in facade layer order (global layers stay absent).
     pub(crate) fn texts(&self) -> dctx::RuleTexts<'_> {
-        dctx::RuleTexts { local_ignore: self.ignore.as_deref(), local_omit: self.omit.as_deref(), ..dctx::RuleTexts::default() }
+        dctx::RuleTexts {
+            local_ignore: self.ignore.as_deref(),
+            ..dctx::RuleTexts::default()
+        }
     }
 }
 
@@ -39,8 +40,9 @@ impl ProjectRules {
 pub(crate) fn load_project_rules(root: &Path) -> Result<ProjectRules, DesktopError> {
     let gitignore = read_rule(root, ".gitignore")?;
     let dctxignore = read_rule(root, ".dctxignore")?;
-    let omit = read_rule(root, ".dctxomitcontent")?;
-    Ok(ProjectRules { ignore: combine_ignore(gitignore.as_deref(), dctxignore.as_deref()), omit })
+    Ok(ProjectRules {
+        ignore: combine_ignore(gitignore.as_deref(), dctxignore.as_deref()),
+    })
 }
 
 /// Drops negations that would re-include a builtin-excluded literal name.
@@ -71,7 +73,11 @@ fn combine_ignore(gitignore: Option<&str>, dctxignore: Option<&str>) -> Option<S
         return None;
     }
     let cleaned = without_builtin_negations(&combined);
-    if cleaned.trim().is_empty() { None } else { Some(cleaned) }
+    if cleaned.trim().is_empty() {
+        None
+    } else {
+        Some(cleaned)
+    }
 }
 
 fn push_text(buf: &mut String, text: &str) {
@@ -89,7 +95,12 @@ fn negation_lifts_builtin(line: &str) -> bool {
     let Some(rest) = trimmed.strip_prefix('!') else {
         return false;
     };
-    let token = rest.split('#').next().unwrap_or(rest).trim().trim_matches('/');
+    let token = rest
+        .split('#')
+        .next()
+        .unwrap_or(rest)
+        .trim()
+        .trim_matches('/');
     let name = token.split('/').next().unwrap_or(token);
     excluded_by_builtin(name, true) || excluded_by_builtin(name, false)
 }
@@ -99,8 +110,26 @@ pub(crate) fn excluded_by_builtin(name: &str, is_dir: bool) -> bool {
     if is_dir {
         return matches!(
             name,
-            ".git" | ".svn" | ".hg" | "node_modules" | "bower_components" | ".turbo" | ".pnpm-store" | ".localstack"
-                | "dist" | "build" | "target" | "bin" | "obj" | ".venv" | "venv" | "__pycache__" | ".dctx" | ".cursor" | ".aider" | ".eris-code"
+            ".git"
+                | ".svn"
+                | ".hg"
+                | "node_modules"
+                | "bower_components"
+                | ".turbo"
+                | ".pnpm-store"
+                | ".localstack"
+                | "dist"
+                | "build"
+                | "target"
+                | "bin"
+                | "obj"
+                | ".venv"
+                | "venv"
+                | "__pycache__"
+                | ".dctx"
+                | ".cursor"
+                | ".aider"
+                | ".eris-code"
                 | ".continue"
         );
     }
@@ -111,7 +140,10 @@ pub(crate) fn excluded_by_builtin(name: &str, is_dir: bool) -> bool {
 }
 
 fn has_extension(name: &str, extension: &str) -> bool {
-    Path::new(name).extension().and_then(|value| value.to_str()).is_some_and(|value| value.eq_ignore_ascii_case(extension))
+    Path::new(name)
+        .extension()
+        .and_then(|value| value.to_str())
+        .is_some_and(|value| value.eq_ignore_ascii_case(extension))
 }
 
 fn read_rule(root: &Path, name: &str) -> Result<Option<String>, DesktopError> {
@@ -148,12 +180,17 @@ fn read_rule(root: &Path, name: &str) -> Result<Option<String>, DesktopError> {
 }
 
 fn read_bounded(file: &File, name: &str) -> Result<String, DesktopError> {
-    let len = file.metadata().map_err(|error| io_error(name, &error))?.len();
+    let len = file
+        .metadata()
+        .map_err(|error| io_error(name, &error))?
+        .len();
     if len > MAX_RULE_FILE_BYTES {
         return Err(too_big(name));
     }
     let mut buf = Vec::new();
-    file.take(MAX_RULE_FILE_BYTES + 1).read_to_end(&mut buf).map_err(|error| io_error(name, &error))?;
+    file.take(MAX_RULE_FILE_BYTES + 1)
+        .read_to_end(&mut buf)
+        .map_err(|error| io_error(name, &error))?;
     if buf.len() as u64 > MAX_RULE_FILE_BYTES {
         return Err(too_big(name));
     }
@@ -164,7 +201,10 @@ fn open_nofollow(path: &Path) -> std::io::Result<File> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::OpenOptionsExt;
-        std::fs::OpenOptions::new().read(true).custom_flags(nofollow_flag()).open(path)
+        std::fs::OpenOptions::new()
+            .read(true)
+            .custom_flags(nofollow_flag())
+            .open(path)
     }
     #[cfg(not(unix))]
     {
@@ -183,7 +223,12 @@ fn nofollow_flag() -> i32 {
     {
         0x100
     }
-    #[cfg(not(any(target_os = "linux", target_os = "android", target_os = "macos", target_os = "ios")))]
+    #[cfg(not(any(
+        target_os = "linux",
+        target_os = "android",
+        target_os = "macos",
+        target_os = "ios"
+    )))]
     {
         0
     }
@@ -206,7 +251,9 @@ fn too_big(name: &str) -> DesktopError {
 }
 
 fn rule_error(name: &str, reason: &str) -> DesktopError {
-    DesktopError::IgnoreRules { detail: format!("{name} {reason}") }
+    DesktopError::IgnoreRules {
+        detail: format!("{name} {reason}"),
+    }
 }
 
 fn io_error(name: &str, error: &std::io::Error) -> DesktopError {

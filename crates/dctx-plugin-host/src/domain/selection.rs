@@ -23,7 +23,10 @@ pub enum Decision {
 
 impl Decision {
     /// Whether this decision authorizes content access (read, hash or delivery).
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn authorizes_content(self) -> bool {
         matches!(self, Self::Include)
     }
@@ -38,23 +41,37 @@ pub struct Selection {
 impl Selection {
     /// Builds a selection from explicit decisions.
     pub fn new(decisions: impl IntoIterator<Item = (ProjectPath, Decision)>) -> Self {
-        Self { decisions: decisions.into_iter().collect() }
+        Self {
+            decisions: decisions.into_iter().collect(),
+        }
     }
 
     /// Decision for `path`, failing closed to `Exclude`.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn decision(&self, path: &ProjectPath) -> Decision {
-        self.decisions.get(path).copied().unwrap_or(Decision::Exclude)
+        self.decisions
+            .get(path)
+            .copied()
+            .unwrap_or(Decision::Exclude)
     }
 
     /// Whether `path` content may be accessed.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn authorizes(&self, path: &ProjectPath) -> bool {
         self.decision(path).authorizes_content()
     }
 
     /// Whether every provenance constituent is currently `Include` (an empty set is authorized).
-    pub fn authorizes_all<'a>(&self, provenance: impl IntoIterator<Item = &'a ProjectPath>) -> bool {
+    pub fn authorizes_all<'a>(
+        &self,
+        provenance: impl IntoIterator<Item = &'a ProjectPath>,
+    ) -> bool {
         provenance.into_iter().all(|path| self.authorizes(path))
     }
 }

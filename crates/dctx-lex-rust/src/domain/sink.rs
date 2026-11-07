@@ -60,9 +60,9 @@ impl Sink {
         refusal: Option<Refusal>,
         module_doc: Option<String>,
     ) -> Extraction {
-        let refusal = refusal.or(self.truncated.then_some(Refusal::TooManyRecords {
-            limit: self.limit,
-        }));
+        let refusal = refusal.or(self
+            .truncated
+            .then_some(Refusal::TooManyRecords { limit: self.limit }));
         Extraction {
             completion: refusal.map_or(Completion::Complete, Completion::Partial),
             coverage,

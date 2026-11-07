@@ -11,18 +11,30 @@ use crate::plugin::{PluginBinding, PluginGroup, PluginState};
 #[cfg(test)]
 use crate::plugin::Resolution;
 
-pub(super) fn schedule(groups: &[PluginGroup], plugins: &[PluginBinding]) -> Result<Vec<String>, TemplateError> {
-    let ids: Vec<String> =
-        plugins.iter().filter(|plugin| plugin.state == PluginState::Enabled).map(|plugin| plugin.id.clone()).collect();
+pub(super) fn schedule(
+    groups: &[PluginGroup],
+    plugins: &[PluginBinding],
+) -> Result<Vec<String>, TemplateError> {
+    let ids: Vec<String> = plugins
+        .iter()
+        .filter(|plugin| plugin.state == PluginState::Enabled)
+        .map(|plugin| plugin.id.clone())
+        .collect();
     let mut edges = Vec::new();
     for group in groups {
         for pair in group.order.windows(2) {
-            if let (Some(before), Some(after)) = (participant(plugins, &pair[0])?, participant(plugins, &pair[1])?) {
+            if let (Some(before), Some(after)) = (
+                participant(plugins, &pair[0])?,
+                participant(plugins, &pair[1])?,
+            ) {
                 edges.push((before.to_string(), after.to_string()));
             }
         }
     }
-    for plugin in plugins.iter().filter(|plugin| plugin.state == PluginState::Enabled) {
+    for plugin in plugins
+        .iter()
+        .filter(|plugin| plugin.state == PluginState::Enabled)
+    {
         for before in &plugin.before {
             if let Some(id) = participant(plugins, before)? {
                 edges.push((id.to_string(), plugin.id.clone()));
@@ -37,9 +49,15 @@ pub(super) fn schedule(groups: &[PluginGroup], plugins: &[PluginBinding]) -> Res
     topo(&ids, &edges)
 }
 
-fn participant<'a>(plugins: &'a [PluginBinding], id: &str) -> Result<Option<&'a str>, TemplateError> {
+fn participant<'a>(
+    plugins: &'a [PluginBinding],
+    id: &str,
+) -> Result<Option<&'a str>, TemplateError> {
     let Some(plugin) = plugins.iter().find(|plugin| plugin.id == id) else {
-        return Err(TemplateError::UnresolvedRef { kind: "plugin", name: id.to_string() });
+        return Err(TemplateError::UnresolvedRef {
+            kind: "plugin",
+            name: id.to_string(),
+        });
     };
     if plugin.state == PluginState::Enabled {
         Ok(Some(plugin.id.as_str()))
@@ -50,22 +68,36 @@ fn participant<'a>(plugins: &'a [PluginBinding], id: &str) -> Result<Option<&'a 
 
 fn topo(ids: &[String], edges: &[(String, String)]) -> Result<Vec<String>, TemplateError> {
     let mut indeg: BTreeMap<String, usize> = ids.iter().map(|id| (id.clone(), 0)).collect();
-    let mut outgoing: BTreeMap<String, BTreeSet<String>> = ids.iter().map(|id| (id.clone(), BTreeSet::new())).collect();
+    let mut outgoing: BTreeMap<String, BTreeSet<String>> =
+        ids.iter().map(|id| (id.clone(), BTreeSet::new())).collect();
     for (before, after) in edges {
         if before == after {
-            return Err(TemplateError::Cycle { kind: "plugin", name: before.clone() });
+            return Err(TemplateError::Cycle {
+                kind: "plugin",
+                name: before.clone(),
+            });
         }
         let Some(next) = outgoing.get_mut(before) else {
-            return Err(TemplateError::UnresolvedRef { kind: "plugin", name: before.clone() });
+            return Err(TemplateError::UnresolvedRef {
+                kind: "plugin",
+                name: before.clone(),
+            });
         };
         if next.insert(after.clone()) {
             let Some(degree) = indeg.get_mut(after) else {
-                return Err(TemplateError::UnresolvedRef { kind: "plugin", name: after.clone() });
+                return Err(TemplateError::UnresolvedRef {
+                    kind: "plugin",
+                    name: after.clone(),
+                });
             };
             *degree += 1;
         }
     }
-    let mut ready: BTreeSet<String> = indeg.iter().filter(|(_, degree)| **degree == 0).map(|(id, _)| id.clone()).collect();
+    let mut ready: BTreeSet<String> = indeg
+        .iter()
+        .filter(|(_, degree)| **degree == 0)
+        .map(|(id, _)| id.clone())
+        .collect();
     let mut order = Vec::new();
     while let Some(id) = ready.iter().next().cloned() {
         ready.remove(&id);
@@ -81,8 +113,15 @@ fn topo(ids: &[String], edges: &[(String, String)]) -> Result<Vec<String>, Templ
         }
     }
     if order.len() != ids.len() {
-        let name = ids.iter().find(|id| !order.contains(*id)).cloned().unwrap_or_default();
-        return Err(TemplateError::Cycle { kind: "plugin", name });
+        let name = ids
+            .iter()
+            .find(|id| !order.contains(*id))
+            .cloned()
+            .unwrap_or_default();
+        return Err(TemplateError::Cycle {
+            kind: "plugin",
+            name,
+        });
     }
     Ok(order)
 }
@@ -123,6 +162,9 @@ mod tests {
         assert_eq!(forced, vec!["ex/b".to_string(), "ex/a".to_string()]);
         let mut looped = enabled("ex/a");
         looped.before = vec!["ex/a".to_string()];
-        assert!(matches!(schedule(&[], &[looped]), Err(TemplateError::Cycle { kind: "plugin", .. })));
+        assert!(matches!(
+            schedule(&[], &[looped]),
+            Err(TemplateError::Cycle { kind: "plugin", .. })
+        ));
     }
 }

@@ -1,0 +1,28 @@
+{
+  "name": "@dctx/cli-win32-x64",
+  "version": "1.1.0",
+  "description": "dctx native CLI for win32-x64",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Eris-Margeta/dctx.git",
+    "directory": "packaging/npm/cli-win32-x64"
+  },
+  "homepage": "https://www.dctx.internet.technology",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "bin/",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "preferUnplugged": true
+}

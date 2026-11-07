@@ -5,8 +5,8 @@
 //! Names are hashed from the parent hash plus the new segment; collisions compare the path.
 //! Identities and fingerprints are built only after the walk succeeds, in parallel when it is large.
 use crate::domain::{
-    body_fingerprint, fingerprint_plain, has_whitespace, Completion, Diagnostic, DiagnosticReason,
-    Dialect, Labeled, LexError, LexedFile, Precision, RawReference,
+    Completion, Diagnostic, DiagnosticReason, Dialect, Labeled, LexError, LexedFile, Precision,
+    RawReference, body_fingerprint, fingerprint_plain, has_whitespace,
 };
 use dctx_map_model::{
     Confidence, Edge, EdgeKind, Node, NodeKind, StableId, Summary, SummarySource, SymbolKind,
@@ -20,23 +20,58 @@ pub(crate) struct Cur<'a> {
     pub end: usize,
 }
 impl<'a> Cur<'a> {
-    pub(crate) fn new(src: &'a str) -> Self { Self { src, i: 0, end: src.len() } }
+    pub(crate) fn new(src: &'a str) -> Self {
+        Self {
+            src,
+            i: 0,
+            end: src.len(),
+        }
+    }
     pub(crate) fn byte(&self) -> Option<u8> {
-        if self.i >= self.end { None } else { self.src.as_bytes().get(self.i).copied() }
+        if self.i >= self.end {
+            None
+        } else {
+            self.src.as_bytes().get(self.i).copied()
+        }
     }
     pub(crate) fn eat(&mut self, expected: u8) -> bool {
-        if self.byte() == Some(expected) { self.i += 1; true } else { false }
+        if self.byte() == Some(expected) {
+            self.i += 1;
+            true
+        } else {
+            false
+        }
     }
-    pub(crate) fn bump(&mut self) -> Option<u8> { let byte = self.byte()?; self.i += 1; Some(byte) }
-    pub(crate) fn eof(&self) -> bool { self.i >= self.end || self.i >= self.src.len() }
-    pub(crate) fn slice(&self, start: usize, end: usize) -> &str { self.src.get(start..end).unwrap_or("") }
-    pub(crate) fn rest(&self) -> &str { self.src.get(self.i..self.end.min(self.src.len())).unwrap_or("") }
-    pub(crate) fn starts(&self, pat: &str) -> bool { self.rest().starts_with(pat) }
+    pub(crate) fn bump(&mut self) -> Option<u8> {
+        let byte = self.byte()?;
+        self.i += 1;
+        Some(byte)
+    }
+    pub(crate) fn eof(&self) -> bool {
+        self.i >= self.end || self.i >= self.src.len()
+    }
+    pub(crate) fn slice(&self, start: usize, end: usize) -> &str {
+        self.src.get(start..end).unwrap_or("")
+    }
+    pub(crate) fn rest(&self) -> &str {
+        self.src
+            .get(self.i..self.end.min(self.src.len()))
+            .unwrap_or("")
+    }
+    pub(crate) fn starts(&self, pat: &str) -> bool {
+        self.rest().starts_with(pat)
+    }
     pub(crate) fn skip_spaces(&mut self) {
-        while matches!(self.byte(), Some(b' ' | b'\t' | b'\r')) { self.i += 1; }
+        while matches!(self.byte(), Some(b' ' | b'\t' | b'\r')) {
+            self.i += 1;
+        }
     }
     pub(crate) fn consume_line(&mut self) {
-        while let Some(byte) = self.bump() { if byte == b'\n' { break; } }
+        while let Some(byte) = self.bump() {
+            if byte == b'\n' {
+                break;
+            }
+        }
     }
 }
 
@@ -124,16 +159,26 @@ struct NameIndex {
 
 impl NameIndex {
     fn with_capacity(capacity: usize) -> Self {
-        Self { first: HashMap::with_capacity(capacity), more: Vec::new() }
+        Self {
+            first: HashMap::with_capacity(capacity),
+            more: Vec::new(),
+        }
     }
 
     fn find(&self, hash: u64, name: &str, nodes: &[DraftNode], buf: &str) -> Option<usize> {
         let index = *self.first.get(&hash)?;
-        if nodes.get(index).is_some_and(|node| name_at(buf, node) == name) {
+        if nodes
+            .get(index)
+            .is_some_and(|node| name_at(buf, node) == name)
+        {
             return Some(index);
         }
         self.more.iter().find_map(|&(candidate, index)| {
-            (candidate == hash && nodes.get(index).is_some_and(|node| name_at(buf, node) == name)).then_some(index)
+            (candidate == hash
+                && nodes
+                    .get(index)
+                    .is_some_and(|node| name_at(buf, node) == name))
+            .then_some(index)
         })
     }
 
@@ -175,7 +220,10 @@ impl Stored {
     }
 }
 
-#[allow(clippy::struct_excessive_bools, reason = "Container shape, array shape, open state, dependency emission and module identity are separate facts retained during staged node assembly.")]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "Container shape, array shape, open state, dependency emission and module identity are separate facts retained during staged node assembly."
+)]
 struct DraftNode {
     /// Byte range of the dotted name inside [`Draft::names_buf`].
     name_start: u32,
@@ -207,7 +255,10 @@ struct Lines {
     starts: Vec<u32>,
 }
 impl Lines {
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn new(source: &str) -> Self {
         let mut starts = vec![0];
         for (index, byte) in source.bytes().enumerate() {
@@ -253,7 +304,12 @@ pub(crate) struct Draft<'a> {
     module_id: StableId,
 }
 impl<'a> Draft<'a> {
-    pub(crate) fn open(path: &str, source: &'a str, max_facts: usize, max_depth: u32) -> Result<Self, LexError> {
+    pub(crate) fn open(
+        path: &str,
+        source: &'a str,
+        max_facts: usize,
+        max_depth: u32,
+    ) -> Result<Self, LexError> {
         if max_facts == 0 {
             return Err(LexError::TooManyFacts { limit: 0 });
         }
@@ -261,7 +317,8 @@ impl<'a> Draft<'a> {
         let one_line = lines.starts.len() == 1;
         let plain = !has_whitespace(source);
         let guess = (source.len() / 16).clamp(1, max_facts);
-        let module_id = StableId::new(NodeKind::Module, path, None, None).map_err(LexError::InvalidId)?;
+        let module_id =
+            StableId::new(NodeKind::Module, path, None, None).map_err(LexError::InvalidId)?;
         let mut names_buf = String::with_capacity((guess.saturating_mul(24)).min(8 << 20));
         names_buf.push_str(path);
         let mut nodes = Vec::with_capacity(guess);
@@ -305,7 +362,9 @@ impl<'a> Draft<'a> {
         self.lines.line(byte)
     }
     fn name_of(&self, index: usize) -> &str {
-        self.nodes.get(index).map_or("", |node| name_at(&self.names_buf, node))
+        self.nodes
+            .get(index)
+            .map_or("", |node| name_at(&self.names_buf, node))
     }
     fn segment(&self, index: usize) -> &str {
         let name = self.name_of(index);
@@ -326,7 +385,10 @@ impl<'a> Draft<'a> {
         depth: u32,
     ) -> Result<Declared, LexError> {
         if depth > self.max_depth {
-            return Err(LexError::TooDeep { line: self.line(start), limit: self.max_depth });
+            return Err(LexError::TooDeep {
+                line: self.line(start),
+                limit: self.max_depth,
+            });
         }
         if parent >= self.nodes.len() || !valid_segment(segment) {
             self.diagnose(start, DiagnosticReason::UnsupportedName);
@@ -352,7 +414,11 @@ impl<'a> Draft<'a> {
         };
         let end = end.max(start);
         let index = self.nodes.len();
-        let lines = if self.one_line { [1, 1] } else { self.lines.span(start, end) };
+        let lines = if self.one_line {
+            [1, 1]
+        } else {
+            self.lines.span(start, end)
+        };
         self.nodes.push(DraftNode {
             name_start,
             name_end,
@@ -379,7 +445,13 @@ impl<'a> Draft<'a> {
         Ok(Declared::Fresh(index))
     }
 
-    fn reuse(&mut self, index: usize, kind: Kind, start: usize, end: usize) -> Result<Declared, LexError> {
+    fn reuse(
+        &mut self,
+        index: usize,
+        kind: Kind,
+        start: usize,
+        end: usize,
+    ) -> Result<Declared, LexError> {
         let node = &self.nodes[index];
         let conflict = match kind {
             Kind::Implicit => !node.container,
@@ -408,7 +480,11 @@ impl<'a> Draft<'a> {
         let mut current = index;
         let end_u = u32::try_from(end).unwrap_or(u32::MAX);
         // One lookup for the shared end byte; ancestors only grow their last line.
-        let end_line = if self.one_line { 1 } else { self.lines.line(end.saturating_sub(1)) };
+        let end_line = if self.one_line {
+            1
+        } else {
+            self.lines.line(end.saturating_sub(1))
+        };
         while current != 0 && current < self.nodes.len() {
             if end_u > self.nodes[current].end {
                 self.nodes[current].end = end_u;
@@ -416,7 +492,11 @@ impl<'a> Draft<'a> {
             }
             if !self.one_line {
                 let start = self.nodes[current].start as usize;
-                let line = if start > end.saturating_sub(1) { self.lines.line(start) } else { end_line };
+                let line = if start > end.saturating_sub(1) {
+                    self.lines.line(start)
+                } else {
+                    end_line
+                };
                 if line > self.nodes[current].lines[1] {
                     self.nodes[current].lines[1] = line;
                 }
@@ -479,7 +559,13 @@ impl<'a> Draft<'a> {
         }
     }
 
-    pub(crate) fn string_ref(&mut self, index: usize, value: &str, start: usize, end: usize) -> Result<(), LexError> {
+    pub(crate) fn string_ref(
+        &mut self,
+        index: usize,
+        value: &str,
+        start: usize,
+        end: usize,
+    ) -> Result<(), LexError> {
         if index >= self.nodes.len() {
             return Ok(());
         }
@@ -487,14 +573,22 @@ impl<'a> Draft<'a> {
         let hit = {
             let key = self.segment(index);
             let parent = self.nodes[index].parent;
-            let scope = if parent == 0 { "" } else { self.name_of(parent) };
+            let scope = if parent == 0 {
+                ""
+            } else {
+                self.name_of(parent)
+            };
             obvious_member(scope, value) || obvious_path(key, value)
         };
         if !hit {
             return Ok(());
         }
         let parent = self.nodes[index].parent;
-        let scope = if parent == 0 { String::new() } else { self.name_of(parent).to_string() };
+        let scope = if parent == 0 {
+            String::new()
+        } else {
+            self.name_of(parent).to_string()
+        };
         self.emit(index, value, &scope, start, end)
     }
 
@@ -506,7 +600,11 @@ impl<'a> Draft<'a> {
             return Ok(());
         };
         let hit = {
-            let scope = if parent == 0 { "" } else { self.name_of(parent) };
+            let scope = if parent == 0 {
+                ""
+            } else {
+                self.name_of(parent)
+            };
             dependency_table(scope)
         };
         if !hit {
@@ -516,12 +614,23 @@ impl<'a> Draft<'a> {
         if name.is_empty() {
             return Ok(());
         }
-        let scope = if parent == 0 { String::new() } else { self.name_of(parent).to_string() };
+        let scope = if parent == 0 {
+            String::new()
+        } else {
+            self.name_of(parent).to_string()
+        };
         self.nodes[index].noted = true;
         self.emit(index, &name, &scope, start, end)
     }
 
-    fn emit(&mut self, src: usize, name: &str, scope: &str, start: usize, end: usize) -> Result<(), LexError> {
+    fn emit(
+        &mut self,
+        src: usize,
+        name: &str,
+        scope: &str,
+        start: usize,
+        end: usize,
+    ) -> Result<(), LexError> {
         if name.is_empty() {
             return Ok(());
         }
@@ -542,7 +651,11 @@ impl<'a> Draft<'a> {
             return;
         }
         let byte_u = u32::try_from(byte.min(self.source.len())).unwrap_or(u32::MAX);
-        self.diagnostics.push(Diagnostic { line: self.line(byte), byte: byte_u, reason });
+        self.diagnostics.push(Diagnostic {
+            line: self.line(byte),
+            byte: byte_u,
+            reason,
+        });
     }
 
     pub(crate) fn finish(self, dialect: Dialect) -> Result<LexedFile, LexError> {
@@ -551,31 +664,60 @@ impl<'a> Draft<'a> {
     }
 
     fn finish_with(mut self, dialect: Dialect, workers: usize) -> Result<LexedFile, LexError> {
-        self.diagnostics.sort_by_key(|item| (item.byte, item.reason as u8));
+        self.diagnostics
+            .sort_by_key(|item| (item.byte, item.reason as u8));
         let first = self.diagnostics.first().map_or(u32::MAX, |item| item.byte);
-        let completion = if self.partial { Completion::Partial } else { Completion::Complete };
+        let completion = if self.partial {
+            Completion::Partial
+        } else {
+            Completion::Complete
+        };
         let prepared = self.prepare_all(workers)?;
         // Small files lose to allocator contention when edges are built on many threads.
-        let edge_workers = if self.nodes.len() >= 100_000 { workers } else { 1 };
+        let edge_workers = if self.nodes.len() >= 100_000 {
+            workers
+        } else {
+            1
+        };
         let edges = self.edges_from(&prepared, first, edge_workers)?;
         let references = self.references_from(&prepared, first);
         let path = self.path.clone();
-        let nodes = self.nodes.into_iter().zip(prepared).map(|(draft, item)| Labeled {
-            precision: precision_at(draft.precision_end, first, Precision::Structural),
-            fact: Node {
-                id: item.id,
-                kind: if draft.module { NodeKind::Module } else { NodeKind::Symbol },
-                symbol_kind: draft.symbol_kind,
-                path: item.path,
-                lines: draft.lines,
-                name: item.name,
-                signature: item.signature,
-                fingerprint: item.fingerprint,
-                public: false,
-                summary: Summary { text: item.summary, source: draft.summary_source },
-            },
-        }).collect();
-        Ok(LexedFile { path, dialect, completion, diagnostics: self.diagnostics, nodes, edges, references })
+        let nodes = self
+            .nodes
+            .into_iter()
+            .zip(prepared)
+            .map(|(draft, item)| Labeled {
+                precision: precision_at(draft.precision_end, first, Precision::Structural),
+                fact: Node {
+                    id: item.id,
+                    kind: if draft.module {
+                        NodeKind::Module
+                    } else {
+                        NodeKind::Symbol
+                    },
+                    symbol_kind: draft.symbol_kind,
+                    path: item.path,
+                    lines: draft.lines,
+                    name: item.name,
+                    signature: item.signature,
+                    fingerprint: item.fingerprint,
+                    public: false,
+                    summary: Summary {
+                        text: item.summary,
+                        source: draft.summary_source,
+                    },
+                },
+            })
+            .collect();
+        Ok(LexedFile {
+            path,
+            dialect,
+            completion,
+            diagnostics: self.diagnostics,
+            nodes,
+            edges,
+            references,
+        })
     }
 
     /// A slice of `source` stays a span. Anything else is the bounded owned string.
@@ -595,7 +737,11 @@ impl<'a> Draft<'a> {
             return Stored::Owned(text.to_string());
         }
         let owned = bounded(text, max);
-        if owned.is_empty() { Stored::Empty } else { Stored::Owned(owned) }
+        if owned.is_empty() {
+            Stored::Empty
+        } else {
+            Stored::Owned(owned)
+        }
     }
 
     fn byte_span(&self, text: &str) -> Option<(u32, u32)> {
@@ -607,18 +753,33 @@ impl<'a> Draft<'a> {
             return None;
         }
         let offset = start - base;
-        Some((u32::try_from(offset).ok()?, u32::try_from(offset + text.len()).ok()?))
+        Some((
+            u32::try_from(offset).ok()?,
+            u32::try_from(offset + text.len()).ok()?,
+        ))
     }
 
     fn prepare_all(&self, workers: usize) -> Result<Vec<Prepared>, LexError> {
         let ranges = byte_ranges(&self.nodes, workers);
         let buf = self.names_buf.as_str();
         dispatch(&ranges, |start, end| {
-            prepare_range(&self.nodes[start..end], self.source, &self.path, self.plain, &self.module_id, buf)
+            prepare_range(
+                &self.nodes[start..end],
+                self.source,
+                &self.path,
+                self.plain,
+                &self.module_id,
+                buf,
+            )
         })
     }
 
-    fn edges_from(&self, prepared: &[Prepared], first: u32, workers: usize) -> Result<Vec<Labeled<Edge>>, LexError> {
+    fn edges_from(
+        &self,
+        prepared: &[Prepared],
+        first: u32,
+        workers: usize,
+    ) -> Result<Vec<Labeled<Edge>>, LexError> {
         if self.nodes.len() <= 1 {
             return Ok(Vec::new());
         }
@@ -654,7 +815,9 @@ impl<'a> Draft<'a> {
     fn references_from(&self, prepared: &[Prepared], first: u32) -> Vec<Labeled<RawReference>> {
         let mut references = Vec::with_capacity(self.refs.len());
         for reference in &self.refs {
-            let Some(src) = prepared.get(reference.src) else { continue };
+            let Some(src) = prepared.get(reference.src) else {
+                continue;
+            };
             references.push(Labeled {
                 precision: precision_at(reference.end, first, Precision::Convention),
                 fact: RawReference {
@@ -700,12 +863,18 @@ impl<'a> Draft<'a> {
             self.names_buf.push_str(segment);
             fnv(fnv(parent_hash, b"."), segment.as_bytes())
         };
-        (u32::try_from(start).unwrap_or(0), u32::try_from(self.names_buf.len()).unwrap_or(u32::MAX), hash)
+        (
+            u32::try_from(start).unwrap_or(0),
+            u32::try_from(self.names_buf.len()).unwrap_or(u32::MAX),
+            hash,
+        )
     }
 
     fn charge(&self) -> Result<(), LexError> {
         if self.nodes.len() + self.refs.len() >= self.max_facts {
-            Err(LexError::TooManyFacts { limit: self.max_facts })
+            Err(LexError::TooManyFacts {
+                limit: self.max_facts,
+            })
         } else {
             Ok(())
         }
@@ -738,7 +907,11 @@ fn worker_count(nodes: usize) -> usize {
 }
 
 fn precision_at(end: u32, first: u32, base: Precision) -> Precision {
-    if end != u32::MAX && end > first { Precision::Partial } else { base }
+    if end != u32::MAX && end > first {
+        Precision::Partial
+    } else {
+        base
+    }
 }
 
 fn span_len(node: &DraftNode) -> u64 {
@@ -853,11 +1026,16 @@ fn prepare_range(
         let id = if node.module {
             module_id.clone()
         } else {
-            StableId::new(NodeKind::Symbol, path, Some(name.as_str()), None).map_err(LexError::InvalidId)?
+            StableId::new(NodeKind::Symbol, path, Some(name.as_str()), None)
+                .map_err(LexError::InvalidId)?
         };
         let body = node_body(node, source);
         // `plain` is file-wide, so every source span is free of whitespace and hashes raw.
-        let fingerprint = if plain { fingerprint_plain(body) } else { body_fingerprint(body) };
+        let fingerprint = if plain {
+            fingerprint_plain(body)
+        } else {
+            body_fingerprint(body)
+        };
         prepared.push(Prepared {
             id,
             path: path.to_string(),
@@ -873,7 +1051,9 @@ fn prepare_range(
 fn valid_segment(segment: &str) -> bool {
     !segment.is_empty()
         && segment.len() <= 512
-        && !segment.chars().any(|ch| ch.is_control() || matches!(ch, '#' | '~'))
+        && !segment
+            .chars()
+            .any(|ch| ch.is_control() || matches!(ch, '#' | '~'))
 }
 
 fn bounded(text: &str, max: usize) -> String {
@@ -883,18 +1063,34 @@ fn bounded(text: &str, max: usize) -> String {
     let mut out = String::new();
     for word in text.split_whitespace() {
         let room = max.saturating_sub(out.chars().count());
-        if room == 0 { break; }
+        if room == 0 {
+            break;
+        }
         if !out.is_empty() {
-            if room == 1 { break; }
+            if room == 1 {
+                break;
+            }
             out.push(' ');
         }
-        out.extend(word.chars().take(room.saturating_sub(usize::from(!out.is_empty()))));
+        out.extend(
+            word.chars()
+                .take(room.saturating_sub(usize::from(!out.is_empty()))),
+        );
     }
     out
 }
 
 pub(crate) fn dependency_table(name: &str) -> bool {
-    matches!(name, "dependencies" | "dev-dependencies" | "build-dependencies" | "devDependencies" | "peerDependencies" | "optionalDependencies" | "workspace.dependencies")
+    matches!(
+        name,
+        "dependencies"
+            | "dev-dependencies"
+            | "build-dependencies"
+            | "devDependencies"
+            | "peerDependencies"
+            | "optionalDependencies"
+            | "workspace.dependencies"
+    )
 }
 
 pub(crate) fn obvious_member(parent: &str, value: &str) -> bool {
@@ -903,7 +1099,9 @@ pub(crate) fn obvious_member(parent: &str, value: &str) -> bool {
 
 pub(crate) fn obvious_path(key: &str, value: &str) -> bool {
     plain_token(value)
-        && (value.starts_with("./") || value.starts_with("../") || (key == "path" && value.contains('/')))
+        && (value.starts_with("./")
+            || value.starts_with("../")
+            || (key == "path" && value.contains('/')))
 }
 
 fn plain_token(value: &str) -> bool {
@@ -912,7 +1110,9 @@ fn plain_token(value: &str) -> bool {
         && !value.starts_with('/')
         && value != "."
         && value != ".."
-        && value.bytes().all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-' | b'/' | b'+' | b'~'))
+        && value.bytes().all(|byte| {
+            byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-' | b'/' | b'+' | b'~')
+        })
 }
 
 #[cfg(test)]

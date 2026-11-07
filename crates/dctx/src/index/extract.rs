@@ -20,13 +20,13 @@ pub(crate) use graph::index_prepared;
 pub(crate) use graph::index_symbols;
 #[cfg(test)]
 use graph::{letter_byte, stored_ordinal};
+pub(crate) use language::language_of;
 #[cfg(test)]
 pub(super) use language::{EXTENSIONS, INFRA_BASENAMES, RUBY_BASENAMES};
-pub(crate) use language::language_of;
-use source::{markdown_symbols, rust_symbols};
 #[cfg(test)]
 use source::SIGNATURE_CAP;
 pub(crate) use source::signature_text;
+use source::{markdown_symbols, rust_symbols};
 
 /// Facts ready to enter the graph. A complete config lex is projected once.
 pub(crate) enum Prepared {
@@ -64,7 +64,9 @@ pub(crate) fn prepare_structural(path: &str, bytes: &[u8]) -> (Prepared, Vec<Raw
     }
     if language_of(path) == "config" {
         return match dctx_lex_cfg::CfgLexer::default().extract(path, bytes) {
-            Ok(lexed) if lexed.completion == dctx_lex_cfg::Completion::Complete => (Prepared::Config(lexed), Vec::new()),
+            Ok(lexed) if lexed.completion == dctx_lex_cfg::Completion::Complete => {
+                (Prepared::Config(lexed), Vec::new())
+            }
             _ => (Prepared::Symbols(Vec::new()), Vec::new()),
         };
     }
@@ -89,7 +91,9 @@ pub(crate) fn extract_structural_refs(path: &str, bytes: &[u8]) -> (Vec<Symbol>,
     match language_of(path) {
         "rust" => (rust_symbols(text), Vec::new()),
         "markdown" => (markdown_symbols(bytes), Vec::new()),
-        document if super::text_docs::handles(document) => (super::text_docs::symbols(document, text), Vec::new()),
+        document if super::text_docs::handles(document) => {
+            (super::text_docs::symbols(document, text), Vec::new())
+        }
         language => super::lex_dispatch::lexed(language, path, text),
     }
 }

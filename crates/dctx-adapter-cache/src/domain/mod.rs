@@ -39,14 +39,14 @@ pub use legacy::{
 pub use maintain::{GcRequest, MaintainReport, SliceBudget};
 pub use purge::{PurgeReport, PurgeRequest, PurgeScope};
 pub use quota::{
-    AutoCleanPolicy, Quota, ACCOUNTING_UNIT, DAY_MS, DEAD_BYTE_THRESHOLD_PPM,
-    EMERGENCY_METADATA_BYTES, EVICTION_TARGET_BYTES, HARD_CAP_BYTES, LAST_USE_COALESCE_MS,
-    MAX_PACK_SNAPSHOTS, MAX_PREVIEW_GENERATIONS, MAX_VIEW_MANIFESTS, MISSING_GRACE_MS,
-    OVERLAY_TTL_MS, PREVIEW_TTL_MS, RECOGNIZED_LEGACY_VERSION, ROOT_PACK_CEILING_BYTES,
-    ROOT_PREVIEW_CEILING_BYTES, ROOT_TTL_MS, ROOT_VIEW_CEILING_BYTES, SOFT_WATERMARK_BYTES,
-    STAGING_TTL_MS, STARTUP_MAX_OBJECTS, STARTUP_TARGET_MILLIS, UNLINK_GRACE_MS,
+    ACCOUNTING_UNIT, AutoCleanPolicy, DAY_MS, DEAD_BYTE_THRESHOLD_PPM, EMERGENCY_METADATA_BYTES,
+    EVICTION_TARGET_BYTES, HARD_CAP_BYTES, LAST_USE_COALESCE_MS, MAX_PACK_SNAPSHOTS,
+    MAX_PREVIEW_GENERATIONS, MAX_VIEW_MANIFESTS, MISSING_GRACE_MS, OVERLAY_TTL_MS, PREVIEW_TTL_MS,
+    Quota, RECOGNIZED_LEGACY_VERSION, ROOT_PACK_CEILING_BYTES, ROOT_PREVIEW_CEILING_BYTES,
+    ROOT_TTL_MS, ROOT_VIEW_CEILING_BYTES, SOFT_WATERMARK_BYTES, STAGING_TTL_MS,
+    STARTUP_MAX_OBJECTS, STARTUP_TARGET_MILLIS, UNLINK_GRACE_MS,
 };
-pub use restart::{RestartEvidence, LEDGER_MAGIC, LEDGER_MAX_BYTES, LEDGER_VERSION};
+pub use restart::{LEDGER_MAGIC, LEDGER_MAX_BYTES, LEDGER_VERSION, RestartEvidence};
 pub use status::{Blocker, Buckets, RootStatus, Status};
 pub use writer::WriterPhase;
 
@@ -65,7 +65,13 @@ struct IdGen {
 
 impl IdGen {
     const fn fresh() -> Self {
-        Self { object: 1, manifest: 1, generation: 1, lease: 1, reservation: 1 }
+        Self {
+            object: 1,
+            manifest: 1,
+            generation: 1,
+            lease: 1,
+            reservation: 1,
+        }
     }
 }
 
@@ -196,7 +202,10 @@ impl Lifecycle {
     /// Empty ledger under `quota`. Watermarks must be ordered and the metadata reserve must fit.
     /// # Errors
     /// Refuses quota watermarks or ceilings that fail quota validation.
-    #[allow(clippy::needless_pass_by_value, reason = "Lifecycle construction takes ownership of the public quota configuration; preserve the existing value-taking API.")]
+    #[allow(
+        clippy::needless_pass_by_value,
+        reason = "Lifecycle construction takes ownership of the public quota configuration; preserve the existing value-taking API."
+    )]
     pub fn new(quota: Quota) -> Result<Self, crate::error::CacheError> {
         quota.check()?;
         Ok(Self::open(quota))
@@ -240,7 +249,10 @@ impl Lifecycle {
     }
 
     /// Product defaults: 2 GiB cap, 1.5 GiB soft watermark, 1.2 GiB target.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn product_default() -> Self {
         Self::open(Quota::product_default())
     }

@@ -2,124 +2,197 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    tags: ['v*']
 
 permissions:
   contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  preflight:
+    runs-on: ubuntu-24.04
+    outputs:
+      npm: ${{ steps.secrets.outputs.npm }}
+      crates: ${{ steps.secrets.outputs.crates }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Validate release version and notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF_NAME#v}" = "$(cat VERSION)"
+          ./tools/sync-version.sh --check
+          ./tools/extract-changelog.sh "$GITHUB_REF_NAME" > release-notes.md
+          test -s release-notes.md
+      - name: Check optional publishing credentials
+        id: secrets
+        shell: bash
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          if [ -n "$NPM_TOKEN" ]; then echo 'npm=true' >> "$GITHUB_OUTPUT"; fi
+          if [ -n "$CARGO_REGISTRY_TOKEN" ]; then echo 'crates=true' >> "$GITHUB_OUTPUT"; fi
+
   build:
     name: Build ${{ matrix.target }}
+    needs: preflight
     strategy:
       fail-fast: false
       matrix:
         include:
-          - target: x86_64-unknown-linux-gnu
+          - target: x86_64-unknown-linux-musl
             os: ubuntu-24.04
-            artifact: dctx-linux-x64
+            extension: tar.gz
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-24.04-arm
             extension: tar.gz
           - target: x86_64-apple-darwin
             os: macos-15-intel
-            artifact: dctx-macos-x64
             extension: tar.gz
           - target: aarch64-apple-darwin
             os: macos-15
-            artifact: dctx-macos-arm64
             extension: tar.gz
           - target: x86_64-pc-windows-msvc
             os: windows-2022
-            artifact: dctx-windows-x64
             extension: zip
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           persist-credentials: false
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
-
+      - name: Install Rust target
+        shell: bash
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustup target add '${{ matrix.target }}'
+      - name: Install native musl linker
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes musl-tools
+          echo 'CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=musl-gcc' >> "$GITHUB_ENV"
+          echo 'CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=musl-gcc' >> "$GITHUB_ENV"
+          echo 'CC_x86_64_unknown_linux_musl=musl-gcc' >> "$GITHUB_ENV"
+          echo 'CC_aarch64_unknown_linux_musl=musl-gcc' >> "$GITHUB_ENV"
       - name: Build release
         run: cargo build --locked --release -p dctx-cli --bin dctx-cli --target ${{ matrix.target }}
-
       - name: Smoke test CLI (Unix)
         if: runner.os != 'Windows'
         run: ./target/${{ matrix.target }}/release/dctx-cli --version
-
       - name: Smoke test CLI (Windows)
         if: runner.os == 'Windows'
         run: .\target\${{ matrix.target }}\release\dctx-cli.exe --version
-
-      - name: Prepare artifact (Unix)
+      - name: Archive (Unix)
         if: runner.os != 'Windows'
+        shell: bash
         run: |
           mkdir -p dist
           cp target/${{ matrix.target }}/release/dctx-cli dist/dctx
-          chmod +x dist/dctx
+          chmod 755 dist/dctx
           cp LICENSE NOTICE dist/
-          COPYFILE_DISABLE=1 tar -czf ${{ matrix.artifact }}.tar.gz -C dist dctx LICENSE NOTICE
-
-      - name: Prepare artifact (Windows)
+          COPYFILE_DISABLE=1 tar -czf dctx-${{ matrix.target }}.tar.gz -C dist dctx LICENSE NOTICE
+      - name: Archive (Windows)
         if: runner.os == 'Windows'
+        shell: pwsh
         run: |
           New-Item -ItemType Directory -Path dist -Force
           Copy-Item target\${{ matrix.target }}\release\dctx-cli.exe dist\dctx.exe
           Copy-Item LICENSE, NOTICE dist\
-          Compress-Archive -Path dist\* -DestinationPath ${{ matrix.artifact }}.zip
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+          Compress-Archive -Path dist\* -DestinationPath dctx-${{ matrix.target }}.zip
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: ${{ matrix.artifact }}
-          path: ${{ matrix.artifact }}.${{ matrix.extension }}
+          name: dctx-${{ matrix.target }}
+          path: dctx-${{ matrix.target }}.${{ matrix.extension }}
           if-no-files-found: error
 
   release:
-    name: Create Release
+    name: Create GitHub Release
     needs: build
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           persist-credentials: false
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
+          pattern: dctx-*
           path: artifacts
-
-      - name: List artifacts
-        run: find artifacts -type f
-
-      - name: Extract changelog for this version
+          merge-multiple: true
+      - name: Checksums and changelog
+        shell: bash
         run: |
-          set -eu
-          RELEASE_VERSION="${GITHUB_REF#refs/tags/v}"
-          test "$RELEASE_VERSION" = "$(cat VERSION)"
-          ./tools/sync-version.sh --check
-          ./tools/extract-changelog.sh "$RELEASE_VERSION" > release-notes.md
+          set -euo pipefail
+          (cd artifacts && sha256sum dctx-*.tar.gz dctx-*.zip > SHA256SUMS && sha256sum --check SHA256SUMS)
+          ./tools/extract-changelog.sh "$GITHUB_REF_NAME" > release-notes.md
           test -s release-notes.md
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          draft: false
-          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
-          body_path: release-notes.md
-          generate_release_notes: true
-          fail_on_unmatched_files: true
-          files: |
-            artifacts/**/*.tar.gz
-            artifacts/**/*.zip
+      - name: Create release with changelog notes
+        shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          extra=()
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then extra+=(--prerelease); fi
+          gh release create "$GITHUB_REF_NAME" artifacts/* --verify-tag \
+            --title "dctx $GITHUB_REF_NAME" --notes-file release-notes.md "${extra[@]}"
+
+  npm-publish:
+    needs: [preflight, release]
+    if: needs.preflight.outputs.npm == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+      - name: Prepare packages from released assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$GITHUB_REF_NAME" --dir artifacts --pattern 'dctx-*' --pattern SHA256SUMS
+          python3 tools/release/prepare-npm.py "$GITHUB_REF_NAME" artifacts
+      - name: Publish platform packages, then shim
+        shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          npm_tag=latest
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then npm_tag=next; fi
+          for package in packaging/npm/cli-* packaging/npm/dctx; do
+            (cd "$package" && npm publish --provenance --access public --tag "$npm_tag")
+          done
+
+  crates-publish:
+    needs: [preflight, release]
+    if: needs.preflight.outputs.crates == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Install Rust
+        run: rustup update stable && rustup default stable
+      - name: Publish crates in dependency order
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: tools/release/publish-crates.sh

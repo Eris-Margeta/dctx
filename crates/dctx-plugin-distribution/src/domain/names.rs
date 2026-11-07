@@ -24,7 +24,8 @@ fn reserved_device(text: &str) -> bool {
     if RESERVED.contains(&stem.as_str()) {
         return true;
     }
-    let digit = stem.len() == 4 && stem.as_bytes()[3].is_ascii_digit() && stem.as_bytes()[3] != b'0';
+    let digit =
+        stem.len() == 4 && stem.as_bytes()[3].is_ascii_digit() && stem.as_bytes()[3] != b'0';
     digit && (stem.starts_with("com") || stem.starts_with("lpt"))
 }
 
@@ -59,19 +60,30 @@ impl PluginId {
     pub fn parse(text: &str) -> Result<Self, DistributionError> {
         let valid = text.len() <= MAX_NAME
             && text.split_once('/').is_some_and(|(publisher, name)| {
-                component_ok(publisher, lower_alnum, lower_rest) && component_ok(name, lower_alnum, lower_rest)
+                component_ok(publisher, lower_alnum, lower_rest)
+                    && component_ok(name, lower_alnum, lower_rest)
             });
-        if valid { Ok(Self(text.to_owned())) } else { Err(DistributionError::malformed(Document::Locator, "plugin-id")) }
+        if valid {
+            Ok(Self(text.to_owned()))
+        } else {
+            Err(DistributionError::malformed(Document::Locator, "plugin-id"))
+        }
     }
 
     /// The ID as written.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn as_str(&self) -> &str {
         &self.0
     }
 
     /// Publisher and name as two validated directory components.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn components(&self) -> (&str, &str) {
         self.0.split_once('/').unwrap_or((&self.0, ""))
     }
@@ -94,13 +106,19 @@ impl SafeFileName {
     }
 
     /// The name as written.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn as_str(&self) -> &str {
         &self.0
     }
 
     /// Case-folded form used to refuse case aliases on case-insensitive file systems.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn folded(&self) -> String {
         self.0.to_ascii_lowercase()
     }
@@ -120,11 +138,18 @@ impl KeyId {
             && bytes.len() <= MAX_NAME
             && any_alnum(bytes[0])
             && bytes[1..].iter().all(|&b| token_rest(b));
-        if valid { Ok(Self(text.to_owned())) } else { Err(DistributionError::malformed(Document::Manifest, "key-id")) }
+        if valid {
+            Ok(Self(text.to_owned()))
+        } else {
+            Err(DistributionError::malformed(Document::Manifest, "key-id"))
+        }
     }
 
     /// The ID as written.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -147,18 +172,30 @@ impl Version {
         let (core, pre) = split_opt(core, '-');
         let numbers: Vec<&str> = core.split('.').collect();
         let numeric = |part: &&str| {
-            !part.is_empty() && part.bytes().all(|b| b.is_ascii_digit()) && (part.len() == 1 || !part.starts_with('0'))
+            !part.is_empty()
+                && part.bytes().all(|b| b.is_ascii_digit())
+                && (part.len() == 1 || !part.starts_with('0'))
         };
-        let ident = |part: &str| part.split('.').all(|p| !p.is_empty() && p.bytes().all(|b| any_alnum(b) || b == b'-'));
+        let ident = |part: &str| {
+            part.split('.')
+                .all(|p| !p.is_empty() && p.bytes().all(|b| any_alnum(b) || b == b'-'))
+        };
         let valid = numbers.len() == 3
             && numbers.iter().all(numeric)
             && pre.is_none_or(ident)
             && build.is_none_or(ident);
-        if valid { Ok(Self(text.to_owned())) } else { Err(refuse()) }
+        if valid {
+            Ok(Self(text.to_owned()))
+        } else {
+            Err(refuse())
+        }
     }
 
     /// The version as written; also a safe directory component.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -207,9 +244,15 @@ impl Target {
     }
 
     /// The target triple.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn as_str(self) -> &'static str {
-        Self::ALL.iter().find(|(target, _)| *target == self).map_or("", |(_, name)| name)
+        Self::ALL
+            .iter()
+            .find(|(target, _)| *target == self)
+            .map_or("", |(_, name)| name)
     }
 }
 
@@ -220,8 +263,21 @@ mod tests {
 
     #[test]
     fn plugin_ids_are_two_safe_components() {
-        assert_eq!(PluginId::parse("dctx/git").unwrap().components(), ("dctx", "git"));
-        for bad in ["dctx", "dctx/", "/git", "../git", "dctx/..", "dctx/git/x", "Dctx/git", "dctx/con", "a/b."] {
+        assert_eq!(
+            PluginId::parse("dctx/git").unwrap().components(),
+            ("dctx", "git")
+        );
+        for bad in [
+            "dctx",
+            "dctx/",
+            "/git",
+            "../git",
+            "dctx/..",
+            "dctx/git/x",
+            "Dctx/git",
+            "dctx/con",
+            "a/b.",
+        ] {
             assert!(PluginId::parse(bad).is_err(), "{bad}");
         }
     }
@@ -230,7 +286,9 @@ mod tests {
     fn file_names_refuse_traversal_and_devices() {
         assert!(SafeFileName::parse("abc.bin").is_ok());
         assert_eq!(SafeFileName::parse("LICENSE").unwrap().folded(), "license");
-        for bad in ["", ".", "..", "../x", "a/b", "a\\b", "/abs", ".hidden", "NUL.txt", "com1", "x.", "a b"] {
+        for bad in [
+            "", ".", "..", "../x", "a/b", "a\\b", "/abs", ".hidden", "NUL.txt", "com1", "x.", "a b",
+        ] {
             assert!(SafeFileName::parse(bad).is_err(), "{bad}");
         }
         assert!(SafeFileName::parse("com0").is_ok());
@@ -241,7 +299,15 @@ mod tests {
         for good in ["1.0.0", "0.1.2-rc.1", "1.2.3+build.5", "10.20.30-alpha-1+x"] {
             assert!(Version::parse(good).is_ok(), "{good}");
         }
-        for bad in ["1.0", "01.0.0", "1.0.0-", "1.0.0+", "1.0.0-a..b", "v1.0.0", "1.0.0/x"] {
+        for bad in [
+            "1.0",
+            "01.0.0",
+            "1.0.0-",
+            "1.0.0+",
+            "1.0.0-a..b",
+            "v1.0.0",
+            "1.0.0/x",
+        ] {
             assert!(Version::parse(bad).is_err(), "{bad}");
         }
     }

@@ -3,14 +3,22 @@
 //! `-type name(` attributes are types, and the clauses `name(Args) [when ..] ->` written at column 0,
 //! separated by `;` and closed by a full stop at the end of a line, are one fn symbol per function.
 
-use super::super::{ident_at, is_denied, mask, signature_of, Decl, Syntax};
+use super::super::{Decl, Syntax, ident_at, is_denied, mask, signature_of};
 
 /// Comment and string syntax of Erlang: `%` to the end of the line, quoted strings and single-quoted atoms.
-const SYNTAX: Syntax = Syntax { line: &["%"], block: None, nested: false, quotes: b"\"'", triple: true };
+const SYNTAX: Syntax = Syntax {
+    line: &["%"],
+    block: None,
+    nested: false,
+    quotes: b"\"'",
+    triple: true,
+};
 
 /// Erlang words that may never start a clause. `is_denied` covers the ones shared with the other families.
-const NOT_HEADS: &[&str] =
-    &["after", "begin", "catch", "cond", "end", "fun", "let", "maybe", "not", "of", "receive", "try", "when"];
+const NOT_HEADS: &[&str] = &[
+    "after", "begin", "catch", "cond", "end", "fun", "let", "maybe", "not", "of", "receive", "try",
+    "when",
+];
 
 /// Erlang declarations of `text`.
 pub(super) fn decls(text: &str) -> Vec<Decl> {
@@ -27,13 +35,22 @@ pub(super) fn decls(text: &str) -> Vec<Decl> {
             continue;
         }
         // A fresh declaration only starts at column 0, outside any open clause head or body.
-        if parens == 0 && waiting.is_none() && body.is_none() && !shown.starts_with(char::is_whitespace) {
+        if parens == 0
+            && waiting.is_none()
+            && body.is_none()
+            && !shown.starts_with(char::is_whitespace)
+        {
             if let Some(decl) = attribute(line, original, number) {
                 decls.push(decl);
                 continue;
             }
             if let Some(name) = clause_head(shown) {
-                decls.push(Decl { name, kind: "fn", lines: [number, number], signature: signature_of(original) });
+                decls.push(Decl {
+                    name,
+                    kind: "fn",
+                    lines: [number, number],
+                    signature: signature_of(original),
+                });
                 waiting = Some(decls.len() - 1);
             }
         }
@@ -107,14 +124,21 @@ fn attribute(line: &str, original: &str, number: u32) -> Option<Decl> {
     } else {
         return None;
     };
-    Some(Decl { name, kind, lines: [number, number], signature: signature_of(original) })
+    Some(Decl {
+        name,
+        kind,
+        lines: [number, number],
+        signature: signature_of(original),
+    })
 }
 
 /// The plain lower-case atom `[a-z][a-z0-9_@]*` that names a module, a record, a type or a clause.
 fn atom(text: &str) -> Option<String> {
     let valid = !text.is_empty()
         && text.starts_with(|c: char| c.is_ascii_lowercase())
-        && text.chars().all(|c: char| c.is_ascii_alphanumeric() || matches!(c, '_' | '@'));
+        && text
+            .chars()
+            .all(|c: char| c.is_ascii_alphanumeric() || matches!(c, '_' | '@'));
     let name = valid.then(|| text.to_string())?;
     (!is_denied(&name) && !NOT_HEADS.contains(&name.as_str())).then_some(name)
 }
@@ -122,7 +146,9 @@ fn atom(text: &str) -> Option<String> {
 /// The function name when a column-0 line opens a clause: `name(Args)`, followed by `->` here or after a guard.
 /// A leading `-` is an attribute, and an uppercase- or `_`-initial name is a variable, never a clause.
 fn clause_head(shown: &str) -> Option<String> {
-    let end = shown.find(|c: char| !(c.is_ascii_alphanumeric() || c == '_' || c == '@')).unwrap_or(shown.len());
+    let end = shown
+        .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_' || c == '@'))
+        .unwrap_or(shown.len());
     let name = atom(&shown[..end])?;
     shown[end..].trim_start().starts_with('(').then_some(name)
 }
@@ -135,11 +161,22 @@ mod tests {
     /// from its first clause to the full stop that ends it.
     #[test]
     fn erlang_lists_module_records_types_and_clause_lists() {
-        let text =
-            "-module(shop).\n\n-record(item, {price, label}).\n-type cents() :: integer().\n\n%% price(X) -> hidden is a comment\nprice(#item{price = P}, N) ->\n  P * N;\nprice(_, _) ->\n  0.\n\nshown() ->\n  price(#item{price = 2}, 3).\n";
+        let text = "-module(shop).\n\n-record(item, {price, label}).\n-type cents() :: integer().\n\n%% price(X) -> hidden is a comment\nprice(#item{price = P}, N) ->\n  P * N;\nprice(_, _) ->\n  0.\n\nshown() ->\n  price(#item{price = 2}, 3).\n";
         let found = symbols("erlang", text);
-        let listed: Vec<(&str, &str, [u32; 2])> = found.iter().map(|symbol| (symbol.name.as_str(), symbol.kind.as_str(), symbol.lines)).collect();
-        assert_eq!(listed, [("shop", "module", [1, 1]), ("item", "type", [3, 3]), ("cents", "type", [4, 4]), ("price", "fn", [7, 10]), ("shown", "fn", [12, 13])]);
+        let listed: Vec<(&str, &str, [u32; 2])> = found
+            .iter()
+            .map(|symbol| (symbol.name.as_str(), symbol.kind.as_str(), symbol.lines))
+            .collect();
+        assert_eq!(
+            listed,
+            [
+                ("shop", "module", [1, 1]),
+                ("item", "type", [3, 3]),
+                ("cents", "type", [4, 4]),
+                ("price", "fn", [7, 10]),
+                ("shown", "fn", [12, 13])
+            ]
+        );
     }
 
     /// A truncated Erlang file that leaves a head, a clause or a body open never panics.
@@ -156,9 +193,16 @@ mod tests {
         ];
         for sample in samples {
             let found = symbols("erlang", sample);
-            assert!(found.iter().all(|symbol| !symbol.name.is_empty()), "{sample}: {found:?}");
+            assert!(
+                found.iter().all(|symbol| !symbol.name.is_empty()),
+                "{sample}: {found:?}"
+            );
         }
         let found = symbols("erlang", "-module(shop).\n\nprice(X) ->\n");
-        assert!(found.iter().any(|symbol| (symbol.name.as_str(), symbol.kind.as_str(), symbol.lines) == ("shop", "module", [1, 1])));
+        assert!(found.iter().any(|symbol| (
+            symbol.name.as_str(),
+            symbol.kind.as_str(),
+            symbol.lines
+        ) == ("shop", "module", [1, 1])));
     }
 }

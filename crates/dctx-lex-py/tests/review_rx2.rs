@@ -15,7 +15,11 @@ fn assert_complete(source: &str, node_names: &[&str], calls: &[&str]) {
     check_invariants(source, &facts);
     assert_eq!(names(&facts), node_names, "{source}");
     assert_eq!(facts.completion, Completion::Complete, "{source}");
-    assert!(facts.diagnostics.is_empty(), "{source} {:?}", facts.diagnostics);
+    assert!(
+        facts.diagnostics.is_empty(),
+        "{source} {:?}",
+        facts.diagnostics
+    );
     assert_eq!(call_names(&facts), calls, "{source}");
 }
 
@@ -23,16 +27,36 @@ fn assert_complete(source: &str, node_names: &[&str], calls: &[&str]) {
 #[test]
 fn same_quote_fstring_keeps_the_following_declaration() {
     // Positive control: the opposite quote already ends the inner literal.
-    assert_complete("x = f\"{foo('bar')}\"\ndef real():\n    pass\n", &["m.py", "real"], &["foo"]);
-    assert_complete("x = f\"{foo(\"bar\")}\"\ndef real():\n    pass\n", &["m.py", "real"], &["foo"]);
-    assert_complete("x = f'{foo('bar')}'\ndef real():\n    pass\n", &["m.py", "real"], &["foo"]);
-    assert_complete("x = f\"{b\"bar\"}\"\ndef real():\n    pass\n", &["m.py", "real"], &[]);
+    assert_complete(
+        "x = f\"{foo('bar')}\"\ndef real():\n    pass\n",
+        &["m.py", "real"],
+        &["foo"],
+    );
+    assert_complete(
+        "x = f\"{foo(\"bar\")}\"\ndef real():\n    pass\n",
+        &["m.py", "real"],
+        &["foo"],
+    );
+    assert_complete(
+        "x = f'{foo('bar')}'\ndef real():\n    pass\n",
+        &["m.py", "real"],
+        &["foo"],
+    );
+    assert_complete(
+        "x = f\"{b\"bar\"}\"\ndef real():\n    pass\n",
+        &["m.py", "real"],
+        &[],
+    );
     assert_complete(
         "x = (\n    f\"{foo(\"bar\")}\"\n)\ndef real():\n    pass\n",
         &["m.py", "real"],
         &["foo"],
     );
-    assert_complete(concat!(r#"f"{"}"}"; FLAG = 1"#, "\n"), &["m.py", "FLAG"], &[]);
+    assert_complete(
+        concat!(r#"f"{"}"}"; FLAG = 1"#, "\n"),
+        &["m.py", "FLAG"],
+        &[],
+    );
 }
 
 /// Finding 11. A span past the first diagnostic keeps an exact contains-edge.
@@ -51,13 +75,30 @@ fn partial_containment_stays_exact_and_labels_precision() {
         .edges
         .iter()
         .zip(facts.nodes.iter().skip(1))
-        .map(|(edge, node)| (node.fact.name.as_str(), edge.fact.conf, edge.precision, node.precision))
+        .map(|(edge, node)| {
+            (
+                node.fact.name.as_str(),
+                edge.fact.conf,
+                edge.precision,
+                node.precision,
+            )
+        })
         .collect();
     assert_eq!(
         edges,
         [
-            ("kept", Confidence::Exact, Precision::Structural, Precision::Structural),
-            ("also", Confidence::Exact, Precision::Partial, Precision::Partial),
+            (
+                "kept",
+                Confidence::Exact,
+                Precision::Structural,
+                Precision::Structural
+            ),
+            (
+                "also",
+                Confidence::Exact,
+                Precision::Partial,
+                Precision::Partial
+            ),
         ]
     );
 }

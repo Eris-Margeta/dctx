@@ -14,8 +14,9 @@ use std::sync::Arc;
 
 use dctx::memory::{CancelFlag, FixedClock};
 use dctx::{
-    AutoCleanConfig, FsSource, HostCeiling, HostGrants, IdentityOutcome, OperationLimits, RuleTexts, SelectionPolicy,
-    Session, SnapshotRequest, Source, StoragePolicy, Timestamp, VecSink,
+    AutoCleanConfig, FsSource, HostCeiling, HostGrants, IdentityOutcome, OperationLimits,
+    RuleTexts, SelectionPolicy, Session, SnapshotRequest, Source, StoragePolicy, Timestamp,
+    VecSink,
 };
 
 #[test]
@@ -33,29 +34,50 @@ fn gitignore_is_not_automatic_and_git_config_is_not_rewritten() {
     let ignore_path = root.path().join(".gitignore");
     let ignore_before = std::fs::read(&ignore_path).expect("ignore");
 
-    let included = run(root.path(), SelectionPolicy::from_texts(&RuleTexts::default()));
+    let included = run(
+        root.path(),
+        SelectionPolicy::from_texts(&RuleTexts::default()),
+    );
     // The env-shaped `secrets.env` is never read or indexed, with or without a local omit rule.
     assert_eq!(included.reads, 4);
     assert!(included.secret.is_none());
     assert!(included.git_gone);
-    assert_eq!(std::fs::read(&git_config).expect("config after"), config_bytes);
-    assert_eq!(std::fs::read(&ignore_path).expect("ignore after"), ignore_before);
+    assert_eq!(
+        std::fs::read(&git_config).expect("config after"),
+        config_bytes
+    );
+    assert_eq!(
+        std::fs::read(&ignore_path).expect("ignore after"),
+        ignore_before
+    );
     assert!(!root.path().join(".dctx").exists());
 
     let omitted = run(
         root.path(),
-        SelectionPolicy::from_texts(&RuleTexts { local_omit: Some("secrets.env\n"), ..RuleTexts::default() }),
+        SelectionPolicy::from_texts(&RuleTexts {
+            local_omit: Some("secrets.env\n"),
+            ..RuleTexts::default()
+        }),
     );
     assert_eq!(omitted.reads, included.reads);
     assert!(omitted.secret.is_none());
     assert!(omitted.git_gone);
-    assert_eq!(std::fs::read(&git_config).expect("config still"), config_bytes);
-    assert_eq!(std::fs::read(&ignore_path).expect("ignore still"), ignore_before);
+    assert_eq!(
+        std::fs::read(&git_config).expect("config still"),
+        config_bytes
+    );
+    assert_eq!(
+        std::fs::read(&ignore_path).expect("ignore still"),
+        ignore_before
+    );
 
     // local_omit saves a read: the omitted non-env file is not opened.
     let private = run(
         root.path(),
-        SelectionPolicy::from_texts(&RuleTexts { local_omit: Some("private.txt\n"), ..RuleTexts::default() }),
+        SelectionPolicy::from_texts(&RuleTexts {
+            local_omit: Some("private.txt\n"),
+            ..RuleTexts::default()
+        }),
     );
     assert!(private.reads < included.reads);
     assert_eq!(private.reads, 3);
@@ -74,22 +96,40 @@ fn run(root: &Path, selection: SelectionPolicy) -> Probe {
         source,
         Arc::new(CancelFlag::new()),
         HostGrants::PermitAll,
-        StoragePolicy::Ephemeral { max_bytes: 8 * 1024 * 1024 },
+        StoragePolicy::Ephemeral {
+            max_bytes: 8 * 1024 * 1024,
+        },
         selection,
     );
-    let handle = session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
+    let handle = session
+        .snapshot(&SnapshotRequest::immutable())
+        .expect("snapshot");
     let reads = session.content_reads();
     let mut sink = VecSink::new();
-    let secret = session.explain(&handle, "m:secrets.env", &mut sink).expect("secret");
+    let secret = session
+        .explain(&handle, "m:secrets.env", &mut sink)
+        .expect("secret");
     let secret = secret.records.first().map(|record| record.path.clone());
     let mut sink = VecSink::new();
-    let git = session.explain(&handle, "m:.git/config", &mut sink).expect("git");
+    let git = session
+        .explain(&handle, "m:.git/config", &mut sink)
+        .expect("git");
     let git_gone = matches!(git.outcome, Some(IdentityOutcome::Gone { .. }));
-    assert!(git.records.iter().all(|record| record.path != ".git" && !record.path.starts_with(".git/")));
+    assert!(
+        git.records
+            .iter()
+            .all(|record| record.path != ".git" && !record.path.starts_with(".git/"))
+    );
     let mut sink = VecSink::new();
-    let ping = session.explain(&handle, "s:src/lib.rs#ping", &mut sink).expect("ping");
+    let ping = session
+        .explain(&handle, "s:src/lib.rs#ping", &mut sink)
+        .expect("ping");
     assert_eq!(ping.records[0].summary, "Respond.");
-    Probe { reads, secret, git_gone }
+    Probe {
+        reads,
+        secret,
+        git_gone,
+    }
 }
 
 fn copy_fixture(dest: &Path) {
@@ -109,7 +149,9 @@ fn managed_cache_round_trips_and_isolation_does_not_clean() {
         .selection(SelectionPolicy::from_texts(&RuleTexts::default()))
         .ceiling(HostCeiling::base())
         .grants(HostGrants::PermitAll)
-        .storage(StoragePolicy::Ephemeral { max_bytes: 8 * 1024 * 1024 })
+        .storage(StoragePolicy::Ephemeral {
+            max_bytes: 8 * 1024 * 1024,
+        })
         .place("fixture")
         .view("map")
         .cache_root(Path::new("relative-cache"), 7)
@@ -120,8 +162,16 @@ fn managed_cache_round_trips_and_isolation_does_not_clean() {
     let dir = tempfile::tempdir().expect("temp");
     let cache = dir.path().join("cache");
     std::fs::create_dir(&cache).expect("dir");
-    let mut first = open_cached(common::repository(), 0, &cache, 7, AutoCleanConfig::default());
-    let handle = first.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
+    let mut first = open_cached(
+        common::repository(),
+        0,
+        &cache,
+        7,
+        AutoCleanConfig::default(),
+    );
+    let handle = first
+        .snapshot(&SnapshotRequest::immutable())
+        .expect("snapshot");
     assert_eq!(handle.generation(), 1);
     let admitted = first.cache_ledger().expect("ledger").admitted_bytes;
     assert!(admitted > 0);
@@ -130,7 +180,13 @@ fn managed_cache_round_trips_and_isolation_does_not_clean() {
     drop(handle);
     drop(first);
 
-    let second = open_cached(common::repository(), 0, &cache, 7, AutoCleanConfig::default());
+    let second = open_cached(
+        common::repository(),
+        0,
+        &cache,
+        7,
+        AutoCleanConfig::default(),
+    );
     let ledger = second.cache_ledger().expect("reloaded");
     assert_eq!(ledger.roots, 1);
     assert_eq!(ledger.admitted_bytes, admitted);
@@ -145,23 +201,59 @@ fn auto_clean_is_disabled_until_the_policy_and_the_day_say_so() {
     let dir = tempfile::tempdir().expect("temp");
     let cache = dir.path().join("cache");
     std::fs::create_dir(&cache).expect("dir");
-    let disabled = AutoCleanConfig { enabled: false, ..AutoCleanConfig::default() };
+    let disabled = AutoCleanConfig {
+        enabled: false,
+        ..AutoCleanConfig::default()
+    };
     let skipped = open_cached(common::repository(), 50_000_000, &cache, 1, disabled);
-    assert!(skipped.cache_ledger().expect("ledger").last_auto_clean_ms.is_none());
+    assert!(
+        skipped
+            .cache_ledger()
+            .expect("ledger")
+            .last_auto_clean_ms
+            .is_none()
+    );
     assert_eq!(skipped.cache_status().reclaimed_bytes, 0);
     drop(skipped);
 
     let fresh = dir.path().join("fresh");
     std::fs::create_dir(&fresh).expect("dir");
-    let opened = open_cached(common::repository(), 10, &fresh, 2, AutoCleanConfig::default());
-    assert_eq!(opened.cache_ledger().expect("ledger").last_auto_clean_ms, Some(10));
+    let opened = open_cached(
+        common::repository(),
+        10,
+        &fresh,
+        2,
+        AutoCleanConfig::default(),
+    );
+    assert_eq!(
+        opened.cache_ledger().expect("ledger").last_auto_clean_ms,
+        Some(10)
+    );
     drop(opened);
-    let same_day = open_cached(common::repository(), 10, &fresh, 2, AutoCleanConfig::default());
-    assert_eq!(same_day.cache_ledger().expect("ledger").last_auto_clean_ms, Some(10));
+    let same_day = open_cached(
+        common::repository(),
+        10,
+        &fresh,
+        2,
+        AutoCleanConfig::default(),
+    );
+    assert_eq!(
+        same_day.cache_ledger().expect("ledger").last_auto_clean_ms,
+        Some(10)
+    );
     assert_eq!(same_day.cache_status().reclaimed_bytes, 0);
     drop(same_day);
-    let next_day = open_cached(common::repository(), 10 + 86_400_000, &fresh, 2, AutoCleanConfig::default());
-    assert_eq!(next_day.cache_ledger().expect("ledger").last_auto_clean_ms, Some(10 + 86_400_000));
+    let next_day = open_cached(
+        common::repository(),
+        10 + 86_400_000,
+        &fresh,
+        2,
+        AutoCleanConfig::default(),
+    );
+    assert_eq!(
+        next_day.cache_ledger().expect("ledger").last_auto_clean_ms,
+        Some(10 + 86_400_000)
+    );
 }
 
 #[test]
@@ -169,9 +261,15 @@ fn cap_and_ttl_follow_the_injected_clock() {
     let dir = tempfile::tempdir().expect("temp");
     let cache = dir.path().join("cache");
     std::fs::create_dir(&cache).expect("dir");
-    let mut policy = AutoCleanConfig { min_interval_ms: 0, root_ttl_ms: 1_000, ..AutoCleanConfig::default() };
+    let mut policy = AutoCleanConfig {
+        min_interval_ms: 0,
+        root_ttl_ms: 1_000,
+        ..AutoCleanConfig::default()
+    };
     let mut first = open_cached(common::repository(), 0, &cache, 3, policy);
-    first.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
+    first
+        .snapshot(&SnapshotRequest::immutable())
+        .expect("snapshot");
     assert!(first.cache_ledger().expect("ledger").admitted_bytes > 0);
     assert_eq!(first.cache_ledger().expect("ledger").expired_roots, 0);
     assert!(object_files(&cache) >= 1);
@@ -213,7 +311,9 @@ fn open_cached(
         .selection(SelectionPolicy::from_texts(&RuleTexts::default()))
         .ceiling(HostCeiling::base())
         .grants(HostGrants::PermitAll)
-        .storage(StoragePolicy::Ephemeral { max_bytes: 8 * 1024 * 1024 })
+        .storage(StoragePolicy::Ephemeral {
+            max_bytes: 8 * 1024 * 1024,
+        })
         .limits(OperationLimits::default())
         .place("fixture")
         .view("map")
@@ -228,7 +328,9 @@ fn object_files(cache: &Path) -> usize {
     let Ok(entries) = std::fs::read_dir(objects) else {
         return 0;
     };
-    entries.filter(|entry| entry.as_ref().is_ok_and(|item| item.path().is_file())).count()
+    entries
+        .filter(|entry| entry.as_ref().is_ok_and(|item| item.path().is_file()))
+        .count()
 }
 
 fn copy_dir(from: &Path, to: &Path) {

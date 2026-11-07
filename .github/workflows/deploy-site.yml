@@ -1,0 +1,74 @@
+name: Deploy website
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'website/**'
+      - 'tools/website/**'
+      - 'docs/**'
+      - 'CHANGELOG.md'
+      - '.github/workflows/deploy-site.yml'
+
+permissions:
+  contents: read
+
+# Serialize deployments so an older sync cannot overwrite a newer one mid-flight.
+concurrency:
+  group: deploy-site
+  cancel-in-progress: false
+
+jobs:
+  credentials:
+    runs-on: ubuntu-24.04
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - name: Check optional deployment credentials
+        id: check
+        env:
+          SITE_KEY: ${{ secrets.DCTX_SITE_SSH_KEY }}
+          SITE_HOST: ${{ secrets.DCTX_SITE_HOST }}
+          SITE_KNOWN_HOSTS: ${{ secrets.DCTX_SITE_KNOWN_HOSTS }}
+        run: |
+          if [ -n "$SITE_KEY" ] && [ -n "$SITE_HOST" ] && [ -n "$SITE_KNOWN_HOSTS" ]; then
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy:
+    needs: credentials
+    if: needs.credentials.outputs.ready == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.13'
+      - name: Install pinned website dependencies in a venv
+        run: |
+          python -m venv tools/website/.venv
+          tools/website/.venv/bin/python -m pip install -r tools/website/requirements.txt
+      - name: Build and check website
+        # This deploy verifies the generated site. CLI capture drift remains in CI.
+        run: |
+          tools/website/.venv/bin/python tools/website/build.py
+          tools/website/.venv/bin/python tools/website/check.py --working-tree --no-capture
+      - name: Deploy to /srv/sites/dctx via restricted rsync
+        shell: bash
+        env:
+          SITE_KEY: ${{ secrets.DCTX_SITE_SSH_KEY }}
+          SITE_HOST: ${{ secrets.DCTX_SITE_HOST }}
+          SITE_KNOWN_HOSTS: ${{ secrets.DCTX_SITE_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          install -d -m 700 "$RUNNER_TEMP/dctx-site-ssh"
+          trap 'rm -rf "$RUNNER_TEMP/dctx-site-ssh"' EXIT
+          printf '%s\n' "$SITE_KEY" > "$RUNNER_TEMP/dctx-site-ssh/key"
+          printf '%s\n' "$SITE_KNOWN_HOSTS" > "$RUNNER_TEMP/dctx-site-ssh/known_hosts"
+          export RSYNC_RSH="ssh -i $RUNNER_TEMP/dctx-site-ssh/key -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/dctx-site-ssh/known_hosts"
+          # rrsync -wo /srv/sites/dctx maps remote ./ to that directory.
+          rsync -rltz --delete-delay --delay-updates --chmod=D755,F644 \
+            --exclude=.gitignore website/ "$SITE_HOST:./"

@@ -14,5 +14,10 @@ exclude = ["plugins/index", "tools/playground"]
 resolver = "2"
 
 [workspace.package]
+rust-version = "1.91"
 license = "Apache-2.0"
 repository = "https://github.com/Eris-Margeta/dctx"
+homepage = "https://www.dctx.internet.technology"
+readme = "README.md"
+keywords = ["context", "cli", "code-analysis", "llm", "developer-tools"]
+categories = ["command-line-utilities", "development-tools"]

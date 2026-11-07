@@ -14,7 +14,10 @@ enum Token {
     Literal(char),
     Any,
     Star,
-    Class { negated: bool, ranges: Vec<(char, char)> },
+    Class {
+        negated: bool,
+        ranges: Vec<(char, char)>,
+    },
 }
 
 /// A tokenized glob for one path component.
@@ -30,18 +33,36 @@ fn fold(c: char) -> char {
 fn class_has(negated: bool, ranges: &[(char, char)], c: char) -> bool {
     let inside = |c: &char| ranges.iter().any(|(lo, hi)| (*lo..=*hi).contains(c));
     let variants = [c, c.to_ascii_lowercase(), c.to_ascii_uppercase()];
-    if negated { !variants.iter().all(inside) } else { variants.iter().any(inside) }
+    if negated {
+        !variants.iter().all(inside)
+    } else {
+        variants.iter().any(inside)
+    }
 }
 
 fn compatible(a: &Token, b: &Token) -> bool {
     match (a, b) {
         (Token::Literal(x), Token::Literal(y)) => fold(*x) == fold(*y),
-        (Token::Literal(x), Token::Class { negated, ranges }) | (Token::Class { negated, ranges }, Token::Literal(x)) => {
-            class_has(*negated, ranges, *x)
-        }
-        (Token::Class { negated: false, ranges: left }, Token::Class { negated: false, ranges: right }) => {
-            left.iter().any(|(a_lo, a_hi)| right.iter().any(|(b_lo, b_hi)| a_lo <= b_hi && b_lo <= a_hi))
-                || left.iter().chain(right).any(|(lo, hi)| lo.is_ascii_alphabetic() || hi.is_ascii_alphabetic())
+        (Token::Literal(x), Token::Class { negated, ranges })
+        | (Token::Class { negated, ranges }, Token::Literal(x)) => class_has(*negated, ranges, *x),
+        (
+            Token::Class {
+                negated: false,
+                ranges: left,
+            },
+            Token::Class {
+                negated: false,
+                ranges: right,
+            },
+        ) => {
+            left.iter().any(|(a_lo, a_hi)| {
+                right
+                    .iter()
+                    .any(|(b_lo, b_hi)| a_lo <= b_hi && b_lo <= a_hi)
+            }) || left
+                .iter()
+                .chain(right)
+                .any(|(lo, hi)| lo.is_ascii_alphabetic() || hi.is_ascii_alphabetic())
         }
         _ => true,
     }
@@ -121,11 +142,16 @@ impl Glob {
 
     /// The literal glob for an exact name (every character escaped).
     pub fn literal(name: &str) -> Self {
-        Self { tokens: name.chars().map(Token::Literal).collect() }
+        Self {
+            tokens: name.chars().map(Token::Literal).collect(),
+        }
     }
 
     /// Whether some single name could match both globs (sound over-approximation).
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn intersects(&self, other: &Self) -> bool {
         let (a, b) = (&self.tokens, &other.tokens);
         let width = b.len() + 1;
@@ -158,7 +184,10 @@ impl Glob {
     }
 
     /// Whether the glob matches `name` (exact, case-sensitive Git semantics).
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn matches(&self, name: &str) -> bool {
         let chars: Vec<char> = name.chars().collect();
         let width = chars.len() + 1;

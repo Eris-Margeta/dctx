@@ -9,8 +9,8 @@ use dctx_core::budget::{byte_ceiling, estimate_tokens};
 use dctx_template::{BudgetPlan, HostCeiling};
 
 use super::error::{DctxError, Resource};
-use super::source_ceiling::{entries_ceiling, records_ceiling, source_ceiling};
 use super::request::Verb;
+use super::source_ceiling::{entries_ceiling, records_ceiling, source_ceiling};
 
 /// Most directory levels one snapshot will walk when the caller sets no depth.
 pub(crate) const SAFETY_DEPTH: u64 = 256;
@@ -46,7 +46,11 @@ pub struct OperationLimits {
 
 impl OperationLimits {
     /// The tighter of two limits in every dimension.
-    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn intersect(self, other: Self) -> Self {
         Self {
             encoded_bytes: min_opt(self.encoded_bytes, other.encoded_bytes),
@@ -64,7 +68,11 @@ impl OperationLimits {
     pub(crate) fn from_ceiling(ceiling: &HostCeiling) -> Self {
         Self {
             encoded_bytes: finite(ceiling.max_bytes),
-            estimated_tokens: finite(ceiling.max_estimated_tokens.min(ceiling.max_hard_estimated_tokens)),
+            estimated_tokens: finite(
+                ceiling
+                    .max_estimated_tokens
+                    .min(ceiling.max_hard_estimated_tokens),
+            ),
             records: finite(ceiling.max_records),
             depth: finite_u32(ceiling.max_depth),
             source_bytes: None,
@@ -223,13 +231,26 @@ pub(crate) fn resolve_query(
     policy: OperationLimits,
 ) -> Result<ResolvedLimits, DctxError> {
     let cap = verb_cap(verb);
-    let tokens = choose(requested.limits.estimated_tokens, cap.default_tokens, cap.hard_tokens, "tokens")?;
-    let records = choose(requested.limits.records, cap.default_records, cap.hard_records, "records")?;
+    let tokens = choose(
+        requested.limits.estimated_tokens,
+        cap.default_tokens,
+        cap.hard_tokens,
+        "tokens",
+    )?;
+    let records = choose(
+        requested.limits.records,
+        cap.default_records,
+        cap.hard_records,
+        "records",
+    )?;
     let depth = if cap.hard_depth == 0 {
         0
     } else {
         u32::try_from(choose(
-            requested.depth.map(u64::from).or(requested.limits.depth.map(u64::from)),
+            requested
+                .depth
+                .map(u64::from)
+                .or(requested.limits.depth.map(u64::from)),
             u64::from(cap.default_depth),
             u64::from(cap.hard_depth),
             "depth",
@@ -244,10 +265,17 @@ pub(crate) fn resolve_query(
         } else {
             requested.lines.map(u64::from)
         };
-        u32::try_from(choose(asked, u64::from(cap.default_lines), u64::from(cap.hard_lines), "lines")?)
-            .unwrap_or(cap.hard_lines)
+        u32::try_from(choose(
+            asked,
+            u64::from(cap.default_lines),
+            u64::from(cap.hard_lines),
+            "lines",
+        )?)
+        .unwrap_or(cap.hard_lines)
     };
-    let tokens = policy.estimated_tokens.map_or(tokens, |limit| tokens.min(limit));
+    let tokens = policy
+        .estimated_tokens
+        .map_or(tokens, |limit| tokens.min(limit));
     let records = policy.records.map_or(records, |limit| records.min(limit));
     let depth = policy.depth.map_or(depth, |limit| depth.min(limit));
     if tokens == 0 || records == 0 {
@@ -259,14 +287,28 @@ pub(crate) fn resolve_query(
         Some(limit) => token_bytes.min(limit),
         None => token_bytes,
     };
-    Ok(ResolvedLimits { tokens, bytes, records, depth, lines })
+    Ok(ResolvedLimits {
+        tokens,
+        bytes,
+        records,
+        depth,
+        lines,
+    })
 }
 
-fn choose(requested: Option<u64>, default: u64, hard: u64, what: &'static str) -> Result<u64, DctxError> {
+fn choose(
+    requested: Option<u64>,
+    default: u64,
+    hard: u64,
+    what: &'static str,
+) -> Result<u64, DctxError> {
     match requested {
         None => Ok(default.min(hard)),
         Some(0) => Err(DctxError::invalid_detail("limit must be positive", what)),
-        Some(value) if value > hard => Err(DctxError::invalid_detail("limit exceeds the verb hard cap", what)),
+        Some(value) if value > hard => Err(DctxError::invalid_detail(
+            "limit exceeds the verb hard cap",
+            what,
+        )),
         Some(value) => Ok(value),
     }
 }
@@ -298,9 +340,10 @@ pub(crate) fn resolve_scan(limits: &OperationLimits) -> Result<ScanLimits, DctxE
 fn under(requested: Option<u64>, safety: u64, what: &'static str) -> Result<u64, DctxError> {
     match requested {
         None => Ok(safety),
-        Some(value) if value == 0 || value > safety => {
-            Err(DctxError::invalid_detail("limit exceeds the facade safety cap", what))
-        }
+        Some(value) if value == 0 || value > safety => Err(DctxError::invalid_detail(
+            "limit exceeds the facade safety cap",
+            what,
+        )),
         Some(value) => Ok(value),
     }
 }
@@ -310,11 +353,18 @@ pub(crate) fn within_budget(bytes: &[u8], limits: &ResolvedLimits) -> bool {
     len <= limits.bytes && estimate_tokens(len) <= limits.tokens
 }
 
-pub(crate) fn check_deadline(start_ms: u64, now_ms: u64, deadline_ms: Option<u64>) -> Result<(), DctxError> {
+pub(crate) fn check_deadline(
+    start_ms: u64,
+    now_ms: u64,
+    deadline_ms: Option<u64>,
+) -> Result<(), DctxError> {
     if let Some(bound) = deadline_ms
         && now_ms.saturating_sub(start_ms) > bound
     {
-        return Err(DctxError::ResourceLimit { resource: Resource::Deadline, limit: bound });
+        return Err(DctxError::ResourceLimit {
+            resource: Resource::Deadline,
+            limit: bound,
+        });
     }
     Ok(())
 }
@@ -328,28 +378,47 @@ mod tests {
     fn oversized_find_is_refused_and_the_default_fits() {
         let mut request = MapRequest::new(Verb::Find);
         request.limits.estimated_tokens = Some(5_000);
-        let error = resolve_query(Verb::Find, &request, OperationLimits::default()).expect_err("hard");
+        let error =
+            resolve_query(Verb::Find, &request, OperationLimits::default()).expect_err("hard");
         assert_eq!(error.code().as_str(), "InvalidRequest");
         request.limits.estimated_tokens = Some(2_000);
         let ok = resolve_query(Verb::Find, &request, OperationLimits::default()).expect("ok");
         assert_eq!(ok.tokens, 2_000);
-        let defaulted = resolve_query(Verb::Find, &MapRequest::new(Verb::Find), OperationLimits::default()).expect("default");
+        let defaulted = resolve_query(
+            Verb::Find,
+            &MapRequest::new(Verb::Find),
+            OperationLimits::default(),
+        )
+        .expect("default");
         assert_eq!(defaulted.records, 10);
         assert_eq!(defaulted.tokens, 500);
     }
 
     #[test]
     fn read_default_fits_a_typical_module_and_cannot_pass_the_hard_cap() {
-        let read = resolve_query(Verb::Read, &MapRequest::new(Verb::Read), OperationLimits::default()).expect("read");
+        let read = resolve_query(
+            Verb::Read,
+            &MapRequest::new(Verb::Read),
+            OperationLimits::default(),
+        )
+        .expect("read");
         assert_eq!(read.tokens, super::READ_DEFAULT_TOKENS);
-        assert!(read.bytes >= 5_250, "a ~5 KB module page must fit, got {} bytes", read.bytes);
+        assert!(
+            read.bytes >= 5_250,
+            "a ~5 KB module page must fit, got {} bytes",
+            read.bytes
+        );
         assert!(super::estimate_tokens(5_250) <= read.tokens);
 
         let mut narrow = MapRequest::new(Verb::Read);
         narrow.limits.estimated_tokens = Some(500);
-        let narrow = resolve_query(Verb::Read, &narrow, OperationLimits::default()).expect("narrow");
+        let narrow =
+            resolve_query(Verb::Read, &narrow, OperationLimits::default()).expect("narrow");
         assert_eq!(narrow.tokens, 500);
-        assert!(narrow.bytes < 5_250, "an explicit 500-token budget stays narrow");
+        assert!(
+            narrow.bytes < 5_250,
+            "an explicit 500-token budget stays narrow"
+        );
 
         let mut over = MapRequest::new(Verb::Read);
         over.limits.estimated_tokens = Some(super::READ_DEFAULT_TOKENS + 1);
@@ -359,8 +428,18 @@ mod tests {
 
     #[test]
     fn explain_defaults_are_tighter_than_map() {
-        let explain = resolve_query(Verb::Explain, &MapRequest::new(Verb::Explain), OperationLimits::default()).expect("e");
-        let map = resolve_query(Verb::Map, &MapRequest::new(Verb::Map), OperationLimits::default()).expect("m");
+        let explain = resolve_query(
+            Verb::Explain,
+            &MapRequest::new(Verb::Explain),
+            OperationLimits::default(),
+        )
+        .expect("e");
+        let map = resolve_query(
+            Verb::Map,
+            &MapRequest::new(Verb::Map),
+            OperationLimits::default(),
+        )
+        .expect("m");
         assert_eq!(explain.tokens, 400);
         assert_eq!(map.depth, 1);
         assert_eq!(map.records, 60);
@@ -369,7 +448,10 @@ mod tests {
     #[test]
     fn safety_cap_refuses_a_raised_walk_limit() {
         let ceiling = super::entries_ceiling().expect("entries ceiling");
-        let mut limits = OperationLimits { work_units: Some(ceiling + 1), ..OperationLimits::default() };
+        let mut limits = OperationLimits {
+            work_units: Some(ceiling + 1),
+            ..OperationLimits::default()
+        };
         assert!(resolve_scan(&limits).is_err());
         limits.work_units = Some(4);
         assert_eq!(resolve_scan(&limits).expect("narrow").entries, 4);
@@ -381,7 +463,10 @@ mod tests {
     fn source_cap_defaults_to_the_ceiling_and_refuses_a_raised_request() {
         let ceiling = super::source_ceiling().expect("ceiling");
         let mut limits = OperationLimits::default();
-        assert_eq!(resolve_scan(&limits).expect("default").source_bytes, ceiling);
+        assert_eq!(
+            resolve_scan(&limits).expect("default").source_bytes,
+            ceiling
+        );
         limits.source_bytes = Some(ceiling + 1);
         assert!(resolve_scan(&limits).is_err());
         limits.source_bytes = Some(1);

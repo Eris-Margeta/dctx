@@ -15,19 +15,32 @@ const MAX_RULE_DEPTH: u32 = 256;
 /// to root-relative lines, then `.dctxignore`. An excluded directory is not listed.
 pub(crate) fn project_rules(root: &Path) -> Result<RuleSources, String> {
     let root = fs::canonicalize(root).map_err(|error| error.to_string())?;
-    let global_omit = optional_omit(config_file("omitcontent"));
-    let local_omit = optional_omit(Some(root.join(".dctxomitcontent")));
+    let global_omit = optional_omit(config_file("omitcontent")?);
+    let local_omit = None;
     if index_ignored() {
-        return Ok(RuleSources { global_ignore: None, global_omit, local_ignore: None, local_omit });
+        return Ok(RuleSources {
+            global_ignore: None,
+            global_omit,
+            local_ignore: None,
+            local_omit,
+        });
     }
-    let global_ignore = required_ignore(config_file("ignore"))?;
+    let global_ignore = required_ignore(config_file("ignore")?)?;
     let local_ignore = local_ignore_text(&root, global_ignore.as_deref())?;
-    Ok(RuleSources { global_ignore, global_omit, local_ignore, local_omit })
+    Ok(RuleSources {
+        global_ignore,
+        global_omit,
+        local_ignore,
+        local_omit,
+    })
 }
 
 /// Local ignore text for `root`, or `None` when every rule file is missing or empty.
 /// `global_ignore` is consulted only so an already-excluded directory is not listed.
-pub(crate) fn local_ignore_text(root: &Path, global_ignore: Option<&str>) -> Result<Option<String>, String> {
+pub(crate) fn local_ignore_text(
+    root: &Path,
+    global_ignore: Option<&str>,
+) -> Result<Option<String>, String> {
     let mut local = String::new();
     if let Some(text) = read_rule_file(&root.join(".gitignore"))? {
         append_text(&mut local, &text);
@@ -36,27 +49,41 @@ pub(crate) fn local_ignore_text(root: &Path, global_ignore: Option<&str>) -> Res
     if let Some(text) = read_rule_file(&root.join(".dctxignore"))? {
         append_text(&mut local, &text);
     }
-    if local.is_empty() { Ok(None) } else { Ok(Some(local)) }
+    if local.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(local))
+    }
 }
 
 fn index_ignored() -> bool {
     std::env::var("DCTX_INDEX_IGNORED").ok().as_deref() == Some("1")
 }
 
-fn config_file(name: &str) -> Option<PathBuf> {
-    config_dir().map(|dir| dir.join(name))
+fn config_file(name: &str) -> Result<Option<PathBuf>, String> {
+    config_dir().map(|dir| dir.map(|dir| dir.join(name)))
 }
 
-fn config_dir() -> Option<PathBuf> {
-    let base = if cfg!(windows) {
-        std::env::var("APPDATA").ok().map(PathBuf::from)
-    } else {
-        std::env::var("XDG_CONFIG_HOME")
-            .ok()
+fn config_dir() -> Result<Option<PathBuf>, String> {
+    config_dir_from_env(cfg!(windows), |key| std::env::var_os(key))
+}
+
+/// Pure resolver so Windows mappings can be checked on every test platform.
+fn config_dir_from_env(
+    windows: bool,
+    env: impl Fn(&str) -> Option<std::ffi::OsString>,
+) -> Result<Option<PathBuf>, String> {
+    let nonempty = |key| {
+        env(key)
+            .filter(|value| !value.is_empty())
             .map(PathBuf::from)
-            .or_else(|| std::env::var("HOME").ok().map(|home| PathBuf::from(home).join(".config")))
     };
-    base.map(|path| path.join(APP_NAME))
+    let base = if windows {
+        Some(nonempty("APPDATA").ok_or_else(|| "APPDATA is not set or is empty".to_string())?)
+    } else {
+        nonempty("XDG_CONFIG_HOME").or_else(|| nonempty("HOME").map(|home| home.join(".config")))
+    };
+    Ok(base.map(|path| path.join(APP_NAME)))
 }
 
 fn required_ignore(path: Option<PathBuf>) -> Result<Option<String>, String> {
@@ -83,7 +110,10 @@ fn read_rule_file(path: &Path) -> Result<Option<String>, String> {
         return Err(format!("{}: is not a file", path.display()));
     }
     if meta.len() > MAX_RULE_FILE_BYTES {
-        return Err(format!("{}: exceeds {MAX_RULE_FILE_BYTES} bytes", path.display()));
+        return Err(format!(
+            "{}: exceeds {MAX_RULE_FILE_BYTES} bytes",
+            path.display()
+        ));
     }
     let file = fs::File::open(path).map_err(|error| format!("{}: {error}", path.display()))?;
     let mut buf = Vec::new();
@@ -91,9 +121,13 @@ fn read_rule_file(path: &Path) -> Result<Option<String>, String> {
         .read_to_end(&mut buf)
         .map_err(|error| format!("{}: {error}", path.display()))?;
     if buf.len() as u64 > MAX_RULE_FILE_BYTES {
-        return Err(format!("{}: exceeds {MAX_RULE_FILE_BYTES} bytes", path.display()));
+        return Err(format!(
+            "{}: exceeds {MAX_RULE_FILE_BYTES} bytes",
+            path.display()
+        ));
     }
-    let text = std::str::from_utf8(&buf).map_err(|_| format!("{}: invalid UTF-8", path.display()))?;
+    let text =
+        std::str::from_utf8(&buf).map_err(|_| format!("{}: invalid UTF-8", path.display()))?;
     Ok(Some(text.to_string()))
 }
 
@@ -107,9 +141,14 @@ fn collect_nested(
     if depth > MAX_RULE_DEPTH {
         return Ok(());
     }
-    let dir = if prefix.is_empty() { root.to_path_buf() } else { root.join(prefix) };
+    let dir = if prefix.is_empty() {
+        root.to_path_buf()
+    } else {
+        root.join(prefix)
+    };
     let mut names = Vec::new();
-    let entries = fs::read_dir(&dir).map_err(|error| format!("rule walk {}: {error}", dir.display()))?;
+    let entries =
+        fs::read_dir(&dir).map_err(|error| format!("rule walk {}: {error}", dir.display()))?;
     for entry in entries {
         let entry = entry.map_err(|error| format!("rule walk {}: {error}", dir.display()))?;
         let Ok(name) = entry.file_name().into_string() else {
@@ -118,7 +157,9 @@ fn collect_nested(
         if name.is_empty() || name == "." || name == ".." {
             continue;
         }
-        let kind = entry.file_type().map_err(|error| format!("rule walk {}: {error}", dir.display()))?;
+        let kind = entry
+            .file_type()
+            .map_err(|error| format!("rule walk {}: {error}", dir.display()))?;
         if kind.is_symlink() || !kind.is_dir() {
             continue;
         }
@@ -126,7 +167,11 @@ fn collect_nested(
     }
     names.sort();
     for name in names {
-        let relative = if prefix.is_empty() { name.clone() } else { format!("{prefix}/{name}") };
+        let relative = if prefix.is_empty() {
+            name.clone()
+        } else {
+            format!("{prefix}/{name}")
+        };
         if directory_excluded(global_ignore, rules, &relative, &name) {
             continue;
         }
@@ -138,10 +183,28 @@ fn collect_nested(
     Ok(())
 }
 
-fn directory_excluded(global_ignore: Option<&str>, local_so_far: &str, relative: &str, name: &str) -> bool {
-    let local_ignore = if local_so_far.is_empty() { None } else { Some(local_so_far) };
-    let policy = SelectionPolicy::from_texts(&RuleTexts { global_ignore, local_ignore, ..RuleTexts::default() });
-    let context = ItemContext { relative_path: relative, name, is_directory: true, debug_mode: false };
+fn directory_excluded(
+    global_ignore: Option<&str>,
+    local_so_far: &str,
+    relative: &str,
+    name: &str,
+) -> bool {
+    let local_ignore = if local_so_far.is_empty() {
+        None
+    } else {
+        Some(local_so_far)
+    };
+    let policy = SelectionPolicy::from_texts(&RuleTexts {
+        global_ignore,
+        local_ignore,
+        ..RuleTexts::default()
+    });
+    let context = ItemContext {
+        relative_path: relative,
+        name,
+        is_directory: true,
+        debug_mode: false,
+    };
     policy.decide(&context) == FileHandlingDecision::Exclude
 }
 
@@ -216,4 +279,77 @@ pub(super) fn rewrite_nested_line(prefix: &str, line: &str) -> String {
         out.push_str(comment);
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{collections::BTreeMap, ffi::OsString};
+
+    fn resolve(windows: bool, values: &[(&str, &str)]) -> Result<Option<PathBuf>, String> {
+        let env: BTreeMap<_, _> = values
+            .iter()
+            .map(|(key, value)| (*key, OsString::from(value)))
+            .collect();
+        config_dir_from_env(windows, |key| env.get(key).cloned())
+    }
+
+    #[test]
+    fn windows_config_uses_appdata_instead_of_xdg_or_localappdata() {
+        let values = [
+            ("APPDATA", "config"),
+            ("XDG_CONFIG_HOME", "other-config"),
+            ("LOCALAPPDATA", "local-app-data"),
+            ("HOME", "home"),
+        ];
+        assert_eq!(
+            resolve(true, &values),
+            Ok(Some(PathBuf::from("config").join(APP_NAME)))
+        );
+    }
+
+    #[test]
+    fn windows_config_refuses_missing_or_empty_appdata_without_falling_back() {
+        for values in [
+            vec![],
+            vec![
+                ("XDG_CONFIG_HOME", "config"),
+                ("LOCALAPPDATA", "local-app-data"),
+                ("HOME", "home"),
+            ],
+            vec![
+                ("APPDATA", ""),
+                ("XDG_CONFIG_HOME", "config"),
+                ("HOME", "home"),
+            ],
+        ] {
+            assert_eq!(
+                resolve(true, &values),
+                Err("APPDATA is not set or is empty".to_string())
+            );
+        }
+    }
+
+    #[test]
+    fn unix_config_uses_xdg_then_home_and_ignores_appdata() {
+        let values = [
+            ("XDG_CONFIG_HOME", "config"),
+            ("HOME", "home"),
+            ("APPDATA", "other-config"),
+        ];
+        assert_eq!(
+            resolve(false, &values),
+            Ok(Some(PathBuf::from("config").join(APP_NAME)))
+        );
+        for values in [
+            vec![("HOME", "home")],
+            vec![("XDG_CONFIG_HOME", ""), ("HOME", "home")],
+        ] {
+            assert_eq!(
+                resolve(false, &values),
+                Ok(Some(PathBuf::from("home").join(".config").join(APP_NAME)))
+            );
+        }
+        assert_eq!(resolve(false, &[("APPDATA", "config")]), Ok(None));
+    }
 }

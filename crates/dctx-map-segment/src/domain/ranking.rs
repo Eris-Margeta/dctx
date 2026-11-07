@@ -27,7 +27,10 @@ pub struct FieldHit {
 
 /// Inputs for [`rank_score`]. Token counts are the postings lengths.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[allow(clippy::struct_excessive_bools, reason = "Exact-name, public, tier-zero and focus are independent ranking boosts; all combinations are meaningful in the existing public input.")]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "Exact-name, public, tier-zero and focus are independent ranking boosts; all combinations are meaningful in the existing public input."
+)]
 pub struct RankInput<'a> {
     /// Documents in the corpus. Zero is refused.
     pub document_count: u32,
@@ -50,12 +53,17 @@ pub struct RankInput<'a> {
 }
 
 /// Floor of the mean token count. An empty slice scores as zero.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn average_document_tokens(lengths: &[u32]) -> u32 {
     if lengths.is_empty() {
         return 0;
     }
-    let sum = lengths.iter().fold(0u128, |acc, length| acc.saturating_add(u128::from(*length)));
+    let sum = lengths
+        .iter()
+        .fold(0u128, |acc, length| acc.saturating_add(u128::from(*length)));
     let len = u128::try_from(lengths.len()).unwrap_or(u128::MAX);
     u32::try_from(sum / len).unwrap_or(u32::MAX)
 }
@@ -77,7 +85,10 @@ pub fn rank_score(input: &RankInput<'_>) -> Result<i64, SegmentError> {
 }
 
 /// Orders a higher score first, then the public id ascending.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn cmp_ranked(a_score: i64, a_id: &str, b_score: i64, b_id: &str) -> Ordering {
     b_score.cmp(&a_score).then_with(|| a_id.cmp(b_id))
 }

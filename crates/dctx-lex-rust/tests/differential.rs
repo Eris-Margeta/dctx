@@ -54,7 +54,14 @@ fn ours(source: &str) -> Extraction {
 fn oracle_decls(file: &ParsedFile) -> BTreeSet<Decl> {
     let nodes = file.nodes.iter().skip(1);
     nodes
-        .map(|n| (n.name.clone(), n.symbol_kind, n.kind == NodeKind::Test, n.lines))
+        .map(|n| {
+            (
+                n.name.clone(),
+                n.symbol_kind,
+                n.kind == NodeKind::Test,
+                n.lines,
+            )
+        })
         .collect()
 }
 
@@ -74,7 +81,10 @@ fn refs(file: &ParsedFile, kind: EdgeKind) -> BTreeSet<(String, Option<String>)>
 }
 
 /// (precision, recall) of `emitted` against `expected`; empty denominators count as 1.
-#[allow(clippy::cast_precision_loss, reason = "Counts come from the fixed snippet corpus and are far below f64's exact integer limit of 2^53.")]
+#[allow(
+    clippy::cast_precision_loss,
+    reason = "Counts come from the fixed snippet corpus and are far below f64's exact integer limit of 2^53."
+)]
 fn score<T: Ord>(emitted: &BTreeSet<T>, expected: &BTreeSet<T>) -> (f64, f64) {
     let correct = emitted.intersection(expected).count() as f64;
     let ratio = |n: usize| if n == 0 { 1.0 } else { correct / n as f64 };
@@ -95,7 +105,12 @@ fn syn_declarations_match_the_oracle() {
             emitted.difference(&expected).collect::<Vec<_>>(),
             expected.difference(&emitted).collect::<Vec<_>>(),
         );
-        assert!(facts.declarations.iter().all(|d| d.precision == Precision::Syntax));
+        assert!(
+            facts
+                .declarations
+                .iter()
+                .all(|d| d.precision == Precision::Syntax)
+        );
     }
 }
 
@@ -114,8 +129,14 @@ fn syn_imports_reexports_and_impls_match_the_oracle() {
             .imports
             .iter()
             .filter(|i| i.public && i.kind == ImportKind::Use);
-        let exported: BTreeSet<_> = exported.map(|i| (i.path.clone(), i.alias.clone())).collect();
-        assert_eq!(exported, refs(&file, EdgeKind::Reexports), "{path} reexports");
+        let exported: BTreeSet<_> = exported
+            .map(|i| (i.path.clone(), i.alias.clone()))
+            .collect();
+        assert_eq!(
+            exported,
+            refs(&file, EdgeKind::Reexports),
+            "{path} reexports"
+        );
         let traits = facts.declarations.iter().filter_map(|d| {
             let path = d.implementation.as_ref()?.trait_path.clone()?;
             Some((path, None))
@@ -160,11 +181,19 @@ fn line_scan_meets_the_structural_gate_on_broken_fixtures() {
         let broken = format!("{source}\nfn broken(\n");
         let facts = ours(&broken);
         assert!(
-            matches!(facts.completion, Completion::Partial(Refusal::Syntax { .. } | Refusal::Lex { .. })),
+            matches!(
+                facts.completion,
+                Completion::Partial(Refusal::Syntax { .. } | Refusal::Lex { .. })
+            ),
             "{path}: {:?}",
             facts.completion
         );
-        assert!(facts.declarations.iter().all(|d| d.precision == Precision::LineScan));
+        assert!(
+            facts
+                .declarations
+                .iter()
+                .all(|d| d.precision == Precision::LineScan)
+        );
         let emitted = our_decls(&facts, false);
         let (precision, recall) = score(&emitted, &expected);
         assert!(

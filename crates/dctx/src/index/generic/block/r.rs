@@ -2,10 +2,16 @@
 //! R declarations: `name <- function(` and `name = function(` outside any brace or parenthesis (fn), and the object-system calls
 //! `setClass("Name")`, `setRefClass("Name")` and `R6Class("Name")` (type) and `setGeneric("name")` (fn), with or without `x <-` in front.
 
-use super::super::{ident_at, is_denied, mask, signature_of, Decl, Syntax};
+use super::super::{Decl, Syntax, ident_at, is_denied, mask, signature_of};
 
 /// Comment and string syntax of R.
-const SYNTAX: Syntax = Syntax { line: &["#"], block: None, nested: false, quotes: b"\"'", triple: false };
+const SYNTAX: Syntax = Syntax {
+    line: &["#"],
+    block: None,
+    nested: false,
+    quotes: b"\"'",
+    triple: false,
+};
 
 /// R declarations of `text`.
 pub(super) fn decls(text: &str) -> Vec<Decl> {
@@ -28,10 +34,20 @@ pub(super) fn decls(text: &str) -> Vec<Decl> {
         }
         if depth == 0 && parens == 0 && waiting.is_none() {
             if let Some(name) = function_name(line) {
-                decls.push(Decl { name, kind: "fn", lines: [number, number], signature: signature_of(original) });
+                decls.push(Decl {
+                    name,
+                    kind: "fn",
+                    lines: [number, number],
+                    signature: signature_of(original),
+                });
                 waiting = Some(decls.len() - 1);
             } else if let Some((name, kind)) = call_name(shown, original) {
-                decls.push(Decl { name, kind, lines: [number, number], signature: signature_of(original) });
+                decls.push(Decl {
+                    name,
+                    kind,
+                    lines: [number, number],
+                    signature: signature_of(original),
+                });
                 call = Some(decls.len() - 1);
             }
         }
@@ -70,19 +86,28 @@ pub(super) fn decls(text: &str) -> Vec<Decl> {
 /// The name when `line` starts `name <- function(`, `name <<- function(` or `name = function(`.
 fn function_name(line: &str) -> Option<String> {
     let (name, value) = assignment(line)?;
-    let is_function = ident_at(value) == Some("function") && value["function".len()..].trim_start().starts_with('(');
+    let is_function = ident_at(value) == Some("function")
+        && value["function".len()..].trim_start().starts_with('(');
     is_function.then(|| name.to_string())
 }
 
 /// The name and the value of `line` when it starts `name <- value`, `name <<- value` or `name = value`.
 fn assignment(line: &str) -> Option<(&str, &str)> {
-    let end = line.find(|c: char| !(c.is_alphanumeric() || c == '.' || c == '_')).unwrap_or(line.len());
+    let end = line
+        .find(|c: char| !(c.is_alphanumeric() || c == '.' || c == '_'))
+        .unwrap_or(line.len());
     let name = &line[..end];
     if !name.starts_with(|c: char| c.is_alphabetic() || c == '.') || is_denied(name) {
         return None;
     }
     let rest = line[end..].trim_start();
-    let value = rest.strip_prefix("<<-").or_else(|| rest.strip_prefix("<-")).or_else(|| rest.strip_prefix('=').filter(|after| !after.starts_with('=')))?;
+    let value = rest
+        .strip_prefix("<<-")
+        .or_else(|| rest.strip_prefix("<-"))
+        .or_else(|| {
+            rest.strip_prefix('=')
+                .filter(|after| !after.starts_with('='))
+        })?;
     Some((name, value.trim_start()))
 }
 
@@ -97,7 +122,9 @@ fn call_name(shown: &str, original: &str) -> Option<(String, &'static str)> {
         Some((name, value)) => (Some(name), value),
         None => (None, line),
     };
-    let end = head.find(|c: char| !(c.is_alphanumeric() || matches!(c, '.' | '_' | ':'))).unwrap_or(head.len());
+    let end = head
+        .find(|c: char| !(c.is_alphanumeric() || matches!(c, '.' | '_' | ':')))
+        .unwrap_or(head.len());
     let kind = match head[..end].rsplit("::").next()? {
         "setClass" | "setRefClass" | "R6Class" => "type",
         "setGeneric" => "fn",
@@ -113,13 +140,22 @@ fn call_name(shown: &str, original: &str) -> Option<(String, &'static str)> {
 fn quoted_name(arguments: &str) -> Option<String> {
     let mut arguments = arguments.trim_start();
     if let Some(label) = ident_at(arguments)
-        && let Some(value) = arguments[label.len()..].trim_start().strip_prefix('=').filter(|after| !after.starts_with('='))
+        && let Some(value) = arguments[label.len()..]
+            .trim_start()
+            .strip_prefix('=')
+            .filter(|after| !after.starts_with('='))
     {
         arguments = value.trim_start();
     }
-    let quote = arguments.chars().next().filter(|c| matches!(c, '"' | '\''))?;
+    let quote = arguments
+        .chars()
+        .next()
+        .filter(|c| matches!(c, '"' | '\''))?;
     let body = &arguments[1..];
     let name = &body[..body.find(quote)?];
-    let valid = name.starts_with(|c: char| c.is_alphabetic() || c == '.') && name.chars().all(|c| c.is_alphanumeric() || matches!(c, '.' | '_'));
+    let valid = name.starts_with(|c: char| c.is_alphabetic() || c == '.')
+        && name
+            .chars()
+            .all(|c| c.is_alphanumeric() || matches!(c, '.' | '_'));
     (valid && !is_denied(name)).then(|| name.to_string())
 }

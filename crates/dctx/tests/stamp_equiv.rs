@@ -80,7 +80,10 @@ fn aged(step: u32, salt: u64) -> SystemTime {
 }
 
 fn open(root: &Path, cache: &Path) -> Session {
-    let auto = AutoCleanConfig { enabled: false, ..AutoCleanConfig::default() };
+    let auto = AutoCleanConfig {
+        enabled: false,
+        ..AutoCleanConfig::default()
+    };
     Session::builder(FsSource::open(root).expect("source"))
         .clock(FixedClock(Timestamp(0)))
         .cancellation(Arc::new(CancelFlag::new()))

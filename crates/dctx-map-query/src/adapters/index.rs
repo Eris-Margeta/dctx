@@ -13,7 +13,10 @@ use dctx_map_parse::{Parser, TreeSitterParser};
 use dctx_map_store::SqliteStore;
 use dctx_ports::memory::{CancelFlag, FixedClock};
 use dctx_ports::{Cancellation, Clock};
-use std::{collections::BTreeMap, time::{Duration, Instant}};
+use std::{
+    collections::BTreeMap,
+    time::{Duration, Instant},
+};
 
 /// Evidence from the latest source refresh.
 #[derive(Debug, Clone, Default)]
@@ -129,7 +132,10 @@ impl Index {
 
     /// Applies a captured inventory, parsing only changed content.
     /// A finite deadline flags pending files stale; no obsolete source is served.
-    #[allow(clippy::too_many_lines, reason = "Keep ordered incremental snapshot application and its stale/publication transitions together in one operation.")]
+    #[allow(
+        clippy::too_many_lines,
+        reason = "Keep ordered incremental snapshot application and its stale/publication transitions together in one operation."
+    )]
     pub(super) fn apply_snapshot(
         &mut self,
         mut snapshot: Snapshot,

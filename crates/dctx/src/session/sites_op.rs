@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 use super::Session;
 use crate::domain::{AnswerRecord, MapRequest};
-use crate::index::{sites, Generation};
+use crate::index::{Generation, sites};
 
 /// Most depth-one callers whose files are scanned to rank a whole answer. A larger answer keeps the target order and gets sites per page.
 const RANK_CAP: usize = 2000;
@@ -16,7 +16,12 @@ const RANK_CAP: usize = 2000;
 impl Session {
     /// Scans every depth-one inbound `calls` record of the whole answer, fills its `sites` and ranks the callers with more call sites first.
     /// Returns false, leaving `records` untouched, when there is nothing to scan or more than [`RANK_CAP`] callers.
-    pub(super) fn rank_sites(&mut self, generation: &Generation, request: &MapRequest, records: &mut Vec<AnswerRecord>) -> bool {
+    pub(super) fn rank_sites(
+        &mut self,
+        generation: &Generation,
+        request: &MapRequest,
+        records: &mut Vec<AnswerRecord>,
+    ) -> bool {
         let Some(plan) = sites::plan(generation, request, records) else {
             return false;
         };
@@ -29,21 +34,37 @@ impl Session {
     }
 
     /// Fills `sites` on the depth-one inbound `calls` records of `records`. Other records stay unchanged.
-    pub(super) fn attach_sites(&mut self, generation: &Generation, request: &MapRequest, records: &mut [AnswerRecord]) {
+    pub(super) fn attach_sites(
+        &mut self,
+        generation: &Generation,
+        request: &MapRequest,
+        records: &mut [AnswerRecord],
+    ) {
         if let Some(plan) = sites::plan(generation, request, records) {
             self.fill_sites(generation, &plan, records);
         }
     }
 
     /// Scans the jobs of `plan`, keeps the first [`sites::MAX_SITES`] lines on each record and returns every record's full call-site count, at least one for a direct caller.
-    fn fill_sites(&mut self, generation: &Generation, plan: &sites::SitePlan, records: &mut [AnswerRecord]) -> Vec<usize> {
+    fn fill_sites(
+        &mut self,
+        generation: &Generation,
+        plan: &sites::SitePlan,
+        records: &mut [AnswerRecord],
+    ) -> Vec<usize> {
         let mut counts = vec![0; records.len()];
         let mut files: HashMap<String, Option<Vec<u8>>> = HashMap::new();
         for job in &plan.jobs {
             if !files.contains_key(&job.path) {
-                let digest = generation.files.iter().find(|file| file.path == job.path).and_then(|file| file.digest);
+                let digest = generation
+                    .files
+                    .iter()
+                    .find(|file| file.path == job.path)
+                    .and_then(|file| file.digest);
                 let bytes = match digest {
-                    Some(expected) if self.authorize(&job.path).is_ok() => self.read_verified(&job.path, expected).ok(),
+                    Some(expected) if self.authorize(&job.path).is_ok() => {
+                        self.read_verified(&job.path, expected).ok()
+                    }
                     _ => None,
                 };
                 files.insert(job.path.clone(), bytes);
@@ -70,11 +91,18 @@ impl Session {
 /// Fits a neighbors page into the budget, where `fits(records, more)` says whether that page fits.
 /// Summaries are shed before records: every summary goes, then records drop from the end (never the last one, so the caller's
 /// refusal keeps its size), then summaries come back from the top while the page still fits. Each dropped record adds one to `more`.
-pub(super) fn fit_neighbors(records: &mut Vec<AnswerRecord>, more: &mut u64, fits: impl Fn(&[AnswerRecord], u64) -> bool) {
+pub(super) fn fit_neighbors(
+    records: &mut Vec<AnswerRecord>,
+    more: &mut u64,
+    fits: impl Fn(&[AnswerRecord], u64) -> bool,
+) {
     if records.is_empty() || fits(records, *more) {
         return;
     }
-    let summaries: Vec<String> = records.iter_mut().map(|record| std::mem::take(&mut record.summary)).collect();
+    let summaries: Vec<String> = records
+        .iter_mut()
+        .map(|record| std::mem::take(&mut record.summary))
+        .collect();
     while records.len() > 1 && !fits(records, *more) {
         records.pop();
         *more = more.saturating_add(1);
@@ -99,7 +127,8 @@ mod tests {
     fn page(count: usize) -> Vec<AnswerRecord> {
         (0..count)
             .map(|index| {
-                let mut record = AnswerRecord::basic(format!("calls:in:s:a.rs#f{index}"), "fn", "a.rs");
+                let mut record =
+                    AnswerRecord::basic(format!("calls:in:s:a.rs#f{index}"), "fn", "a.rs");
                 record.summary = "x".repeat(100);
                 record
             })
@@ -108,21 +137,35 @@ mod tests {
 
     /// Bytes of a page: 50 per record plus its summary, plus 10 when more records follow.
     fn size(records: &[AnswerRecord], more: u64) -> usize {
-        records.iter().map(|record| 50 + record.summary.len()).sum::<usize>() + if more > 0 { 10 } else { 0 }
+        records
+            .iter()
+            .map(|record| 50 + record.summary.len())
+            .sum::<usize>()
+            + if more > 0 { 10 } else { 0 }
     }
 
     #[test]
     fn summaries_go_before_records_and_come_back_from_the_top() {
         let mut records = page(10);
         let mut more = 0;
-        fit_neighbors(&mut records, &mut more, |records, more| size(records, more) <= 650);
+        fit_neighbors(&mut records, &mut more, |records, more| {
+            size(records, more) <= 650
+        });
         // Ten bare records need 500 + 10 bytes; one summary fits back in, a second does not.
         assert_eq!((records.len(), more), (10, 0));
-        assert_eq!(records.iter().filter(|record| !record.summary.is_empty()).count(), 1);
+        assert_eq!(
+            records
+                .iter()
+                .filter(|record| !record.summary.is_empty())
+                .count(),
+            1
+        );
         assert!(!records[0].summary.is_empty());
         let mut records = page(10);
         let mut more = 0;
-        fit_neighbors(&mut records, &mut more, |records, more| size(records, more) <= 300);
+        fit_neighbors(&mut records, &mut more, |records, more| {
+            size(records, more) <= 300
+        });
         assert_eq!((records.len(), more), (5, 5));
         assert!(records.iter().all(|record| record.summary.is_empty()));
     }
@@ -131,7 +174,9 @@ mod tests {
     fn a_page_that_fits_is_left_alone_and_the_last_record_is_kept() {
         let mut records = page(3);
         let mut more = 0;
-        fit_neighbors(&mut records, &mut more, |records, more| size(records, more) <= 450);
+        fit_neighbors(&mut records, &mut more, |records, more| {
+            size(records, more) <= 450
+        });
         assert_eq!(records, page(3));
         let mut records = page(3);
         fit_neighbors(&mut records, &mut more, |_, _| false);

@@ -58,35 +58,59 @@ impl SourceSpy {
     }
 
     /// Content-read paths, in order.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn reads(&self) -> Vec<String> {
         self.collect(|touch| touch.kind == TouchKind::Read)
     }
 
     /// True when any recorded call named `path` exactly.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn touched(&self, path: &str) -> bool {
         self.snapshot().iter().any(|touch| touch.path == path)
     }
 
     /// True when a recorded path has a `.git` component.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn git_touched(&self) -> bool {
-        self.snapshot().iter().any(|touch| git_component(&touch.path))
+        self.snapshot()
+            .iter()
+            .any(|touch| git_component(&touch.path))
     }
 
     /// Every recorded call, for assertion messages.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn paths(&self) -> Vec<String> {
-        self.snapshot().iter().map(|touch| format!("{:?} {}", touch.kind, touch.path)).collect()
+        self.snapshot()
+            .iter()
+            .map(|touch| format!("{:?} {}", touch.kind, touch.path))
+            .collect()
     }
 
     fn collect(&self, keep: impl Fn(&Touch) -> bool) -> Vec<String> {
-        self.snapshot().into_iter().filter(|touch| keep(touch)).map(|touch| touch.path).collect()
+        self.snapshot()
+            .into_iter()
+            .filter(|touch| keep(touch))
+            .map(|touch| touch.path)
+            .collect()
     }
 
     fn snapshot(&self) -> Vec<Touch> {
-        self.touches.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
+        self.touches
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone()
     }
 }
 
@@ -94,7 +118,10 @@ impl Drop for SourceSpy {
     fn drop(&mut self) {
         SPY.with(|slot| {
             let mut slot = slot.borrow_mut();
-            if slot.as_ref().is_some_and(|spy| Arc::ptr_eq(spy, &self.touches)) {
+            if slot
+                .as_ref()
+                .is_some_and(|spy| Arc::ptr_eq(spy, &self.touches))
+            {
                 *slot = None;
             }
         });
@@ -106,7 +133,12 @@ fn note(kind: TouchKind, path: &str) {
     let Some(spy) = spy else {
         return;
     };
-    spy.lock().unwrap_or_else(std::sync::PoisonError::into_inner).push(Touch { kind, path: path.to_string() });
+    spy.lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .push(Touch {
+            kind,
+            path: path.to_string(),
+        });
 }
 
 fn git_component(path: &str) -> bool {
@@ -265,9 +297,17 @@ impl<S: Source> Source for LoggingSource<S> {
 }
 
 /// Confined filesystem source with desktop filters and the `.git` boundary outside it.
-pub(crate) fn desktop_source(root: &Path, config: &DesktopConfig) -> Result<impl Source + Send + 'static, DesktopError> {
-    let fs = dctx::FsSource::open(root).map_err(|error| DesktopError::Walk { detail: error.to_string() })?;
-    Ok(GitClosedSource::new(SelectedSource::new(LoggingSource::new(fs), config.clone())))
+pub(crate) fn desktop_source(
+    root: &Path,
+    config: &DesktopConfig,
+) -> Result<impl Source + Send + 'static, DesktopError> {
+    let fs = dctx::FsSource::open(root).map_err(|error| DesktopError::Walk {
+        detail: error.to_string(),
+    })?;
+    Ok(GitClosedSource::new(SelectedSource::new(
+        LoggingSource::new(fs),
+        config.clone(),
+    )))
 }
 
 /// Files seen by the pre-pack survey, and how many pass the desktop filters.
@@ -281,13 +321,18 @@ pub(crate) struct Survey {
 
 /// Counts files without reading contents. `.git` is not opened.
 pub(crate) fn survey(root: &Path, config: &DesktopConfig) -> Result<Survey, DesktopError> {
-    let meta = fs::metadata(root).map_err(|error| DesktopError::Walk { detail: error.to_string() })?;
+    let meta = fs::metadata(root).map_err(|error| DesktopError::Walk {
+        detail: error.to_string(),
+    })?;
     let mut survey = Survey::default();
     if meta.is_dir() {
         survey_dir(root, 0, true, config, &mut survey)?;
     } else {
         survey.files = 1;
-        let name = root.file_name().and_then(|item| item.to_str()).unwrap_or("");
+        let name = root
+            .file_name()
+            .and_then(|item| item.to_str())
+            .unwrap_or("");
         if file_visible(name, meta.len(), config) {
             survey.included = 1;
         }
@@ -295,13 +340,23 @@ pub(crate) fn survey(root: &Path, config: &DesktopConfig) -> Result<Survey, Desk
     Ok(survey)
 }
 
-fn survey_dir(dir: &Path, depth: u32, admit: bool, config: &DesktopConfig, survey: &mut Survey) -> Result<(), DesktopError> {
+fn survey_dir(
+    dir: &Path,
+    depth: u32,
+    admit: bool,
+    config: &DesktopConfig,
+    survey: &mut Survey,
+) -> Result<(), DesktopError> {
     if depth > MAX_DEPTH {
         return Ok(());
     }
     let entries = match fs::read_dir(dir) {
         Ok(entries) => entries,
-        Err(error) if depth == 0 => return Err(DesktopError::Walk { detail: error.to_string() }),
+        Err(error) if depth == 0 => {
+            return Err(DesktopError::Walk {
+                detail: error.to_string(),
+            })
+        }
         Err(_) => return Ok(()),
     };
     for entry in entries {
@@ -321,7 +376,13 @@ fn survey_dir(dir: &Path, depth: u32, admit: bool, config: &DesktopConfig, surve
         }
         if is_dir {
             let child_admit = admit && directory_visible(name, config);
-            survey_dir(&entry.path(), depth.saturating_add(1), child_admit, config, survey)?;
+            survey_dir(
+                &entry.path(),
+                depth.saturating_add(1),
+                child_admit,
+                config,
+                survey,
+            )?;
         } else {
             survey.files = survey.files.saturating_add(1);
             let len = entry.metadata().map_or(0, |meta| meta.len());
@@ -351,7 +412,11 @@ fn name_visible(name: &str, config: &DesktopConfig) -> bool {
     if config.only_hidden && !is_hidden(name) {
         return false;
     }
-    if let Some(exts) = config.filter_extensions.as_ref().filter(|exts| !exts.is_empty()) {
+    if let Some(exts) = config
+        .filter_extensions
+        .as_ref()
+        .filter(|exts| !exts.is_empty())
+    {
         let Some(ext) = extension_of(name) else {
             return false;
         };
@@ -383,7 +448,10 @@ fn size_visible(len: u64, config: &DesktopConfig) -> bool {
 }
 
 fn needs_size(config: &DesktopConfig) -> bool {
-    config.only_empty || config.only_non_empty || config.min_size_mb.is_some() || config.max_size_mb.is_some()
+    config.only_empty
+        || config.only_non_empty
+        || config.min_size_mb.is_some()
+        || config.max_size_mb.is_some()
 }
 
 fn is_hidden(name: &str) -> bool {
@@ -401,13 +469,22 @@ fn extension_of(file_name: &str) -> Option<&str> {
     None
 }
 
-#[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation, clippy::cast_sign_loss, reason = "Non-finite and non-positive values return zero; values at the rounded u64 boundary saturate. Interior positive fractional byte thresholds intentionally truncate toward zero.")]
+#[allow(
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "Non-finite and non-positive values return zero; values at the rounded u64 boundary saturate. Interior positive fractional byte thresholds intentionally truncate toward zero."
+)]
 fn mb_to_bytes(mb: f64) -> u64 {
     let bytes = mb * 1_048_576.0;
     if !bytes.is_finite() || bytes <= 0.0 {
         return 0;
     }
-    if bytes >= u64::MAX as f64 { u64::MAX } else { bytes as u64 }
+    if bytes >= u64::MAX as f64 {
+        u64::MAX
+    } else {
+        bytes as u64
+    }
 }
 
 #[cfg(test)]
@@ -426,15 +503,25 @@ mod tests {
     fn closed_source_never_lists_or_reads_git() {
         let mut inner = MemorySource::new();
         inner.insert_file("keep.txt", b"keep", 1).unwrap();
-        inner.insert_file(".git/config", b"PRIVATE_SENTINEL", 1).unwrap();
-        inner.insert_file("nested/.git/config", b"PRIVATE_SENTINEL", 1).unwrap();
+        inner
+            .insert_file(".git/config", b"PRIVATE_SENTINEL", 1)
+            .unwrap();
+        inner
+            .insert_file("nested/.git/config", b"PRIVATE_SENTINEL", 1)
+            .unwrap();
         let source = GitClosedSource::new(LoggingSource::new(inner));
         let spy = SourceSpy::arm();
         let entries = source.entries(&RelativePath::root()).unwrap();
         assert!(entries.iter().all(|entry| entry.name != ".git"));
         let nested = RelativePath::parse("nested").unwrap();
-        assert!(source.entries(&nested).unwrap().iter().all(|entry| entry.name != ".git"));
-        assert!(source.entries(&RelativePath::parse(".git").unwrap()).is_err());
+        assert!(source
+            .entries(&nested)
+            .unwrap()
+            .iter()
+            .all(|entry| entry.name != ".git"));
+        assert!(source
+            .entries(&RelativePath::parse(".git").unwrap())
+            .is_err());
         assert!(source.read(&grant("keep.txt"), 100).is_ok());
         assert!(source.read(&grant(".git/config"), 100).is_err());
         assert!(source.read(&grant("nested/.git/config"), 100).is_err());

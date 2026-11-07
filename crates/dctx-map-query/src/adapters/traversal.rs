@@ -71,7 +71,10 @@ impl Index {
         Ok(records)
     }
 
-    #[allow(clippy::cast_possible_wrap, reason = "The degree boost is capped at 999 before converting it to i64.")]
+    #[allow(
+        clippy::cast_possible_wrap,
+        reason = "The degree boost is capped at 999 before converting it to i64."
+    )]
     pub(super) fn neighbors(&self, request: &Request, target: &StableId) -> Vec<Record> {
         let mut visited = BTreeSet::new();
         let mut relations = BTreeMap::new();

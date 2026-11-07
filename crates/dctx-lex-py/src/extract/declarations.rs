@@ -89,12 +89,7 @@ impl Walker<'_> {
         false
     }
 
-    fn word_stmt(
-        &mut self,
-        word: &str,
-        run: fn(&mut Self, &Scope),
-        scope: &Scope,
-    ) -> bool {
+    fn word_stmt(&mut self, word: &str, run: fn(&mut Self, &Scope), scope: &Scope) -> bool {
         if self.at_text(word) {
             run(self, scope);
             true
@@ -198,9 +193,15 @@ impl Walker<'_> {
         let colon = self.i;
         let doc = self.lookahead_suite_doc();
         let qualified = qualify(scope, &local);
-        let Some(owner) =
-            self.emit_symbol(scope, &qualified, &local, SymbolKind::Class, sig_at, colon, doc)
-        else {
+        let Some(owner) = self.emit_symbol(
+            scope,
+            &qualified,
+            &local,
+            SymbolKind::Class,
+            sig_at,
+            colon,
+            doc,
+        ) else {
             self.suite(&scope.blocked());
             return;
         };
@@ -242,7 +243,10 @@ impl Walker<'_> {
             self.depth -= 1;
             return;
         }
-        while self.refused.is_none() && !self.eof() && !self.at(Kind::Newline) && !self.at(Kind::Dedent)
+        while self.refused.is_none()
+            && !self.eof()
+            && !self.at(Kind::Newline)
+            && !self.at(Kind::Dedent)
         {
             let mark = self.i;
             self.statement(scope);

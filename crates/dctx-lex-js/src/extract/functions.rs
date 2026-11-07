@@ -81,7 +81,10 @@ impl Walker<'_> {
             j.saturating_sub(1).max(params)
         };
         let (sig_end, body) = if block {
-            (self.start_byte(j), (self.start_byte(j), self.end_byte(last)))
+            (
+                self.start_byte(j),
+                (self.start_byte(j), self.end_byte(last)),
+            )
         } else {
             let whole = (self.start_byte(first), self.end_byte(last));
             (whole.1, whole)

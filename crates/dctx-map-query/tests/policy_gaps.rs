@@ -23,7 +23,9 @@ fn rust_files(dir: &Path, out: &mut Vec<PathBuf>) {
     let entries =
         fs::read_dir(dir).unwrap_or_else(|err| panic!("read_dir {}: {err}", dir.display()));
     for entry in entries {
-        let path = entry.unwrap_or_else(|err| panic!("dir entry: {err}")).path();
+        let path = entry
+            .unwrap_or_else(|err| panic!("dir entry: {err}"))
+            .path();
         if path.is_dir() {
             rust_files(&path, out);
         } else if path.extension().is_some_and(|ext| ext == "rs") {
@@ -37,12 +39,23 @@ fn toml_code(line: &str) -> &str {
 }
 
 fn manifest_declares_sha2(manifest: &str, dev: bool) -> bool {
-    let wanted = if dev { "dev-dependencies" } else { "dependencies" };
-    let named = if dev { "dev-dependencies.sha2" } else { "dependencies.sha2" };
+    let wanted = if dev {
+        "dev-dependencies"
+    } else {
+        "dependencies"
+    };
+    let named = if dev {
+        "dev-dependencies.sha2"
+    } else {
+        "dependencies.sha2"
+    };
     let mut in_section = false;
     for line in manifest.lines() {
         let code = toml_code(line);
-        if let Some(inner) = code.strip_prefix('[').and_then(|rest| rest.strip_suffix(']')) {
+        if let Some(inner) = code
+            .strip_prefix('[')
+            .and_then(|rest| rest.strip_suffix(']'))
+        {
             let header = inner.trim();
             let leaf = header.rsplit('.').next().unwrap_or(header).trim();
             if header == named || header.ends_with(&format!(".{named}")) {
@@ -51,7 +64,12 @@ fn manifest_declares_sha2(manifest: &str, dev: bool) -> bool {
             in_section = leaf == wanted;
             continue;
         }
-        let key = code.split('=').next().unwrap_or("").trim().trim_matches('"');
+        let key = code
+            .split('=')
+            .next()
+            .unwrap_or("")
+            .trim()
+            .trim_matches('"');
         if in_section && (key == "sha2" || key.starts_with("sha2.")) {
             return true;
         }
@@ -112,7 +130,9 @@ fn finish_string(bytes: &[u8], mut index: usize) -> usize {
             continue;
         }
         let tail = index + 1 + hashes;
-        let closed = bytes[index] == b'"' && tail <= bytes.len() && bytes[index + 1..tail].iter().all(|byte| *byte == b'#');
+        let closed = bytes[index] == b'"'
+            && tail <= bytes.len()
+            && bytes[index + 1..tail].iter().all(|byte| *byte == b'#');
         if closed {
             return tail;
         }
@@ -151,7 +171,10 @@ fn skip_string(bytes: &[u8], index: usize) -> Option<usize> {
     for prefix in [b"br".as_slice(), b"cr", b"b", b"c", b"r"] {
         if bytes[index..].starts_with(prefix) {
             let next = index + prefix.len();
-            if bytes.get(next).is_some_and(|byte| *byte == b'"' || *byte == b'#') {
+            if bytes
+                .get(next)
+                .is_some_and(|byte| *byte == b'"' || *byte == b'#')
+            {
                 return Some(finish_string(bytes, next));
             }
         }
@@ -192,8 +215,8 @@ fn unsafe_at(source: &str) -> Option<usize> {
         }
         if bytes[index] == b'\'' {
             let body = index + 1;
-            let char_literal = bytes.get(body) == Some(&b'\\')
-                || bytes.get(body + 1) == Some(&b'\'');
+            let char_literal =
+                bytes.get(body) == Some(&b'\\') || bytes.get(body + 1) == Some(&b'\'');
             if char_literal {
                 index = skip_quoted_char(bytes, body);
             } else {
@@ -229,39 +252,61 @@ fn production_sha2_rejected_dev_oracle_accepted() {
     let refused = "[dependencies]\nsha2 = \"0.10\"\n";
     let accepted = "[dependencies]\nthiserror = \"2\"\n\n[dev-dependencies]\nsha2 = \"=0.10.9\"\n";
     assert!(manifest_declares_sha2(refused, false));
-    assert!(manifest_declares_sha2("[dependencies.sha2]\nversion = \"0.10\"\n", false));
+    assert!(manifest_declares_sha2(
+        "[dependencies.sha2]\nversion = \"0.10\"\n",
+        false
+    ));
     assert!(!manifest_declares_sha2(accepted, false));
     assert!(manifest_declares_sha2(accepted, true));
     assert!(references_sha2_crate("use sha2::{Digest, Sha256};"));
-    assert!(!references_sha2_crate("fn sha256_hex() -> &'static str { \"sha256\" }"));
+    assert!(!references_sha2_crate(
+        "fn sha256_hex() -> &'static str { \"sha256\" }"
+    ));
 
     let root = crates_dir();
     for name in ["dctx-map-scan", "dctx-map-parse"] {
         let dir = root.join(name);
         let manifest = read_text(&dir.join("Cargo.toml"));
-        assert!(!manifest_declares_sha2(&manifest, false), "{name} production dependency declares sha2");
+        assert!(
+            !manifest_declares_sha2(&manifest, false),
+            "{name} production dependency declares sha2"
+        );
         let mut sources = Vec::new();
         rust_files(&dir.join("src"), &mut sources);
         assert!(!sources.is_empty(), "{name} src missing");
         for file in sources {
-            assert!(!references_sha2_crate(&read_text(&file)), "{} references the sha2 crate", file.display());
+            assert!(
+                !references_sha2_crate(&read_text(&file)),
+                "{} references the sha2 crate",
+                file.display()
+            );
         }
     }
 
     let hash = root.join("dctx-hash");
     let hash_manifest = read_text(&hash.join("Cargo.toml"));
     assert!(!manifest_declares_sha2(&hash_manifest, false));
-    assert!(manifest_declares_sha2(&hash_manifest, true), "dctx-hash dev oracle must keep sha2");
+    assert!(
+        manifest_declares_sha2(&hash_manifest, true),
+        "dctx-hash dev oracle must keep sha2"
+    );
     let mut sources = Vec::new();
     rust_files(&hash.join("src"), &mut sources);
     let mut oracle = false;
     for file in sources {
         let text = read_text(&file);
-        if file.file_name().is_some_and(|name| name == "differential.rs") {
+        if file
+            .file_name()
+            .is_some_and(|name| name == "differential.rs")
+        {
             assert!(references_sha2_crate(&text), "dev oracle lost sha2");
             oracle = true;
         } else {
-            assert!(!references_sha2_crate(&text), "{} is production source", file.display());
+            assert!(
+                !references_sha2_crate(&text),
+                "{} is production source",
+                file.display()
+            );
         }
     }
     assert!(oracle, "dctx-hash differential oracle missing");
@@ -271,7 +316,9 @@ fn production_sha2_rejected_dev_oracle_accepted() {
 fn integration_tests_reject_unsafe_with_safe_control() {
     assert!(has_unsafe_code("fn demo() { unsafe { let _n = 1; } }"));
     assert!(!has_unsafe_code("fn demo() { let _n = 1; }"));
-    assert!(!has_unsafe_code("// unsafe block\nfn demo() { let _n = 1; }\n"));
+    assert!(!has_unsafe_code(
+        "// unsafe block\nfn demo() { let _n = 1; }\n"
+    ));
     assert!(!has_unsafe_code(
         "fn demo() { let _s = \"unsafe extern \\\"C\\\" { pub safe fn abs(x: i32) -> i32; }\"; }"
     ));
@@ -285,7 +332,10 @@ fn integration_tests_reject_unsafe_with_safe_control() {
     assert!(!files.is_empty(), "query integration tests missing");
     for file in &files {
         let text = read_text(file);
-        let name = file.file_name().and_then(|item| item.to_str()).unwrap_or("");
+        let name = file
+            .file_name()
+            .and_then(|item| item.to_str())
+            .unwrap_or("");
         if name == "recovery.rs" {
             assert!(text.contains("unsafe"), "recovery fixture string missing");
             saw_recovery = true;
@@ -293,7 +343,14 @@ fn integration_tests_reject_unsafe_with_safe_control() {
         if name == "no_git.rs" {
             saw_no_git = true;
         }
-        assert!(unsafe_at(&text).is_none(), "{} contains unsafe code", file.display());
+        assert!(
+            unsafe_at(&text).is_none(),
+            "{} contains unsafe code",
+            file.display()
+        );
     }
-    assert!(saw_recovery && saw_no_git, "recovery.rs and no_git.rs were not both scanned");
+    assert!(
+        saw_recovery && saw_no_git,
+        "recovery.rs and no_git.rs were not both scanned"
+    );
 }

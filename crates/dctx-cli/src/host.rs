@@ -15,14 +15,15 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use dctx::memory::{CancelFlag, FixedClock, MemorySource};
 use dctx::{
-    AutoCleanConfig, CacheReport, DctxError, FileHandlingDecision, FsSource, GcRequest, HostCeiling, HostGrants,
-    PurgeRequest, PurgeScope, RuleSources, RuleTexts, SelectionPolicy, Session, Source, StoragePolicy, Timestamp,
+    AutoCleanConfig, CacheReport, DctxError, FileHandlingDecision, FsSource, GcRequest,
+    HostCeiling, HostGrants, PurgeRequest, PurgeScope, RuleSources, RuleTexts, SelectionPolicy,
+    Session, Source, StoragePolicy, Timestamp,
 };
-use dctx_core::settings::APP_NAME;
-use dctx_core::ItemContext;
 use dctx_adapter_cache::adapters::FsLedgerStore;
 use dctx_adapter_cache::ports::LedgerStore;
 use dctx_adapter_cache::{Lifecycle, Quota, HARD_CAP_BYTES};
+use dctx_core::settings::APP_NAME;
+use dctx_core::ItemContext;
 
 mod cache;
 mod policy;
@@ -45,7 +46,12 @@ use rules::{append_nested, append_text, local_ignore_text, rewrite_nested_line};
 /// # Errors
 /// Returns session builder or storage/cache setup failures.
 pub fn open_memory() -> Result<Session, String> {
-    build(MemorySource::new(), "memory", "default", RuleSources::default())
+    build(
+        MemorySource::new(),
+        "memory",
+        "default",
+        RuleSources::default(),
+    )
 }
 
 /// Opens `path` as a facade source with the product cache ceiling.
@@ -80,14 +86,19 @@ pub fn open_mapped_at(path: &Path, root: Option<&Path>) -> Result<(Session, Stri
     if ensure_cache_dir(root).is_err() {
         return Ok((build(source, &place, "default", rules)?, key));
     }
-    if let Ok(session) = build_cached(source, &place, root, rules.clone()) { Ok((session, key)) } else {
+    if let Ok(session) = build_cached(source, &place, root, rules.clone()) {
+        Ok((session, key))
+    } else {
         let (source, place, key) = open_source(path)?;
         Ok((build(source, &place, "default", rules)?, key))
     }
 }
 
 /// True when map should print whether the generation was reused. Set `DCTX_REUSE_REPORT=1`.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn reuse_report_enabled() -> bool {
     std::env::var("DCTX_REUSE_REPORT").ok().as_deref() == Some("1")
 }
@@ -124,7 +135,8 @@ fn build_cached(
     root: &Path,
     rules: RuleSources,
 ) -> Result<Session, String> {
-    let mut policy = load_policy(root).map_or_else(|_| AutoCleanConfig::default(), |item| item.auto);
+    let mut policy =
+        load_policy(root).map_or_else(|_| AutoCleanConfig::default(), |item| item.auto);
     let env_off = std::env::var("DCTX_AUTO_CLEAN").ok().as_deref() == Some("0");
     if !MAP_AUTO_CLEAN.load(Ordering::Relaxed) || env_off {
         policy.enabled = false;
@@ -137,7 +149,9 @@ fn build_cached(
         .rule_sources(rules)
         .ceiling(HostCeiling::base())
         .grants(HostGrants::PermitAll)
-        .storage(StoragePolicy::Ephemeral { max_bytes: HARD_CAP_BYTES })
+        .storage(StoragePolicy::Ephemeral {
+            max_bytes: HARD_CAP_BYTES,
+        })
         .place(place)
         .view("default")
         .cache_root(root, CLI_ROOT_ID)
@@ -146,7 +160,12 @@ fn build_cached(
         .map_err(facade_error)
 }
 
-fn build(source: impl Source + Send + 'static, place: &str, view: &str, rules: RuleSources) -> Result<Session, String> {
+fn build(
+    source: impl Source + Send + 'static,
+    place: &str,
+    view: &str,
+    rules: RuleSources,
+) -> Result<Session, String> {
     let selection = rules.policy();
     Session::builder(source)
         .clock(FixedClock(Timestamp(unix_millis())))
@@ -155,7 +174,9 @@ fn build(source: impl Source + Send + 'static, place: &str, view: &str, rules: R
         .rule_sources(rules)
         .ceiling(HostCeiling::base())
         .grants(HostGrants::PermitAll)
-        .storage(StoragePolicy::Ephemeral { max_bytes: HARD_CAP_BYTES })
+        .storage(StoragePolicy::Ephemeral {
+            max_bytes: HARD_CAP_BYTES,
+        })
         .place(place)
         .view(view)
         .build()
@@ -163,11 +184,16 @@ fn build(source: impl Source + Send + 'static, place: &str, view: &str, rules: R
 }
 
 /// Unix milliseconds for the injected clock. The facade does not read the clock itself.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn unix_millis() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map_or(0, |duration| u64::try_from(duration.as_millis()).unwrap_or(u64::MAX))
+        .map_or(0, |duration| {
+            u64::try_from(duration.as_millis()).unwrap_or(u64::MAX)
+        })
 }
 
 #[cfg(test)]

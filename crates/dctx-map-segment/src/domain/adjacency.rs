@@ -4,11 +4,11 @@
 //! Depends on [`super::kinds`] for the confidence matrix. The decoder recomputes reverse and compares.
 //! Empty adjacency is a zero-length section. Self-edges are allowed. `contains` raw refs are not.
 
-use super::cursor::{push_narrow, push_record, push_u16, push_u32, push_u8, Cursor};
+use super::cursor::{Cursor, push_narrow, push_record, push_u8, push_u16, push_u32};
 use super::dictionary::dict_str;
 use super::error::SegmentError;
 use super::kinds::{Confidence, EdgeKind};
-use super::limits::{bounded_count, DecoderLimits};
+use super::limits::{DecoderLimits, bounded_count};
 
 const TAG_RESOLVED: u8 = 1;
 const TAG_UNRESOLVED: u8 = 2;
@@ -66,11 +66,20 @@ pub(crate) fn forward_key(edge: &ForwardEdge) -> (u32, u16, u16, u8, u32, u32) {
         Target::Resolved(id) => (TAG_RESOLVED, id, 0),
         Target::Unresolved(id) => (TAG_UNRESOLVED, 0, id),
     };
-    (edge.source, edge.kind.code(), edge.confidence.code(), tag, target, name)
+    (
+        edge.source,
+        edge.kind.code(),
+        edge.confidence.code(),
+        tag,
+        target,
+        name,
+    )
 }
 
 /// Sorted reverse rows for `forward`. Resolved rows precede unresolved rows on the wire.
-pub(crate) fn reverse_of(forward: &[ForwardEdge]) -> (Vec<ResolvedReverse>, Vec<UnresolvedReverse>) {
+pub(crate) fn reverse_of(
+    forward: &[ForwardEdge],
+) -> (Vec<ResolvedReverse>, Vec<UnresolvedReverse>) {
     let mut resolved = Vec::new();
     let mut unresolved = Vec::new();
     for edge in forward {
@@ -95,7 +104,12 @@ pub(crate) fn reverse_of(forward: &[ForwardEdge]) -> (Vec<ResolvedReverse>, Vec<
 }
 
 fn resolved_key(row: &ResolvedReverse) -> (u32, u16, u16, u32) {
-    (row.target, row.kind.code(), row.confidence.code(), row.source)
+    (
+        row.target,
+        row.kind.code(),
+        row.confidence.code(),
+        row.source,
+    )
 }
 
 fn unresolved_key(row: &UnresolvedReverse) -> (u32, u16, u16, u32) {
@@ -136,7 +150,10 @@ pub(crate) fn encode_forward<S: AsRef<str>>(
         push_u32(&mut body, name);
         push_record(&mut out, &body, limits.max_record_bytes)?;
     }
-    Ok((out, u64::try_from(edges.len()).map_err(|_| SegmentError::Arithmetic)?))
+    Ok((
+        out,
+        u64::try_from(edges.len()).map_err(|_| SegmentError::Arithmetic)?,
+    ))
 }
 
 pub(crate) fn encode_reverse(
@@ -149,14 +166,22 @@ pub(crate) fn encode_reverse(
     }
     let resolved_len = u64::try_from(resolved.len()).map_err(|_| SegmentError::Arithmetic)?;
     let unresolved_len = u64::try_from(unresolved.len()).map_err(|_| SegmentError::Arithmetic)?;
-    let total = resolved_len.checked_add(unresolved_len).ok_or(SegmentError::Arithmetic)?;
+    let total = resolved_len
+        .checked_add(unresolved_len)
+        .ok_or(SegmentError::Arithmetic)?;
     if total > limits.max_records {
         return Err(SegmentError::Limit("records"));
     }
     let mut out = Vec::new();
-    push_u32(&mut out, u32::try_from(resolved.len()).map_err(|_| SegmentError::Arithmetic)?);
+    push_u32(
+        &mut out,
+        u32::try_from(resolved.len()).map_err(|_| SegmentError::Arithmetic)?,
+    );
     write_resolved(&mut out, resolved, limits)?;
-    push_u32(&mut out, u32::try_from(unresolved.len()).map_err(|_| SegmentError::Arithmetic)?);
+    push_u32(
+        &mut out,
+        u32::try_from(unresolved.len()).map_err(|_| SegmentError::Arithmetic)?,
+    );
     write_unresolved(&mut out, unresolved, limits)?;
     Ok((out, total))
 }
@@ -217,7 +242,13 @@ pub(crate) fn decode_reverse<S: AsRef<str>>(
     let resolved_count = cursor.u32()?;
     let resolved = read_resolved(&mut cursor, resolved_count, node_count, limits)?;
     let unresolved_count = cursor.u32()?;
-    let unresolved = read_unresolved(&mut cursor, unresolved_count, node_count, dictionary, limits)?;
+    let unresolved = read_unresolved(
+        &mut cursor,
+        unresolved_count,
+        node_count,
+        dictionary,
+        limits,
+    )?;
     if !cursor.rest().is_empty() {
         return Err(SegmentError::Adjacency("order"));
     }
@@ -318,7 +349,8 @@ fn read_forward_record<S: AsRef<str>>(
     let mut body = Cursor::new(record, 0);
     let source = body.u32()?;
     let kind = EdgeKind::from_code(body.u16()?).ok_or(SegmentError::Adjacency("canonical"))?;
-    let confidence = Confidence::from_code(u16::from(body.u8()?)).ok_or(SegmentError::Adjacency("confidence"))?;
+    let confidence = Confidence::from_code(u16::from(body.u8()?))
+        .ok_or(SegmentError::Adjacency("confidence"))?;
     let tag = body.u8()?;
     let target_dense = body.u32()?;
     let name_id = body.u32()?;
@@ -327,7 +359,12 @@ fn read_forward_record<S: AsRef<str>>(
         TAG_UNRESOLVED if target_dense == 0 => Target::Unresolved(name_id),
         _ => return Err(SegmentError::Adjacency("canonical")),
     };
-    let edge = ForwardEdge { source, kind, confidence, target };
+    let edge = ForwardEdge {
+        source,
+        kind,
+        confidence,
+        target,
+    };
     check_forward(&edge, node_count, dictionary)?;
     Ok(edge)
 }
@@ -449,7 +486,10 @@ mod tests {
             },
         ];
         let (payload, count) = encode_forward(&forward, 2, &dictionary, &limits).unwrap();
-        assert_eq!(decode_forward(&payload, count, 2, &dictionary, &limits).unwrap(), forward);
+        assert_eq!(
+            decode_forward(&payload, count, 2, &dictionary, &limits).unwrap(),
+            forward
+        );
         let (resolved, unresolved) = reverse_of(&forward);
         let (rev_payload, rev_count) = encode_reverse(&resolved, &unresolved, &limits).unwrap();
         assert_eq!(

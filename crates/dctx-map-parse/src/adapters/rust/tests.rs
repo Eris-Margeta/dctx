@@ -7,7 +7,11 @@ fn macro_bodies_are_not_expanded_into_false_symbols() {
     let source = b"macro_rules! make { () => { fn phantom() {} } } make!(); fn real() {}";
     let facts = PureParser.parse("lib.rs", source).unwrap();
     assert_eq!(
-        facts.nodes.iter().map(|n| n.name.as_str()).collect::<Vec<_>>(),
+        facts
+            .nodes
+            .iter()
+            .map(|n| n.name.as_str())
+            .collect::<Vec<_>>(),
         ["lib.rs", "make", "real"]
     );
 }
@@ -43,7 +47,10 @@ fn nested_imports_and_calls_keep_syntactic_targets() {
         ]
     );
     let facts = PureParser
-        .parse("lib.rs", b"fn run() { crate::work::<Thing>(); worker.run(); }")
+        .parse(
+            "lib.rs",
+            b"fn run() { crate::work::<Thing>(); worker.run(); }",
+        )
         .unwrap();
     let calls = facts
         .references

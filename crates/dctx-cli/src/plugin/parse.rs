@@ -137,13 +137,19 @@ fn parse_git(args: &[String]) -> Result<Request, String> {
     if args.iter().any(|arg| arg == "--") {
         return Err("dctx git does not take a -- separator; use plugin run".to_owned());
     }
-    Ok(Request { action: Action::Git { args }, json })
+    Ok(Request {
+        action: Action::Git { args },
+        json,
+    })
 }
 
 fn parse_plugin(args: &[String]) -> Result<Request, String> {
     if args.is_empty() || args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
         let json = args.iter().any(|arg| arg == "--json");
-        return Ok(Request { action: Action::Help, json });
+        return Ok(Request {
+            action: Action::Help,
+            json,
+        });
     }
     let (args, json) = strip_json(args);
     let action = match args.first().map(String::as_str) {
@@ -193,7 +199,9 @@ fn parse_install(args: &[String]) -> Result<Install, String> {
             "--url" => url = Some(need_value(args, &mut index, "--url")?),
             "--file" => file = Some(need_value(args, &mut index, "--file")?),
             "--id" => id = Some(need_value(args, &mut index, "--id")?),
-            other if other.starts_with('-') => return Err(format!("unknown install flag: {other}")),
+            other if other.starts_with('-') => {
+                return Err(format!("unknown install flag: {other}"))
+            }
             other if locator.is_none() => locator = Some(other.to_owned()),
             _ => return Err("install accepts one locator".to_owned()),
         }
@@ -207,14 +215,29 @@ fn parse_install(args: &[String]) -> Result<Install, String> {
         return Err("install --enable requires --approve of the displayed capabilities".to_owned());
     }
     if let Some(url) = url {
-        return Ok(Install::Url { url, id: id.ok_or("install --url requires --id")?, enable, approve });
+        return Ok(Install::Url {
+            url,
+            id: id.ok_or("install --url requires --id")?,
+            enable,
+            approve,
+        });
     }
     if let Some(path) = file {
-        return Ok(Install::File { path, id: id.ok_or("install --file requires --id")?, enable, approve });
+        return Ok(Install::File {
+            path,
+            id: id.ok_or("install --file requires --id")?,
+            enable,
+            approve,
+        });
     }
     let locator = locator.unwrap_or_default();
     let (repository, version) = split_version(&locator)?;
-    Ok(Install::Index { repository, version, enable, approve })
+    Ok(Install::Index {
+        repository,
+        version,
+        enable,
+        approve,
+    })
 }
 
 fn parse_switch(args: &[String], enable: bool) -> Result<Action, String> {
@@ -235,7 +258,11 @@ fn parse_switch(args: &[String], enable: bool) -> Result<Action, String> {
     }
     let id = id.ok_or("a plugin id is required")?;
     if enable {
-        Ok(Action::Enable { id, project, approve })
+        Ok(Action::Enable {
+            id,
+            project,
+            approve,
+        })
     } else {
         Ok(Action::Disable { id, project })
     }
@@ -281,7 +308,10 @@ fn parse_run(args: &[String]) -> Result<Action, String> {
     if head.len() != 1 || head[0].starts_with('-') {
         return Err("plugin run requires <id> -- <args>".to_owned());
     }
-    Ok(Action::Run { id: head[0].clone(), args: args[split + 1..].to_vec() })
+    Ok(Action::Run {
+        id: head[0].clone(),
+        args: args[split + 1..].to_vec(),
+    })
 }
 
 fn split_version(locator: &str) -> Result<(String, Option<String>), String> {
@@ -308,17 +338,28 @@ fn one_positional(args: &[String], command: &str) -> Result<String, String> {
 }
 
 fn only_flags(args: &[String], command: &str) -> Result<(), String> {
-    if args.is_empty() { Ok(()) } else { Err(format!("{command} does not take arguments")) }
+    if args.is_empty() {
+        Ok(())
+    } else {
+        Err(format!("{command} does not take arguments"))
+    }
 }
 
 fn need_value(args: &[String], index: &mut usize, flag: &str) -> Result<String, String> {
     *index += 1;
-    args.get(*index).filter(|value| !value.starts_with('-')).cloned().ok_or_else(|| format!("{flag} requires a value"))
+    args.get(*index)
+        .filter(|value| !value.starts_with('-'))
+        .cloned()
+        .ok_or_else(|| format!("{flag} requires a value"))
 }
 
 fn strip_json(args: &[String]) -> (Vec<String>, bool) {
     let json = args.iter().any(|arg| arg == "--json");
-    let kept = args.iter().filter(|arg| arg.as_str() != "--json").cloned().collect();
+    let kept = args
+        .iter()
+        .filter(|arg| arg.as_str() != "--json")
+        .cloned()
+        .collect();
     (kept, json)
 }
 
@@ -327,26 +368,83 @@ mod tests {
     use super::*;
 
     fn parse(args: &[&str]) -> Request {
-        let owned: Vec<String> = std::iter::once("dctx").chain(args.iter().copied()).map(str::to_owned).collect();
+        let owned: Vec<String> = std::iter::once("dctx")
+            .chain(args.iter().copied())
+            .map(str::to_owned)
+            .collect();
         parse_argv(&owned).unwrap()
     }
 
     #[test]
     fn every_section_5_command_parses_and_unknown_flags_refuse() {
         assert!(matches!(parse(&["plugin"]).action, Action::Help));
-        assert!(matches!(parse(&["plugin", "search", "git", "--refresh", "--json"]), Request { json: true, action: Action::Search { refresh: true, .. } }));
-        assert!(matches!(parse(&["plugin", "list", "--json"]).action, Action::List));
-        assert!(matches!(parse(&["plugin", "info", "dctx/git"]).action, Action::Info { .. }));
-        assert!(matches!(parse(&["plugin", "enable", "dctx/git", "--approve", "--project", "/work"]).action, Action::Enable { approve: true, .. }));
-        assert!(matches!(parse(&["plugin", "disable", "dctx/git"]).action, Action::Disable { .. }));
-        assert!(matches!(parse(&["plugin", "remove", "dctx/git"]).action, Action::Remove { .. }));
-        assert!(matches!(parse(&["plugin", "update", "--check"]).action, Action::Update { check: true, .. }));
-        assert!(matches!(parse(&["plugin", "verify", "--refresh-trust"]).action, Action::Verify { refresh_trust: true, .. }));
-        assert!(matches!(parse(&["plugin", "run", "dctx/git", "--", "status"]).action, Action::Run { .. }));
-        assert!(matches!(parse(&["git", "status", "--json"]), Request { json: true, .. }));
-        let owned = vec!["dctx".to_owned(), "plugin".to_owned(), "install".to_owned(), "--enable".to_owned()];
+        assert!(matches!(
+            parse(&["plugin", "search", "git", "--refresh", "--json"]),
+            Request {
+                json: true,
+                action: Action::Search { refresh: true, .. }
+            }
+        ));
+        assert!(matches!(
+            parse(&["plugin", "list", "--json"]).action,
+            Action::List
+        ));
+        assert!(matches!(
+            parse(&["plugin", "info", "dctx/git"]).action,
+            Action::Info { .. }
+        ));
+        assert!(matches!(
+            parse(&[
+                "plugin",
+                "enable",
+                "dctx/git",
+                "--approve",
+                "--project",
+                "/work"
+            ])
+            .action,
+            Action::Enable { approve: true, .. }
+        ));
+        assert!(matches!(
+            parse(&["plugin", "disable", "dctx/git"]).action,
+            Action::Disable { .. }
+        ));
+        assert!(matches!(
+            parse(&["plugin", "remove", "dctx/git"]).action,
+            Action::Remove { .. }
+        ));
+        assert!(matches!(
+            parse(&["plugin", "update", "--check"]).action,
+            Action::Update { check: true, .. }
+        ));
+        assert!(matches!(
+            parse(&["plugin", "verify", "--refresh-trust"]).action,
+            Action::Verify {
+                refresh_trust: true,
+                ..
+            }
+        ));
+        assert!(matches!(
+            parse(&["plugin", "run", "dctx/git", "--", "status"]).action,
+            Action::Run { .. }
+        ));
+        assert!(matches!(
+            parse(&["git", "status", "--json"]),
+            Request { json: true, .. }
+        ));
+        let owned = vec![
+            "dctx".to_owned(),
+            "plugin".to_owned(),
+            "install".to_owned(),
+            "--enable".to_owned(),
+        ];
         assert!(parse_argv(&owned).is_err());
-        let owned = vec!["dctx".to_owned(), "plugin".to_owned(), "search".to_owned(), "--download".to_owned()];
+        let owned = vec![
+            "dctx".to_owned(),
+            "plugin".to_owned(),
+            "search".to_owned(),
+            "--download".to_owned(),
+        ];
         assert!(parse_argv(&owned).is_err());
     }
 }

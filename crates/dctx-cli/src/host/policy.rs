@@ -119,7 +119,8 @@ pub(super) fn store_policy(root: &Path, policy: &CachePolicy) -> Result<(), Stri
     );
     let temp = root.join("policy.v1.tmp");
     write_private(&temp, body.as_bytes())?;
-    fs::rename(&temp, root.join(POLICY_FILE)).map_err(|_| "failed to commit the cache policy".to_string())
+    fs::rename(&temp, root.join(POLICY_FILE))
+        .map_err(|_| "failed to commit the cache policy".to_string())
 }
 
 fn parse_policy(text: &str) -> Result<CachePolicy, String> {
@@ -130,7 +131,9 @@ fn parse_policy(text: &str) -> Result<CachePolicy, String> {
         if line.is_empty() {
             continue;
         }
-        let (key, value) = line.split_once('=').ok_or_else(|| "corrupt cache policy: line".to_string())?;
+        let (key, value) = line
+            .split_once('=')
+            .ok_or_else(|| "corrupt cache policy: line".to_string())?;
         let index = policy_key(key)?;
         if seen[index] {
             return Err("corrupt cache policy: duplicate".to_string());
@@ -162,7 +165,9 @@ fn policy_key(key: &str) -> Result<usize, String> {
 }
 
 fn assign_policy(policy: &mut CachePolicy, index: usize, value: &str) -> Result<(), String> {
-    let number: u64 = value.parse().map_err(|_| "corrupt cache policy: number".to_string())?;
+    let number: u64 = value
+        .parse()
+        .map_err(|_| "corrupt cache policy: number".to_string())?;
     match index {
         0 => {
             policy.auto.enabled = match number {
@@ -190,7 +195,10 @@ fn write_private(path: &Path, bytes: &[u8]) -> Result<(), String> {
         use std::os::unix::fs::OpenOptionsExt;
         options.mode(0o600);
     }
-    let mut file = options.open(path).map_err(|_| "failed to write the cache policy".to_string())?;
-    file.write_all(bytes).map_err(|_| "failed to write the cache policy".to_string())?;
+    let mut file = options
+        .open(path)
+        .map_err(|_| "failed to write the cache policy".to_string())?;
+    file.write_all(bytes)
+        .map_err(|_| "failed to write the cache policy".to_string())?;
     Ok(())
 }

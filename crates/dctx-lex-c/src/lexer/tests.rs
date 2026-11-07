@@ -16,7 +16,11 @@ fn splices_strings_and_directives_do_not_leak_tokens() {
     assert!(!words.contains(&"hidden"), "{words:?}");
     assert!(words.iter().any(|word| word.starts_with("#define")));
     assert!(lexed.diagnostics.is_empty(), "{:?}", lexed.diagnostics);
-    let raw = lex("const char* s = R\"c(int Hidden() { fake(); })c\";\n", &Limits::default()).unwrap();
+    let raw = lex(
+        "const char* s = R\"c(int Hidden() { fake(); })c\";\n",
+        &Limits::default(),
+    )
+    .unwrap();
     let raw_words: Vec<&str> = raw
         .tokens
         .iter()

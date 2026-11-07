@@ -188,7 +188,8 @@ pub struct EdgeDraft {
 
 pub(crate) fn check_fact(draft: &FactDraft) -> Result<(), SegmentError> {
     for declaration in &draft.declarations {
-        if declaration.span_end < declaration.span_start || declaration.span_end > draft.byte_length {
+        if declaration.span_end < declaration.span_start || declaration.span_end > draft.byte_length
+        {
             return Err(SegmentError::Facts("span"));
         }
     }
@@ -201,7 +202,9 @@ pub(crate) fn check_fact(draft: &FactDraft) -> Result<(), SegmentError> {
         }
     }
     match draft.completion {
-        Completion::Complete if !draft.completion_reason.is_empty() => Err(SegmentError::Facts("reason")),
+        Completion::Complete if !draft.completion_reason.is_empty() => {
+            Err(SegmentError::Facts("reason"))
+        }
         Completion::Partial | Completion::Refused if draft.completion_reason.is_empty() => {
             Err(SegmentError::Facts("reason"))
         }
@@ -307,13 +310,19 @@ mod tests {
             confidence: Confidence::Name,
             target: EdgeEnd::Unresolved(String::new()),
         };
-        assert_eq!(check_edge(&edge).unwrap_err(), SegmentError::Adjacency("name"));
+        assert_eq!(
+            check_edge(&edge).unwrap_err(),
+            SegmentError::Adjacency("name")
+        );
         assert_eq!(
             check_term(
                 &TermDraft {
                     field: Field::Path,
                     term: "a.rs".to_owned(),
-                    hits: vec![PostingDraft { doc: DocId::Index(0), positions: vec![0] }],
+                    hits: vec![PostingDraft {
+                        doc: DocId::Index(0),
+                        positions: vec![0]
+                    }],
                 },
                 SegmentRole::Fact
             )

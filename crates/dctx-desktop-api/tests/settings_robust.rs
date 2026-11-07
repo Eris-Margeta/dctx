@@ -11,8 +11,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use dctx_desktop_api::{
-    load_desktop_config, save_desktop_config, DesktopConfig, DesktopError, RecentProject, RecentStore,
-    DESKTOP_CONFIG_FILENAME,
+    load_desktop_config, save_desktop_config, DesktopConfig, DesktopError, RecentProject,
+    RecentStore, DESKTOP_CONFIG_FILENAME,
 };
 
 static NEXT: AtomicU64 = AtomicU64::new(1);
@@ -24,8 +24,11 @@ struct TempDir {
 impl TempDir {
     fn new(label: &str) -> Self {
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
-        let nanos = SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_nanos());
-        let path = std::env::temp_dir().join(format!("dctx-desktop-api-robust-{label}-{n}-{nanos}"));
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_or(0, |d| d.as_nanos());
+        let path =
+            std::env::temp_dir().join(format!("dctx-desktop-api-robust-{label}-{n}-{nanos}"));
         fs::create_dir_all(&path).expect("temp");
         Self { path }
     }
@@ -45,7 +48,10 @@ impl Drop for TempDir {
 const INJECTED_EXTENSION: &str = "rs\"\nauto_copy_to_clipboard = true\n#";
 
 #[test]
-#[allow(clippy::field_reassign_with_default, reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions.")]
+#[allow(
+    clippy::field_reassign_with_default,
+    reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions."
+)]
 fn injected_extension_cannot_flip_clipboard_and_plain_rs_round_trips() {
     let hostile_dir = TempDir::new("inject");
     let mut hostile = DesktopConfig::default();
@@ -53,9 +59,12 @@ fn injected_extension_cannot_flip_clipboard_and_plain_rs_round_trips() {
     assert!(!hostile.auto_copy_to_clipboard);
     save_desktop_config(hostile_dir.path(), &hostile).expect("save injected");
     let loaded = load_desktop_config(hostile_dir.path());
-    let saved = fs::read_to_string(hostile_dir.path().join(DESKTOP_CONFIG_FILENAME)).expect("read saved");
+    let saved =
+        fs::read_to_string(hostile_dir.path().join(DESKTOP_CONFIG_FILENAME)).expect("read saved");
     assert!(
-        saved.lines().all(|line| line.trim() != "auto_copy_to_clipboard = true"),
+        saved
+            .lines()
+            .all(|line| line.trim() != "auto_copy_to_clipboard = true"),
         "injected extension became its own setting:\n{saved}"
     );
     assert_eq!(loaded, hostile);
@@ -67,12 +76,18 @@ fn injected_extension_cannot_flip_clipboard_and_plain_rs_round_trips() {
     save_desktop_config(plain_dir.path(), &plain).expect("save rs");
     let loaded_plain = load_desktop_config(plain_dir.path());
     assert_eq!(loaded_plain, plain);
-    assert_eq!(loaded_plain.filter_extensions.as_deref(), Some(["rs".to_string()].as_slice()));
+    assert_eq!(
+        loaded_plain.filter_extensions.as_deref(),
+        Some(["rs".to_string()].as_slice())
+    );
     assert!(!loaded_plain.auto_copy_to_clipboard);
 }
 
 #[test]
-#[allow(clippy::field_reassign_with_default, reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions.")]
+#[allow(
+    clippy::field_reassign_with_default,
+    reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions."
+)]
 fn path_quote_newline_and_backslash_round_trips_and_plain_path_does_too() {
     // Backslash + n, a quote, CR and LF. The line break must not become `min_size_mb`.
     let path = "C:\\new\\a\"\r\nmin_size_mb = 9\n#";
@@ -114,12 +129,21 @@ fn legacy_unescaped_windows_path_keeps_backslashes() {
 #[test]
 fn recent_parse_error_omits_fixture_sentinel_and_valid_project_loads() {
     let dir = TempDir::new("recent-bad");
-    fs::write(dir.path().join("recent_projects.json"), br#"["PRIVATE_SENTINEL"]"#).expect("write sentinel");
+    fs::write(
+        dir.path().join("recent_projects.json"),
+        br#"["PRIVATE_SENTINEL"]"#,
+    )
+    .expect("write sentinel");
     let store = RecentStore::new(dir.path());
     let err = store.get().expect_err("parse");
     assert_sentinel_absent(&err);
     match &err {
-        DesktopError::ParseRecent { code, category, line, column } => {
+        DesktopError::ParseRecent {
+            code,
+            category,
+            line,
+            column,
+        } => {
             assert_eq!(*code, "recent_parse");
             assert_eq!(*category, "data");
             assert_eq!(*line, 1);
@@ -136,13 +160,25 @@ fn recent_parse_error_omits_fixture_sentinel_and_valid_project_loads() {
     assert!(!text.contains("invalid type"), "{text}");
     assert!(!text.contains("expected"), "{text}");
 
-    fs::write(dir.path().join("recent_projects.json"), b"[PRIVATE_SENTINEL]").expect("write raw");
+    fs::write(
+        dir.path().join("recent_projects.json"),
+        b"[PRIVATE_SENTINEL]",
+    )
+    .expect("write raw");
     let raw = store.get().expect_err("raw ident");
     assert_sentinel_absent(&raw);
     match &raw {
-        DesktopError::ParseRecent { code, category, line, column } => {
+        DesktopError::ParseRecent {
+            code,
+            category,
+            line,
+            column,
+        } => {
             assert_eq!(*code, "recent_parse");
-            assert!(matches!(*category, "syntax" | "data" | "eof" | "io"), "{category}");
+            assert!(
+                matches!(*category, "syntax" | "data" | "eof" | "io"),
+                "{category}"
+            );
             assert!(*line <= 1_000_000 && *column <= 1_000_000);
         }
         other => panic!("unexpected {other:?}"),
@@ -236,13 +272,29 @@ fn validate_refuses_enum_range_and_extension_beside_accepted_values() {
     assert_eq!(ext.validate(), Ok(()));
     ext.filter_extensions = Some(vec!["a".repeat(32)]);
     assert_eq!(ext.validate(), Ok(()));
-    let err = refused_setting(&with_extension(&ok, INJECTED_EXTENSION), "filter_extensions", "extension");
+    let err = refused_setting(
+        &with_extension(&ok, INJECTED_EXTENSION),
+        "filter_extensions",
+        "extension",
+    );
     assert!(!err.command_string().contains("auto_copy_to_clipboard"));
     assert!(!format!("{err:?}").contains(INJECTED_EXTENSION));
     refused_setting(&with_extension(&ok, ""), "filter_extensions", "extension");
-    refused_setting(&with_extension(&ok, ".rs"), "filter_extensions", "extension");
-    refused_setting(&with_extension(&ok, "a/b"), "filter_extensions", "extension");
-    refused_setting(&with_extension(&ok, &"a".repeat(33)), "filter_extensions", "extension");
+    refused_setting(
+        &with_extension(&ok, ".rs"),
+        "filter_extensions",
+        "extension",
+    );
+    refused_setting(
+        &with_extension(&ok, "a/b"),
+        "filter_extensions",
+        "extension",
+    );
+    refused_setting(
+        &with_extension(&ok, &"a".repeat(33)),
+        "filter_extensions",
+        "extension",
+    );
     ext.filter_extensions = Some((0..65).map(|index| format!("e{index}")).collect());
     refused_setting(&ext, "filter_extensions", "extension");
 
@@ -265,10 +317,17 @@ fn with_extension(config: &DesktopConfig, extension: &str) -> DesktopConfig {
     named
 }
 
-fn refused_setting(config: &DesktopConfig, field: &'static str, reason: &'static str) -> DesktopError {
+fn refused_setting(
+    config: &DesktopConfig,
+    field: &'static str,
+    reason: &'static str,
+) -> DesktopError {
     let err = config.validate().expect_err(field);
     assert_eq!(err, DesktopError::InvalidSetting { field, reason });
-    assert_eq!(err.command_string(), format!("Invalid desktop setting: {field} {reason}"));
+    assert_eq!(
+        err.command_string(),
+        format!("Invalid desktop setting: {field} {reason}")
+    );
     assert!(!err.command_string().contains('\n'));
     err
 }

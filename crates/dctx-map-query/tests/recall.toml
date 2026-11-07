@@ -14,8 +14,8 @@ text = "How does the pack scan walk a Source with selection policy and limits?"
 expected = "s:crates/dctx-pack/src/snapshot.rs#scan"
 
 [[question]]
-text = "How does the CLI filter_tree prune a directory tree with FilterConfig?"
-expected = "s:crates/dctx-cli/src/lib.rs#filter_tree"
+text = "How does the CLI parse_extensions validate a comma separated extension list?"
+expected = "s:crates/dctx-cli/src/pack/filter.rs#parse_extensions"
 
 [[question]]
 text = "How does the snapshot Walk read authorized content and record its digest?"
@@ -38,12 +38,12 @@ text = "How does template list load compiled plans from an explicit directory?"
 expected = "s:crates/dctx-cli/src/template.rs#list"
 
 [[question]]
-text = "How does the CLI app_config load application settings with default fallback?"
-expected = "s:crates/dctx-cli/src/compat.rs#app_config"
+text = "How does the CLI load_policy read persisted cache settings with default fallback?"
+expected = "s:crates/dctx-cli/src/host/policy.rs#load_policy"
 
 [[question]]
-text = "How does project_id find or append a mapping in the projects.db registry?"
-expected = "s:crates/dctx-cli/src/compat.rs#project_id"
+text = "How does open_source canonicalize a directory and construct a filesystem source?"
+expected = "s:crates/dctx-cli/src/host.rs#open_source"
 
 [[question]]
 text = "How does the filesystem adapter load_policy read ignore rules from a supplied global directory?"
@@ -78,8 +78,8 @@ text = "Where does compare_trees calculate a DiffReport?"
 expected = "s:crates/dctx-core/src/diff/compare.rs#compare_trees"
 
 [[question]]
-text = "How does the CLI load_state read previous binary history or reset to V1?"
-expected = "s:crates/dctx-cli/src/compat.rs#load_state"
+text = "How does the CLI parse_policy decode the persisted cache policy fields?"
+expected = "s:crates/dctx-cli/src/host/policy.rs#parse_policy"
 
 [[question]]
 text = "How does encode_legacy_to validate a snapshot before writing binary bytes to a sink?"

@@ -26,21 +26,21 @@ mod source;
 mod v1;
 
 pub use binary::{from_bytes, to_bytes};
-pub use bound::{authorize_path, narrow_decision, render_plan, AnswerRecord};
+pub use bound::{AnswerRecord, authorize_path, narrow_decision, render_plan};
 pub use error::{TemplateError, TemplateValidationError};
 pub use legacy_diff::render_legacy_diff;
-pub use legacy_output::{render_legacy_snapshot, LegacyLayout, LegacyOutput, TreeStamps};
+pub use legacy_output::{LegacyLayout, LegacyOutput, TreeStamps, render_legacy_snapshot};
 pub use lower::compile;
 pub use model::{
-    BudgetPlan, ContextPlan, GrantRule, HostCeiling, IndexPlan, Inst, NamedCode, RenderProgram, SelectRule,
-    Selection, ViewPlan,
+    BudgetPlan, ContextPlan, GrantRule, HostCeiling, IndexPlan, Inst, NamedCode, RenderProgram,
+    SelectRule, Selection, ViewPlan,
 };
 pub use plugin::{
-    bundled_git_plugin, Capability, ConfigEntry, ConfigValue, FieldKind, FieldSpec, HookDecl, KnownPlugin, Liveness,
-    NetworkPolicy, PluginBinding, PluginGroup, PluginOrigin, PluginPlan, PluginState, Resolution, ResourceLimits,
-    UnavailableReason, RESERVED_ALIASES,
+    Capability, ConfigEntry, ConfigValue, FieldKind, FieldSpec, HookDecl, KnownPlugin, Liveness,
+    NetworkPolicy, PluginBinding, PluginGroup, PluginOrigin, PluginPlan, PluginState,
+    RESERVED_ALIASES, Resolution, ResourceLimits, UnavailableReason, bundled_git_plugin,
 };
-pub use v1::{render_markers, replace_vars, CompiledTemplate, MarkerNode, Template};
+pub use v1::{CompiledTemplate, MarkerNode, Template, render_markers, replace_vars};
 
 /// Loads a plan and checks plugin locks, order and ceilings against `host`.
 /// [`from_bytes`] checks structure only. A blob the current policy would refuse does not load.

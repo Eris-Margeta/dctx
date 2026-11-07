@@ -5,8 +5,8 @@
 #![forbid(unsafe_code)]
 
 use dctx_lex_java::{
-    body_fingerprint, Completion, DiagnosticReason, Dialect, JavaLexer, LexError, LexedFile,
-    Limits, Precision,
+    Completion, DiagnosticReason, Dialect, JavaLexer, LexError, LexedFile, Limits, Precision,
+    body_fingerprint,
 };
 
 const BASIC: &str = include_str!("fixtures/basic.java");
@@ -42,7 +42,10 @@ fn expect(
 }
 
 #[test]
-#[allow(clippy::too_many_lines, reason = "The golden fixture is one expected declaration table and its invariant checks; splitting it would separate expected records from their verification.")]
+#[allow(
+    clippy::too_many_lines,
+    reason = "The golden fixture is one expected declaration table and its invariant checks; splitting it would separate expected records from their verification."
+)]
 fn basic_fixture_matches_the_golden_facts() {
     let facts = JavaLexer::default()
         .extract("src/sample.java", BASIC.as_bytes())
@@ -63,37 +66,191 @@ fn basic_fixture_matches_the_golden_facts() {
     assert_eq!(module.fact.fingerprint, body_fingerprint(BASIC));
 
     let expected = [
-        expect("Box", "symbol", "class", true, "public class Box<T extends CharSequence> extends Base implements Runnable", Some("A box of values.")),
-        expect("Box::capacity", "symbol", "const", true, "public final int capacity", Some("Capacity.")),
-        expect("Box::names", "symbol", "const", false, "private List<String> names", None),
-        expect("Box::Box", "symbol", "method", true, "public Box(int capacity)", Some("Builds a box.")),
-        expect("Box::run", "symbol", "method", true, "@Override public void run()", None),
-        expect("Box::Nested", "symbol", "class", true, "public static class Nested", Some("Nested holder.")),
-        expect("Box::Nested::ping", "symbol", "method", false, "void ping()", None),
-        expect("Box::Nested::ping", "symbol", "method", false, "void ping(int times)", None),
-        expect("Point", "symbol", "struct", false, "record Point(int x, String label) implements Marker", Some("One point.")),
+        expect(
+            "Box",
+            "symbol",
+            "class",
+            true,
+            "public class Box<T extends CharSequence> extends Base implements Runnable",
+            Some("A box of values."),
+        ),
+        expect(
+            "Box::capacity",
+            "symbol",
+            "const",
+            true,
+            "public final int capacity",
+            Some("Capacity."),
+        ),
+        expect(
+            "Box::names",
+            "symbol",
+            "const",
+            false,
+            "private List<String> names",
+            None,
+        ),
+        expect(
+            "Box::Box",
+            "symbol",
+            "method",
+            true,
+            "public Box(int capacity)",
+            Some("Builds a box."),
+        ),
+        expect(
+            "Box::run",
+            "symbol",
+            "method",
+            true,
+            "@Override public void run()",
+            None,
+        ),
+        expect(
+            "Box::Nested",
+            "symbol",
+            "class",
+            true,
+            "public static class Nested",
+            Some("Nested holder."),
+        ),
+        expect(
+            "Box::Nested::ping",
+            "symbol",
+            "method",
+            false,
+            "void ping()",
+            None,
+        ),
+        expect(
+            "Box::Nested::ping",
+            "symbol",
+            "method",
+            false,
+            "void ping(int times)",
+            None,
+        ),
+        expect(
+            "Point",
+            "symbol",
+            "struct",
+            false,
+            "record Point(int x, String label) implements Marker",
+            Some("One point."),
+        ),
         expect("Point::x", "symbol", "const", false, "int x", None),
-        expect("Point::label", "symbol", "const", false, "String label", None),
-        expect("Point::doubled", "symbol", "method", true, "public int doubled()", None),
+        expect(
+            "Point::label",
+            "symbol",
+            "const",
+            false,
+            "String label",
+            None,
+        ),
+        expect(
+            "Point::doubled",
+            "symbol",
+            "method",
+            true,
+            "public int doubled()",
+            None,
+        ),
         expect("Color", "symbol", "enum", false, "enum Color", None),
         expect("Color::RED", "symbol", "const", true, "RED", None),
         expect("Color::GREEN", "symbol", "const", true, "GREEN", None),
         expect("Color::BLUE", "symbol", "const", true, "BLUE", None),
-        expect("Color::BLUE::code", "symbol", "method", false, "int code()", None),
-        expect("Color::n", "symbol", "const", false, "private final int n", None),
-        expect("Color::Color", "symbol", "method", false, "Color(int n)", None),
+        expect(
+            "Color::BLUE::code",
+            "symbol",
+            "method",
+            false,
+            "int code()",
+            None,
+        ),
+        expect(
+            "Color::n",
+            "symbol",
+            "const",
+            false,
+            "private final int n",
+            None,
+        ),
+        expect(
+            "Color::Color",
+            "symbol",
+            "method",
+            false,
+            "Color(int n)",
+            None,
+        ),
         expect("Task", "symbol", "interface", false, "interface Task", None),
         expect("Task::run", "symbol", "method", true, "void run()", None),
-        expect("Marker", "symbol", "interface", false, "@FunctionalInterface interface Marker", None),
+        expect(
+            "Marker",
+            "symbol",
+            "interface",
+            false,
+            "@FunctionalInterface interface Marker",
+            None,
+        ),
         expect("Tag", "symbol", "interface", false, "@interface Tag", None),
-        expect("Tag::value", "symbol", "method", true, "String value()", None),
+        expect(
+            "Tag::value",
+            "symbol",
+            "method",
+            true,
+            "String value()",
+            None,
+        ),
         expect("App", "symbol", "class", false, "class App", None),
-        expect("App::greeting", "symbol", "const", false, "private String greeting", None),
-        expect("App::mark", "symbol", "const", false, "private char mark", None),
-        expect("App::tricky", "symbol", "const", false, "private String tricky", None),
-        expect("App::start", "symbol", "method", false, "void start()", None),
-        expect("App::start::new Runnable", "symbol", "class", false, "new Runnable()", None),
-        expect("App::start::new Runnable::run", "symbol", "method", true, "public void run()", None),
+        expect(
+            "App::greeting",
+            "symbol",
+            "const",
+            false,
+            "private String greeting",
+            None,
+        ),
+        expect(
+            "App::mark",
+            "symbol",
+            "const",
+            false,
+            "private char mark",
+            None,
+        ),
+        expect(
+            "App::tricky",
+            "symbol",
+            "const",
+            false,
+            "private String tricky",
+            None,
+        ),
+        expect(
+            "App::start",
+            "symbol",
+            "method",
+            false,
+            "void start()",
+            None,
+        ),
+        expect(
+            "App::start::new Runnable",
+            "symbol",
+            "class",
+            false,
+            "new Runnable()",
+            None,
+        ),
+        expect(
+            "App::start::new Runnable::run",
+            "symbol",
+            "method",
+            true,
+            "public void run()",
+            None,
+        ),
         Expect {
             name: "App::saves",
             kind: "test",
@@ -110,7 +267,9 @@ fn basic_fixture_matches_the_golden_facts() {
         assert_eq!(node.fact.name, expect.name, "name");
         assert_eq!(node.fact.kind.as_str(), expect.kind, "{}", expect.name);
         assert_eq!(
-            node.fact.symbol_kind.map(dctx_map_model::SymbolKind::as_str),
+            node.fact
+                .symbol_kind
+                .map(dctx_map_model::SymbolKind::as_str),
             Some(expect.symbol),
             "{}",
             expect.name
@@ -143,7 +302,11 @@ fn basic_fixture_matches_the_golden_facts() {
     assert_parent(&facts, "Color::BLUE::code", "Color::BLUE");
     assert_parent(&facts, "Point::label", "Point");
     assert_parent(&facts, "App::start::new Runnable", "App::start");
-    assert_parent(&facts, "App::start::new Runnable::run", "App::start::new Runnable");
+    assert_parent(
+        &facts,
+        "App::start::new Runnable::run",
+        "App::start::new Runnable",
+    );
     assert_parent(&facts, "App::saves", "App");
 
     let imports = named(&facts, "imports");
@@ -156,9 +319,17 @@ fn basic_fixture_matches_the_golden_facts() {
             "static java.util.Objects.*"
         ]
     );
-    assert!(facts.references.iter().filter(|r| r.fact.kind.as_str() == "imports").all(|r| {
-        r.fact.alias.is_none() && r.fact.scope.is_empty() && r.precision == Precision::Structural
-    }));
+    assert!(
+        facts
+            .references
+            .iter()
+            .filter(|r| r.fact.kind.as_str() == "imports")
+            .all(|r| {
+                r.fact.alias.is_none()
+                    && r.fact.scope.is_empty()
+                    && r.precision == Precision::Structural
+            })
+    );
 
     let calls: Vec<_> = facts
         .references
@@ -175,7 +346,11 @@ fn basic_fixture_matches_the_golden_facts() {
             ("pingBack", "Box::Nested::ping", Precision::Structural),
             ("pingBack", "Box::Nested::ping", Precision::Structural),
             ("new Runnable", "App::start", Precision::Structural),
-            ("hook", "App::start::new Runnable::run", Precision::Structural),
+            (
+                "hook",
+                "App::start::new Runnable::run",
+                Precision::Structural
+            ),
             ("names.forEach", "App::start", Precision::Structural),
             ("sink.accept", "App::start", Precision::Structural),
             ("new Point", "App::start", Precision::Structural),
@@ -223,16 +398,33 @@ fn basic_fixture_matches_the_golden_facts() {
             ("Test", "App::saves"),
         ]
     );
-    for banned in ["NotAClass", "Fake", "Ghost", "point.x", "String::trim", "Consumer"] {
-        assert!(facts.nodes.iter().all(|n| !n.fact.name.contains(banned)), "{banned}");
+    for banned in [
+        "NotAClass",
+        "Fake",
+        "Ghost",
+        "point.x",
+        "String::trim",
+        "Consumer",
+    ] {
+        assert!(
+            facts.nodes.iter().all(|n| !n.fact.name.contains(banned)),
+            "{banned}"
+        );
         assert!(
             facts.references.iter().all(|r| r.fact.name != banned),
             "{banned}"
         );
     }
-    assert!(facts.nodes.iter().all(|n| n.fact.name != "no" && !n.fact.name.ends_with("::no")));
+    assert!(
+        facts
+            .nodes
+            .iter()
+            .all(|n| n.fact.name != "no" && !n.fact.name.ends_with("::no"))
+    );
     invariants(BASIC, &facts);
-    let again = JavaLexer::default().extract("src/sample.java", BASIC.as_bytes()).expect("again");
+    let again = JavaLexer::default()
+        .extract("src/sample.java", BASIC.as_bytes())
+        .expect("again");
     assert_eq!(facts, again);
 }
 
@@ -243,18 +435,35 @@ fn incomplete_file_keeps_partial_facts() {
         .expect("partial");
     assert_eq!(facts.completion, Completion::Partial);
     assert_eq!(facts.diagnostics.len(), 1);
-    assert_eq!(facts.diagnostics[0].reason, DiagnosticReason::UnterminatedString);
-    let quote = u32::try_from(INCOMPLETE.find("\"unterminated").expect("quote")).expect("bounded test coordinate");
+    assert_eq!(
+        facts.diagnostics[0].reason,
+        DiagnosticReason::UnterminatedString
+    );
+    let quote = u32::try_from(INCOMPLETE.find("\"unterminated").expect("quote"))
+        .expect("bounded test coordinate");
     assert_eq!(facts.diagnostics[0].byte, quote);
     assert_eq!(facts.nodes[0].fact.signature, "demo");
     assert_eq!(facts.nodes[0].precision, Precision::Structural);
-    let names: Vec<_> = facts.nodes.iter().skip(1).map(|n| n.fact.name.as_str()).collect();
+    let names: Vec<_> = facts
+        .nodes
+        .iter()
+        .skip(1)
+        .map(|n| n.fact.name.as_str())
+        .collect();
     assert_eq!(names, ["Half", "Half::ok", "Half::later"]);
     assert_eq!(precision_of(&facts, "Half"), Precision::Partial);
     assert_eq!(precision_of(&facts, "Half::ok"), Precision::Structural);
     assert_eq!(precision_of(&facts, "Half::later"), Precision::Partial);
-    let ready = facts.references.iter().find(|r| r.fact.name == "ready").expect("ready");
-    let later = facts.references.iter().find(|r| r.fact.name == "laterCall").expect("later");
+    let ready = facts
+        .references
+        .iter()
+        .find(|r| r.fact.name == "ready")
+        .expect("ready");
+    let later = facts
+        .references
+        .iter()
+        .find(|r| r.fact.name == "laterCall")
+        .expect("later");
     assert_eq!(ready.precision, Precision::Structural);
     assert_eq!(ready.fact.kind.as_str(), "calls");
     assert_eq!(later.precision, Precision::Partial);
@@ -268,7 +477,12 @@ fn unclosed_brace_is_partial_not_fatal() {
         .extract("A.java", b"class A { void m() {")
         .expect("unclosed");
     assert_eq!(facts.completion, Completion::Partial);
-    assert!(facts.diagnostics.iter().any(|d| d.reason == DiagnosticReason::UnbalancedBracket));
+    assert!(
+        facts
+            .diagnostics
+            .iter()
+            .any(|d| d.reason == DiagnosticReason::UnbalancedBracket)
+    );
 }
 
 #[test]
@@ -295,7 +509,11 @@ fn limits_refuse_with_positive_controls() {
         max_depth: 8,
         ..Limits::default()
     });
-    assert!(limited.extract("A.java", b"class A<T> { List<String> x; }").is_ok());
+    assert!(
+        limited
+            .extract("A.java", b"class A<T> { List<String> x; }")
+            .is_ok()
+    );
     assert!(limited.extract("A.java", b"(())").is_ok());
     let four = JavaLexer::new(Limits {
         max_depth: 4,
@@ -344,7 +562,10 @@ fn limits_refuse_with_positive_controls() {
 }
 
 #[test]
-#[allow(clippy::cast_possible_truncation, reason = "The fuzz length deliberately uses the PRNG's native low word before applying the 301-byte bound.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "The fuzz length deliberately uses the PRNG's native low word before applying the 301-byte bound."
+)]
 fn truncated_prefixes_and_arbitrary_bytes_do_not_panic() {
     prefixes("src/sample.java", BASIC);
     prefixes("src/incomplete.java", INCOMPLETE);
@@ -432,7 +653,11 @@ fn invariants(source: &str, facts: &LexedFile) {
         assert_eq!(facts.completion, Completion::Partial);
     }
     for node in &facts.nodes {
-        assert!(node.fact.lines[0] >= 1 && node.fact.lines[0] <= lines, "{}", node.fact.name);
+        assert!(
+            node.fact.lines[0] >= 1 && node.fact.lines[0] <= lines,
+            "{}",
+            node.fact.name
+        );
         assert!(node.fact.lines[1] >= node.fact.lines[0] && node.fact.lines[1] <= lines);
         assert_eq!(node.fact.fingerprint.len(), 64, "{}", node.fact.name);
         assert!(node.fact.fingerprint.chars().all(|c| c.is_ascii_hexdigit()));
@@ -446,7 +671,9 @@ fn invariants(source: &str, facts: &LexedFile) {
         assert_ne!(reference.fact.name, "");
         assert!(reference.fact.alias.is_none());
         assert!(reference.fact.lines[0] >= 1 && reference.fact.lines[0] <= lines);
-        assert!(reference.fact.lines[1] >= reference.fact.lines[0] && reference.fact.lines[1] <= lines);
+        assert!(
+            reference.fact.lines[1] >= reference.fact.lines[0] && reference.fact.lines[1] <= lines
+        );
     }
 }
 
@@ -478,7 +705,11 @@ fn precision_of(facts: &LexedFile, name: &str) -> Precision {
 }
 
 fn assert_parent(facts: &LexedFile, child: &str, parent: &str) {
-    let child_node = facts.nodes.iter().find(|node| node.fact.name == child).expect(child);
+    let child_node = facts
+        .nodes
+        .iter()
+        .find(|node| node.fact.name == child)
+        .expect(child);
     let edge = facts
         .edges
         .iter()

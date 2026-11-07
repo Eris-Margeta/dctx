@@ -50,7 +50,11 @@ impl Lifecycle {
     pub(super) fn over_retention(&self) -> BTreeSet<super::ManifestId> {
         let mut extra = BTreeSet::new();
         for root in self.roots.keys().copied() {
-            for kind in [ManifestKind::View, ManifestKind::Pack, ManifestKind::Preview] {
+            for kind in [
+                ManifestKind::View,
+                ManifestKind::Pack,
+                ManifestKind::Preview,
+            ] {
                 let Some(keep) = kind.keep() else {
                     continue;
                 };
@@ -60,12 +64,7 @@ impl Lifecycle {
         extra
     }
 
-    fn overflow(
-        &self,
-        root: RootId,
-        kind: ManifestKind,
-        keep: usize,
-    ) -> Vec<super::ManifestId> {
+    fn overflow(&self, root: RootId, kind: ManifestKind, keep: usize) -> Vec<super::ManifestId> {
         let mut rows: Vec<(u64, u64, super::ManifestId)> = self
             .manifests
             .values()
@@ -79,7 +78,9 @@ impl Lifecycle {
     }
 
     pub(super) fn is_published(&self, manifest: &Manifest) -> bool {
-        self.objects.get(&manifest.object).is_some_and(|object| object.state == Physical::Published)
+        self.objects
+            .get(&manifest.object)
+            .is_some_and(|object| object.state == Physical::Published)
     }
 
     pub(super) fn next_retire_candidate(&self, only: Option<RootId>) -> Option<super::ManifestId> {
@@ -196,14 +197,19 @@ impl Lifecycle {
     /// Refuses an unknown root ID.
     pub fn release_recovery(&mut self, root: RootId) -> Result<(), CacheError> {
         if !self.roots.contains_key(&root) {
-            return Err(CacheError::InvalidRequest { reason: "unknown root" });
+            return Err(CacheError::InvalidRequest {
+                reason: "unknown root",
+            });
         }
         self.drop_previous(root);
         Ok(())
     }
 
     /// Generation the pointer names, if any.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn current_generation(&self, root: RootId) -> Option<GenerationId> {
         self.pointers.get(&root).and_then(|pointer| pointer.current)
     }
@@ -214,24 +220,34 @@ impl Lifecycle {
     pub fn open_current(&self, root: RootId) -> Result<GenerationId, CacheError> {
         let generation = self
             .current_generation(root)
-            .ok_or(CacheError::InvalidRequest { reason: "no generation" })?;
+            .ok_or(CacheError::InvalidRequest {
+                reason: "no generation",
+            })?;
         let manifest = self
             .manifests
             .values()
             .find(|manifest| manifest.root == root && manifest.generation == generation)
-            .ok_or(CacheError::CorruptIndex { reason: "pointer has no manifest" })?;
+            .ok_or(CacheError::CorruptIndex {
+                reason: "pointer has no manifest",
+            })?;
         let object = self
             .objects
             .get(&manifest.object)
-            .ok_or(CacheError::CorruptIndex { reason: "manifest object missing" })?;
+            .ok_or(CacheError::CorruptIndex {
+                reason: "manifest object missing",
+            })?;
         if object.corrupt {
-            return Err(CacheError::CorruptIndex { reason: "generation is quarantined" });
+            return Err(CacheError::CorruptIndex {
+                reason: "generation is quarantined",
+            });
         }
         if !manifest.available {
             return Err(CacheError::PolicyDenied);
         }
         if !object.validated || !object.complete || object.state != Physical::Published {
-            return Err(CacheError::CorruptIndex { reason: "generation is incomplete" });
+            return Err(CacheError::CorruptIndex {
+                reason: "generation is incomplete",
+            });
         }
         Ok(generation)
     }
@@ -241,7 +257,9 @@ impl Lifecycle {
     /// Refuses an unknown object ID.
     pub fn note_incompatible(&mut self, id: ObjectId) -> Result<(), CacheError> {
         let Some(object) = self.objects.get_mut(&id) else {
-            return Err(CacheError::InvalidRequest { reason: "unknown object" });
+            return Err(CacheError::InvalidRequest {
+                reason: "unknown object",
+            });
         };
         object.corrupt = true;
         self.incompatible = true;
@@ -254,7 +272,9 @@ impl Lifecycle {
     /// Refuses an unknown manifest ID.
     pub fn revoke_manifest(&mut self, id: super::ManifestId) -> Result<(), CacheError> {
         let Some(manifest) = self.manifests.get_mut(&id) else {
-            return Err(CacheError::InvalidRequest { reason: "unknown manifest" });
+            return Err(CacheError::InvalidRequest {
+                reason: "unknown manifest",
+            });
         };
         manifest.available = false;
         self.bump();
@@ -266,11 +286,12 @@ impl Lifecycle {
     /// Refuses an unknown manifest ID.
     pub fn pin_manifest(&mut self, id: super::ManifestId, pinned: bool) -> Result<(), CacheError> {
         let Some(manifest) = self.manifests.get_mut(&id) else {
-            return Err(CacheError::InvalidRequest { reason: "unknown manifest" });
+            return Err(CacheError::InvalidRequest {
+                reason: "unknown manifest",
+            });
         };
         manifest.pinned = pinned;
         self.bump();
         Ok(())
     }
-
 }

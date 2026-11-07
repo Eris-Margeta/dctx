@@ -42,24 +42,38 @@ wire_enum!(
 
 impl Method {
     /// The only side allowed to send this request.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn sender(self) -> Sender {
         match self {
-            Self::Initialize | Self::Invoke | Self::Probe | Self::Cancel | Self::Shutdown => Sender::Host,
+            Self::Initialize | Self::Invoke | Self::Probe | Self::Cancel | Self::Shutdown => {
+                Sender::Host
+            }
             _ => Sender::Plugin,
         }
     }
 
     /// Whether this is a plugin broker request bound to the active invocation.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn is_broker(self) -> bool {
         matches!(self.sender(), Sender::Plugin)
     }
 
     /// Whether the request carries an `action_id` replay key (S-REPLAY).
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn has_action_id(self) -> bool {
-        matches!(self, Self::FileReplace | Self::ProgramRun | Self::StateWrite | Self::StateReclaim)
+        matches!(
+            self,
+            Self::FileReplace | Self::ProgramRun | Self::StateWrite | Self::StateReclaim
+        )
     }
 }
 
@@ -70,8 +84,15 @@ mod tests {
     #[test]
     fn method_table_matches_wire_md() {
         assert_eq!(Method::ALL.len(), 14);
-        let host: Vec<&str> = Method::ALL.iter().filter(|m| m.sender() == Sender::Host).map(|m| m.as_str()).collect();
-        assert_eq!(host, ["initialize", "invoke", "probe", "cancel", "shutdown"]);
+        let host: Vec<&str> = Method::ALL
+            .iter()
+            .filter(|m| m.sender() == Sender::Host)
+            .map(|m| m.as_str())
+            .collect();
+        assert_eq!(
+            host,
+            ["initialize", "invoke", "probe", "cancel", "shutdown"]
+        );
         assert!(Method::FileRead.is_broker());
         assert!(!Method::Probe.is_broker());
         assert!(Method::parse("network.fetch").is_none());

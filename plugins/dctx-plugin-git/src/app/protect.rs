@@ -13,13 +13,13 @@ use dctx_plugin_protocol::records::scalars::Token;
 use dctx_plugin_protocol::{ErrorCode, Phase};
 
 use crate::app::binding::{Binding, Grants};
-use crate::app::failure::Failure;
+use crate::app::failure::{Failure, action, text_failure};
 use crate::app::stage::{StageRequest, stage};
 use crate::app::transfer::{read_file, upload};
 use crate::domain::coverage::NestedRules;
 use crate::domain::outcome::{DiagnosticCode, Reason, Staging};
 use crate::domain::plan::{Plan, plan};
-use crate::domain::text::{IgnoreText, TextRefusal};
+use crate::domain::text::IgnoreText;
 use crate::ports::{Broker, BrokerFailure};
 
 /// Replay key of the ignore-file replacement (the host binds it to artifact, project and invocation).
@@ -74,29 +74,47 @@ pub struct Report {
 
 impl Report {
     /// A result with no effects.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn plain(status: InvokeStatus, reason: Reason) -> Self {
-        Self { status, reason: reason.as_str(), receipts: Vec::new(), diagnostics: Vec::new(), protected: false, staged: false }
+        Self {
+            status,
+            reason: reason.as_str(),
+            receipts: Vec::new(),
+            diagnostics: Vec::new(),
+            protected: false,
+            staged: false,
+        }
     }
 
     fn warning(reason: Reason, diagnostic: DiagnosticCode) -> Self {
-        Self { diagnostics: vec![(diagnostic, Severity::Warning)], ..Self::plain(InvokeStatus::Warning, reason) }
+        Self {
+            diagnostics: vec![(diagnostic, Severity::Warning)],
+            ..Self::plain(InvokeStatus::Warning, reason)
+        }
     }
 }
 
-fn text_failure(refusal: TextRefusal) -> Failure {
-    match refusal {
-        TextRefusal::Oversized => Failure::limit(refusal.reason(), "max_bytes"),
-        _ => Failure::refused(ErrorCode::InvalidConfig, Phase::Invoke, refusal.reason()),
-    }
-}
-
-fn nested_evidence(broker: &mut dyn Broker, run: &Run<'_>, max: u64) -> Result<Vec<NestedRules>, Failure> {
+fn nested_evidence(
+    broker: &mut dyn Broker,
+    run: &Run<'_>,
+    max: u64,
+) -> Result<Vec<NestedRules>, Failure> {
     let mut evidence = Vec::new();
     for handle in &run.binding.nested {
         let rules = match read_file(broker, handle, max, run.limits, None) {
-            Ok(delivered) => IgnoreText::parse(&delivered.bytes, max).map_or(NestedRules::Unavailable, NestedRules::Text),
-            Err(failure) if matches!(failure.code, ErrorCode::Cancelled | ErrorCode::InvalidMessage) => return Err(failure),
+            Ok(delivered) => IgnoreText::parse(&delivered.bytes, max)
+                .map_or(NestedRules::Unavailable, NestedRules::Text),
+            Err(failure)
+                if matches!(
+                    failure.code,
+                    ErrorCode::Cancelled | ErrorCode::InvalidMessage
+                ) =>
+            {
+                return Err(failure);
+            }
             Err(_) => NestedRules::Unavailable,
         };
         evidence.push(rules);
@@ -108,38 +126,78 @@ fn nested_evidence(broker: &mut dyn Broker, run: &Run<'_>, max: u64) -> Result<V
 /// # Errors
 /// Refuses unbound resources, denied reads/writes, invalid ignore text, exceeded limits, or failed/uncertain broker effects.
 pub fn protect(broker: &mut dyn Broker, run: &Run<'_>) -> Result<Report, Failure> {
-    let Some(repository) = run.repository else { return Ok(Report::plain(InvokeStatus::Skipped, Reason::NotARepository)) };
+    let Some(repository) = run.repository else {
+        return Ok(Report::plain(InvokeStatus::Skipped, Reason::NotARepository));
+    };
     match run.binding.repository(repository) {
         Some(bound) if bound.ordinary => {}
-        Some(_) => return Ok(Report::plain(InvokeStatus::Skipped, Reason::UnsupportedRepositoryLayout)),
-        None => return Err(Failure::refused(ErrorCode::InvalidMessage, Phase::Invoke, "unbound-repository")),
+        Some(_) => {
+            return Ok(Report::plain(
+                InvokeStatus::Skipped,
+                Reason::UnsupportedRepositoryLayout,
+            ));
+        }
+        None => {
+            return Err(Failure::refused(
+                ErrorCode::InvalidMessage,
+                Phase::Invoke,
+                "unbound-repository",
+            ));
+        }
     }
     let Some(ignore) = run.binding.ignore.as_ref() else {
         return Ok(Report::plain(InvokeStatus::Skipped, Reason::MissingIgnore));
     };
     let Some(max_read) = run.grants.read else {
-        return Err(Failure::refused(ErrorCode::Denied, Phase::Invoke, "read-not-granted"));
+        return Err(Failure::refused(
+            ErrorCode::Denied,
+            Phase::Invoke,
+            "read-not-granted",
+        ));
     };
     let delivered = read_file(broker, ignore, max_read, run.limits, Some("read-ignore"))?;
     let text = IgnoreText::parse(&delivered.bytes, max_read).map_err(text_failure)?;
     let nested = nested_evidence(broker, run, max_read)?;
     let append = match plan(&text, run.host_version, &nested, run.custom_output) {
-        Plan::RulesConflict => return Ok(Report::warning(Reason::RulesConflict, DiagnosticCode::RulesConflict)),
-        Plan::CoverageUnknown => return Ok(Report::warning(Reason::CoverageUnknown, DiagnosticCode::CoverageUnknown)),
+        Plan::RulesConflict => {
+            return Ok(Report::warning(
+                Reason::RulesConflict,
+                DiagnosticCode::RulesConflict,
+            ));
+        }
+        Plan::CoverageUnknown => {
+            return Ok(Report::warning(
+                Reason::CoverageUnknown,
+                DiagnosticCode::CoverageUnknown,
+            ));
+        }
         Plan::AlreadyProtected => {
-            let mut report = Report { protected: true, ..Report::plain(InvokeStatus::Ok, Reason::AlreadyProtected) };
+            let mut report = Report {
+                protected: true,
+                ..Report::plain(InvokeStatus::Ok, Reason::AlreadyProtected)
+            };
             if run.mode == StageMode::Explicit {
-                let request = StageRequest { resource: ignore, precondition: &delivered.precondition, repository };
+                let request = StageRequest {
+                    resource: ignore,
+                    precondition: &delivered.precondition,
+                    repository,
+                };
                 let (staging, receipt) = stage(broker, run, &request, &[])?;
                 apply_explicit(&mut report, staging, receipt);
             }
             return Ok(report);
         }
-        Plan::Append(_) if run.mode == StageMode::Inspect => return Ok(Report::plain(InvokeStatus::Ok, Reason::Completed)),
+        Plan::Append(_) if run.mode == StageMode::Inspect => {
+            return Ok(Report::plain(InvokeStatus::Ok, Reason::Completed));
+        }
         Plan::Append(append) => append,
     };
     let Some((max_growth, max_bytes)) = run.grants.write else {
-        return Err(Failure::refused(ErrorCode::Denied, Phase::Invoke, "write-not-granted"));
+        return Err(Failure::refused(
+            ErrorCode::Denied,
+            Phase::Invoke,
+            "write-not-granted",
+        ));
     };
     if append.growth > max_growth {
         return Err(Failure::limit("growth-limit", "max_growth_bytes"));
@@ -147,23 +205,37 @@ pub fn protect(broker: &mut dyn Broker, run: &Run<'_>) -> Result<Report, Failure
     if u64::try_from(append.replacement.len()).unwrap_or(u64::MAX) > max_bytes {
         return Err(Failure::limit("size-limit", "max_bytes"));
     }
-    let sealed = upload(broker, ignore, &delivered.precondition, &append.replacement, run.limits)?;
+    let sealed = upload(
+        broker,
+        ignore,
+        &delivered.precondition,
+        &append.replacement,
+        run.limits,
+    )?;
     let replace = FileReplace {
         resource: ignore.clone(),
         precondition: delivered.precondition.clone(),
         upload: sealed,
         action_id: action(REPLACE_ACTION)?,
     };
-    let replaced = broker.file_replace(&replace).map_err(|failure| match failure {
-        BrokerFailure::Refused(error) => Failure::from_broker(BrokerFailure::Refused(error), false, &[]),
-        other => Failure::from_broker(other, true, &[]),
-    })?;
+    let replaced = broker
+        .file_replace(&replace)
+        .map_err(|failure| match failure {
+            BrokerFailure::Refused(error) => {
+                Failure::from_broker(BrokerFailure::Refused(error), false, &[])
+            }
+            other => Failure::from_broker(other, true, &[]),
+        })?;
     broker.progress("replace-ignore", 1, Some(1), ProgressUnit::Actions);
     let receipts = vec![replaced.receipt.clone()];
     let staging = match run.mode {
         StageMode::AfterEdit(false) | StageMode::Inspect => (Staging::NotRequested, None),
         StageMode::AfterEdit(true) | StageMode::Explicit => {
-            let request = StageRequest { resource: ignore, precondition: &replaced.precondition, repository };
+            let request = StageRequest {
+                resource: ignore,
+                precondition: &replaced.precondition,
+                repository,
+            };
             stage(broker, run, &request, &receipts)?
         }
     };
@@ -173,12 +245,23 @@ pub fn protect(broker: &mut dyn Broker, run: &Run<'_>) -> Result<Report, Failure
 fn committed(mut receipts: Vec<Token>, (staging, receipt): (Staging, Option<Token>)) -> Report {
     let (warning, reason, diagnostic) = staging.report();
     receipts.extend(receipt);
-    let severity = if warning { Severity::Warning } else { Severity::Info };
+    let severity = if warning {
+        Severity::Warning
+    } else {
+        Severity::Info
+    };
     Report {
-        status: if warning { InvokeStatus::Warning } else { InvokeStatus::Ok },
+        status: if warning {
+            InvokeStatus::Warning
+        } else {
+            InvokeStatus::Ok
+        },
         reason: reason.as_str(),
         receipts,
-        diagnostics: diagnostic.map(|code| (code, severity)).into_iter().collect(),
+        diagnostics: diagnostic
+            .map(|code| (code, severity))
+            .into_iter()
+            .collect(),
         protected: true,
         staged: staging == Staging::Staged,
     }
@@ -190,25 +273,24 @@ fn apply_explicit(report: &mut Report, staging: Staging, receipt: Option<Token>)
         Staging::Staged => {
             report.reason = Reason::Completed.as_str();
             report.staged = true;
-            report.diagnostics.push((DiagnosticCode::WholeFileStaging, Severity::Info));
+            report
+                .diagnostics
+                .push((DiagnosticCode::WholeFileStaging, Severity::Info));
         }
         Staging::NotRequested => {}
         Staging::GitMissing => {
             report.status = InvokeStatus::Warning;
             report.reason = Reason::GitMissing.as_str();
-            report.diagnostics.push((DiagnosticCode::GitMissing, Severity::Warning));
+            report
+                .diagnostics
+                .push((DiagnosticCode::GitMissing, Severity::Warning));
         }
         Staging::Denied | Staging::Failed => {
             report.status = InvokeStatus::Warning;
             report.reason = Reason::StagingDenied.as_str();
-            report.diagnostics.push((DiagnosticCode::StagingDenied, Severity::Warning));
+            report
+                .diagnostics
+                .push((DiagnosticCode::StagingDenied, Severity::Warning));
         }
     }
-}
-
-/// A fixed replay key token.
-/// # Errors
-/// Refuses text outside the protocol action-token format.
-pub fn action(text: &'static str) -> Result<Token, Failure> {
-    Token::new(text).map_err(|_| Failure::refused(ErrorCode::InvalidMessage, Phase::Invoke, "invalid-action-id"))
 }

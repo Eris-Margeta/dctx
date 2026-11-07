@@ -10,14 +10,14 @@ use dctx_core::diff::compare_trees;
 use dctx_core::error::DctxError as CoreError;
 use dctx_core::facts::{EntryMeta, ReadGrant, SourceEntry};
 use dctx_core::ids::{RelativePath, ViewKey};
-use dctx_pack::{pack, scan, PackPorts, PackRequest as EngineRequest, ScanOptions};
-use dctx_template::{render_legacy_diff, render_legacy_snapshot, LegacyLayout, MarkerNode};
+use dctx_pack::{PackPorts, PackRequest as EngineRequest, ScanOptions, pack, scan};
+use dctx_template::{LegacyLayout, MarkerNode, render_legacy_diff, render_legacy_snapshot};
 
 const MAX_DIFF_FILES: u32 = 100_000;
 
 use super::Session;
-use crate::domain::{BoundedSink, PackReport, PackRequest, DctxError, REQUEST_VERSION};
 use crate::Source;
+use crate::domain::{BoundedSink, DctxError, PackReport, PackRequest, REQUEST_VERSION};
 
 /// Hides paths [`PackRequest`] rejects so the scan never opens them.
 /// `apply_filters == false` forwards every call unchanged.
@@ -95,23 +95,36 @@ impl Session {
     /// Runs pack and writes one page. A budget under 64 bytes is refused before publish.
     /// # Errors
     /// Refuses unsupported requests/formats, insufficient budgets, cancellation/deadlines, source/storage/hook failures, or sink errors.
-    pub fn pack(&mut self, request: &PackRequest, sink: &mut dyn BoundedSink) -> Result<PackReport, DctxError> {
+    pub fn pack(
+        &mut self,
+        request: &PackRequest,
+        sink: &mut dyn BoundedSink,
+    ) -> Result<PackReport, DctxError> {
         if !cfg!(feature = "pack") {
             return Err(DctxError::unsupported("pack"));
         }
         if request.request_version != REQUEST_VERSION {
-            return Err(DctxError::UnsupportedVersion { found: request.request_version });
+            return Err(DctxError::UnsupportedVersion {
+                found: request.request_version,
+            });
         }
         reject_format(request.output_format)?;
         reject_git(request.git_revision.as_deref())?;
         let effective_limits = self.limits.intersect(request.limits);
-        if effective_limits.encoded_bytes.is_some_and(|bytes| bytes < 64) {
+        if effective_limits
+            .encoded_bytes
+            .is_some_and(|bytes| bytes < 64)
+        {
             return Err(DctxError::BudgetTooSmall { minimum_bytes: 64 });
         }
         self.cancel.checkpoint().map_err(DctxError::from_core)?;
         self.hooks_before_pack()?;
         self.touch_cache_root()?;
-        let view_name = if request.view.is_empty() { self.view.clone() } else { request.view.clone() };
+        let view_name = if request.view.is_empty() {
+            self.view.clone()
+        } else {
+            request.view.clone()
+        };
         let view = ViewKey::parse(&view_name).map_err(DctxError::from_core)?;
         let scan = crate::domain::resolve_scan(&effective_limits)?;
         let limits = PackLimits {
@@ -121,7 +134,10 @@ impl Session {
             max_source_bytes: scan.source_bytes,
         };
         self.refuse_exhausted_revision(&view, request, limits)?;
-        let filtered = FilteredSource { inner: self.source.as_ref(), request };
+        let filtered = FilteredSource {
+            inner: self.source.as_ref(),
+            request,
+        };
         let engine = pack(
             PackPorts {
                 source: &filtered,
@@ -133,16 +149,24 @@ impl Session {
             &EngineRequest {
                 view,
                 policy: &self.selection,
-                debug_ignored: request.legacy_output.as_ref().is_some_and(|output| output.debug_ignored),
+                debug_ignored: request
+                    .legacy_output
+                    .as_ref()
+                    .is_some_and(|output| output.debug_ignored),
                 max_diff_files: MAX_DIFF_FILES,
                 limits,
             },
         )
         .map_err(DctxError::from_core)?;
-        let changes = engine.diff.stats.files_added + engine.diff.stats.files_removed + engine.diff.stats.files_modified;
+        let changes = engine.diff.stats.files_added
+            + engine.diff.stats.files_removed
+            + engine.diff.stats.files_modified;
         let mut public = PackReport {
             version: engine.snapshot.version().to_string(),
-            previous: engine.previous_version.as_ref().map(std::string::ToString::to_string),
+            previous: engine
+                .previous_version
+                .as_ref()
+                .map(std::string::ToString::to_string),
             published: engine.published,
             major_reset: engine.major_reset,
             digest: engine.snapshot.digest().to_string(),
@@ -151,7 +175,12 @@ impl Session {
             diagnostics: u64::try_from(engine.diagnostics.len()).unwrap_or(u64::MAX),
             legacy_layout: None,
         };
-        let encoded = encode_output(request, &engine, &mut public, effective_limits.encoded_bytes)?;
+        let encoded = encode_output(
+            request,
+            &engine,
+            &mut public,
+            effective_limits.encoded_bytes,
+        )?;
         if let Some(limit) = effective_limits.encoded_bytes {
             let len = u64::try_from(encoded.len()).unwrap_or(u64::MAX);
             if len > limit {
@@ -176,13 +205,19 @@ impl Session {
         if previous.version().major != u32::MAX {
             return Ok(());
         }
-        let filtered = FilteredSource { inner: self.source.as_ref(), request };
+        let filtered = FilteredSource {
+            inner: self.source.as_ref(),
+            request,
+        };
         let scanned = scan(
             &filtered,
             self.cancel.as_ref(),
             ScanOptions {
                 policy: &self.selection,
-                debug_ignored: request.legacy_output.as_ref().is_some_and(|output| output.debug_ignored),
+                debug_ignored: request
+                    .legacy_output
+                    .as_ref()
+                    .is_some_and(|output| output.debug_ignored),
                 limits,
             },
         )
@@ -191,7 +226,11 @@ impl Session {
         if report.has_changes
             && previous
                 .version()
-                .try_calculate_next(report.stats.files_unchanged, report.stats.total_files_in_new_state, MAX_DIFF_FILES)
+                .try_calculate_next(
+                    report.stats.files_unchanged,
+                    report.stats.total_files_in_new_state,
+                    MAX_DIFF_FILES,
+                )
                 .is_err()
         {
             return Err(DctxError::invalid("version exhausted"));
@@ -211,25 +250,52 @@ fn encode_output(
     };
     let tree = marker_tree(engine.snapshot.tree());
     let version = engine.snapshot.version();
-    if output.layout == LegacyLayout::Diff && !engine.major_reset && let Some(previous) = &engine.previous_version {
+    if output.layout == LegacyLayout::Diff
+        && !engine.major_reset
+        && let Some(previous) = &engine.previous_version
+    {
         report.legacy_layout = Some(LegacyLayout::Diff);
         let text = match limit {
             Some(limit) => output
                 .template
-                .legacy_diff_within(&tree, &engine.diff, previous, version, output.omit_svg_content, limit)
+                .legacy_diff_within(
+                    &tree,
+                    &engine.diff,
+                    previous,
+                    version,
+                    output.omit_svg_content,
+                    limit,
+                )
                 .map_err(DctxError::from_template)?,
-            None => render_legacy_diff(&output.template, &tree, &engine.diff, previous, version, output.omit_svg_content),
+            None => render_legacy_diff(
+                &output.template,
+                &tree,
+                &engine.diff,
+                previous,
+                version,
+                output.omit_svg_content,
+            ),
         };
         return Ok(text.into_bytes());
     }
     let tree_only = output.layout == LegacyLayout::TreeOnly;
-    report.legacy_layout = Some(if tree_only { LegacyLayout::TreeOnly } else { LegacyLayout::Snapshot });
+    report.legacy_layout = Some(if tree_only {
+        LegacyLayout::TreeOnly
+    } else {
+        LegacyLayout::Snapshot
+    });
     let text = match limit {
         Some(limit) => output
             .template
             .legacy_snapshot_within(&tree, version, tree_only, output.omit_svg_content, limit)
             .map_err(DctxError::from_template)?,
-        None => render_legacy_snapshot(&output.template, &tree, version, tree_only, output.omit_svg_content),
+        None => render_legacy_snapshot(
+            &output.template,
+            &tree,
+            version,
+            tree_only,
+            output.omit_svg_content,
+        ),
     };
     Ok(text.into_bytes())
 }
@@ -238,9 +304,15 @@ fn marker_tree(node: &DirContextTreeNode) -> MarkerNode {
     let omitted = node.handling_decision == dctx_core::FileHandlingDecision::OmitContent;
     let ignored = node.is_ignored || !node.handling_decision.should_read_content() && !omitted;
     let binary_label = if node.is_binary_file {
-        Some(node.binary_file_type.clone().unwrap_or_else(|| "Unknown".to_string()))
+        Some(
+            node.binary_file_type
+                .clone()
+                .unwrap_or_else(|| "Unknown".to_string()),
+        )
     } else {
-        node.binary_file_type.clone().filter(|label| label == "SVG file")
+        node.binary_file_type
+            .clone()
+            .filter(|label| label == "SVG file")
     };
     MarkerNode {
         relative_path: node.relative_path.clone(),
@@ -248,7 +320,11 @@ fn marker_tree(node: &DirContextTreeNode) -> MarkerNode {
         is_ignored: ignored,
         omit_content: omitted,
         binary_label,
-        content: if ignored || omitted || node.is_binary_file { None } else { node.file_content.clone() },
+        content: if ignored || omitted || node.is_binary_file {
+            None
+        } else {
+            node.file_content.clone()
+        },
         content_size: node.content_size,
         modified: node.last_modified_timestamp,
         children: node.children.iter().map(marker_tree).collect(),
@@ -273,12 +349,18 @@ pub(super) fn reject_git(revision: Option<&str>) -> Result<(), DctxError> {
 /// Files in the pack tree. The first engine diff is empty, so the count comes from the tree.
 fn file_count(node: &DirContextTreeNode) -> u64 {
     let own = u64::from(node.node_type == NodeType::File);
-    node.children.iter().fold(own, |sum, child| sum.saturating_add(file_count(child)))
+    node.children
+        .iter()
+        .fold(own, |sum, child| sum.saturating_add(file_count(child)))
 }
 
 fn encode_pack(format: u32, report: &PackReport) -> Vec<u8> {
     if format == 1 {
-        return format!("# pack {} files={} changes={}\n", report.version, report.files, report.changes).into_bytes();
+        return format!(
+            "# pack {} files={} changes={}\n",
+            report.version, report.files, report.changes
+        )
+        .into_bytes();
     }
     let previous = match &report.previous {
         Some(version) => format!("\"{version}\""),
@@ -339,9 +421,16 @@ mod tests {
         inner.insert_file("a.rs", b"fn a() {}\n", 1).expect("a");
         inner.insert_file("b.md", b"md\n", 1).expect("b");
         inner.insert_file("logo.png", b"\x89PNG\0", 1).expect("png");
-        inner.insert_file("nested/yes.rs", b"fn yes() {}\n", 1).expect("yes");
-        inner.insert_file("nested/nope.md", b"nope\n", 1).expect("nope");
-        Spy { inner, reads: Arc::clone(reads) }
+        inner
+            .insert_file("nested/yes.rs", b"fn yes() {}\n", 1)
+            .expect("yes");
+        inner
+            .insert_file("nested/nope.md", b"nope\n", 1)
+            .expect("nope");
+        Spy {
+            inner,
+            reads: Arc::clone(reads),
+        }
     }
 
     fn open_session(source: Spy) -> Session {
@@ -351,7 +440,9 @@ mod tests {
             .selection(SelectionPolicy::from_texts(&RuleTexts::default()))
             .ceiling(HostCeiling::base())
             .grants(HostGrants::PermitAll)
-            .storage(StoragePolicy::Ephemeral { max_bytes: 8 * 1024 * 1024 })
+            .storage(StoragePolicy::Ephemeral {
+                max_bytes: 8 * 1024 * 1024,
+            })
             .place("fixture")
             .view("default")
             .build()
@@ -373,12 +464,17 @@ mod tests {
         let mut filtered_session = open_session(sample(&reads));
         let mut sink = VecSink::new();
         filtered_session.pack(&filtered, &mut sink).expect("pack");
-        assert_eq!(taken(&reads), vec!["a.rs".to_string(), "nested/yes.rs".to_string()]);
+        assert_eq!(
+            taken(&reads),
+            vec!["a.rs".to_string(), "nested/yes.rs".to_string()]
+        );
 
         let open_reads = Arc::new(Mutex::new(Vec::new()));
         let mut unfiltered = open_session(sample(&open_reads));
         let mut sink = VecSink::new();
-        unfiltered.pack(&PackRequest::new(), &mut sink).expect("pack");
+        unfiltered
+            .pack(&PackRequest::new(), &mut sink)
+            .expect("pack");
         assert_eq!(
             taken(&open_reads),
             vec![

@@ -41,7 +41,10 @@ struct Walker<'a> {
     ordinals: BTreeMap<String, u32>,
 }
 
-#[allow(clippy::cast_possible_truncation, reason = "Source offsets and line counts fit u32 because PhpLexer::extract enforces the 8 MiB input ceiling.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "Source offsets and line counts fit u32 because PhpLexer::extract enforces the 8 MiB input ceiling."
+)]
 pub(crate) fn extract(
     path: &str,
     src: &str,
@@ -160,7 +163,10 @@ impl Walker<'_> {
             .min(self.out.nodes[0].fact.lines[1])
             .max(1)
     }
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets and line counts fit u32 because PhpLexer::extract enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets and line counts fit u32 because PhpLexer::extract enforces the 8 MiB input ceiling."
+    )]
     fn problem(&mut self, i: usize, reason: DiagnosticReason) {
         self.out.completion = Completion::Partial;
         if self.out.diagnostics.len() < LexedFile::MAX_DIAGNOSTICS {

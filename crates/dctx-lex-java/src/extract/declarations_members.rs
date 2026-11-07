@@ -4,8 +4,8 @@
 //! Depends on modifier visibility and the method finisher; sees through generic arguments.
 //! Called from class and enum bodies.
 
-use super::declarations_modifiers::{is_visible, MethodShape};
-use super::{is_modifier_word, Prefix, Scope, SymbolDraft, Walker};
+use super::declarations_modifiers::{MethodShape, is_visible};
+use super::{Prefix, Scope, SymbolDraft, Walker, is_modifier_word};
 use crate::domain::Precision;
 use dctx_map_model::{NodeKind, SymbolKind};
 
@@ -349,7 +349,10 @@ impl Walker<'_> {
         }
         if self.is_punct(index, "{") {
             if top.len() == 1 && !ctor.is_empty() && self.text(top[0]) == ctor {
-                return Some(Shape::Compact { name: top[0], brace: index });
+                return Some(Shape::Compact {
+                    name: top[0],
+                    brace: index,
+                });
             }
             return Some(Shape::Unknown);
         }

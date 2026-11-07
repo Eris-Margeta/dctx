@@ -4,7 +4,9 @@
 //! wire.md §Invocation boundaries: projects and resources are opaque handles, never OS paths.
 //! Depends on json, scalars, common and refusal; used by `requests::Request::Invoke` and session hook checks.
 
-use crate::json::fields::{Fields, Obj, array, constant_int, constant_true, list, string, uint, unique_list};
+use crate::json::fields::{
+    Fields, Obj, array, constant_int, constant_true, list, string, uint, unique_list,
+};
 use crate::json::value::Json;
 use crate::records::common::{Config, HookName, Limits, decode_config, encode_config};
 use crate::records::scalars::{Alias, Digest, Name, Role, SemVer, Text, Token};
@@ -202,7 +204,10 @@ pub struct Invocation {
 
 impl Invocation {
     /// The declared hook this invocation runs, or `None` for a command.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn hook(&self) -> Option<HookName> {
         match self.payload {
             HookPayload::BeforePackOutputWritten { .. } => Some(HookName::BeforePackOutputWritten),
@@ -306,43 +311,80 @@ impl Invocation {
             .put("hook_version", Json::Int(1))
             .maybe("project", self.project.as_ref().map(Token::encode))
             .put("policy_epoch", Json::uint(self.policy_epoch))
-            .maybe("selection_digest", self.selection_digest.as_ref().map(Digest::encode))
+            .maybe(
+                "selection_digest",
+                self.selection_digest.as_ref().map(Digest::encode),
+            )
             .put("host_version", self.host_version.encode())
             .put("grants", array(&self.grants, Token::encode))
             .put("limits", self.limits.encode())
             .put("config", encode_config(&self.config))
             .put("hook", Json::str(hook));
         let counts = |pairs: &[(&str, u64)]| {
-            pairs.iter().fold(Obj::new(), |obj, (key, value)| obj.put(key, Json::uint(*value))).build()
+            pairs
+                .iter()
+                .fold(Obj::new(), |obj, (key, value)| {
+                    obj.put(key, Json::uint(*value))
+                })
+                .build()
         };
         let object = match &self.payload {
-            HookPayload::BeforePackOutputWritten { outputs, next, repository } => base
+            HookPayload::BeforePackOutputWritten {
+                outputs,
+                next,
+                repository,
+            } => base
                 .put("outputs", array(outputs, PlannedOutput::encode))
                 .maybe("next", next.as_ref().map(Token::encode))
                 .maybe("repository", repository.as_ref().map(Token::encode)),
-            HookPayload::AfterPackOutputWritten { outputs, next, generation } => base
+            HookPayload::AfterPackOutputWritten {
+                outputs,
+                next,
+                generation,
+            } => base
                 .put("outputs", array(outputs, CommittedOutput::encode))
                 .maybe("next", next.as_ref().map(Token::encode))
                 .put("generation", generation.encode())
                 .put("output_committed", Json::Bool(true)),
-            HookPayload::BeforeIndex { intent, files, bytes } => {
-                base.put("intent", intent.encode()).put("counts", counts(&[("files", *files), ("bytes", *bytes)]))
-            }
-            HookPayload::AfterIndex { generation, files, symbols, edges, freshness } => base
+            HookPayload::BeforeIndex {
+                intent,
+                files,
+                bytes,
+            } => base
+                .put("intent", intent.encode())
+                .put("counts", counts(&[("files", *files), ("bytes", *bytes)])),
+            HookPayload::AfterIndex {
+                generation,
+                files,
+                symbols,
+                edges,
+                freshness,
+            } => base
                 .put("generation", generation.encode())
-                .put("counts", counts(&[("files", *files), ("symbols", *symbols), ("edges", *edges)]))
-                .put("freshness", freshness.encode())
-                .put("output_committed", Json::Bool(true)),
-            HookPayload::CacheGc { reclaimed_bytes, reclaimed_objects, state_handles } => base
                 .put(
                     "counts",
-                    counts(&[("reclaimed_bytes", *reclaimed_bytes), ("reclaimed_objects", *reclaimed_objects)]),
+                    counts(&[("files", *files), ("symbols", *symbols), ("edges", *edges)]),
+                )
+                .put("freshness", freshness.encode())
+                .put("output_committed", Json::Bool(true)),
+            HookPayload::CacheGc {
+                reclaimed_bytes,
+                reclaimed_objects,
+                state_handles,
+            } => base
+                .put(
+                    "counts",
+                    counts(&[
+                        ("reclaimed_bytes", *reclaimed_bytes),
+                        ("reclaimed_objects", *reclaimed_objects),
+                    ]),
                 )
                 .put("state_handles", array(state_handles, Token::encode))
                 .put("output_committed", Json::Bool(true)),
-            HookPayload::Command { alias, verb, args } => {
-                base.put("alias", alias.encode()).put("verb", verb.encode()).put("args", array(args, Text::encode))
-            }
+            HookPayload::Command { alias, verb, args } => base
+                .put("alias", alias.encode())
+                .put("verb", verb.encode())
+                .put("args", array(args, Text::encode)),
         };
         object.build()
     }
@@ -362,7 +404,9 @@ mod tests {
 
     #[test]
     fn command_may_omit_project_and_selection_but_hooks_may_not() {
-        let command = invocation(r#""hook":"command","alias":"git","verb":"status","args":["--x"]"#).expect("command");
+        let command =
+            invocation(r#""hook":"command","alias":"git","verb":"status","args":["--x"]"#)
+                .expect("command");
         assert_eq!(command.hook(), None);
         assert_eq!(Invocation::decode(&command.encode()), Ok(command));
         let digest = r#""selection_digest":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855""#;
@@ -370,7 +414,9 @@ mod tests {
             .expect("gc");
         assert_eq!(gc.hook(), Some(HookName::CacheGc));
         assert_eq!(Invocation::decode(&gc.encode()), Ok(gc));
-        let index = format!(r#"{digest},"hook":"before-index","intent":"build","counts":{{"files":1,"bytes":3}}"#);
+        let index = format!(
+            r#"{digest},"hook":"before-index","intent":"build","counts":{{"files":1,"bytes":3}}"#
+        );
         assert_eq!(invocation(&index).unwrap_err().reason, "missing-field");
         assert!(invocation(&format!(r#""project":"project:1",{index}"#)).is_ok());
     }
@@ -378,10 +424,24 @@ mod tests {
     #[test]
     fn committed_hooks_require_output_committed_true() {
         let digest = r#""project":"p:1","selection_digest":"sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855""#;
-        let after = format!(r#"{digest},"hook":"after-index","generation":"generation:1","counts":{{"files":1,"symbols":0,"edges":0}},"freshness":"fresh","output_committed":COMMITTED"#);
+        let after = format!(
+            r#"{digest},"hook":"after-index","generation":"generation:1","counts":{{"files":1,"symbols":0,"edges":0}},"freshness":"fresh","output_committed":COMMITTED"#
+        );
         assert!(invocation(&after.replace("COMMITTED", "true")).is_ok());
         assert!(invocation(&after.replace("COMMITTED", "false")).is_err());
-        assert!(invocation(&after.replace("COMMITTED", "true").replace("\"edges\":0", "\"edges\":0,\"x\":1")).is_err());
-        assert_eq!(invocation(&format!(r#"{digest},"hook":"rm","args":[]"#)).unwrap_err().reason, "unknown-hook");
+        assert!(
+            invocation(
+                &after
+                    .replace("COMMITTED", "true")
+                    .replace("\"edges\":0", "\"edges\":0,\"x\":1")
+            )
+            .is_err()
+        );
+        assert_eq!(
+            invocation(&format!(r#"{digest},"hook":"rm","args":[]"#))
+                .unwrap_err()
+                .reason,
+            "unknown-hook"
+        );
     }
 }

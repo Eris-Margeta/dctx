@@ -28,7 +28,9 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
         index += 1;
         match flag.as_str() {
             "--format" | "--output" | "--place" => {
-                let value = args.get(index).ok_or_else(|| format!("missing value for {flag}"))?;
+                let value = args
+                    .get(index)
+                    .ok_or_else(|| format!("missing value for {flag}"))?;
                 index += 1;
                 match flag.as_str() {
                     "--format" => format = value.clone(),
@@ -36,11 +38,17 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
                     _ => place = PathBuf::from(value),
                 }
             }
-            _ => return Err(format!("export takes no target and only --format, --output and --place; got {flag}")),
+            _ => {
+                return Err(format!(
+                    "export takes no target and only --format, --output and --place; got {flag}"
+                ))
+            }
         }
     }
     if !matches!(format.as_str(), "json" | "mermaid") {
-        return Err(format!("unknown export format: {format}; expected json or mermaid"));
+        return Err(format!(
+            "unknown export format: {format}; expected json or mermaid"
+        ));
     }
     request.validate().map_err(|e| e.to_string())?;
     Ok(Options {
@@ -61,13 +69,23 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
 }
 
 /// Runs the export on `handle`. Returns the document, or an empty string after writing it to `--output`.
-pub(super) fn answer(session: &mut Session, handle: &SnapshotHandle, options: &Options) -> Result<String, String> {
-    let export = options.export.as_ref().ok_or("export requires its options")?;
+pub(super) fn answer(
+    session: &mut Session,
+    handle: &SnapshotHandle,
+    options: &Options,
+) -> Result<String, String> {
+    let export = options
+        .export
+        .as_ref()
+        .ok_or("export requires its options")?;
     let request = MapRequest::new(Verb::Neighbors);
-    let document = session.export_graph(handle, &export.format, &request).map_err(|e| e.to_string())?;
+    let document = session
+        .export_graph(handle, &export.format, &request)
+        .map_err(|e| e.to_string())?;
     match &export.output {
         Some(path) => {
-            std::fs::write(path, document).map_err(|e| format!("cannot write {}: {e}", path.display()))?;
+            std::fs::write(path, document)
+                .map_err(|e| format!("cannot write {}: {e}", path.display()))?;
             Ok(String::new())
         }
         None => Ok(document),
@@ -86,10 +104,24 @@ mod tests {
     #[test]
     fn export_takes_a_format_an_output_and_a_place_only() {
         let plain = parse(&strings(&["export"])).expect("plain");
-        assert_eq!(plain.export.as_ref().map(|e| e.format.as_str()), Some("json"));
-        let full = parse(&strings(&["export", "--format", "mermaid", "--output", "g.mmd"])).expect("full");
-        assert_eq!(full.export.and_then(|e| e.output), Some(PathBuf::from("g.mmd")));
-        for bad in [vec!["export", "--format", "nope"], vec!["export", "src"], vec!["export", "--json"], vec!["export", "--format"]] {
+        assert_eq!(
+            plain.export.as_ref().map(|e| e.format.as_str()),
+            Some("json")
+        );
+        let full = parse(&strings(&[
+            "export", "--format", "mermaid", "--output", "g.mmd",
+        ]))
+        .expect("full");
+        assert_eq!(
+            full.export.and_then(|e| e.output),
+            Some(PathBuf::from("g.mmd"))
+        );
+        for bad in [
+            vec!["export", "--format", "nope"],
+            vec!["export", "src"],
+            vec!["export", "--json"],
+            vec!["export", "--format"],
+        ] {
             assert!(parse(&strings(&bad)).is_err(), "{bad:?}");
         }
         assert!(super::super::args::HELP.contains("export"));
@@ -100,19 +132,32 @@ mod tests {
         let fixture = tempfile::tempdir().expect("fixture");
         let (place, cache) = (fixture.path().join("place"), fixture.path().join("cache"));
         std::fs::create_dir_all(&place).expect("place");
-        std::fs::write(place.join("a.py"), "def alpha():\n    return beta()\n\ndef beta():\n    return 1\n").expect("source");
+        std::fs::write(
+            place.join("a.py"),
+            "def alpha():\n    return beta()\n\ndef beta():\n    return 1\n",
+        )
+        .expect("source");
         let run = |extra: &[&str]| {
             let mut args = strings(&["export", "--place", &place.display().to_string()]);
             args.extend(strings(extra));
             super::super::execute_with(&args, |at| host::open_mapped_at(at, Some(&cache)))
         };
         let json = run(&["--format", "json"]).expect("json");
-        assert!(json.contains("{\"src\":\"s:a.py#alpha\",\"edge\":\"calls\",\"dst\":\"s:a.py#beta\""), "{json}");
+        assert!(
+            json.contains("{\"src\":\"s:a.py#alpha\",\"edge\":\"calls\",\"dst\":\"s:a.py#beta\""),
+            "{json}"
+        );
         let mermaid = run(&["--format", "mermaid"]).expect("mermaid");
-        assert!(mermaid.starts_with("flowchart LR\n") && mermaid.contains("-->|calls|"), "{mermaid}");
+        assert!(
+            mermaid.starts_with("flowchart LR\n") && mermaid.contains("-->|calls|"),
+            "{mermaid}"
+        );
         assert_eq!(mermaid, run(&["--format", "mermaid"]).expect("again"));
         let file = fixture.path().join("out.json");
-        assert_eq!(run(&["--output", &file.display().to_string()]).expect("file"), "");
+        assert_eq!(
+            run(&["--output", &file.display().to_string()]).expect("file"),
+            ""
+        );
         assert_eq!(std::fs::read_to_string(&file).expect("written"), json);
         assert!(run(&["--format", "nope"]).is_err());
     }

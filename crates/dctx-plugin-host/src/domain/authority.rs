@@ -49,10 +49,22 @@ pub struct Authority {
 
 impl Authority {
     /// Builds a not-yet-ready authority under `binding` at policy `epoch`.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new(layers: GrantLayers, selection: Selection, binding: Binding, epoch: u64) -> Self {
         let effective = layers.effective(&selection);
-        Self { layers, selection, binding, epoch, ready: false, halted: false, effective, trace: Trace::default() }
+        Self {
+            layers,
+            selection,
+            binding,
+            epoch,
+            ready: false,
+            halted: false,
+            effective,
+            trace: Trace::default(),
+        }
     }
 
     /// `Authority.Initialize`: the session reached `ready`.
@@ -60,7 +72,11 @@ impl Authority {
     /// Refuses initialization after the authority has halted.
     pub fn initialize(&mut self) -> Result<(), HostRefusal> {
         if self.halted {
-            return Err(HostRefusal::new(ErrorCode::Cancelled, Phase::Initialize, "halted"));
+            return Err(HostRefusal::new(
+                ErrorCode::Cancelled,
+                Phase::Initialize,
+                "halted",
+            ));
         }
         self.ready = true;
         self.trace.push(ModelAction::AuthorityInitialize);
@@ -69,7 +85,8 @@ impl Authority {
 
     /// `Authority.Configure`: configuration may only narrow the manifest request, never consent.
     pub fn configure(&mut self, requested: &[Capability]) {
-        self.layers.manifest = crate::domain::grant::intersect_sets(&self.layers.manifest, requested);
+        self.layers.manifest =
+            crate::domain::grant::intersect_sets(&self.layers.manifest, requested);
         self.refresh(ModelAction::AuthorityConfigure, false);
     }
 
@@ -106,10 +123,18 @@ impl Authority {
     /// Refuses before initialization/after halt, on a binding mismatch, or when no effective capability covers the need.
     pub fn admit(&mut self, handle: &Binding, need: Need) -> Result<Admission, HostRefusal> {
         if !self.ready {
-            return Err(HostRefusal::new(ErrorCode::InvalidMessage, Phase::Initialize, "not-ready"));
+            return Err(HostRefusal::new(
+                ErrorCode::InvalidMessage,
+                Phase::Initialize,
+                "not-ready",
+            ));
         }
         if self.halted {
-            return Err(HostRefusal::new(ErrorCode::Cancelled, Phase::Broker, "halted"));
+            return Err(HostRefusal::new(
+                ErrorCode::Cancelled,
+                Phase::Broker,
+                "halted",
+            ));
         }
         if *handle != self.binding {
             return Err(HostRefusal::denied("binding-mismatch"));
@@ -118,7 +143,10 @@ impl Authority {
             return Err(HostRefusal::denied("not-granted"));
         }
         self.trace.push(ModelAction::AuthorityAdmit);
-        Ok(Admission { need, epoch: self.epoch })
+        Ok(Admission {
+            need,
+            epoch: self.epoch,
+        })
     }
 
     /// `Authority.Commit`: refuse when halted, the epoch moved or the need left the grant.
@@ -126,12 +154,20 @@ impl Authority {
     /// Refuses after halt, for a stale policy epoch, or if the grant has been revoked.
     pub fn commit(&mut self, admission: &Admission) -> Result<(), HostRefusal> {
         if self.halted {
-            return Err(HostRefusal::new(ErrorCode::Cancelled, Phase::Broker, "halted"));
+            return Err(HostRefusal::new(
+                ErrorCode::Cancelled,
+                Phase::Broker,
+                "halted",
+            ));
         }
         if admission.epoch != self.epoch {
             return Err(HostRefusal::denied("stale-policy-epoch"));
         }
-        if !self.effective.iter().any(|cap| covers(cap, &admission.need)) {
+        if !self
+            .effective
+            .iter()
+            .any(|cap| covers(cap, &admission.need))
+        {
             return Err(HostRefusal::denied("grant-revoked"));
         }
         self.trace.push(ModelAction::AuthorityCommit);
@@ -142,7 +178,11 @@ impl Authority {
     /// # Errors
     /// Refuses content outside the included source selection.
     pub fn check_content(&self, path: &ProjectPath) -> Result<(), HostRefusal> {
-        if self.selection.authorizes(path) { Ok(()) } else { Err(HostRefusal::denied("source-not-included")) }
+        if self.selection.authorizes(path) {
+            Ok(())
+        } else {
+            Err(HostRefusal::denied("source-not-included"))
+        }
     }
 
     /// Provenance precondition for derived/cached delivery: every constituent is currently `Include`.
@@ -162,31 +202,46 @@ impl Authority {
     }
 
     /// Current policy epoch.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn epoch(&self) -> u64 {
         self.epoch
     }
 
     /// Whether admission is closed.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn halted(&self) -> bool {
         self.halted
     }
 
     /// The bound context.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn binding(&self) -> &Binding {
         &self.binding
     }
 
     /// Current effective grant `G(now)`.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn effective(&self) -> &[Capability] {
         &self.effective
     }
 
     /// Model actions taken.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn trace(&self) -> &Trace {
         &self.trace
     }
@@ -219,19 +274,37 @@ mod tests {
     }
 
     fn read_cap() -> Capability {
-        Capability::FileRead { path: path(), max_bytes: 100 }
+        Capability::FileRead {
+            path: path(),
+            max_bytes: 100,
+        }
     }
 
     fn authority() -> Authority {
         let all = vec![read_cap()];
-        let layers = GrantLayers { manifest: all.clone(), consent: all.clone(), organization: all.clone(), host: all.clone(), adapter: all, denies: vec![] };
-        let mut authority = Authority::new(layers, Selection::new([(path(), Decision::Include)]), context("op:1"), 0);
+        let layers = GrantLayers {
+            manifest: all.clone(),
+            consent: all.clone(),
+            organization: all.clone(),
+            host: all.clone(),
+            adapter: all,
+            denies: vec![],
+        };
+        let mut authority = Authority::new(
+            layers,
+            Selection::new([(path(), Decision::Include)]),
+            context("op:1"),
+            0,
+        );
         authority.initialize().expect("ready");
         authority
     }
 
     fn need() -> Need {
-        Need::FileRead { path: path(), bytes: 10 }
+        Need::FileRead {
+            path: path(),
+            bytes: 10,
+        }
     }
 
     #[test]
@@ -239,7 +312,11 @@ mod tests {
         let mut authority = authority();
         let admission = authority.admit(&context("op:1"), need()).expect("admitted");
         authority.commit(&admission).expect("committed");
-        assert!(authority.trace().precedes(ModelAction::AuthorityAdmit, ModelAction::AuthorityCommit));
+        assert!(
+            authority
+                .trace()
+                .precedes(ModelAction::AuthorityAdmit, ModelAction::AuthorityCommit)
+        );
     }
 
     #[test]
@@ -247,7 +324,10 @@ mod tests {
         let mut authority = authority();
         let admission = authority.admit(&context("op:1"), need()).expect("admitted");
         authority.narrow(Layer::Consent, &[]);
-        assert_eq!(authority.commit(&admission).map_err(|e| e.reason), Err("stale-policy-epoch"));
+        assert_eq!(
+            authority.commit(&admission).map_err(|e| e.reason),
+            Err("stale-policy-epoch")
+        );
         let fresh = authority.admit(&context("op:1"), need());
         assert_eq!(fresh.map_err(|e| e.reason), Err("not-granted"));
     }
@@ -256,24 +336,48 @@ mod tests {
     fn halt_closes_admission_and_not_ready_refuses() {
         let mut authority = authority();
         authority.halt();
-        assert_eq!(authority.admit(&context("op:1"), need()).map_err(|e| e.code), Err(ErrorCode::Cancelled));
-        let mut fresh = Authority::new(GrantLayers::default(), Selection::default(), context("op:1"), 0);
-        assert_eq!(fresh.admit(&context("op:1"), need()).map_err(|e| e.reason), Err("not-ready"));
+        assert_eq!(
+            authority
+                .admit(&context("op:1"), need())
+                .map_err(|e| e.code),
+            Err(ErrorCode::Cancelled)
+        );
+        let mut fresh = Authority::new(
+            GrantLayers::default(),
+            Selection::default(),
+            context("op:1"),
+            0,
+        );
+        assert_eq!(
+            fresh.admit(&context("op:1"), need()).map_err(|e| e.reason),
+            Err("not-ready")
+        );
         fresh.initialize().expect("ready");
-        assert_eq!(fresh.admit(&context("op:1"), need()).map_err(|e| e.reason), Err("not-granted"));
+        assert_eq!(
+            fresh.admit(&context("op:1"), need()).map_err(|e| e.reason),
+            Err("not-granted")
+        );
     }
 
     #[test]
     fn foreign_binding_refuses() {
         let mut authority = authority();
-        assert_eq!(authority.admit(&context("op:2"), need()).map_err(|e| e.reason), Err("binding-mismatch"));
+        assert_eq!(
+            authority
+                .admit(&context("op:2"), need())
+                .map_err(|e| e.reason),
+            Err("binding-mismatch")
+        );
         assert!(authority.admit(&context("op:1"), need()).is_ok());
     }
 
     #[test]
     fn configuration_never_widens_consent() {
         let mut authority = authority();
-        let wider = Capability::FileRead { path: path(), max_bytes: 1_000 };
+        let wider = Capability::FileRead {
+            path: path(),
+            max_bytes: 1_000,
+        };
         authority.configure(&[wider]);
         assert_eq!(authority.effective(), &[read_cap()]);
     }

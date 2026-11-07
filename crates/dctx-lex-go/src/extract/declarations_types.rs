@@ -45,7 +45,9 @@ impl Walker<'_> {
         }
         let struct_kw = !alias && self.is(cursor, "struct");
         let iface_kw = !alias && self.is(cursor, "interface");
-        let body_open = (struct_kw || iface_kw).then_some(cursor + 1).filter(|&brace| self.is(brace, "{"));
+        let body_open = (struct_kw || iface_kw)
+            .then_some(cursor + 1)
+            .filter(|&brace| self.is(brace, "{"));
         let symbol = if struct_kw {
             SymbolKind::Struct
         } else if iface_kw {

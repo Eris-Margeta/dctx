@@ -6,7 +6,10 @@
 //! Empty input is text; a null byte, or over 30% non-printable in the first 8KB, is binary.
 
 /// Analyzes file content to determine if it's binary
-#[allow(clippy::cast_precision_loss, reason = "Both counts are at most 8192, within the exact integer range of f64.")]
+#[allow(
+    clippy::cast_precision_loss,
+    reason = "Both counts are at most 8192, within the exact integer range of f64."
+)]
 pub(super) fn is_binary_content(content: &[u8]) -> bool {
     // Empty files are not binary
     if content.is_empty() {

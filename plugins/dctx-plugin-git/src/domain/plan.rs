@@ -6,7 +6,9 @@
 //! Pure; depends on rules, text and coverage. Used by `app::protect`.
 
 use crate::domain::coverage::{Coverage, NestedRules, evaluate};
-use crate::domain::rules::{HEADER, REQUIRED_PATTERNS, current_marker, is_current_marker, known_pattern};
+use crate::domain::rules::{
+    HEADER, REQUIRED_PATTERNS, current_marker, is_current_marker, known_pattern,
+};
 use crate::domain::text::{IgnoreText, MAX_IGNORE_BYTES};
 
 /// What the committed file would gain.
@@ -36,7 +38,10 @@ pub enum Plan {
 }
 
 /// Whether the four literals and the current host marker are all present (the old fast path, plus rules).
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn missing(text: &IgnoreText, host_version: &str) -> (Vec<&'static str>, bool) {
     let mut present = [false; REQUIRED_PATTERNS.len()];
     let mut marker = false;
@@ -46,13 +51,26 @@ pub fn missing(text: &IgnoreText, host_version: &str) -> (Vec<&'static str>, boo
         }
         marker |= is_current_marker(line, host_version);
     }
-    let rules = REQUIRED_PATTERNS.iter().zip(present).filter(|(_, seen)| !seen).map(|(rule, _)| *rule).collect();
+    let rules = REQUIRED_PATTERNS
+        .iter()
+        .zip(present)
+        .filter(|(_, seen)| !seen)
+        .map(|(rule, _)| *rule)
+        .collect();
     (rules, !marker)
 }
 
 /// Computes the plan; coverage is evaluated on the text as it would be committed.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
-pub fn plan(text: &IgnoreText, host_version: &str, nested: &[NestedRules], custom_output: bool) -> Plan {
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
+pub fn plan(
+    text: &IgnoreText,
+    host_version: &str,
+    nested: &[NestedRules],
+    custom_output: bool,
+) -> Plan {
     let (appended_rules, marker_added) = missing(text, host_version);
     let newline = text.newline().as_str();
     let mut suffix = String::new();
@@ -71,7 +89,10 @@ pub fn plan(text: &IgnoreText, host_version: &str, nested: &[NestedRules], custo
     }
     let mut replacement = text.as_str().as_bytes().to_vec();
     replacement.extend_from_slice(suffix.as_bytes());
-    let committed = IgnoreText::parse(&replacement, MAX_IGNORE_BYTES + u64::try_from(suffix.len()).unwrap_or(u64::MAX));
+    let committed = IgnoreText::parse(
+        &replacement,
+        MAX_IGNORE_BYTES + u64::try_from(suffix.len()).unwrap_or(u64::MAX),
+    );
     let coverage = match committed {
         Ok(committed) => evaluate(&committed, nested),
         Err(_) => Coverage::Unknown,
@@ -108,23 +129,53 @@ mod tests {
     fn appends_only_what_is_missing() {
         let full = "# [dctx] Automated Rules\n.dctx\n.dctx/\n*.llmcontext.txt\n*.llmcontext-*-diff.txt\n# [dctx v0.26.0]\n";
         assert_eq!(appended(""), full);
-        assert_eq!(plan(&text(full), "0.26.0", &[], false), Plan::AlreadyProtected);
+        assert_eq!(
+            plan(&text(full), "0.26.0", &[], false),
+            Plan::AlreadyProtected
+        );
         assert_eq!(appended("notes"), format!("notes\n{full}"));
-        assert_eq!(appended("notes\r\n"), format!("notes\r\n{}", full.replace('\n', "\r\n")));
+        assert_eq!(
+            appended("notes\r\n"),
+            format!("notes\r\n{}", full.replace('\n', "\r\n"))
+        );
         let rules = ".dctx\n.dctx/\n*.llmcontext.txt\n*.llmcontext-*-diff.txt\n";
         assert_eq!(appended(rules), format!("{rules}# [dctx v0.26.0]\n"));
         let removed = ".dctx\n.dctx/\n*.llmcontext.txt\n# [dctx v0.26.0]\n";
-        assert_eq!(appended(removed), format!("{removed}# [dctx] Automated Rules\n*.llmcontext-*-diff.txt\n"));
+        assert_eq!(
+            appended(removed),
+            format!("{removed}# [dctx] Automated Rules\n*.llmcontext-*-diff.txt\n")
+        );
     }
 
     #[test]
     fn conflicts_unknowns_and_custom_outputs_never_claim_protection() {
         let full = "# [dctx] Automated Rules\n.dctx\n.dctx/\n*.llmcontext.txt\n*.llmcontext-*-diff.txt\n# [dctx v0.26.0]\n";
-        assert_eq!(plan(&text(&format!("{full}!*.llmcontext.txt\n")), "0.26.0", &[], false), Plan::RulesConflict);
-        assert_eq!(plan(&text("notes\n"), "0.26.0", &[NestedRules::Unavailable], false), Plan::CoverageUnknown);
-        assert_eq!(plan(&text(full), "0.26.0", &[], true), Plan::CoverageUnknown);
+        assert_eq!(
+            plan(
+                &text(&format!("{full}!*.llmcontext.txt\n")),
+                "0.26.0",
+                &[],
+                false
+            ),
+            Plan::RulesConflict
+        );
+        assert_eq!(
+            plan(
+                &text("notes\n"),
+                "0.26.0",
+                &[NestedRules::Unavailable],
+                false
+            ),
+            Plan::CoverageUnknown
+        );
+        assert_eq!(
+            plan(&text(full), "0.26.0", &[], true),
+            Plan::CoverageUnknown
+        );
         match plan(&text(full), "0.27.0", &[], false) {
-            Plan::Append(append) => assert!(append.appended_rules.is_empty() && append.marker_added),
+            Plan::Append(append) => {
+                assert!(append.appended_rules.is_empty() && append.marker_added)
+            }
             other => panic!("{other:?}"),
         }
     }

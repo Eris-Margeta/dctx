@@ -7,7 +7,7 @@
 use std::fmt::Write as _;
 
 use super::hubs::quote;
-use super::{write_node_id, Generation};
+use super::{Generation, write_node_id};
 
 /// Output format of an export.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -26,7 +26,9 @@ impl ExportFormat {
         match name {
             "json" => Ok(Self::Json),
             "mermaid" => Ok(Self::Mermaid),
-            other => Err(format!("unknown export format: {other}; expected json or mermaid")),
+            other => Err(format!(
+                "unknown export format: {other}; expected json or mermaid"
+            )),
         }
     }
 }
@@ -72,7 +74,12 @@ fn collect(generation: &Generation) -> (Vec<ExportNode>, Vec<ExportEdge>) {
         .map(|node| {
             let mut id = String::new();
             write_node_id(&mut id, text, node);
-            ExportNode { id, kind: node.kind.clone(), path: text.get(node.path).to_string(), lines: node.lines }
+            ExportNode {
+                id,
+                kind: node.kind.clone(),
+                path: text.get(node.path).to_string(),
+                lines: node.lines,
+            }
         })
         .collect();
     nodes.sort_by(|left, right| left.id.cmp(&right.id));
@@ -81,11 +88,20 @@ fn collect(generation: &Generation) -> (Vec<ExportNode>, Vec<ExportEdge>) {
         .iter()
         .filter_map(|edge| {
             let (src, dst) = (id_of(generation, edge.src)?, id_of(generation, edge.dst)?);
-            Some(ExportEdge { src, edge: text.get(edge.edge).to_string(), dst, confidence: text.get(edge.confidence).to_string() })
+            Some(ExportEdge {
+                src,
+                edge: text.get(edge.edge).to_string(),
+                dst,
+                confidence: text.get(edge.confidence).to_string(),
+            })
         })
         .collect();
-    edges.sort_by(|a, b| (&a.src, &a.edge, &a.dst, &a.confidence).cmp(&(&b.src, &b.edge, &b.dst, &b.confidence)));
-    edges.dedup_by(|a, b| (&a.src, &a.edge, &a.dst, &a.confidence) == (&b.src, &b.edge, &b.dst, &b.confidence));
+    edges.sort_by(|a, b| {
+        (&a.src, &a.edge, &a.dst, &a.confidence).cmp(&(&b.src, &b.edge, &b.dst, &b.confidence))
+    });
+    edges.dedup_by(|a, b| {
+        (&a.src, &a.edge, &a.dst, &a.confidence) == (&b.src, &b.edge, &b.dst, &b.confidence)
+    });
     (nodes, edges)
 }
 
@@ -102,7 +118,11 @@ pub(crate) fn export_graph(generation: &Generation, format: ExportFormat) -> Str
 fn encode_json(nodes: &[ExportNode], edges: &[ExportEdge]) -> String {
     let mut out = String::from("{\"nodes\":[");
     for (index, node) in nodes.iter().enumerate() {
-        out.push_str(if index > 0 { ",\n{\"id\":" } else { "\n{\"id\":" });
+        out.push_str(if index > 0 {
+            ",\n{\"id\":"
+        } else {
+            "\n{\"id\":"
+        });
         quote(&mut out, &node.id);
         out.push_str(",\"kind\":");
         quote(&mut out, &node.kind);
@@ -112,7 +132,11 @@ fn encode_json(nodes: &[ExportNode], edges: &[ExportEdge]) -> String {
     }
     out.push_str("],\"edges\":[");
     for (index, edge) in edges.iter().enumerate() {
-        out.push_str(if index > 0 { ",\n{\"src\":" } else { "\n{\"src\":" });
+        out.push_str(if index > 0 {
+            ",\n{\"src\":"
+        } else {
+            "\n{\"src\":"
+        });
         quote(&mut out, &edge.src);
         out.push_str(",\"edge\":");
         quote(&mut out, &edge.edge);
@@ -133,7 +157,10 @@ fn encode_mermaid(nodes: &[ExportNode], edges: &[ExportEdge]) -> String {
         let _ = writeln!(out, "  n{index}[\"{}\"]", node.id.replace('"', "#quot;"));
     }
     let index_of = |id: &str| nodes.binary_search_by(|node| node.id.as_str().cmp(id)).ok();
-    for edge in edges.iter().filter(|edge| edge.edge == "calls" || edge.edge == "imports") {
+    for edge in edges
+        .iter()
+        .filter(|edge| edge.edge == "calls" || edge.edge == "imports")
+    {
         if let (Some(a), Some(b)) = (index_of(&edge.src), index_of(&edge.dst)) {
             let _ = writeln!(out, "  n{a} -->|{}| n{b}", edge.edge);
         }
@@ -165,12 +192,35 @@ mod tests {
     fn fixture() -> Generation {
         let mut text = TextBlob::default();
         // Stored out of id order on purpose: beta before alpha.
-        let nodes = vec![node(&mut text, b'm', "module", ""), node(&mut text, b's', "fn", "beta"), node(&mut text, b's', "fn", "alpha")];
-        let (calls, contains, exact) = (text.push("calls"), text.push("contains"), text.push("exact"));
+        let nodes = vec![
+            node(&mut text, b'm', "module", ""),
+            node(&mut text, b's', "fn", "beta"),
+            node(&mut text, b's', "fn", "alpha"),
+        ];
+        let (calls, contains, exact) = (
+            text.push("calls"),
+            text.push("contains"),
+            text.push("exact"),
+        );
         let edges = vec![
-            IndexedEdge { src: 0, dst: 2, edge: contains, confidence: exact },
-            IndexedEdge { src: 2, dst: 1, edge: calls, confidence: exact },
-            IndexedEdge { src: 0, dst: 1, edge: contains, confidence: exact },
+            IndexedEdge {
+                src: 0,
+                dst: 2,
+                edge: contains,
+                confidence: exact,
+            },
+            IndexedEdge {
+                src: 2,
+                dst: 1,
+                edge: calls,
+                confidence: exact,
+            },
+            IndexedEdge {
+                src: 0,
+                dst: 1,
+                edge: contains,
+                confidence: exact,
+            },
         ];
         Generation {
             id: 1,
@@ -194,13 +244,22 @@ mod tests {
     fn json_and_mermaid_are_sorted_and_repeatable() {
         let generation = fixture();
         let json = export_graph(&generation, ExportFormat::Json);
-        let ids: Vec<usize> = ["m:a.py", "s:a.py#alpha", "s:a.py#beta"].iter().map(|id| json.find(id).expect("id")).collect();
+        let ids: Vec<usize> = ["m:a.py", "s:a.py#alpha", "s:a.py#beta"]
+            .iter()
+            .map(|id| json.find(id).expect("id"))
+            .collect();
         assert!(ids[0] < ids[1] && ids[1] < ids[2], "{json}");
         assert!(json.contains("{\"src\":\"s:a.py#alpha\",\"edge\":\"calls\",\"dst\":\"s:a.py#beta\",\"confidence\":\"exact\"}"), "{json}");
         assert!(json.contains("\"lines\":[1,2]"), "{json}");
         let mermaid = export_graph(&generation, ExportFormat::Mermaid);
-        assert_eq!(mermaid, "flowchart LR\n  n0[\"m:a.py\"]\n  n1[\"s:a.py#alpha\"]\n  n2[\"s:a.py#beta\"]\n  n1 -->|calls| n2\n");
+        assert_eq!(
+            mermaid,
+            "flowchart LR\n  n0[\"m:a.py\"]\n  n1[\"s:a.py#alpha\"]\n  n2[\"s:a.py#beta\"]\n  n1 -->|calls| n2\n"
+        );
         assert_eq!(mermaid, export_graph(&generation, ExportFormat::Mermaid));
-        assert!(ExportFormat::parse("nope").is_err() && ExportFormat::parse("json") == Ok(ExportFormat::Json));
+        assert!(
+            ExportFormat::parse("nope").is_err()
+                && ExportFormat::parse("json") == Ok(ExportFormat::Json)
+        );
     }
 }

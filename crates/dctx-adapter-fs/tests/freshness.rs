@@ -5,7 +5,7 @@
 
 use dctx_adapter_fs::{
     DirEntry, EntryMeta, FileBody, FreshnessMode, FsKind, FsSource, SourceError, SourceFs,
-    SourceOptions, SpyFs, StdFs, StaleReason, Validation,
+    SourceOptions, SpyFs, StaleReason, StdFs, Validation,
 };
 use std::{
     cell::Cell,
@@ -90,7 +90,9 @@ impl SourceFs for Script {
     fn read_link(&self, path: &Path) -> io::Result<PathBuf> {
         if path == self.root.join("leak") {
             return Ok(PathBuf::from(
-                self.link_target.clone().unwrap_or_else(|| "../secret".to_string()),
+                self.link_target
+                    .clone()
+                    .unwrap_or_else(|| "../secret".to_string()),
             ));
         }
         Err(io::Error::new(io::ErrorKind::InvalidInput, "not a link"))
@@ -173,7 +175,11 @@ fn strict_digest_catches_same_size_same_mtime_edit() {
         fs::metadata(&path).unwrap().ino()
     };
     {
-        let mut file = fs::OpenOptions::new().write(true).truncate(true).open(&path).unwrap();
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .open(&path)
+            .unwrap();
         file.write_all(b"bbbb").unwrap();
         file.set_modified(modified).unwrap();
     }
@@ -190,7 +196,10 @@ fn strict_digest_catches_same_size_same_mtime_edit() {
         .validate("note.txt", &first.identity(), FreshnessMode::Metadata)
         .unwrap();
     assert!(matches!(metadata, Validation::MetadataMatch { .. }));
-    assert_eq!(source.filesystem().read_files(), [] as [std::path::PathBuf; 0]);
+    assert_eq!(
+        source.filesystem().read_files(),
+        [] as [std::path::PathBuf; 0]
+    );
     let strict = source
         .validate("note.txt", &first.identity(), FreshnessMode::Strict)
         .unwrap();
@@ -216,7 +225,10 @@ fn real_symlink_escape_is_refused_and_a_plain_file_is_read() {
     fs::write(temp.path().join("secret.txt"), b"nope").unwrap();
     std::os::unix::fs::symlink("../secret.txt", root.join("leak")).unwrap();
     let source = FsSource::load(root.clone(), SourceOptions::default(), SpyFs::new(StdFs)).unwrap();
-    assert!(matches!(source.inventory().unwrap_err(), SourceError::Escape { .. }));
+    assert!(matches!(
+        source.inventory().unwrap_err(),
+        SourceError::Escape { .. }
+    ));
     assert!(
         source
             .filesystem()
@@ -231,5 +243,11 @@ fn real_symlink_escape_is_refused_and_a_plain_file_is_read() {
     let source = FsSource::load(clean, SourceOptions::default(), SpyFs::new(StdFs)).unwrap();
     let files = source.inventory().unwrap();
     assert!(files.iter().any(|file| file.relative == "ok.txt"));
-    assert!(source.filesystem().read_files().iter().any(|path| path.ends_with("ok.txt")));
+    assert!(
+        source
+            .filesystem()
+            .read_files()
+            .iter()
+            .any(|path| path.ends_with("ok.txt"))
+    );
 }

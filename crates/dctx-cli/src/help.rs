@@ -4,59 +4,37 @@
 //! Depends on [`dctx::Capabilities`]. `dctx --help` and `dctx --version --verbose` print [`text`] or [`limits`].
 //! Limits describe this binary. They are not a promise that a host tokenizer was linked.
 
-use std::fmt::Write as _;
 use crate::tui::{Menu, MenuContext};
 use dctx::Capabilities;
+use std::fmt::Write as _;
 
 /// Build the main menu
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn create_main_menu(context: &MenuContext) -> Menu {
     let mut menu = Menu::new("dctx - Directory Context Generator");
 
-    menu.add_item('1', "Snapshot Current Directory", "Generate full context snapshot")
-        .add_item('2', "Snapshot to Clipboard", "Generate and copy to clipboard")
-        .add_item('3', "Tree-Only Mode", "Show directory structure only")
-        .add_item('4', "Diff Mode", "Generate diff from last snapshot")
-        .add_item('5', "Advanced Options →", "Filters, templates, and cache")
-        .add_item('0', "Exit", "")
-        .set_footer(&context.format());
-
-    menu
-}
-
-/// Build the advanced menu
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
-pub fn create_advanced_menu() -> Menu {
-    let mut menu = Menu::new("Advanced Options");
-
-    menu.add_item('1', "Filters →", "Extension, size, content filters")
-        .add_item('2', "Templates →", "Manage output templates")
-        .add_item('3', "Cache & Debug →", "State management and diagnostics")
-        .add_item('0', "← Back to Main Menu", "")
-        .set_footer("Escape or 0 to go back");
-
-    menu
-}
-
-/// Build the filter submenu
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
-pub fn create_filter_menu() -> Menu {
-    let mut menu = Menu::new("Filter Options");
-
-    menu.add_item('1', "Filter by Extension", "e.g., rs,toml,md")
-        .add_item('2', "Filter by Size", "Large or small files")
-        .add_item('3', "Content Filters", "Empty or non-empty files")
-        .add_item('4', "Hidden Files Only", "Show .hidden files")
-        .add_item('5', "Include Binary Files", "Include binary files in output")
-        .add_item('9', "Clear All Filters", "")
-        .add_item('0', "← Back", "")
-        .set_footer("Filters combine for precise control");
+    menu.add_item(
+        '1',
+        "Pack Current Directory",
+        "Write source context to stdout",
+    )
+    .add_item('2', "Pack to Clipboard", "Copy source context to clipboard")
+    .add_item('3', "Templates →", "Build and list templates")
+    .add_item('4', "Cache →", "Inspect and collect the managed cache")
+    .add_item('0', "Exit", "")
+    .set_footer(&context.format());
 
     menu
 }
 
 /// Build the template submenu
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn create_template_menu() -> Menu {
     let mut menu = Menu::new("Template Management");
 
@@ -69,33 +47,45 @@ pub fn create_template_menu() -> Menu {
     menu
 }
 
-/// Build the cache/debug submenu
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+/// Build the managed cache submenu
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn create_cache_menu() -> Menu {
-    let mut menu = Menu::new("Cache & Debug");
+    let mut menu = Menu::new("Cache");
 
-    menu.add_item('1', "Show Ignored Folders", "List .gitignore exclusions")
-        .add_item('2', "Reset Project State", "Force V1 reset")
-        .add_item('3', "Clear Global Cache", "Remove all cached states")
+    menu.add_item('1', "Status", "Show managed cache usage")
+        .add_item(
+            '2',
+            "Preview Collection",
+            "Show a dry run of cache collection",
+        )
+        .add_item('3', "Collect Cache", "Collect unused managed cache entries")
         .add_item('0', "← Back", "")
         .set_footer("Manage cached state and diagnostics");
 
     menu
 }
 
-/// Full help page, including snapshot compatibility and the facade commands.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+/// Full help page for the explicit facade commands.
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn text() -> String {
     let mut out = String::from(
         "\
-Usage: dctx [PATH] [OPTIONS]
+Usage: dctx <COMMAND> [OPTIONS]
        dctx pack [PATH] [--output PATH] [--clipboard] [--json]
        dctx pack [PATH] --for <TEXT> [--budget TOKENS]
        dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path> [--json]
        dctx mcp [PATH]
+       dctx serve [--mcp] [PATH]
+       dctx read <TARGET> [OPTIONS]
        dctx languages [--json|--markdown]
        dctx cache status [--json] [--root PATH]
-       dctx cache gc [--dry-run] [--root PATH] [--max-bytes N] [--legacy]
+       dctx cache gc [--dry-run] [--root PATH] [--max-bytes N]
        dctx cache purge --root PATH [--dry-run] [--yes]
        dctx cache purge --all [--dry-run] [--yes]
        dctx cache config [auto on|off] [--max-bytes N] [--ttl-days N]
@@ -107,45 +97,29 @@ Usage: dctx [PATH] [OPTIONS]
 
 `dctx languages` lists every supported language with its tier: full (symbols and call edges), outline (symbols only) or docs (sections).
 `dctx mcp` serves the map verbs as MCP tools over stdio (JSON-RPC 2.0, one message per line) for Claude Code, Cursor and Codex.
+`dctx serve` and `dctx serve --mcp` use that same server; `dctx read` uses `dctx map read`.
 Explicit `dctx pack` writes stdout, the clipboard, or `--output`. It does not create a project text file.
 `dctx pack --for <TEXT>` prints task context for an agent card instead: map find, neighbors and read of the names in TEXT, cut to `--budget` estimated tokens (default 3000).
-`dctx .` remains the legacy snapshot alias and still writes its documented project text.
 `dctx plugin list` and `dctx --help` do not create a project `.dctx/` directory or start a plugin.
 `dctx git` routes to the bundled dctx/git plugin. It is not a Git passthrough.
 Cache purge requires `--root PATH` or `--all`, and `--yes` unless `--dry-run` is set.
-`dctx cache gc --legacy` reads only exports the caller already registered. It does not search the home directory.
 `dctx cache config` shows the persisted policy. `auto on|off` enables auto-clean, `--max-bytes` tightens the system cap, and `--ttl-days` sets idle overlay and preview lifetime.
 `dctx cache auto` prints the last auto-clean time, the bytes it reclaimed and the next due time.
 pack, map, template, plugin and the TUI run one bounded auto-clean when it is due. They print nothing unless bytes were reclaimed.
 `--no-auto-clean` and `DCTX_AUTO_CLEAN=0` disable that slice. `DCTX_CACHE_DIR` selects the cache root.
 
-Snapshot Options:
-  -c, --clipboard       Copy to clipboard
-  -d, --diff            Output diff only (if available)
-  -t, --tree            Tree-Only mode (skips file content)
-  -r, --reset           Force V1 reset
+General Options:
   -h, --help            Show help
   -v, --version         Show version
-  --verbose             With --version, also show feature and precision limits
+  --verbose            With --version, also show feature and precision limits
 
-Filter Options:
-  --ext <extensions>    Only include files with these extensions
-  --binary              Include binary files (excluded by default)
-  --empty               Show only empty files (0 bytes)
-  --non-empty           Show only non-empty files
-  --large <MB>          Show only files larger than X megabytes
-  --small <MB>          Show only files smaller than X megabytes
-  --hidden              Show ONLY hidden files and folders (starting with .)
-  --debug-ignored       Show ignored files in the tree without reading them
-  -V, --debug-verbose   Show ignore decision traces
-  --tree-stamps=on|off  MOD: timestamps on tree lines: off (default) keeps the output prefix stable across a touch, on = the 1.0.0 text
+Run `dctx pack --help` for pack options and filters.
 
 Template Commands:
   template build <PATH>  Compile a template through the facade
   template list          List explicit compiled plans; no home-directory scan
 
 Examples:
-  dctx .                      Legacy snapshot of the current directory
   dctx pack .                 Pack to stdout and write no project text file
   dctx pack . --output out.txt
   dctx languages --json
@@ -163,7 +137,10 @@ Examples:
 }
 
 /// Feature, storage and precision limits for this build.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn limits() -> String {
     let caps = Capabilities::current();
     let mut out = String::new();
@@ -190,7 +167,8 @@ token estimate: ceil(2 * UTF-8 bytes / 7) is an estimate, not a tokenizer guaran
 cache cap: 2 GiB hard, 1.5 GiB soft watermark, 1.2 GiB eviction target.
 ",
     );
-    let _ = writeln!(out,
+    let _ =
+        writeln!(out,
         "cache ttl: idle overlays and previews {} days, unpinned roots {} days, staging {} day.",
         dctx_adapter_cache::OVERLAY_TTL_MS / dctx_adapter_cache::DAY_MS,
         dctx_adapter_cache::ROOT_TTL_MS / dctx_adapter_cache::DAY_MS,
@@ -223,7 +201,10 @@ mod tests {
         assert!(page.contains("DCTX_AUTO_CLEAN=0"));
         assert!(page.contains("--yes"));
         assert!(page.contains("does not create a project text file"));
-        assert!(page.contains("dctx ."));
+        assert!(!page.contains("dctx ."));
+        assert!(!page.contains("legacy"));
+        assert!(!page.contains("--diff"));
+        assert!(!page.contains("--reset"));
         let limits = limits();
         assert!(limits.contains("precision:"));
         assert!(limits.contains("not a tokenizer guarantee"));
@@ -240,7 +221,10 @@ mod tests {
 
     #[test]
     fn capability_languages_come_from_the_registry() {
-        let tags: Vec<&str> = dctx::LANGUAGES.iter().map(|language| language.tag).collect();
+        let tags: Vec<&str> = dctx::LANGUAGES
+            .iter()
+            .map(|language| language.tag)
+            .collect();
         assert!(limits().contains(&format!("languages: {}\n", tags.join(","))));
         assert!(text().contains("dctx languages [--json|--markdown]"));
     }

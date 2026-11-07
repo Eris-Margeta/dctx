@@ -41,10 +41,16 @@ type Facts = BTreeMap<&'static str, Vec<String>>;
 
 fn oracle_facts(file: &ParsedFile) -> Facts {
     let nodes = file.nodes.iter().map(|n| (n, n.kind));
-    let refs = file
-        .references
-        .iter()
-        .map(|r| (r.src.as_str(), r.kind, r.name.as_str(), r.alias.as_deref(), r.scope.as_str(), r.lines));
+    let refs = file.references.iter().map(|r| {
+        (
+            r.src.as_str(),
+            r.kind,
+            r.name.as_str(),
+            r.alias.as_deref(),
+            r.scope.as_str(),
+            r.lines,
+        )
+    });
     collect(nodes, refs)
 }
 
@@ -52,12 +58,26 @@ fn lexer_facts(file: &LexedFile) -> Facts {
     let nodes = file.nodes.iter().map(|n| (&n.fact, n.fact.kind));
     let refs = file.references.iter().map(|r| {
         let r = &r.fact;
-        (r.src.as_str(), r.kind, r.name.as_str(), r.alias.as_deref(), r.scope.as_str(), r.lines)
+        (
+            r.src.as_str(),
+            r.kind,
+            r.name.as_str(),
+            r.alias.as_deref(),
+            r.scope.as_str(),
+            r.lines,
+        )
     });
     collect(nodes, refs)
 }
 
-type Ref<'a> = (&'a str, EdgeKind, &'a str, Option<&'a str>, &'a str, [u32; 2]);
+type Ref<'a> = (
+    &'a str,
+    EdgeKind,
+    &'a str,
+    Option<&'a str>,
+    &'a str,
+    [u32; 2],
+);
 
 fn collect<'a>(
     nodes: impl Iterator<Item = (&'a dctx_map_model::Node, NodeKind)>,
@@ -92,9 +112,10 @@ fn collect<'a>(
             EdgeKind::UsesType => "uses-type",
             _ => "other",
         };
-        facts.entry(family).or_default().push(format!(
-            "{src} {kind:?} {name} {alias:?} {scope} {lines:?}"
-        ));
+        facts
+            .entry(family)
+            .or_default()
+            .push(format!("{src} {kind:?} {name} {alias:?} {scope} {lines:?}"));
     }
     facts
 }
@@ -117,12 +138,18 @@ fn score(emitted: &[String], expected: &[String]) -> (usize, usize, usize) {
     (matched, emitted.len(), expected.len())
 }
 
-#[allow(clippy::cast_precision_loss, reason = "Precision and recall use only the fixed differential fixture corpus, whose counts are far below the exact f64 integer range.")]
+#[allow(
+    clippy::cast_precision_loss,
+    reason = "Precision and recall use only the fixed differential fixture corpus, whose counts are far below the exact f64 integer range."
+)]
 fn ratio(numerator: usize, denominator: usize) -> Option<f64> {
     (denominator > 0).then(|| numerator as f64 / denominator as f64)
 }
 
-#[allow(clippy::case_sensitive_file_extension_comparisons, reason = "These are checked-in, case-sensitive oracle fixture paths; matching their literal .ts and .tsx suffixes is intentional.")]
+#[allow(
+    clippy::case_sensitive_file_extension_comparisons,
+    reason = "These are checked-in, case-sensitive oracle fixture paths; matching their literal .ts and .tsx suffixes is intentional."
+)]
 fn language(path: &str) -> &'static str {
     if path.ends_with(".ts") || path.ends_with(".tsx") {
         "typescript"
@@ -132,7 +159,10 @@ fn language(path: &str) -> &'static str {
 }
 
 #[test]
-#[allow(clippy::many_single_char_names, reason = "Keep m/n/d aligned with the table's matched/emitted/expected counts; e/x name the emitted/expected fact sets.")]
+#[allow(
+    clippy::many_single_char_names,
+    reason = "Keep m/n/d aligned with the table's matched/emitted/expected counts; e/x name the emitted/expected fact sets."
+)]
 fn precision_and_recall_meet_the_declaration_gate_per_language() {
     let mut totals: BTreeMap<(&str, &str), (usize, usize, usize)> = BTreeMap::new();
     for (path, source) in CASES {
@@ -170,10 +200,16 @@ fn precision_and_recall_meet_the_declaration_gate_per_language() {
         let (m, n, d) = totals[&(lang, "declarations")];
         let precision = ratio(m, n).unwrap_or(0.0);
         let recall = ratio(m, d).unwrap_or(0.0);
-        assert!(precision >= 0.98, "{lang} declaration precision {precision}");
+        assert!(
+            precision >= 0.98,
+            "{lang} declaration precision {precision}"
+        );
         assert!(recall >= 0.85, "{lang} declaration recall {recall}");
         let (m, n, _) = totals[&(lang, "imports")];
-        assert!(ratio(m, n).unwrap_or(0.0) >= 0.98, "{lang} import precision");
+        assert!(
+            ratio(m, n).unwrap_or(0.0) >= 0.98,
+            "{lang} import precision"
+        );
     }
 }
 
@@ -191,13 +227,29 @@ fn oracle_fixtures_are_reproduced_exactly() {
             .iter()
             .map(|r| {
                 let r = &r.fact;
-                (r.src.clone(), r.kind, r.name.clone(), r.scope.clone(), r.alias.clone(), r.lines)
+                (
+                    r.src.clone(),
+                    r.kind,
+                    r.name.clone(),
+                    r.scope.clone(),
+                    r.alias.clone(),
+                    r.lines,
+                )
             })
             .collect();
         let expected: Vec<_> = oracle
             .references
             .iter()
-            .map(|r| (r.src.clone(), r.kind, r.name.clone(), r.scope.clone(), r.alias.clone(), r.lines))
+            .map(|r| {
+                (
+                    r.src.clone(),
+                    r.kind,
+                    r.name.clone(),
+                    r.scope.clone(),
+                    r.alias.clone(),
+                    r.lines,
+                )
+            })
             .collect();
         assert_eq!(refs, expected, "{path} references");
     }

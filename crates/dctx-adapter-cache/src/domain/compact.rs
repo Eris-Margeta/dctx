@@ -28,13 +28,19 @@ impl Lifecycle {
     /// Refuses unknown/non-segment/quarantined objects, disk/quota exhaustion, or invalid references/identity during compaction.
     pub fn compact_segment(&mut self, id: ObjectId) -> Result<CompactOutcome, CacheError> {
         let Some(object) = self.objects.get(&id) else {
-            return Err(CacheError::InvalidRequest { reason: "unknown object" });
+            return Err(CacheError::InvalidRequest {
+                reason: "unknown object",
+            });
         };
         if object.kind != ObjectKind::Segment {
-            return Err(CacheError::InvalidRequest { reason: "object is not a segment" });
+            return Err(CacheError::InvalidRequest {
+                reason: "object is not a segment",
+            });
         }
         if object.corrupt {
-            return Err(CacheError::CorruptIndex { reason: "segment is quarantined" });
+            return Err(CacheError::CorruptIndex {
+                reason: "segment is quarantined",
+            });
         }
         let old_bytes = object.bytes;
         let born = object.born;
@@ -48,7 +54,9 @@ impl Lifecycle {
             .map(|manifest| manifest.id)
             .collect();
         let leased = manifest_ids.iter().any(|manifest_id| {
-            self.manifests.get(manifest_id).is_some_and(|manifest| self.lease_holds(manifest.generation))
+            self.manifests
+                .get(manifest_id)
+                .is_some_and(|manifest| self.lease_holds(manifest.generation))
         });
         let mut copies = Vec::new();
         if !leased {
@@ -56,7 +64,10 @@ impl Lifecycle {
                 let Some(manifest) = self.manifests.get(manifest_id) else {
                     continue;
                 };
-                let bytes = self.objects.get(&manifest.object).map_or(0, |object| object.bytes);
+                let bytes = self
+                    .objects
+                    .get(&manifest.object)
+                    .map_or(0, |object| object.bytes);
                 copies.push((*manifest_id, manifest.root, manifest.kind, bytes));
             }
         }
@@ -82,7 +93,9 @@ impl Lifecycle {
             }
         }
         if self.object_bytes(id) != Some(born) {
-            return Err(CacheError::CorruptIndex { reason: "segment changed before compaction" });
+            return Err(CacheError::CorruptIndex {
+                reason: "segment changed before compaction",
+            });
         }
         let new_segment = if new_bytes == 0 {
             id
@@ -109,7 +122,9 @@ impl Lifecycle {
             }
         }
         let peak_admitted = self.admitted();
-        let old_retained = if leased || self.live_objects(true).contains(&id) || self.unlink_failures.contains(&id)
+        let old_retained = if leased
+            || self.live_objects(true).contains(&id)
+            || self.unlink_failures.contains(&id)
         {
             true
         } else if id != new_segment {
@@ -119,7 +134,12 @@ impl Lifecycle {
             true
         };
         self.debug_check();
-        Ok(CompactOutcome { new_segment, old_bytes, peak_admitted, old_retained })
+        Ok(CompactOutcome {
+            new_segment,
+            old_bytes,
+            peak_admitted,
+            old_retained,
+        })
     }
 
     fn retarget(

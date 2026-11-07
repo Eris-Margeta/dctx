@@ -5,7 +5,9 @@ fn scratch(label: &str) -> std::path::PathBuf {
     use std::sync::atomic::{AtomicU64, Ordering};
     static NEXT: AtomicU64 = AtomicU64::new(1);
     let n = NEXT.fetch_add(1, Ordering::Relaxed);
-    let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_nanos());
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_nanos());
     let path = std::env::temp_dir().join(format!("dctx-desktop-api-settings-{label}-{n}-{nanos}"));
     fs::create_dir_all(&path).expect("temp");
     path
@@ -35,7 +37,10 @@ file_count_limit = 42
 }
 
 #[test]
-#[allow(clippy::field_reassign_with_default, reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions.")]
+#[allow(
+    clippy::field_reassign_with_default,
+    reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions."
+)]
 fn save_load_and_reset_round_trip() {
     let dir = scratch("round");
     let mut config = DesktopConfig::default();

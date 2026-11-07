@@ -2,17 +2,17 @@
 //! Privacy-filtered snapshots and selected source reads through the filesystem port.
 //! Implements SPEC-MAP-MODE sections 6.1 and 7 using the DX-B3 source adapter.
 //! Content opens are counted; metadata and denied paths are not.
-use std::fmt::Write as _;
 use crate::{
     Error, Result,
     domain::validate_path,
     ports::{RuleFile, Snapshot, Source, SourceFile},
 };
-use dctx_adapter_fs::ports::{EntryMeta, FsKind, SourceFs};
-use dctx_adapter_fs::domain::join_lexical;
 use dctx_adapter_fs::StdFs;
+use dctx_adapter_fs::domain::join_lexical;
+use dctx_adapter_fs::ports::{EntryMeta, FsKind, SourceFs};
 use dctx_map_scan::adapters::rules::FileRuleSource;
 use dctx_map_scan::{FileHandlingDecision, IgnoreEngine, ItemContext};
+use std::fmt::Write as _;
 use std::{
     cell::{Cell, RefCell},
     collections::BTreeMap,
@@ -180,12 +180,15 @@ impl Source for FileSource {
 
 #[allow(clippy::expect_used, reason = "writing to a String cannot fail")]
 pub(crate) fn hex(hash: [u8; 32]) -> String {
-    hash.iter().fold(String::new(), |mut text, byte| { write!(text, "{byte:02x}").expect("writing to a String cannot fail"); text })
+    hash.iter().fold(String::new(), |mut text, byte| {
+        write!(text, "{byte:02x}").expect("writing to a String cannot fail");
+        text
+    })
 }
 
 pub(crate) fn digest_bytes(bytes: &[u8]) -> Result<[u8; 32]> {
-    let hashed = dctx_hash::Sha256::digest(bytes)
-        .map_err(|error| Error::Request(error.to_string()))?;
+    let hashed =
+        dctx_hash::Sha256::digest(bytes).map_err(|error| Error::Request(error.to_string()))?;
     Ok(*hashed.as_bytes())
 }
 
@@ -193,7 +196,10 @@ pub(crate) fn digest(bytes: &[u8]) -> Result<String> {
     Ok(hex(digest_bytes(bytes)?))
 }
 
-#[allow(clippy::case_sensitive_file_extension_comparisons, reason = "Preserve the existing literal suffix policy for source language dispatch and privacy exclusions; case folding would change which paths are parsed or denied.")]
+#[allow(
+    clippy::case_sensitive_file_extension_comparisons,
+    reason = "Preserve the existing literal suffix policy for source language dispatch and privacy exclusions; case folding would change which paths are parsed or denied."
+)]
 pub(super) fn forbidden(name: &str) -> bool {
     matches!(
         name,

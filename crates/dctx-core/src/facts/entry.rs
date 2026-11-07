@@ -21,19 +21,34 @@ pub struct SourceEntry {
 
 impl SourceEntry {
     /// A file entry.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn file(name: &str) -> Self {
-        Self { name: name.to_string(), kind: NodeType::File }
+        Self {
+            name: name.to_string(),
+            kind: NodeType::File,
+        }
     }
 
     /// A directory entry.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn directory(name: &str) -> Self {
-        Self { name: name.to_string(), kind: NodeType::Directory }
+        Self {
+            name: name.to_string(),
+            kind: NodeType::Directory,
+        }
     }
 
     /// True for directories.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn is_dir(&self) -> bool {
         self.kind == NodeType::Directory
     }
@@ -72,7 +87,10 @@ pub struct ReadGrant {
 impl ReadGrant {
     /// Grants a read of `path` iff the item and all its ancestors were decided `Include`
     /// (`ancestors_readable`) and `decision` itself permits reading content.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn authorize(
         path: &RelativePath,
         decision: FileHandlingDecision,
@@ -82,7 +100,10 @@ impl ReadGrant {
     }
 
     /// The authorized path.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn path(&self) -> &RelativePath {
         &self.path
     }
@@ -102,7 +123,10 @@ mod tests {
             FileHandlingDecision::DebugVisible,
             FileHandlingDecision::OmitContent,
         ] {
-            assert!(ReadGrant::authorize(&path, denied, true).is_none(), "{denied:?}");
+            assert!(
+                ReadGrant::authorize(&path, denied, true).is_none(),
+                "{denied:?}"
+            );
         }
         assert!(ReadGrant::authorize(&path, FileHandlingDecision::Include, false).is_none());
     }

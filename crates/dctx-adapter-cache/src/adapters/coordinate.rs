@@ -118,12 +118,19 @@ mod tests {
         let overwritten = objects.put_object(right_id.raw(), &right_bytes);
         assert!(matches!(
             overwritten,
-            Err(CacheError::InvalidRequest { reason: "object already published" })
+            Err(CacheError::InvalidRequest {
+                reason: "object already published"
+            })
         ));
         assert_eq!(fs::read(&path).expect("kept"), left_bytes);
         first.store(&left).expect("store");
         let stale = second.store(&right);
-        assert!(matches!(stale, Err(CacheError::InvalidRequest { reason: "stale ledger" })));
+        assert!(matches!(
+            stale,
+            Err(CacheError::InvalidRequest {
+                reason: "stale ledger"
+            })
+        ));
         assert_eq!(fs::read(&path).expect("still"), left_bytes);
 
         let mut reloaded = second.load(quota).expect("reload").lifecycle;
@@ -135,7 +142,10 @@ mod tests {
         objects.put_object(small_id.raw(), &small).expect("small");
         second.store(&reloaded).expect("commit");
         assert_eq!(fs::read(&path).expect("first stays"), left_bytes);
-        assert_eq!(fs::read(root.join("objects").join(small_id.raw().to_string())).expect("small"), small);
+        assert_eq!(
+            fs::read(root.join("objects").join(small_id.raw().to_string())).expect("small"),
+            small
+        );
         let stored = first.load(quota).expect("final").lifecycle;
         assert_eq!(stored.admitted(), 90);
         assert_eq!(payload(&root), stored.admitted());

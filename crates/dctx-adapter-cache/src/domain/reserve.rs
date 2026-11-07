@@ -12,7 +12,10 @@ use dctx_core::budget::Reservation;
 
 impl Lifecycle {
     /// `C + Sg + R + P`. Shared facts are stored once, so they contribute once.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn admitted(&self) -> u64 {
         self.stored_bytes().saturating_add(self.reserved_bytes())
     }
@@ -39,20 +42,30 @@ impl Lifecycle {
 
     fn bytes_in(&self, states: &[Physical]) -> u64 {
         self.sum_iter(
-            self.objects.values().filter(|object| states.contains(&object.state)).map(|object| object.bytes),
+            self.objects
+                .values()
+                .filter(|object| states.contains(&object.state))
+                .map(|object| object.bytes),
         )
     }
 
     pub(super) fn payload_ceiling(&self) -> u64 {
-        self.quota.hard_cap.saturating_sub(self.quota.emergency_metadata)
+        self.quota
+            .hard_cap
+            .saturating_sub(self.quota.emergency_metadata)
     }
 
     /// P4: under the cap, or frozen with no staged growth and no new reservation.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn p4_holds(&self) -> bool {
         let admitted = self.admitted();
         if self.legacy_frozen {
-            admitted <= self.legacy_ceiling && self.staged_bytes() == 0 && self.reserved_bytes() == 0
+            admitted <= self.legacy_ceiling
+                && self.staged_bytes() == 0
+                && self.reserved_bytes() == 0
         } else {
             admitted <= self.payload_ceiling() && admitted <= self.quota.hard_cap
         }
@@ -62,7 +75,9 @@ impl Lifecycle {
         if self.legacy_frozen {
             return false;
         }
-        self.admitted().checked_add(bytes).is_some_and(|sum| sum <= self.payload_ceiling())
+        self.admitted()
+            .checked_add(bytes)
+            .is_some_and(|sum| sum <= self.payload_ceiling())
     }
 
     pub(super) fn class_charge(&self, root: super::RootId, class: ChargeClass) -> u64 {
@@ -90,7 +105,12 @@ impl Lifecycle {
         }
     }
 
-    pub(super) fn ceiling_allows(&self, root: super::RootId, class: ChargeClass, bytes: u64) -> bool {
+    pub(super) fn ceiling_allows(
+        &self,
+        root: super::RootId,
+        class: ChargeClass,
+        bytes: u64,
+    ) -> bool {
         if matches!(class, ChargeClass::Global) {
             return true;
         }
@@ -135,27 +155,42 @@ impl Lifecycle {
         protect: &[super::ObjectId],
     ) -> Result<Reservation, CacheError> {
         if bytes == 0 {
-            return Err(CacheError::InvalidRequest { reason: "reservation is empty" });
+            return Err(CacheError::InvalidRequest {
+                reason: "reservation is empty",
+            });
         }
         if root.is_some_and(|id| !self.roots.contains_key(&id)) {
-            return Err(CacheError::InvalidRequest { reason: "unknown root" });
+            return Err(CacheError::InvalidRequest {
+                reason: "unknown root",
+            });
         }
         // Pending files stay charged. Dropping them here would free bytes the disk still holds.
         self.reclaim_safe();
         let class = purpose.class();
         let fits = |life: &Self| {
-            life.admission_allows(bytes) && root.is_none_or(|id| life.ceiling_allows(id, class, bytes))
+            life.admission_allows(bytes)
+                && root.is_none_or(|id| life.ceiling_allows(id, class, bytes))
         };
         if !self.evict_until(protect, fits) {
             return Err(self.limit(bytes));
         }
         let id = self.ids.reservation;
-        self.ids.reservation = self.ids.reservation.checked_add(1).ok_or(CacheError::InvalidRequest {
-            reason: "reservation id space exhausted",
-        })?;
+        self.ids.reservation =
+            self.ids
+                .reservation
+                .checked_add(1)
+                .ok_or(CacheError::InvalidRequest {
+                    reason: "reservation id space exhausted",
+                })?;
         self.reservations.insert(
             id,
-            Hold { left: bytes, original: bytes, root, class, purpose },
+            Hold {
+                left: bytes,
+                original: bytes,
+                root,
+                class,
+                purpose,
+            },
         );
         self.bump();
         self.debug_check();
@@ -165,17 +200,24 @@ impl Lifecycle {
     /// Settles a rootless or rooted reservation. `used` bytes become a committed object.
     /// # Errors
     /// Refuses unknown reservations, usage above the held bytes, or exhausted object IDs.
-    #[allow(clippy::needless_pass_by_value, reason = "Settling a reservation consumes the public reservation token; preserve the ownership contract even when only its ID is read.")]
+    #[allow(
+        clippy::needless_pass_by_value,
+        reason = "Settling a reservation consumes the public reservation token; preserve the ownership contract even when only its ID is read."
+    )]
     pub fn commit_reservation(
         &mut self,
         reservation: Reservation,
         used: u64,
     ) -> Result<(), CacheError> {
         let Some(hold) = self.reservations.get(&reservation.id()) else {
-            return Err(CacheError::InvalidRequest { reason: "unknown reservation" });
+            return Err(CacheError::InvalidRequest {
+                reason: "unknown reservation",
+            });
         };
         if used > hold.left || used > hold.original {
-            return Err(CacheError::InvalidRequest { reason: "commit exceeds reservation" });
+            return Err(CacheError::InvalidRequest {
+                reason: "commit exceeds reservation",
+            });
         }
         let class = hold.class;
         let root = hold.root;
@@ -183,7 +225,11 @@ impl Lifecycle {
         self.reservations.remove(&reservation.id());
         if used > 0 {
             let roots: &[super::RootId] = &[];
-            let charged_root = if matches!(class, ChargeClass::Global) { None } else { root };
+            let charged_root = if matches!(class, ChargeClass::Global) {
+                None
+            } else {
+                root
+            };
             let kind = match purpose {
                 Purpose::Fact | Purpose::Payload => ObjectKind::Fact,
                 Purpose::Segment => ObjectKind::Segment,
@@ -212,13 +258,18 @@ impl Lifecycle {
     }
 
     /// Drops the reservation and any staged objects still tied to it.
-    #[allow(clippy::needless_pass_by_value, reason = "Aborting a reservation consumes its public token and releases the hold; preserve that ownership contract.")]
+    #[allow(
+        clippy::needless_pass_by_value,
+        reason = "Aborting a reservation consumes its public token and releases the hold; preserve that ownership contract."
+    )]
     pub fn abort_reservation(&mut self, reservation: Reservation) {
         let id = reservation.id();
         let staged: Vec<super::ObjectId> = self
             .objects
             .iter()
-            .filter(|(_, object)| object.reservation == Some(id) && object.state == Physical::Staged)
+            .filter(|(_, object)| {
+                object.reservation == Some(id) && object.state == Physical::Staged
+            })
             .map(|(id, _)| *id)
             .collect();
         for object_id in staged {
@@ -251,7 +302,9 @@ impl Lifecycle {
             return Ok(());
         }
         let Some(mut object) = prior.objects.get(&id).cloned() else {
-            return Err(CacheError::InvalidRequest { reason: "unknown object" });
+            return Err(CacheError::InvalidRequest {
+                reason: "unknown object",
+            });
         };
         object.state = Physical::PendingUnlink;
         object.deletion_requested = true;
@@ -259,7 +312,10 @@ impl Lifecycle {
         if id.raw() >= self.ids.object {
             self.ids.object = id.raw().saturating_add(1);
         }
-        if self.admitted() > self.payload_ceiling() && self.staged_bytes() == 0 && self.reserved_bytes() == 0 {
+        if self.admitted() > self.payload_ceiling()
+            && self.staged_bytes() == 0
+            && self.reserved_bytes() == 0
+        {
             self.legacy_frozen = true;
             if self.admitted() > self.legacy_ceiling {
                 self.legacy_ceiling = self.admitted();
@@ -298,7 +354,9 @@ impl Lifecycle {
     /// Refuses empty records, frozen legacy admission, unsettled staging/reservations, or exhausted object IDs.
     pub fn observe_legacy_wal(&mut self, bytes: u64) -> Result<super::ObjectId, CacheError> {
         if bytes == 0 {
-            return Err(CacheError::InvalidRequest { reason: "legacy record is empty" });
+            return Err(CacheError::InvalidRequest {
+                reason: "legacy record is empty",
+            });
         }
         if self.legacy_frozen {
             return Err(self.limit(bytes));
@@ -334,13 +392,19 @@ impl Lifecycle {
     /// Refuses unknown/nonlegacy objects or objects still retained by a live manifest/lease.
     pub fn reclaim_legacy(&mut self, id: super::ObjectId) -> Result<u64, CacheError> {
         let Some(object) = self.objects.get(&id) else {
-            return Err(CacheError::InvalidRequest { reason: "unknown object" });
+            return Err(CacheError::InvalidRequest {
+                reason: "unknown object",
+            });
         };
         if object.kind != ObjectKind::LegacyWal {
-            return Err(CacheError::InvalidRequest { reason: "object is not legacy wal" });
+            return Err(CacheError::InvalidRequest {
+                reason: "object is not legacy wal",
+            });
         }
         if self.live_objects(true).contains(&id) {
-            return Err(CacheError::InvalidRequest { reason: "legacy object is still retained" });
+            return Err(CacheError::InvalidRequest {
+                reason: "legacy object is still retained",
+            });
         }
         let bytes = object.bytes;
         self.remove_object(id);
@@ -358,7 +422,9 @@ impl Lifecycle {
             });
         }
         if self.staged_bytes() != 0 || self.reserved_bytes() != 0 {
-            return Err(CacheError::InvalidRequest { reason: "cap changes wait until staging settles" });
+            return Err(CacheError::InvalidRequest {
+                reason: "cap changes wait until staging settles",
+            });
         }
         if hard < self.quota.eviction_target {
             self.quota.eviction_target = hard;
@@ -403,7 +469,10 @@ mod tests {
         assert!(life.reserve_for(None, Purpose::Payload, 5).is_err());
         life.commit_reservation(reservation, 4).unwrap();
         assert_eq!(life.admitted(), 4);
-        assert!(life.commit_reservation(dctx_core::budget::Reservation::new(1, 6), 1).is_err());
+        assert!(
+            life.commit_reservation(dctx_core::budget::Reservation::new(1, 6), 1)
+                .is_err()
+        );
         let again = life.reserve_for(None, Purpose::Payload, 6).unwrap();
         life.abort_reservation(again);
         assert_eq!(life.reserved_bytes(), 0);
@@ -414,7 +483,8 @@ mod tests {
     fn dropping_reservation_from_the_sum_would_over_admit() {
         let mut life = Lifecycle::new(Quota::scaled(10)).unwrap();
         let _hold = life.reserve_for(None, Purpose::Payload, 8).unwrap();
-        let without_reservations = life.committed_bytes() + life.staged_bytes() + life.pending_bytes();
+        let without_reservations =
+            life.committed_bytes() + life.staged_bytes() + life.pending_bytes();
         assert!(without_reservations + 4 <= 10);
         assert!(life.reserve_for(None, Purpose::Payload, 4).is_err());
         assert!(life.p4_holds());

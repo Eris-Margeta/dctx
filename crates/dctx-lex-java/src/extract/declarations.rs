@@ -141,7 +141,9 @@ impl Walker<'_> {
         }
         let mut cursor = start + 1;
         while cursor < end {
-            if (self.is_punct(cursor, "{") || self.is_punct(cursor, "(") || self.is_punct(cursor, "["))
+            if (self.is_punct(cursor, "{")
+                || self.is_punct(cursor, "(")
+                || self.is_punct(cursor, "["))
                 && let Some(close) = self.close(cursor)
             {
                 cursor = close + 1;

@@ -38,7 +38,10 @@ impl Index {
     ///
     /// # Errors
     /// Refuses invalid requests, an unavailable graph/revision or invalid read spans; propagates lookup, source and storage errors.
-    #[allow(clippy::too_many_lines, reason = "Keep validated verb dispatch together with the answer metadata and revision checks shared by every branch.")]
+    #[allow(
+        clippy::too_many_lines,
+        reason = "Keep validated verb dispatch together with the answer metadata and revision checks shared by every branch."
+    )]
     pub fn answer(&self, source: &impl Source, request: &Request) -> Result<Answer> {
         request.validate()?;
         if !self.ready {
@@ -195,8 +198,7 @@ impl Index {
                 || request.kinds.contains(&record.kind)
                 || (request.kinds.iter().any(|k| k == "type")
                     && matches!(record.kind.as_str(), "struct" | "enum" | "trait" | "type"));
-            if !matches_kind
-            {
+            if !matches_kind {
                 continue;
             }
             if request

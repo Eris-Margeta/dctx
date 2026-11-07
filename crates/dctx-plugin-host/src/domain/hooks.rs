@@ -68,7 +68,10 @@ impl HookRun {
     /// `Plan`: refuse unknown references and cycles; order topologically with the canonical tie-break.
     /// # Errors
     /// Refuses duplicate entries, unknown dependency references, or a hook dependency cycle.
-    pub fn plan(entries: &[HookEntry], edges: &[(PluginId, PluginId)]) -> Result<Self, HostRefusal> {
+    pub fn plan(
+        entries: &[HookEntry],
+        edges: &[(PluginId, PluginId)],
+    ) -> Result<Self, HostRefusal> {
         let invalid = |reason| HostRefusal::new(ErrorCode::InvalidConfig, Phase::Resolve, reason);
         let ids: BTreeSet<PluginId> = entries.iter().map(|e| e.plugin.clone()).collect();
         if ids.len() != entries.len() {
@@ -80,23 +83,35 @@ impl HookRun {
             if !ids.contains(before) || !ids.contains(after) {
                 return Err(invalid("unknown-hook-reference"));
             }
-            predecessors.entry(after.clone()).or_default().insert(before.clone());
+            predecessors
+                .entry(after.clone())
+                .or_default()
+                .insert(before.clone());
         }
         let mut order = Vec::with_capacity(ids.len());
         let mut placed = BTreeSet::new();
         while order.len() < ids.len() {
-            let ready = ids
-                .iter()
-                .find(|id| !placed.contains(*id) && predecessors.get(*id).is_none_or(|p| p.is_subset(&placed)));
-            let Some(next) = ready.cloned() else { return Err(invalid("hook-cycle")) };
+            let ready = ids.iter().find(|id| {
+                !placed.contains(*id) && predecessors.get(*id).is_none_or(|p| p.is_subset(&placed))
+            });
+            let Some(next) = ready.cloned() else {
+                return Err(invalid("hook-cycle"));
+            };
             placed.insert(next.clone());
             order.push(next);
         }
         let mut trace = Trace::default();
         trace.push(ModelAction::HooksPlan);
         Ok(Self {
-            status: ids.iter().map(|id| (id.clone(), HookStatus::Pending)).collect(),
-            required: entries.iter().filter(|e| e.required).map(|e| e.plugin.clone()).collect(),
+            status: ids
+                .iter()
+                .map(|id| (id.clone(), HookStatus::Pending))
+                .collect(),
+            required: entries
+                .iter()
+                .filter(|e| e.required)
+                .map(|e| e.plugin.clone())
+                .collect(),
             order,
             predecessors,
             receipts: Vec::new(),
@@ -108,13 +123,19 @@ impl HookRun {
     }
 
     /// The canonical execution order.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn order(&self) -> &[PluginId] {
         &self.order
     }
 
     /// Next plugin to run and whether it may run (false: a required predecessor failed or was skipped).
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn next(&self) -> Option<(&PluginId, bool)> {
         let plugin = self.order.get(self.next)?;
         Some((plugin, !self.blocked(plugin)))
@@ -123,9 +144,18 @@ impl HookRun {
     /// `RunHook`: record the outcome and the host-ledger receipts of the plugin just run.
     /// # Errors
     /// Refuses when there is no pending hook left to record.
-    pub fn record(&mut self, succeeded: bool, ledger_receipts: Vec<Token>, claims: Vec<Token>) -> Result<HookStatus, HostRefusal> {
+    pub fn record(
+        &mut self,
+        succeeded: bool,
+        ledger_receipts: Vec<Token>,
+        claims: Vec<Token>,
+    ) -> Result<HookStatus, HostRefusal> {
         let Some(plugin) = self.order.get(self.next).cloned() else {
-            return Err(HostRefusal::new(ErrorCode::InvalidMessage, Phase::Invoke, "no-hook-pending"));
+            return Err(HostRefusal::new(
+                ErrorCode::InvalidMessage,
+                Phase::Invoke,
+                "no-hook-pending",
+            ));
         };
         let status = if self.blocked(&plugin) {
             HookStatus::Skipped
@@ -147,9 +177,16 @@ impl HookRun {
     }
 
     /// Whether a pre-commit boundary may publish: every hook ran and no required hook failed.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn may_publish_before(&self) -> bool {
-        self.next == self.order.len() && !self.status.values().any(|s| *s == HookStatus::RequiredFailure)
+        self.next == self.order.len()
+            && !self
+                .status
+                .values()
+                .any(|s| *s == HookStatus::RequiredFailure)
     }
 
     /// `Publish`: the engine output became visible; irreversible.
@@ -162,22 +199,44 @@ impl HookRun {
     pub fn report(&mut self) -> HookReport {
         self.trace.push(ModelAction::HooksReport);
         HookReport {
-            statuses: self.order.iter().map(|id| (id.clone(), self.status.get(id).copied().unwrap_or(HookStatus::Pending))).collect(),
+            statuses: self
+                .order
+                .iter()
+                .map(|id| {
+                    (
+                        id.clone(),
+                        self.status.get(id).copied().unwrap_or(HookStatus::Pending),
+                    )
+                })
+                .collect(),
             receipts: self.receipts.clone(),
-            rejected_claims: self.claims.iter().filter(|c| !self.receipts.contains(c)).cloned().collect(),
+            rejected_claims: self
+                .claims
+                .iter()
+                .filter(|c| !self.receipts.contains(c))
+                .cloned()
+                .collect(),
             published: self.published,
         }
     }
 
     /// Model actions taken.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn trace(&self) -> &Trace {
         &self.trace
     }
 
     fn blocked(&self, plugin: &PluginId) -> bool {
         self.predecessors.get(plugin).is_some_and(|preds| {
-            preds.iter().any(|p| matches!(self.status.get(p), Some(HookStatus::RequiredFailure | HookStatus::Skipped)))
+            preds.iter().any(|p| {
+                matches!(
+                    self.status.get(p),
+                    Some(HookStatus::RequiredFailure | HookStatus::Skipped)
+                )
+            })
         })
     }
 }
@@ -191,33 +250,50 @@ mod tests {
     }
 
     fn entry(text: &str, required: bool) -> HookEntry {
-        HookEntry { plugin: id(text), required }
+        HookEntry {
+            plugin: id(text),
+            required,
+        }
     }
 
     #[test]
     fn canonical_tie_break_and_edges() {
         let run = HookRun::plan(&[entry("x/b", false), entry("x/a", false)], &[]).expect("plan");
         assert_eq!(run.order(), &[id("x/a"), id("x/b")]);
-        let run = HookRun::plan(&[entry("x/b", false), entry("x/a", false)], &[(id("x/b"), id("x/a"))]).expect("plan");
+        let run = HookRun::plan(
+            &[entry("x/b", false), entry("x/a", false)],
+            &[(id("x/b"), id("x/a"))],
+        )
+        .expect("plan");
         assert_eq!(run.order(), &[id("x/b"), id("x/a")]);
     }
 
     #[test]
     fn cycles_and_unknown_references_refuse() {
-        let cyc = HookRun::plan(&[entry("x/a", false), entry("x/b", false)], &[(id("x/a"), id("x/b")), (id("x/b"), id("x/a"))]);
+        let cyc = HookRun::plan(
+            &[entry("x/a", false), entry("x/b", false)],
+            &[(id("x/a"), id("x/b")), (id("x/b"), id("x/a"))],
+        );
         assert_eq!(cyc.map(|_| ()).map_err(|e| e.reason), Err("hook-cycle"));
         let selfloop = HookRun::plan(&[entry("x/a", false)], &[(id("x/a"), id("x/a"))]);
         assert!(selfloop.is_err());
         let unknown = HookRun::plan(&[entry("x/a", false)], &[(id("x/z"), id("x/a"))]);
-        assert_eq!(unknown.map(|_| ()).map_err(|e| e.reason), Err("unknown-hook-reference"));
+        assert_eq!(
+            unknown.map(|_| ()).map_err(|e| e.reason),
+            Err("unknown-hook-reference")
+        );
     }
 
     #[test]
     fn required_failure_skips_dependents_but_keeps_earlier_effects() {
         let edges = [(id("x/a"), id("x/b"))];
-        let mut run = HookRun::plan(&[entry("x/a", true), entry("x/b", false)], &edges).expect("plan");
+        let mut run =
+            HookRun::plan(&[entry("x/a", true), entry("x/b", false)], &edges).expect("plan");
         let receipt = Token::new("receipt:1").expect("receipt");
-        assert_eq!(run.record(false, vec![receipt.clone()], vec![]), Ok(HookStatus::RequiredFailure));
+        assert_eq!(
+            run.record(false, vec![receipt.clone()], vec![]),
+            Ok(HookStatus::RequiredFailure)
+        );
         assert_eq!(run.next().map(|(_, runs)| runs), Some(false));
         assert_eq!(run.record(true, vec![], vec![]), Ok(HookStatus::Skipped));
         assert!(!run.may_publish_before());
@@ -229,7 +305,8 @@ mod tests {
     #[test]
     fn advisory_failure_does_not_skip_and_forged_claims_are_rejected() {
         let edges = [(id("x/a"), id("x/b"))];
-        let mut run = HookRun::plan(&[entry("x/a", false), entry("x/b", false)], &edges).expect("plan");
+        let mut run =
+            HookRun::plan(&[entry("x/a", false), entry("x/b", false)], &edges).expect("plan");
         run.record(false, vec![], vec![]).expect("a");
         assert_eq!(run.next().map(|(_, runs)| runs), Some(true));
         let forged = Token::new("receipt:3").expect("forged");
@@ -237,7 +314,10 @@ mod tests {
         assert!(run.may_publish_before());
         run.published();
         let report = run.report();
-        assert_eq!(report.receipts, [] as [dctx_plugin_protocol::records::scalars::Token; 0]);
+        assert_eq!(
+            report.receipts,
+            [] as [dctx_plugin_protocol::records::scalars::Token; 0]
+        );
         assert_eq!(report.rejected_claims, vec![forged]);
         assert!(report.published);
     }

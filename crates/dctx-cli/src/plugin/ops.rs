@@ -25,11 +25,19 @@ pub fn execute(request: &Request, env: &mut Env<'_>) -> Outcome {
         Action::Install(install) => install_cmd(env, install, request.json),
         Action::List => list(env, request.json),
         Action::Info { id } => info(env, id, request.json),
-        Action::Enable { id, project, approve } => enable(env, id, project.as_deref(), *approve, request.json),
+        Action::Enable {
+            id,
+            project,
+            approve,
+        } => enable(env, id, project.as_deref(), *approve, request.json),
         Action::Disable { id, project } => disable(env, id, project.as_deref(), request.json),
         Action::Remove { id } => remove(env, id, request.json),
-        Action::Update { id, version, check } => update(env, id.as_deref(), version.as_deref(), *check, request.json),
-        Action::Verify { id, refresh_trust } => verify(env, id.as_deref(), *refresh_trust, request.json),
+        Action::Update { id, version, check } => {
+            update(env, id.as_deref(), version.as_deref(), *check, request.json)
+        }
+        Action::Verify { id, refresh_trust } => {
+            verify(env, id.as_deref(), *refresh_trust, request.json)
+        }
         Action::Run { id, args } => route(env, id, args, "run", request.json),
         Action::Git { args } => {
             let catalog = bundled::catalog();

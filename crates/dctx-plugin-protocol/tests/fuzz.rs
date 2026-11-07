@@ -10,8 +10,8 @@ use std::collections::BTreeMap;
 
 use common::*;
 use dctx_plugin_protocol::{
-    DecodeLimits, FrameDecoder, FrameReader, Json, MAX_FRAME_CAP, WireMessage, decode_object, encode_frame,
-    to_canonical,
+    DecodeLimits, FrameDecoder, FrameReader, Json, MAX_FRAME_CAP, WireMessage, decode_object,
+    encode_frame, to_canonical,
 };
 use proptest::prelude::*;
 

@@ -7,6 +7,8 @@
 
 #![forbid(unsafe_code)]
 
+mod common;
+
 use std::fmt::Write as _;
 use std::fs;
 use std::path::PathBuf;
@@ -22,10 +24,20 @@ struct Repository {
 impl Repository {
     fn new(label: &str) -> Self {
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
-        let root = std::env::temp_dir().join(format!("dctx-e02c-{label}-{}-{n}", std::process::id()));
+        let root =
+            std::env::temp_dir().join(format!("dctx-e02c-{label}-{}-{n}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
         fs::create_dir_all(root.join("repo")).expect("repo");
-        for folder in ["home", "config", "cache", "plugins", "map-cache", "local-app-data", "empty-path", "tmp"] {
+        for folder in [
+            "home",
+            "config",
+            "cache",
+            "plugins",
+            "map-cache",
+            "local-app-data",
+            "empty-path",
+            "tmp",
+        ] {
             fs::create_dir(root.join(folder)).expect("isolated directory");
         }
         Self { root }
@@ -41,20 +53,18 @@ impl Repository {
 
     fn output(&self, args: &[&str]) -> Output {
         let mut command = Command::new(env!("CARGO_BIN_EXE_dctx-cli"));
-        command.current_dir(self.repo()).env_clear().args(args).env("DCTX_AUTO_CLEAN", "0").env("NO_COLOR", "1");
+        command
+            .current_dir(self.repo())
+            .env_clear()
+            .args(args)
+            .env("DCTX_AUTO_CLEAN", "0")
+            .env("NO_COLOR", "1");
+        common::isolated_dirs(&mut command, &self.root);
         for (variable, folder) in [
-            ("HOME", "home"),
-            ("USERPROFILE", "home"),
-            ("XDG_CONFIG_HOME", "config"),
-            ("XDG_CACHE_HOME", "cache"),
-            ("LOCALAPPDATA", "local-app-data"),
             ("DCTX_PLUGIN_ROOT", "plugins"),
             ("DCTX_CACHE_DIR", "cache"),
             ("DCTX_MAP_CACHE", "map-cache"),
             ("PATH", "empty-path"),
-            ("TMPDIR", "tmp"),
-            ("TMP", "tmp"),
-            ("TEMP", "tmp"),
         ] {
             command.env(variable, self.root.join(folder));
         }
@@ -70,7 +80,11 @@ impl Repository {
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr),
         );
-        assert!(output.stderr.is_empty(), "{args:?}: {}", String::from_utf8_lossy(&output.stderr));
+        assert!(
+            output.stderr.is_empty(),
+            "{args:?}: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
         String::from_utf8(output.stdout).expect("UTF-8 stdout")
     }
 
@@ -202,7 +216,10 @@ fn explain_and_read_use_an_id_returned_by_find() {
     let read = repo.run(&["map", "read", &id, "--json"]);
     let source = json_field(&read, "source_utf8").expect("source");
     assert!(source.contains("Beacon"), "{read}");
-    assert!(repo.output(&["map", "read", &id, "--limit", "1", "--json"]).status.success());
+    assert!(repo
+        .output(&["map", "read", &id, "--limit", "1", "--json"])
+        .status
+        .success());
 }
 
 #[test]
@@ -247,7 +264,16 @@ fn three_pages_visit_each_record_once_across_processes() {
     let mut seen = Vec::new();
     for page_index in 0..3 {
         let page = match &cursor {
-            Some(token) => repo.run(&["map", "map", "m:page.rs", "--limit", "1", "--json", "--cursor", token]),
+            Some(token) => repo.run(&[
+                "map",
+                "map",
+                "m:page.rs",
+                "--limit",
+                "1",
+                "--json",
+                "--cursor",
+                token,
+            ]),
             None => repo.run(&["map", "map", "m:page.rs", "--limit", "1", "--json"]),
         };
         let ids = record_ids(&page);
@@ -262,14 +288,22 @@ fn three_pages_visit_each_record_once_across_processes() {
         }
     }
     assert_eq!(seen, all);
-    let stale = repo.fail(&["map", "map", "m:page.rs", "--cursor", "v1|9|map|s:page.rs#aaa", "--json"]);
+    let stale = repo.fail(&[
+        "map",
+        "map",
+        "m:page.rs",
+        "--cursor",
+        "v1|9|map|s:page.rs#aaa",
+        "--json",
+    ]);
     assert!(stale.contains("stale continuation"), "{stale}");
 }
 
 #[test]
 fn lines_35_36_match_disk_and_an_inner_symbol_range_is_not_shifted() {
     let repo = Repository::new("lines");
-    let mut body = String::from("// L01\nfn inner() {\n    let kept_line = 1;\n    let next_line = 2;\n}\n");
+    let mut body =
+        String::from("// L01\nfn inner() {\n    let kept_line = 1;\n    let next_line = 2;\n}\n");
     for number in 6..=40 {
         let _ = writeln!(body, "// L{number:02}");
     }
@@ -281,17 +315,45 @@ fn lines_35_36_match_disk_and_an_inner_symbol_range_is_not_shifted() {
 
     let explained = repo.run(&["map", "explain", "s:lines.rs#inner", "--json"]);
     let (start, end) = json_lines(&explained).expect("symbol lines");
-    assert!(end >= start.saturating_add(2), "span {start}-{end} has no inner range: {explained}");
+    assert!(
+        end >= start.saturating_add(2),
+        "span {start}-{end} has no inner range: {explained}"
+    );
     let inner_start = start.saturating_add(1);
     let inner_end = inner_start.saturating_add(1).min(end);
     let range = format!("{inner_start}-{inner_end}");
-    let inner = repo.run(&["map", "read", "s:lines.rs#inner", "--lines", &range, "--json"]);
+    let inner = repo.run(&[
+        "map",
+        "read",
+        "s:lines.rs#inner",
+        "--lines",
+        &range,
+        "--json",
+    ]);
     let inner_source = json_field(&inner, "source_utf8").expect("inner source");
-    assert_eq!(inner_source, line_slice(&body, inner_start, inner_end), "{inner}");
+    assert_eq!(
+        inner_source,
+        line_slice(&body, inner_start, inner_end),
+        "{inner}"
+    );
     let prefix = line_slice(&body, start, start.saturating_add(inner_end - inner_start));
-    assert_ne!(inner_source, prefix, "range shifted to the start of the symbol");
+    assert_ne!(
+        inner_source, prefix,
+        "range shifted to the start of the symbol"
+    );
 
-    let outside = if start > 1 { "1-1".to_string() } else { format!("{}-{}", end.saturating_add(1), end.saturating_add(1)) };
-    let refused = repo.fail(&["map", "read", "s:lines.rs#inner", "--lines", &outside, "--json"]);
+    let outside = if start > 1 {
+        "1-1".to_string()
+    } else {
+        format!("{}-{}", end.saturating_add(1), end.saturating_add(1))
+    };
+    let refused = repo.fail(&[
+        "map",
+        "read",
+        "s:lines.rs#inner",
+        "--lines",
+        &outside,
+        "--json",
+    ]);
     assert!(refused.contains("outside"), "{refused}");
 }

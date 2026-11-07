@@ -30,7 +30,14 @@ pub struct Supervisor<P> {
 impl<P: ProcessPort> Supervisor<P> {
     /// A supervisor for an installed worker with host-established `facts`.
     pub fn new(facts: LaunchFacts, policy: Liveness, process: P) -> Self {
-        Self { worker: Worker::new(facts), feed: None, policy, process, pid: None, cancel_at: None }
+        Self {
+            worker: Worker::new(facts),
+            feed: None,
+            policy,
+            process,
+            pid: None,
+            cancel_at: None,
+        }
     }
 
     /// `EnableOrRefuse` then `Start`: no exec unless verified, compatible and admitted by disposition.
@@ -43,10 +50,16 @@ impl<P: ProcessPort> Supervisor<P> {
                 self.pid = Some(pid);
                 self.worker.started()
             }
-            Err(SpawnFault::UnsupportedPlatform) => {
-                Err(HostRefusal::new(ErrorCode::UnsupportedPlatform, Phase::Confine, "no-confinement-provider"))
-            }
-            Err(SpawnFault::Failed) => Err(HostRefusal::new(ErrorCode::PluginExited, Phase::Confine, "spawn-failed")),
+            Err(SpawnFault::UnsupportedPlatform) => Err(HostRefusal::new(
+                ErrorCode::UnsupportedPlatform,
+                Phase::Confine,
+                "no-confinement-provider",
+            )),
+            Err(SpawnFault::Failed) => Err(HostRefusal::new(
+                ErrorCode::PluginExited,
+                Phase::Confine,
+                "spawn-failed",
+            )),
         }
     }
 
@@ -119,7 +132,10 @@ impl<P: ProcessPort> Supervisor<P> {
 
     /// A probe reply arrived.
     pub fn probe_reply(&mut self, wait: Option<&Wait>, now: u64) -> Verdict {
-        let verdict = self.feed.as_mut().map_or(Verdict::Continue, |feed| feed.probe_reply(wait, now));
+        let verdict = self
+            .feed
+            .as_mut()
+            .map_or(Verdict::Continue, |feed| feed.probe_reply(wait, now));
         self.apply(verdict, now)
     }
 
@@ -131,7 +147,10 @@ impl<P: ProcessPort> Supervisor<P> {
                     Some(pid) => self.process.evidence(pid),
                     None => crate::domain::liveness::ProcessEvidence::Unknown,
                 };
-                let verdict = self.feed.as_mut().map_or(Verdict::Continue, |feed| feed.sample(now, evidence));
+                let verdict = self
+                    .feed
+                    .as_mut()
+                    .map_or(Verdict::Continue, |feed| feed.sample(now, evidence));
                 self.apply(verdict, now)
             }
             WorkerPhase::Cancelling(_) => {
@@ -198,9 +217,15 @@ impl<P: ProcessPort> Supervisor<P> {
 
     fn cancel_grace(&self) -> u64 {
         match self.policy {
-            Liveness::Interactive { cancel_grace_ms, .. }
-            | Liveness::UnattendedFailClosed { cancel_grace_ms, .. }
-            | Liveness::UnattendedBoundedObservation { cancel_grace_ms, .. } => cancel_grace_ms,
+            Liveness::Interactive {
+                cancel_grace_ms, ..
+            }
+            | Liveness::UnattendedFailClosed {
+                cancel_grace_ms, ..
+            }
+            | Liveness::UnattendedBoundedObservation {
+                cancel_grace_ms, ..
+            } => cancel_grace_ms,
         }
     }
 
@@ -217,6 +242,10 @@ impl<P: ProcessPort> Supervisor<P> {
     }
 
     fn feed_mut(&mut self) -> Result<&mut LivenessFeed, HostRefusal> {
-        self.feed.as_mut().ok_or(HostRefusal::new(ErrorCode::InvalidMessage, Phase::Invoke, "no-active-invocation"))
+        self.feed.as_mut().ok_or(HostRefusal::new(
+            ErrorCode::InvalidMessage,
+            Phase::Invoke,
+            "no-active-invocation",
+        ))
     }
 }

@@ -5,7 +5,8 @@
 
 use dctx_plugin_distribution::domain::index::INDEX_LIMITS;
 use dctx_plugin_distribution::{
-    DistributionError, Enablement, HttpsUrl, Origin, PluginId, PluginStatus, SafeFileName, VerifiedIndex,
+    DistributionError, Enablement, HttpsUrl, Origin, PluginId, PluginStatus, SafeFileName,
+    VerifiedIndex,
 };
 
 use super::ops_output::{dist, done, facade_note, fail, Outcome};
@@ -26,7 +27,10 @@ pub(super) fn search(env: &mut Env<'_>, query: &str, refresh: bool, json: bool) 
         }
         Err(error) => return fail("search", &error, json),
     };
-    let age = env.index.fetched_at.map(|at| env.clock.now().saturating_sub(at));
+    let age = env
+        .index
+        .fetched_at
+        .map(|at| env.clock.now().saturating_sub(at));
     let hits: Vec<String> = index.search(query).iter().map(|entry| hit(entry)).collect();
     let age_json = age.map_or_else(|| "null".to_owned(), |age| age.to_string());
     done("search", json, env, |fields| {
@@ -39,7 +43,10 @@ pub(super) fn search(env: &mut Env<'_>, query: &str, refresh: bool, json: bool) 
 }
 
 pub(super) fn hit(entry: &dctx_plugin_distribution::IndexEntry) -> String {
-    let version = entry.releases.first().map_or("", |release| release.version.as_str());
+    let version = entry
+        .releases
+        .first()
+        .map_or("", |release| release.version.as_str());
     format!(
         "{{\"id\":{},\"repository\":{},\"summary\":{},\"version\":{}}}",
         render::json_string(entry.id.as_str()),
@@ -55,7 +62,12 @@ pub(super) fn refresh_index(env: &mut Env<'_>) -> Result<(), DistributionError> 
     let limit = INDEX_LIMITS.max_bytes as u64;
     let bytes = fetch::fetch_all(env.network, &env.policy.origin, &url, limit)?;
     let signature_name = SafeFileName::parse("index.json.sig")?;
-    let signature = fetch::fetch_all(env.network, &env.policy.origin, &url.sibling(&signature_name), limit)?;
+    let signature = fetch::fetch_all(
+        env.network,
+        &env.policy.origin,
+        &url.sibling(&signature_name),
+        limit,
+    )?;
     let index = VerifiedIndex::verify(&bytes, &signature, &key)?;
     index.check_newer_than(env.index.sequence)?;
     env.index.sequence = Some(index.sequence);
@@ -67,8 +79,16 @@ pub(super) fn refresh_index(env: &mut Env<'_>) -> Result<(), DistributionError> 
 
 pub(super) fn cached_index(env: &Env<'_>) -> Result<VerifiedIndex, DistributionError> {
     let key = env.index_key.ok_or(DistributionError::UnknownKey)?;
-    let bytes = env.index.bytes.as_deref().ok_or(DistributionError::NotFound)?;
-    let signature = env.index.signature.as_deref().ok_or(DistributionError::NotFound)?;
+    let bytes = env
+        .index
+        .bytes
+        .as_deref()
+        .ok_or(DistributionError::NotFound)?;
+    let signature = env
+        .index
+        .signature
+        .as_deref()
+        .ok_or(DistributionError::NotFound)?;
     VerifiedIndex::verify(bytes, signature, &key)
 }
 
@@ -84,14 +104,19 @@ pub(super) fn list(env: &Env<'_>, json: bool) -> Outcome {
     }
     let rendered: Vec<String> = rows.iter().map(|row| render_status(row, json)).collect();
     if json {
-        done("list", true, env, |fields| format!("{fields},\"plugins\":[{}]", rendered.join(",")))
+        done("list", true, env, |fields| {
+            format!("{fields},\"plugins\":[{}]", rendered.join(","))
+        })
     } else {
         let mut text = rendered.join("\n");
         if !text.is_empty() {
             text.push('\n');
         }
         let _ = facade_note(env);
-        Outcome { code: 0, body: text }
+        Outcome {
+            code: 0,
+            body: text,
+        }
     }
 }
 
@@ -111,10 +136,23 @@ pub(super) fn info(env: &Env<'_>, raw_id: &str, json: bool) -> Outcome {
             None => return fail("info", &DistributionError::NotInstalled, json),
         },
     };
-    let labels = if status.id.as_str() == "dctx/git" { bundled::capability_labels() } else { Vec::new() };
-    let grants = labels.iter().map(|label| render::json_string(label)).collect::<Vec<_>>().join(",");
+    let labels = if status.id.as_str() == "dctx/git" {
+        bundled::capability_labels()
+    } else {
+        Vec::new()
+    };
+    let grants = labels
+        .iter()
+        .map(|label| render::json_string(label))
+        .collect::<Vec<_>>()
+        .join(",");
     let hooks = if status.id.as_str() == "dctx/git" {
-        bundled::catalog().hooks.into_iter().map(|hook| render::json_string(&hook)).collect::<Vec<_>>().join(",")
+        bundled::catalog()
+            .hooks
+            .into_iter()
+            .map(|hook| render::json_string(&hook))
+            .collect::<Vec<_>>()
+            .join(",")
     } else {
         String::new()
     };
@@ -129,7 +167,11 @@ pub(super) fn synthetic(env: &Env<'_>) -> Option<PluginStatus> {
         id: bundled::id().ok()?,
         origin: Origin::Bundled,
         version: Some(version.version),
-        enablement: if bundled::worker_linked() { Enablement::Enabled } else { Enablement::Disabled },
+        enablement: if bundled::worker_linked() {
+            Enablement::Enabled
+        } else {
+            Enablement::Disabled
+        },
         needs_consent: bundled::worker_linked(),
         blocked: !bundled::worker_linked(),
         revocation_age_secs: env.trust.revocation_age(env.clock.now()),
@@ -137,10 +179,24 @@ pub(super) fn synthetic(env: &Env<'_>) -> Option<PluginStatus> {
 }
 
 pub(super) fn render_status(status: &PluginStatus, json: bool) -> String {
-    let alias = if status.id.as_str() == "dctx/git" { bundled::catalog().alias } else { String::new() };
+    let alias = if status.id.as_str() == "dctx/git" {
+        bundled::catalog().alias
+    } else {
+        String::new()
+    };
     if status.id.as_str() == "dctx/git" && !bundled::worker_linked() {
         return render::status_line(status, &alias, "unavailable", "excluded", json);
     }
-    let worker = if status.origin == Origin::Bundled && bundled::worker_linked() { "same-binary" } else { "host-target" };
-    render::status_line(status, &alias, render::consent_name(status.needs_consent, status.enablement), worker, json)
+    let worker = if status.origin == Origin::Bundled && bundled::worker_linked() {
+        "same-binary"
+    } else {
+        "host-target"
+    };
+    render::status_line(
+        status,
+        &alias,
+        render::consent_name(status.needs_consent, status.enablement),
+        worker,
+        json,
+    )
 }

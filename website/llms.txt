@@ -2,7 +2,7 @@
 
 > The context engine for AI-assisted software development. Fewer tokens. Stable prefixes. Exact source. One policy for every workflow.
 
-dctx 1.1.0: a Rust CLI and MCP server; Apache-2.0; offline, no telemetry. Short: https://www.dctx.internet.technology/llms-small.txt
+dctx 1.2.0: a Rust CLI and MCP server; Apache-2.0; offline, no telemetry. Short: https://www.dctx.internet.technology/llms-small.txt
 
 ## Docs
 - [Why dctx](https://www.dctx.internet.technology/why/index.md): why it exists; why byte-identical output matters

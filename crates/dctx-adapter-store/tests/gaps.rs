@@ -56,14 +56,21 @@ impl CapFs {
     fn new() -> Self {
         Self {
             inner: MemoryFs::posix(),
-            gate: Arc::new(Mutex::new(Gate { logical: std::collections::BTreeMap::new(), grow: None })),
+            gate: Arc::new(Mutex::new(Gate {
+                logical: std::collections::BTreeMap::new(),
+                grow: None,
+            })),
             log: Arc::new(Mutex::new(Vec::new())),
             violations: Arc::new(AtomicU64::new(0)),
         }
     }
 
     fn inflate(&self, path: &str) {
-        self.gate.lock().expect("gate").logical.insert(path.to_string(), HUGE);
+        self.gate
+            .lock()
+            .expect("gate")
+            .logical
+            .insert(path.to_string(), HUGE);
     }
 
     fn arm_grow(&self, path: &str) {
@@ -78,13 +85,27 @@ impl CapFs {
 }
 
 impl StoreFs for CapFs {
-    fn capabilities(&self) -> FsCapabilities { self.inner.capabilities() }
-    fn checkpoint(&self, boundary: Boundary) -> Result<(), StoreError> { self.inner.checkpoint(boundary) }
-    fn try_lock(&self, root: &str) -> Result<(), StoreError> { self.inner.try_lock(root) }
-    fn unlock(&self, root: &str) -> Result<(), StoreError> { self.inner.unlock(root) }
-    fn lock_held(&self, root: &str) -> bool { self.inner.lock_held(root) }
-    fn held_roots(&self) -> Vec<String> { self.inner.held_roots() }
-    fn create(&self, path: &str) -> Result<(), StoreError> { self.inner.create(path) }
+    fn capabilities(&self) -> FsCapabilities {
+        self.inner.capabilities()
+    }
+    fn checkpoint(&self, boundary: Boundary) -> Result<(), StoreError> {
+        self.inner.checkpoint(boundary)
+    }
+    fn try_lock(&self, root: &str) -> Result<(), StoreError> {
+        self.inner.try_lock(root)
+    }
+    fn unlock(&self, root: &str) -> Result<(), StoreError> {
+        self.inner.unlock(root)
+    }
+    fn lock_held(&self, root: &str) -> bool {
+        self.inner.lock_held(root)
+    }
+    fn held_roots(&self) -> Vec<String> {
+        self.inner.held_roots()
+    }
+    fn create(&self, path: &str) -> Result<(), StoreError> {
+        self.inner.create(path)
+    }
     fn write(&self, path: &str, bytes: &[u8]) -> Result<(), StoreError> {
         {
             let mut gate = self.gate.lock().expect("gate");
@@ -95,11 +116,21 @@ impl StoreFs for CapFs {
         }
         self.inner.write(path, bytes)
     }
-    fn flush(&self, path: &str) -> Result<(), StoreError> { self.inner.flush(path) }
-    fn sync_file(&self, path: &str) -> Result<(), StoreError> { self.inner.sync_file(path) }
-    fn sync_dir(&self) -> Result<(), StoreError> { self.inner.sync_dir() }
-    fn rename_new(&self, from: &str, to: &str) -> Result<(), StoreError> { self.inner.rename_new(from, to) }
-    fn rename_replace(&self, from: &str, to: &str) -> Result<(), StoreError> { self.inner.rename_replace(from, to) }
+    fn flush(&self, path: &str) -> Result<(), StoreError> {
+        self.inner.flush(path)
+    }
+    fn sync_file(&self, path: &str) -> Result<(), StoreError> {
+        self.inner.sync_file(path)
+    }
+    fn sync_dir(&self) -> Result<(), StoreError> {
+        self.inner.sync_dir()
+    }
+    fn rename_new(&self, from: &str, to: &str) -> Result<(), StoreError> {
+        self.inner.rename_new(from, to)
+    }
+    fn rename_replace(&self, from: &str, to: &str) -> Result<(), StoreError> {
+        self.inner.rename_replace(from, to)
+    }
     fn read(&self, path: &str) -> Result<Vec<u8>, StoreError> {
         let gate = self.gate.lock().expect("gate");
         let logical = gate.logical.contains_key(path);
@@ -116,20 +147,28 @@ impl StoreFs for CapFs {
         self.log.lock().expect("log").push(path.to_string());
         Ok(bytes)
     }
-    fn exists(&self, path: &str) -> Result<bool, StoreError> { self.inner.exists(path) }
+    fn exists(&self, path: &str) -> Result<bool, StoreError> {
+        self.inner.exists(path)
+    }
     fn len(&self, path: &str) -> Result<u64, StoreError> {
         if let Some(len) = self.gate.lock().expect("gate").logical.get(path).copied() {
             return Ok(len);
         }
         self.inner.len(path)
     }
-    fn unlink(&self, path: &str) -> Result<(), StoreError> { self.inner.unlink(path) }
-    fn list_prefix(&self, prefix: &str) -> Result<Vec<String>, StoreError> { self.inner.list_prefix(prefix) }
+    fn unlink(&self, path: &str) -> Result<(), StoreError> {
+        self.inner.unlink(path)
+    }
+    fn list_prefix(&self, prefix: &str) -> Result<Vec<String>, StoreError> {
+        self.inner.list_prefix(prefix)
+    }
 }
 
 fn assert_reads(store: &SegmentStore<CapFs>, bytes: &[u8]) {
     let pin = store.pin("main").expect("pin");
-    let got = store.read_segment(&pin, pin.segments()[0].digest()).expect("segment");
+    let got = store
+        .read_segment(&pin, pin.segments()[0].digest())
+        .expect("segment");
     assert_eq!(got, bytes);
     store.release(pin).expect("release");
 }
@@ -137,9 +176,22 @@ fn assert_reads(store: &SegmentStore<CapFs>, bytes: &[u8]) {
 fn assert_closed(store: &SegmentStore<CapFs>, fs: &CapFs, hostile: &str) {
     fs.log.lock().expect("log").clear();
     fs.violations.store(0, Ordering::SeqCst);
-    assert_eq!(store.pin("main").expect_err("hostile"), StoreError::CorruptIndex { reason: "limit" });
-    assert_eq!(fs.violations.load(Ordering::SeqCst), 0, "{hostile} was read");
-    assert!(!fs.log.lock().expect("log").iter().any(|path| path == hostile));
+    assert_eq!(
+        store.pin("main").expect_err("hostile"),
+        StoreError::CorruptIndex { reason: "limit" }
+    );
+    assert_eq!(
+        fs.violations.load(Ordering::SeqCst),
+        0,
+        "{hostile} was read"
+    );
+    assert!(
+        !fs.log
+            .lock()
+            .expect("log")
+            .iter()
+            .any(|path| path == hostile)
+    );
     fs.reset();
 }
 
@@ -151,7 +203,10 @@ fn bounded_corrupt_reads() {
     mem.write("roots/main/current", &[1u8; 92]).expect("write");
     assert_eq!(mem.read("roots/main/current").expect("read").len(), 92);
     mem.write("roots/main/current", &[1u8; 93]).expect("write");
-    assert_eq!(mem.read("roots/main/current").expect_err("over"), StoreError::CorruptIndex { reason: "limit" });
+    assert_eq!(
+        mem.read("roots/main/current").expect_err("over"),
+        StoreError::CorruptIndex { reason: "limit" }
+    );
     // A non-pointer wider than a pointer, and still under the writer maximum, is not a pointer ceiling.
     mem.create("segments/wide.seg").expect("create");
     mem.write("segments/wide.seg", &[7u8; 200]).expect("write");
@@ -163,19 +218,35 @@ fn bounded_corrupt_reads() {
     disk.write("roots/main/current", &[1u8; 92]).expect("write");
     assert_eq!(disk.read("roots/main/current").expect("read").len(), 92);
     disk.write("roots/main/current", &[1u8; 93]).expect("write");
-    assert_eq!(disk.read("roots/main/current").expect_err("over"), StoreError::CorruptIndex { reason: "limit" });
+    assert_eq!(
+        disk.read("roots/main/current").expect_err("over"),
+        StoreError::CorruptIndex { reason: "limit" }
+    );
 
     // Positive control: a segment of exactly the writer maximum is accepted. One byte over is refused
     // from metadata, before that extra byte is stored. The hole is sparse; only the accepted read allocates.
     let max = writer_maximum();
     disk.create("segments/max.seg").expect("create");
     let max_path = dir.path().join("segments/max.seg");
-    std::fs::OpenOptions::new().write(true).open(&max_path).expect("open").set_len(max).expect("len");
+    std::fs::OpenOptions::new()
+        .write(true)
+        .open(&max_path)
+        .expect("open")
+        .set_len(max)
+        .expect("len");
     let got = disk.read("segments/max.seg").expect("max");
     assert_eq!(got.len() as u64, max);
     drop(got);
-    std::fs::OpenOptions::new().write(true).open(&max_path).expect("open").set_len(max + 1).expect("over");
-    assert_eq!(disk.read("segments/max.seg").expect_err("over"), StoreError::CorruptIndex { reason: "limit" });
+    std::fs::OpenOptions::new()
+        .write(true)
+        .open(&max_path)
+        .expect("open")
+        .set_len(max + 1)
+        .expect("over");
+    assert_eq!(
+        disk.read("segments/max.seg").expect_err("over"),
+        StoreError::CorruptIndex { reason: "limit" }
+    );
 
     let fs = CapFs::new();
     let store = SegmentStore::open(fs.clone(), cap()).expect("open");
@@ -215,7 +286,12 @@ fn bounded_corrupt_reads() {
     assert_eq!(recovery.generation, Some(1));
     let pin = store.pin("main").expect("repaired");
     assert_eq!(pin.generation(), 1);
-    assert_eq!(store.read_segment(&pin, pin.segments()[0].digest()).expect("kept"), first);
+    assert_eq!(
+        store
+            .read_segment(&pin, pin.segments()[0].digest())
+            .expect("kept"),
+        first
+    );
 }
 
 #[test]
@@ -223,9 +299,16 @@ fn symlink_confinement() {
     let dir = tempfile::tempdir().expect("dir");
     let store = SegmentStore::open(StdFs::open(dir.path()).expect("fs"), cap()).expect("open");
     let bytes = segment("kept");
-    store.publish(req("main", 1, bytes.clone())).expect("publish");
+    store
+        .publish(req("main", 1, bytes.clone()))
+        .expect("publish");
     let pin = store.pin("main").expect("pin");
-    assert_eq!(store.read_segment(&pin, pin.segments()[0].digest()).expect("read"), bytes);
+    assert_eq!(
+        store
+            .read_segment(&pin, pin.segments()[0].digest())
+            .expect("read"),
+        bytes
+    );
     drop(store);
     let fs = StdFs::open(dir.path()).expect("fs");
     fs.create("segments/plain.seg").expect("create");
@@ -246,7 +329,11 @@ fn unix_symlinks() {
     let outside = tempfile::tempdir().expect("out");
     let sentinel = seed(outside.path());
     std::os::unix::fs::symlink(outside.path(), root.path().join("segments")).expect("link");
-    refuse(&StdFs::open(root.path()).expect("fs"), "segments/sentinel", &sentinel);
+    refuse(
+        &StdFs::open(root.path()).expect("fs"),
+        "segments/sentinel",
+        &sentinel,
+    );
     publish_refuses(root.path(), &sentinel);
 
     let root = tempfile::tempdir().expect("root");
@@ -260,7 +347,11 @@ fn unix_symlinks() {
     let sentinel = seed(outside.path());
     std::fs::create_dir(root.path().join("segments")).expect("dir");
     std::os::unix::fs::symlink(&sentinel, root.path().join("segments/leaf")).expect("link");
-    refuse(&StdFs::open(root.path()).expect("fs"), "segments/leaf", &sentinel);
+    refuse(
+        &StdFs::open(root.path()).expect("fs"),
+        "segments/leaf",
+        &sentinel,
+    );
 
     let root = tempfile::tempdir().expect("root");
     let outside = tempfile::tempdir().expect("out");
@@ -291,17 +382,30 @@ fn refuse(fs: &StdFs, rel: &str, sentinel: &Path) {
     let err = fs.read(rel).expect_err("read");
     assert_eq!(err, StoreError::InvalidRequest { reason: "path" });
     assert!(!err.to_string().contains("SECRET"));
-    assert_eq!(fs.write(rel, b"no").expect_err("write"), StoreError::InvalidRequest { reason: "path" });
-    assert_eq!(fs.len(rel).expect_err("len"), StoreError::InvalidRequest { reason: "path" });
+    assert_eq!(
+        fs.write(rel, b"no").expect_err("write"),
+        StoreError::InvalidRequest { reason: "path" }
+    );
+    assert_eq!(
+        fs.len(rel).expect_err("len"),
+        StoreError::InvalidRequest { reason: "path" }
+    );
     assert_eq!(std::fs::read(sentinel).expect("sentinel"), b"SECRET");
 }
 
 #[cfg(unix)]
 fn publish_refuses(root: &Path, sentinel: &Path) {
     let store = SegmentStore::open(StdFs::open(root).expect("fs"), cap()).expect("open");
-    let err = store.publish(req("main", 1, segment("gone"))).expect_err("publish");
+    let err = store
+        .publish(req("main", 1, segment("gone")))
+        .expect_err("publish");
     assert_eq!(err, StoreError::InvalidRequest { reason: "path" });
     assert!(!err.to_string().contains("SECRET"));
     assert_eq!(std::fs::read(sentinel).expect("sentinel"), b"SECRET");
-    assert_eq!(std::fs::read_dir(sentinel.parent().expect("parent")).expect("dir").count(), 1);
+    assert_eq!(
+        std::fs::read_dir(sentinel.parent().expect("parent"))
+            .expect("dir")
+            .count(),
+        1
+    );
 }

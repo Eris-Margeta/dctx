@@ -23,12 +23,21 @@ pub(crate) const KEY_HITS_PER_FILE: usize = 8;
 pub(crate) fn key_shaped(query: &str) -> bool {
     query.len() >= 4
         && query.starts_with(|ch: char| ch.is_ascii_uppercase())
-        && query.chars().all(|ch| ch.is_ascii_uppercase() || ch.is_ascii_digit() || ch == '_')
+        && query
+            .chars()
+            .all(|ch| ch.is_ascii_uppercase() || ch.is_ascii_digit() || ch == '_')
 }
 
 /// Merges ranked `symbols` and path-ordered literal `texts` for `key` into one find order, each record once.
-pub(crate) fn rank(key: &str, symbols: Vec<AnswerRecord>, texts: Vec<AnswerRecord>) -> Vec<AnswerRecord> {
-    let (exact, other): (Vec<_>, Vec<_>) = symbols.into_iter().enumerate().partition(|(index, record)| *index < EXACT_FIRST && record.score >= EXACT);
+pub(crate) fn rank(
+    key: &str,
+    symbols: Vec<AnswerRecord>,
+    texts: Vec<AnswerRecord>,
+) -> Vec<AnswerRecord> {
+    let (exact, other): (Vec<_>, Vec<_>) = symbols
+        .into_iter()
+        .enumerate()
+        .partition(|(index, record)| *index < EXACT_FIRST && record.score >= EXACT);
     let mut out: Vec<AnswerRecord> = exact.into_iter().map(|(_, record)| record).collect();
     let mut files: HashSet<String> = HashSet::new();
     let mut reads = Vec::new();
@@ -44,7 +53,12 @@ pub(crate) fn rank(key: &str, symbols: Vec<AnswerRecord>, texts: Vec<AnswerRecor
     reads.sort_by(|left, right| left.0.cmp(&right.0).then(left.1.path.cmp(&right.1.path)));
     out.extend(reads.into_iter().map(|(_, record)| record));
     out.extend(other.into_iter().map(|(_, record)| record));
-    rest.sort_by(|left, right| left.0.cmp(&right.0).then(left.1.path.cmp(&right.1.path)).then(left.1.lines[0].cmp(&right.1.lines[0])));
+    rest.sort_by(|left, right| {
+        left.0
+            .cmp(&right.0)
+            .then(left.1.path.cmp(&right.1.path))
+            .then(left.1.lines[0].cmp(&right.1.lines[0]))
+    });
     out.extend(rest.into_iter().map(|(_, record)| record));
     out
 }
@@ -54,15 +68,44 @@ fn class_of(path: &str) -> u8 {
     let language = language_of(path);
     let segments: Vec<&str> = path.split('/').collect();
     let base = segments.last().copied().unwrap_or(path);
-    let dir_is = |names: &[&str]| segments[..segments.len().saturating_sub(1)].iter().any(|segment| names.contains(segment));
-    if matches!(language, "markdown" | "text" | "tex" | "rst" | "asciidoc" | "org") || dir_is(&["doc", "docs"]) {
+    let dir_is = |names: &[&str]| {
+        segments[..segments.len().saturating_sub(1)]
+            .iter()
+            .any(|segment| names.contains(segment))
+    };
+    if matches!(
+        language,
+        "markdown" | "text" | "tex" | "rst" | "asciidoc" | "org"
+    ) || dir_is(&["doc", "docs"])
+    {
         return 3;
     }
-    let test_name = base.starts_with("test_") || base.contains("_test.") || base.contains(".test.") || base.contains(".spec.") || base.starts_with("conftest");
-    if test_name || dir_is(&["test", "tests", "testdata", "testing", "fixtures", "fixture", "__tests__", "spec", "benches", "examples", "example"]) {
+    let test_name = base.starts_with("test_")
+        || base.contains("_test.")
+        || base.contains(".test.")
+        || base.contains(".spec.")
+        || base.starts_with("conftest");
+    if test_name
+        || dir_is(&[
+            "test",
+            "tests",
+            "testdata",
+            "testing",
+            "fixtures",
+            "fixture",
+            "__tests__",
+            "spec",
+            "benches",
+            "examples",
+            "example",
+        ])
+    {
         return 2;
     }
-    if matches!(language, "config" | "shell" | "make" | "docker" | "hcl" | "opaque" | "sql" | "proto" | "graphql") {
+    if matches!(
+        language,
+        "config" | "shell" | "make" | "docker" | "hcl" | "opaque" | "sql" | "proto" | "graphql"
+    ) {
         return 1;
     }
     0
@@ -107,14 +150,28 @@ mod tests {
 
     #[test]
     fn key_shape_is_screaming_case_of_four_or_more() {
-        assert!(key_shaped("HOME") && key_shaped("DJANGO_SETTINGS_MODULE") && key_shaped("XDG_CONFIG_HOME") && key_shaped("S3_BUCKET"));
-        assert!(!key_shaped("ABC") && !key_shaped("Home") && !key_shaped("max_upload_size") && !key_shaped("_HOME") && !key_shaped("HOME DIR"));
+        assert!(
+            key_shaped("HOME")
+                && key_shaped("DJANGO_SETTINGS_MODULE")
+                && key_shaped("XDG_CONFIG_HOME")
+                && key_shaped("S3_BUCKET")
+        );
+        assert!(
+            !key_shaped("ABC")
+                && !key_shaped("Home")
+                && !key_shaped("max_upload_size")
+                && !key_shaped("_HOME")
+                && !key_shaped("HOME DIR")
+        );
     }
 
     #[test]
     fn a_read_is_a_whole_quoted_or_accessed_token() {
         assert!(reads_key("let home = env::var_os(\"HOME\")?;", "HOME"));
-        assert!(reads_key("const dir = process.env.CLAUDE_PROJECT_DIR;", "CLAUDE_PROJECT_DIR"));
+        assert!(reads_key(
+            "const dir = process.env.CLAUDE_PROJECT_DIR;",
+            "CLAUDE_PROJECT_DIR"
+        ));
         assert!(reads_key("cd ${HOME}/x && ls $HOME", "HOME"));
         assert!(!reads_key("let x = env::var(\"XDG_CONFIG_HOME\");", "HOME"));
         assert!(!reads_key("HOME=/tmp", "HOME"));
@@ -123,7 +180,10 @@ mod tests {
 
     #[test]
     fn read_sites_in_code_lead_after_a_few_exact_symbols() {
-        let symbols = vec![symbol("s:tools/a.sh#HOME", "tools/a.sh", 3000), symbol("s:docs/x.md#HOME", "docs/x.md", 1000)];
+        let symbols = vec![
+            symbol("s:tools/a.sh#HOME", "tools/a.sh", 3000),
+            symbol("s:docs/x.md#HOME", "docs/x.md", 1000),
+        ];
         let texts = vec![
             text("docs/config.md", 3, "`HOME` is read"),
             text("src/host.rs", 9, "std::env::var_os(\"HOME\")"),
@@ -132,7 +192,10 @@ mod tests {
             text("tools/run.sh", 2, "cd \"$HOME\""),
             text("src/xdg.rs", 5, "env::var(\"XDG_CONFIG_HOME\")"),
         ];
-        let ids: Vec<String> = rank("HOME", symbols, texts).into_iter().map(|record| record.id).collect();
+        let ids: Vec<String> = rank("HOME", symbols, texts)
+            .into_iter()
+            .map(|record| record.id)
+            .collect();
         assert_eq!(
             ids,
             [

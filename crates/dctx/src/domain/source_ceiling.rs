@@ -29,7 +29,11 @@ const COUNT_ENV_MAX: u64 = 100_000_000;
 ///
 /// # Errors
 /// `InvalidRequest` naming the variable when the text is not a decimal number or is out of range.
-pub fn parse_count_ceiling(name: &'static str, raw: Option<&str>, default: u64) -> Result<u64, DctxError> {
+pub fn parse_count_ceiling(
+    name: &'static str,
+    raw: Option<&str>,
+    default: u64,
+) -> Result<u64, DctxError> {
     let Some(text) = raw else { return Ok(default) };
     let reason = if name == RECORDS_ENV {
         "DCTX_MAX_RECORDS must be a decimal count from 1 to 100000000"
@@ -46,7 +50,9 @@ fn count_ceiling(name: &'static str, default: u64) -> Result<u64, DctxError> {
     match std::env::var(name) {
         Ok(text) => parse_count_ceiling(name, Some(&text), default),
         Err(std::env::VarError::NotPresent) => Ok(default),
-        Err(std::env::VarError::NotUnicode(_)) => parse_count_ceiling(name, Some("not unicode"), default),
+        Err(std::env::VarError::NotUnicode(_)) => {
+            parse_count_ceiling(name, Some("not unicode"), default)
+        }
     }
 }
 
@@ -71,7 +77,9 @@ pub fn entries_ceiling() -> Result<u64, DctxError> {
 /// # Errors
 /// `InvalidRequest` naming the variable when the text is not a decimal number or is out of range.
 pub fn parse_source_ceiling(raw: Option<&str>) -> Result<u64, DctxError> {
-    let Some(text) = raw else { return Ok(SAFETY_SOURCE) };
+    let Some(text) = raw else {
+        return Ok(SAFETY_SOURCE);
+    };
     let reason = "DCTX_MAX_SOURCE_BYTES must be a decimal byte count from 1 to 17179869184";
     match text.trim().parse::<u64>() {
         Ok(value) if (1..=SOURCE_ENV_MAX).contains(&value) => Ok(value),
@@ -97,9 +105,18 @@ mod tests {
 
     #[test]
     fn count_ceilings_parse_the_default_valid_invalid_and_out_of_range() {
-        assert_eq!(parse_count_ceiling(RECORDS_ENV, None, SAFETY_RECORDS).expect("default"), 1_000_000);
-        assert_eq!(parse_count_ceiling(ENTRIES_ENV, Some("5000000"), SAFETY_ENTRIES).expect("raised"), 5_000_000);
-        assert_eq!(parse_count_ceiling(ENTRIES_ENV, Some("1"), SAFETY_ENTRIES).expect("min"), 1);
+        assert_eq!(
+            parse_count_ceiling(RECORDS_ENV, None, SAFETY_RECORDS).expect("default"),
+            1_000_000
+        );
+        assert_eq!(
+            parse_count_ceiling(ENTRIES_ENV, Some("5000000"), SAFETY_ENTRIES).expect("raised"),
+            5_000_000
+        );
+        assert_eq!(
+            parse_count_ceiling(ENTRIES_ENV, Some("1"), SAFETY_ENTRIES).expect("min"),
+            1
+        );
         for bad in ["", "abc", "0", "-1", "100000001", "1.5"] {
             let error = parse_count_ceiling(RECORDS_ENV, Some(bad), SAFETY_RECORDS).expect_err(bad);
             assert_eq!(error.code().as_str(), "InvalidRequest", "{bad}");
@@ -111,11 +128,28 @@ mod tests {
 
     #[test]
     fn source_ceiling_parses_the_default_valid_invalid_and_out_of_range() {
-        assert_eq!(parse_source_ceiling(None).expect("default"), 1024 * 1024 * 1024);
+        assert_eq!(
+            parse_source_ceiling(None).expect("default"),
+            1024 * 1024 * 1024
+        );
         assert_eq!(parse_source_ceiling(Some("1")).expect("min"), 1);
-        assert_eq!(parse_source_ceiling(Some("1000000")).expect("small"), 1_000_000);
-        assert_eq!(parse_source_ceiling(Some("17179869184")).expect("max"), 16 * 1024 * 1024 * 1024);
-        for bad in ["", "abc", "1.5", "-4", "0", "17179869185", "99999999999999999999999"] {
+        assert_eq!(
+            parse_source_ceiling(Some("1000000")).expect("small"),
+            1_000_000
+        );
+        assert_eq!(
+            parse_source_ceiling(Some("17179869184")).expect("max"),
+            16 * 1024 * 1024 * 1024
+        );
+        for bad in [
+            "",
+            "abc",
+            "1.5",
+            "-4",
+            "0",
+            "17179869185",
+            "99999999999999999999999",
+        ] {
             let error = parse_source_ceiling(Some(bad)).expect_err(bad);
             assert_eq!(error.code().as_str(), "InvalidRequest", "{bad}");
             assert!(error.to_string().contains(SOURCE_ENV), "{bad}: {error}");

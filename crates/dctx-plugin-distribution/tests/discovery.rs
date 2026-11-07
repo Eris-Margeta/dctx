@@ -6,9 +6,9 @@
 mod common;
 
 use common::*;
+use dctx_ed25519::VerificationError;
 use dctx_plugin_distribution::domain::signature::MANIFEST_DOMAIN;
 use dctx_plugin_distribution::{DistributionError as E, Document, VerifiedIndex, escape_display};
-use dctx_ed25519::VerificationError;
 
 const PLX: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../plugins/index/invalid/");
 
@@ -28,28 +28,57 @@ fn index_signature_uses_the_pinned_key_and_its_own_domain() {
         Err(E::Signature(VerificationError::EquationMismatch))
     );
     let confused = sign(MANIFEST_DOMAIN, &bytes, &index_key);
-    assert_eq!(VerifiedIndex::verify(&bytes, &confused, &public(&index_key)), Err(E::Signature(VerificationError::EquationMismatch)));
-    assert_eq!(index.check_newer_than(Some(5)), Err(E::Downgrade { candidate: 4, floor: 5 }));
+    assert_eq!(
+        VerifiedIndex::verify(&bytes, &confused, &public(&index_key)),
+        Err(E::Signature(VerificationError::EquationMismatch))
+    );
+    assert_eq!(
+        index.check_newer_than(Some(5)),
+        Err(E::Downgrade {
+            candidate: 4,
+            floor: 5
+        })
+    );
 }
 
 #[test]
 fn plx_hostile_index_fixtures_are_refused_or_escaped() {
     let key = test_key(3);
-    let verify = |bytes: &[u8]| VerifiedIndex::verify(bytes, &sign(dctx_plugin_distribution::domain::signature::INDEX_DOMAIN, bytes, &key), &public(&key));
+    let verify = |bytes: &[u8]| {
+        VerifiedIndex::verify(
+            bytes,
+            &sign(
+                dctx_plugin_distribution::domain::signature::INDEX_DOMAIN,
+                bytes,
+                &key,
+            ),
+            &public(&key),
+        )
+    };
     for (name, reason) in [
         ("duplicate-id", "duplicate-id"),
         ("same-repository", "duplicate-repository"),
         ("unsigned-metadata", "unknown-field"),
         ("alias-claim", "unknown-field"),
     ] {
-        assert_eq!(verify(&plx(name)), Err(E::Malformed { document: Document::Index, reason }), "{name}");
+        assert_eq!(
+            verify(&plx(name)),
+            Err(E::Malformed {
+                document: Document::Index,
+                reason
+            }),
+            "{name}"
+        );
     }
     assert!(matches!(verify(&plx("http-url")), Err(E::Origin(_))));
     assert!(matches!(verify(&plx("userinfo-url")), Err(E::Origin(_))));
 
     let world = World::new();
     let changed = verify(&plx("changed-publisher")).unwrap();
-    assert_eq!(changed.entry(&id(GIT), &world.trust).map(|_| ()), Err(E::SignerChanged));
+    assert_eq!(
+        changed.entry(&id(GIT), &world.trust).map(|_| ()),
+        Err(E::SignerChanged)
+    );
 
     let hostile = verify(&plx("hostile-display")).unwrap();
     let hits = hostile.search("hidden");
@@ -71,9 +100,24 @@ fn install_from_index_checks_manifest_digest_and_fetches_nothing_during_search()
     let mut altered = release.manifest();
     altered.push(b' ');
     world.net.serve(&release.url(), &altered);
-    assert_eq!(world.dist().install_from_index(&index, &id(GIT), None).map(|_| ()), Err(E::ManifestDigestMismatch));
+    assert_eq!(
+        world
+            .dist()
+            .install_from_index(&index, &id(GIT), None)
+            .map(|_| ()),
+        Err(E::ManifestDigestMismatch)
+    );
     world.net.serve(&release.url(), &release.manifest());
-    let report = world.dist().install_from_index(&index, &id(GIT), None).unwrap();
+    let report = world
+        .dist()
+        .install_from_index(&index, &id(GIT), None)
+        .unwrap();
     assert_eq!(report.key.digest, release.digest());
-    assert_eq!(world.dist().install_from_index(&index, &id("dctx/none"), None).map(|_| ()), Err(E::NotFound));
+    assert_eq!(
+        world
+            .dist()
+            .install_from_index(&index, &id("dctx/none"), None)
+            .map(|_| ()),
+        Err(E::NotFound)
+    );
 }

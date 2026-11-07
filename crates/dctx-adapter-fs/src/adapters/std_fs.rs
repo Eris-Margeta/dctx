@@ -100,16 +100,17 @@ fn kind_of(meta: &fs::Metadata) -> FsKind {
 
 fn modified_ns(meta: &fs::Metadata) -> io::Result<u128> {
     let modified = meta.modified()?;
-    modified.duration_since(UNIX_EPOCH).map(|duration| duration.as_nanos()).map_err(|_| {
-        io::Error::new(
-            io::ErrorKind::InvalidData,
-            "mtime before the unix epoch",
-        )
-    })
+    modified
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_nanos())
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "mtime before the unix epoch"))
 }
 
 #[cfg(unix)]
-#[allow(clippy::unnecessary_wraps, reason = "The cross-platform file-index hook returns None on platforms without Unix inode metadata.")]
+#[allow(
+    clippy::unnecessary_wraps,
+    reason = "The cross-platform file-index hook returns None on platforms without Unix inode metadata."
+)]
 fn file_index(meta: &fs::Metadata) -> Option<u64> {
     use std::os::unix::fs::MetadataExt;
     Some(meta.ino())
@@ -132,7 +133,11 @@ mod tests {
         let fs = StdFs;
         assert_eq!(fs.read_file(&path).unwrap(), b"abc");
         assert_eq!(fs.metadata(&path).unwrap().kind, FsKind::File);
-        assert!(fs.read_policy(&dir.path().join("missing")).unwrap().is_none());
+        assert!(
+            fs.read_policy(&dir.path().join("missing"))
+                .unwrap()
+                .is_none()
+        );
     }
 
     #[cfg(unix)]

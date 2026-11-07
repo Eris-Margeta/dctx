@@ -1,24 +1,29 @@
 [package]
 name = "dctx-map-query"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2024"
 license.workspace = true
 repository.workspace = true
+rust-version.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 description = "Incremental indexing and bounded traversal for dctx map mode"
 
 [dependencies]
-dctx-map-model = { path = "../dctx-map-model" }
-dctx-map-scan = { path = "../dctx-map-scan" }
-dctx-map-parse = { path = "../dctx-map-parse" }
-dctx-map-resolve = { path = "../dctx-map-resolve" }
-dctx-map-store = { path = "../dctx-map-store" }
-dctx-map-segment = { path = "../dctx-map-segment" }
-dctx-ports = { path = "../dctx-ports" }
-dctx-adapter-fs = { path = "../dctx-adapter-fs" }
-dctx-adapter-store = { path = "../dctx-adapter-store" }
-dctx-adapter-cache = { path = "../dctx-adapter-cache" }
-dctx-core = { path = "../dctx-core" }
-dctx-hash = { path = "../dctx-hash" }
+dctx-map-model = { version = "=1.2.0", path = "../dctx-map-model" }
+dctx-map-scan = { version = "=1.2.0", path = "../dctx-map-scan" }
+dctx-map-parse = { version = "=1.2.0", path = "../dctx-map-parse" }
+dctx-map-resolve = { version = "=1.2.0", path = "../dctx-map-resolve" }
+dctx-map-store = { version = "=1.2.0", path = "../dctx-map-store" }
+dctx-map-segment = { version = "=1.2.0", path = "../dctx-map-segment" }
+dctx-ports = { version = "=1.2.0", path = "../dctx-ports" }
+dctx-adapter-fs = { version = "=1.2.0", path = "../dctx-adapter-fs" }
+dctx-adapter-store = { version = "=1.2.0", path = "../dctx-adapter-store" }
+dctx-adapter-cache = { version = "=1.2.0", path = "../dctx-adapter-cache" }
+dctx-core = { version = "=1.2.0", path = "../dctx-core" }
+dctx-hash = { version = "=1.2.0", path = "../dctx-hash" }
 thiserror = "=2.0.18"
 serde = { version = "=1.0.228", features = ["derive"] }
 serde_json = "=1.0.149"

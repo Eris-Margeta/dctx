@@ -59,14 +59,24 @@ impl Parser for PureParser {
             Language::Php => php::parse_pure(path, bytes),
             Language::Swift => swift::parse_pure(path, bytes),
             // Heuristic families are extracted by the facade; here they stay module-only.
-            Language::Scala | Language::Dart | Language::Zig | Language::Solidity | Language::Gleam | Language::Fortran | Language::Perl | Language::Groovy | Language::Powershell | Language::Text => {
-                fallback(path, source)
-            }
+            Language::Scala
+            | Language::Dart
+            | Language::Zig
+            | Language::Solidity
+            | Language::Gleam
+            | Language::Fortran
+            | Language::Perl
+            | Language::Groovy
+            | Language::Powershell
+            | Language::Text => fallback(path, source),
             Language::Verilog => fallback(path, source),
             Language::Erlang => fallback(path, source),
-            Language::Elixir | Language::Lua | Language::OCaml | Language::R | Language::Julia | Language::Haskell => {
-                fallback(path, source)
-            }
+            Language::Elixir
+            | Language::Lua
+            | Language::OCaml
+            | Language::R
+            | Language::Julia
+            | Language::Haskell => fallback(path, source),
             Language::Hcl
             | Language::Sql
             | Language::Shell
@@ -109,11 +119,25 @@ impl Parser for TreeSitterParser {
             Language::Ruby => return ruby::parse_pure(path, bytes),
             Language::Php => return php::parse_pure(path, bytes),
             Language::Swift => return swift::parse_pure(path, bytes),
-            Language::Scala | Language::Dart | Language::Zig | Language::Solidity | Language::Gleam | Language::Fortran | Language::Groovy | Language::Powershell | Language::Verilog | Language::Text => {
+            Language::Scala
+            | Language::Dart
+            | Language::Zig
+            | Language::Solidity
+            | Language::Gleam
+            | Language::Fortran
+            | Language::Groovy
+            | Language::Powershell
+            | Language::Verilog
+            | Language::Text => {
                 return fallback(path, source);
             }
             Language::Perl | Language::Erlang => return fallback(path, source),
-            Language::Elixir | Language::Lua | Language::OCaml | Language::R | Language::Julia | Language::Haskell => {
+            Language::Elixir
+            | Language::Lua
+            | Language::OCaml
+            | Language::R
+            | Language::Julia
+            | Language::Haskell => {
                 return fallback(path, source);
             }
             Language::Hcl

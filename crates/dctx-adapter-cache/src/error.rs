@@ -72,24 +72,34 @@ pub enum CacheError {
 
 impl CacheError {
     /// Maps onto the stable port error. Pinned and pending stay in [`CacheError::CacheLimit`].
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn into_dctx(self) -> DctxError {
         match self {
-            Self::CacheLimit { requested, available, .. } => {
-                DctxError::CacheLimit { requested, available }
-            }
+            Self::CacheLimit {
+                requested,
+                available,
+                ..
+            } => DctxError::CacheLimit {
+                requested,
+                available,
+            },
             Self::Busy => DctxError::Busy,
             Self::Cancelled => DctxError::Cancelled,
             Self::InvalidRequest { reason } => DctxError::InvalidRequest { reason },
-            Self::CorruptIndex { reason } | Self::CorruptLedger { reason } => DctxError::CorruptIndex { reason },
+            Self::CorruptIndex { reason } | Self::CorruptLedger { reason } => {
+                DctxError::CorruptIndex { reason }
+            }
             Self::PolicyDenied => DctxError::PolicyDenied,
             Self::DiskFull => DctxError::io("disk full"),
-            Self::UnknownLedgerVersion { .. } => {
-                DctxError::CorruptIndex { reason: "unknown ledger version" }
-            }
-            Self::OutsideCacheRoot => {
-                DctxError::InvalidRequest { reason: "path escapes the cache root" }
-            }
+            Self::UnknownLedgerVersion { .. } => DctxError::CorruptIndex {
+                reason: "unknown ledger version",
+            },
+            Self::OutsideCacheRoot => DctxError::InvalidRequest {
+                reason: "path escapes the cache root",
+            },
             Self::LedgerIo { reason } => DctxError::io(reason),
         }
     }
@@ -109,19 +119,37 @@ mod tests {
             pending: 2,
         }
         .into_dctx();
-        assert_eq!(mapped, DctxError::CacheLimit { requested: 3, available: 1 });
+        assert_eq!(
+            mapped,
+            DctxError::CacheLimit {
+                requested: 3,
+                available: 1
+            }
+        );
         assert_eq!(CacheError::DiskFull.into_dctx(), DctxError::io("disk full"));
         assert_eq!(CacheError::DiskFull.into_dctx().code(), ErrorCode::Io);
         let unknown = CacheError::UnknownLedgerVersion { found: 9 }.into_dctx();
-        assert_eq!(unknown, DctxError::CorruptIndex { reason: "unknown ledger version" });
         assert_eq!(
-            CacheError::CorruptLedger { reason: "checksum" }.into_dctx().code(),
+            unknown,
+            DctxError::CorruptIndex {
+                reason: "unknown ledger version"
+            }
+        );
+        assert_eq!(
+            CacheError::CorruptLedger { reason: "checksum" }
+                .into_dctx()
+                .code(),
             ErrorCode::CorruptIndex
         );
-        assert_eq!(CacheError::LedgerIo { reason: "read" }.into_dctx().code(), ErrorCode::Io);
+        assert_eq!(
+            CacheError::LedgerIo { reason: "read" }.into_dctx().code(),
+            ErrorCode::Io
+        );
         assert_eq!(
             CacheError::OutsideCacheRoot.into_dctx(),
-            DctxError::InvalidRequest { reason: "path escapes the cache root" }
+            DctxError::InvalidRequest {
+                reason: "path escapes the cache root"
+            }
         );
     }
 }

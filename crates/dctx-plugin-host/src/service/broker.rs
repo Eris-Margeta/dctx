@@ -69,7 +69,13 @@ pub struct Broker<A, F, R> {
 
 impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
     /// A broker for one session; `frame_bytes` is the negotiated operation frame ceiling.
-    pub fn new(authority: Authority, ledger: Ledger, budget: Budget, frame_bytes: u64, ports: (A, F, R)) -> Self {
+    pub fn new(
+        authority: Authority,
+        ledger: Ledger,
+        budget: Budget,
+        frame_bytes: u64,
+        ports: (A, F, R),
+    ) -> Self {
         let (audit, files, recipes) = ports;
         Self {
             authority,
@@ -95,7 +101,11 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
     /// Registers a handle bound to another context (a stale or foreign handle in tests and recovery).
     /// # Errors
     /// Refuses an exhausted handle table or an invalid generated handle token.
-    pub fn register_bound(&mut self, binding: crate::domain::binding::Binding, kind: HandleKind) -> Result<Token, HostRefusal> {
+    pub fn register_bound(
+        &mut self,
+        binding: crate::domain::binding::Binding,
+        kind: HandleKind,
+    ) -> Result<Token, HostRefusal> {
         self.handles.register(binding, kind)
     }
 
@@ -119,10 +129,20 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
             Request::FileStage(stage) => self.file_stage(stage),
             Request::FileReplace(replace) => self.file_replace(request, replace),
             Request::ProgramRun(run) => self.program_run(request, run),
-            _ => Err(HostRefusal::new(ErrorCode::UnsupportedCapability, Phase::Broker, "method-not-brokered")),
+            _ => Err(HostRefusal::new(
+                ErrorCode::UnsupportedCapability,
+                Phase::Broker,
+                "method-not-brokered",
+            )),
         };
         if let Err(refusal) = &result {
-            let record = self.record(AuditKind::Refusal, request.method().as_str(), None, 0, refusal.reason);
+            let record = self.record(
+                AuditKind::Refusal,
+                request.method().as_str(),
+                None,
+                0,
+                refusal.reason,
+            );
             let _ = self.audit.append(&record);
         }
         result
@@ -186,14 +206,27 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
 
     fn file_read(&mut self, read: &ChunkRead) -> Result<Reply, HostRefusal> {
         let record = self.handles.get(&read.handle)?.clone();
-        let HandleKind::File { path } = &record.kind else { return Err(HostRefusal::denied("not-a-file-handle")) };
+        let HandleKind::File { path } = &record.kind else {
+            return Err(HostRefusal::denied("not-a-file-handle"));
+        };
         let total = self.delivered_after(&read.handle, read.length)?;
         self.authority.check_content(path)?;
-        let admission = self.authority.admit(&record.binding, Need::FileRead { path: path.clone(), bytes: total })?;
+        let admission = self.authority.admit(
+            &record.binding,
+            Need::FileRead {
+                path: path.clone(),
+                bytes: total,
+            },
+        )?;
         self.check_frame(read.length)?;
-        let (identity, precondition) = if let Some(token) = &read.precondition { (self.handles.check_precondition(&read.handle, token)?, None) } else {
+        let (identity, precondition) = if let Some(token) = &read.precondition {
+            (self.handles.check_precondition(&read.handle, token)?, None)
+        } else {
             let identity = self.files.identity(path).map_err(fault)?;
-            (identity, Some(self.handles.precondition(&read.handle, identity)?))
+            (
+                identity,
+                Some(self.handles.precondition(&read.handle, identity)?),
+            )
         };
         self.budget.charge(&[(Dimension::Content, read.length)])?;
         if let Err(refusal) = self.authority.commit(&admission) {
@@ -208,16 +241,30 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
             }
         };
         self.deliver(&read.handle, "file.read", read.length, bytes.len() as u64)?;
-        Ok(Reply::Chunk { bytes, size: identity.size, precondition })
+        Ok(Reply::Chunk {
+            bytes,
+            size: identity.size,
+            precondition,
+        })
     }
 
     fn output_read(&mut self, read: &ChunkRead) -> Result<Reply, HostRefusal> {
         let record = self.handles.get(&read.handle)?.clone();
-        let HandleKind::Output { role, operation, provenance, bytes } = &record.kind else {
+        let HandleKind::Output {
+            role,
+            operation,
+            provenance,
+            bytes,
+        } = &record.kind
+        else {
             return Err(HostRefusal::denied("not-an-output-handle"));
         };
         let total = self.delivered_after(&read.handle, read.length)?;
-        let need = Need::OutputRead { role: role.clone(), operation: *operation, bytes: total };
+        let need = Need::OutputRead {
+            role: role.clone(),
+            operation: *operation,
+            bytes: total,
+        };
         self.authority.check_provenance(provenance)?;
         let admission = self.authority.admit(&record.binding, need)?;
         self.check_frame(read.length)?;
@@ -226,21 +273,41 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
             self.budget.release(Dimension::Content, read.length);
             return Err(refusal);
         }
-        let start = usize::try_from(read.offset).unwrap_or(usize::MAX).min(bytes.len());
-        let end = usize::try_from(read.offset.saturating_add(read.length)).unwrap_or(usize::MAX).min(bytes.len());
+        let start = usize::try_from(read.offset)
+            .unwrap_or(usize::MAX)
+            .min(bytes.len());
+        let end = usize::try_from(read.offset.saturating_add(read.length))
+            .unwrap_or(usize::MAX)
+            .min(bytes.len());
         let chunk = bytes[start..end].to_vec();
         self.deliver(&read.handle, "output.read", read.length, chunk.len() as u64)?;
-        Ok(Reply::Chunk { bytes: chunk, size: bytes.len() as u64, precondition: None })
+        Ok(Reply::Chunk {
+            bytes: chunk,
+            size: bytes.len() as u64,
+            precondition: None,
+        })
     }
 
     fn file_stage(&mut self, stage: &FileStage) -> Result<Reply, HostRefusal> {
         let record = self.handles.get(&stage.resource)?.clone();
-        let HandleKind::File { path } = &record.kind else { return Err(HostRefusal::denied("not-a-file-handle")) };
-        let identity = self.handles.check_precondition(&stage.resource, &stage.precondition)?;
+        let HandleKind::File { path } = &record.kind else {
+            return Err(HostRefusal::denied("not-a-file-handle"));
+        };
+        let identity = self
+            .handles
+            .check_precondition(&stage.resource, &stage.precondition)?;
         let len = stage.bytes.len() as u64;
-        let size = stage.offset.checked_add(len).ok_or(HostRefusal::limit("upload-size"))?;
+        let size = stage
+            .offset
+            .checked_add(len)
+            .ok_or(HostRefusal::limit("upload-size"))?;
         let growth = size.saturating_sub(identity.size);
-        let need = Need::FileWrite { path: path.clone(), size, growth, create: false };
+        let need = Need::FileWrite {
+            path: path.clone(),
+            size,
+            growth,
+            create: false,
+        };
         let admission = self.authority.admit(&record.binding, need)?;
         let invocation = record.binding.invocation.clone();
         let upload = match &stage.upload {
@@ -248,7 +315,10 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
             None => return Err(HostRefusal::conflict("upload-must-start-at-zero")),
             Some(token) => {
                 let upload = self.handles.upload_mut(token)?;
-                if upload.resource != stage.resource || upload.precondition != stage.precondition || upload.invocation != invocation {
+                if upload.resource != stage.resource
+                    || upload.precondition != stage.precondition
+                    || upload.invocation != invocation
+                {
                     return Err(HostRefusal::conflict("upload-bound-elsewhere"));
                 }
                 if upload.sealed || upload.bytes.len() as u64 != stage.offset {
@@ -275,10 +345,20 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
         let upload = self.handles.upload_mut(&token)?;
         upload.bytes.extend_from_slice(stage.bytes.as_bytes());
         upload.sealed = stage.final_chunk;
-        Ok(Reply::Staged { upload: token, sealed: stage.final_chunk })
+        Ok(Reply::Staged {
+            upload: token,
+            sealed: stage.final_chunk,
+        })
     }
 
-    pub(crate) fn record(&self, kind: AuditKind, method: &'static str, receipt: Option<Token>, bytes: u64, reason: &'static str) -> AuditRecord {
+    pub(crate) fn record(
+        &self,
+        kind: AuditKind,
+        method: &'static str,
+        receipt: Option<Token>,
+        bytes: u64,
+        reason: &'static str,
+    ) -> AuditRecord {
         let binding = self.authority.binding();
         AuditRecord {
             kind,
@@ -294,7 +374,10 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
         }
     }
 
-    pub(crate) fn file_path(&self, handle: &Token) -> Result<dctx_plugin_protocol::records::scalars::ProjectPath, HostRefusal> {
+    pub(crate) fn file_path(
+        &self,
+        handle: &Token,
+    ) -> Result<dctx_plugin_protocol::records::scalars::ProjectPath, HostRefusal> {
         match &self.handles.get(handle)?.kind {
             HandleKind::File { path } => Ok(path.clone()),
             _ => Err(HostRefusal::denied("not-a-file-handle")),
@@ -302,7 +385,12 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
     }
 
     fn delivered_after(&self, handle: &Token, length: u64) -> Result<u64, HostRefusal> {
-        self.delivered.get(handle).copied().unwrap_or(0).checked_add(length).ok_or(HostRefusal::limit("read-total"))
+        self.delivered
+            .get(handle)
+            .copied()
+            .unwrap_or(0)
+            .checked_add(length)
+            .ok_or(HostRefusal::limit("read-total"))
     }
 
     fn check_frame(&self, length: u64) -> Result<(), HostRefusal> {
@@ -314,8 +402,15 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
     }
 
     /// Audits the delivery before the bytes leave the host, then records `Authority.Read`.
-    fn deliver(&mut self, handle: &Token, method: &'static str, charged: u64, actual: u64) -> Result<(), HostRefusal> {
-        self.budget.release(Dimension::Content, charged.saturating_sub(actual));
+    fn deliver(
+        &mut self,
+        handle: &Token,
+        method: &'static str,
+        charged: u64,
+        actual: u64,
+    ) -> Result<(), HostRefusal> {
+        self.budget
+            .release(Dimension::Content, charged.saturating_sub(actual));
         let mut record = self.record(AuditKind::Delivery, method, None, actual, "delivered");
         record.handle = Some(handle.clone());
         if self.audit.append(&record).is_err() {

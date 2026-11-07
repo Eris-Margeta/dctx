@@ -44,12 +44,17 @@ pub struct FakeNetwork {
 }
 
 fn locked<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
-    mutex.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
+    mutex
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
 impl FakeNetwork {
     /// Empty network.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new() -> Self {
         Self::default()
     }
@@ -61,7 +66,14 @@ impl FakeNetwork {
 
     /// Serves `bytes` at `url` from a public peer.
     pub fn serve(&self, url: &str, bytes: &[u8]) {
-        self.route(url, FakeResponse::Content { bytes: bytes.to_vec(), peer: PUBLIC_PEER, fail_after: None });
+        self.route(
+            url,
+            FakeResponse::Content {
+                bytes: bytes.to_vec(),
+                peer: PUBLIC_PEER,
+                fail_after: None,
+            },
+        );
     }
 
     /// Removes a route.
@@ -83,10 +95,16 @@ struct Interrupting {
 
 impl Read for Interrupting {
     fn read(&mut self, out: &mut [u8]) -> io::Result<usize> {
-        let end = self.fail_after.unwrap_or(self.bytes.len()).min(self.bytes.len());
+        let end = self
+            .fail_after
+            .unwrap_or(self.bytes.len())
+            .min(self.bytes.len());
         if self.at >= end {
             return match self.fail_after {
-                Some(_) => Err(io::Error::new(io::ErrorKind::ConnectionReset, "fake interruption")),
+                Some(_) => Err(io::Error::new(
+                    io::ErrorKind::ConnectionReset,
+                    "fake interruption",
+                )),
                 None => Ok(0),
             };
         }
@@ -104,10 +122,22 @@ impl Network for FakeNetwork {
         match locked(&self.routes).get(&text).cloned() {
             None => Err(NetworkError::NotFound),
             Some(FakeResponse::Fail(error)) => Err(error),
-            Some(FakeResponse::Redirect(location)) => Ok(Response { peer: PUBLIC_PEER, body: Body::Redirect(location) }),
-            Some(FakeResponse::Content { bytes, peer, fail_after }) => {
-                Ok(Response { peer, body: Body::Content(Box::new(Interrupting { bytes, at: 0, fail_after })) })
-            }
+            Some(FakeResponse::Redirect(location)) => Ok(Response {
+                peer: PUBLIC_PEER,
+                body: Body::Redirect(location),
+            }),
+            Some(FakeResponse::Content {
+                bytes,
+                peer,
+                fail_after,
+            }) => Ok(Response {
+                peer,
+                body: Body::Content(Box::new(Interrupting {
+                    bytes,
+                    at: 0,
+                    fail_after,
+                })),
+            }),
         }
     }
 }
@@ -137,7 +167,11 @@ struct MemoryState {
 
 impl MemoryState {
     fn check(&self, token: LockToken) -> Result<(), DistributionError> {
-        if self.lock == Some(token.value()) { Ok(()) } else { Err(DistributionError::Busy) }
+        if self.lock == Some(token.value()) {
+            Ok(())
+        } else {
+            Err(DistributionError::Busy)
+        }
     }
 
     fn fire(&mut self, at: Fault) -> Result<(), DistributionError> {
@@ -157,7 +191,10 @@ pub struct MemoryStore {
 
 impl MemoryStore {
     /// Empty store.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new() -> Self {
         Self::default()
     }
@@ -168,7 +205,10 @@ impl MemoryStore {
     }
 
     /// Simulates another process holding the lock.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn hold_lock(&self) -> LockToken {
         let mut state = locked(&self.state);
         state.next_token += 1;
@@ -177,9 +217,15 @@ impl MemoryStore {
     }
 
     /// Files of a published directory.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn installed_files(&self, key: &InstallKey) -> Option<Vec<String>> {
-        locked(&self.state).installed.get(key).map(|files| files.keys().cloned().collect())
+        locked(&self.state)
+            .installed
+            .get(key)
+            .map(|files| files.keys().cloned().collect())
     }
 
     /// Overwrites one published file, simulating tampering on disk.
@@ -220,11 +266,23 @@ impl Store for MemoryStore {
         Ok(())
     }
 
-    fn stage_append(&self, token: LockToken, key: &InstallKey, file: &SafeFileName, bytes: &[u8]) -> Result<(), DistributionError> {
+    fn stage_append(
+        &self,
+        token: LockToken,
+        key: &InstallKey,
+        file: &SafeFileName,
+        bytes: &[u8],
+    ) -> Result<(), DistributionError> {
         let mut state = locked(&self.state);
         state.check(token)?;
         state.fire(Fault::Stage)?;
-        state.staging.entry(key.clone()).or_default().entry(file.as_str().to_owned()).or_default().extend_from_slice(bytes);
+        state
+            .staging
+            .entry(key.clone())
+            .or_default()
+            .entry(file.as_str().to_owned())
+            .or_default()
+            .extend_from_slice(bytes);
         Ok(())
     }
 
@@ -235,7 +293,10 @@ impl Store for MemoryStore {
         if state.installed.contains_key(key) {
             return Err(DistributionError::Interrupted);
         }
-        let files = state.staging.remove(key).ok_or(DistributionError::NotInstalled)?;
+        let files = state
+            .staging
+            .remove(key)
+            .ok_or(DistributionError::NotInstalled)?;
         state.installed.insert(key.clone(), files);
         Ok(())
     }
@@ -255,12 +316,25 @@ impl Store for MemoryStore {
         Ok(locked(&self.state).installed.keys().cloned().collect())
     }
 
-    fn read_installed(&self, key: &InstallKey, file: &SafeFileName) -> Result<Vec<u8>, DistributionError> {
+    fn read_installed(
+        &self,
+        key: &InstallKey,
+        file: &SafeFileName,
+    ) -> Result<Vec<u8>, DistributionError> {
         let state = locked(&self.state);
-        state.installed.get(key).and_then(|files| files.get(file.as_str())).cloned().ok_or(DistributionError::NotInstalled)
+        state
+            .installed
+            .get(key)
+            .and_then(|files| files.get(file.as_str()))
+            .cloned()
+            .ok_or(DistributionError::NotInstalled)
     }
 
-    fn remove_installed(&self, token: LockToken, key: &InstallKey) -> Result<(), DistributionError> {
+    fn remove_installed(
+        &self,
+        token: LockToken,
+        key: &InstallKey,
+    ) -> Result<(), DistributionError> {
         let mut state = locked(&self.state);
         state.check(token)?;
         state.installed.remove(key);
@@ -274,7 +348,10 @@ pub struct FixedClock(AtomicU64);
 
 impl FixedClock {
     /// Clock at `now`.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn at(now: u64) -> Self {
         Self(AtomicU64::new(now))
     }

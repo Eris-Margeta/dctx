@@ -35,8 +35,12 @@ pub(super) fn parse_resume(id: &str) -> Result<ReadResume, DctxError> {
     let (head, flag) = id.rsplit_once('|').ok_or(DctxError::StaleContinuation)?;
     let (head, end_text) = head.rsplit_once('|').ok_or(DctxError::StaleContinuation)?;
     let (node, start_text) = head.rsplit_once('|').ok_or(DctxError::StaleContinuation)?;
-    let start = start_text.parse::<u32>().map_err(|_| DctxError::StaleContinuation)?;
-    let end = end_text.parse::<u32>().map_err(|_| DctxError::StaleContinuation)?;
+    let start = start_text
+        .parse::<u32>()
+        .map_err(|_| DctxError::StaleContinuation)?;
+    let end = end_text
+        .parse::<u32>()
+        .map_err(|_| DctxError::StaleContinuation)?;
     let beyond = match flag {
         "1" => true,
         "0" => false,
@@ -45,7 +49,12 @@ pub(super) fn parse_resume(id: &str) -> Result<ReadResume, DctxError> {
     if node.is_empty() || start == 0 || end < start {
         return Err(DctxError::StaleContinuation);
     }
-    Ok(ReadResume { id: node.to_string(), start, end, beyond })
+    Ok(ReadResume {
+        id: node.to_string(),
+        start,
+        end,
+        beyond,
+    })
 }
 
 pub(super) fn slice_span(
@@ -60,9 +69,13 @@ pub(super) fn slice_span(
     if start > end || end > bytes.len() {
         return Err(DctxError::CorruptIndex { reason: "span" });
     }
-    let text = std::str::from_utf8(&bytes[start..end]).map_err(|_| DctxError::CorruptIndex { reason: "span" })?;
+    let text = std::str::from_utf8(&bytes[start..end])
+        .map_err(|_| DctxError::CorruptIndex { reason: "span" })?;
     if lines == 0 {
-        return Ok(SlicedSource { text: text.to_string(), capped: false });
+        return Ok(SlicedSource {
+            text: text.to_string(),
+            capped: false,
+        });
     }
     let (skip, take) = match absolute_start {
         None => (0usize, usize::try_from(lines).unwrap_or(usize::MAX)),
@@ -95,8 +108,14 @@ pub(super) fn slice_span(
     Ok(SlicedSource { text: out, capped })
 }
 
-fn absolute_window(line: u32, lines: u32, node_lines: [u32; 2]) -> Result<(usize, usize), DctxError> {
-    let last = line.checked_add(lines.saturating_sub(1)).ok_or_else(|| DctxError::invalid("lines are outside the node span"))?;
+fn absolute_window(
+    line: u32,
+    lines: u32,
+    node_lines: [u32; 2],
+) -> Result<(usize, usize), DctxError> {
+    let last = line
+        .checked_add(lines.saturating_sub(1))
+        .ok_or_else(|| DctxError::invalid("lines are outside the node span"))?;
     if line == 0 || line < node_lines[0] || last > node_lines[1] {
         return Err(DctxError::invalid("lines are outside the node span"));
     }

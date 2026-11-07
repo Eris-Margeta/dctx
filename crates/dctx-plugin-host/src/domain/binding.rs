@@ -44,7 +44,10 @@ pub struct ActionKey {
 
 impl ActionKey {
     /// Binds `action_id` to the host context; the plugin chooses only the last field.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn bind(context: &Binding, action_id: &Token) -> Self {
         Self {
             artifact: context.artifact.clone(),
@@ -69,7 +72,8 @@ impl ArgDigest {
         }
         let mut bytes = [0; 32];
         for (index, byte) in bytes.iter_mut().enumerate() {
-            *byte = u8::from_str_radix(&value[index * 2..index * 2 + 2], 16).map_err(|_| HostRefusal::audit("invalid-argument-digest"))?;
+            *byte = u8::from_str_radix(&value[index * 2..index * 2 + 2], 16)
+                .map_err(|_| HostRefusal::audit("invalid-argument-digest"))?;
         }
         Ok(Self(bytes))
     }
@@ -78,21 +82,32 @@ impl ArgDigest {
     /// # Errors
     /// Refuses input above the SHA-256 message length limit.
     pub fn of(bytes: &[u8]) -> Result<Self, HostRefusal> {
-        Sha256::digest(bytes).map(|digest| Self(*digest.as_bytes())).map_err(|_| HostRefusal::limit("argument-digest-too-long"))
+        Sha256::digest(bytes)
+            .map(|digest| Self(*digest.as_bytes()))
+            .map_err(|_| HostRefusal::limit("argument-digest-too-long"))
     }
 
     /// Replay key and argument digest of an effect request; `None` for requests without `action_id`.
     /// # Errors
     /// Propagates the argument-digest length refusal when an action input is present.
-    pub fn of_request(context: &Binding, request: &Request) -> Result<Option<(ActionKey, Self)>, HostRefusal> {
+    pub fn of_request(
+        context: &Binding,
+        request: &Request,
+    ) -> Result<Option<(ActionKey, Self)>, HostRefusal> {
         match request.action_input() {
-            Some((action_id, bytes)) => Ok(Some((ActionKey::bind(context, action_id), Self::of(&bytes)?))),
+            Some((action_id, bytes)) => Ok(Some((
+                ActionKey::bind(context, action_id),
+                Self::of(&bytes)?,
+            ))),
             None => Ok(None),
         }
     }
 
     /// Raw digest bytes (private local metadata; never source content).
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn as_bytes(&self) -> &[u8; 32] {
         &self.0
     }
@@ -125,7 +140,13 @@ pub(crate) mod tests {
 
     #[test]
     fn digest_distinguishes_arguments() {
-        assert_eq!(ArgDigest::of(b"a").expect("a"), ArgDigest::of(b"a").expect("a"));
-        assert_ne!(ArgDigest::of(b"a").expect("a"), ArgDigest::of(b"b").expect("b"));
+        assert_eq!(
+            ArgDigest::of(b"a").expect("a"),
+            ArgDigest::of(b"a").expect("a")
+        );
+        assert_ne!(
+            ArgDigest::of(b"a").expect("a"),
+            ArgDigest::of(b"b").expect("b")
+        );
     }
 }

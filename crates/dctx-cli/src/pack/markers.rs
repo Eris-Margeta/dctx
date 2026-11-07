@@ -10,7 +10,7 @@ pub(super) fn source_document(
     path: &Path,
     stamps: dctx_template::TreeStamps,
 ) -> Result<dctx_template::LegacyOutput, String> {
-    let mut template = crate::template::legacy_template("default", stamps)?;
+    let mut template = stamps.template();
     template.insert_variable("project", &project_name(path));
     Ok(dctx_template::LegacyOutput::new(
         template,

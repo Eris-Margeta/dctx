@@ -3,7 +3,7 @@
 //! Implements the configuration extractor for `.toml` (PARSERS-v1, SPEC-MAP-MODE 5).
 //! Malformed spans become diagnostics. The draft in `path` owns facts.
 use crate::domain::{DiagnosticReason, Dialect, LexError, LexedFile, Limits};
-use crate::path::{hash_comment, skip_hash_comments, Cur, Draft, Kind};
+use crate::path::{Cur, Draft, Kind, hash_comment, skip_hash_comments};
 use std::collections::BTreeMap;
 
 pub(crate) fn extract(path: &str, source: &str, limits: &Limits) -> Result<LexedFile, LexError> {
@@ -53,7 +53,10 @@ impl Parser<'_> {
         Ok(())
     }
 
-    #[allow(clippy::needless_pass_by_value, reason = "Pending comment text is transferred at grammar dispatch boundaries and is not reusable by the caller after that item is handled.")]
+    #[allow(
+        clippy::needless_pass_by_value,
+        reason = "Pending comment text is transferred at grammar dispatch boundaries and is not reusable by the caller after that item is handled."
+    )]
     fn header(&mut self, doc: Option<String>) -> Result<(), LexError> {
         let start = self.cur.i;
         if !self.cur.eat(b'[') {
@@ -90,7 +93,11 @@ impl Parser<'_> {
             } else {
                 Kind::Table
             };
-            let Some(index) = self.draft.put(parent, segment, kind, start, self.cur.i, depth)?.index() else {
+            let Some(index) = self
+                .draft
+                .put(parent, segment, kind, start, self.cur.i, depth)?
+                .index()
+            else {
                 self.cur.consume_line();
                 return Ok(());
             };
@@ -103,7 +110,16 @@ impl Parser<'_> {
             *slot += 1;
             depth += 1;
             let segment = ordinal.to_string();
-            self.draft.put(parent, &segment, Kind::Value(true), start, self.cur.i, depth)?.index()
+            self.draft
+                .put(
+                    parent,
+                    &segment,
+                    Kind::Value(true),
+                    start,
+                    self.cur.i,
+                    depth,
+                )?
+                .index()
         } else {
             Some(parent)
         };
@@ -121,7 +137,10 @@ impl Parser<'_> {
         Ok(())
     }
 
-    #[allow(clippy::needless_pass_by_value, reason = "Pending comment text is transferred at grammar dispatch boundaries and is not reusable by the caller after that item is handled.")]
+    #[allow(
+        clippy::needless_pass_by_value,
+        reason = "Pending comment text is transferred at grammar dispatch boundaries and is not reusable by the caller after that item is handled."
+    )]
     fn assignment(&mut self, doc: Option<String>) -> Result<(), LexError> {
         let start = self.cur.i;
         let Some(segments) = self.key_path() else {
@@ -141,7 +160,11 @@ impl Parser<'_> {
         let last = segments.len() - 1;
         for segment in &segments[..last] {
             depth += 1;
-            let Some(index) = self.draft.put(parent, segment, Kind::Implicit, start, self.cur.i, depth)?.index() else {
+            let Some(index) = self
+                .draft
+                .put(parent, segment, Kind::Implicit, start, self.cur.i, depth)?
+                .index()
+            else {
                 self.skip_value(depth)?;
                 return Ok(());
             };
@@ -151,7 +174,14 @@ impl Parser<'_> {
         let container = matches!(self.cur.byte(), Some(b'{' | b'['));
         let node = self
             .draft
-            .put(parent, &segments[last], Kind::Value(container), start, self.cur.i, depth)?
+            .put(
+                parent,
+                &segments[last],
+                Kind::Value(container),
+                start,
+                self.cur.i,
+                depth,
+            )?
             .index();
         if let (Some(index), Some(text)) = (node, doc.as_deref()) {
             self.draft.set_doc(index, text);
@@ -168,7 +198,10 @@ impl Parser<'_> {
 
     fn value(&mut self, node: Option<usize>, depth: u32) -> Result<(), LexError> {
         if depth > self.max_depth {
-            return Err(LexError::TooDeep { line: self.draft.line(self.cur.i), limit: self.max_depth });
+            return Err(LexError::TooDeep {
+                line: self.draft.line(self.cur.i),
+                limit: self.max_depth,
+            });
         }
         match self.cur.byte() {
             Some(b'"' | b'\'') => {
@@ -188,7 +221,8 @@ impl Parser<'_> {
                 let start = self.cur.i;
                 self.bare();
                 if let Some(index) = node {
-                    self.draft.set_signature(index, self.cur.slice(start, self.cur.i).trim());
+                    self.draft
+                        .set_signature(index, self.cur.slice(start, self.cur.i).trim());
                     self.draft.extend(index, self.cur.i);
                 }
                 Ok(())
@@ -222,7 +256,14 @@ impl Parser<'_> {
             let child_depth = depth.saturating_add(1);
             let container = matches!(self.cur.byte(), Some(b'{' | b'['));
             let node = if let Some(parent) = parent {
-                let declared = self.draft.put(parent, &segment, Kind::Value(container), mark, mark, child_depth)?;
+                let declared = self.draft.put(
+                    parent,
+                    &segment,
+                    Kind::Value(container),
+                    mark,
+                    mark,
+                    child_depth,
+                )?;
                 if let Some(index) = declared.index()
                     && let Some(text) = &doc
                 {
@@ -230,7 +271,10 @@ impl Parser<'_> {
                 }
                 declared.index()
             } else if child_depth > self.max_depth {
-                return Err(LexError::TooDeep { line: self.draft.line(mark), limit: self.max_depth });
+                return Err(LexError::TooDeep {
+                    line: self.draft.line(mark),
+                    limit: self.max_depth,
+                });
             } else {
                 None
             };
@@ -301,7 +345,18 @@ impl Parser<'_> {
             let mut skipped = false;
             for segment in &segments[..last] {
                 child_depth += 1;
-                let Some(index) = self.draft.put(current, segment, Kind::Implicit, start, self.cur.i, child_depth)?.index() else {
+                let Some(index) = self
+                    .draft
+                    .put(
+                        current,
+                        segment,
+                        Kind::Implicit,
+                        start,
+                        self.cur.i,
+                        child_depth,
+                    )?
+                    .index()
+                else {
                     skipped = true;
                     break;
                 };
@@ -314,7 +369,14 @@ impl Parser<'_> {
                 let container = matches!(self.cur.byte(), Some(b'{' | b'['));
                 let node = self
                     .draft
-                    .put(current, &segments[last], Kind::Value(container), start, self.cur.i, child_depth)?
+                    .put(
+                        current,
+                        &segments[last],
+                        Kind::Value(container),
+                        start,
+                        self.cur.i,
+                        child_depth,
+                    )?
                     .index();
                 if let (Some(index), Some(text)) = (node, doc.as_deref()) {
                     self.draft.set_doc(index, text);
@@ -360,7 +422,10 @@ impl Parser<'_> {
             Some(b'"' | b'\'') => self.string(),
             Some(b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'_' | b'-') => {
                 let start = self.cur.i;
-                while matches!(self.cur.byte(), Some(b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'_' | b'-')) {
+                while matches!(
+                    self.cur.byte(),
+                    Some(b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'_' | b'-')
+                ) {
                     self.cur.i += 1;
                 }
                 Some(self.cur.slice(start, self.cur.i).to_string())
@@ -447,7 +512,12 @@ impl Parser<'_> {
                 self.cur.i += 1;
                 continue;
             }
-            if let Some(ch) = self.cur.src.get(self.cur.i..).and_then(|text| text.chars().next()) {
+            if let Some(ch) = self
+                .cur
+                .src
+                .get(self.cur.i..)
+                .and_then(|text| text.chars().next())
+            {
                 out.push(ch);
                 self.cur.i += ch.len_utf8();
             } else {

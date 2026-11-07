@@ -18,11 +18,19 @@ use common::open_session;
 #[test]
 fn queries_share_one_generation_and_keep_records_and_digest() {
     let mut source = MemorySource::new();
-    source.insert_file("src/a.rs", b"fn alpha() {}\nfn beta() {}\n", 0).expect("a");
-    source.insert_file("src/b.rs", b"fn gamma() {}\n", 0).expect("b");
-    source.insert_file("README.md", b"# Fixture\n", 0).expect("readme");
+    source
+        .insert_file("src/a.rs", b"fn alpha() {}\nfn beta() {}\n", 0)
+        .expect("a");
+    source
+        .insert_file("src/b.rs", b"fn gamma() {}\n", 0)
+        .expect("b");
+    source
+        .insert_file("README.md", b"# Fixture\n", 0)
+        .expect("readme");
     let mut session = open_session(source);
-    let handle = session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
+    let handle = session
+        .snapshot(&SnapshotRequest::immutable())
+        .expect("snapshot");
     let digest = handle.digest().to_string();
     assert_eq!(handle.generation(), 1);
     let (live, seen) = session.generation_shares(&handle).expect("before");
@@ -35,7 +43,12 @@ fn queries_share_one_generation_and_keep_records_and_digest() {
     assert_eq!(paged.records[0].id, "s:src/a.rs#alpha");
     assert_eq!(paged.records[1].id, "s:src/a.rs#beta");
     assert_eq!(paged.cursors.len(), paged.records.len() - 1);
-    assert!(paged.cursors.iter().all(|cursor| cursor.starts_with("v1|1|map|")));
+    assert!(
+        paged
+            .cursors
+            .iter()
+            .all(|cursor| cursor.starts_with("v1|1|map|"))
+    );
     assert_eq!(full.snapshot, digest);
     assert_eq!(paged.snapshot, digest);
 
@@ -71,11 +84,19 @@ struct Page {
     cursors: Vec<String>,
 }
 
-fn map_children(session: &mut dctx::Session, handle: &dctx::SnapshotHandle, records: Option<u64>) -> Page {
+fn map_children(
+    session: &mut dctx::Session,
+    handle: &dctx::SnapshotHandle,
+    records: Option<u64>,
+) -> Page {
     let mut request = MapRequest::new(Verb::Map);
     request.target = "m:src/a.rs".to_string();
     request.limits.records = records;
-    let mut page = Page { records: Vec::new(), snapshot: String::new(), cursors: Vec::new() };
+    let mut page = Page {
+        records: Vec::new(),
+        snapshot: String::new(),
+        cursors: Vec::new(),
+    };
     let mut finished = false;
     for _ in 0..8 {
         let mut sink = VecSink::new();
@@ -105,5 +126,9 @@ fn find(session: &mut dctx::Session, handle: &dctx::SnapshotHandle, query: &str)
     request.query = query.to_string();
     let mut sink = VecSink::new();
     let answer = session.query(handle, &request, &mut sink).expect("find");
-    Page { records: answer.records, snapshot: answer.snapshot, cursors: Vec::new() }
+    Page {
+        records: answer.records,
+        snapshot: answer.snapshot,
+        cursors: Vec::new(),
+    }
 }

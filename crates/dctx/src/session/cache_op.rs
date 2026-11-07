@@ -4,14 +4,17 @@
 //! Depends on [`super::Session`] and the shared ledger. A live lease blocks destruction.
 //! Applying purge and collection unlink unleased bytes. A dry-run writes nothing.
 
-use super::ledger::{DiskReclaim, PersistedCache};
 use super::Session;
-use crate::domain::{CacheLedger, CacheReport, GcRequest, PurgeRequest, PurgeScope, DctxError};
+use super::ledger::{DiskReclaim, PersistedCache};
+use crate::domain::{CacheLedger, CacheReport, DctxError, GcRequest, PurgeRequest, PurgeScope};
 
 impl Session {
     /// Current ledger totals. `reclaimed_bytes` is the open-time auto-clean total, or zero in isolation.
     pub fn cache_status(&self) -> CacheReport {
-        self.report(self.managed.as_ref().map_or(0, PersistedCache::reclaimed), 0)
+        self.report(
+            self.managed.as_ref().map_or(0, PersistedCache::reclaimed),
+            0,
+        )
     }
 
     /// Managed lifecycle figures. `None` in library isolation, where auto-clean does not run.
@@ -50,7 +53,11 @@ impl Session {
             PurgeScope::All => None,
             PurgeScope::Generation(id) => Some(id),
         };
-        let disk = if only.is_none() { self.disk_reclaim(request.apply)? } else { None };
+        let disk = if only.is_none() {
+            self.disk_reclaim(request.apply)?
+        } else {
+            None
+        };
         let mut report = self.reclaim(request.apply, only);
         apply_disk(&mut report, disk);
         Ok(report)
@@ -75,7 +82,11 @@ impl Session {
         let mut reclaimed = 0u64;
         let mut blocked = 0u64;
         for id in ids {
-            let pinned = self.pins.get(&id).and_then(std::sync::Weak::upgrade).is_some();
+            let pinned = self
+                .pins
+                .get(&id)
+                .and_then(std::sync::Weak::upgrade)
+                .is_some();
             if pinned {
                 blocked += 1;
                 continue;
@@ -93,7 +104,11 @@ impl Session {
     }
 
     fn report(&self, reclaimed_bytes: u64, blocked_generations: u64) -> CacheReport {
-        let pinned_generations = self.pins.values().filter(|weak| weak.upgrade().is_some()).count();
+        let pinned_generations = self
+            .pins
+            .values()
+            .filter(|weak| weak.upgrade().is_some())
+            .count();
         CacheReport {
             committed_bytes: self.cache.committed(),
             reserved_bytes: self.cache.reserved(),

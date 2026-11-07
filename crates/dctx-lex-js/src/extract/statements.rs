@@ -60,7 +60,8 @@ impl Walker<'_> {
                         "if" | "for" | "while" | "with" | "catch" | "switch"
                     )
             }
-            (Some(Kind::Punct), ";" | "}") | (Some(Kind::Ident), "else" | "do" | "try" | "catch" | "finally") => true,
+            (Some(Kind::Punct), ";" | "}")
+            | (Some(Kind::Ident), "else" | "do" | "try" | "catch" | "finally") => true,
             _ => false,
         };
         explicit || self.asi(i)
@@ -182,7 +183,9 @@ impl Walker<'_> {
                 Some(self.variables(i, end, scope, decl))
             }
             "interface" if self.ts && self.word(i + 1) => self.interface(i, end, scope, decl),
-            "type" if self.ts && self.ident(i + 1) && (self.is(i + 2, "=") || self.is(i + 2, "<")) => {
+            "type"
+                if self.ts && self.ident(i + 1) && (self.is(i + 2, "=") || self.is(i + 2, "<")) =>
+            {
                 self.type_alias(i, end, scope, decl)
             }
             "enum" if self.ts && self.ident(i + 1) => self.enumeration(i, end, scope, decl),
@@ -309,13 +312,21 @@ mod tests {
 
     fn names(path: &str, source: &str) -> Vec<String> {
         let facts = JsLexer::default().extract(path, source.as_bytes()).unwrap();
-        facts.nodes.iter().skip(1).map(|n| n.fact.name.clone()).collect()
+        facts
+            .nodes
+            .iter()
+            .skip(1)
+            .map(|n| n.fact.name.clone())
+            .collect()
     }
 
     #[test]
     fn optional_catch_and_labels_keep_inner_declarations() {
         let source = "function outer() {\n  loop: for (;;) { break loop }\n  try { throw 1 } catch { function inner() { return 1 } }\n  try { throw 2 } catch (e) { function bound() { return e } }\n}";
-        assert_eq!(names("x.js", source), ["outer", "outer::inner", "outer::bound"]);
+        assert_eq!(
+            names("x.js", source),
+            ["outer", "outer::inner", "outer::bound"]
+        );
     }
 
     #[test]
@@ -336,7 +347,13 @@ mod tests {
             .nodes
             .iter()
             .skip(1)
-            .map(|n| (n.fact.name.as_str(), n.fact.public, n.fact.signature.as_str()))
+            .map(|n| {
+                (
+                    n.fact.name.as_str(),
+                    n.fact.public,
+                    n.fact.signature.as_str(),
+                )
+            })
             .collect();
         assert_eq!(
             summary,

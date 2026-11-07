@@ -3,7 +3,7 @@
 //! Implements SPEC-MAP-MODE 5.1 declaration spans for Ruby `class`, `module` and `def`.
 //! Metaprogramming is not a declaration: only a statement-level keyword is extracted.
 use super::{OutRef, Scope, Sym, Vis, Walker, qualify};
-use crate::domain::{collapse, DiagnosticReason, Precision};
+use crate::domain::{DiagnosticReason, Precision, collapse};
 use crate::lexer::Kind;
 use dctx_map_model::{EdgeKind, SymbolKind};
 
@@ -121,7 +121,11 @@ impl Walker<'_> {
         self.push_vis();
         let child = Scope {
             owner: idx.unwrap_or(scope.owner),
-            name: if idx.is_some() { name } else { scope.name.clone() },
+            name: if idx.is_some() {
+                name
+            } else {
+                scope.name.clone()
+            },
             defining: true,
         };
         if self.nest() {
@@ -222,7 +226,11 @@ impl Walker<'_> {
         );
         let child = Scope {
             owner: idx.unwrap_or(scope.owner),
-            name: if idx.is_some() { name } else { scope.name.clone() },
+            name: if idx.is_some() {
+                name
+            } else {
+                scope.name.clone()
+            },
             defining: false,
         };
         if endless {

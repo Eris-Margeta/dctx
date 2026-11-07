@@ -12,9 +12,9 @@ mod perl;
 #[cfg(test)]
 mod tests;
 
-use super::{ident_at, mask, signature_of, to_symbols, Decl, Syntax};
+use super::{Decl, Syntax, ident_at, mask, signature_of, to_symbols};
 use crate::index::extract::Symbol;
-use decl::{declarations, shape, Inside, Scope};
+use decl::{Inside, Scope, declarations, shape};
 
 /// How one language declares things.
 struct Lang {
@@ -36,12 +36,37 @@ struct Lang {
     const_type: bool,
 }
 
-const SLASHES: Syntax = Syntax { line: &["//"], block: Some(("/*", "*/")), nested: false, quotes: b"\"'", triple: false };
+const SLASHES: Syntax = Syntax {
+    line: &["//"],
+    block: Some(("/*", "*/")),
+    nested: false,
+    quotes: b"\"'",
+    triple: false,
+};
 
 const SCALA: Lang = Lang {
     tag: "scala",
-    syntax: Syntax { nested: true, triple: true, ..SLASHES },
-    modifiers: &["private", "protected", "override", "final", "abstract", "sealed", "implicit", "lazy", "case", "open", "inline", "transparent", "opaque", "infix"],
+    syntax: Syntax {
+        nested: true,
+        triple: true,
+        ..SLASHES
+    },
+    modifiers: &[
+        "private",
+        "protected",
+        "override",
+        "final",
+        "abstract",
+        "sealed",
+        "implicit",
+        "lazy",
+        "case",
+        "open",
+        "inline",
+        "transparent",
+        "opaque",
+        "infix",
+    ],
     types: &["class", "object", "trait", "enum", "type"],
     fns: &["def"],
     paren: false,
@@ -51,8 +76,23 @@ const SCALA: Lang = Lang {
 
 const DART: Lang = Lang {
     tag: "dart",
-    syntax: Syntax { nested: true, triple: true, ..SLASHES },
-    modifiers: &["abstract", "base", "final", "sealed", "interface", "static", "external", "const", "late", "factory"],
+    syntax: Syntax {
+        nested: true,
+        triple: true,
+        ..SLASHES
+    },
+    modifiers: &[
+        "abstract",
+        "base",
+        "final",
+        "sealed",
+        "interface",
+        "static",
+        "external",
+        "const",
+        "late",
+        "factory",
+    ],
     types: &["class", "mixin", "enum", "extension"],
     fns: &[],
     paren: true,
@@ -62,8 +102,21 @@ const DART: Lang = Lang {
 
 const ZIG: Lang = Lang {
     tag: "zig",
-    syntax: Syntax { line: &["//", "\\\\"], block: None, quotes: b"\"'", ..SLASHES },
-    modifiers: &["pub", "export", "inline", "noinline", "extern", "comptime", "threadlocal"],
+    syntax: Syntax {
+        line: &["//", "\\\\"],
+        block: None,
+        quotes: b"\"'",
+        ..SLASHES
+    },
+    modifiers: &[
+        "pub",
+        "export",
+        "inline",
+        "noinline",
+        "extern",
+        "comptime",
+        "threadlocal",
+    ],
     types: &[],
     fns: &["fn"],
     paren: false,
@@ -84,7 +137,12 @@ const SOLIDITY: Lang = Lang {
 
 const GLEAM: Lang = Lang {
     tag: "gleam",
-    syntax: Syntax { line: &["//"], block: None, quotes: b"\"", ..SLASHES },
+    syntax: Syntax {
+        line: &["//"],
+        block: None,
+        quotes: b"\"",
+        ..SLASHES
+    },
     modifiers: &["pub", "opaque"],
     types: &["type"],
     fns: &["fn"],
@@ -95,8 +153,22 @@ const GLEAM: Lang = Lang {
 
 const GROOVY: Lang = Lang {
     tag: "groovy",
-    syntax: Syntax { line: &["//", "#!"], triple: true, ..SLASHES },
-    modifiers: &["public", "private", "protected", "static", "final", "abstract", "synchronized", "transient", "volatile"],
+    syntax: Syntax {
+        line: &["//", "#!"],
+        triple: true,
+        ..SLASHES
+    },
+    modifiers: &[
+        "public",
+        "private",
+        "protected",
+        "static",
+        "final",
+        "abstract",
+        "synchronized",
+        "transient",
+        "volatile",
+    ],
     types: &["class", "interface", "trait", "enum"],
     fns: &["def"],
     paren: true,
@@ -108,7 +180,13 @@ const GROOVY: Lang = Lang {
 /// keywords and the comment-and-string syntax so `syntax_of` and `handles` answer for it.
 const PERL: Lang = Lang {
     tag: "perl",
-    syntax: Syntax { line: &["#"], block: None, nested: false, quotes: b"\"'", triple: false },
+    syntax: Syntax {
+        line: &["#"],
+        block: None,
+        nested: false,
+        quotes: b"\"'",
+        triple: false,
+    },
     modifiers: &[],
     types: &["package"],
     fns: &["sub"],
@@ -119,7 +197,13 @@ const PERL: Lang = Lang {
 
 const POWERSHELL: Lang = Lang {
     tag: "powershell",
-    syntax: Syntax { line: &["#"], block: Some(("<#", "#>")), nested: false, quotes: b"\"'", triple: false },
+    syntax: Syntax {
+        line: &["#"],
+        block: Some(("<#", "#>")),
+        nested: false,
+        quotes: b"\"'",
+        triple: false,
+    },
     modifiers: &[],
     types: &["class", "enum"],
     fns: &["function", "filter"],
@@ -149,7 +233,11 @@ pub(super) fn syntax_of(tag: &str) -> Option<Syntax> {
 }
 
 /// Called names in one Perl function body; the scan and its `&name` and bareword rules live in [`perl::call_names`].
-pub(super) fn perl_call_names<'a>(body: &'a str, own: &str, defined: &std::collections::HashSet<&str>) -> Vec<&'a str> {
+pub(super) fn perl_call_names<'a>(
+    body: &'a str,
+    own: &str,
+    defined: &std::collections::HashSet<&str>,
+) -> Vec<&'a str> {
     perl::call_names(body, own, defined)
 }
 
@@ -223,13 +311,27 @@ pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
         }
         let indent = shown.len() - shown.trim_start().len();
         // A brace-less body ends at the first line that is not indented past its `def` (and not inside open parens or braces).
-        if cont.as_ref().is_some_and(|c| c.body && c.depth == 0 && stack.len() <= c.base && indent <= c.indent) {
+        if cont
+            .as_ref()
+            .is_some_and(|c| c.body && c.depth == 0 && stack.len() <= c.base && indent <= c.indent)
+        {
             cont = None;
         }
         let in_parens = parens.depth > 0;
-        let in_header = in_parens || (solidity && header_lines < 12 && !line.starts_with('{') && pending.is_some_and(|at| decls[at].kind == "fn"));
-        header_lines = if in_header && !in_parens { header_lines + 1 } else { 0 };
-        if cont.is_none() && !in_header && !(line.starts_with('{') || (scala && continues_header(line))) {
+        let in_header = in_parens
+            || (solidity
+                && header_lines < 12
+                && !line.starts_with('{')
+                && pending.is_some_and(|at| decls[at].kind == "fn"));
+        header_lines = if in_header && !in_parens {
+            header_lines + 1
+        } else {
+            0
+        };
+        if cont.is_none()
+            && !in_header
+            && !(line.starts_with('{') || (scala && continues_header(line)))
+        {
             pending = None;
         }
         let mut open = pending.take();
@@ -251,13 +353,21 @@ pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
         };
         let mut fresh = false;
         if open.is_none() && cont.is_none() && !in_header && in_scope {
-            let scope = Scope { inside: top.map_or(Inside::File, |frame| frame.inside), owner: top.and_then(|frame| frame.container.as_deref()) };
+            let scope = Scope {
+                inside: top.map_or(Inside::File, |frame| frame.inside),
+                owner: top.and_then(|frame| frame.container.as_deref()),
+            };
             for (name, kind) in declarations(lang, line, original, &scope) {
                 let name = match scope.owner {
                     Some(owner) => format!("{owner}::{name}"),
                     None => name,
                 };
-                decls.push(Decl { name, kind, lines: [number, number], signature: signature_of(original) });
+                decls.push(Decl {
+                    name,
+                    kind,
+                    lines: [number, number],
+                    signature: signature_of(original),
+                });
                 open = Some(decls.len() - 1);
                 fresh = true;
             }
@@ -271,7 +381,12 @@ pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
             if let (Some(at), Some(inside)) = (open, inline) {
                 let parent = decls[at].name.clone();
                 for (member, kind) in data::inline_members(lang, line, inside) {
-                    decls.push(Decl { name: format!("{parent}::{member}"), kind, lines: [number, number], signature: signature_of(original) });
+                    decls.push(Decl {
+                        name: format!("{parent}::{member}"),
+                        kind,
+                        lines: [number, number],
+                        signature: signature_of(original),
+                    });
                 }
             }
         }
@@ -283,7 +398,12 @@ pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
         {
             let parent = decls[at].name.clone();
             for (member, kind) in decl::class_params(line, depth) {
-                decls.push(Decl { name: format!("{parent}::{member}"), kind, lines: [number, number], signature: signature_of(original) });
+                decls.push(Decl {
+                    name: format!("{parent}::{member}"),
+                    kind,
+                    lines: [number, number],
+                    signature: signature_of(original),
+                });
             }
         }
         for byte in shown.bytes() {
@@ -293,26 +413,47 @@ pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
                 b'{' => {
                     let decl = if parens.depth == 0 { open.take() } else { None };
                     let (container, inside) = match decl {
-                        Some(at) if decls[at].kind == "type" => (Some(decls[at].name.clone()), shape(lang, &decls[at].signature)),
+                        Some(at) if decls[at].kind == "type" => (
+                            Some(decls[at].name.clone()),
+                            shape(lang, &decls[at].signature),
+                        ),
                         // Scala defs and vals and Zig functions and tests: nested declarations are named under them.
-                        Some(at) if (scala || zig) && decls[at].kind == "fn" => (Some(decls[at].name.clone()), Inside::Body),
-                        Some(at) if scala && matches!(decls[at].kind, "const" | "var") => (Some(decls[at].name.clone()), Inside::Body),
-                        Some(at) if zig && decls[at].kind == "field" => match decl::field_shape(&decls[at].signature) {
-                            Some(inside) => (Some(decls[at].name.clone()), inside),
-                            None => (None, Inside::File),
-                        },
+                        Some(at) if (scala || zig) && decls[at].kind == "fn" => {
+                            (Some(decls[at].name.clone()), Inside::Body)
+                        }
+                        Some(at) if scala && matches!(decls[at].kind, "const" | "var") => {
+                            (Some(decls[at].name.clone()), Inside::Body)
+                        }
+                        Some(at) if zig && decls[at].kind == "field" => {
+                            match decl::field_shape(&decls[at].signature) {
+                                Some(inside) => (Some(decls[at].name.clone()), inside),
+                                None => (None, Inside::File),
+                            }
+                        }
                         Some(_) => (None, Inside::File),
                         // A block inside a body stays in that body; a Zig `return struct {` gives the function its members.
                         None => {
-                            let body = stack.last().filter(|frame| (scala || zig) && frame.inside == Inside::Body);
-                            let returned = if zig { decl::returned_shape(line) } else { None };
+                            let body = stack
+                                .last()
+                                .filter(|frame| (scala || zig) && frame.inside == Inside::Body);
+                            let returned = if zig {
+                                decl::returned_shape(line)
+                            } else {
+                                None
+                            };
                             match body {
-                                Some(frame) => (frame.container.clone(), returned.unwrap_or(Inside::Body)),
+                                Some(frame) => {
+                                    (frame.container.clone(), returned.unwrap_or(Inside::Body))
+                                }
                                 None => (None, Inside::File),
                             }
                         }
                     };
-                    stack.push(Frame { container, decl, inside });
+                    stack.push(Frame {
+                        container,
+                        decl,
+                        inside,
+                    });
                 }
                 b'}' => {
                     if let Some(frame) = stack.pop()
@@ -349,7 +490,15 @@ pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
                         c.depth = depth;
                         c.body |= body;
                     }
-                    None => cont = Some(Cont { decl: at, indent, depth, base: stack.len(), body }),
+                    None => {
+                        cont = Some(Cont {
+                            decl: at,
+                            indent,
+                            depth,
+                            base: stack.len(),
+                            body,
+                        })
+                    }
                 }
                 // Header done and no expression body: back to the one-line rules below.
                 if depth == 0 && !body {
@@ -385,7 +534,8 @@ fn scan_parens(line: &str, mut depth: usize) -> (usize, bool) {
             b')' => depth = depth.saturating_sub(1),
             b'=' if depth == 0 && !assigned => {
                 let before = at.checked_sub(1).map(|prior| bytes[prior]);
-                assigned = !matches!(before, Some(b'=' | b'!' | b'<' | b'>')) && !matches!(bytes.get(at + 1), Some(b'=' | b'>' | b':'));
+                assigned = !matches!(before, Some(b'=' | b'!' | b'<' | b'>'))
+                    && !matches!(bytes.get(at + 1), Some(b'=' | b'>' | b':'));
             }
             _ => {}
         }

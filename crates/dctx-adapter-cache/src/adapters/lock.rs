@@ -37,7 +37,11 @@ impl LockGuard {
         Self::acquire_within(root, true, LOCK_WAIT)
     }
 
-    pub(super) fn acquire_within(root: &Path, shared: bool, wait: Duration) -> Result<Self, CacheError> {
+    pub(super) fn acquire_within(
+        root: &Path,
+        shared: bool,
+        wait: Duration,
+    ) -> Result<Self, CacheError> {
         let path = root.join(LOCK_FILE);
         let mut options = OpenOptions::new();
         options.read(true).write(true).create(true);
@@ -46,11 +50,17 @@ impl LockGuard {
             use std::os::unix::fs::OpenOptionsExt;
             options.mode(0o600);
         }
-        let file = options.open(&path).map_err(|_| CacheError::LedgerIo { reason: "lock" })?;
+        let file = options
+            .open(&path)
+            .map_err(|_| CacheError::LedgerIo { reason: "lock" })?;
         let started = Instant::now();
         let mut pause = Duration::from_millis(1);
         loop {
-            let tried = if shared { file.try_lock_shared() } else { file.try_lock() };
+            let tried = if shared {
+                file.try_lock_shared()
+            } else {
+                file.try_lock()
+            };
             match tried {
                 Ok(()) => return Ok(Self { file }),
                 Err(std::fs::TryLockError::WouldBlock) => {
@@ -60,7 +70,9 @@ impl LockGuard {
                     std::thread::sleep(pause);
                     pause = (pause * 2).min(Duration::from_millis(25));
                 }
-                Err(std::fs::TryLockError::Error(_)) => return Err(CacheError::LedgerIo { reason: "lock" }),
+                Err(std::fs::TryLockError::Error(_)) => {
+                    return Err(CacheError::LedgerIo { reason: "lock" });
+                }
             }
         }
     }
@@ -80,17 +92,24 @@ mod tests {
     #[test]
     fn shared_locks_coexist_and_an_exclusive_one_waits_then_reports_busy() {
         let dir = tempfile::tempdir().expect("temp");
-        let a = LockGuard::acquire_within(dir.path(), true, Duration::from_millis(20)).expect("first reader");
-        let b = LockGuard::acquire_within(dir.path(), true, Duration::from_millis(20)).expect("second reader");
+        let a = LockGuard::acquire_within(dir.path(), true, Duration::from_millis(20))
+            .expect("first reader");
+        let b = LockGuard::acquire_within(dir.path(), true, Duration::from_millis(20))
+            .expect("second reader");
         let started = Instant::now();
         let refused = LockGuard::acquire_within(dir.path(), false, Duration::from_millis(60));
         assert!(matches!(refused, Err(CacheError::Busy)));
-        assert!(started.elapsed() >= Duration::from_millis(60), "the writer waited before giving up");
+        assert!(
+            started.elapsed() >= Duration::from_millis(60),
+            "the writer waited before giving up"
+        );
         drop((a, b));
-        let writer = LockGuard::acquire_within(dir.path(), false, Duration::from_millis(20)).expect("writer");
+        let writer = LockGuard::acquire_within(dir.path(), false, Duration::from_millis(20))
+            .expect("writer");
         let reader = LockGuard::acquire_within(dir.path(), true, Duration::from_millis(40));
         assert!(matches!(reader, Err(CacheError::Busy)));
         drop(writer);
-        LockGuard::acquire_within(dir.path(), true, Duration::from_millis(20)).expect("reader again");
+        LockGuard::acquire_within(dir.path(), true, Duration::from_millis(20))
+            .expect("reader again");
     }
 }

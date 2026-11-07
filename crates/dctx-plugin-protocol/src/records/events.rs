@@ -58,7 +58,10 @@ pub enum Event {
 
 impl Event {
     /// Wire method name.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn method(&self) -> &'static str {
         match self {
             Self::Progress(_) => "progress",
@@ -67,7 +70,10 @@ impl Event {
     }
 
     /// Invocation the event belongs to.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn invocation(&self) -> &Token {
         match self {
             Self::Progress(progress) => &progress.invocation,
@@ -108,7 +114,10 @@ impl Event {
                 .put("unit", p.unit.encode())
                 .maybe("wait", p.wait.as_ref().map(Wait::encode))
                 .build(),
-            Self::Cancelled { invocation, last_receipt } => Obj::new()
+            Self::Cancelled {
+                invocation,
+                last_receipt,
+            } => Obj::new()
                 .put("invocation", invocation.encode())
                 .maybe("last_receipt", last_receipt.as_ref().map(Token::encode))
                 .build(),
@@ -130,7 +139,11 @@ mod tests {
         assert_eq!(event.invocation().as_str(), "op:1");
         assert_eq!(Event::decode("progress", &event.encode_params()), Ok(event));
         assert!(Event::decode("heartbeat", &params).is_err());
-        let zero = decode_object(text.replace("\"seq\":1", "\"seq\":0").as_bytes(), DecodeLimits::WIRE).expect("json");
+        let zero = decode_object(
+            text.replace("\"seq\":1", "\"seq\":0").as_bytes(),
+            DecodeLimits::WIRE,
+        )
+        .expect("json");
         assert!(Event::decode("progress", &zero).is_err());
     }
 }

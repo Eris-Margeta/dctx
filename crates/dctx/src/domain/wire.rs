@@ -4,13 +4,16 @@
 //! Depends on [`super::answer`]. The session writes the returned string as one sink page.
 //! `score` is a sort key and is not a JSON field. The object has no `vcs` field and no git id.
 
-use std::fmt::Write as _;
 use super::answer::{Answer, AnswerRecord};
 use super::error::DctxError;
 use super::request::Verb;
+use std::fmt::Write as _;
 
 /// Encodes `answer` as one JSON v2 document plus a trailing LF, without `snapshot`, `generation` or `freshness.age_s`.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn encode_answer(place: &str, answer: &Answer) -> String {
     encode_answer_with(place, answer, false)
 }
@@ -24,14 +27,24 @@ pub fn encode_answer_with(place: &str, answer: &Answer, meta: bool) -> String {
     field_str(&mut out, "place", place, false);
     if meta {
         field_str(&mut out, "snapshot", &answer.snapshot, false);
-        field_raw(&mut out, "generation", &answer.generation.to_string(), false);
+        field_raw(
+            &mut out,
+            "generation",
+            &answer.generation.to_string(),
+            false,
+        );
     }
     field_str(&mut out, "verb", answer.verb.as_str(), false);
     out.push_str(",\"freshness\":{");
     field_str(&mut out, "mode", &answer.freshness.mode, true);
     field_str(&mut out, "state", &answer.freshness.state, false);
     if meta {
-        field_raw(&mut out, "age_s", &answer.freshness.age_s.to_string(), false);
+        field_raw(
+            &mut out,
+            "age_s",
+            &answer.freshness.age_s.to_string(),
+            false,
+        );
     }
     out.push('}');
     out.push_str(",\"precision\":{");
@@ -84,7 +97,8 @@ pub fn encode_text(place: &str, answer: &Answer, meta: bool) -> String {
         out.push('\t');
         out.push_str(&record.kind);
         out.push('\t');
-        if matches!(answer.verb, Verb::Map | Verb::Find) && id_names_path(&record.id, &record.path) {
+        if matches!(answer.verb, Verb::Map | Verb::Find) && id_names_path(&record.id, &record.path)
+        {
             push_lines_text(&mut out, record.lines);
         } else {
             out.push_str(&record.path);
@@ -121,7 +135,10 @@ fn id_names_path(id: &str, path: &str) -> bool {
     let Some((_, rest)) = id.split_once(':') else {
         return false;
     };
-    !path.is_empty() && rest.strip_prefix(path).is_some_and(|tail| tail.is_empty() || tail.starts_with('#') || tail.starts_with(':'))
+    !path.is_empty()
+        && rest
+            .strip_prefix(path)
+            .is_some_and(|tail| tail.is_empty() || tail.starts_with('#') || tail.starts_with(':'))
 }
 
 /// Appends a record's lines as `L<a>-<b>`, or `L<a>` for one line. A map or find text line carries them in place of the path its id holds.
@@ -143,9 +160,19 @@ fn push_sites_text(out: &mut String, sites: &[u32]) {
 
 /// One skeleton line: `<id>\t<kind>\tL<start>-<end>\t<signature>`. The module line carries its path, and tabs or newlines inside a signature become spaces.
 fn push_skeleton_line(out: &mut String, record: &AnswerRecord) {
-    let _ = write!(out, "{}\t{}\tL{}-{}\t", record.id, record.kind, record.lines[0], record.lines[1]);
+    let _ = write!(
+        out,
+        "{}\t{}\tL{}-{}\t",
+        record.id, record.kind, record.lines[0], record.lines[1]
+    );
     match record.signature.as_deref() {
-        Some(signature) => out.extend(signature.chars().map(|ch| if matches!(ch, '\t' | '\n' | '\r') { ' ' } else { ch })),
+        Some(signature) => out.extend(signature.chars().map(|ch| {
+            if matches!(ch, '\t' | '\n' | '\r') {
+                ' '
+            } else {
+                ch
+            }
+        })),
         None if record.kind == "module" => out.push_str(&record.path),
         None => {}
     }
@@ -183,7 +210,10 @@ fn encode_record(out: &mut String, record: &AnswerRecord, compact: bool) {
     field_opt_in(out, "source_utf8", record.source_utf8.as_deref(), compact);
     field_opt_in(out, "edge", record.edge.as_deref(), compact);
     field_opt_in(out, "direction", record.direction.as_deref(), compact);
-    let target = record.target.as_deref().filter(|target| !(compact && record.id.ends_with(target)));
+    let target = record
+        .target
+        .as_deref()
+        .filter(|target| !(compact && record.id.ends_with(target)));
     field_opt_in(out, "target", target, compact);
     field_opt_in(out, "confidence", record.confidence.as_deref(), compact);
     if !record.sites.is_empty() {
@@ -265,12 +295,16 @@ pub(crate) fn parse_cursor(cursor: &str, generation: u64, verb: Verb) -> Result<
     if version != Some("v1") {
         return Err(DctxError::StaleContinuation);
     }
-    let found_generation = found_generation.and_then(|text| text.parse::<u64>().ok()).ok_or(DctxError::StaleContinuation)?;
+    let found_generation = found_generation
+        .and_then(|text| text.parse::<u64>().ok())
+        .ok_or(DctxError::StaleContinuation)?;
     if found_generation != generation {
         return Err(DctxError::StaleContinuation);
     }
     if found_verb != Some(verb.as_str()) {
-        return Err(DctxError::invalid("continuation verb does not match the request"));
+        return Err(DctxError::invalid(
+            "continuation verb does not match the request",
+        ));
     }
     match id {
         Some(id) if !id.is_empty() => Ok(id.to_string()),
@@ -307,16 +341,37 @@ mod tests {
         second.snapshot = "v1:sha256:cd:7".to_string();
         second.generation = 7;
         second.freshness.age_s = 99;
-        assert_eq!(encode_answer("fixture", &first), encode_answer("fixture", &second));
-        assert_eq!(encode_text("fixture", &first, false), encode_text("fixture", &second, false));
+        assert_eq!(
+            encode_answer("fixture", &first),
+            encode_answer("fixture", &second)
+        );
+        assert_eq!(
+            encode_text("fixture", &first, false),
+            encode_text("fixture", &second, false)
+        );
         assert!(encode_text("fixture", &first, false).starts_with("# fixture find\n"));
         let json = encode_answer("fixture", &first);
-        assert!(!json.contains("\"snapshot\"") && !json.contains("generation") && !json.contains("age_s"));
-        assert!(json.contains("\"mode\":\"immutable_snapshot\"") && json.contains("\"state\":\"verified\""));
-        assert_ne!(encode_answer_with("fixture", &first, true), encode_answer_with("fixture", &second, true));
-        assert!(encode_answer_with("fixture", &first, true).contains("\"snapshot\":\"v1:sha256:ab:1\",\"generation\":1"));
+        assert!(
+            !json.contains("\"snapshot\"")
+                && !json.contains("generation")
+                && !json.contains("age_s")
+        );
+        assert!(
+            json.contains("\"mode\":\"immutable_snapshot\"")
+                && json.contains("\"state\":\"verified\"")
+        );
+        assert_ne!(
+            encode_answer_with("fixture", &first, true),
+            encode_answer_with("fixture", &second, true)
+        );
+        assert!(
+            encode_answer_with("fixture", &first, true)
+                .contains("\"snapshot\":\"v1:sha256:ab:1\",\"generation\":1")
+        );
         assert!(encode_answer_with("fixture", &first, true).contains("\"age_s\":0"));
-        assert!(encode_text("fixture", &first, true).starts_with("# fixture find v1:sha256:ab:1 g=1\n"));
+        assert!(
+            encode_text("fixture", &first, true).starts_with("# fixture find v1:sha256:ab:1 g=1\n")
+        );
     }
 
     #[test]
@@ -330,9 +385,15 @@ mod tests {
         let odd = AnswerRecord::basic("x", "fn", "src/a.py");
         answer.records = vec![symbol, hit, odd];
         let text = encode_text("fixture", &answer, false);
-        assert_eq!(text, "# fixture find\ns:src/a.py#Repo::get\tmethod\tL12-30\ntext:src/a.py:7\ttext\tL7\nx\tfn\tsrc/a.py\n");
+        assert_eq!(
+            text,
+            "# fixture find\ns:src/a.py#Repo::get\tmethod\tL12-30\ntext:src/a.py:7\ttext\tL7\nx\tfn\tsrc/a.py\n"
+        );
         answer.verb = Verb::Neighbors;
-        assert!(encode_text("fixture", &answer, false).contains("s:src/a.py#Repo::get\tmethod\tsrc/a.py\n"));
+        assert!(
+            encode_text("fixture", &answer, false)
+                .contains("s:src/a.py#Repo::get\tmethod\tsrc/a.py\n")
+        );
         assert!(!id_names_path("s:src/a.pyc#x", "src/a.py"));
     }
 
@@ -348,8 +409,13 @@ mod tests {
         module.lines = [1, 9];
         answer.records = vec![module, method];
         let text = encode_text("fixture", &answer, false);
-        assert_eq!(text, "# fixture skeleton\nm:a.py\tmodule\tL1-9\ta.py\ns:a.py#Repo::get\tfn\tL2-3\tdef get(self, key):\n");
-        assert!(encode_answer("fixture", &answer).contains("\"signature\":\"def get(self,\\tkey):\""));
+        assert_eq!(
+            text,
+            "# fixture skeleton\nm:a.py\tmodule\tL1-9\ta.py\ns:a.py#Repo::get\tfn\tL2-3\tdef get(self, key):\n"
+        );
+        assert!(
+            encode_answer("fixture", &answer).contains("\"signature\":\"def get(self,\\tkey):\"")
+        );
     }
 
     #[test]
@@ -359,8 +425,14 @@ mod tests {
         answer.outcome = None;
         let mut with = AnswerRecord::basic("calls:in:s:a.py#caller", "fn", "a.py");
         with.sites = vec![6, 7];
-        answer.records = vec![with, AnswerRecord::basic("calls:in:s:a.py#other", "fn", "a.py")];
-        assert_eq!(encode_text("fixture", &answer, false), "# fixture neighbors\ncalls:in:s:a.py#caller\tfn\ta.py\tL6,L7\ncalls:in:s:a.py#other\tfn\ta.py\n");
+        answer.records = vec![
+            with,
+            AnswerRecord::basic("calls:in:s:a.py#other", "fn", "a.py"),
+        ];
+        assert_eq!(
+            encode_text("fixture", &answer, false),
+            "# fixture neighbors\ncalls:in:s:a.py#caller\tfn\ta.py\tL6,L7\ncalls:in:s:a.py#other\tfn\ta.py\n"
+        );
         let json = encode_answer("fixture", &answer);
         assert_eq!(json.matches("\"sites\"").count(), 1);
         assert!(json.contains("\"sites\":[6,7]}"), "{json}");
@@ -374,13 +446,19 @@ mod tests {
             records: vec![AnswerRecord::basic("s:src/lib.rs#ping", "fn", "src/lib.rs")],
             more: 0,
             next: None,
-            freshness: Freshness { mode: "immutable_snapshot".to_string(), state: "verified".to_string(), age_s: 0 },
+            freshness: Freshness {
+                mode: "immutable_snapshot".to_string(),
+                state: "verified".to_string(),
+                age_s: 0,
+            },
             precision: Precision {
                 coverage: "structural".to_string(),
                 completion: "complete".to_string(),
                 parser: "dctx-structural/2".to_string(),
             },
-            outcome: Some(IdentityOutcome::Gone { id: "s:src/lib.rs#removed".to_string() }),
+            outcome: Some(IdentityOutcome::Gone {
+                id: "s:src/lib.rs#removed".to_string(),
+            }),
         }
     }
 }

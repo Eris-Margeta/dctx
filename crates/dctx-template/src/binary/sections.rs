@@ -5,13 +5,13 @@
 
 use dctx_core::FileHandlingDecision;
 
-use crate::error::{TemplateError, MAX_INSTRUCTIONS};
+use crate::error::{MAX_INSTRUCTIONS, TemplateError};
 use crate::model::{
-    BudgetPlan, IndexPlan, Inst, NamedCode, RenderProgram, SelectRule, Selection, ViewPlan, OP_MAX,
+    BudgetPlan, IndexPlan, Inst, NamedCode, OP_MAX, RenderProgram, SelectRule, Selection, ViewPlan,
 };
 use crate::opcode::instruction_ok;
 
-use super::io::{count, Buf, Reader};
+use super::io::{Buf, Reader, count};
 
 pub(super) fn encode_selections(items: &[Selection]) -> Result<Vec<u8>, TemplateError> {
     let mut buf = Buf::new();
@@ -42,9 +42,18 @@ pub(super) fn decode_selections(payload: &[u8]) -> Result<Vec<Selection>, Templa
         let rules_n = reader.count()?;
         let mut rules = Vec::with_capacity(rules_n);
         for _ in 0..rules_n {
-            rules.push(SelectRule { decision: decision_from(reader.u8()?)?, pattern: reader.string()? });
+            rules.push(SelectRule {
+                decision: decision_from(reader.u8()?)?,
+                pattern: reader.string()?,
+            });
         }
-        items.push(Selection { name, roots, languages, kinds, rules });
+        items.push(Selection {
+            name,
+            roots,
+            languages,
+            kinds,
+            rules,
+        });
     }
     reader.finish("payload")?;
     Ok(items)
@@ -192,16 +201,29 @@ pub(super) fn decode_render(payload: &[u8]) -> Result<RenderProgram, TemplateErr
     let partials = read_codes(&mut reader, &mut instructions)?;
     let layouts = read_codes(&mut reader, &mut instructions)?;
     reader.finish("payload")?;
-    let program = RenderProgram { strings, variables, partials, layouts };
+    let program = RenderProgram {
+        strings,
+        variables,
+        partials,
+        layouts,
+    };
     for code in program.partials.iter().chain(program.layouts.iter()) {
         for inst in &code.instructions {
-            instruction_ok(inst.opcode, inst.arg, program.strings.len(), program.partials.len())?;
+            instruction_ok(
+                inst.opcode,
+                inst.arg,
+                program.strings.len(),
+                program.partials.len(),
+            )?;
         }
     }
     Ok(program)
 }
 
-fn read_codes(reader: &mut Reader<'_>, instructions: &mut u64) -> Result<Vec<NamedCode>, TemplateError> {
+fn read_codes(
+    reader: &mut Reader<'_>,
+    instructions: &mut u64,
+) -> Result<Vec<NamedCode>, TemplateError> {
     let n = reader.count()?;
     let mut items = Vec::with_capacity(n);
     for _ in 0..n {
@@ -211,7 +233,10 @@ fn read_codes(reader: &mut Reader<'_>, instructions: &mut u64) -> Result<Vec<Nam
         for _ in 0..count {
             *instructions = instructions.saturating_add(1);
             if *instructions > u64::from(MAX_INSTRUCTIONS) {
-                return Err(TemplateError::Limit { what: "instructions", limit: u64::from(MAX_INSTRUCTIONS) });
+                return Err(TemplateError::Limit {
+                    what: "instructions",
+                    limit: u64::from(MAX_INSTRUCTIONS),
+                });
             }
             let opcode = reader.u16()?;
             let arg = reader.u16()?;
@@ -220,7 +245,10 @@ fn read_codes(reader: &mut Reader<'_>, instructions: &mut u64) -> Result<Vec<Nam
             }
             body.push(Inst { opcode, arg });
         }
-        items.push(NamedCode { name, instructions: body });
+        items.push(NamedCode {
+            name,
+            instructions: body,
+        });
     }
     Ok(items)
 }
@@ -243,4 +271,3 @@ fn decision_from(code: u8) -> Result<FileHandlingDecision, TemplateError> {
         _ => Err(TemplateError::Corrupt { reason: "decision" }),
     }
 }
-

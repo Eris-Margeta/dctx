@@ -29,10 +29,7 @@ fn omitted_in(row: &str) -> Option<u64> {
 
 /// Hits a group stands for: its rows plus the hits an omission note counts.
 fn group_hits(source: &str) -> u64 {
-    source
-        .lines()
-        .map(|row| omitted_in(row).unwrap_or(1))
-        .sum()
+    source.lines().map(|row| omitted_in(row).unwrap_or(1)).sum()
 }
 
 /// Keeps the first half of a group's hits and notes the rest. `None` when one hit or fewer is left to drop.
@@ -71,7 +68,10 @@ pub(crate) fn append_summary(out: &mut String, records: &[AnswerRecord]) {
         out.push_str("0 hits\n");
         return;
     }
-    let hits: u64 = records.iter().map(|record| group_hits(record.source_utf8.as_deref().unwrap_or(""))).sum();
+    let hits: u64 = records
+        .iter()
+        .map(|record| group_hits(record.source_utf8.as_deref().unwrap_or("")))
+        .sum();
     out.push_str(&format!("{hits} hits in {} symbols\n", records.len()));
 }
 
@@ -98,10 +98,16 @@ mod tests {
     fn shrinking_halves_the_rows_and_keeps_the_hit_total() {
         let source = "L1: a\nL2: b\nL3: c\nL4: d";
         let once = shrink(source).expect("shrunk");
-        assert_eq!(once, "L1: a\nL2: b\n+2 more hits in this symbol; narrow with --in");
+        assert_eq!(
+            once,
+            "L1: a\nL2: b\n+2 more hits in this symbol; narrow with --in"
+        );
         assert_eq!(group_hits(&once), 4);
         let twice = shrink(&once).expect("shrunk again");
-        assert_eq!(twice, "L1: a\n+3 more hits in this symbol; narrow with --in");
+        assert_eq!(
+            twice,
+            "L1: a\n+3 more hits in this symbol; narrow with --in"
+        );
         assert_eq!(group_hits(&twice), 4);
         assert!(shrink(&twice).is_none());
     }

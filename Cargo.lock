@@ -802,7 +802,7 @@ dependencies = [
 
 [[package]]
 name = "dctx"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-adapter-cache",
  "dctx-core",
@@ -833,7 +833,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-adapter-cache"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-core",
  "dctx-hash",
@@ -845,7 +845,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-adapter-fs"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "tempfile",
@@ -854,7 +854,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-adapter-store"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "dctx-map-segment",
@@ -865,7 +865,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-cli"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx",
  "dctx-adapter-cache",
@@ -884,7 +884,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-core"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "criterion",
  "dctx-hash",
@@ -912,7 +912,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-desktop-api"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx",
  "dctx-core",
@@ -924,7 +924,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-ed25519"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "ed25519-dalek",
  "hex",
@@ -935,7 +935,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-hash"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "criterion",
  "proptest",
@@ -944,7 +944,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-lex-c"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "dctx-map-model",
@@ -952,7 +952,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-lex-cfg"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "dctx-map-model",
@@ -960,7 +960,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-lex-cs"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "dctx-map-model",
@@ -968,7 +968,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-lex-go"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "dctx-map-model",
@@ -976,7 +976,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-lex-java"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "dctx-map-model",
@@ -984,7 +984,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-lex-js"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "dctx-map-model",
@@ -994,7 +994,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-lex-kt"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "dctx-map-model",
@@ -1002,7 +1002,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-lex-md"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-map-parse",
  "proptest",
@@ -1010,7 +1010,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-lex-php"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "dctx-map-model",
@@ -1018,7 +1018,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-lex-py"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "dctx-map-model",
@@ -1027,7 +1027,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-lex-rb"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "dctx-map-model",
@@ -1035,7 +1035,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-lex-rust"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-map-model",
  "dctx-map-parse",
@@ -1048,7 +1048,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-lex-swift"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "dctx-map-model",
@@ -1056,7 +1056,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-map-model"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "proptest",
@@ -1066,7 +1066,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-map-parse"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "dctx-lex-c",
@@ -1094,7 +1094,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-map-query"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-adapter-cache",
  "dctx-adapter-fs",
@@ -1116,7 +1116,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-map-resolve"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-map-model",
  "proptest",
@@ -1125,7 +1125,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-map-scan"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "tempfile",
@@ -1134,7 +1134,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-map-segment"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "proptest",
@@ -1143,7 +1143,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-map-store"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-core",
  "dctx-hash",
@@ -1157,7 +1157,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-pack"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-core",
  "dctx-hash",
@@ -1167,7 +1167,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-plugin-distribution"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-ed25519",
  "dctx-hash",
@@ -1178,7 +1178,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-plugin-git"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "dctx-plugin-protocol",
@@ -1187,7 +1187,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-plugin-host"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "dctx-plugin-protocol",
@@ -1196,7 +1196,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-plugin-platform"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "dctx-plugin-protocol",
@@ -1210,7 +1210,7 @@ dependencies = [
 
 [[package]]
 name = "dctx-plugin-protocol"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "proptest",
@@ -1218,14 +1218,14 @@ dependencies = [
 
 [[package]]
 name = "dctx-ports"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-core",
 ]
 
 [[package]]
 name = "dctx-template"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "dctx-core",
  "dctx-hash",

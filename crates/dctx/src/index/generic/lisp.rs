@@ -10,7 +10,7 @@ mod nix;
 #[cfg(test)]
 mod tests;
 
-use super::{is_denied, signature_of, to_symbols, Decl};
+use super::{Decl, is_denied, signature_of, to_symbols};
 use crate::index::extract::Symbol;
 
 /// The language tags this family owns, as `extract::language_of` spells them.
@@ -57,7 +57,12 @@ impl Lines {
     /// Index of `text`.
     pub(super) fn new(text: &str) -> Self {
         let mut starts = vec![0usize];
-        starts.extend(text.bytes().enumerate().filter(|(_, byte)| *byte == b'\n').map(|(at, _)| at + 1));
+        starts.extend(
+            text.bytes()
+                .enumerate()
+                .filter(|(_, byte)| *byte == b'\n')
+                .map(|(at, _)| at + 1),
+        );
         Self(starts)
     }
 
@@ -76,14 +81,25 @@ pub(super) fn mask_lisp(text: &str, language: &str) -> String {
     while at < bytes.len() {
         let next = bytes.get(at + 1).copied();
         let end = match bytes[at] {
-            b';' => Some(bytes[at..].iter().position(|byte| *byte == b'\n').map_or(bytes.len(), |offset| at + offset)),
+            b';' => Some(
+                bytes[at..]
+                    .iter()
+                    .position(|byte| *byte == b'\n')
+                    .map_or(bytes.len(), |offset| at + offset),
+            ),
             b'"' => Some(string_end(bytes, at)),
             b'#' if next == Some(b'|') && language != "clojure" => Some(block_end(bytes, at)),
             b'#' if next == Some(b'\\') => Some(char_end(text, at + 2)),
             b'\\' if language == "clojure" => Some(char_end(text, at + 1)),
-            b'?' if language == "elisp" && at > 0 && !bytes[at - 1].is_ascii_alphanumeric() && !matches!(bytes[at - 1], b'-' | b'_') => {
+            b'?' if language == "elisp"
+                && at > 0
+                && !bytes[at - 1].is_ascii_alphanumeric()
+                && !matches!(bytes[at - 1], b'-' | b'_') =>
+            {
                 let from = if next == Some(b'\\') { at + 2 } else { at + 1 };
-                text.get(from..).is_some_and(|rest| rest.chars().next().is_some_and(|c| !c.is_whitespace())).then(|| char_end(text, from))
+                text.get(from..)
+                    .is_some_and(|rest| rest.chars().next().is_some_and(|c| !c.is_whitespace()))
+                    .then(|| char_end(text, from))
             }
             _ => None,
         };
@@ -184,12 +200,19 @@ fn forms(masked: &str) -> Vec<(usize, usize)> {
 
 /// True for a byte that separates tokens.
 fn is_gap(byte: u8) -> bool {
-    byte.is_ascii_whitespace() || matches!(byte, b',' | b'(' | b')' | b'[' | b']' | b'{' | b'}' | b'"' | b';')
+    byte.is_ascii_whitespace()
+        || matches!(
+            byte,
+            b',' | b'(' | b')' | b'[' | b']' | b'{' | b'}' | b'"' | b';'
+        )
 }
 
 /// Offset of the first byte at or after `from` that is not whitespace or a comma.
 fn skip_space(bytes: &[u8], mut from: usize) -> usize {
-    while bytes.get(from).is_some_and(|byte| byte.is_ascii_whitespace() || *byte == b',') {
+    while bytes
+        .get(from)
+        .is_some_and(|byte| byte.is_ascii_whitespace() || *byte == b',')
+    {
         from += 1;
     }
     from
@@ -209,8 +232,10 @@ pub(super) fn token(masked: &str, from: usize) -> (&str, usize) {
 /// What the head word `head` declares, if anything.
 fn shape_of(head: &str, language: &str) -> Option<Shape> {
     Some(match head {
-        "defn" | "defn-" | "defmacro" | "defun" | "defgeneric" | "defsubst" | "defmulti" | "define-syntax" | "define-syntax-rule" | "cl-defun"
-        | "cl-defmacro" | "cl-defgeneric" => Shape::Fn,
+        "defn" | "defn-" | "defmacro" | "defun" | "defgeneric" | "defsubst" | "defmulti"
+        | "define-syntax" | "define-syntax-rule" | "cl-defun" | "cl-defmacro" | "cl-defgeneric" => {
+            Shape::Fn
+        }
         "defprotocol" | "defrecord" | "deftype" | "defclass" | "definterface" => Shape::Type,
         "ns" if language == "clojure" => Shape::Type,
         "defstruct" | "cl-defstruct" | "define-record-type" => Shape::Struct,
@@ -251,7 +276,11 @@ fn declared(masked: &str, open: usize, language: &str) -> Option<(String, &'stat
             (Some(b'#'), Some(b'^')) => at + 2,
             _ => break,
         };
-        at = if bytes.get(meta) == Some(&b'{') { skip_group(bytes, meta, b'{', b'}') } else { token(masked, meta).1 };
+        at = if bytes.get(meta) == Some(&b'{') {
+            skip_group(bytes, meta, b'{', b'}')
+        } else {
+            token(masked, meta).1
+        };
     }
     let mut listed = false;
     if bytes.get(at) == Some(&b'(') && matches!(shape, Shape::Define | Shape::Struct) {
@@ -261,7 +290,9 @@ fn declared(masked: &str, open: usize, language: &str) -> Option<(String, &'stat
         }
     }
     let (name, end) = token(masked, at);
-    let bad_start = name.starts_with(|c: char| c.is_ascii_digit() || matches!(c, ':' | '\'' | '`' | '#' | '@' | '.' | '~'));
+    let bad_start = name.starts_with(|c: char| {
+        c.is_ascii_digit() || matches!(c, ':' | '\'' | '`' | '#' | '@' | '.' | '~')
+    });
     if name.is_empty() || bad_start || is_denied(name) {
         return None;
     }
@@ -273,7 +304,11 @@ fn declared(masked: &str, open: usize, language: &str) -> Option<(String, &'stat
         Shape::Def | Shape::Define if listed => "fn",
         Shape::Def | Shape::Define => {
             let rest = skip_space(bytes, end);
-            let lambda = bytes.get(rest) == Some(&b'(') && matches!(token(masked, rest + 1).0, "fn" | "fn*" | "lambda" | "named-lambda" | "\u{3bb}");
+            let lambda = bytes.get(rest) == Some(&b'(')
+                && matches!(
+                    token(masked, rest + 1).0,
+                    "fn" | "fn*" | "lambda" | "named-lambda" | "\u{3bb}"
+                );
             if lambda { "fn" } else { "var" }
         }
     };
@@ -284,26 +319,51 @@ fn declared(masked: &str, open: usize, language: &str) -> Option<(String, &'stat
 fn decls(language: &str, text: &str) -> Vec<Decl> {
     let masked = mask_lisp(text, language);
     let lines = Lines::new(text);
-    let first_line = |from: usize| signature_of(text.get(from..).and_then(|rest| rest.lines().next()).unwrap_or(""));
+    let first_line = |from: usize| {
+        signature_of(
+            text.get(from..)
+                .and_then(|rest| rest.lines().next())
+                .unwrap_or(""),
+        )
+    };
     let mut out = Vec::new();
     for (open, end) in forms(&masked) {
         let Some((name, kind)) = declared(&masked, open, language) else {
             continue;
         };
-        out.push(Decl { name: name.clone(), kind, lines: [lines.of(open), lines.of(end.saturating_sub(1).max(open))], signature: first_line(open) });
+        out.push(Decl {
+            name: name.clone(),
+            kind,
+            lines: [lines.of(open), lines.of(end.saturating_sub(1).max(open))],
+            signature: first_line(open),
+        });
         if token(&masked, open + 1).0 != "defprotocol" {
             continue;
         }
-        let inner_end = if end > 0 && masked.as_bytes().get(end - 1) == Some(&b')') { end - 1 } else { end };
+        let inner_end = if end > 0 && masked.as_bytes().get(end - 1) == Some(&b')') {
+            end - 1
+        } else {
+            end
+        };
         let inner = masked.get(open + 1..inner_end).unwrap_or("");
         for (from, to) in forms(inner) {
             let member = token(inner, from + 1).0;
-            if member.is_empty() || is_denied(member) || member.starts_with(|c: char| c.is_ascii_digit() || matches!(c, ':' | '\'' | '`' | '#')) {
+            if member.is_empty()
+                || is_denied(member)
+                || member.starts_with(|c: char| {
+                    c.is_ascii_digit() || matches!(c, ':' | '\'' | '`' | '#')
+                })
+            {
                 continue;
             }
             let at = open + 1 + from;
             let last = open + 1 + to.saturating_sub(1).max(from);
-            out.push(Decl { name: format!("{name}::{member}"), kind: "fn", lines: [lines.of(at), lines.of(last)], signature: first_line(at) });
+            out.push(Decl {
+                name: format!("{name}::{member}"),
+                kind: "fn",
+                lines: [lines.of(at), lines.of(last)],
+                signature: first_line(at),
+            });
         }
     }
     out

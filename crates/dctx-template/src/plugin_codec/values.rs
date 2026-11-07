@@ -43,17 +43,27 @@ pub(super) fn read_limits(reader: &mut Reader<'_>) -> Result<ResourceLimits, Tem
 
 pub(super) fn write_liveness(buf: &mut Buf, policy: &Liveness) {
     match policy {
-        Liveness::Interactive { sample_ms, cancel_grace_ms } => {
+        Liveness::Interactive {
+            sample_ms,
+            cancel_grace_ms,
+        } => {
             buf.u8(1);
             buf.u64(*sample_ms);
             buf.u64(*cancel_grace_ms);
         }
-        Liveness::UnattendedFailClosed { sample_ms, cancel_grace_ms } => {
+        Liveness::UnattendedFailClosed {
+            sample_ms,
+            cancel_grace_ms,
+        } => {
             buf.u8(2);
             buf.u64(*sample_ms);
             buf.u64(*cancel_grace_ms);
         }
-        Liveness::UnattendedBounded { sample_ms, cancel_grace_ms, inactivity_ms } => {
+        Liveness::UnattendedBounded {
+            sample_ms,
+            cancel_grace_ms,
+            inactivity_ms,
+        } => {
             buf.u8(3);
             buf.u64(*sample_ms);
             buf.u64(*cancel_grace_ms);
@@ -64,8 +74,14 @@ pub(super) fn write_liveness(buf: &mut Buf, policy: &Liveness) {
 
 pub(super) fn read_liveness(reader: &mut Reader<'_>) -> Result<Liveness, TemplateError> {
     match reader.u8()? {
-        1 => Ok(Liveness::Interactive { sample_ms: reader.u64()?, cancel_grace_ms: reader.u64()? }),
-        2 => Ok(Liveness::UnattendedFailClosed { sample_ms: reader.u64()?, cancel_grace_ms: reader.u64()? }),
+        1 => Ok(Liveness::Interactive {
+            sample_ms: reader.u64()?,
+            cancel_grace_ms: reader.u64()?,
+        }),
+        2 => Ok(Liveness::UnattendedFailClosed {
+            sample_ms: reader.u64()?,
+            cancel_grace_ms: reader.u64()?,
+        }),
         3 => Ok(Liveness::UnattendedBounded {
             sample_ms: reader.u64()?,
             cancel_grace_ms: reader.u64()?,
@@ -82,26 +98,45 @@ pub(super) fn write_capability(buf: &mut Buf, cap: &Capability) -> Result<(), Te
             buf.str(path)?;
             buf.u64(*max_bytes);
         }
-        Capability::FileWrite { path, create, max_growth_bytes, max_bytes } => {
+        Capability::FileWrite {
+            path,
+            create,
+            max_growth_bytes,
+            max_bytes,
+        } => {
             buf.u8(2);
             buf.str(path)?;
             buf.u8(u8::from(*create));
             buf.u64(*max_growth_bytes);
             buf.u64(*max_bytes);
         }
-        Capability::Program { operation, resources, max_output_bytes } => {
+        Capability::Program {
+            operation,
+            resources,
+            max_output_bytes,
+        } => {
             buf.u8(3);
             buf.str(operation)?;
             buf.strs(resources)?;
             buf.u64(*max_output_bytes);
         }
-        Capability::OutputsRead { roles, operations, max_bytes } => {
+        Capability::OutputsRead {
+            roles,
+            operations,
+            max_bytes,
+        } => {
             buf.u8(4);
             buf.strs(roles)?;
             buf.strs(operations)?;
             buf.u64(*max_bytes);
         }
-        Capability::State { read, write, reclaim, max_bytes, source_content } => {
+        Capability::State {
+            read,
+            write,
+            reclaim,
+            max_bytes,
+            source_content,
+        } => {
             buf.u8(5);
             buf.u8(u8::from(*read));
             buf.u8(u8::from(*write));
@@ -115,7 +150,10 @@ pub(super) fn write_capability(buf: &mut Buf, cap: &Capability) -> Result<(), Te
 
 pub(super) fn read_capability(reader: &mut Reader<'_>) -> Result<Capability, TemplateError> {
     match reader.u8()? {
-        1 => Ok(Capability::FileRead { path: reader.string()?, max_bytes: reader.u64()? }),
+        1 => Ok(Capability::FileRead {
+            path: reader.string()?,
+            max_bytes: reader.u64()?,
+        }),
         2 => Ok(Capability::FileWrite {
             path: reader.string()?,
             create: flag(reader.u8()?)?,
@@ -139,7 +177,9 @@ pub(super) fn read_capability(reader: &mut Reader<'_>) -> Result<Capability, Tem
             max_bytes: reader.u64()?,
             source_content: flag(reader.u8()?)?,
         }),
-        _ => Err(TemplateError::Corrupt { reason: "capability" }),
+        _ => Err(TemplateError::Corrupt {
+            reason: "capability",
+        }),
     }
 }
 
@@ -216,8 +256,12 @@ pub(super) fn write_resolution(buf: &mut Buf, resolution: Resolution) {
 pub(super) fn read_resolution(reader: &mut Reader<'_>) -> Result<Resolution, TemplateError> {
     match reader.u8()? {
         1 => Ok(Resolution::Available),
-        2 => Ok(Resolution::Unavailable { reason: reason_from(reader.u8()?)? }),
-        _ => Err(TemplateError::Corrupt { reason: "resolution" }),
+        2 => Ok(Resolution::Unavailable {
+            reason: reason_from(reader.u8()?)?,
+        }),
+        _ => Err(TemplateError::Corrupt {
+            reason: "resolution",
+        }),
     }
 }
 
@@ -251,7 +295,9 @@ pub(super) fn state_from(code: u8) -> Result<PluginState, TemplateError> {
         1 => Ok(PluginState::Enabled),
         2 => Ok(PluginState::Disabled),
         3 => Ok(PluginState::Unavailable),
-        _ => Err(TemplateError::Corrupt { reason: "plugin state" }),
+        _ => Err(TemplateError::Corrupt {
+            reason: "plugin state",
+        }),
     }
 }
 
@@ -289,7 +335,9 @@ pub(super) fn reason_from(code: u8) -> Result<UnavailableReason, TemplateError> 
         2 => Ok(UnavailableReason::Incompatible),
         3 => Ok(UnavailableReason::UnsupportedPlatform),
         4 => Ok(UnavailableReason::Quarantined),
-        _ => Err(TemplateError::Corrupt { reason: "unavailable" }),
+        _ => Err(TemplateError::Corrupt {
+            reason: "unavailable",
+        }),
     }
 }
 
@@ -300,4 +348,3 @@ pub(super) fn flag(code: u8) -> Result<bool, TemplateError> {
         _ => Err(TemplateError::Corrupt { reason: "flag" }),
     }
 }
-

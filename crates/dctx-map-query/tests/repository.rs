@@ -27,7 +27,10 @@ fn corpus() -> Vec<(String, String)> {
 }
 
 #[test]
-#[allow(clippy::too_many_lines, reason = "Keep repository recall assertions beside the timing and continuation checks for the same warmed index.")]
+#[allow(
+    clippy::too_many_lines,
+    reason = "Keep repository recall assertions beside the timing and continuation checks for the same warmed index."
+)]
 fn dctx_repository_recall_and_latency() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()

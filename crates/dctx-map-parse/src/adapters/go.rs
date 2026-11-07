@@ -24,9 +24,21 @@ pub(super) fn parse_pure(path: &str, bytes: &[u8]) -> Result<ParsedFile, ParseEr
             line,
         });
     }
-    let parser = format!("{}:{}", dctx_lex_go::PARSER_ID, dctx_lex_go::PARSER_REVISION);
-    let nodes = lexed.nodes.into_iter().map(|labeled| labeled.fact).collect();
-    let edges = lexed.edges.into_iter().map(|labeled| labeled.fact).collect();
+    let parser = format!(
+        "{}:{}",
+        dctx_lex_go::PARSER_ID,
+        dctx_lex_go::PARSER_REVISION
+    );
+    let nodes = lexed
+        .nodes
+        .into_iter()
+        .map(|labeled| labeled.fact)
+        .collect();
+    let edges = lexed
+        .edges
+        .into_iter()
+        .map(|labeled| labeled.fact)
+        .collect();
     let references = lexed
         .references
         .into_iter()
@@ -146,7 +158,12 @@ mod tests {
         assert_eq!(facts.language, Language::Go);
         assert_eq!(facts.precision.coverage(), Coverage::Structural);
         assert_eq!(facts.precision.completion().as_str(), "complete");
-        assert!(facts.nodes.iter().all(|node| node.kind != NodeKind::Package));
+        assert!(
+            facts
+                .nodes
+                .iter()
+                .all(|node| node.kind != NodeKind::Package)
+        );
         assert_eq!(facts.nodes[1].name, "p");
         assert_eq!(facts.nodes[1].kind, NodeKind::Symbol);
         assert_eq!(facts.nodes[1].id.as_str(), "s:x.go#p");

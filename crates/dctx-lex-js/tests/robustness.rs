@@ -86,7 +86,12 @@ fn malformed_fragments_yield_partial_facts_not_errors() {
     assert_eq!(facts.completion, Completion::Partial);
     assert_eq!(facts.nodes[1].precision, Precision::Structural);
     assert_eq!(facts.nodes[2].precision, Precision::Partial);
-    assert!(facts.references.iter().all(|r| r.precision == Precision::Partial));
+    assert!(
+        facts
+            .references
+            .iter()
+            .all(|r| r.precision == Precision::Partial)
+    );
 }
 
 #[test]
@@ -107,7 +112,11 @@ fn nesting_limits_refuse_with_typed_errors_and_positive_controls() {
         Err(LexError::TooDeep { .. })
     ));
     let shallow = "(".repeat(100) + &")".repeat(100);
-    assert!(JsLexer::default().extract("d.js", shallow.as_bytes()).is_ok());
+    assert!(
+        JsLexer::default()
+            .extract("d.js", shallow.as_bytes())
+            .is_ok()
+    );
     let narrow = JsLexer::new(Limits {
         max_depth: 8,
         ..Limits::default()
@@ -119,9 +128,17 @@ fn nesting_limits_refuse_with_typed_errors_and_positive_controls() {
 #[test]
 fn unicode_and_private_names_parse() {
     let facts = JsLexer::default()
-        .extract("u.js", "class Ünï { #hidden() {} visible() {} }\nconst ñ = () => 1;".as_bytes())
+        .extract(
+            "u.js",
+            "class Ünï { #hidden() {} visible() {} }\nconst ñ = () => 1;".as_bytes(),
+        )
         .unwrap();
-    let names: Vec<_> = facts.nodes.iter().skip(1).map(|n| n.fact.name.as_str()).collect();
+    let names: Vec<_> = facts
+        .nodes
+        .iter()
+        .skip(1)
+        .map(|n| n.fact.name.as_str())
+        .collect();
     assert_eq!(names, ["Ünï", "Ünï::.hidden", "Ünï::visible", "ñ"]);
     assert_eq!(facts.completion, Completion::Complete);
 }
@@ -132,8 +149,18 @@ fn modern_syntax_parses_to_completion() {
     let facts = JsLexer::default()
         .extract("modern.mjs", source.as_bytes())
         .unwrap();
-    assert_eq!(facts.completion, Completion::Complete, "{:?}", facts.diagnostics);
-    let names: Vec<_> = facts.nodes.iter().skip(1).map(|n| n.fact.name.as_str()).collect();
+    assert_eq!(
+        facts.completion,
+        Completion::Complete,
+        "{:?}",
+        facts.diagnostics
+    );
+    let names: Vec<_> = facts
+        .nodes
+        .iter()
+        .skip(1)
+        .map(|n| n.fact.name.as_str())
+        .collect();
     assert!(names.contains(&"outer"), "{names:?}");
     assert!(names.contains(&"gen"), "{names:?}");
 }

@@ -18,7 +18,9 @@ pub(crate) fn classify_link<F: SourceFs>(
     link: &Path,
     fs: &F,
 ) -> Result<LinkTarget, SourceError> {
-    let linked = fs.read_link(link).map_err(|source| SourceError::io(link, source))?;
+    let linked = fs
+        .read_link(link)
+        .map_err(|source| SourceError::io(link, source))?;
     let parent = link.parent().unwrap_or(link);
     // The name `raw` is rejected here: `&raw` is a Rust 2024 raw-borrow prefix.
     let resolved = join_lexical(parent, &linked);

@@ -108,7 +108,8 @@ impl World {
         let new_lease = self.lease != Which::New
             || self.lease_phase != Phase::Active
             || (self.pointed && self.seg == Obj::Valid && self.man == Obj::Valid);
-        let one = self.lease_phase != Phase::Active || matches!(self.lease, Which::Old | Which::New);
+        let one =
+            self.lease_phase != Phase::Active || matches!(self.lease, Which::Old | Which::New);
         visible && complete && new_lease && one
     }
 
@@ -119,7 +120,8 @@ impl World {
     fn p3(&self) -> bool {
         let pinned = !self.lease_holds_old() || matches!(self.old_kept, Kept::Live | Kept::Retired);
         let current = self.ptr != Which::Old || self.old_kept != Kept::Gone;
-        let recovery = self.prev != Which::Old || matches!(self.old_kept, Kept::Live | Kept::Retired);
+        let recovery =
+            self.prev != Which::Old || matches!(self.old_kept, Kept::Live | Kept::Retired);
         pinned && current && recovery
     }
 
@@ -202,7 +204,10 @@ impl World {
             && self.step == Step::Ready
             && self.seg == Obj::Valid
             && self.man == Obj::Valid;
-        let early = self.mutation == Mutation::PointerFirst && self.step == Step::Staged && self.seg == Obj::Temp && self.man == Obj::Absent;
+        let early = self.mutation == Mutation::PointerFirst
+            && self.step == Step::Staged
+            && self.seg == Obj::Temp
+            && self.man == Obj::Absent;
         if self.lock == Lock::Held && self.ptr == Which::Old && (ready || early) {
             self.ptr = Which::New;
             self.prev = Which::Old;
@@ -262,7 +267,10 @@ impl World {
     }
 
     fn confirm_new(&self) -> bool {
-        self.observed == Which::New && self.ptr == Which::New && self.seg == Obj::Valid && self.man == Obj::Valid
+        self.observed == Which::New
+            && self.ptr == Which::New
+            && self.seg == Obj::Valid
+            && self.man == Obj::Valid
     }
 
     fn reader_confirm(&mut self) -> bool {
@@ -311,7 +319,11 @@ impl World {
 
     fn retire(&mut self) -> bool {
         let lease_blocks = self.mutation != Mutation::OmitLeases && self.lease_holds_old();
-        if self.old_kept == Kept::Live && self.ptr != Which::Old && self.prev != Which::Old && !lease_blocks {
+        if self.old_kept == Kept::Live
+            && self.ptr != Which::Old
+            && self.prev != Which::Old
+            && !lease_blocks
+        {
             self.old_kept = Kept::Retired;
             self.grace = 0;
             return true;
@@ -405,7 +417,11 @@ impl World {
                 }
                 if world.lease_phase == Phase::Active {
                     world.reader_release();
-                } else if !world.drop_prev() && !world.retire() && !world.arm_grace() && !world.to_pending() {
+                } else if !world.drop_prev()
+                    && !world.retire()
+                    && !world.arm_grace()
+                    && !world.to_pending()
+                {
                     world.to_gone();
                 }
                 continue;
@@ -414,7 +430,16 @@ impl World {
                 crashed = true;
                 continue;
             }
-            if world.acquire() || world.reserve() || world.refuse() || world.write_seg() || world.validate_seg() || world.write_man() || world.validate_man() || world.swap() || world.release() {
+            if world.acquire()
+                || world.reserve()
+                || world.refuse()
+                || world.write_seg()
+                || world.validate_seg()
+                || world.write_man()
+                || world.validate_man()
+                || world.swap()
+                || world.release()
+            {
                 continue;
             }
             return "halt";

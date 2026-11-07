@@ -69,7 +69,10 @@ fn stem(word: &str) -> Option<&str> {
     None
 }
 
-#[allow(clippy::cast_possible_truncation, reason = "The fixed-point lexical score is rounded and clamped to 0..=1_000_000_000 before conversion; retain Rust float-to-integer NaN handling.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "The fixed-point lexical score is rounded and clamped to 0..=1_000_000_000 before conversion; retain Rust float-to-integer NaN handling."
+)]
 pub(crate) fn rank(node: &Node, bm25: f64, request: &Request, degree: usize, recent: bool) -> i64 {
     let lexical = (-bm25 * 10_000.0).round().clamp(0.0, 1_000_000_000.0) as i64;
     let exact = node

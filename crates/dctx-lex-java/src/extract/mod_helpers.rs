@@ -7,8 +7,8 @@
 
 use super::DraftNode;
 use crate::domain::{
-    body_fingerprint, javadoc_summary, Completion, Diagnostic, Dialect, Labeled, LexError,
-    LexedFile, Precision, RawReference,
+    Completion, Diagnostic, Dialect, Labeled, LexError, LexedFile, Precision, RawReference,
+    body_fingerprint, javadoc_summary,
 };
 use crate::lexer::Lexed;
 use dctx_map_model::{
@@ -18,8 +18,16 @@ use std::cmp::Reverse;
 use std::collections::BTreeMap;
 
 impl super::Draft {
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
-    pub(super) fn new(path: &str, source: &str, lexed: &Lexed, max_facts: usize) -> Result<Self, LexError> {
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
+    pub(super) fn new(
+        path: &str,
+        source: &str,
+        lexed: &Lexed,
+        max_facts: usize,
+    ) -> Result<Self, LexError> {
         let id = StableId::new(NodeKind::Module, path, None, None)?;
         let lines = source.lines().count().max(1) as u32;
         let summary = match leading_javadoc(source, lexed) {
@@ -107,7 +115,8 @@ impl super::Draft {
             node.parent = remap[node.parent];
         }
         assign_ordinals(&mut nodes)?;
-        self.refs.sort_by_key(|reference| (reference.start, Reverse(reference.end)));
+        self.refs
+            .sort_by_key(|reference| (reference.start, Reverse(reference.end)));
         let mut diagnostics = lexed.diagnostics.clone();
         diagnostics.extend(self.problems.iter().map(|&(byte, reason)| Diagnostic {
             line: lexed.line(byte),

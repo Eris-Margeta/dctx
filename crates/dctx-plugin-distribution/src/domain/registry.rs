@@ -108,13 +108,21 @@ impl PluginRecord {
     }
 
     /// Installed version by digest.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn version(&self, digest: &Sha256Hex) -> Option<&InstalledVersion> {
-        self.versions.iter().find(|version| version.digest == *digest)
+        self.versions
+            .iter()
+            .find(|version| version.digest == *digest)
     }
 
     /// The active installed version.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn active_version(&self) -> Option<&InstalledVersion> {
         self.active.as_ref().and_then(|digest| self.version(digest))
     }
@@ -123,8 +131,14 @@ impl PluginRecord {
         self.leases.get(digest).is_some_and(|count| *count > 0)
     }
 
-    fn usable<'a>(&'a self, digest: &Sha256Hex, trust: &TrustStore) -> Result<&'a InstalledVersion, DistributionError> {
-        let version = self.version(digest).ok_or(DistributionError::NotInstalled)?;
+    fn usable<'a>(
+        &'a self,
+        digest: &Sha256Hex,
+        trust: &TrustStore,
+    ) -> Result<&'a InstalledVersion, DistributionError> {
+        let version = self
+            .version(digest)
+            .ok_or(DistributionError::NotInstalled)?;
         if version.quarantined {
             return Err(DistributionError::Quarantined);
         }
@@ -141,10 +155,9 @@ impl PluginRecord {
         if self.enablement != Enablement::Enabled {
             return Ok(());
         }
-        let derived = self
-            .consent
-            .as_ref()
-            .and_then(|consent| consent.derive(version.digest, &version.signer, &version.capabilities));
+        let derived = self.consent.as_ref().and_then(|consent| {
+            consent.derive(version.digest, &version.signer, &version.capabilities)
+        });
         self.consent = Some(derived.ok_or(DistributionError::ConsentRequired)?);
         Ok(())
     }
@@ -158,7 +171,10 @@ pub struct Registry {
 
 impl Registry {
     /// Record by ID.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn get(&self, id: &PluginId) -> Option<&PluginRecord> {
         self.plugins.get(id)
     }
@@ -169,22 +185,41 @@ impl Registry {
     }
 
     fn record_mut(&mut self, id: &PluginId) -> Result<&mut PluginRecord, DistributionError> {
-        self.plugins.get_mut(id).ok_or(DistributionError::NotInstalled)
+        self.plugins
+            .get_mut(id)
+            .ok_or(DistributionError::NotInstalled)
     }
 
     /// Adds a published version inactive; refuses downgrade and sequence replay. Idempotent per digest.
     /// # Errors
     /// Refuses release sequence downgrades or replayed sequences with a different artifact.
-    pub fn record_install(&mut self, id: &PluginId, origin: Origin, version: InstalledVersion) -> Result<(), DistributionError> {
-        let record = self.plugins.entry(id.clone()).or_insert_with(|| PluginRecord::new(origin));
+    pub fn record_install(
+        &mut self,
+        id: &PluginId,
+        origin: Origin,
+        version: InstalledVersion,
+    ) -> Result<(), DistributionError> {
+        let record = self
+            .plugins
+            .entry(id.clone())
+            .or_insert_with(|| PluginRecord::new(origin));
         if record.version(&version.digest).is_some() {
             return Ok(());
         }
         if version.release_sequence < record.high_water {
-            return Err(DistributionError::Downgrade { candidate: version.release_sequence, floor: record.high_water });
+            return Err(DistributionError::Downgrade {
+                candidate: version.release_sequence,
+                floor: record.high_water,
+            });
         }
-        if record.versions.iter().any(|known| known.release_sequence == version.release_sequence) {
-            return Err(DistributionError::Replay { sequence: version.release_sequence });
+        if record
+            .versions
+            .iter()
+            .any(|known| known.release_sequence == version.release_sequence)
+        {
+            return Err(DistributionError::Replay {
+                sequence: version.release_sequence,
+            });
         }
         if origin == Origin::Override || record.versions.is_empty() {
             record.origin = origin;
@@ -196,11 +231,19 @@ impl Registry {
     /// Atomically selects `digest` as active; consent of an enabled plugin must cover it.
     /// # Errors
     /// Refuses missing, quarantined, untrusted/revoked or downgraded versions, or incompatible existing consent.
-    pub fn activate(&mut self, id: &PluginId, digest: &Sha256Hex, trust: &TrustStore) -> Result<(), DistributionError> {
+    pub fn activate(
+        &mut self,
+        id: &PluginId,
+        digest: &Sha256Hex,
+        trust: &TrustStore,
+    ) -> Result<(), DistributionError> {
         let record = self.record_mut(id)?;
         let version = record.usable(digest, trust)?.clone();
         if version.release_sequence < record.high_water {
-            return Err(DistributionError::Downgrade { candidate: version.release_sequence, floor: record.high_water });
+            return Err(DistributionError::Downgrade {
+                candidate: version.release_sequence,
+                floor: record.high_water,
+            });
         }
         record.rebind_consent(&version)?;
         record.active = Some(version.digest);
@@ -211,16 +254,28 @@ impl Registry {
     /// Explicit exact-digest rollback with a reason; cannot revive revoked or quarantined versions.
     /// # Errors
     /// Refuses missing or unusable versions, an empty rollback reason, or incompatible existing consent.
-    pub fn rollback(&mut self, id: &PluginId, digest: &Sha256Hex, reason: &str, trust: &TrustStore) -> Result<(), DistributionError> {
+    pub fn rollback(
+        &mut self,
+        id: &PluginId,
+        digest: &Sha256Hex,
+        reason: &str,
+        trust: &TrustStore,
+    ) -> Result<(), DistributionError> {
         let record = self.record_mut(id)?;
         let version = record.usable(digest, trust)?.clone();
         if reason.trim().is_empty() {
-            return Err(DistributionError::malformed(crate::error::Document::Registry, "rollback-reason"));
+            return Err(DistributionError::malformed(
+                crate::error::Document::Registry,
+                "rollback-reason",
+            ));
         }
         record.rebind_consent(&version)?;
         record.active = Some(version.digest);
         record.high_water = record.high_water.max(version.release_sequence);
-        record.rollbacks.push(RollbackEntry { digest: version.digest, reason: reason.to_owned() });
+        record.rollbacks.push(RollbackEntry {
+            digest: version.digest,
+            reason: reason.to_owned(),
+        });
         Ok(())
     }
 
@@ -240,10 +295,16 @@ impl Registry {
         if record.origin != Origin::Bundled && confinement != Confinement::Established {
             return Err(DistributionError::ConfinementRequired);
         }
-        let existing = record.consent.as_ref().and_then(|c| c.derive(digest, &version.signer, &version.capabilities));
+        let existing = record
+            .consent
+            .as_ref()
+            .and_then(|c| c.derive(digest, &version.signer, &version.capabilities));
         let consent = match (existing, approval) {
             (Some(consent), _) => consent,
-            (None, Some(approval)) if approval.digest == digest && version.capabilities.is_within(&approval.capabilities) => {
+            (None, Some(approval))
+                if approval.digest == digest
+                    && version.capabilities.is_within(&approval.capabilities) =>
+            {
                 ConsentRecord {
                     digest,
                     signer: version.signer,
@@ -270,9 +331,17 @@ impl Registry {
     /// Marks a version as failed reverification.
     /// # Errors
     /// Returns `NotInstalled` for an unknown plugin ID or artifact digest.
-    pub fn quarantine(&mut self, id: &PluginId, digest: &Sha256Hex) -> Result<(), DistributionError> {
+    pub fn quarantine(
+        &mut self,
+        id: &PluginId,
+        digest: &Sha256Hex,
+    ) -> Result<(), DistributionError> {
         let record = self.record_mut(id)?;
-        let version = record.versions.iter_mut().find(|v| v.digest == *digest).ok_or(DistributionError::NotInstalled)?;
+        let version = record
+            .versions
+            .iter_mut()
+            .find(|v| v.digest == *digest)
+            .ok_or(DistributionError::NotInstalled)?;
         version.quarantined = true;
         Ok(())
     }
@@ -280,14 +349,22 @@ impl Registry {
     /// Unlinks an inactive, unleased version.
     /// # Errors
     /// Refuses an unknown plugin/version or a version with active leases.
-    pub fn remove_version(&mut self, id: &PluginId, digest: &Sha256Hex) -> Result<(), DistributionError> {
+    pub fn remove_version(
+        &mut self,
+        id: &PluginId,
+        digest: &Sha256Hex,
+    ) -> Result<(), DistributionError> {
         let record = self.record_mut(id)?;
         if record.active == Some(*digest) || record.leased(digest) {
             return Err(DistributionError::Leased);
         }
         let before = record.versions.len();
         record.versions.retain(|version| version.digest != *digest);
-        if record.versions.len() == before { Err(DistributionError::NotInstalled) } else { Ok(()) }
+        if record.versions.len() == before {
+            Err(DistributionError::NotInstalled)
+        } else {
+            Ok(())
+        }
     }
 
     /// Removes all versions after leases end; keeps a sticky disabled mask record.
@@ -301,7 +378,11 @@ impl Registry {
         }
         record.active = None;
         record.consent = None;
-        Ok(record.versions.drain(..).map(|version| version.digest).collect())
+        Ok(record
+            .versions
+            .drain(..)
+            .map(|version| version.digest)
+            .collect())
     }
 }
 
@@ -326,13 +407,25 @@ pub(crate) mod tests {
         let id = PluginId::parse("dctx/git").unwrap();
         let trust = TrustStore::new();
         let mut registry = Registry::default();
-        registry.record_install(&id, Origin::Installed, version(2, 2)).unwrap();
-        registry.record_install(&id, Origin::Installed, version(2, 2)).unwrap();
-        assert_eq!(registry.record_install(&id, Origin::Installed, version(2, 9)), Err(DistributionError::Replay { sequence: 2 }));
-        registry.activate(&id, &Sha256Hex::from_bytes([2; 32]), &trust).unwrap();
+        registry
+            .record_install(&id, Origin::Installed, version(2, 2))
+            .unwrap();
+        registry
+            .record_install(&id, Origin::Installed, version(2, 2))
+            .unwrap();
+        assert_eq!(
+            registry.record_install(&id, Origin::Installed, version(2, 9)),
+            Err(DistributionError::Replay { sequence: 2 })
+        );
+        registry
+            .activate(&id, &Sha256Hex::from_bytes([2; 32]), &trust)
+            .unwrap();
         assert_eq!(
             registry.record_install(&id, Origin::Installed, version(1, 1)),
-            Err(DistributionError::Downgrade { candidate: 1, floor: 2 })
+            Err(DistributionError::Downgrade {
+                candidate: 1,
+                floor: 2
+            })
         );
     }
 
@@ -341,8 +434,17 @@ pub(crate) mod tests {
         let id = PluginId::parse("dctx/git").unwrap();
         let trust = TrustStore::new();
         let mut registry = Registry::default();
-        registry.record_install(&id, Origin::Installed, version(1, 1)).unwrap();
-        registry.rollback(&id, &Sha256Hex::from_bytes([1; 32]), "first selection", &trust).unwrap();
+        registry
+            .record_install(&id, Origin::Installed, version(1, 1))
+            .unwrap();
+        registry
+            .rollback(
+                &id,
+                &Sha256Hex::from_bytes([1; 32]),
+                "first selection",
+                &trust,
+            )
+            .unwrap();
         let record = registry.get(&id).unwrap();
         assert_eq!((record.high_water, record.rollbacks.len()), (1, 1));
     }
@@ -353,10 +455,18 @@ pub(crate) mod tests {
         let trust = TrustStore::new();
         let digest = Sha256Hex::from_bytes([1; 32]);
         let mut registry = Registry::default();
-        registry.record_install(&id, Origin::Installed, version(1, 1)).unwrap();
+        registry
+            .record_install(&id, Origin::Installed, version(1, 1))
+            .unwrap();
         registry.activate(&id, &digest, &trust).unwrap();
-        assert_eq!(registry.remove_version(&id, &digest), Err(DistributionError::Leased));
+        assert_eq!(
+            registry.remove_version(&id, &digest),
+            Err(DistributionError::Leased)
+        );
         registry.quarantine(&id, &digest).unwrap();
-        assert_eq!(registry.activate(&id, &digest, &trust), Err(DistributionError::Quarantined));
+        assert_eq!(
+            registry.activate(&id, &digest, &trust),
+            Err(DistributionError::Quarantined)
+        );
     }
 }

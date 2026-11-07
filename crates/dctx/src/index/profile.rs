@@ -60,7 +60,12 @@ struct Profile {
 
 impl Profile {
     fn new() -> Self {
-        Self { stages: [0; 9], files: Vec::new(), file_work_ns: 0, snapshot_accounted: false }
+        Self {
+            stages: [0; 9],
+            files: Vec::new(),
+            file_work_ns: 0,
+            snapshot_accounted: false,
+        }
     }
 }
 
@@ -126,11 +131,22 @@ fn add_file_work(ns: u128) {
 }
 
 fn file_work_ns() -> u128 {
-    DATA.with(|slot| slot.borrow().as_ref().map_or(0, |profile| profile.file_work_ns))
+    DATA.with(|slot| {
+        slot.borrow()
+            .as_ref()
+            .map_or(0, |profile| profile.file_work_ns)
+    })
 }
 
 fn push_file(path: String, bytes: u64, symbols: u64, nanos: u128) {
-    with_profile(|profile| profile.files.push(FileSample { path, bytes, symbols, nanos }));
+    with_profile(|profile| {
+        profile.files.push(FileSample {
+            path,
+            bytes,
+            symbols,
+            nanos,
+        })
+    });
 }
 
 /// Marks that `snapshot_inner` already recorded canonicalize and persist.
@@ -151,7 +167,11 @@ pub(crate) fn observe_snapshot_wall(wall: Duration) {
         if profile.snapshot_accounted {
             return;
         }
-        let accounted = profile.stages.iter().copied().fold(0u128, u128::saturating_add);
+        let accounted = profile
+            .stages
+            .iter()
+            .copied()
+            .fold(0u128, u128::saturating_add);
         let extra = wall.as_nanos().saturating_sub(accounted);
         if let Some(cell) = profile.stages.get_mut(Stage::PersistReuse as usize) {
             *cell = cell.saturating_add(extra);
@@ -171,7 +191,12 @@ pub(crate) fn report() -> Option<String> {
 }
 
 fn render(mut profile: Profile) -> String {
-    profile.files.sort_by(|left, right| right.nanos.cmp(&left.nanos).then_with(|| left.path.cmp(&right.path)));
+    profile.files.sort_by(|left, right| {
+        right
+            .nanos
+            .cmp(&left.nanos)
+            .then_with(|| left.path.cmp(&right.path))
+    });
     profile.files.truncate(5);
     let mut out = String::from("dctx profile\n");
     for (index, name) in STAGES.iter().enumerate() {
@@ -182,7 +207,9 @@ fn render(mut profile: Profile) -> String {
         out.push_str(&ns.to_string());
         out.push('\n');
     }
-    out.push_str("note finalization is canonicalize/seal, persist/reuse and query; file lines exclude it\n");
+    out.push_str(
+        "note finalization is canonicalize/seal, persist/reuse and query; file lines exclude it\n",
+    );
     for file in profile.files {
         let path = file.path.replace(['\n', '\r'], "?");
         out.push_str("file ");
@@ -207,7 +234,10 @@ pub(crate) struct Elapsed {
 impl Elapsed {
     /// Starts `stage` if profiling is on.
     pub(crate) fn begin(stage: Stage) -> Self {
-        Self { stage, start: start() }
+        Self {
+            stage,
+            start: start(),
+        }
     }
 }
 
@@ -227,9 +257,15 @@ impl WalkSpan {
     /// Starts the exclusive walk sample, or a no-op when profiling is off.
     pub(crate) fn begin() -> Self {
         if !enabled() {
-            return Self { start: None, file_work_before: 0 };
+            return Self {
+                start: None,
+                file_work_before: 0,
+            };
         }
-        Self { file_work_before: file_work_ns(), start: Some(Instant::now()) }
+        Self {
+            file_work_before: file_work_ns(),
+            start: Some(Instant::now()),
+        }
     }
 }
 
@@ -257,9 +293,21 @@ impl FileWatch {
     /// Opens a row when profiling is on. The inactive watch records nothing.
     pub(crate) fn begin(path: &str) -> Self {
         if !enabled() {
-            return Self { path: String::new(), bytes: 0, symbols: 0, nanos: 0, active: false };
+            return Self {
+                path: String::new(),
+                bytes: 0,
+                symbols: 0,
+                nanos: 0,
+                active: false,
+            };
         }
-        Self { path: path.to_string(), bytes: 0, symbols: 0, nanos: 0, active: true }
+        Self {
+            path: path.to_string(),
+            bytes: 0,
+            symbols: 0,
+            nanos: 0,
+            active: true,
+        }
     }
 
     /// Adds `start`'s elapsed time to `stage` and to this file.
@@ -292,7 +340,12 @@ impl Drop for FileWatch {
             return;
         }
         self.active = false;
-        push_file(std::mem::take(&mut self.path), self.bytes, self.symbols, self.nanos);
+        push_file(
+            std::mem::take(&mut self.path),
+            self.bytes,
+            self.symbols,
+            self.nanos,
+        );
     }
 }
 
@@ -364,7 +417,11 @@ mod tests {
         assert_eq!(file_sum, 80 + 50 + 50 + 10 + 9);
         assert_eq!(stage_line(&text, "read"), 80 + 50 + 50 + 10 + 9 + 8);
         for name in STAGES {
-            assert!(text.lines().any(|line| line.starts_with(&format!("stage {name} "))), "{name} missing\n{text}");
+            assert!(
+                text.lines()
+                    .any(|line| line.starts_with(&format!("stage {name} "))),
+                "{name} missing\n{text}"
+            );
         }
     }
 

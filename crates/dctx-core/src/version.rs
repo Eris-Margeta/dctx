@@ -34,7 +34,11 @@ pub struct VersionExhausted {
 
 impl fmt::Display for VersionExhausted {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(formatter, "version {}.{} cannot advance", self.major, self.minor)
+        write!(
+            formatter,
+            "version {}.{} cannot advance",
+            self.major, self.minor
+        )
     }
 }
 
@@ -42,14 +46,20 @@ impl std::error::Error for VersionExhausted {}
 
 impl Version {
     /// Defaultni početak: V1
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new_v1() -> Self {
         Self { major: 1, minor: 0 }
     }
 
     /// Parsira string poput "V1", "V1.5", "V2.0".
     /// Ako je format neispravan, vraća V1.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn parse(version_str: &str) -> Self {
         if !version_str.starts_with('V') {
             return Self::new_v1();

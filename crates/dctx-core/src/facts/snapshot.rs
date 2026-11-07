@@ -71,41 +71,65 @@ impl PackSnapshot {
         digests: ContentDigests,
     ) -> Result<Self, DctxError> {
         let digest = snapshot_digest(&tree, &digests)?;
-        Ok(Self { tree, version, taken_at, digests, digest })
+        Ok(Self {
+            tree,
+            version,
+            taken_at,
+            digests,
+            digest,
+        })
     }
 
     /// The selected tree.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn tree(&self) -> &DirContextTreeNode {
         &self.tree
     }
 
     /// Consumes the snapshot, returning its tree.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn into_tree(self) -> DirContextTreeNode {
         self.tree
     }
 
     /// Pack version of this snapshot.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn version(&self) -> &Version {
         &self.version
     }
 
     /// When the snapshot was taken (not part of its identity).
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn taken_at(&self) -> Timestamp {
         self.taken_at
     }
 
     /// Content digests of read files.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn digests(&self) -> &ContentDigests {
         &self.digests
     }
 
     /// Own identity of this snapshot.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn digest(&self) -> SnapshotDigest {
         self.digest
     }
@@ -161,9 +185,10 @@ fn encode_node(
 }
 
 fn feed(hasher: &mut Sha256, bytes: &[u8]) -> Result<(), DctxError> {
-    hasher
-        .update(bytes)
-        .map_err(|_| DctxError::ResourceLimit { resource: Resource::SourceBytes, limit: u64::MAX })
+    hasher.update(bytes).map_err(|_| DctxError::ResourceLimit {
+        resource: Resource::SourceBytes,
+        limit: u64::MAX,
+    })
 }
 
 #[cfg(test)]
@@ -187,8 +212,10 @@ mod tests {
 
     #[test]
     fn identity_is_deterministic_and_ignores_the_clock() {
-        let a = PackSnapshot::new(tree(3), Version::new_v1(), Timestamp(1), digests(b"abc")).unwrap();
-        let b = PackSnapshot::new(tree(3), Version::new_v1(), Timestamp(99), digests(b"abc")).unwrap();
+        let a =
+            PackSnapshot::new(tree(3), Version::new_v1(), Timestamp(1), digests(b"abc")).unwrap();
+        let b =
+            PackSnapshot::new(tree(3), Version::new_v1(), Timestamp(99), digests(b"abc")).unwrap();
         assert_eq!(a.digest(), b.digest());
         assert_eq!(a.taken_at(), Timestamp(1));
         assert_eq!(a.digests().len(), 1);
@@ -206,9 +233,15 @@ mod tests {
     #[test]
     fn identity_follows_metadata_and_decisions() {
         let base = snapshot_digest(&tree(3), &ContentDigests::new()).unwrap();
-        assert_ne!(base, snapshot_digest(&tree(4), &ContentDigests::new()).unwrap());
+        assert_ne!(
+            base,
+            snapshot_digest(&tree(4), &ContentDigests::new()).unwrap()
+        );
         let mut omitted = tree(3);
         omitted.children[0].handling_decision = FileHandlingDecision::OmitContent;
-        assert_ne!(base, snapshot_digest(&omitted, &ContentDigests::new()).unwrap());
+        assert_ne!(
+            base,
+            snapshot_digest(&omitted, &ContentDigests::new()).unwrap()
+        );
     }
 }

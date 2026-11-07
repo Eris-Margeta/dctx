@@ -41,24 +41,38 @@ impl HttpsUrl {
         let host = host.to_ascii_lowercase();
         let valid_host = !host.is_empty()
             && match host.strip_prefix('[') {
-                Some(literal) => literal.strip_suffix(']').is_some_and(|inner| inner.parse::<Ipv6Addr>().is_ok()),
-                None => host.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'.'),
+                Some(literal) => literal
+                    .strip_suffix(']')
+                    .is_some_and(|inner| inner.parse::<Ipv6Addr>().is_ok()),
+                None => host
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'.'),
             };
         if !valid_host {
             return Err(OriginRefusal::Syntax);
         }
-        let path = if tail.starts_with('/') { tail.to_owned() } else { format!("/{tail}") };
+        let path = if tail.starts_with('/') {
+            tail.to_owned()
+        } else {
+            format!("/{tail}")
+        };
         Ok(Self { host, port, path })
     }
 
     /// Lowercase host, IPv6 literals keep their brackets.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn host(&self) -> &str {
         &self.host
     }
 
     /// `host[:port]`, the unit of origin comparison.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn origin(&self) -> String {
         match self.port {
             Some(port) => format!("{}:{port}", self.host),
@@ -67,11 +81,19 @@ impl HttpsUrl {
     }
 
     /// The URL of `file` in the same directory as this URL.
-    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn sibling(&self, file: &SafeFileName) -> Self {
         let path = self.path.split('?').next().unwrap_or("/");
         let directory = &path[..path.rfind('/').map_or(0, |index| index + 1)];
-        Self { host: self.host.clone(), port: self.port, path: format!("{directory}{}", file.as_str()) }
+        Self {
+            host: self.host.clone(),
+            port: self.port,
+            path: format!("{directory}{}", file.as_str()),
+        }
     }
 }
 
@@ -83,13 +105,18 @@ impl std::fmt::Display for HttpsUrl {
 
 fn split_port(authority: &str) -> Result<(&str, Option<u16>), OriginRefusal> {
     let colon = if authority.starts_with('[') {
-        authority.find(']').map(|end| end + 1).filter(|&end| end < authority.len())
+        authority
+            .find(']')
+            .map(|end| end + 1)
+            .filter(|&end| end < authority.len())
     } else {
         authority.rfind(':')
     };
     match colon {
         Some(index) if authority.as_bytes()[index] == b':' => {
-            let port = authority[index + 1..].parse::<u16>().map_err(|_| OriginRefusal::Syntax)?;
+            let port = authority[index + 1..]
+                .parse::<u16>()
+                .map_err(|_| OriginRefusal::Syntax)?;
             Ok((&authority[..index], Some(port)))
         }
         Some(_) => Err(OriginRefusal::Syntax),
@@ -98,7 +125,10 @@ fn split_port(authority: &str) -> Result<(&str, Option<u16>), OriginRefusal> {
 }
 
 /// True for loopback, private, link-local, CGNAT, unspecified, multicast and unique-local addresses.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn is_private_address(address: IpAddr) -> bool {
     match address {
         IpAddr::V4(v4) => private_v4(v4),
@@ -123,7 +153,11 @@ fn private_v6(v6: Ipv6Addr) -> bool {
         return private_v4(mapped);
     }
     let first = v6.segments()[0];
-    v6.is_loopback() || v6.is_unspecified() || v6.is_multicast() || (first & 0xfe00) == 0xfc00 || (first & 0xffc0) == 0xfe80
+    v6.is_loopback()
+        || v6.is_unspecified()
+        || v6.is_multicast()
+        || (first & 0xfe00) == 0xfc00
+        || (first & 0xffc0) == 0xfe80
 }
 
 /// Installer network policy; it is not a plugin runtime grant.
@@ -139,7 +173,11 @@ pub struct OriginPolicy {
 
 impl Default for OriginPolicy {
     fn default() -> Self {
-        Self { allow_private: false, approved_redirects: Vec::new(), max_redirects: 5 }
+        Self {
+            allow_private: false,
+            approved_redirects: Vec::new(),
+            max_redirects: 5,
+        }
     }
 }
 
@@ -156,7 +194,11 @@ impl OriginPolicy {
         let private = host == "localhost"
             || host.ends_with(".localhost")
             || literal.parse::<IpAddr>().is_ok_and(is_private_address);
-        if private { Err(OriginRefusal::PrivateDestination) } else { Ok(()) }
+        if private {
+            Err(OriginRefusal::PrivateDestination)
+        } else {
+            Ok(())
+        }
     }
 
     /// Checks the address the connection actually reached (binds DNS to the connection).
@@ -172,7 +214,11 @@ impl OriginPolicy {
     /// Checks a redirect from the selected origin `selected` to `target`.
     /// # Errors
     /// Refuses a disallowed destination or an origin outside the selected/approved redirect origins.
-    pub fn check_redirect(&self, selected: &HttpsUrl, target: &HttpsUrl) -> Result<(), OriginRefusal> {
+    pub fn check_redirect(
+        &self,
+        selected: &HttpsUrl,
+        target: &HttpsUrl,
+    ) -> Result<(), OriginRefusal> {
         self.check_url(target)?;
         let origin = target.origin();
         if origin == selected.origin() || self.approved_redirects.contains(&origin) {
@@ -192,20 +238,49 @@ mod tests {
         let url = HttpsUrl::parse("https://Example.org/rel/1.0.0/plugin.json").unwrap();
         assert_eq!(url.origin(), "example.org");
         let file = SafeFileName::parse("abc.bin").unwrap();
-        assert_eq!(url.sibling(&file).to_string(), "https://example.org/rel/1.0.0/abc.bin");
+        assert_eq!(
+            url.sibling(&file).to_string(),
+            "https://example.org/rel/1.0.0/abc.bin"
+        );
         let port = HttpsUrl::parse("https://example.org:8443?x=1").unwrap();
         assert_eq!(port.origin(), "example.org:8443");
-        assert_eq!(port.sibling(&file).to_string(), "https://example.org:8443/abc.bin");
-        assert_eq!(HttpsUrl::parse("https://[2001:db8::1]:443/a").unwrap().host(), "[2001:db8::1]");
+        assert_eq!(
+            port.sibling(&file).to_string(),
+            "https://example.org:8443/abc.bin"
+        );
+        assert_eq!(
+            HttpsUrl::parse("https://[2001:db8::1]:443/a")
+                .unwrap()
+                .host(),
+            "[2001:db8::1]"
+        );
     }
 
     #[test]
     fn refuses_scheme_userinfo_fragment_and_syntax() {
-        assert_eq!(HttpsUrl::parse("http://example.org/p"), Err(OriginRefusal::Scheme));
-        assert_eq!(HttpsUrl::parse("file:///etc/passwd"), Err(OriginRefusal::Scheme));
-        assert_eq!(HttpsUrl::parse("https://user:pw@example.org/p"), Err(OriginRefusal::Userinfo));
-        assert_eq!(HttpsUrl::parse("https://example.org/p#x"), Err(OriginRefusal::Fragment));
-        for bad in ["https://", "https://exa mple.org/", "https://example.org:99999/", "https://a_b.org/", "https://x\\y/"] {
+        assert_eq!(
+            HttpsUrl::parse("http://example.org/p"),
+            Err(OriginRefusal::Scheme)
+        );
+        assert_eq!(
+            HttpsUrl::parse("file:///etc/passwd"),
+            Err(OriginRefusal::Scheme)
+        );
+        assert_eq!(
+            HttpsUrl::parse("https://user:pw@example.org/p"),
+            Err(OriginRefusal::Userinfo)
+        );
+        assert_eq!(
+            HttpsUrl::parse("https://example.org/p#x"),
+            Err(OriginRefusal::Fragment)
+        );
+        for bad in [
+            "https://",
+            "https://exa mple.org/",
+            "https://example.org:99999/",
+            "https://a_b.org/",
+            "https://x\\y/",
+        ] {
             assert_eq!(HttpsUrl::parse(bad), Err(OriginRefusal::Syntax), "{bad}");
         }
     }
@@ -213,14 +288,34 @@ mod tests {
     #[test]
     fn private_destinations_need_explicit_policy() {
         let policy = OriginPolicy::default();
-        for host in ["localhost", "a.localhost", "127.0.0.1", "10.1.2.3", "169.254.169.254", "192.168.1.1", "100.64.0.1", "[::1]", "[fe80::1]", "[fd00::1]", "[::ffff:127.0.0.1]", "0.0.0.0"] {
+        for host in [
+            "localhost",
+            "a.localhost",
+            "127.0.0.1",
+            "10.1.2.3",
+            "169.254.169.254",
+            "192.168.1.1",
+            "100.64.0.1",
+            "[::1]",
+            "[fe80::1]",
+            "[fd00::1]",
+            "[::ffff:127.0.0.1]",
+            "0.0.0.0",
+        ] {
             let url = HttpsUrl::parse(&format!("https://{host}/p")).unwrap();
-            assert_eq!(policy.check_url(&url), Err(OriginRefusal::PrivateDestination), "{host}");
+            assert_eq!(
+                policy.check_url(&url),
+                Err(OriginRefusal::PrivateDestination),
+                "{host}"
+            );
         }
         let public = HttpsUrl::parse("https://203.0.113.9/p").unwrap();
         assert!(policy.check_url(&public).is_ok());
         assert!(policy.check_peer("10.0.0.1".parse().unwrap()).is_err());
-        let open = OriginPolicy { allow_private: true, ..OriginPolicy::default() };
+        let open = OriginPolicy {
+            allow_private: true,
+            ..OriginPolicy::default()
+        };
         assert!(open.check_peer("10.0.0.1".parse().unwrap()).is_ok());
     }
 
@@ -231,8 +326,14 @@ mod tests {
         let cdn = HttpsUrl::parse("https://cdn.example.net/b").unwrap();
         let policy = OriginPolicy::default();
         assert!(policy.check_redirect(&selected, &same).is_ok());
-        assert_eq!(policy.check_redirect(&selected, &cdn), Err(OriginRefusal::NotApproved));
-        let approved = OriginPolicy { approved_redirects: vec!["cdn.example.net".into()], ..OriginPolicy::default() };
+        assert_eq!(
+            policy.check_redirect(&selected, &cdn),
+            Err(OriginRefusal::NotApproved)
+        );
+        let approved = OriginPolicy {
+            approved_redirects: vec!["cdn.example.net".into()],
+            ..OriginPolicy::default()
+        };
         assert!(approved.check_redirect(&selected, &cdn).is_ok());
     }
 }

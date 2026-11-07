@@ -40,8 +40,15 @@ impl Session {
         self.cancel.checkpoint().map_err(DctxError::from_core)?;
         let started = self.clock.now().0;
         check_deadline(started, started, self.limits.deadline_ms)?;
-        if self.store.load(&view).map_err(DctxError::from_core)?.is_some() {
-            return Err(DctxError::invalid("legacy import destination already exists"));
+        if self
+            .store
+            .load(&view)
+            .map_err(DctxError::from_core)?
+            .is_some()
+        {
+            return Err(DctxError::invalid(
+                "legacy import destination already exists",
+            ));
         }
         let caps = resolve_scan(&self.limits)?;
         limits.max_total_bytes = cap(limits.max_total_bytes, caps.source_bytes);
@@ -61,10 +68,19 @@ impl Session {
             });
         }
         let digests = import_digests(&document.root, caps.file_bytes)?;
-        let snapshot = PackSnapshot::new(document.root, document.header.version, self.clock.now(), digests)
+        let snapshot = PackSnapshot::new(
+            document.root,
+            document.header.version,
+            self.clock.now(),
+            digests,
+        )
+        .map_err(DctxError::from_core)?;
+        let stored_bytes =
+            u64::try_from(bytes.len()).map_err(|_| DctxError::invalid("legacy import size"))?;
+        let reservation = self
+            .cache
+            .reserve(stored_bytes)
             .map_err(DctxError::from_core)?;
-        let stored_bytes = u64::try_from(bytes.len()).map_err(|_| DctxError::invalid("legacy import size"))?;
-        let reservation = self.cache.reserve(stored_bytes).map_err(DctxError::from_core)?;
         let ready = self
             .cancel
             .checkpoint()
@@ -78,7 +94,9 @@ impl Session {
             self.cache.abort(reservation);
             return Err(DctxError::from_core(error));
         }
-        self.cache.commit(reservation, stored_bytes).map_err(DctxError::from_core)?;
+        self.cache
+            .commit(reservation, stored_bytes)
+            .map_err(DctxError::from_core)?;
         Ok(snapshot)
     }
 }
@@ -97,10 +115,14 @@ fn import_digests(root: &LegacyNode, file_limit: u64) -> Result<ContentDigests, 
             return Err(DctxError::invalid("duplicate legacy path"));
         }
         if node.content_size > file_limit {
-            return Err(DctxError::ResourceLimit { resource: Resource::FileBytes, limit: file_limit });
+            return Err(DctxError::ResourceLimit {
+                resource: Resource::FileBytes,
+                limit: file_limit,
+            });
         }
         if let Some(bytes) = &node.file_content {
-            let digest = Sha256::digest(bytes).map_err(|_| DctxError::invalid("legacy digest size"))?;
+            let digest =
+                Sha256::digest(bytes).map_err(|_| DctxError::invalid("legacy digest size"))?;
             digests.insert(node.relative_path.clone(), digest);
         }
         stack.extend(&node.children);

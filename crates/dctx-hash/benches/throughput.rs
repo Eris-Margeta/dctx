@@ -3,7 +3,7 @@
 //! A measurement only: `cargo test` does not run or assert this bench.
 //! Depends on criterion and [`dctx_hash::Sha256`]. Used when comparing the strict profile.
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
+use criterion::{Criterion, Throughput, black_box, criterion_group, criterion_main};
 use dctx_hash::Sha256;
 
 fn sha256_throughput(c: &mut Criterion) {

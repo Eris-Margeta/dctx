@@ -19,7 +19,10 @@ fn io_error(_: std::io::Error) -> PlatformError {
     PlatformError::Io
 }
 
-#[allow(clippy::too_many_lines, reason = "Keep the confinement probe effect-dispatch cases together so each forbidden syscall has one explicit test entry.")]
+#[allow(
+    clippy::too_many_lines,
+    reason = "Keep the confinement probe effect-dispatch cases together so each forbidden syscall has one explicit test entry."
+)]
 pub(super) fn run() -> Result<(), PlatformError> {
     let args: Vec<_> = std::env::args().collect();
     let mode = args.get(1).ok_or(PlatformError::InvalidPath)?.clone();

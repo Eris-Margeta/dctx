@@ -46,9 +46,10 @@ impl Walker<'_> {
     pub fn call(&mut self, i: usize, close: usize, end: usize, scope: &Scope) -> usize {
         let last = Self::last(close, end);
         if let Some((start, callee_last, member)) = self.callee(i) {
-            let raw = &self.src[self.start_byte(start) as usize..self.end_byte(callee_last) as usize];
-            let literal = self.kind(i + 1) == Some(Kind::Str)
-                && (self.is(i + 2, ",") || self.is(i + 2, ")"));
+            let raw =
+                &self.src[self.start_byte(start) as usize..self.end_byte(callee_last) as usize];
+            let literal =
+                self.kind(i + 1) == Some(Kind::Str) && (self.is(i + 2, ",") || self.is(i + 2, ")"));
             if !member && raw == "require" && literal {
                 self.require(start, i, close, last, scope);
             } else if let Some(name) = literal.then(|| test_name(raw, self.text(i + 1))).flatten() {
@@ -123,7 +124,12 @@ impl Walker<'_> {
         let mut applied = false;
         loop {
             let start = match self.kind(q)? {
-                Kind::Ident | Kind::Private | Kind::Number | Kind::Str | Kind::Regex | Kind::Template => q,
+                Kind::Ident
+                | Kind::Private
+                | Kind::Number
+                | Kind::Str
+                | Kind::Regex
+                | Kind::Template => q,
                 Kind::Punct => match self.text(q) {
                     ")" | "]" => {
                         let open = self.partner[q];
@@ -193,20 +199,37 @@ impl Walker<'_> {
             Some(b) if self.is(b.pattern, "{") => {
                 let pattern_close = self.close(b.pattern, b.value);
                 for (s, e) in self.segments(b.pattern + 1, pattern_close) {
-                    let keyed = matches!(
-                        self.kind(s),
-                        Some(Kind::Ident | Kind::Str | Kind::Number)
-                    ) && self.is(s + 1, ":")
-                        && e > s + 2;
+                    let keyed =
+                        matches!(self.kind(s), Some(Kind::Ident | Kind::Str | Kind::Number))
+                            && self.is(s + 1, ":")
+                            && e > s + 2;
                     if keyed {
                         let alias = self.src
                             [self.start_byte(s + 2) as usize..self.end_byte(e - 1) as usize]
                             .to_owned();
                         let name = format!("{module}::{}", self.text(s));
-                        self.refer(0, scope, EdgeKind::Imports, name, Some(alias), (s, e - 1), key, convention);
+                        self.refer(
+                            0,
+                            scope,
+                            EdgeKind::Imports,
+                            name,
+                            Some(alias),
+                            (s, e - 1),
+                            key,
+                            convention,
+                        );
                     } else if e == s + 1 && self.ident(s) {
                         let name = format!("{module}::{}", self.text(s));
-                        self.refer(0, scope, EdgeKind::Imports, name, None, (s, s), key, convention);
+                        self.refer(
+                            0,
+                            scope,
+                            EdgeKind::Imports,
+                            name,
+                            None,
+                            (s, s),
+                            key,
+                            convention,
+                        );
                     }
                 }
             }
@@ -219,9 +242,27 @@ impl Walker<'_> {
                 let alias = self.src
                     [self.start_byte(b.pattern) as usize..self.end_byte(pattern_last) as usize]
                     .to_owned();
-                self.refer(0, scope, EdgeKind::Imports, module, Some(alias), key, key, convention);
+                self.refer(
+                    0,
+                    scope,
+                    EdgeKind::Imports,
+                    module,
+                    Some(alias),
+                    key,
+                    key,
+                    convention,
+                );
             }
-            None => self.refer(0, scope, EdgeKind::Imports, module, None, key, key, convention),
+            None => self.refer(
+                0,
+                scope,
+                EdgeKind::Imports,
+                module,
+                None,
+                key,
+                key,
+                convention,
+            ),
         }
     }
 
@@ -242,7 +283,9 @@ fn test_name(callee: &str, literal: &str) -> Option<String> {
     {
         return None;
     }
-    literal.get(1..literal.len().checked_sub(1)?).map(str::to_owned)
+    literal
+        .get(1..literal.len().checked_sub(1)?)
+        .map(str::to_owned)
 }
 
 #[cfg(test)]
@@ -252,7 +295,9 @@ mod tests {
     use dctx_map_model::EdgeKind;
 
     fn refs(source: &str) -> Vec<(EdgeKind, String, Option<String>)> {
-        let facts = JsLexer::default().extract("x.js", source.as_bytes()).unwrap();
+        let facts = JsLexer::default()
+            .extract("x.js", source.as_bytes())
+            .unwrap();
         facts
             .references
             .iter()
@@ -269,7 +314,9 @@ mod tests {
 
     #[test]
     fn require_bindings_and_test_modifiers() {
-        let found = refs("const { a, b: c } = require('m'); const d = require('n').x; it.skip('t', () => g());");
+        let found = refs(
+            "const { a, b: c } = require('m'); const d = require('n').x; it.skip('t', () => g());",
+        );
         assert_eq!(
             found,
             [

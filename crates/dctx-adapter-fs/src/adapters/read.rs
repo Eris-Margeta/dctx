@@ -4,9 +4,9 @@
 //! Depends on [`crate::ports`] and `dctx-hash`. Inventory and `validate` share it.
 
 use super::error::SourceError;
+use crate::ContentDigest;
 use crate::domain::{FileStamp, StaleReason};
 use crate::ports::{EntryMeta, FsKind, SourceFs};
-use crate::ContentDigest;
 use dctx_hash::Sha256;
 use std::path::Path;
 

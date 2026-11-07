@@ -7,8 +7,8 @@
 use proptest::prelude::*;
 
 use crate::{
-    decode, decode_with_limits, envelope_checksum, DecoderLimits, DocId, Field, PostingDraft,
-    SectionKind, SegmentBuilder, SegmentError, SegmentRole, TermDraft,
+    DecoderLimits, DocId, Field, PostingDraft, SectionKind, SegmentBuilder, SegmentError,
+    SegmentRole, TermDraft, decode, decode_with_limits, envelope_checksum,
 };
 
 #[test]
@@ -37,11 +37,17 @@ fn every_truncation_is_refused_and_the_full_file_decodes() {
 fn header_checksum_and_limit_refusals_keep_a_valid_control() {
     let bytes = empty_fact();
     assert!(decode(&bytes, SegmentRole::Fact).is_ok());
-    assert_eq!(decode(&bytes, SegmentRole::View).unwrap_err(), SegmentError::Role("forbidden"));
+    assert_eq!(
+        decode(&bytes, SegmentRole::View).unwrap_err(),
+        SegmentError::Role("forbidden")
+    );
 
     let mut magic = bytes.clone();
     magic[0] = b'X';
-    assert_eq!(decode(&magic, SegmentRole::Fact).unwrap_err(), SegmentError::BadMagic);
+    assert_eq!(
+        decode(&magic, SegmentRole::Fact).unwrap_err(),
+        SegmentError::BadMagic
+    );
 
     let mut version = bytes.clone();
     version[8..10].copy_from_slice(&2u16.to_le_bytes());
@@ -57,11 +63,17 @@ fn header_checksum_and_limit_refusals_keep_a_valid_control() {
 
     let mut feature = bytes.clone();
     feature[40..48].copy_from_slice(&1u64.to_le_bytes());
-    assert_eq!(decode(&feature, SegmentRole::Fact).unwrap_err(), SegmentError::UnknownFeature(1));
+    assert_eq!(
+        decode(&feature, SegmentRole::Fact).unwrap_err(),
+        SegmentError::UnknownFeature(1)
+    );
 
     let mut checksum = bytes.clone();
     checksum[48] ^= 0xff;
-    assert_eq!(decode(&checksum, SegmentRole::Fact).unwrap_err(), SegmentError::BadEnvelopeChecksum);
+    assert_eq!(
+        decode(&checksum, SegmentRole::Fact).unwrap_err(),
+        SegmentError::BadEnvelopeChecksum
+    );
 
     let mut payload = bytes.clone();
     let (at, _, _) = entry(&payload, SectionKind::Dictionary.code());
@@ -69,27 +81,41 @@ fn header_checksum_and_limit_refusals_keep_a_valid_control() {
     resign(&mut payload);
     assert_eq!(
         decode(&payload, SegmentRole::Fact).unwrap_err(),
-        SegmentError::BadPayloadChecksum { kind: SectionKind::Dictionary.code() }
+        SegmentError::BadPayloadChecksum {
+            kind: SectionKind::Dictionary.code()
+        }
     );
 
     let mut trailing = bytes.clone();
     trailing.push(0);
-    assert_eq!(decode(&trailing, SegmentRole::Fact).unwrap_err(), SegmentError::TrailingBytes);
+    assert_eq!(
+        decode(&trailing, SegmentRole::Fact).unwrap_err(),
+        SegmentError::TrailingBytes
+    );
 
     let mut offset = bytes.clone();
     let (at, _, _) = entry(&offset, SectionKind::Dictionary.code());
     offset[at + 8..at + 16].copy_from_slice(&u64::MAX.to_le_bytes());
-    assert_eq!(decode(&offset, SegmentRole::Fact).unwrap_err(), SegmentError::OffsetOverflow);
+    assert_eq!(
+        decode(&offset, SegmentRole::Fact).unwrap_err(),
+        SegmentError::OffsetOverflow
+    );
 
     let mut length = bytes.clone();
     let (at, _, _) = entry(&length, SectionKind::Facts.code());
     length[at + 16..at + 24].copy_from_slice(&u64::MAX.to_le_bytes());
-    assert_eq!(decode(&length, SegmentRole::Fact).unwrap_err(), SegmentError::OffsetOverflow);
+    assert_eq!(
+        decode(&length, SegmentRole::Fact).unwrap_err(),
+        SegmentError::OffsetOverflow
+    );
 
     let mut flags = bytes.clone();
     let (at, _, _) = entry(&flags, SectionKind::Dictionary.code());
     flags[at + 4..at + 8].copy_from_slice(&3u32.to_le_bytes());
-    assert_eq!(decode(&flags, SegmentRole::Fact).unwrap_err(), SegmentError::Directory("flag"));
+    assert_eq!(
+        decode(&flags, SegmentRole::Fact).unwrap_err(),
+        SegmentError::Directory("flag")
+    );
 
     let mut schema = bytes.clone();
     let (at, _, _) = entry(&schema, SectionKind::Dictionary.code());
@@ -97,30 +123,45 @@ fn header_checksum_and_limit_refusals_keep_a_valid_control() {
     resign(&mut schema);
     assert_eq!(
         decode(&schema, SegmentRole::Fact).unwrap_err(),
-        SegmentError::UnknownSchema { kind: SectionKind::Dictionary.code(), schema: 2 }
+        SegmentError::UnknownSchema {
+            kind: SectionKind::Dictionary.code(),
+            schema: 2
+        }
     );
 
     let mut required = bytes.clone();
     let (at, _, _) = entry(&required, SectionKind::Dictionary.code());
     required[at + 4..at + 8].copy_from_slice(&0u32.to_le_bytes());
     resign(&mut required);
-    assert_eq!(decode(&required, SegmentRole::Fact).unwrap_err(), SegmentError::Role("flag"));
+    assert_eq!(
+        decode(&required, SegmentRole::Fact).unwrap_err(),
+        SegmentError::Role("flag")
+    );
 
     let mut count = bytes.clone();
     let (at, _, _) = entry(&count, SectionKind::Dictionary.code());
     count[at + 24..at + 32].copy_from_slice(&1u64.to_le_bytes());
-    assert_eq!(decode(&count, SegmentRole::Fact).unwrap_err(), SegmentError::Cardinality("count"));
+    assert_eq!(
+        decode(&count, SegmentRole::Fact).unwrap_err(),
+        SegmentError::Cardinality("count")
+    );
 
     let mut huge = bytes.clone();
     huge[16..24].copy_from_slice(&(super::limits::MAX_SEGMENT_BYTES + 1).to_le_bytes());
-    let raised = DecoderLimits { max_segment_bytes: u64::MAX, ..DecoderLimits::standard() };
+    let raised = DecoderLimits {
+        max_segment_bytes: u64::MAX,
+        ..DecoderLimits::standard()
+    };
     assert_eq!(
         decode_with_limits(&huge, SegmentRole::Fact, raised).unwrap_err(),
         SegmentError::Limit("segment")
     );
     assert!(decode_with_limits(&bytes, SegmentRole::Fact, raised).is_ok());
 
-    let tight = DecoderLimits { max_segment_bytes: 80, ..DecoderLimits::standard() };
+    let tight = DecoderLimits {
+        max_segment_bytes: 80,
+        ..DecoderLimits::standard()
+    };
     assert_eq!(
         decode_with_limits(&bytes, SegmentRole::Fact, tight).unwrap_err(),
         SegmentError::Limit("segment")
@@ -150,21 +191,32 @@ fn utf8_gaps_and_string_limits_are_refused() {
     resign(&mut bad_utf8);
     assert_eq!(
         decode(&bad_utf8, SegmentRole::Fact).unwrap_err(),
-        SegmentError::Utf8 { kind: SectionKind::Dictionary.code() }
+        SegmentError::Utf8 {
+            kind: SectionKind::Dictionary.code()
+        }
     );
 
     let mut gap = bytes.clone();
     let (at, _, len) = entry(&gap, SectionKind::Dictionary.code());
     assert!(len > 1);
     gap[at + 16..at + 24].copy_from_slice(&(len - 1).to_le_bytes());
-    assert_eq!(decode(&gap, SegmentRole::Fact).unwrap_err(), SegmentError::Directory("gap"));
+    assert_eq!(
+        decode(&gap, SegmentRole::Fact).unwrap_err(),
+        SegmentError::Directory("gap")
+    );
 
-    let records = DecoderLimits { max_records: 0, ..DecoderLimits::standard() };
+    let records = DecoderLimits {
+        max_records: 0,
+        ..DecoderLimits::standard()
+    };
     assert_eq!(
         decode_with_limits(&bytes, SegmentRole::Fact, records).unwrap_err(),
         SegmentError::Limit("records")
     );
-    let strings = DecoderLimits { max_string_bytes: 1, ..DecoderLimits::standard() };
+    let strings = DecoderLimits {
+        max_string_bytes: 1,
+        ..DecoderLimits::standard()
+    };
     assert_eq!(
         decode_with_limits(&bytes, SegmentRole::Fact, strings).unwrap_err(),
         SegmentError::Limit("string")
@@ -179,7 +231,10 @@ fn every_single_byte_flip_is_refused() {
     for (index, byte) in bytes.iter().enumerate() {
         let mut flipped = bytes.clone();
         flipped[index] = byte ^ 0x5a;
-        assert!(decode(&flipped, SegmentRole::Fact).is_err(), "index {index}");
+        assert!(
+            decode(&flipped, SegmentRole::Fact).is_err(),
+            "index {index}"
+        );
     }
 }
 
@@ -207,7 +262,9 @@ fn checked(bytes: &[u8], role: SegmentRole) -> bool {
                 if start > last || last >= dictionary.len() {
                     return false;
                 }
-                if !dictionary[start].starts_with(entry.prefix) || !dictionary[last].starts_with(entry.prefix) {
+                if !dictionary[start].starts_with(entry.prefix)
+                    || !dictionary[last].starts_with(entry.prefix)
+                {
                     return false;
                 }
             }
@@ -234,7 +291,10 @@ fn accent_segment() -> Vec<u8> {
         .add_term(TermDraft {
             field: Field::Identifier,
             term: "é".to_owned(),
-            hits: vec![PostingDraft { doc: DocId::Index(0), positions: vec![1] }],
+            hits: vec![PostingDraft {
+                doc: DocId::Index(0),
+                positions: vec![1],
+            }],
         })
         .unwrap();
     builder.build().unwrap()

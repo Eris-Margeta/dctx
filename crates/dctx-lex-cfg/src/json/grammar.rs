@@ -5,7 +5,10 @@ use super::*;
 impl<'a> Parser<'a> {
     pub(super) fn object(&mut self, parent: Option<usize>, depth: u32) -> Result<(), LexError> {
         if depth > self.max_depth {
-            return Err(LexError::TooDeep { line: self.draft.line(self.cur.i), limit: self.max_depth });
+            return Err(LexError::TooDeep {
+                line: self.draft.line(self.cur.i),
+                limit: self.max_depth,
+            });
         }
         self.cur.bump();
         loop {
@@ -45,7 +48,10 @@ impl<'a> Parser<'a> {
 
     pub(super) fn array(&mut self, parent: Option<usize>, depth: u32) -> Result<(), LexError> {
         if depth > self.max_depth {
-            return Err(LexError::TooDeep { line: self.draft.line(self.cur.i), limit: self.max_depth });
+            return Err(LexError::TooDeep {
+                line: self.draft.line(self.cur.i),
+                limit: self.max_depth,
+            });
         }
         self.cur.bump();
         let mut index = 0u32;
@@ -68,7 +74,10 @@ impl<'a> Parser<'a> {
                 // RFC 8259 refuses `[1,]`. JSONC keeps the comma. Objects stay
                 // permissive: settings.json locks a trailing comma as complete.
                 if !self.jsonc && self.closer_after_space(b']') {
-                    self.diagnose(self.cur.i.saturating_sub(1), DiagnosticReason::InvalidSyntax);
+                    self.diagnose(
+                        self.cur.i.saturating_sub(1),
+                        DiagnosticReason::InvalidSyntax,
+                    );
                 }
                 continue;
             }
@@ -81,7 +90,10 @@ impl<'a> Parser<'a> {
         Ok(())
     }
 
-    #[allow(clippy::needless_pass_by_value, reason = "Pending comment text is transferred at grammar dispatch boundaries and is not reusable by the caller after that item is handled.")]
+    #[allow(
+        clippy::needless_pass_by_value,
+        reason = "Pending comment text is transferred at grammar dispatch boundaries and is not reusable by the caller after that item is handled."
+    )]
     fn value(
         &mut self,
         parent: Option<usize>,
@@ -113,7 +125,10 @@ impl<'a> Parser<'a> {
 
     pub(super) fn scalar(&mut self, node: Option<usize>, depth: u32) -> Result<(), LexError> {
         if depth > self.max_depth {
-            return Err(LexError::TooDeep { line: self.draft.line(self.cur.i), limit: self.max_depth });
+            return Err(LexError::TooDeep {
+                line: self.draft.line(self.cur.i),
+                limit: self.max_depth,
+            });
         }
         let start = self.cur.i;
         if self.cur.byte() == Some(b'"') {
@@ -127,7 +142,8 @@ impl<'a> Parser<'a> {
         }
         if self.literal() {
             if let Some(index) = node {
-                self.draft.set_signature(index, self.cur.slice(start, self.cur.i).trim());
+                self.draft
+                    .set_signature(index, self.cur.slice(start, self.cur.i).trim());
             }
             return Ok(());
         }
@@ -142,7 +158,10 @@ impl<'a> Parser<'a> {
         let rest = self.cur.rest();
         for word in ["true", "false", "null"] {
             if let Some(tail) = rest.strip_prefix(word) {
-                let boundary = tail.chars().next().is_none_or(|ch| !ch.is_ascii_alphanumeric());
+                let boundary = tail
+                    .chars()
+                    .next()
+                    .is_none_or(|ch| !ch.is_ascii_alphanumeric());
                 if boundary {
                     self.cur.i += word.len();
                     return true;
@@ -188,11 +207,17 @@ impl<'a> Parser<'a> {
     ) -> Result<Option<usize>, LexError> {
         let Some(parent) = parent else {
             if depth > self.max_depth {
-                return Err(LexError::TooDeep { line: self.draft.line(start), limit: self.max_depth });
+                return Err(LexError::TooDeep {
+                    line: self.draft.line(start),
+                    limit: self.max_depth,
+                });
             }
             return Ok(None);
         };
-        Ok(self.draft.put(parent, key, Kind::Value(container), start, start, depth)?.index())
+        Ok(self
+            .draft
+            .put(parent, key, Kind::Value(container), start, start, depth)?
+            .index())
     }
 }
 

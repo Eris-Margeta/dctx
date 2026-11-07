@@ -5,8 +5,8 @@
 
 mod common;
 
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 
 use common::{open, req, segment};
@@ -22,7 +22,9 @@ fn writer_readers_and_gc_agree_on_valid_generations() {
         let store = Arc::clone(&store);
         thread::spawn(move || {
             for generation in 1..=6 {
-                store.publish(req("main", generation, segment(&format!("c{generation}")))).unwrap();
+                store
+                    .publish(req("main", generation, segment(&format!("c{generation}"))))
+                    .unwrap();
                 thread::yield_now();
             }
         })
@@ -66,7 +68,9 @@ fn writer_readers_and_gc_agree_on_valid_generations() {
     gc.join().unwrap();
     let pin = store.pin("main").unwrap();
     assert_eq!(pin.generation(), 6);
-    let bytes = store.read_segment(&pin, pin.segments()[0].digest()).unwrap();
+    let bytes = store
+        .read_segment(&pin, pin.segments()[0].digest())
+        .unwrap();
     assert_eq!(bytes, segment("c6"));
     decode(&bytes, SegmentRole::Fact).unwrap();
 }
@@ -91,11 +95,15 @@ fn std_round_trip_reopens_and_the_writer_lock_is_exclusive() {
             .unwrap();
             let pin = store.pin("main").unwrap();
             assert_eq!(pin.generation(), 2);
-            let bytes = store.read_segment(&pin, pin.segments()[0].digest()).unwrap();
+            let bytes = store
+                .read_segment(&pin, pin.segments()[0].digest())
+                .unwrap();
             assert_eq!(bytes, segment("std-2"));
             store
         }
-        Err(StoreError::UnsupportedDurability { capability: "atomic-replace" }) => {
+        Err(StoreError::UnsupportedDurability {
+            capability: "atomic-replace",
+        }) => {
             assert_eq!(store.committed("main").unwrap(), Some(1));
             drop(store);
             let store = dctx_adapter_store::SegmentStore::open(
@@ -105,7 +113,9 @@ fn std_round_trip_reopens_and_the_writer_lock_is_exclusive() {
             .unwrap();
             let pin = store.pin("main").unwrap();
             assert_eq!(pin.generation(), 1);
-            let bytes = store.read_segment(&pin, pin.segments()[0].digest()).unwrap();
+            let bytes = store
+                .read_segment(&pin, pin.segments()[0].digest())
+                .unwrap();
             assert_eq!(bytes, first);
             store
         }

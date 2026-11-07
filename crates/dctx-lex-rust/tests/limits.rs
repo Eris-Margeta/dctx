@@ -13,7 +13,10 @@ fn complete(source: &str) -> bool {
 
 fn too_deep(source: &str) -> bool {
     extract(source.as_bytes(), &Limits::default()).is_ok_and(|f| {
-        matches!(f.completion, Completion::Partial(Refusal::TooDeep { limit: 2048, .. }))
+        matches!(
+            f.completion,
+            Completion::Partial(Refusal::TooDeep { limit: 2048, .. })
+        )
     })
 }
 
@@ -47,7 +50,12 @@ fn deep_inputs_at_the_ceiling_parse_and_beyond_it_are_refused() {
     type Shape = (&'static str, fn(usize) -> String, usize, usize);
     let shapes: [Shape; 7] = [
         ("unary", |n| format!("{}x", "-".repeat(n)), 2000, 2100),
-        ("parens", |n| format!("{}x{}", "(".repeat(n), ")".repeat(n)), 2000, 2100),
+        (
+            "parens",
+            |n| format!("{}x{}", "(".repeat(n), ")".repeat(n)),
+            2000,
+            2100,
+        ),
         ("chain", |n| format!("x{}", ".a()".repeat(n)), 670, 700),
         ("binary", |n| format!("{}b", "a + ".repeat(n)), 1000, 1100),
         ("closures", |n| format!("{}a", "|a| ".repeat(n)), 670, 700),
@@ -57,11 +65,22 @@ fn deep_inputs_at_the_ceiling_parse_and_beyond_it_are_refused() {
             670,
             700,
         ),
-        ("else-if", |n| format!("{}{{ 2 }}", "if c { 1 } else ".repeat(n)), 500, 600),
+        (
+            "else-if",
+            |n| format!("{}{{ 2 }}", "if c { 1 } else ".repeat(n)),
+            500,
+            600,
+        ),
     ];
     for (shape, nested, fits, exceeds) in shapes {
-        assert!(complete(&body(&nested(fits))), "{shape} x {fits} should parse");
-        assert!(too_deep(&body(&nested(exceeds))), "{shape} x {exceeds} should be refused");
+        assert!(
+            complete(&body(&nested(fits))),
+            "{shape} x {fits} should parse"
+        );
+        assert!(
+            too_deep(&body(&nested(exceeds))),
+            "{shape} x {exceeds} should be refused"
+        );
     }
 }
 
@@ -80,12 +99,24 @@ fn refused_nesting_still_recovers_declarations() {
 fn syntax_and_lex_errors_return_partial_line_scan_facts() {
     let broken = "pub struct Kept;\nfn half(x: u8 -> ) {\n}\n";
     let facts = extract(broken.as_bytes(), &Limits::default()).unwrap_or_else(|e| panic!("{e}"));
-    assert_eq!(facts.completion, Completion::Partial(Refusal::Syntax { line: 2 }));
-    assert!(facts.declarations.iter().all(|d| d.precision == Precision::LineScan));
+    assert_eq!(
+        facts.completion,
+        Completion::Partial(Refusal::Syntax { line: 2 })
+    );
+    assert!(
+        facts
+            .declarations
+            .iter()
+            .all(|d| d.precision == Precision::LineScan)
+    );
     assert_eq!(facts.declarations.len(), 2);
     let unterminated = "fn kept() {}\nconst S: &str = \"open;\n";
-    let facts = extract(unterminated.as_bytes(), &Limits::default()).unwrap_or_else(|e| panic!("{e}"));
-    assert!(matches!(facts.completion, Completion::Partial(Refusal::Lex { .. })));
+    let facts =
+        extract(unterminated.as_bytes(), &Limits::default()).unwrap_or_else(|e| panic!("{e}"));
+    assert!(matches!(
+        facts.completion,
+        Completion::Partial(Refusal::Lex { .. })
+    ));
     assert_eq!(facts.declarations[0].name, "kept");
     assert!(complete("pub struct Kept;\nfn whole(x: u8) -> u8 { x }\n"));
 }
@@ -96,7 +127,10 @@ fn record_limit_truncates_and_reports() {
     let two = Limits::narrowed(1 << 20, 64, 2);
     let facts = extract(source.as_bytes(), &two).unwrap_or_else(|e| panic!("{e}"));
     assert_eq!(facts.declarations.len(), 2);
-    assert_eq!(facts.completion, Completion::Partial(Refusal::TooManyRecords { limit: 2 }));
+    assert_eq!(
+        facts.completion,
+        Completion::Partial(Refusal::TooManyRecords { limit: 2 })
+    );
     let three = Limits::narrowed(1 << 20, 64, 3);
     let facts = extract(source.as_bytes(), &three).unwrap_or_else(|e| panic!("{e}"));
     assert_eq!(facts.completion, Completion::Complete);
@@ -107,6 +141,9 @@ fn narrowed_nesting_refuses_earlier() {
     let source = body(&format!("{}x", "-".repeat(40)));
     let narrow = Limits::narrowed(1 << 20, 16, 100);
     let facts = extract(source.as_bytes(), &narrow).unwrap_or_else(|e| panic!("{e}"));
-    assert_eq!(facts.completion, Completion::Partial(Refusal::TooDeep { line: 1, limit: 16 }));
+    assert_eq!(
+        facts.completion,
+        Completion::Partial(Refusal::TooDeep { line: 1, limit: 16 })
+    );
     assert!(complete(&source));
 }

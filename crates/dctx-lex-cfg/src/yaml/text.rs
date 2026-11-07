@@ -7,7 +7,9 @@ use crate::path::hash_comment;
 impl Parser<'_> {
     pub(super) fn quoted(&mut self) -> Option<String> {
         let quote = self.cur.byte()?;
-        if quote != b'"' && quote != b'\'' { return None; }
+        if quote != b'"' && quote != b'\'' {
+            return None;
+        }
         self.cur.i += 1;
         let mut out = String::new();
         loop {
@@ -15,28 +17,48 @@ impl Parser<'_> {
                 None => return self.bad_string(),
                 Some(b'\n' | b'\r') => {
                     // An unclosed quote stops at the break so later keys stay visible.
-                    if !self.quote_closes_later(quote) { return self.bad_string(); }
+                    if !self.quote_closes_later(quote) {
+                        return self.bad_string();
+                    }
                     self.fold_break(&mut out);
                 }
                 Some(byte) if byte == quote => {
                     self.cur.i += 1;
-                    if quote == b'\'' && self.cur.eat(b'\'') { out.push('\''); continue; }
+                    if quote == b'\'' && self.cur.eat(b'\'') {
+                        out.push('\'');
+                        continue;
+                    }
                     return Some(out);
                 }
                 Some(b'\\') if quote == b'"' => {
                     if self.escaped_break() {
-                        if !self.quote_closes_later(quote) { return self.bad_string(); }
+                        if !self.quote_closes_later(quote) {
+                            return self.bad_string();
+                        }
                         self.cur.i += 1;
                         self.consume_break();
-                        while matches!(self.cur.byte(), Some(b' ' | b'\t')) { self.cur.i += 1; }
+                        while matches!(self.cur.byte(), Some(b' ' | b'\t')) {
+                            self.cur.i += 1;
+                        }
                         continue;
                     }
                     self.cur.i += 1;
-                    let Some(byte) = self.cur.bump() else { return self.bad_string() };
-                    out.push(match byte { b'n' => '\n', b't' => '\t', b'"' => '"', b'\\' => '\\', other => char::from(other) });
+                    let Some(byte) = self.cur.bump() else {
+                        return self.bad_string();
+                    };
+                    out.push(match byte {
+                        b'n' => '\n',
+                        b't' => '\t',
+                        b'"' => '"',
+                        b'\\' => '\\',
+                        other => char::from(other),
+                    });
                 }
                 Some(_) => {
-                    let Some(ch) = self.cur.rest().chars().next() else { self.cur.i += 1; continue; };
+                    let Some(ch) = self.cur.rest().chars().next() else {
+                        self.cur.i += 1;
+                        continue;
+                    };
                     out.push(ch);
                     self.cur.i += ch.len_utf8();
                 }
@@ -44,15 +66,24 @@ impl Parser<'_> {
         }
     }
     fn escaped_break(&self) -> bool {
-        matches!(self.cur.src.as_bytes().get(self.cur.i + 1), Some(b'\n' | b'\r'))
+        matches!(
+            self.cur.src.as_bytes().get(self.cur.i + 1),
+            Some(b'\n' | b'\r')
+        )
     }
     fn fold_break(&mut self, out: &mut String) {
         self.consume_break();
-        if !out.is_empty() && !out.ends_with(' ') { out.push(' '); }
+        if !out.is_empty() && !out.ends_with(' ') {
+            out.push(' ');
+        }
     }
     fn consume_break(&mut self) {
-        if self.cur.byte() == Some(b'\r') { self.cur.i += 1; }
-        if self.cur.byte() == Some(b'\n') { self.cur.i += 1; }
+        if self.cur.byte() == Some(b'\r') {
+            self.cur.i += 1;
+        }
+        if self.cur.byte() == Some(b'\n') {
+            self.cur.i += 1;
+        }
     }
     /// True when a closer for `quote` exists before this document ends.
     fn quote_closes_later(&self, quote: u8) -> bool {
@@ -62,7 +93,9 @@ impl Parser<'_> {
         while index < end {
             let byte = bytes[index];
             if quote == b'"' && byte == b'\\' {
-                if index + 1 >= end { return false; }
+                if index + 1 >= end {
+                    return false;
+                }
                 index += 2;
                 continue;
             }
@@ -83,16 +116,36 @@ impl Parser<'_> {
         None
     }
     pub(super) fn take_mark(&mut self, mark: u8) -> Option<String> {
-        if self.cur.byte() != Some(mark) { return None; }
+        if self.cur.byte() != Some(mark) {
+            return None;
+        }
         let save = self.cur.i;
         self.cur.i += 1;
         let start = self.cur.i;
-        while matches!(self.cur.byte(), Some(b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'_' | b'-')) { self.cur.i += 1; }
-        if self.cur.i == start { self.cur.i = save; None } else { Some(self.cur.slice(start, self.cur.i).to_string()) }
+        while matches!(
+            self.cur.byte(),
+            Some(b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'_' | b'-')
+        ) {
+            self.cur.i += 1;
+        }
+        if self.cur.i == start {
+            self.cur.i = save;
+            None
+        } else {
+            Some(self.cur.slice(start, self.cur.i).to_string())
+        }
     }
     pub(super) fn skip_tag(&mut self) {
-        if self.cur.byte() != Some(b'!') { return; }
-        while self.cur.byte().is_some_and(|byte| !byte.is_ascii_whitespace()) { self.cur.i += 1; }
+        if self.cur.byte() != Some(b'!') {
+            return;
+        }
+        while self
+            .cur
+            .byte()
+            .is_some_and(|byte| !byte.is_ascii_whitespace())
+        {
+            self.cur.i += 1;
+        }
     }
     pub(super) fn trailing(&mut self) -> Option<String> {
         let save = self.cur.i;
@@ -163,7 +216,9 @@ pub(super) fn documents(source: &str) -> Vec<(usize, usize)> {
     } else {
         push_doc(&mut ranges, source, start, source.len());
     }
-    if ranges.is_empty() { ranges.push((0, source.len())); }
+    if ranges.is_empty() {
+        ranges.push((0, source.len()));
+    }
     ranges
 }
 
@@ -183,7 +238,10 @@ fn take_line(line: &str, carry: Carry) -> (Carry, bool) {
             if marker_at_column_0(line) {
                 (Carry::Plain, true)
             } else {
-                (scan_from(line.as_bytes(), 0, indent_of(line.as_bytes()), depth), false)
+                (
+                    scan_from(line.as_bytes(), 0, indent_of(line.as_bytes()), depth),
+                    false,
+                )
             }
         }
         Carry::Plain => {
@@ -199,7 +257,9 @@ fn take_line(line: &str, carry: Carry) -> (Carry, bool) {
 fn plain_line(line: &str) -> Carry {
     let bytes = line.as_bytes();
     let mut index = 0;
-    while index < bytes.len() && matches!(bytes[index], b' ' | b'\t') { index += 1; }
+    while index < bytes.len() && matches!(bytes[index], b' ' | b'\t') {
+        index += 1;
+    }
     scan_from(bytes, index, indent_of(bytes), 0)
 }
 
@@ -225,17 +285,26 @@ fn resume_quote(line: &str, quote: u8) -> Carry {
         }
         index += 1;
     }
-    if quote == b'"' { Carry::Double } else { Carry::Single }
+    if quote == b'"' {
+        Carry::Double
+    } else {
+        Carry::Single
+    }
 }
 
-enum QuoteEnd { Closed(usize), Open }
+enum QuoteEnd {
+    Closed(usize),
+    Open,
+}
 
 fn finish_quote(bytes: &[u8], start: usize, quote: u8) -> QuoteEnd {
     let mut index = start + 1;
     while index < bytes.len() {
         let byte = bytes[index];
         if quote == b'"' && byte == b'\\' {
-            if index + 1 >= bytes.len() { return QuoteEnd::Open; }
+            if index + 1 >= bytes.len() {
+                return QuoteEnd::Open;
+            }
             index += 2;
             continue;
         }
@@ -259,7 +328,9 @@ fn scan_from(bytes: &[u8], mut index: usize, line_indent: usize, mut flow: i32) 
             index += 1;
             continue;
         }
-        if byte == b'#' && flow == 0 { break; }
+        if byte == b'#' && flow == 0 {
+            break;
+        }
         if (byte == b'"' || byte == b'\'') && (flow > 0 || pending) {
             match finish_quote(bytes, index, byte) {
                 QuoteEnd::Closed(next) => {
@@ -267,7 +338,13 @@ fn scan_from(bytes: &[u8], mut index: usize, line_indent: usize, mut flow: i32) 
                     index = next;
                     continue;
                 }
-                QuoteEnd::Open => return if byte == b'"' { Carry::Double } else { Carry::Single },
+                QuoteEnd::Open => {
+                    return if byte == b'"' {
+                        Carry::Double
+                    } else {
+                        Carry::Single
+                    };
+                }
             }
         }
         if pending && flow == 0 && (byte == b'|' || byte == b'>') {
@@ -280,7 +357,9 @@ fn scan_from(bytes: &[u8], mut index: usize, line_indent: usize, mut flow: i32) 
             continue;
         }
         if byte == b'}' || byte == b']' {
-            if flow > 0 { flow -= 1; }
+            if flow > 0 {
+                flow -= 1;
+            }
             pending = false;
             index += 1;
             continue;
@@ -298,11 +377,17 @@ fn scan_from(bytes: &[u8], mut index: usize, line_indent: usize, mut flow: i32) 
         pending = false;
         index += 1;
     }
-    if flow > 0 { Carry::Flow(flow) } else { Carry::Plain }
+    if flow > 0 {
+        Carry::Flow(flow)
+    } else {
+        Carry::Plain
+    }
 }
 
 fn marker_at_column_0(line: &str) -> bool {
-    if matches!(line.as_bytes().first(), Some(b' ' | b'\t')) { return false; }
+    if matches!(line.as_bytes().first(), Some(b' ' | b'\t')) {
+        return false;
+    }
     let rest = if let Some(rest) = line.strip_prefix("---") {
         rest
     } else if let Some(rest) = line.strip_prefix("...") {
@@ -320,12 +405,15 @@ fn line_empty(line: &str) -> bool {
 
 fn indent_of(bytes: &[u8]) -> usize {
     let mut index = 0;
-    while index < bytes.len() && matches!(bytes[index], b' ' | b'\t') { index += 1; }
+    while index < bytes.len() && matches!(bytes[index], b' ' | b'\t') {
+        index += 1;
+    }
     visual_columns(&bytes[..index])
 }
 
 fn is_dash(bytes: &[u8], index: usize) -> bool {
-    bytes.get(index) == Some(&b'-') && matches!(bytes.get(index + 1), None | Some(b' ' | b'\t' | b'#'))
+    bytes.get(index) == Some(&b'-')
+        && matches!(bytes.get(index + 1), None | Some(b' ' | b'\t' | b'#'))
 }
 
 fn colon_value_at(bytes: &[u8], index: usize) -> bool {
@@ -338,10 +426,15 @@ fn colon_value_at(bytes: &[u8], index: usize) -> bool {
 }
 
 fn push_doc(ranges: &mut Vec<(usize, usize)>, source: &str, start: usize, end: usize) {
-    let Some(body) = source.get(start..end) else { return };
+    let Some(body) = source.get(start..end) else {
+        return;
+    };
     if body.lines().any(|line| {
         let text = line.trim();
-        !text.is_empty() && !text.starts_with('#') && !text.starts_with("%YAML") && !text.starts_with("%TAG")
+        !text.is_empty()
+            && !text.starts_with('#')
+            && !text.starts_with("%YAML")
+            && !text.starts_with("%TAG")
     }) {
         ranges.push((start, end));
     }

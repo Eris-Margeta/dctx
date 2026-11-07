@@ -24,13 +24,21 @@ pub struct ChunkRead {
 }
 
 impl ChunkRead {
-    pub(crate) fn decode(value: &Json, handle_key: &str, allow_precondition: bool) -> Result<Self, Refusal> {
+    pub(crate) fn decode(
+        value: &Json,
+        handle_key: &str,
+        allow_precondition: bool,
+    ) -> Result<Self, Refusal> {
         let mut f = Fields::of(value)?;
         let read = Self {
             handle: Token::decode(f.req(handle_key)?)?,
             offset: uint(f.req("offset")?)?,
             length: int_in(f.req("length")?, 1, 65_536)?,
-            precondition: if allow_precondition { f.opt("precondition").map(Token::decode).transpose()? } else { None },
+            precondition: if allow_precondition {
+                f.opt("precondition").map(Token::decode).transpose()?
+            } else {
+                None
+            },
         };
         f.finish()?;
         Ok(read)
@@ -41,7 +49,10 @@ impl ChunkRead {
             .put(handle_key, self.handle.encode())
             .put("offset", Json::uint(self.offset))
             .put("length", Json::uint(self.length))
-            .maybe("precondition", self.precondition.as_ref().map(Token::encode))
+            .maybe(
+                "precondition",
+                self.precondition.as_ref().map(Token::encode),
+            )
             .build()
     }
 }
@@ -217,7 +228,9 @@ impl GitAddIgnore {
             .put("precondition", self.precondition.encode())
             .put("repository", self.repository.encode())
             .build();
-        Obj::new().put("operation", Json::str("git.add-ignore")).put("args", args)
+        Obj::new()
+            .put("operation", Json::str("git.add-ignore"))
+            .put("args", args)
     }
 }
 
@@ -257,6 +270,8 @@ impl StateReclaim {
     }
 
     pub(crate) fn encode_without_action(&self) -> Obj {
-        Obj::new().put("handle", self.handle.encode()).put("precondition", self.precondition.encode())
+        Obj::new()
+            .put("handle", self.handle.encode())
+            .put("precondition", self.precondition.encode())
     }
 }

@@ -12,7 +12,10 @@ pub use facts::{
 pub use limits::{LexError, Limits};
 
 /// SHA-256 hex of the body with whitespace runs collapsed and edges trimmed.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn body_fingerprint(body: &str) -> String {
     if !has_whitespace(body) {
         return fingerprint_plain(body);
@@ -112,7 +115,11 @@ mod tests {
         for sample in samples {
             assert_eq!(body_fingerprint(sample), oracle(sample), "{sample:?}");
             if !has_whitespace(sample) {
-                assert_eq!(fingerprint_plain(sample), body_fingerprint(sample), "{sample:?}");
+                assert_eq!(
+                    fingerprint_plain(sample),
+                    body_fingerprint(sample),
+                    "{sample:?}"
+                );
             }
         }
     }

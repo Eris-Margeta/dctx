@@ -7,6 +7,8 @@
 
 #![forbid(unsafe_code)]
 
+mod common;
+
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::PathBuf;
@@ -27,19 +29,41 @@ impl Repository {
         let repo = root.join("repo");
         fs::create_dir_all(repo.join("src")).expect("src");
         fs::create_dir_all(repo.join("corpus")).expect("corpus");
-        for folder in ["home", "config", "cache", "plugins", "map-cache", "local-app-data", "empty-path", "tmp"] {
+        for folder in [
+            "home",
+            "config",
+            "cache",
+            "plugins",
+            "map-cache",
+            "local-app-data",
+            "empty-path",
+            "tmp",
+        ] {
             fs::create_dir_all(root.join(folder)).expect("isolated directory");
         }
         fs::create_dir_all(root.join("config").join("dctx")).expect("global rules");
-        fs::write(root.join("config").join("dctx").join("ignore"), "# one\n").expect("global ignore");
-        fs::write(repo.join(".gitignore"), "/corpus/\n*.secret.rs\n!keep.secret.rs\n").expect("gitignore");
+        fs::write(root.join("config").join("dctx").join("ignore"), "# one\n")
+            .expect("global ignore");
+        fs::write(
+            repo.join(".gitignore"),
+            "/corpus/\n*.secret.rs\n!keep.secret.rs\n",
+        )
+        .expect("gitignore");
         fs::write(repo.join("src").join(".gitignore"), "generated.rs\n").expect("nested");
         fs::write(repo.join("keep.rs"), "fn keep_marker() {}\n").expect("keep");
         fs::write(repo.join("keep.secret.rs"), "fn negated_marker() {}\n").expect("negated");
         fs::write(repo.join("drop.secret.rs"), "fn drop_marker() {}\n").expect("drop");
-        fs::write(repo.join("corpus").join("ready.rs"), "fn corpus_marker() {}\n").expect("corpus");
+        fs::write(
+            repo.join("corpus").join("ready.rs"),
+            "fn corpus_marker() {}\n",
+        )
+        .expect("corpus");
         fs::write(repo.join("src").join("lib.rs"), "fn lib_marker() {}\n").expect("lib");
-        fs::write(repo.join("src").join("generated.rs"), "fn generated_marker() {}\n").expect("generated");
+        fs::write(
+            repo.join("src").join("generated.rs"),
+            "fn generated_marker() {}\n",
+        )
+        .expect("generated");
         fs::write(repo.join("notes.md"), "notes_marker\n").expect("notes");
         fs::write(repo.join("logo.png"), b"\x89PNG\0png_marker").expect("png");
         Self { root }
@@ -51,20 +75,18 @@ impl Repository {
 
     fn output(&self, args: &[&str], extra: &[(&str, &str)]) -> Output {
         let mut command = Command::new(env!("CARGO_BIN_EXE_dctx-cli"));
-        command.current_dir(self.repo()).env_clear().args(args).env("DCTX_AUTO_CLEAN", "0").env("NO_COLOR", "1");
+        command
+            .current_dir(self.repo())
+            .env_clear()
+            .args(args)
+            .env("DCTX_AUTO_CLEAN", "0")
+            .env("NO_COLOR", "1");
+        common::isolated_dirs(&mut command, &self.root);
         for (variable, folder) in [
-            ("HOME", "home"),
-            ("USERPROFILE", "home"),
-            ("XDG_CONFIG_HOME", "config"),
-            ("XDG_CACHE_HOME", "cache"),
-            ("LOCALAPPDATA", "local-app-data"),
             ("DCTX_PLUGIN_ROOT", "plugins"),
             ("DCTX_CACHE_DIR", "cache"),
             ("DCTX_MAP_CACHE", "map-cache"),
             ("PATH", "empty-path"),
-            ("TMPDIR", "tmp"),
-            ("TMP", "tmp"),
-            ("TEMP", "tmp"),
         ] {
             command.env(variable, self.root.join(folder));
         }
@@ -78,7 +100,11 @@ impl Repository {
         let output = self.output(args, extra);
         let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
         let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
-        assert!(output.status.success(), "{args:?}: status {}; stdout: {stdout}; stderr: {stderr}", output.status);
+        assert!(
+            output.status.success(),
+            "{args:?}: status {}; stdout: {stdout}; stderr: {stderr}",
+            output.status
+        );
         (stdout, stderr)
     }
 }
@@ -97,13 +123,19 @@ fn count_line(stderr: &str, label: &str) -> u64 {
 }
 
 fn payload(stdout: &str) -> &str {
-    stdout.rfind("pack bytes=").map_or_else(|| panic!("status line in {stdout}"), |pos| &stdout[..pos])
+    stdout
+        .rfind("pack bytes=")
+        .map_or_else(|| panic!("status line in {stdout}"), |pos| &stdout[..pos])
 }
 
 fn file_paths(page: &str) -> BTreeSet<String> {
-    let start = page.find("<DIRECTORY_TREE>").unwrap_or_else(|| panic!("tree in {page}"));
+    let start = page
+        .find("<DIRECTORY_TREE>")
+        .unwrap_or_else(|| panic!("tree in {page}"));
     let rest = &page[start..];
-    let end = rest.find("</DIRECTORY_TREE>").unwrap_or_else(|| panic!("tree end in {page}"));
+    let end = rest
+        .find("</DIRECTORY_TREE>")
+        .unwrap_or_else(|| panic!("tree end in {page}"));
     let mut paths = BTreeSet::new();
     for line in rest[..end].lines() {
         let Some(rest) = line.trim_start().strip_prefix("[F] ") else {
@@ -119,7 +151,10 @@ fn file_paths(page: &str) -> BTreeSet<String> {
 }
 
 fn read_paths(stderr: &str) -> BTreeSet<String> {
-    stderr.lines().filter_map(|line| line.strip_prefix("read ").map(str::to_string)).collect()
+    stderr
+        .lines()
+        .filter_map(|line| line.strip_prefix("read ").map(str::to_string))
+        .collect()
 }
 
 #[test]
@@ -143,19 +178,37 @@ fn ignored_files_stay_unread_until_opt_in_and_a_rule_edit_rebuilds() {
 
     let (_warm, warm_err) = repo.run(&args, &[("DCTX_REUSE_REPORT", "1")]);
     assert!(warm_err.contains("generation reused"), "{warm_err}");
-    assert!(count_line(&warm_err, "content_reads") < cold_reads, "{warm_err}");
+    assert!(
+        count_line(&warm_err, "content_reads") < cold_reads,
+        "{warm_err}"
+    );
 
-    fs::write(repo.root.join("config").join("dctx").join("ignore"), "# two\n").expect("edit rule");
+    fs::write(
+        repo.root.join("config").join("dctx").join("ignore"),
+        "# two\n",
+    )
+    .expect("edit rule");
     let (edited, edited_err) = repo.run(&args, &[("DCTX_REUSE_REPORT", "1")]);
     assert!(edited_err.contains("generation built"), "{edited_err}");
     assert!(!edited_err.contains("generation reused"), "{edited_err}");
-    assert_eq!(count_line(&edited_err, "content_reads"), cold_reads, "{edited_err}");
+    assert_eq!(
+        count_line(&edited_err, "content_reads"),
+        cold_reads,
+        "{edited_err}"
+    );
     assert!(!edited.contains("corpus_marker"), "{edited}");
 
-    let (opt_in, opt_err) = repo.run(&args, &[("DCTX_REUSE_REPORT", "1"), ("DCTX_INDEX_IGNORED", "1")]);
+    let (opt_in, opt_err) = repo.run(
+        &args,
+        &[("DCTX_REUSE_REPORT", "1"), ("DCTX_INDEX_IGNORED", "1")],
+    );
     assert!(opt_err.contains("generation built"), "{opt_err}");
     // The three ignored rust files join the seven included files.
-    assert_eq!(count_line(&opt_err, "content_reads"), cold_reads + 3, "{opt_err}");
+    assert_eq!(
+        count_line(&opt_err, "content_reads"),
+        cold_reads + 3,
+        "{opt_err}"
+    );
     assert!(opt_in.contains("corpus_marker"), "{opt_in}");
     assert!(opt_in.contains("drop_marker"), "{opt_in}");
     assert!(opt_in.contains("generated_marker"), "{opt_in}");
@@ -163,7 +216,10 @@ fn ignored_files_stay_unread_until_opt_in_and_a_rule_edit_rebuilds() {
 }
 
 #[test]
-#[allow(clippy::case_sensitive_file_extension_comparisons, reason = "The export fixture selects literal lowercase .txt paths; folding case would change the fixture policy.")]
+#[allow(
+    clippy::case_sensitive_file_extension_comparisons,
+    reason = "The export fixture selects literal lowercase .txt paths; folding case would change the fixture policy."
+)]
 fn pack_ext_opens_only_rust_files_and_matches_the_filtered_page() {
     let repo = Repository::new();
     let place = repo.repo().to_string_lossy().into_owned();
@@ -177,10 +233,22 @@ fn pack_ext_opens_only_rust_files_and_matches_the_filtered_page() {
     assert!(!open_page.contains("corpus_marker"), "{open_page}");
     assert!(!open_page.contains("generated_marker"), "{open_page}");
     let open_paths = file_paths(open_page);
-    assert!(!open_paths.iter().any(|path| path.contains("drop.secret") || path.contains("generated.rs") || path.starts_with("corpus")), "{open_paths:?}");
-    let rust_only: BTreeSet<String> = open_paths.iter().filter(|path| path.ends_with(".rs")).cloned().collect();
+    assert!(
+        !open_paths.iter().any(|path| path.contains("drop.secret")
+            || path.contains("generated.rs")
+            || path.starts_with("corpus")),
+        "{open_paths:?}"
+    );
+    let rust_only: BTreeSet<String> = open_paths
+        .iter()
+        .filter(|path| path.ends_with(".rs"))
+        .cloned()
+        .collect();
 
-    let (filtered, filtered_err) = repo.run(&["pack", place.as_str(), "--ext", "rs"], &[("DCTX_READ_REPORT", "1")]);
+    let (filtered, filtered_err) = repo.run(
+        &["pack", place.as_str(), "--ext", "rs"],
+        &[("DCTX_READ_REPORT", "1")],
+    );
     let filtered_page = payload(&filtered);
     assert_eq!(file_paths(filtered_page), rust_only, "{filtered_page}");
     assert_eq!(read_paths(&filtered_err), rust_only, "{filtered_err}");

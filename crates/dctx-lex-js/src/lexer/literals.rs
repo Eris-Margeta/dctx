@@ -61,7 +61,11 @@ impl Lexer<'_> {
                 }
                 '`' => {
                     self.pos = at + 1;
-                    let kind = if head { Kind::Template } else { Kind::TemplateTail };
+                    let kind = if head {
+                        Kind::Template
+                    } else {
+                        Kind::TemplateTail
+                    };
                     self.emit(kind, start, self.pos);
                     return Ok(());
                 }
@@ -80,7 +84,11 @@ impl Lexer<'_> {
         }
         self.problem(start, DiagnosticReason::UnterminatedTemplate);
         self.pos = at;
-        let kind = if head { Kind::Template } else { Kind::TemplateTail };
+        let kind = if head {
+            Kind::Template
+        } else {
+            Kind::TemplateTail
+        };
         self.emit(kind, start, at);
         Ok(())
     }

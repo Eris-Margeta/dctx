@@ -20,7 +20,10 @@ pub enum TextRefusal {
 
 impl TextRefusal {
     /// Stable safe reason name for wire error details.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn reason(self) -> &'static str {
         match self {
             Self::Oversized => "ignore-oversized",
@@ -41,7 +44,10 @@ pub enum Newline {
 
 impl Newline {
     /// The ending's bytes.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Lf => "\n",
@@ -68,29 +74,43 @@ impl IgnoreText {
             return Err(TextRefusal::ContainsNul);
         }
         let text = std::str::from_utf8(bytes).map_err(|_| TextRefusal::InvalidUtf8)?;
-        Ok(Self { text: text.to_owned() })
+        Ok(Self {
+            text: text.to_owned(),
+        })
     }
 
     /// The original text.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn as_str(&self) -> &str {
         &self.text
     }
 
     /// Byte length of the original text.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn len(&self) -> usize {
         self.text.len()
     }
 
     /// Whether the file is empty.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn is_empty(&self) -> bool {
         self.text.is_empty()
     }
 
     /// Style of the first line ending; LF when the file has none.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn newline(&self) -> Newline {
         match self.text.find('\n') {
             Some(index) if index > 0 && self.text.as_bytes()[index - 1] == b'\r' => Newline::CrLf,
@@ -99,7 +119,10 @@ impl IgnoreText {
     }
 
     /// Whether appending needs a separating line ending first (nonempty, unterminated last line).
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn needs_separator(&self) -> bool {
         !self.text.is_empty() && !self.text.ends_with('\n')
     }
@@ -108,7 +131,9 @@ impl IgnoreText {
     pub fn lines(&self) -> impl Iterator<Item = &str> {
         let body = self.text.strip_suffix('\n').unwrap_or(&self.text);
         let empty = self.text.is_empty();
-        body.split('\n').filter(move |_| !empty).map(|line| line.strip_suffix('\r').unwrap_or(line))
+        body.split('\n')
+            .filter(move |_| !empty)
+            .map(|line| line.strip_suffix('\r').unwrap_or(line))
     }
 }
 
@@ -119,8 +144,14 @@ mod tests {
     #[test]
     fn refusals_have_positive_controls() {
         assert!(IgnoreText::parse(b"notes\n", MAX_IGNORE_BYTES).is_ok());
-        assert_eq!(IgnoreText::parse(b"a\0b", MAX_IGNORE_BYTES), Err(TextRefusal::ContainsNul));
-        assert_eq!(IgnoreText::parse(&[0xff, b'\n'], MAX_IGNORE_BYTES), Err(TextRefusal::InvalidUtf8));
+        assert_eq!(
+            IgnoreText::parse(b"a\0b", MAX_IGNORE_BYTES),
+            Err(TextRefusal::ContainsNul)
+        );
+        assert_eq!(
+            IgnoreText::parse(&[0xff, b'\n'], MAX_IGNORE_BYTES),
+            Err(TextRefusal::InvalidUtf8)
+        );
         assert_eq!(IgnoreText::parse(b"abcd", 3), Err(TextRefusal::Oversized));
         assert!(IgnoreText::parse(b"abc", 3).is_ok());
         assert!(IgnoreText::parse("ünïcödé\n".as_bytes(), MAX_IGNORE_BYTES).is_ok());

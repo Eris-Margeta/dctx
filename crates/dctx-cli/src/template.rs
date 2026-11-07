@@ -31,7 +31,9 @@ pub fn execute(args: &[String]) -> Result<String, String> {
     match args[1].as_str() {
         "build" => build(&args[2..]),
         "list" => list(&args[2..]),
-        other => Err(format!("unknown template action: {other}. Use build or list")),
+        other => Err(format!(
+            "unknown template action: {other}. Use build or list"
+        )),
     }
 }
 
@@ -43,13 +45,17 @@ fn build(args: &[String]) -> Result<String, String> {
         match args[index].as_str() {
             "--output" | "-o" => {
                 index += 1;
-                let value = args.get(index).ok_or_else(|| "--output requires a path".to_string())?;
+                let value = args
+                    .get(index)
+                    .ok_or_else(|| "--output requires a path".to_string())?;
                 if output.is_some() {
                     return Err("template build accepts one --output path".to_string());
                 }
                 output = Some(PathBuf::from(value));
             }
-            other if other.starts_with('-') => return Err(format!("unknown template flag: {other}")),
+            other if other.starts_with('-') => {
+                return Err(format!("unknown template flag: {other}"))
+            }
             other => {
                 if source_path.is_some() {
                     return Err("template build accepts one source path".to_string());
@@ -59,14 +65,19 @@ fn build(args: &[String]) -> Result<String, String> {
         }
         index += 1;
     }
-    let source_path = source_path.ok_or_else(|| "template build requires a template path".to_string())?;
-    let source = std::fs::read_to_string(&source_path).map_err(|error| format!("failed to read template: {error}"))?;
+    let source_path =
+        source_path.ok_or_else(|| "template build requires a template path".to_string())?;
+    let source = std::fs::read_to_string(&source_path)
+        .map_err(|error| format!("failed to read template: {error}"))?;
     let session = compiler()?;
-    let plan = session.compile_template(&source).map_err(|error| error.to_string())?;
+    let plan = session
+        .compile_template(&source)
+        .map_err(|error| error.to_string())?;
     let bytes = to_bytes(&plan).map_err(|error| error.to_string())?;
     let digest = hex(&plan.plan_digest);
     let retention = if let Some(path) = &output {
-        std::fs::write(path, &bytes).map_err(|error| format!("failed to write {}: {error}", path.display()))?;
+        std::fs::write(path, &bytes)
+            .map_err(|error| format!("failed to write {}: {error}", path.display()))?;
         format!("explicit path={}", path.display())
     } else {
         "stdout".to_string()
@@ -87,10 +98,14 @@ fn list(args: &[String]) -> Result<String, String> {
         match args[index].as_str() {
             "--dir" => {
                 index += 1;
-                let value = args.get(index).ok_or_else(|| "--dir requires a path".to_string())?;
+                let value = args
+                    .get(index)
+                    .ok_or_else(|| "--dir requires a path".to_string())?;
                 dir = Some(PathBuf::from(value));
             }
-            other if other.starts_with('-') => return Err(format!("unknown template flag: {other}")),
+            other if other.starts_with('-') => {
+                return Err(format!("unknown template flag: {other}"))
+            }
             other => return Err(format!("unknown template list argument: {other}")),
         }
         index += 1;
@@ -102,7 +117,8 @@ fn list(args: &[String]) -> Result<String, String> {
         );
     };
     let session = compiler()?;
-    let entries = std::fs::read_dir(&dir).map_err(|error| format!("failed to read {}: {error}", dir.display()))?;
+    let entries = std::fs::read_dir(&dir)
+        .map_err(|error| format!("failed to read {}: {error}", dir.display()))?;
     let mut lines = Vec::new();
     for entry in entries {
         let entry = entry.map_err(|error| error.to_string())?;
@@ -145,7 +161,14 @@ fn hex(bytes: &[u8]) -> String {
 /// # Errors
 /// Returns template argument, source reading, compilation, or output persistence failures.
 pub fn build_path(path: &Path) -> Result<(), String> {
-    println!("{}", execute(&["template".into(), "build".into(), path.display().to_string()])?);
+    println!(
+        "{}",
+        execute(&[
+            "template".into(),
+            "build".into(),
+            path.display().to_string()
+        ])?
+    );
     Ok(())
 }
 
@@ -155,23 +178,6 @@ pub fn build_path(path: &Path) -> Result<(), String> {
 pub fn list_default() -> Result<(), String> {
     println!("{}", execute(&["template".into(), "list".into()])?);
     Ok(())
-}
-
-/// Load the built-in default (chosen by `stamps`) or a named compiled-v1 template from the legacy cache.
-/// A named template is the user's own text: `stamps` does not change it.
-/// # Errors
-/// Returns cache-path discovery, compiled template reading, or template decoding failures.
-pub fn legacy_template(name: &str, stamps: dctx_template::TreeStamps) -> Result<dctx_template::Template, String> {
-    if name == "default" {
-        return Ok(stamps.template());
-    }
-    let cache = crate::compat::cache_dir().ok_or("Could not determine compiled template path")?;
-    let path = cache.join("templates").join(format!("{name}.bin"));
-    let bytes =
-        std::fs::read(&path).map_err(|error| format!("Compiled template '{name}' at {}: {error}", path.display()))?;
-    dctx_template::CompiledTemplate::deserialize(&mut bytes.as_slice())
-        .map(|compiled| compiled.to_template())
-        .map_err(|error| error.to_string())
 }
 
 /// Interactive template actions use the same explicit facade compiler as the command.
@@ -242,7 +248,12 @@ layout = "SNAPSHOT"
         std::fs::create_dir_all(&dir).expect("temp");
         let source = dir.join("policy.dctx_template");
         std::fs::write(&source, SOURCE).expect("source");
-        let report = execute(&["template".into(), "build".into(), source.display().to_string()]).expect("build");
+        let report = execute(&[
+            "template".into(),
+            "build".into(),
+            source.display().to_string(),
+        ])
+        .expect("build");
         assert!(report.contains("source_version=2"));
         assert!(report.contains("retention=stdout"));
         let listed: Vec<_> = std::fs::read_dir(&dir).expect("list").flatten().collect();
@@ -252,7 +263,8 @@ layout = "SNAPSHOT"
 
     #[test]
     fn output_round_trips_through_the_facade_loader() {
-        let dir = std::env::temp_dir().join(format!("dctx-cli-template-out-{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("dctx-cli-template-out-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).expect("temp");
         let source = dir.join("policy.dctx_template");
@@ -267,8 +279,13 @@ layout = "SNAPSHOT"
         ])
         .expect("build");
         assert!(report.contains("retention=explicit"));
-        let listed =
-            execute(&["template".into(), "list".into(), "--dir".into(), dir.display().to_string()]).expect("list");
+        let listed = execute(&[
+            "template".into(),
+            "list".into(),
+            "--dir".into(),
+            dir.display().to_string(),
+        ])
+        .expect("list");
         assert!(listed.contains("ok "));
         assert!(listed.contains("source_version=2"));
         let bare = execute(&["template".into(), "list".into()]).expect("bare");

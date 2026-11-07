@@ -7,7 +7,7 @@
 use std::sync::Arc;
 
 use crate::ports::SegmentRead;
-use crate::{decode, SegmentError, SegmentRole, ValidatedSegment};
+use crate::{SegmentError, SegmentRole, ValidatedSegment, decode};
 
 /// A segment held in an `Arc`.
 #[derive(Clone, Debug)]
@@ -17,9 +17,14 @@ pub struct MemorySegment {
 
 impl MemorySegment {
     /// Copies `bytes` into an `Arc`.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new(bytes: Vec<u8>) -> Self {
-        Self { bytes: Arc::from(bytes) }
+        Self {
+            bytes: Arc::from(bytes),
+        }
     }
 
     /// Decodes the stored bytes for `role`.
@@ -31,7 +36,10 @@ impl MemorySegment {
     }
 
     /// Borrows the stored bytes.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn bytes(&self) -> &[u8] {
         &self.bytes
     }
@@ -48,7 +56,9 @@ impl SegmentRead for MemorySegment {
 
     fn read_at(&self, offset: u64, buf: &mut [u8]) -> Result<(), SegmentError> {
         let start = usize::try_from(offset).map_err(|_| SegmentError::OffsetOverflow)?;
-        let end = start.checked_add(buf.len()).ok_or(SegmentError::OffsetOverflow)?;
+        let end = start
+            .checked_add(buf.len())
+            .ok_or(SegmentError::OffsetOverflow)?;
         let src = self.bytes.get(start..end).ok_or(SegmentError::Truncated {
             at: offset,
             need: offset.saturating_add(u64::try_from(buf.len()).unwrap_or(u64::MAX)),
@@ -68,7 +78,10 @@ mod tests {
         let bytes = SegmentBuilder::fact().build().unwrap();
         let segment = MemorySegment::new(bytes.clone());
         assert_eq!(segment.bytes(), bytes.as_slice());
-        assert_eq!(segment.len(), u64::try_from(bytes.len()).unwrap_or(u64::MAX));
+        assert_eq!(
+            segment.len(),
+            u64::try_from(bytes.len()).unwrap_or(u64::MAX)
+        );
         let decoded = segment.validate(SegmentRole::Fact).unwrap();
         assert_eq!(decoded.dictionary(), [] as [&str; 0]);
         let mut buf = [0u8; 4];

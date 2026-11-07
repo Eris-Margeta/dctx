@@ -8,7 +8,9 @@ use dctx_map_model::SymbolKind;
 
 impl Walker<'_> {
     pub(crate) fn class_body(&mut self, open: usize, scope: &Scope, enum_head: bool) {
-        let Some(close) = self.matched(open, usize::MAX) else { return };
+        let Some(close) = self.matched(open, usize::MAX) else {
+            return;
+        };
         if self.depth >= 64 {
             self.problem(self.start_byte(open), DiagnosticReason::Malformed);
             return;
@@ -22,7 +24,11 @@ impl Walker<'_> {
         while index < close && guard <= close {
             guard += 1;
             let next = self.declaration(index, close, scope, false);
-            index = if next > index { next.min(close) } else { index + 1 };
+            index = if next > index {
+                next.min(close)
+            } else {
+                index + 1
+            };
         }
         self.depth -= 1;
     }
@@ -75,8 +81,17 @@ impl Walker<'_> {
         self.ident(index)
             && matches!(
                 self.text(index),
-                "fun" | "val" | "var" | "class" | "interface" | "object" | "typealias" | "constructor"
-                    | "init" | "get" | "set"
+                "fun"
+                    | "val"
+                    | "var"
+                    | "class"
+                    | "interface"
+                    | "object"
+                    | "typealias"
+                    | "constructor"
+                    | "init"
+                    | "get"
+                    | "set"
             )
     }
     fn one_constant(&mut self, index: usize, end: usize, scope: &Scope) -> usize {
@@ -147,7 +162,13 @@ impl Walker<'_> {
         self.flush_anns(&child, anns);
         Some(child)
     }
-    pub(crate) fn property_decl(&mut self, begin: usize, prefix: &Prefix, end: usize, scope: &Scope) -> usize {
+    pub(crate) fn property_decl(
+        &mut self,
+        begin: usize,
+        prefix: &Prefix,
+        end: usize,
+        scope: &Scope,
+    ) -> usize {
         let keyword_at = prefix.next;
         let Some(name_at) = self.find_prop_name(keyword_at + 1, end) else {
             self.problem(self.start_byte(keyword_at), DiagnosticReason::Malformed);
@@ -205,7 +226,12 @@ impl Walker<'_> {
             }
             cursor = to;
         }
-        PropParts { cursor, sig_end, type_span, init }
+        PropParts {
+            cursor,
+            sig_end,
+            type_span,
+            init,
+        }
     }
     fn find_prop_name(&self, start: usize, end: usize) -> Option<usize> {
         let mut found = None;
@@ -236,7 +262,13 @@ impl Walker<'_> {
         found
     }
     fn prop_stop(&self, index: usize, named: bool) -> bool {
-        if self.is(index, ":") || self.is(index, "=") || self.is(index, "by") || self.is(index, "{") || self.is_semi(index) || self.decl_at(index) {
+        if self.is(index, ":")
+            || self.is(index, "=")
+            || self.is(index, "by")
+            || self.is(index, "{")
+            || self.is_semi(index)
+            || self.decl_at(index)
+        {
             return true;
         }
         named && (self.is(index, "get") || self.is(index, "set"))
@@ -315,7 +347,9 @@ impl Walker<'_> {
         let mut guard = 0usize;
         while cursor < end && guard < 6 {
             guard += 1;
-            let Some(word) = self.accessor_word(cursor, end) else { return };
+            let Some(word) = self.accessor_word(cursor, end) else {
+                return;
+            };
             if word >= end {
                 return;
             }
@@ -367,7 +401,13 @@ impl Walker<'_> {
             self.scan_refs(cursor + 1, stop, scope);
         }
     }
-    pub(crate) fn walk_params(&mut self, open: usize, close: usize, scope: &Scope, props: Option<&Scope>) {
+    pub(crate) fn walk_params(
+        &mut self,
+        open: usize,
+        close: usize,
+        scope: &Scope,
+        props: Option<&Scope>,
+    ) {
         let mut index = open + 1;
         let mut guard = 0usize;
         while index < close && guard <= close {
@@ -380,7 +420,13 @@ impl Walker<'_> {
             index = if next > index { next } else { index + 1 };
         }
     }
-    fn one_param(&mut self, mut index: usize, close: usize, scope: &Scope, props: Option<&Scope>) -> usize {
+    fn one_param(
+        &mut self,
+        mut index: usize,
+        close: usize,
+        scope: &Scope,
+        props: Option<&Scope>,
+    ) -> usize {
         let mut anns = Vec::new();
         while self.is(index, "@") && index < close {
             let ann = self.read_ann(index, close);
@@ -430,7 +476,11 @@ impl Walker<'_> {
                 self.scan_refs(from, to, scope);
             }
         }
-        if self.is(index, ",") { index + 1 } else { index }
+        if self.is(index, ",") {
+            index + 1
+        } else {
+            index
+        }
     }
     fn emit_param_prop(
         &mut self,
@@ -481,7 +531,6 @@ impl Walker<'_> {
         }
         (index, public, false)
     }
-
 }
 
 struct PropParts {

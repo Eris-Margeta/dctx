@@ -7,7 +7,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
-use crate::domain::{check_rel, Boundary, StoreError};
+use crate::domain::{Boundary, StoreError, check_rel};
 use crate::ports::{FsCapabilities, StoreFs};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -53,11 +53,15 @@ impl Mem {
         if self.dirty_names.is_none() {
             self.dirty_names = Some(self.durable_names.clone());
         }
-        self.dirty_names.as_mut().ok_or_else(|| StoreError::io("dir"))
+        self.dirty_names
+            .as_mut()
+            .ok_or_else(|| StoreError::io("dir"))
     }
 
     fn inode_mut(&mut self, id: u64) -> Result<&mut Inode, StoreError> {
-        self.inodes.get_mut(&id).ok_or_else(|| StoreError::io("inode"))
+        self.inodes
+            .get_mut(&id)
+            .ok_or_else(|| StoreError::io("inode"))
     }
 
     fn reap(&mut self) {
@@ -73,7 +77,8 @@ impl Mem {
         for id in self.holds.values() {
             live.insert(*id);
         }
-        self.inodes.retain(|id, inode| live.contains(id) || inode.holds > 0);
+        self.inodes
+            .retain(|id, inode| live.contains(id) || inode.holds > 0);
     }
 
     fn crash_locked(&mut self) {
@@ -94,19 +99,28 @@ pub struct MemoryFs {
 
 impl MemoryFs {
     /// POSIX rename-over and sync.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn posix() -> Self {
         Self::build(Profile::Posix, true, true, true)
     }
 
     /// Replace and unlink fail while a handle is open. Names are not truncated.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn windows() -> Self {
         Self::build(Profile::Windows, true, true, true)
     }
 
     /// Sync returns [`StoreError::UnsupportedDurability`].
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn no_sync() -> Self {
         Self::build(Profile::Posix, false, true, true)
     }
@@ -162,7 +176,10 @@ impl MemoryFs {
     pub fn hold(&self, path: &str) -> Result<u64, StoreError> {
         check_rel(path)?;
         let mut mem = self.lock();
-        let id = *mem.visible().get(path).ok_or_else(|| StoreError::io("missing"))?;
+        let id = *mem
+            .visible()
+            .get(path)
+            .ok_or_else(|| StoreError::io("missing"))?;
         let inode = mem.inode_mut(id)?;
         if inode.holds == u32::MAX {
             return Err(StoreError::InvalidRequest { reason: "hold" });
@@ -180,7 +197,10 @@ impl MemoryFs {
     /// Refuses unknown hold tokens or unavailable inodes.
     pub fn release_hold(&self, token: u64) -> Result<(), StoreError> {
         let mut mem = self.lock();
-        let id = mem.holds.remove(&token).ok_or(StoreError::InvalidRequest { reason: "hold" })?;
+        let id = mem
+            .holds
+            .remove(&token)
+            .ok_or(StoreError::InvalidRequest { reason: "hold" })?;
         let inode = mem.inode_mut(id)?;
         inode.holds = inode.holds.saturating_sub(1);
         Ok(())
@@ -192,7 +212,10 @@ impl MemoryFs {
     /// Refuses unknown hold tokens or unavailable inodes.
     pub fn read_hold(&self, token: u64) -> Result<Vec<u8>, StoreError> {
         let mem = self.lock();
-        let id = *mem.holds.get(&token).ok_or(StoreError::InvalidRequest { reason: "hold" })?;
+        let id = *mem
+            .holds
+            .get(&token)
+            .ok_or(StoreError::InvalidRequest { reason: "hold" })?;
         let inode = mem.inodes.get(&id).ok_or_else(|| StoreError::io("inode"))?;
         Ok(inode.dirty.clone().unwrap_or_else(|| inode.durable.clone()))
     }
@@ -213,7 +236,9 @@ impl StoreFs for MemoryFs {
         if mem.crash_at == Some(boundary) {
             mem.crash_at = None;
             mem.crash_locked();
-            return Err(StoreError::Crashed { boundary: boundary.as_str() });
+            return Err(StoreError::Crashed {
+                boundary: boundary.as_str(),
+            });
         }
         Ok(())
     }
@@ -270,8 +295,12 @@ impl StoreFs for MemoryFs {
     fn write(&self, path: &str, bytes: &[u8]) -> Result<(), StoreError> {
         check_rel(path)?;
         let mut mem = self.lock();
-        let len = u64::try_from(bytes.len()).map_err(|_| StoreError::InvalidRequest { reason: "size" })?;
-        let id = *mem.visible().get(path).ok_or_else(|| StoreError::io("missing"))?;
+        let len = u64::try_from(bytes.len())
+            .map_err(|_| StoreError::InvalidRequest { reason: "size" })?;
+        let id = *mem
+            .visible()
+            .get(path)
+            .ok_or_else(|| StoreError::io("missing"))?;
         if let Some(left) = mem.disk_left {
             if len > left {
                 return Err(StoreError::DiskFull);
@@ -297,7 +326,10 @@ impl StoreFs for MemoryFs {
         if !mem.can_sync {
             return Err(StoreError::UnsupportedDurability { capability: "sync" });
         }
-        let id = *mem.visible().get(path).ok_or_else(|| StoreError::io("missing"))?;
+        let id = *mem
+            .visible()
+            .get(path)
+            .ok_or_else(|| StoreError::io("missing"))?;
         let inode = mem.inode_mut(id)?;
         if let Some(dirty) = inode.dirty.take() {
             inode.durable = dirty;
@@ -324,7 +356,10 @@ impl StoreFs for MemoryFs {
         if mem.visible().contains_key(to) {
             return Err(StoreError::io("exists"));
         }
-        let id = *mem.visible().get(from).ok_or_else(|| StoreError::io("missing"))?;
+        let id = *mem
+            .visible()
+            .get(from)
+            .ok_or_else(|| StoreError::io("missing"))?;
         let dirty = mem.dirty()?;
         dirty.remove(from);
         dirty.insert(to.to_string(), id);
@@ -336,9 +371,14 @@ impl StoreFs for MemoryFs {
         check_rel(to)?;
         let mut mem = self.lock();
         if !mem.can_replace {
-            return Err(StoreError::UnsupportedDurability { capability: "atomic-replace" });
+            return Err(StoreError::UnsupportedDurability {
+                capability: "atomic-replace",
+            });
         }
-        let id = *mem.visible().get(from).ok_or_else(|| StoreError::io("missing"))?;
+        let id = *mem
+            .visible()
+            .get(from)
+            .ok_or_else(|| StoreError::io("missing"))?;
         if let Some(dest) = mem.visible().get(to).copied()
             && dest != id
         {
@@ -356,7 +396,10 @@ impl StoreFs for MemoryFs {
     fn read(&self, path: &str) -> Result<Vec<u8>, StoreError> {
         check_rel(path)?;
         let mem = self.lock();
-        let id = *mem.visible().get(path).ok_or_else(|| StoreError::io("missing"))?;
+        let id = *mem
+            .visible()
+            .get(path)
+            .ok_or_else(|| StoreError::io("missing"))?;
         let inode = mem.inodes.get(&id).ok_or_else(|| StoreError::io("inode"))?;
         let bytes = inode.dirty.as_ref().unwrap_or(&inode.durable);
         if u64::try_from(bytes.len()).unwrap_or(u64::MAX) > crate::ports::read_ceiling(path) {
@@ -373,7 +416,10 @@ impl StoreFs for MemoryFs {
     fn len(&self, path: &str) -> Result<u64, StoreError> {
         check_rel(path)?;
         let mem = self.lock();
-        let id = *mem.visible().get(path).ok_or_else(|| StoreError::io("missing"))?;
+        let id = *mem
+            .visible()
+            .get(path)
+            .ok_or_else(|| StoreError::io("missing"))?;
         let inode = mem.inodes.get(&id).ok_or_else(|| StoreError::io("inode"))?;
         let size = inode.dirty.as_ref().map_or(inode.durable.len(), Vec::len);
         u64::try_from(size).map_err(|_| StoreError::InvalidRequest { reason: "size" })
@@ -382,7 +428,10 @@ impl StoreFs for MemoryFs {
     fn unlink(&self, path: &str) -> Result<(), StoreError> {
         check_rel(path)?;
         let mut mem = self.lock();
-        let id = *mem.visible().get(path).ok_or_else(|| StoreError::io("missing"))?;
+        let id = *mem
+            .visible()
+            .get(path)
+            .ok_or_else(|| StoreError::io("missing"))?;
         let holds = mem.inodes.get(&id).map_or(0, |inode| inode.holds);
         if mem.profile == Profile::Windows && holds > 0 {
             return Err(StoreError::SharingViolation);
@@ -440,13 +489,18 @@ mod tests {
         fs.create("tmp/pointer.partial").unwrap();
         fs.write("tmp/pointer.partial", b"new-pointer").unwrap();
         assert_eq!(
-            fs.rename_replace("tmp/pointer.partial", "roots/main/current").unwrap_err(),
+            fs.rename_replace("tmp/pointer.partial", "roots/main/current")
+                .unwrap_err(),
             StoreError::SharingViolation
         );
-        assert_eq!(fs.unlink("roots/main/current").unwrap_err(), StoreError::SharingViolation);
+        assert_eq!(
+            fs.unlink("roots/main/current").unwrap_err(),
+            StoreError::SharingViolation
+        );
         assert_eq!(fs.read("roots/main/current").unwrap(), b"old-pointer");
         fs.release_hold(held).unwrap();
-        fs.rename_replace("tmp/pointer.partial", "roots/main/current").unwrap();
+        fs.rename_replace("tmp/pointer.partial", "roots/main/current")
+            .unwrap();
         assert_eq!(fs.read("roots/main/current").unwrap(), b"new-pointer");
 
         let posix = MemoryFs::posix();
@@ -455,7 +509,9 @@ mod tests {
         let open = posix.hold("roots/main/current").unwrap();
         posix.create("tmp/pointer.partial").unwrap();
         posix.write("tmp/pointer.partial", b"new-pointer").unwrap();
-        posix.rename_replace("tmp/pointer.partial", "roots/main/current").unwrap();
+        posix
+            .rename_replace("tmp/pointer.partial", "roots/main/current")
+            .unwrap();
         assert_eq!(posix.read_hold(open).unwrap(), b"old-pointer");
         assert_eq!(posix.read("roots/main/current").unwrap(), b"new-pointer");
     }
@@ -465,7 +521,10 @@ mod tests {
         let fs = MemoryFs::posix();
         fs.create("segments/a.seg").unwrap();
         fs.set_disk_budget(Some(0));
-        assert_eq!(fs.write("segments/a.seg", b"x").unwrap_err(), StoreError::DiskFull);
+        assert_eq!(
+            fs.write("segments/a.seg", b"x").unwrap_err(),
+            StoreError::DiskFull
+        );
         assert_eq!(fs.read("segments/a.seg").unwrap(), [] as [u8; 0]);
         fs.set_disk_budget(None);
         fs.write("segments/a.seg", b"ok").unwrap();

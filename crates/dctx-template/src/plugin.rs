@@ -8,7 +8,7 @@ mod catalog;
 mod core;
 mod limits;
 
-pub use catalog::{bundled_git_plugin, RESERVED_ALIASES};
+pub use catalog::{RESERVED_ALIASES, bundled_git_plugin};
 pub use core::{
     Capability, ConfigEntry, ConfigValue, FieldKind, FieldSpec, HookDecl, KnownPlugin,
     NetworkPolicy, PluginGroup, PluginOrigin, PluginState, Resolution, UnavailableReason,

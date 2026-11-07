@@ -7,16 +7,18 @@
 use super::error::StoreError;
 
 pub(crate) fn sha256(bytes: &[u8]) -> Result<[u8; 32], StoreError> {
-    let digest = dctx_hash::Sha256::digest(bytes).map_err(|_| StoreError::CorruptIndex {
-        reason: "checksum",
-    })?;
+    let digest = dctx_hash::Sha256::digest(bytes)
+        .map_err(|_| StoreError::CorruptIndex { reason: "checksum" })?;
     Ok(*digest.as_bytes())
 }
 
 pub(crate) fn structured(kind: u16, payload: &[u8]) -> Result<[u8; 32], StoreError> {
     let mut hasher = dctx_hash::Sha256::new();
-    let len = u64::try_from(payload.len()).map_err(|_| StoreError::CorruptIndex { reason: "checksum" })?;
-    hasher.update(b"DCTX\0").map_err(|_| StoreError::CorruptIndex { reason: "checksum" })?;
+    let len = u64::try_from(payload.len())
+        .map_err(|_| StoreError::CorruptIndex { reason: "checksum" })?;
+    hasher
+        .update(b"DCTX\0")
+        .map_err(|_| StoreError::CorruptIndex { reason: "checksum" })?;
     hasher
         .update(&kind.to_le_bytes())
         .and_then(|()| hasher.update(&1u16.to_le_bytes()))
@@ -27,24 +29,32 @@ pub(crate) fn structured(kind: u16, payload: &[u8]) -> Result<[u8; 32], StoreErr
 }
 
 pub(crate) fn read_u16(bytes: &[u8], at: usize) -> Result<u16, StoreError> {
-    let slot = bytes.get(at..at + 2).ok_or(StoreError::CorruptIndex { reason: "short" })?;
+    let slot = bytes
+        .get(at..at + 2)
+        .ok_or(StoreError::CorruptIndex { reason: "short" })?;
     Ok(u16::from_le_bytes([slot[0], slot[1]]))
 }
 
 pub(crate) fn read_u32(bytes: &[u8], at: usize) -> Result<u32, StoreError> {
-    let slot = bytes.get(at..at + 4).ok_or(StoreError::CorruptIndex { reason: "short" })?;
+    let slot = bytes
+        .get(at..at + 4)
+        .ok_or(StoreError::CorruptIndex { reason: "short" })?;
     Ok(u32::from_le_bytes([slot[0], slot[1], slot[2], slot[3]]))
 }
 
 pub(crate) fn read_u64(bytes: &[u8], at: usize) -> Result<u64, StoreError> {
-    let slot = bytes.get(at..at + 8).ok_or(StoreError::CorruptIndex { reason: "short" })?;
+    let slot = bytes
+        .get(at..at + 8)
+        .ok_or(StoreError::CorruptIndex { reason: "short" })?;
     let mut raw = [0u8; 8];
     raw.copy_from_slice(slot);
     Ok(u64::from_le_bytes(raw))
 }
 
 pub(crate) fn read_array(bytes: &[u8], at: usize) -> Result<[u8; 32], StoreError> {
-    let slot = bytes.get(at..at + 32).ok_or(StoreError::CorruptIndex { reason: "short" })?;
+    let slot = bytes
+        .get(at..at + 32)
+        .ok_or(StoreError::CorruptIndex { reason: "short" })?;
     let mut raw = [0u8; 32];
     raw.copy_from_slice(slot);
     Ok(raw)
@@ -61,7 +71,10 @@ impl<'a> Cur<'a> {
     }
 
     pub(crate) fn u8(&mut self) -> Result<u8, StoreError> {
-        let byte = *self.bytes.get(self.at).ok_or(StoreError::CorruptIndex { reason: "manifest" })?;
+        let byte = *self
+            .bytes
+            .get(self.at)
+            .ok_or(StoreError::CorruptIndex { reason: "manifest" })?;
         self.at += 1;
         Ok(byte)
     }
@@ -92,16 +105,24 @@ impl<'a> Cur<'a> {
 
     pub(crate) fn text(&mut self) -> Result<String, StoreError> {
         let len = self.u32()?;
-        let len = usize::try_from(len).map_err(|_| StoreError::CorruptIndex { reason: "manifest" })?;
+        let len =
+            usize::try_from(len).map_err(|_| StoreError::CorruptIndex { reason: "manifest" })?;
         if len > 4096 {
             return Err(StoreError::CorruptIndex { reason: "manifest" });
         }
-        let end = self.at.checked_add(len).ok_or(StoreError::CorruptIndex { reason: "manifest" })?;
-        let raw = self.bytes.get(self.at..end).ok_or(StoreError::CorruptIndex { reason: "manifest" })?;
+        let end = self
+            .at
+            .checked_add(len)
+            .ok_or(StoreError::CorruptIndex { reason: "manifest" })?;
+        let raw = self
+            .bytes
+            .get(self.at..end)
+            .ok_or(StoreError::CorruptIndex { reason: "manifest" })?;
         if raw.contains(&0) {
             return Err(StoreError::CorruptIndex { reason: "manifest" });
         }
-        let text = std::str::from_utf8(raw).map_err(|_| StoreError::CorruptIndex { reason: "manifest" })?;
+        let text = std::str::from_utf8(raw)
+            .map_err(|_| StoreError::CorruptIndex { reason: "manifest" })?;
         self.at = end;
         Ok(text.to_string())
     }
@@ -118,7 +139,8 @@ pub(crate) fn push_str(out: &mut Vec<u8>, text: &str) -> Result<(), StoreError> 
     if text.len() > 4096 || text.as_bytes().contains(&0) {
         return Err(StoreError::InvalidRequest { reason: "text" });
     }
-    let len = u32::try_from(text.len()).map_err(|_| StoreError::InvalidRequest { reason: "text" })?;
+    let len =
+        u32::try_from(text.len()).map_err(|_| StoreError::InvalidRequest { reason: "text" })?;
     out.extend_from_slice(&len.to_le_bytes());
     out.extend_from_slice(text.as_bytes());
     Ok(())

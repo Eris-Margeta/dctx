@@ -10,9 +10,16 @@ use std::collections::BTreeSet;
 
 impl Lifecycle {
     /// P3: every object reachable from a retained manifest or an active lease is still intact.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn p3_holds(&self) -> bool {
-        if self.objects.values().any(|object| object.bytes != object.born) {
+        if self
+            .objects
+            .values()
+            .any(|object| object.bytes != object.born)
+        {
             return false;
         }
         let intact = |id: ObjectId| {
@@ -24,18 +31,20 @@ impl Lifecycle {
             let super::lease::LeasePhase::Active { generation } = lease.phase else {
                 continue;
             };
-            let held = self.manifests.values().any(|manifest| {
-                manifest.generation == generation && intact(manifest.object)
-            });
+            let held = self
+                .manifests
+                .values()
+                .any(|manifest| manifest.generation == generation && intact(manifest.object));
             if !held {
                 return false;
             }
         }
         for pointer in self.pointers.values() {
             for generation in [pointer.current, pointer.previous].into_iter().flatten() {
-                let held = self.manifests.values().any(|manifest| {
-                    manifest.generation == generation && intact(manifest.object)
-                });
+                let held = self
+                    .manifests
+                    .values()
+                    .any(|manifest| manifest.generation == generation && intact(manifest.object));
                 if !held {
                     return false;
                 }
@@ -71,7 +80,10 @@ impl Lifecycle {
         if object.corrupt {
             return matches!(
                 object.state,
-                Physical::Published | Physical::Retired | Physical::Staged | Physical::PendingUnlink
+                Physical::Published
+                    | Physical::Retired
+                    | Physical::Staged
+                    | Physical::PendingUnlink
             );
         }
         if !matches!(object.state, Physical::Published | Physical::Retired) {
@@ -108,7 +120,11 @@ impl Lifecycle {
     }
 
     pub(super) fn unavailable_protected(&self, root: RootId) -> bool {
-        let Some(since) = self.roots.get(&root).and_then(|record| record.unavailable_since) else {
+        let Some(since) = self
+            .roots
+            .get(&root)
+            .and_then(|record| record.unavailable_since)
+        else {
             return false;
         };
         self.wall.0.saturating_sub(since.0) < super::quota::MISSING_GRACE_MS
@@ -124,7 +140,9 @@ impl Lifecycle {
     pub(super) fn pinned_bytes(&self) -> u64 {
         let mut stack = Vec::new();
         for manifest in self.manifests.values() {
-            if manifest.pinned || self.root_is_pinned(manifest.root) || self.lease_holds(manifest.generation)
+            if manifest.pinned
+                || self.root_is_pinned(manifest.root)
+                || self.lease_holds(manifest.generation)
             {
                 stack.push(manifest.object);
                 stack.extend(manifest.refs.iter().copied());
@@ -156,38 +174,56 @@ impl Lifecycle {
     }
 
     /// Physical state, if the object is still in the ledger.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn object_state(&self, id: ObjectId) -> Option<Physical> {
         self.objects.get(&id).map(|object| object.state)
     }
 
     /// Byte length recorded at creation. Missing means unlinked or never admitted.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn object_bytes(&self, id: ObjectId) -> Option<u64> {
         self.objects.get(&id).map(|object| object.bytes)
     }
 
     /// Manifest that currently publishes `generation` for `root`.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn manifest_of(&self, root: RootId, generation: GenerationId) -> Option<super::ManifestId> {
         self.manifest_for(root, generation)
     }
 
     /// Payload object recorded for a manifest.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn manifest_object(&self, id: super::ManifestId) -> Option<ObjectId> {
         self.manifests.get(&id).map(|manifest| manifest.object)
     }
 
     /// Physical state of a manifest's payload.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn manifest_state(&self, id: super::ManifestId) -> Option<Physical> {
         let object = self.manifests.get(&id)?.object;
         self.object_state(object)
     }
 
     /// True when this object is a segment whose dead bytes exceed 25%, or the soft cap is crossed.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn compaction_candidate(&self, id: ObjectId) -> bool {
         let Some(object) = self.objects.get(&id) else {
             return false;
@@ -198,31 +234,48 @@ impl Lifecycle {
     }
 
     /// How many times this root has persisted a last-use stamp.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn persist_writes(&self, root: RootId) -> Option<u64> {
         self.roots.get(&root).map(|record| record.persist_writes)
     }
 
     /// In-memory last use.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn last_use(&self, root: RootId) -> Option<dctx_core::ids::Timestamp> {
         self.roots.get(&root).map(|record| record.last_use)
     }
 
     /// True once root TTL has fired. The record stays until tombstone compaction.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn root_expired(&self, root: RootId) -> bool {
         self.roots.get(&root).is_some_and(|record| record.expired)
     }
 
     /// When the root was first observed missing or offline.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn unavailable_since(&self, root: RootId) -> Option<dctx_core::ids::Timestamp> {
-        self.roots.get(&root).and_then(|record| record.unavailable_since)
+        self.roots
+            .get(&root)
+            .and_then(|record| record.unavailable_since)
     }
 
     /// Pack eviction wants the next diff answer to say `history_reset`.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn history_reset(&self, root: RootId) -> bool {
         self.history_reset.contains(&root)
     }
@@ -251,7 +304,11 @@ mod tests {
         life.publish_view(root, 5, &[]).unwrap();
         life.publish_view(root, 5, &[]).unwrap();
         life.publish_view(root, 5, &[]).unwrap();
-        let payload = life.manifests.get(&life.manifest_of(root, generation).unwrap()).unwrap().object;
+        let payload = life
+            .manifests
+            .get(&life.manifest_of(root, generation).unwrap())
+            .unwrap()
+            .object;
         life.objects.get_mut(&payload).unwrap().state = Physical::Retired;
         let with_leases = life.live_objects(true);
         let without_leases = life.live_objects(false);
@@ -259,7 +316,10 @@ mod tests {
         assert!(!without_leases.contains(&fact) || life.lease_holds(generation));
         let only_because_of_lease: Vec<ObjectId> =
             with_leases.difference(&without_leases).copied().collect();
-        assert_ne!(only_because_of_lease, [] as [crate::domain::ids::ObjectId; 0]);
+        assert_ne!(
+            only_because_of_lease,
+            [] as [crate::domain::ids::ObjectId; 0]
+        );
         for id in only_because_of_lease {
             life.remove_object(id);
         }

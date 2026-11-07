@@ -4,9 +4,9 @@
 //! Depends on writer locks, leases and `dctx-hash`. Startup passes [`RestartEvidence`] on the first slice.
 //! [`Lifecycle::encode_ledger`] is deterministic. Unknown versions and bad checksums are typed refusals.
 
+use super::Lifecycle;
 use super::ids::SessionId;
 use super::lease::LeasePhase;
-use super::Lifecycle;
 use crate::error::CacheError;
 use dctx_hash::Sha256;
 use std::collections::BTreeSet;
@@ -85,7 +85,9 @@ impl Lifecycle {
             reason: "ledger is too large",
         })?;
         if len > BODY_MAX {
-            return Err(CacheError::InvalidRequest { reason: "ledger is too large" });
+            return Err(CacheError::InvalidRequest {
+                reason: "ledger is too large",
+            });
         }
         let mut framed = Vec::with_capacity(16 + body.len() + 32);
         framed.extend_from_slice(&LEDGER_MAGIC);
@@ -122,9 +124,10 @@ impl Lifecycle {
             return Err(corrupt("ledger is too large"));
         }
         let body_len = body_len as usize;
-        let total = 16usize.checked_add(body_len).and_then(|len| len.checked_add(32)).ok_or_else(|| {
-            corrupt("ledger length")
-        })?;
+        let total = 16usize
+            .checked_add(body_len)
+            .and_then(|len| len.checked_add(32))
+            .ok_or_else(|| corrupt("ledger length"))?;
         if bytes.len() != total {
             return Err(corrupt("ledger length"));
         }
@@ -159,7 +162,10 @@ mod tests {
 
     fn rich() -> Lifecycle {
         let mut life = Lifecycle::new(Quota::scaled(500)).expect("quota");
-        life.reconcile(&RestartEvidence { boot_id: 42, held_sessions: BTreeSet::new() });
+        life.reconcile(&RestartEvidence {
+            boot_id: 42,
+            held_sessions: BTreeSet::new(),
+        });
         life.follow(&FakeClock::at(10));
         let root = RootId::new(3);
         life.register_root(root).expect("root");
@@ -168,7 +174,8 @@ mod tests {
         life.reader_confirm(lease).expect("confirm");
         let other = RootId::new(8);
         life.register_root(other).expect("root");
-        life.writer_acquire(other, SessionId::new(9)).expect("acquire");
+        life.writer_acquire(other, SessionId::new(9))
+            .expect("acquire");
         life.writer_reserve(other, 30).expect("reserve");
         life.crash_writer(other).expect("crash");
         life.adopt_legacy(&KnownExport {
@@ -195,11 +202,17 @@ mod tests {
         let mut held = BTreeSet::new();
         held.insert(SessionId::new(4));
         held.insert(SessionId::new(9));
-        kept.reconcile(&RestartEvidence { boot_id: 42, held_sessions: held });
+        kept.reconcile(&RestartEvidence {
+            boot_id: 42,
+            held_sessions: held,
+        });
         assert_eq!(kept.writer_phase(RootId::new(8)), WriterPhase::Dead);
         assert_eq!(kept.status().active_leases, 1);
         let mut dropped = Lifecycle::decode_ledger(&bytes).expect("decode");
-        dropped.reconcile(&RestartEvidence { boot_id: 42, held_sessions: BTreeSet::new() });
+        dropped.reconcile(&RestartEvidence {
+            boot_id: 42,
+            held_sessions: BTreeSet::new(),
+        });
         assert_eq!(dropped.writer_phase(RootId::new(8)), WriterPhase::Free);
         assert_eq!(dropped.status().active_leases, 0);
         assert_eq!(dropped.admitted(), life.admitted() - 30);
@@ -207,7 +220,10 @@ mod tests {
 
     #[test]
     fn unknown_version_and_bad_checksum_are_distinct() {
-        let bytes = Lifecycle::new(Quota::scaled(20)).expect("quota").encode_ledger().expect("encode");
+        let bytes = Lifecycle::new(Quota::scaled(20))
+            .expect("quota")
+            .encode_ledger()
+            .expect("encode");
         let mut unknown = bytes.clone();
         unknown[8..12].copy_from_slice(&99u32.to_le_bytes());
         assert!(matches!(
@@ -227,7 +243,9 @@ mod tests {
         ));
         assert!(matches!(
             Lifecycle::decode_ledger(b"not-a-ledger-file!!"),
-            Err(CacheError::CorruptLedger { reason: "ledger magic" })
+            Err(CacheError::CorruptLedger {
+                reason: "ledger magic"
+            })
         ));
     }
 }

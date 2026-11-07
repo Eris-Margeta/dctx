@@ -38,7 +38,13 @@ fn pointer_first_mutation_breaks_p2_and_the_safe_order_does_not() {
     let mut good = World::new(Mutation::None, true);
     assert!(good.acquire() && good.reserve() && good.write_seg());
     assert!(!good.swap());
-    assert!(good.validate_seg() && good.write_man() && good.validate_man() && good.swap() && good.release());
+    assert!(
+        good.validate_seg()
+            && good.write_man()
+            && good.validate_man()
+            && good.swap()
+            && good.release()
+    );
     assert!(good.p2());
 }
 
@@ -47,7 +53,9 @@ fn omit_leases_mutation_breaks_p3_and_a_live_pin_does_not() {
     let mut bad = World::new(Mutation::OmitLeases, true);
     assert!(bad.reader_begin() && bad.reader_confirm());
     publish(&mut bad);
-    assert!(bad.drop_prev() && bad.retire() && bad.arm_grace() && bad.to_pending() && bad.to_gone());
+    assert!(
+        bad.drop_prev() && bad.retire() && bad.arm_grace() && bad.to_pending() && bad.to_gone()
+    );
     assert!(bad.lease_holds_old());
     assert!(!bad.p3());
 
@@ -57,7 +65,13 @@ fn omit_leases_mutation_breaks_p3_and_a_live_pin_does_not() {
     assert!(good.drop_prev());
     assert!(!good.retire());
     assert!(good.p3());
-    assert!(good.reader_release() && good.retire() && good.arm_grace() && good.to_pending() && good.to_gone());
+    assert!(
+        good.reader_release()
+            && good.retire()
+            && good.arm_grace()
+            && good.to_pending()
+            && good.to_gone()
+    );
     assert!(good.p3());
     assert_eq!(good.old_kept, Kept::Gone);
 }

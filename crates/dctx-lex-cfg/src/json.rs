@@ -4,11 +4,11 @@
 //! Comments are summaries in JSONC and diagnostics in JSON. Object trailing
 //! commas are accepted; array trailing commas are JSONC-only. `path` owns facts.
 //! Unescaped strings are borrowed from the source; escapes decode in one pass.
-#[cfg(test)]
-use std::fmt::Write as _;
 use crate::domain::{DiagnosticReason, Dialect, LexError, LexedFile, Limits};
 use crate::path::{Cur, Draft, Kind};
 use std::borrow::Cow;
+#[cfg(test)]
+use std::fmt::Write as _;
 
 mod grammar;
 mod scan;
@@ -61,7 +61,9 @@ fn walk(
             parser.diagnose(parser.cur.i, DiagnosticReason::InvalidSyntax);
         }
     }
-    parser.draft.finish(if jsonc { Dialect::Jsonc } else { Dialect::Json })
+    parser
+        .draft
+        .finish(if jsonc { Dialect::Jsonc } else { Dialect::Json })
 }
 
 struct Parser<'a> {

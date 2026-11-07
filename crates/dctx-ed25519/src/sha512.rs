@@ -35,7 +35,10 @@ impl Default for Sha512 {
 
 impl Sha512 {
     /// Creates an empty SHA-512 state.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the public constructor's existing caller lint behavior.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the public constructor's existing caller lint behavior."
+    )]
     pub const fn new() -> Self {
         Self {
             state: INITIAL,
@@ -68,7 +71,10 @@ impl Sha512 {
     }
 
     /// Consumes the state, adds FIPS padding and returns 64 digest bytes.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the consuming digest API's existing caller lint behavior.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the consuming digest API's existing caller lint behavior."
+    )]
     pub fn finalize(mut self) -> [u8; 64] {
         self.buffer[self.used] = 0x80;
         self.buffer[self.used + 1..].fill(0);
@@ -86,7 +92,10 @@ impl Sha512 {
     }
 
     /// Hashes a message in one call.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the one-shot digest API's existing caller lint behavior.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the one-shot digest API's existing caller lint behavior."
+    )]
     pub fn digest(bytes: &[u8]) -> [u8; 64] {
         let mut hash = Self::new();
         hash.update(bytes);

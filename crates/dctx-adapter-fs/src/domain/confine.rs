@@ -6,7 +6,10 @@
 use std::path::{Component, Path, PathBuf};
 
 /// Drops `.` and applies `..` without consulting the filesystem.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn normalize(path: &Path) -> PathBuf {
     let mut out = PathBuf::new();
     for component in path.components() {
@@ -24,7 +27,10 @@ pub fn normalize(path: &Path) -> PathBuf {
 
 /// Joins a link target onto its parent, then normalizes.
 /// Absolute targets replace the parent.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn join_lexical(parent: &Path, target: &Path) -> PathBuf {
     let combined = if target.is_absolute() {
         target.to_path_buf()
@@ -35,7 +41,10 @@ pub fn join_lexical(parent: &Path, target: &Path) -> PathBuf {
 }
 
 /// Whether `path` is the root or a normal-component descendant of it.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn is_inside(root: &Path, path: &Path) -> bool {
     if path == root {
         return true;

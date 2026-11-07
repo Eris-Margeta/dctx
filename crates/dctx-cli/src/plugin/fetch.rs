@@ -5,12 +5,19 @@
 
 use std::io::Read;
 
-use dctx_plugin_distribution::{DistributionError, HttpsUrl, Network, NetworkError, OriginPolicy, OriginRefusal};
+use dctx_plugin_distribution::{
+    DistributionError, HttpsUrl, Network, NetworkError, OriginPolicy, OriginRefusal,
+};
 
 const CHUNK: usize = 64 * 1024;
 
 /// Fetches `url` completely, up to `limit` bytes, following only policy-approved redirects.
-pub fn fetch_all(network: &dyn Network, policy: &OriginPolicy, url: &HttpsUrl, limit: u64) -> Result<Vec<u8>, DistributionError> {
+pub fn fetch_all(
+    network: &dyn Network,
+    policy: &OriginPolicy,
+    url: &HttpsUrl,
+    limit: u64,
+) -> Result<Vec<u8>, DistributionError> {
     let mut current = url.clone();
     for _ in 0..=policy.max_redirects {
         policy.check_url(&current)?;
@@ -28,11 +35,16 @@ pub fn fetch_all(network: &dyn Network, policy: &OriginPolicy, url: &HttpsUrl, l
     Err(OriginRefusal::TooManyRedirects.into())
 }
 
-fn read_bounded(mut reader: Box<dyn Read + Send>, limit: u64) -> Result<Vec<u8>, DistributionError> {
+fn read_bounded(
+    mut reader: Box<dyn Read + Send>,
+    limit: u64,
+) -> Result<Vec<u8>, DistributionError> {
     let mut buffer = vec![0u8; CHUNK];
     let mut out = Vec::new();
     loop {
-        let read = reader.read(&mut buffer).map_err(|_| NetworkError::Interrupted)?;
+        let read = reader
+            .read(&mut buffer)
+            .map_err(|_| NetworkError::Interrupted)?;
         if read == 0 {
             return Ok(out);
         }

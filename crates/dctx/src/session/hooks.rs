@@ -10,9 +10,9 @@ use dctx_template::PluginPlan;
 
 use super::Session;
 use crate::domain::DctxError;
-use crate::plugins::{participants, Boundary, HookWarning};
+use crate::plugins::{Boundary, HookWarning, participants};
 #[cfg(feature = "plugin-runtime")]
-use crate::plugins::{run_plan, BoundaryInput, IgnoreSnap};
+use crate::plugins::{BoundaryInput, IgnoreSnap, run_plan};
 
 impl Session {
     /// Advisory warnings from the latest pack, snapshot or cache collection.
@@ -22,17 +22,23 @@ impl Session {
 
     /// Workers the process port started. Zero when the session has no plugin host.
     pub fn plugin_spawns(&self) -> u64 {
-        self.plugins.as_ref().map_or(0, crate::plugins::PluginHost::spawns)
+        self.plugins
+            .as_ref()
+            .map_or(0, crate::plugins::PluginHost::spawns)
     }
 
     /// Launch attempts, including a fail-closed platform refusal. Zero without a host.
     pub fn plugin_admissions(&self) -> u64 {
-        self.plugins.as_ref().map_or(0, crate::plugins::PluginHost::admissions)
+        self.plugins
+            .as_ref()
+            .map_or(0, crate::plugins::PluginHost::admissions)
     }
 
     /// Git recipe children. A refused platform recipe counts as zero.
     pub fn git_children(&self) -> u64 {
-        self.plugins.as_ref().map_or(0, crate::plugins::PluginHost::git_children)
+        self.plugins
+            .as_ref()
+            .map_or(0, crate::plugins::PluginHost::git_children)
     }
 
     pub(super) fn reset_hook_warnings(&mut self) {
@@ -73,8 +79,11 @@ impl Session {
 
     #[cfg(not(feature = "plugin-runtime"))]
     fn run_disabled(&mut self, boundary: Boundary, committed: bool) -> Result<(), DctxError> {
-        let Some(plan) = self.plugin_plan() else { return Ok(()); };
-        self.missing_host(&plan, boundary, committed).unwrap_or(Ok(()))
+        let Some(plan) = self.plugin_plan() else {
+            return Ok(());
+        };
+        self.missing_host(&plan, boundary, committed)
+            .unwrap_or(Ok(()))
     }
 
     #[cfg(feature = "plugin-runtime")]
@@ -116,11 +125,20 @@ impl Session {
     }
 
     /// `Some(Err)` when a required participant has no host. `Some(Ok)` records an advisory gap.
-    fn missing_host(&mut self, plan: &PluginPlan, boundary: Boundary, committed: bool) -> Option<Result<(), DctxError>> {
+    fn missing_host(
+        &mut self,
+        plan: &PluginPlan,
+        boundary: Boundary,
+        committed: bool,
+    ) -> Option<Result<(), DctxError>> {
         if cfg!(feature = "plugin-runtime") && self.plugins.is_some() {
             return None;
         }
-        let reason = if cfg!(feature = "plugin-runtime") { "plugin-host-missing" } else { "plugin-runtime-disabled" };
+        let reason = if cfg!(feature = "plugin-runtime") {
+            "plugin-host-missing"
+        } else {
+            "plugin-runtime-disabled"
+        };
         let people = participants(plan, boundary);
         if people.iter().any(|plugin| plugin.required) {
             return Some(Err(DctxError::Hook {
@@ -154,7 +172,14 @@ impl Session {
         };
         let result = run_plan(
             &mut host,
-            BoundaryInput { plan, boundary, included, epoch, now, committed },
+            BoundaryInput {
+                plan,
+                boundary,
+                included,
+                epoch,
+                now,
+                committed,
+            },
             &mut self.warnings,
         );
         self.plugins = Some(host);
@@ -163,7 +188,10 @@ impl Session {
 
     #[cfg(feature = "plugin-runtime")]
     fn observe_ignore(&self) -> IgnoreSnap {
-        self.plugins.as_ref().map_or_else(IgnoreSnap::unknown, crate::plugins::PluginHost::observe_gitignore)
+        self.plugins.as_ref().map_or_else(
+            IgnoreSnap::unknown,
+            crate::plugins::PluginHost::observe_gitignore,
+        )
     }
 
     #[cfg(feature = "plugin-runtime")]
@@ -172,14 +200,21 @@ impl Session {
     }
 
     #[cfg(feature = "plugin-runtime")]
-    #[allow(clippy::needless_pass_by_value, reason = "Reloading consumes the before-hook observation after comparing it with the new state; keep that temporal ownership boundary.")]
+    #[allow(
+        clippy::needless_pass_by_value,
+        reason = "Reloading consumes the before-hook observation after comparing it with the new state; keep that temporal ownership boundary."
+    )]
     fn reload_ignore(&mut self, before: IgnoreSnap, spawned: bool) -> Result<(), DctxError> {
         let after = self.observe_ignore();
         if before.same_file(&after) {
             return Ok(());
         }
         if before.is_unknown() && after.is_unknown() {
-            return if spawned { Err(DctxError::PolicyUnavailable) } else { Ok(()) };
+            return if spawned {
+                Err(DctxError::PolicyUnavailable)
+            } else {
+                Ok(())
+            };
         }
         let Some(bytes) = after.bytes() else {
             return Err(DctxError::PolicyUnavailable);

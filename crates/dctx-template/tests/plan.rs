@@ -2,7 +2,7 @@
 //! V2 `ContextPlan` compile, canonical bytes and domain digests.
 
 use dctx_core::FileHandlingDecision;
-use dctx_template::{bundled_git_plugin, compile, from_bytes, to_bytes, HostCeiling, PluginState};
+use dctx_template::{HostCeiling, PluginState, bundled_git_plugin, compile, from_bytes, to_bytes};
 
 const ENGINEERING: &str = r#"
 [DTS]
@@ -45,7 +45,10 @@ fn engineering_plan_compiles_and_roundtrips() {
         rule.decision == FileHandlingDecision::Exclude && rule.pattern == "**/.env*"
     }));
     assert_eq!(plan.indexes[0].parser, "structural");
-    assert_eq!(plan.indexes[0].facts, vec!["symbols", "imports", "calls", "headings"]);
+    assert_eq!(
+        plan.indexes[0].facts,
+        vec!["symbols", "imports", "calls", "headings"]
+    );
     assert_eq!(plan.budgets[0].estimated_tokens, 500);
     assert_eq!(plan.budgets[0].hard_estimated_tokens, 2000);
     assert_eq!(plan.budgets[0].records, 40);
@@ -97,7 +100,10 @@ deny = [\"src/b.rs\"]
 ";
     let left = compile(first, &host).expect("first");
     let right = compile(reordered, &host).expect("reordered");
-    assert_eq!(to_bytes(&left).expect("left"), to_bytes(&right).expect("right"));
+    assert_eq!(
+        to_bytes(&left).expect("left"),
+        to_bytes(&right).expect("right")
+    );
 
     let swapped = first.replace(
         "include = [\"src/a.rs\"]\ndeny = [\"src/b.rs\"]",
@@ -134,7 +140,7 @@ records = 1
 selection = \"s\"
 budget = \"b\"
 [PLUGIN:dctx/git]
-version = \"1.1.0\"
+version = \"1.2.0\"
 hooks = [\"before-pack-output-written\"]
 required = true
 allow = [\"file.read:.gitignore\"]

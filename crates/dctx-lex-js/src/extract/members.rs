@@ -130,8 +130,17 @@ impl Walker<'_> {
         loop {
             let modifier = matches!(
                 self.text(k),
-                "readonly" | "static" | "public" | "private" | "protected" | "declare"
-                    | "abstract" | "override" | "get" | "set" | "async"
+                "readonly"
+                    | "static"
+                    | "public"
+                    | "private"
+                    | "protected"
+                    | "declare"
+                    | "abstract"
+                    | "override"
+                    | "get"
+                    | "set"
+                    | "async"
             ) && self.key_end(k + 1, end).is_some();
             let mapped = (self.is(k, "+") || self.is(k, "-")) && self.is(k + 1, "readonly");
             if !(modifier || mapped) {
@@ -144,7 +153,16 @@ impl Walker<'_> {
             if self.is(k + 2, "in") {
                 let name = self.text(k + 1).to_owned();
                 let site = (k + 1, k + 1);
-                self.refer(scope.owner, scope, EdgeKind::UsesType, name, None, site, site, Precision::Structural);
+                self.refer(
+                    scope.owner,
+                    scope,
+                    EdgeKind::UsesType,
+                    name,
+                    None,
+                    site,
+                    site,
+                    Precision::Structural,
+                );
             }
             let next = self.scan_type(k + 3, close, scope);
             if self.is(next, "as") {
@@ -205,7 +223,12 @@ mod tests {
 
     fn names(path: &str, source: &str) -> Vec<String> {
         let facts = JsLexer::default().extract(path, source.as_bytes()).unwrap();
-        facts.nodes.iter().skip(1).map(|n| n.fact.name.clone()).collect()
+        facts
+            .nodes
+            .iter()
+            .skip(1)
+            .map(|n| n.fact.name.clone())
+            .collect()
     }
 
     #[test]

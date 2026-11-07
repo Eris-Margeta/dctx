@@ -3,10 +3,13 @@
 //! Implements contracts/DTS-v2.md plugin section payloads.
 //! Depends on template size limits and typed corruption errors; used by the binary plugin section codec.
 
-use crate::error::{TemplateError, MAX_STRING_BYTES};
+use crate::error::{MAX_STRING_BYTES, TemplateError};
 
 pub(super) fn count(len: usize) -> Result<u32, TemplateError> {
-    u32::try_from(len).map_err(|_| TemplateError::Limit { what: "count", limit: 64 })
+    u32::try_from(len).map_err(|_| TemplateError::Limit {
+        what: "count",
+        limit: 64,
+    })
 }
 
 #[derive(Default)]
@@ -35,7 +38,10 @@ impl Buf {
 
     pub(super) fn str(&mut self, text: &str) -> Result<(), TemplateError> {
         if text.len() > MAX_STRING_BYTES {
-            return Err(TemplateError::Limit { what: "string", limit: MAX_STRING_BYTES as u64 });
+            return Err(TemplateError::Limit {
+                what: "string",
+                limit: MAX_STRING_BYTES as u64,
+            });
         }
         self.u32(u32::try_from(text.len()).map_err(|_| TemplateError::Limit {
             what: "string",
@@ -65,9 +71,13 @@ impl<'a> Reader<'a> {
     }
 
     pub(super) fn take(&mut self, len: usize) -> Result<&'a [u8], TemplateError> {
-        let end = self.at.checked_add(len).ok_or(TemplateError::Corrupt { reason: "truncated" })?;
+        let end = self.at.checked_add(len).ok_or(TemplateError::Corrupt {
+            reason: "truncated",
+        })?;
         if end > self.data.len() {
-            return Err(TemplateError::Corrupt { reason: "truncated" });
+            return Err(TemplateError::Corrupt {
+                reason: "truncated",
+            });
         }
         let out = &self.data[self.at..end];
         self.at = end;
@@ -90,22 +100,32 @@ impl<'a> Reader<'a> {
 
     pub(super) fn u64(&mut self) -> Result<u64, TemplateError> {
         let bytes = self.take(8)?;
-        Ok(u64::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7]]))
+        Ok(u64::from_le_bytes([
+            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+        ]))
     }
 
     pub(super) fn string(&mut self) -> Result<String, TemplateError> {
         let len = usize::try_from(self.u32()?).unwrap_or(usize::MAX);
         if len > MAX_STRING_BYTES {
-            return Err(TemplateError::Limit { what: "string", limit: MAX_STRING_BYTES as u64 });
+            return Err(TemplateError::Limit {
+                what: "string",
+                limit: MAX_STRING_BYTES as u64,
+            });
         }
         let bytes = self.take(len)?;
-        std::str::from_utf8(bytes).map(str::to_string).map_err(|_| TemplateError::Corrupt { reason: "utf8" })
+        std::str::from_utf8(bytes)
+            .map(str::to_string)
+            .map_err(|_| TemplateError::Corrupt { reason: "utf8" })
     }
 
     pub(super) fn list_len(&mut self) -> Result<usize, TemplateError> {
         let len = usize::try_from(self.u32()?).unwrap_or(usize::MAX);
         if len > 64 {
-            return Err(TemplateError::Limit { what: "list", limit: 64 });
+            return Err(TemplateError::Limit {
+                what: "list",
+                limit: 64,
+            });
         }
         Ok(len)
     }
@@ -127,4 +147,3 @@ impl<'a> Reader<'a> {
         }
     }
 }
-

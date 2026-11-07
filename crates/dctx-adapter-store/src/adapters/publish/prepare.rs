@@ -4,11 +4,14 @@ use super::*;
 pub(super) fn prepare(blobs: &[SegmentBlob]) -> Result<Vec<Prepared>, StoreError> {
     let mut prepared = Vec::new();
     for blob in blobs {
-        decode(&blob.bytes, blob.role).map_err(|_| StoreError::CorruptIndex { reason: "segment" })?;
-        let digest = segment_object_digest(&blob.bytes).map_err(|_| StoreError::CorruptIndex {
-            reason: "segment",
-        })?;
-        if let Some(existing) = prepared.iter().find(|item: &&Prepared| item.digest == digest) {
+        decode(&blob.bytes, blob.role)
+            .map_err(|_| StoreError::CorruptIndex { reason: "segment" })?;
+        let digest = segment_object_digest(&blob.bytes)
+            .map_err(|_| StoreError::CorruptIndex { reason: "segment" })?;
+        if let Some(existing) = prepared
+            .iter()
+            .find(|item: &&Prepared| item.digest == digest)
+        {
             if existing.bytes != blob.bytes {
                 return Err(StoreError::CorruptIndex { reason: "segment" });
             }

@@ -22,7 +22,11 @@ pub(super) fn rust_symbols(text: &str) -> Vec<Symbol> {
         } else if let Some((kind, name)) = rust_decl(trimmed) {
             let mut symbol = placed(name, kind, NodeKind::Symbol, line_no, offset, body_len);
             symbol.signature = signature_text(trimmed);
-            symbol.summary_source = if pending.is_some() { "doc".to_string() } else { "sig".to_string() };
+            symbol.summary_source = if pending.is_some() {
+                "doc".to_string()
+            } else {
+                "sig".to_string()
+            };
             symbol.summary = pending.take().unwrap_or_else(|| symbol.signature.clone());
             symbols.push(symbol);
         } else {
@@ -34,7 +38,13 @@ pub(super) fn rust_symbols(text: &str) -> Vec<Symbol> {
 }
 
 fn rust_decl(line: &str) -> Option<(&'static str, String)> {
-    for (keyword, kind) in [("fn", "fn"), ("struct", "struct"), ("enum", "enum"), ("trait", "trait"), ("mod", "mod")] {
+    for (keyword, kind) in [
+        ("fn", "fn"),
+        ("struct", "struct"),
+        ("enum", "enum"),
+        ("trait", "trait"),
+        ("mod", "mod"),
+    ] {
         if let Some(name) = keyword_name(line, keyword) {
             return Some((kind, name));
         }
@@ -43,13 +53,19 @@ fn rust_decl(line: &str) -> Option<(&'static str, String)> {
 }
 
 pub(super) fn markdown_symbols(bytes: &[u8]) -> Vec<Symbol> {
-    let Ok(document) = dctx_lex_md::extract(bytes) else { return Vec::new() };
+    let Ok(document) = dctx_lex_md::extract(bytes) else {
+        return Vec::new();
+    };
     let mut symbols = Vec::new();
     for heading in document.headings {
         if heading.title.is_empty() {
             continue;
         }
-        let summary = if heading.summary.is_empty() { heading.title.clone() } else { heading.summary };
+        let summary = if heading.summary.is_empty() {
+            heading.title.clone()
+        } else {
+            heading.summary
+        };
         symbols.push(Symbol {
             name: heading.title,
             kind: "heading".to_string(),
@@ -78,7 +94,9 @@ fn keyword_name(line: &str, keyword: &str) -> Option<String> {
         let before_ok = index == 0 || !is_ident(bytes[index - 1]);
         let after = index + key.len();
         let after_ok = after == bytes.len() || !is_ident(bytes[after]);
-        if before_ok && after_ok && bytes[index..].starts_with(key)
+        if before_ok
+            && after_ok
+            && bytes[index..].starts_with(key)
             && let Some(name) = ident_of(line[after..].trim_start())
         {
             return Some(name);
@@ -108,13 +126,23 @@ fn is_ident(byte: u8) -> bool {
     byte == b'_' || byte.is_ascii_alphanumeric() || byte == b'-'
 }
 
-fn placed(name: String, kind: &str, graph: NodeKind, line_no: u32, offset: usize, body_len: usize) -> Symbol {
+fn placed(
+    name: String,
+    kind: &str,
+    graph: NodeKind,
+    line_no: u32,
+    offset: usize,
+    body_len: usize,
+) -> Symbol {
     Symbol {
         name,
         kind: kind.to_string(),
         graph,
         lines: [line_no, line_no],
-        span: [u64::try_from(offset).unwrap_or(u64::MAX), u64::try_from(offset + body_len).unwrap_or(u64::MAX)],
+        span: [
+            u64::try_from(offset).unwrap_or(u64::MAX),
+            u64::try_from(offset + body_len).unwrap_or(u64::MAX),
+        ],
         summary: String::new(),
         summary_source: String::new(),
         signature: String::new(),
@@ -136,7 +164,11 @@ pub(crate) fn signature_text(text: &str) -> String {
         trimmed[..=end].trim().to_string()
     } else {
         let cut = trimmed.find('{').unwrap_or(trimmed.len());
-        trimmed[..cut].trim().trim_end_matches(';').trim().to_string()
+        trimmed[..cut]
+            .trim()
+            .trim_end_matches(';')
+            .trim()
+            .to_string()
     };
     let line = whole.lines().next().unwrap_or_default().trim_end();
     match line.char_indices().nth(SIGNATURE_CAP) {
@@ -153,7 +185,10 @@ fn call_head(text: &str) -> Option<String> {
         return None;
     }
     let rest = &text[open + 1..];
-    let quote = rest.chars().next().filter(|ch| matches!(ch, '\'' | '"' | '`'))?;
+    let quote = rest
+        .chars()
+        .next()
+        .filter(|ch| matches!(ch, '\'' | '"' | '`'))?;
     let mut escaped = false;
     let mut close = None;
     for (index, ch) in rest.char_indices().skip(1) {
@@ -167,7 +202,10 @@ fn call_head(text: &str) -> Option<String> {
         }
     }
     let literal_end = close? + quote.len_utf8();
-    rest[literal_end..].trim_start().starts_with(',').then(|| format!("{callee}({}, ...)", &rest[..literal_end]))
+    rest[literal_end..]
+        .trim_start()
+        .starts_with(',')
+        .then(|| format!("{callee}({}, ...)", &rest[..literal_end]))
 }
 
 fn matching_paren(text: &str, open: usize) -> Option<usize> {

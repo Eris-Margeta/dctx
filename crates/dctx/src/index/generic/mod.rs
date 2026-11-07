@@ -13,10 +13,10 @@ mod calls_infra;
 mod calls_lisp;
 mod calls_verilog;
 mod infra;
-pub(super) mod web;
 mod lisp;
 #[cfg(test)]
 mod tests;
+pub(super) mod web;
 
 use dctx_map_model::NodeKind;
 
@@ -28,8 +28,9 @@ pub(super) const GUESS: &str = "guess";
 
 /// Words that are control flow, never a declaration name.
 const DENYLIST: &[&str] = &[
-    "if", "else", "for", "while", "match", "switch", "return", "case", "catch", "when", "do", "try", "new", "await", "throw",
-    "finally", "elif", "foreach", "loop", "yield", "assert", "with",
+    "if", "else", "for", "while", "match", "switch", "return", "case", "catch", "when", "do",
+    "try", "new", "await", "throw", "finally", "elif", "foreach", "loop", "yield", "assert",
+    "with",
 ];
 
 /// Longest signature kept, in bytes, cut at a character boundary.
@@ -37,7 +38,10 @@ const SIGNATURE_MAX: usize = 160;
 
 /// True when `language` (a tag of `extract::language_of`) is extracted by a generic family.
 pub(super) fn handles(language: &str) -> bool {
-    brace::handles(language) || block::handles(language) || infra::handles(language) || lisp::handles(language)
+    brace::handles(language)
+        || block::handles(language)
+        || infra::handles(language)
+        || lisp::handles(language)
 }
 
 /// Symbols of `text` for a language that [`handles`]. Anything else, and any malformed input, yields none.
@@ -58,7 +62,12 @@ pub(super) fn symbols(language: &str, text: &str) -> Vec<Symbol> {
 }
 
 /// Raw call references of `text` for a language that [`handles`]. Families without call support yield none.
-pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symbol]) -> Vec<super::refs::RawRef> {
+pub(super) fn references(
+    language: &str,
+    path: &str,
+    text: &str,
+    symbols: &[Symbol],
+) -> Vec<super::refs::RawRef> {
     if brace::handles(language) {
         return calls_brace::references(language, path, text, symbols);
     }
@@ -109,9 +118,16 @@ pub(super) fn mask(text: &str, syntax: &Syntax) -> String {
     let mut at = 0usize;
     while at < bytes.len() {
         let rest = &bytes[at..];
-        let end = if syntax.line.iter().any(|prefix| rest.starts_with(prefix.as_bytes())) {
+        let end = if syntax
+            .line
+            .iter()
+            .any(|prefix| rest.starts_with(prefix.as_bytes()))
+        {
             Some(line_end(bytes, at))
-        } else if let Some((open, close)) = syntax.block.filter(|(open, _)| rest.starts_with(open.as_bytes())) {
+        } else if let Some((open, close)) = syntax
+            .block
+            .filter(|(open, _)| rest.starts_with(open.as_bytes()))
+        {
             Some(block_end(bytes, at, open, close, syntax.nested))
         } else if syntax.quotes.contains(&bytes[at]) {
             string_end(bytes, at, syntax.triple)
@@ -140,7 +156,10 @@ fn blank(out: &mut [u8], from: usize, to: usize) {
 
 /// Offset of the line break after `from`, or the end of input.
 fn line_end(bytes: &[u8], from: usize) -> usize {
-    bytes[from..].iter().position(|byte| *byte == b'\n').map_or(bytes.len(), |offset| from + offset)
+    bytes[from..]
+        .iter()
+        .position(|byte| *byte == b'\n')
+        .map_or(bytes.len(), |offset| from + offset)
 }
 
 /// End of the block comment that opens at `from`. An unclosed comment runs to the end of input.
@@ -170,7 +189,11 @@ fn string_end(bytes: &[u8], from: usize, triple: bool) -> Option<usize> {
     let quote = bytes[from];
     if triple && bytes[from..].starts_with(&[quote, quote, quote]) {
         let body = &bytes[from + 3..];
-        return Some(body.windows(3).position(|window| window == [quote; 3]).map_or(bytes.len(), |offset| from + 3 + offset + 3));
+        return Some(
+            body.windows(3)
+                .position(|window| window == [quote; 3])
+                .map_or(bytes.len(), |offset| from + 3 + offset + 3),
+        );
     }
     let mut at = from + 1;
     while at < bytes.len() {
@@ -187,7 +210,9 @@ fn string_end(bytes: &[u8], from: usize, triple: bool) -> Option<usize> {
 
 /// The identifier that starts `text`, or `None`.
 pub(super) fn ident_at(text: &str) -> Option<&str> {
-    let end = text.find(|c: char| !(c.is_alphanumeric() || c == '_' || c == '$')).unwrap_or(text.len());
+    let end = text
+        .find(|c: char| !(c.is_alphanumeric() || c == '_' || c == '$'))
+        .unwrap_or(text.len());
     let word = &text[..end];
     (!word.is_empty() && !word.starts_with(|c: char| c.is_ascii_digit())).then_some(word)
 }
@@ -202,7 +227,9 @@ pub(super) fn skip_modifiers<'a>(mut text: &'a str, modifiers: &[&str]) -> &'a s
     loop {
         text = text.trim_start();
         if let Some(annotation) = text.strip_prefix('@') {
-            let name = annotation.find(|c: char| !(c.is_alphanumeric() || c == '_' || c == '.')).unwrap_or(annotation.len());
+            let name = annotation
+                .find(|c: char| !(c.is_alphanumeric() || c == '_' || c == '.'))
+                .unwrap_or(annotation.len());
             text = skip_group(&annotation[name..], '(', ')');
             continue;
         }

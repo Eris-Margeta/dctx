@@ -69,13 +69,19 @@ impl Lexed {
     }
 }
 
-#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+)]
 pub(crate) fn line_of(line_starts: &[u32], byte: u32) -> u32 {
     line_starts.partition_point(|&start| start <= byte) as u32
 }
 
 /// Lexes `source` and pairs `()`, `[]` and `{}`.
-#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+)]
 pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
     let mut line_starts = vec![0];
     for (index, byte) in source.bytes().enumerate() {
@@ -84,7 +90,13 @@ pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
         }
     }
     let (tokens, comments, mut problems) = scan::scan(source);
-    let partner = pair(source, &tokens, &mut problems, limits.max_depth, &line_starts)?;
+    let partner = pair(
+        source,
+        &tokens,
+        &mut problems,
+        limits.max_depth,
+        &line_starts,
+    )?;
     problems.sort_by_key(|problem| problem.0);
     let diagnostics = problems
         .into_iter()
@@ -103,7 +115,10 @@ pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
     })
 }
 
-#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+)]
 fn pair(
     source: &str,
     tokens: &[Token],
@@ -198,10 +213,11 @@ mod tests {
         assert_eq!(lexed.line(lexed.tokens.last().expect("token").start), 3);
         assert_eq!(lexed.diagnostics, []);
         let open = lex("void m() {", &Limits::default()).expect("lex");
-        assert!(open
-            .diagnostics
-            .iter()
-            .any(|d| d.reason == DiagnosticReason::UnbalancedBracket));
+        assert!(
+            open.diagnostics
+                .iter()
+                .any(|d| d.reason == DiagnosticReason::UnbalancedBracket)
+        );
         let limits = Limits {
             max_depth: 2,
             ..Limits::default()

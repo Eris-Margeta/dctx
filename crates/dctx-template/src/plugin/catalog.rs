@@ -6,16 +6,25 @@
 use super::*;
 
 /// Built-in command words a plugin alias cannot take (PLUGINS.md §3.5).
-pub const RESERVED_ALIASES: &[&str] = &["plugin", "pack", "map", "cache", "template", "help", "version"];
+pub const RESERVED_ALIASES: &[&str] = &[
+    "plugin", "pack", "map", "cache", "template", "help", "version",
+];
 
 /// The bundled `dctx/git` manifest from the plugin-api fixtures. The host still opts in.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn bundled_git_plugin() -> KnownPlugin {
     KnownPlugin {
         id: "dctx/git".to_string(),
-        version: "1.1.0".to_string(),
-        digest: Some(hex32("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")),
-        manifest_digest: Some(hex32("06103b8c8f458e406fc73a174110ea560970c4183ce930dfd642fe13013f4f44")),
+        version: "1.2.0".to_string(),
+        digest: Some(hex32(
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+        )),
+        manifest_digest: Some(hex32(
+            "4f80070730be7a37178ab24ba646822faadf5ee2bf793526a0162c01f5cb8602",
+        )),
         publisher_key: "fixture-key-1".to_string(),
         origin: PluginOrigin::Bundled,
         hooks: vec!["before-pack-output-written".to_string()],
@@ -27,7 +36,10 @@ pub fn bundled_git_plugin() -> KnownPlugin {
             "resource:git-admin:stage-ignore".to_string(),
         ],
         records: vec![
-            Capability::FileRead { path: ".gitignore".to_string(), max_bytes: 1_048_576 },
+            Capability::FileRead {
+                path: ".gitignore".to_string(),
+                max_bytes: 1_048_576,
+            },
             Capability::FileWrite {
                 path: ".gitignore".to_string(),
                 create: false,
@@ -48,12 +60,16 @@ pub fn bundled_git_plugin() -> KnownPlugin {
             },
             FieldSpec {
                 name: "create_missing".to_string(),
-                kind: FieldKind::Enum { options: vec![ConfigValue::Bool(false)] },
+                kind: FieldKind::Enum {
+                    options: vec![ConfigValue::Bool(false)],
+                },
                 default_value: Some(ConfigValue::Bool(false)),
             },
             FieldSpec {
                 name: "marker".to_string(),
-                kind: FieldKind::Enum { options: vec![ConfigValue::Str("host-version".to_string())] },
+                kind: FieldKind::Enum {
+                    options: vec![ConfigValue::Str("host-version".to_string())],
+                },
                 default_value: Some(ConfigValue::Str("host-version".to_string())),
             },
         ],

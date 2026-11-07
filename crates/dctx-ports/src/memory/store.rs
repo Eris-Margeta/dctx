@@ -22,13 +22,19 @@ pub struct MemoryFactStore {
 
 impl MemoryFactStore {
     /// An empty store.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the memory adapter API's existing caller lint behavior.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the memory adapter API's existing caller lint behavior."
+    )]
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Number of successful publishes.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the memory adapter API's existing caller lint behavior.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the memory adapter API's existing caller lint behavior."
+    )]
     pub fn publishes(&self) -> u64 {
         self.publishes
     }
@@ -48,7 +54,8 @@ impl FactStore for MemoryFactStore {
         if self.fail_publish {
             return Err(DctxError::io("publish refused"));
         }
-        self.snapshots.insert(view.as_str().to_string(), snapshot.clone());
+        self.snapshots
+            .insert(view.as_str().to_string(), snapshot.clone());
         self.publishes += 1;
         Ok(())
     }
@@ -65,19 +72,33 @@ pub struct MemoryCache {
 
 impl MemoryCache {
     /// A cache admitting at most `capacity` bytes.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the memory adapter API's existing caller lint behavior.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the memory adapter API's existing caller lint behavior."
+    )]
     pub fn new(capacity: u64) -> Self {
-        Self { capacity, committed: 0, outstanding: BTreeMap::new(), next_id: 1 }
+        Self {
+            capacity,
+            committed: 0,
+            outstanding: BTreeMap::new(),
+            next_id: 1,
+        }
     }
 
     /// Bytes committed so far.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the memory adapter API's existing caller lint behavior.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the memory adapter API's existing caller lint behavior."
+    )]
     pub fn committed(&self) -> u64 {
         self.committed
     }
 
     /// Bytes reserved and not yet settled.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the memory adapter API's existing caller lint behavior.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the memory adapter API's existing caller lint behavior."
+    )]
     pub fn reserved(&self) -> u64 {
         self.outstanding.values().sum()
     }
@@ -85,9 +106,14 @@ impl MemoryCache {
 
 impl Cache for MemoryCache {
     fn reserve(&mut self, bytes: u64) -> Result<Reservation, DctxError> {
-        let available = self.capacity.saturating_sub(self.committed.saturating_add(self.reserved()));
+        let available = self
+            .capacity
+            .saturating_sub(self.committed.saturating_add(self.reserved()));
         if bytes > available {
-            return Err(DctxError::CacheLimit { requested: bytes, available });
+            return Err(DctxError::CacheLimit {
+                requested: bytes,
+                available,
+            });
         }
         let id = self.next_id;
         self.next_id += 1;
@@ -96,13 +122,17 @@ impl Cache for MemoryCache {
     }
 
     fn commit(&mut self, reservation: Reservation, used_bytes: u64) -> Result<(), DctxError> {
-        let reserved = self
-            .outstanding
-            .remove(&reservation.id())
-            .ok_or(DctxError::InvalidRequest { reason: "unknown reservation" })?;
+        let reserved =
+            self.outstanding
+                .remove(&reservation.id())
+                .ok_or(DctxError::InvalidRequest {
+                    reason: "unknown reservation",
+                })?;
         if used_bytes > reserved {
             self.outstanding.insert(reservation.id(), reserved);
-            return Err(DctxError::InvalidRequest { reason: "commit exceeds reservation" });
+            return Err(DctxError::InvalidRequest {
+                reason: "commit exceeds reservation",
+            });
         }
         self.committed += used_bytes;
         Ok(())
@@ -134,7 +164,10 @@ mod tests {
         assert!(store.load(&view).unwrap().is_none());
         store.publish(&view, &snapshot()).unwrap();
         assert_eq!(store.publishes(), 1);
-        assert_eq!(store.load(&view).unwrap().unwrap().digest(), snapshot().digest());
+        assert_eq!(
+            store.load(&view).unwrap().unwrap().digest(),
+            snapshot().digest()
+        );
         store.fail_publishes();
         assert!(store.publish(&view, &snapshot()).is_err());
         assert_eq!(store.publishes(), 1);
@@ -144,7 +177,13 @@ mod tests {
     fn cache_admits_within_capacity_and_settles_once() {
         let mut cache = MemoryCache::new(10);
         let first = cache.reserve(6).unwrap();
-        assert_eq!(cache.reserve(5), Err(DctxError::CacheLimit { requested: 5, available: 4 }));
+        assert_eq!(
+            cache.reserve(5),
+            Err(DctxError::CacheLimit {
+                requested: 5,
+                available: 4
+            })
+        );
         let second = cache.reserve(4).unwrap();
         cache.commit(first, 5).unwrap();
         cache.abort(second);

@@ -11,8 +11,8 @@ mod extract;
 mod lexer;
 
 pub use domain::{
-    body_fingerprint, Completion, Diagnostic, DiagnosticReason, Dialect, Labeled, LexError,
-    LexedFile, Limits, Precision, RawReference,
+    Completion, Diagnostic, DiagnosticReason, Dialect, Labeled, LexError, LexedFile, Limits,
+    Precision, RawReference, body_fingerprint,
 };
 
 /// Parser identity recorded with every fact key (PARSERS-v1 provenance).
@@ -28,7 +28,10 @@ pub struct CLexer {
 
 impl CLexer {
     /// Builds an extractor. Limits above the ceilings are narrowed to them.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new(limits: Limits) -> Self {
         Self {
             limits: limits.narrowed(),
@@ -87,10 +90,7 @@ mod tests {
         ));
         assert!(small.extract("x.c", b"int;").is_ok());
         assert!(lexer.extract("x.c", b"").is_ok());
-        assert_eq!(
-            lexer.extract("x.H", b"int x;").unwrap().dialect,
-            Dialect::C
-        );
+        assert_eq!(lexer.extract("x.H", b"int x;").unwrap().dialect, Dialect::C);
         assert_eq!(PARSER_ID, "dctx-lex-c");
         assert_eq!(PARSER_REVISION, 1);
     }

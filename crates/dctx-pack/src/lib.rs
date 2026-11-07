@@ -17,7 +17,9 @@ pub mod snapshot;
 
 pub use diff::{diff_against, VersionedDiff};
 pub use engine::{pack, PackPorts, PackReport, PackRequest};
-pub use legacy_codec::{LegacyBodies, LegacyDocument, LegacyError, LegacyHeader, LegacyLimits, LegacyNode};
+pub use legacy_codec::{
+    LegacyBodies, LegacyDocument, LegacyError, LegacyHeader, LegacyLimits, LegacyNode,
+};
 pub use legacy_decode::decode_legacy;
 pub use legacy_encode::{encode_legacy, encode_legacy_to};
 pub use snapshot::{scan, Scan, ScanOptions};

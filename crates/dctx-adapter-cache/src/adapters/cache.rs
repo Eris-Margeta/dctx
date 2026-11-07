@@ -17,11 +17,13 @@ use std::path::{Path, PathBuf};
 
 impl Cache for Lifecycle {
     fn reserve(&mut self, bytes: u64) -> Result<Reservation, DctxError> {
-        self.reserve_for(None, Purpose::Payload, bytes).map_err(CacheError::into_dctx)
+        self.reserve_for(None, Purpose::Payload, bytes)
+            .map_err(CacheError::into_dctx)
     }
 
     fn commit(&mut self, reservation: Reservation, used_bytes: u64) -> Result<(), DctxError> {
-        self.commit_reservation(reservation, used_bytes).map_err(CacheError::into_dctx)
+        self.commit_reservation(reservation, used_bytes)
+            .map_err(CacheError::into_dctx)
     }
 
     fn abort(&mut self, reservation: Reservation) {
@@ -40,7 +42,9 @@ impl FsObjectStore {
     /// # Errors
     /// Refuses an unsafe/non-directory cache root or filesystem metadata failures.
     pub fn open(root: &Path) -> Result<Self, CacheError> {
-        Ok(Self { root: real_root(root)? })
+        Ok(Self {
+            root: real_root(root)?,
+        })
     }
 
     /// Publishes one object file. An existing object is never truncated.
@@ -112,7 +116,9 @@ mod tests {
         assert_eq!(fs::read(&secret).expect("secret"), b"keep");
         objects.put_object(7, b"inside").expect("put");
         assert!(root.join("objects/7").is_file());
-        objects.unlink_relative(Path::new("objects/7")).expect("unlink");
+        objects
+            .unlink_relative(Path::new("objects/7"))
+            .expect("unlink");
         assert!(!root.join("objects/7").exists());
         assert_eq!(fs::read(&secret).expect("secret"), b"keep");
     }

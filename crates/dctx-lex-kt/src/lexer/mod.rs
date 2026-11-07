@@ -77,7 +77,10 @@ pub(crate) type Problems = Vec<(u32, DiagnosticReason)>;
 
 impl Lexed {
     /// One-based line of a byte offset. Rows advance on `\n` only.
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     pub fn line(&self, byte: u32) -> u32 {
         self.line_starts.partition_point(|&start| start <= byte) as u32
     }
@@ -89,13 +92,41 @@ pub(crate) fn keyword(word: &str) -> bool {
 }
 
 const KEYWORDS: &[&str] = &[
-    "as", "break", "class", "continue", "do", "else", "false", "for", "fun", "if", "in",
-    "interface", "is", "null", "object", "package", "return", "super", "this", "throw", "true",
-    "try", "typealias", "typeof", "val", "var", "when", "while",
+    "as",
+    "break",
+    "class",
+    "continue",
+    "do",
+    "else",
+    "false",
+    "for",
+    "fun",
+    "if",
+    "in",
+    "interface",
+    "is",
+    "null",
+    "object",
+    "package",
+    "return",
+    "super",
+    "this",
+    "throw",
+    "true",
+    "try",
+    "typealias",
+    "typeof",
+    "val",
+    "var",
+    "when",
+    "while",
 ];
 
 /// Lexes `source` and pairs `()`, `[]` and `{}`.
-#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+)]
 pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
     let mut line_starts = vec![0];
     line_starts.extend(
@@ -106,13 +137,21 @@ pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
             .map(|(index, _)| index as u32 + 1),
     );
     let mut lexer = scan::Lexer::new(source);
-    lexer.run(limits.max_depth).map_err(|byte| LexError::TooDeep {
-        line: line_of(&line_starts, byte),
-        limit: limits.max_depth,
-    })?;
+    lexer
+        .run(limits.max_depth)
+        .map_err(|byte| LexError::TooDeep {
+            line: line_of(&line_starts, byte),
+            limit: limits.max_depth,
+        })?;
     let mut problems = lexer.problems;
     let tokens = lexer.tokens;
-    let partner = pair(source, &tokens, &mut problems, limits.max_depth, &line_starts)?;
+    let partner = pair(
+        source,
+        &tokens,
+        &mut problems,
+        limits.max_depth,
+        &line_starts,
+    )?;
     problems.sort_by_key(|problem| problem.0);
     let diagnostics = problems
         .into_iter()
@@ -131,12 +170,18 @@ pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
     })
 }
 
-#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+)]
 fn line_of(line_starts: &[u32], byte: u32) -> u32 {
     line_starts.partition_point(|&start| start <= byte) as u32
 }
 
-#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+)]
 fn pair(
     source: &str,
     tokens: &[Token],
@@ -162,7 +207,15 @@ fn pair(
                 stack.push(index);
             }
             ")" | "]" | "}" => {
-                close_bracket(source, tokens, index, text, &mut stack, &mut partner, problems);
+                close_bracket(
+                    source,
+                    tokens,
+                    index,
+                    text,
+                    &mut stack,
+                    &mut partner,
+                    problems,
+                );
             }
             _ => {}
         }
@@ -173,7 +226,10 @@ fn pair(
     Ok(partner)
 }
 
-#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+)]
 fn close_bracket(
     source: &str,
     tokens: &[Token],
@@ -239,7 +295,11 @@ impl scan::Lexer<'_> {
     fn scan_digits(&mut self, hex: bool) {
         while self.pos < self.b.len() {
             let byte = self.b[self.pos];
-            let digit = if hex { byte.is_ascii_hexdigit() } else { byte.is_ascii_digit() };
+            let digit = if hex {
+                byte.is_ascii_hexdigit()
+            } else {
+                byte.is_ascii_digit()
+            };
             if digit || byte == b'_' {
                 self.pos += 1;
             } else {
@@ -333,19 +393,35 @@ impl scan::Lexer<'_> {
         }
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn push(&mut self, kind: Kind, start: usize) {
         let end = self.pos;
         let doc = self.doc_for(start as u32);
         self.track_group(kind, start, end);
-        self.tokens.push(Token { kind, start: start as u32, end: end as u32, doc });
+        self.tokens.push(Token {
+            kind,
+            start: start as u32,
+            end: end as u32,
+            doc,
+        });
         self.insert = ends_stmt(kind, self.snippet(start, end));
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn push_semi(&mut self, at: usize) {
         let at = at as u32;
-        self.tokens.push(Token { kind: Kind::Semi, start: at, end: at, doc: 0 });
+        self.tokens.push(Token {
+            kind: Kind::Semi,
+            start: at,
+            end: at,
+            doc: 0,
+        });
         self.insert = false;
     }
 
@@ -360,7 +436,10 @@ impl scan::Lexer<'_> {
         }
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn doc_for(&self, start: u32) -> u32 {
         let Some((index, comment)) = self.comments.iter().enumerate().next_back() else {
             return 0;
@@ -388,7 +467,10 @@ impl scan::Lexer<'_> {
     }
 
     fn char_at(&self, index: usize) -> char {
-        self.src.get(index..).and_then(|rest| rest.chars().next()).unwrap_or('\u{FFFD}')
+        self.src
+            .get(index..)
+            .and_then(|rest| rest.chars().next())
+            .unwrap_or('\u{FFFD}')
     }
 
     fn bump(&mut self) {
@@ -403,9 +485,13 @@ impl scan::Lexer<'_> {
 fn ends_stmt(kind: Kind, text: &str) -> bool {
     match kind {
         Kind::Ident => !text.starts_with('`') && scan::PREFIX.binary_search(&text).is_err(),
-        Kind::Num | Kind::Str | Kind::Raw | Kind::Char | Kind::BadStr | Kind::BadRaw | Kind::BadChar => {
-            true
-        }
+        Kind::Num
+        | Kind::Str
+        | Kind::Raw
+        | Kind::Char
+        | Kind::BadStr
+        | Kind::BadRaw
+        | Kind::BadChar => true,
         Kind::Punct => matches!(text, ")" | "]" | "}" | "!!"),
         Kind::Semi => false,
     }
@@ -418,12 +504,31 @@ fn suppresses(src: &str, index: usize) -> bool {
     };
     if matches!(
         byte,
-        b'.' | b'{' | b':' | b'=' | b',' | b'+' | b'-' | b'*' | b'/' | b'%' | b'&' | b'|' | b')'
-            | b']' | b'}' | b'?' | b'<' | b'>' | b'!'
+        b'.' | b'{'
+            | b':'
+            | b'='
+            | b','
+            | b'+'
+            | b'-'
+            | b'*'
+            | b'/'
+            | b'%'
+            | b'&'
+            | b'|'
+            | b')'
+            | b']'
+            | b'}'
+            | b'?'
+            | b'<'
+            | b'>'
+            | b'!'
     ) {
         return true;
     }
-    matches!(ident_at(rest), "else" | "catch" | "finally" | "by" | "where" | "is" | "as" | "in")
+    matches!(
+        ident_at(rest),
+        "else" | "catch" | "finally" | "by" | "where" | "is" | "as" | "in"
+    )
 }
 
 fn ident_at(rest: &str) -> &str {
@@ -445,7 +550,9 @@ fn gap_ok(src: &str, from: u32, to: u32) -> bool {
         return false;
     };
     gap.bytes().filter(|&byte| byte == b'\n').count() <= 1
-        && gap.bytes().all(|byte| matches!(byte, b' ' | b'\t' | b'\r' | b'\n'))
+        && gap
+            .bytes()
+            .all(|byte| matches!(byte, b' ' | b'\t' | b'\r' | b'\n'))
 }
 
 #[cfg(test)]

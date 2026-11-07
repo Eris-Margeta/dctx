@@ -3,12 +3,20 @@
 //! Depends on distribution registry operations and the bundled catalog.
 //! Used by the dispatcher, installation and execution operations.
 
-use dctx_plugin_distribution::{ConsentApproval, ConsentScope, Confinement, DistributionError, Origin, PluginId};
+use dctx_plugin_distribution::{
+    Confinement, ConsentApproval, ConsentScope, DistributionError, Origin, PluginId,
+};
 
 use super::ops_output::{dist, done, fail, Outcome};
 use super::{bundled, render, Env};
 
-pub(super) fn enable(env: &mut Env<'_>, raw_id: &str, project: Option<&str>, approve: bool, json: bool) -> Outcome {
+pub(super) fn enable(
+    env: &mut Env<'_>,
+    raw_id: &str,
+    project: Option<&str>,
+    approve: bool,
+    json: bool,
+) -> Outcome {
     let id = match PluginId::parse(raw_id) {
         Ok(id) => id,
         Err(error) => return fail("enable", &error, json),
@@ -27,11 +35,19 @@ pub(super) fn enable(env: &mut Env<'_>, raw_id: &str, project: Option<&str>, app
         return fail("enable", &error, json);
     }
     done("enable", json, env, |fields| {
-        format!("{fields},\"id\":{},\"enablement\":\"enabled\"", render::json_string(id.as_str()))
+        format!(
+            "{fields},\"id\":{},\"enablement\":\"enabled\"",
+            render::json_string(id.as_str())
+        )
     })
 }
 
-pub(super) fn disable(env: &mut Env<'_>, raw_id: &str, project: Option<&str>, json: bool) -> Outcome {
+pub(super) fn disable(
+    env: &mut Env<'_>,
+    raw_id: &str,
+    project: Option<&str>,
+    json: bool,
+) -> Outcome {
     let id = match PluginId::parse(raw_id) {
         Ok(id) => id,
         Err(error) => return fail("disable", &error, json),
@@ -64,17 +80,32 @@ pub(super) fn remove(env: &mut Env<'_>, raw_id: &str, json: bool) -> Outcome {
     if let Err(error) = dist(env).remove(&id) {
         return fail("remove", &error, json);
     }
-    done("remove", json, env, |fields| format!("{fields},\"id\":{},\"masked\":true", render::json_string(id.as_str())))
+    done("remove", json, env, |fields| {
+        format!(
+            "{fields},\"id\":{},\"masked\":true",
+            render::json_string(id.as_str())
+        )
+    })
 }
 
-pub(super) fn activate_and_enable(env: &Env<'_>, id: &PluginId, approve: bool, project: Option<&str>) -> Result<(), DistributionError> {
+pub(super) fn activate_and_enable(
+    env: &Env<'_>,
+    id: &PluginId,
+    approve: bool,
+    project: Option<&str>,
+) -> Result<(), DistributionError> {
     let registry = dist(env).registry()?;
     let record = registry.get(id).ok_or(DistributionError::NotInstalled)?;
     if record.origin != Origin::Bundled {
         return Err(DistributionError::ConfinementRequired);
     }
-    let version = record.active_version().ok_or(DistributionError::NotActive)?;
-    let covered = record.consent.as_ref().is_some_and(|consent| consent.covers(&version.signer, &version.capabilities));
+    let version = record
+        .active_version()
+        .ok_or(DistributionError::NotActive)?;
+    let covered = record
+        .consent
+        .as_ref()
+        .is_some_and(|consent| consent.covers(&version.signer, &version.capabilities));
     if !covered && !approve {
         return Err(DistributionError::ConsentRequired);
     }
@@ -104,7 +135,9 @@ pub(super) fn is_bundled_selection(env: &Env<'_>, id: &PluginId) -> bool {
         return false;
     }
     match dist(env).registry() {
-        Ok(registry) => registry.get(id).is_none_or(|record| record.origin == Origin::Bundled),
+        Ok(registry) => registry
+            .get(id)
+            .is_none_or(|record| record.origin == Origin::Bundled),
         Err(_) => false,
     }
 }

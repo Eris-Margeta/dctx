@@ -62,7 +62,11 @@ impl Distribution<'_> {
     /// Installs from a signed manifest URL (`--url`); identity must match the approved `id`.
     /// # Errors
     /// Propagates origin/network, manifest/trust/signature, payload, quota, lock, and storage failures.
-    pub fn install_url(&self, id: &PluginId, manifest_url: &HttpsUrl) -> Result<InstallReport, DistributionError> {
+    pub fn install_url(
+        &self,
+        id: &PluginId,
+        manifest_url: &HttpsUrl,
+    ) -> Result<InstallReport, DistributionError> {
         self.install_remote(id, manifest_url, None)
     }
 
@@ -93,13 +97,19 @@ impl Distribution<'_> {
     /// Installs an offline `.dctx-plugin` bundle (`--file`) with the same trust gates; no network use.
     /// # Errors
     /// Refuses malformed/oversized bundles, missing payloads, trust/signature/digest failures, unsupported targets, or lock/storage failures.
-    pub fn install_bundle(&self, id: &PluginId, bytes: &[u8]) -> Result<InstallReport, DistributionError> {
+    pub fn install_bundle(
+        &self,
+        id: &PluginId,
+        bytes: &[u8],
+    ) -> Result<InstallReport, DistributionError> {
         let held = self.lock()?;
         let bundle = OfflineBundle::parse(bytes, self.policy.max_bundle_bytes)?;
         let missing = DistributionError::malformed(Document::Bundle, "missing-manifest");
         let manifest = bundle.get("plugin.json").ok_or(missing)?;
         let signature = bundle.get("plugin.json.sig").ok_or(missing)?;
-        let verified = self.trust.authenticate(&manifest.bytes, &signature.bytes, id)?;
+        let verified = self
+            .trust
+            .authenticate(&manifest.bytes, &signature.bytes, id)?;
         let artifact = verified.manifest.artifact_for(self.policy.target)?;
         check_bundle_payloads(&bundle, artifact, &verified)?;
         if let Some(sums) = bundle.get("SHA256SUMS") {
@@ -109,7 +119,10 @@ impl Distribution<'_> {
         self.accept(&held, verified, &signature, Source::Bundle(&bundle))
     }
 
-    #[allow(clippy::needless_pass_by_value, reason = "The install transaction owns its verified manifest and selected payload source until publication completes.")]
+    #[allow(
+        clippy::needless_pass_by_value,
+        reason = "The install transaction owns its verified manifest and selected payload source until publication completes."
+    )]
     fn accept(
         &self,
         held: &super::Held<'_>,
@@ -122,8 +135,13 @@ impl Distribution<'_> {
         if self.trust.is_artifact_revoked(&artifact.executable.sha256) {
             return Err(DistributionError::ArtifactRevoked);
         }
-        if artifact.payloads().any(|payload| payload.bytes > self.policy.max_artifact_bytes) {
-            return Err(DistributionError::LimitExceeded { limit: self.policy.max_artifact_bytes });
+        if artifact
+            .payloads()
+            .any(|payload| payload.bytes > self.policy.max_artifact_bytes)
+        {
+            return Err(DistributionError::LimitExceeded {
+                limit: self.policy.max_artifact_bytes,
+            });
         }
         let mut registry = self.registry()?;
         let origin = match registry.get(&manifest.id) {
@@ -139,13 +157,20 @@ impl Distribution<'_> {
             capabilities: manifest.capabilities.clone(),
             quarantined: false,
         };
-        let already = registry.get(&manifest.id).is_some_and(|record| record.version(&version.digest).is_some());
+        let already = registry
+            .get(&manifest.id)
+            .is_some_and(|record| record.version(&version.digest).is_some());
         registry.record_install(&manifest.id, origin, version)?;
-        let key = InstallKey { id: manifest.id.clone(), version: manifest.version.clone(), digest: artifact.executable.sha256 };
+        let key = InstallKey {
+            id: manifest.id.clone(),
+            version: manifest.version.clone(),
+            digest: artifact.executable.sha256,
+        };
         if !already {
             let token = held.token;
             self.store.discard_staging(token, &key)?;
-            let staged = self.stage_all(token, &key, artifact, manifest.bytes(), signature, &source);
+            let staged =
+                self.stage_all(token, &key, artifact, manifest.bytes(), signature, &source);
             if let Err(error) = staged.and_then(|()| self.store.publish(token, &key)) {
                 let _ = self.store.discard_staging(token, &key);
                 return Err(error);
@@ -174,8 +199,10 @@ impl Distribution<'_> {
         for payload in artifact.payloads() {
             self.stage_payload(token, key, payload, source)?;
         }
-        self.store.stage_append(token, key, &safe("plugin.json")?, manifest)?;
-        self.store.stage_append(token, key, &safe("plugin.json.sig")?, signature)
+        self.store
+            .stage_append(token, key, &safe("plugin.json")?, manifest)?;
+        self.store
+            .stage_append(token, key, &safe("plugin.json.sig")?, signature)
     }
 
     fn stage_payload(
@@ -192,10 +219,16 @@ impl Distribution<'_> {
         };
         match source {
             Source::Remote(manifest_url) => {
-                self.fetch(&manifest_url.sibling(&payload.file), self.policy.max_artifact_bytes, &mut sink)?;
+                self.fetch(
+                    &manifest_url.sibling(&payload.file),
+                    self.policy.max_artifact_bytes,
+                    &mut sink,
+                )?;
             }
             Source::Bundle(bundle) => {
-                let entry = bundle.get(payload.file.as_str()).ok_or(DistributionError::TargetMismatch)?;
+                let entry = bundle
+                    .get(payload.file.as_str())
+                    .ok_or(DistributionError::TargetMismatch)?;
                 sink(&entry.bytes)?;
             }
         }
@@ -208,27 +241,46 @@ fn safe(name: &str) -> Result<SafeFileName, DistributionError> {
 }
 
 /// Exactly the selected target's payloads plus ancillary release files; nothing undeclared.
-fn check_bundle_payloads(bundle: &OfflineBundle, artifact: &Artifact, verified: &VerifiedManifest) -> Result<(), DistributionError> {
+fn check_bundle_payloads(
+    bundle: &OfflineBundle,
+    artifact: &Artifact,
+    verified: &VerifiedManifest,
+) -> Result<(), DistributionError> {
     if bundle.get(artifact.executable.file.as_str()).is_none() {
         return Err(DistributionError::TargetMismatch);
     }
     for payload in &artifact.runtime_resources {
         if bundle.get(payload.file.as_str()).is_none() {
-            return Err(DistributionError::malformed(Document::Bundle, "missing-payload"));
+            return Err(DistributionError::malformed(
+                Document::Bundle,
+                "missing-payload",
+            ));
         }
     }
-    let other_targets = verified.manifest.artifacts.iter().filter(|other| other.target != artifact.target);
-    let foreign: Vec<&str> = other_targets.flat_map(super::super::domain::manifest::Artifact::payloads).map(|p| p.file.as_str()).collect();
+    let other_targets = verified
+        .manifest
+        .artifacts
+        .iter()
+        .filter(|other| other.target != artifact.target);
+    let foreign: Vec<&str> = other_targets
+        .flat_map(super::super::domain::manifest::Artifact::payloads)
+        .map(|p| p.file.as_str())
+        .collect();
     for entry in bundle.entries() {
         let name = entry.name.as_str();
-        let selected = artifact.payloads().any(|payload| payload.file.as_str() == name);
+        let selected = artifact
+            .payloads()
+            .any(|payload| payload.file.as_str() == name);
         if selected || RELEASE_FILES.contains(&name) {
             continue;
         }
         if foreign.contains(&name) {
             return Err(DistributionError::TargetMismatch);
         }
-        return Err(DistributionError::malformed(Document::Bundle, "undeclared-payload"));
+        return Err(DistributionError::malformed(
+            Document::Bundle,
+            "undeclared-payload",
+        ));
     }
     Ok(())
 }

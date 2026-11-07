@@ -80,7 +80,11 @@ impl<'a> Lexer<'a> {
     pub fn run(&mut self) -> Result<(), LexError> {
         if self.src.starts_with("#!") {
             self.hashbang = true;
-            self.pos = self.b.iter().position(|&b| b == b'\n').unwrap_or(self.b.len());
+            self.pos = self
+                .b
+                .iter()
+                .position(|&b| b == b'\n')
+                .unwrap_or(self.b.len());
         }
         loop {
             match self.stack.last() {
@@ -95,8 +99,14 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
-    #[allow(clippy::naive_bytecount, reason = "Count newline bytes with std iterators; this bounded error path does not justify adding a bytecount dependency.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
+    #[allow(
+        clippy::naive_bytecount,
+        reason = "Count newline bytes with std iterators; this bounded error path does not justify adding a bytecount dependency."
+    )]
     pub(super) fn push(&mut self, frame: Frame) -> Result<(), LexError> {
         if self.stack.len() >= self.max_depth as usize {
             let line = self.b[..self.pos].iter().filter(|&&b| b == b'\n').count() as u32 + 1;
@@ -109,7 +119,10 @@ impl<'a> Lexer<'a> {
         Ok(())
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     pub(super) fn emit(&mut self, kind: Kind, start: usize, end: usize) {
         self.tokens.push(Token {
             kind,
@@ -120,7 +133,10 @@ impl<'a> Lexer<'a> {
         });
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     pub(super) fn problem(&mut self, at: usize, reason: DiagnosticReason) {
         self.problems.push((at as u32, reason));
     }
@@ -245,7 +261,9 @@ impl<'a> Lexer<'a> {
                     .map_or(self.b.len(), |n| self.pos + n);
                 self.comment(self.pos, end);
             } else if c == '/' && next == Some(b'*') {
-                let end = if let Some(n) = self.src[self.pos + 2..].find("*/") { self.pos + 2 + n + 2 } else {
+                let end = if let Some(n) = self.src[self.pos + 2..].find("*/") {
+                    self.pos + 2 + n + 2
+                } else {
                     self.problem(self.pos, DiagnosticReason::UnterminatedComment);
                     self.b.len()
                 };
@@ -264,7 +282,10 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn comment(&mut self, start: usize, end: usize) {
         self.comments.push((start as u32, end as u32));
         self.doc = self.comments.len() as u32;
@@ -276,7 +297,9 @@ impl<'a> Lexer<'a> {
             if c == '\\' && self.b.get(at + 1) == Some(&b'u') {
                 at += 2;
                 if self.b.get(at) == Some(&b'{') {
-                    at = self.src[at..].find('}').map_or(self.b.len(), |n| at + n + 1);
+                    at = self.src[at..]
+                        .find('}')
+                        .map_or(self.b.len(), |n| at + n + 1);
                 } else {
                     at = (at + 4).min(self.b.len());
                     while !self.src.is_char_boundary(at) {
@@ -320,7 +343,10 @@ impl<'a> Lexer<'a> {
             Some((Kind::Ident, word)) => REGEX_AFTER.contains(&word),
             Some((Kind::Punct, ")" | "]" | "}")) => self.close_allows_regex,
             Some((Kind::Punct, "++" | "--")) => false,
-            None | Some((Kind::TemplateHead | Kind::TemplateMiddle | Kind::JsxOpen | Kind::Punct, _)) => true,
+            None
+            | Some((Kind::TemplateHead | Kind::TemplateMiddle | Kind::JsxOpen | Kind::Punct, _)) => {
+                true
+            }
             Some(_) => false,
         }
     }
@@ -400,7 +426,10 @@ mod tests {
             .iter()
             .map(|t| &lexed.src[t.start as usize..t.end as usize])
             .collect();
-        assert_eq!(texts, ["0x1F", "1e-3", ".5", "10n", "this", ".", "#x", "\\u0061b"]);
+        assert_eq!(
+            texts,
+            ["0x1F", "1e-3", ".5", "10n", "this", ".", "#x", "\\u0061b"]
+        );
     }
 
     #[test]

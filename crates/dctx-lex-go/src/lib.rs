@@ -11,8 +11,8 @@ mod extract;
 mod lexer;
 
 pub use domain::{
-    body_fingerprint, Completion, Diagnostic, DiagnosticReason, Dialect, Labeled, LexError,
-    LexedFile, Limits, Precision, RawReference,
+    Completion, Diagnostic, DiagnosticReason, Dialect, Labeled, LexError, LexedFile, Limits,
+    Precision, RawReference, body_fingerprint,
 };
 
 /// Parser identity recorded with every fact key (PARSERS-v1 provenance).
@@ -28,7 +28,10 @@ pub struct GoLexer {
 
 impl GoLexer {
     /// Builds an extractor. Limits above the ceilings are narrowed to them.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new(limits: Limits) -> Self {
         Self {
             limits: limits.narrowed(),
@@ -63,9 +66,18 @@ mod tests {
     #[test]
     fn refusals_are_typed_with_positive_controls() {
         let lexer = GoLexer::default();
-        assert!(matches!(lexer.extract("x.py", b""), Err(LexError::UnsupportedDialect)));
-        assert!(matches!(lexer.extract("x.go", &[0xff]), Err(LexError::InvalidUtf8(_))));
-        assert!(matches!(lexer.extract("../x.go", b""), Err(LexError::InvalidId(_))));
+        assert!(matches!(
+            lexer.extract("x.py", b""),
+            Err(LexError::UnsupportedDialect)
+        ));
+        assert!(matches!(
+            lexer.extract("x.go", &[0xff]),
+            Err(LexError::InvalidUtf8(_))
+        ));
+        assert!(matches!(
+            lexer.extract("../x.go", b""),
+            Err(LexError::InvalidId(_))
+        ));
         let small = GoLexer::new(Limits {
             max_bytes: 4,
             ..Limits::default()
@@ -76,7 +88,10 @@ mod tests {
         ));
         assert!(small.extract("x.go", b"p").is_ok());
         assert!(lexer.extract("x.go", b"").is_ok());
-        assert_eq!(lexer.extract("x.GO", b"package p\n").unwrap().dialect, Dialect::Go);
+        assert_eq!(
+            lexer.extract("x.GO", b"package p\n").unwrap().dialect,
+            Dialect::Go
+        );
     }
 
     #[test]

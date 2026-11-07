@@ -7,21 +7,21 @@
 //! A plugin host is optional. The library default starts none and schedules no hook.
 
 mod build;
-mod export_op;
 mod cache_op;
+mod dotted_op;
+mod export_op;
+mod export_order_op;
 mod grep_op;
 mod hooks;
 mod hubs_op;
 mod import_op;
-mod path_op;
 mod ledger;
+mod out_calls_op;
 mod pack_op;
+mod path_op;
 mod query_op;
 mod reuse;
 mod sites_op;
-mod out_calls_op;
-mod export_order_op;
-mod dotted_op;
 mod template_op;
 
 use std::collections::BTreeMap;
@@ -32,15 +32,15 @@ use dctx_core::selection::SelectionPolicy;
 use dctx_ports::{Cancellation, Clock, FactStore, Source};
 use dctx_template::{ContextPlan, HostCeiling};
 
-pub use build::StoragePolicy;
 pub use build::SessionBuilder;
+pub use build::StoragePolicy;
 
 use self::ledger::{AccountingCache, PersistedCache, SnapshotLease};
 use crate::domain::{
-    ancestors_include, check_deadline, seal_segment, Answer, BoundedSink, HostGrants, MapRequest, OperationLimits,
-    PolicyView, RuleSources, SnapshotRequest, DctxError, REQUEST_VERSION,
+    Answer, BoundedSink, DctxError, HostGrants, MapRequest, OperationLimits, PolicyView,
+    REQUEST_VERSION, RuleSources, SnapshotRequest, ancestors_include, check_deadline, seal_segment,
 };
-use crate::index::{canonical_bytes, walk_source, Generation, WalkArgs};
+use crate::index::{Generation, WalkArgs, canonical_bytes, walk_source};
 use crate::plugins::{HookWarning, PluginHost};
 
 /// The stored generation. A query clones this `Arc` and borrows the rows.
@@ -83,25 +83,37 @@ pub struct SnapshotHandle {
 
 impl SnapshotHandle {
     /// Generation id. The first snapshot in a session is 1.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn generation(&self) -> u64 {
         self.generation
     }
 
     /// Policy epoch observed when the snapshot was taken.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn epoch(&self) -> u64 {
         self.epoch
     }
 
     /// Own snapshot digest.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn digest(&self) -> &str {
         &self.digest
     }
 
     /// True when this handle was installed from a persisted generation whose digests still matched.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn reused(&self) -> bool {
         self.reused
     }
@@ -191,12 +203,20 @@ impl Session {
         let shared = self
             .generations
             .get(&handle.generation)
-            .ok_or(DctxError::Stale { reason: "generation reclaimed" })?;
-        Ok((Arc::strong_count(shared), shared.borrowed_shares.load(Ordering::Relaxed)))
+            .ok_or(DctxError::Stale {
+                reason: "generation reclaimed",
+            })?;
+        Ok((
+            Arc::strong_count(shared),
+            shared.borrowed_shares.load(Ordering::Relaxed),
+        ))
     }
 
     /// Policy epoch. Installing a plan or revising the selection increments it.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn epoch(&self) -> u64 {
         self.epoch
     }
@@ -293,7 +313,9 @@ impl Session {
         })?;
         self.content_reads += walked.reads;
         let (payload, digest) = {
-            let _span = crate::index::profile::Elapsed::begin(crate::index::profile::Stage::CanonicalizeSeal);
+            let _span = crate::index::profile::Elapsed::begin(
+                crate::index::profile::Stage::CanonicalizeSeal,
+            );
             canonical_bytes(&walked.files, &walked.nodes, &walked.edges, &walked.text)?
         };
         let id = self.next_generation;
@@ -319,21 +341,26 @@ impl Session {
         };
         let stored = if let Some(key) = reuse_key {
             let encoded = {
-                let _span = crate::index::profile::Elapsed::begin(crate::index::profile::Stage::PersistReuse);
+                let _span = crate::index::profile::Elapsed::begin(
+                    crate::index::profile::Stage::PersistReuse,
+                );
                 reuse::encode_generation(key, &self.view, &limits, &generation)?
             };
             drop(payload);
             encoded
         } else {
             let sealed = {
-                let _span = crate::index::profile::Elapsed::begin(crate::index::profile::Stage::CanonicalizeSeal);
+                let _span = crate::index::profile::Elapsed::begin(
+                    crate::index::profile::Stage::CanonicalizeSeal,
+                );
                 seal_segment(&payload)?
             };
             drop(payload);
             sealed
         };
         let handle = {
-            let _span = crate::index::profile::Elapsed::begin(crate::index::profile::Stage::PersistReuse);
+            let _span =
+                crate::index::profile::Elapsed::begin(crate::index::profile::Stage::PersistReuse);
             let encoded_len = if cfg!(feature = "segments") {
                 u64::try_from(stored.len()).unwrap_or(u64::MAX)
             } else {
@@ -362,15 +389,27 @@ impl Session {
     fn reject_snapshot(
         &self,
         request: &SnapshotRequest,
-    ) -> Result<(crate::domain::ScanLimits, crate::domain::ParserChoice, OperationLimits), DctxError> {
+    ) -> Result<
+        (
+            crate::domain::ScanLimits,
+            crate::domain::ParserChoice,
+            OperationLimits,
+        ),
+        DctxError,
+    > {
         if !cfg!(feature = "map") {
             return Err(DctxError::unsupported("map"));
         }
         if request.request_version != REQUEST_VERSION {
-            return Err(DctxError::UnsupportedVersion { found: request.request_version });
+            return Err(DctxError::UnsupportedVersion {
+                found: request.request_version,
+            });
         }
         self.cancel.checkpoint().map_err(DctxError::from_core)?;
-        let scan_limits = self.limits.intersect(OperationLimits::from_ceiling(&self.ceiling)).intersect(request.limits);
+        let scan_limits = self
+            .limits
+            .intersect(OperationLimits::from_ceiling(&self.ceiling))
+            .intersect(request.limits);
         let limits = crate::domain::resolve_scan(&scan_limits)?;
         let parser = {
             let view = self.policy_view();
@@ -380,18 +419,32 @@ impl Session {
         Ok((limits, parser, scan_limits))
     }
 
-    fn pin_generation(&mut self, generation: Generation, ticket: Option<SnapshotLease>, reused: bool) -> SnapshotHandle {
+    fn pin_generation(
+        &mut self,
+        generation: Generation,
+        ticket: Option<SnapshotLease>,
+        reused: bool,
+    ) -> SnapshotHandle {
         let id = generation.id;
         let epoch = generation.epoch;
         let digest = generation.digest.clone();
         let pin = Arc::new(Pin { release: ticket });
         self.pins.insert(id, Arc::downgrade(&pin));
-        let shared = Arc::new(SharedGeneration { generation, borrowed_shares: AtomicUsize::new(0) });
+        let shared = Arc::new(SharedGeneration {
+            generation,
+            borrowed_shares: AtomicUsize::new(0),
+        });
         if let Some(previous) = self.generations.insert(id, shared) {
             self.cache.segment_release(previous.encoded_len);
         }
         self.next_generation = id.saturating_add(1).max(self.next_generation);
-        SnapshotHandle { generation: id, epoch, digest, pin, reused }
+        SnapshotHandle {
+            generation: id,
+            epoch,
+            digest,
+            pin,
+            reused,
+        }
     }
 
     fn policy_view(&self) -> PolicyView<'_> {
@@ -405,8 +458,13 @@ impl Session {
     }
 
     fn authorize(&self, path: &str) -> Result<(), DctxError> {
-        let allowed = ancestors_include(|item, is_dir| self.policy_view().decide(item, is_dir), path)?;
-        if allowed { Ok(()) } else { Err(DctxError::PolicyDenied) }
+        let allowed =
+            ancestors_include(|item, is_dir| self.policy_view().decide(item, is_dir), path)?;
+        if allowed {
+            Ok(())
+        } else {
+            Err(DctxError::PolicyDenied)
+        }
     }
 
     fn generation(&self, handle: &SnapshotHandle) -> Result<Arc<SharedGeneration>, DctxError> {
@@ -414,13 +472,20 @@ impl Session {
             .generations
             .get(&handle.generation)
             .map(Arc::clone)
-            .ok_or(DctxError::Stale { reason: "generation reclaimed" })?;
-        shared.borrowed_shares.store(Arc::strong_count(&shared), Ordering::Relaxed);
+            .ok_or(DctxError::Stale {
+                reason: "generation reclaimed",
+            })?;
+        shared
+            .borrowed_shares
+            .store(Arc::strong_count(&shared), Ordering::Relaxed);
         Ok(shared)
     }
 }
 
-#[allow(clippy::missing_fields_in_debug, reason = "Debug intentionally reports session identity and generation counts without exposing source, storage, grants or callback internals.")]
+#[allow(
+    clippy::missing_fields_in_debug,
+    reason = "Debug intentionally reports session identity and generation counts without exposing source, storage, grants or callback internals."
+)]
 impl std::fmt::Debug for Session {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter

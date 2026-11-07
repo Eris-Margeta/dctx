@@ -15,8 +15,8 @@ use dctx_plugin_protocol::records::requests::Request;
 use dctx_plugin_protocol::records::results::ResultBody;
 use dctx_plugin_protocol::records::scalars::{Digest, Name, PluginId, SemVer, Token};
 use dctx_plugin_protocol::{
-    BOOTSTRAP_FRAME_CAP, DecodeLimits, ErrorCode, FrameReader, Phase, Refusal, SUPPORTED_VERSIONS, Session,
-    WireError, WireMessage, WorkerProfile, accept_answer, answer_hello, write_frame,
+    BOOTSTRAP_FRAME_CAP, DecodeLimits, ErrorCode, FrameReader, Phase, Refusal, SUPPORTED_VERSIONS,
+    Session, WireError, WireMessage, WorkerProfile, accept_answer, answer_hello, write_frame,
 };
 
 use crate::adapters::link::{Link, stream};
@@ -59,7 +59,10 @@ impl LaunchIdentity {
             }
         }
         match (key, digest) {
-            (Some(publisher_key), Some(artifact_digest)) => Ok(Self { publisher_key, artifact_digest }),
+            (Some(publisher_key), Some(artifact_digest)) => Ok(Self {
+                publisher_key,
+                artifact_digest,
+            }),
             _ => Err("usage: --publisher-key <token> --artifact-digest <sha256:hex>"),
         }
     }
@@ -86,8 +89,12 @@ fn negotiate<R: Read, W: Write>(
     writer: &mut W,
     identity: &Identity,
 ) -> Result<dctx_plugin_protocol::Negotiated, WorkerError> {
-    let frame = reader.next_frame().map_err(stream)?.ok_or(WorkerError::Closed)?;
-    let message = WireMessage::decode(&frame, DecodeLimits::BOOTSTRAP).map_err(WorkerError::Protocol)?;
+    let frame = reader
+        .next_frame()
+        .map_err(stream)?
+        .ok_or(WorkerError::Closed)?;
+    let message =
+        WireMessage::decode(&frame, DecodeLimits::BOOTSTRAP).map_err(WorkerError::Protocol)?;
     let WireMessage::Bootstrap(BootstrapMessage::Hello { id, hello }) = message else {
         return Err(WorkerError::Protocol(violation("expected-hello")));
     };
@@ -98,35 +105,64 @@ fn negotiate<R: Read, W: Write>(
         optional_apis: names(&OPTIONAL_APIS).map_err(WorkerError::Internal)?,
     };
     let mut answer = answer_hello(&id, &hello, &profile).map_err(WorkerError::Protocol)?;
-    if matches!(answer, BootstrapMessage::Selected { .. }) && profile.required_apis.iter().any(|api| !hello.apis.contains(api)) {
+    if matches!(answer, BootstrapMessage::Selected { .. })
+        && profile
+            .required_apis
+            .iter()
+            .any(|api| !hello.apis.contains(api))
+    {
         let reason = Name::new("required-api-unoffered").map_err(WorkerError::Internal)?;
         let error = WireError::refusal(ErrorCode::UnsupportedCapability, Phase::Negotiate, reason);
-        answer = BootstrapMessage::Refused { id: id.clone(), error: Box::new(error) };
+        answer = BootstrapMessage::Refused {
+            id: id.clone(),
+            error: Box::new(error),
+        };
     }
-    write_frame(writer, &WireMessage::Bootstrap(answer.clone()).encode(), BOOTSTRAP_FRAME_CAP).map_err(stream)?;
+    write_frame(
+        writer,
+        &WireMessage::Bootstrap(answer.clone()).encode(),
+        BOOTSTRAP_FRAME_CAP,
+    )
+    .map_err(stream)?;
     if let BootstrapMessage::Refused { error, .. } = &answer {
         return Err(WorkerError::Unsupported(error.code));
     }
-    let negotiated = accept_answer(&id, &hello, &answer, identity, &[]).map_err(WorkerError::Internal)?;
-    reader.decoder_mut().set_cap(negotiated.frame_cap).map_err(WorkerError::Protocol)?;
+    let negotiated =
+        accept_answer(&id, &hello, &answer, identity, &[]).map_err(WorkerError::Internal)?;
+    reader
+        .decoder_mut()
+        .set_cap(negotiated.frame_cap)
+        .map_err(WorkerError::Protocol)?;
     Ok(negotiated)
 }
 
 /// Serves one session; `Ok` after shutdown or a clean end of stream between invocations.
 /// # Errors
 /// Returns identity/negotiation failures, invalid host traffic, initialization refusals, or broker/link failures.
-pub fn serve<R: Read, W: Write>(reader: R, mut writer: W, launch: &LaunchIdentity) -> Result<(), WorkerError> {
+pub fn serve<R: Read, W: Write>(
+    reader: R,
+    mut writer: W,
+    launch: &LaunchIdentity,
+) -> Result<(), WorkerError> {
     let identity = launch.identity().map_err(WorkerError::Internal)?;
     let mut reader = FrameReader::new(reader);
     let negotiated = negotiate(&mut reader, &mut writer, &identity)?;
-    let program_api = negotiated.apis.iter().any(|api| api.as_str() == "program.run");
+    let program_api = negotiated
+        .apis
+        .iter()
+        .any(|api| api.as_str() == "program.run");
     let mut link = Link::new(reader, writer);
     let mut session = Some(negotiated);
     let mut binding: Option<Binding> = None;
     loop {
-        let Some(message) = link.recv()? else { return Ok(()) };
+        let Some(message) = link.recv()? else {
+            return Ok(());
+        };
         if let Some(negotiated) = session.take() {
-            link.start(message.session.clone(), Session::new(message.session.clone(), negotiated));
+            link.start(
+                message.session.clone(),
+                Session::new(message.session.clone(), negotiated),
+            );
         }
         link.observe_host(&message)?;
         let SessionBody::Request { id, request } = message.body else {
@@ -145,7 +181,9 @@ pub fn serve<R: Read, W: Write>(reader: R, mut writer: W, launch: &LaunchIdentit
                 }
             },
             Request::Invoke(invocation) => {
-                let bound = binding.as_ref().ok_or(WorkerError::Protocol(violation("invoke-before-ready")))?;
+                let bound = binding
+                    .as_ref()
+                    .ok_or(WorkerError::Protocol(violation("invoke-before-ready")))?;
                 link.begin(invocation.invocation.clone());
                 let mut broker = WireBroker::new(&mut link);
                 let outcome = invoke(&mut broker, bound, &invocation);
@@ -153,11 +191,16 @@ pub fn serve<R: Read, W: Write>(reader: R, mut writer: W, launch: &LaunchIdentit
                     return Err(fatal);
                 }
                 match outcome {
-                    Ok(answer) => link.respond(id, &result(&answer).map_err(WorkerError::Internal)?)?,
+                    Ok(answer) => {
+                        link.respond(id, &result(&answer).map_err(WorkerError::Internal)?)?
+                    }
                     Err(failure) => {
                         if link.cancelled {
                             let last_receipt = failure.receipts.last().cloned();
-                            link.event(Event::Cancelled { invocation: invocation.invocation.clone(), last_receipt })?;
+                            link.event(Event::Cancelled {
+                                invocation: invocation.invocation.clone(),
+                                last_receipt,
+                            })?;
                         }
                         link.respond_error(id, failure.to_wire().map_err(WorkerError::Internal)?)?;
                     }

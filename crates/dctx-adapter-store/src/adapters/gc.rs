@@ -8,12 +8,12 @@ use std::collections::BTreeSet;
 use std::sync::atomic::Ordering;
 
 use crate::domain::{
-    current_path, cursor_path, object_digest, previous_path, sha256, GcBudget, GcReport, MarkMode,
-    StoreError,
+    GcBudget, GcReport, MarkMode, StoreError, current_path, cursor_path, object_digest,
+    previous_path, sha256,
 };
 use crate::ports::StoreFs;
 
-use super::store::{inspect, PointerView, SegmentStore};
+use super::store::{PointerView, SegmentStore, inspect};
 
 const CURSOR_MAGIC: [u8; 8] = *b"DCTXCUR\0";
 
@@ -80,7 +80,10 @@ impl<F: StoreFs> SegmentStore<F> {
     }
 
     fn drop_previous_locked(&self, root: &str) -> Result<(), StoreError> {
-        if !matches!(inspect(&self.fs, &current_path(root))?, PointerView::Closed(_)) {
+        if !matches!(
+            inspect(&self.fs, &current_path(root))?,
+            PointerView::Closed(_)
+        ) {
             return Err(StoreError::CorruptIndex { reason: "pointer" });
         }
         self.unlink_if_present(&previous_path(root))?;
@@ -260,7 +263,13 @@ impl<F: StoreFs> SegmentStore<F> {
             return self.clear_cursor();
         }
         let bytes = encode_cursor(name)?;
-        self.write_durable("maintenance-cursor.partial", cursor_path(), &bytes, true, |_| Ok(()))
+        self.write_durable(
+            "maintenance-cursor.partial",
+            cursor_path(),
+            &bytes,
+            true,
+            |_| Ok(()),
+        )
     }
 
     fn clear_cursor(&self) -> Result<(), StoreError> {
@@ -273,7 +282,10 @@ impl<F: StoreFs> SegmentStore<F> {
     }
 }
 
-fn victim_names<F: StoreFs>(fs: &F, marked: &BTreeSet<[u8; 32]>) -> Result<Vec<String>, StoreError> {
+fn victim_names<F: StoreFs>(
+    fs: &F,
+    marked: &BTreeSet<[u8; 32]>,
+) -> Result<Vec<String>, StoreError> {
     let mut names = Vec::new();
     for prefix in ["segments/", "manifests/", "tmp/"] {
         for path in fs.list_prefix(prefix)? {
@@ -294,7 +306,8 @@ fn victim_names<F: StoreFs>(fs: &F, marked: &BTreeSet<[u8; 32]>) -> Result<Vec<S
 
 fn encode_cursor(name: &str) -> Result<Vec<u8>, StoreError> {
     let raw = name.as_bytes();
-    let len = u32::try_from(raw.len()).map_err(|_| StoreError::InvalidRequest { reason: "cursor" })?;
+    let len =
+        u32::try_from(raw.len()).map_err(|_| StoreError::InvalidRequest { reason: "cursor" })?;
     let mut body = Vec::with_capacity(46 + raw.len());
     body.extend_from_slice(&CURSOR_MAGIC);
     body.extend_from_slice(&1u16.to_le_bytes());
@@ -313,10 +326,16 @@ fn decode_cursor(bytes: &[u8]) -> Result<String, StoreError> {
     if version != 1 {
         return Err(StoreError::UnsupportedVersion { found: version });
     }
-    let len = usize::try_from(u32::from_le_bytes([bytes[10], bytes[11], bytes[12], bytes[13]]))
-        .map_err(|_| StoreError::CorruptIndex { reason: "cursor" })?;
-    let end = 14usize.checked_add(len).ok_or(StoreError::CorruptIndex { reason: "cursor" })?;
-    let sum_at = end.checked_add(32).ok_or(StoreError::CorruptIndex { reason: "cursor" })?;
+    let len = usize::try_from(u32::from_le_bytes([
+        bytes[10], bytes[11], bytes[12], bytes[13],
+    ]))
+    .map_err(|_| StoreError::CorruptIndex { reason: "cursor" })?;
+    let end = 14usize
+        .checked_add(len)
+        .ok_or(StoreError::CorruptIndex { reason: "cursor" })?;
+    let sum_at = end
+        .checked_add(32)
+        .ok_or(StoreError::CorruptIndex { reason: "cursor" })?;
     if bytes.len() != sum_at {
         return Err(StoreError::CorruptIndex { reason: "cursor" });
     }
@@ -325,7 +344,8 @@ fn decode_cursor(bytes: &[u8]) -> Result<String, StoreError> {
     if sha256(&bytes[..end])? != stored {
         return Err(StoreError::CorruptIndex { reason: "cursor" });
     }
-    let name = std::str::from_utf8(&bytes[14..end]).map_err(|_| StoreError::CorruptIndex { reason: "cursor" })?;
+    let name = std::str::from_utf8(&bytes[14..end])
+        .map_err(|_| StoreError::CorruptIndex { reason: "cursor" })?;
     Ok(name.to_string())
 }
 
@@ -340,7 +360,10 @@ mod tests {
         let mut bad = bytes.clone();
         let last = bad.len() - 1;
         bad[last] ^= 0xff;
-        assert!(matches!(decode_cursor(&bad), Err(StoreError::CorruptIndex { .. })));
+        assert!(matches!(
+            decode_cursor(&bad),
+            Err(StoreError::CorruptIndex { .. })
+        ));
         assert_eq!(decode_cursor(&encode_cursor("").unwrap()).unwrap(), "");
     }
 }

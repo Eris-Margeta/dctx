@@ -24,7 +24,10 @@ pub struct RelativePath(String);
 
 impl RelativePath {
     /// The source root.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn root() -> Self {
         Self(String::new())
     }
@@ -68,25 +71,37 @@ impl RelativePath {
     }
 
     /// The path text (empty for the root).
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn as_str(&self) -> &str {
         &self.0
     }
 
     /// True for the source root.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn is_root(&self) -> bool {
         self.0.is_empty()
     }
 
     /// The last segment (empty for the root).
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn name(&self) -> &str {
         self.0.rsplit('/').next().unwrap_or("")
     }
 
     /// Number of segments (0 for the root).
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn depth(&self) -> usize {
         if self.0.is_empty() {
             0
@@ -127,7 +142,9 @@ impl ViewKey {
     /// Returns an invalid-request error for empty/control-containing text, or a resource-limit error above the key byte limit.
     pub fn parse(text: &str) -> Result<Self, DctxError> {
         if text.is_empty() || text.chars().any(char::is_control) {
-            return Err(DctxError::InvalidRequest { reason: "view key must be printable and non-empty" });
+            return Err(DctxError::InvalidRequest {
+                reason: "view key must be printable and non-empty",
+            });
         }
         if text.len() > MAX_PATH_BYTES {
             return Err(DctxError::ResourceLimit {
@@ -139,7 +156,10 @@ impl ViewKey {
     }
 
     /// The key text.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -151,7 +171,10 @@ pub struct Timestamp(pub u64);
 
 impl Timestamp {
     /// Milliseconds since the Unix epoch.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn millis(self) -> u64 {
         self.0
     }
@@ -184,10 +207,17 @@ mod tests {
     #[test]
     fn escaping_and_malformed_paths_are_refused() {
         for bad in ["/etc", "a//b", "a/", "../x", "a/./b", "a\\b", "a\0b"] {
-            assert_eq!(RelativePath::parse(bad).unwrap_err().code(), crate::error::ErrorCode::InvalidRequest, "{bad}");
+            assert_eq!(
+                RelativePath::parse(bad).unwrap_err().code(),
+                crate::error::ErrorCode::InvalidRequest,
+                "{bad}"
+            );
         }
         let long = "a".repeat(MAX_PATH_BYTES + 1);
-        assert!(matches!(RelativePath::parse(&long), Err(DctxError::ResourceLimit { .. })));
+        assert!(matches!(
+            RelativePath::parse(&long),
+            Err(DctxError::ResourceLimit { .. })
+        ));
     }
 
     #[test]

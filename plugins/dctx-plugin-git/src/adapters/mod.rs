@@ -31,7 +31,10 @@ pub enum WorkerError {
 
 impl WorkerError {
     /// Stable safe reason name.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn reason(&self) -> &'static str {
         match self {
             Self::Io(_) => "stream-failed",
@@ -51,7 +54,9 @@ impl fmt::Display for WorkerError {
             Self::Closed => write!(f, "protocol stream closed"),
             Self::Unsupported(code) => write!(f, "negotiation refused: {}", code.as_str()),
             Self::InitializeRefused(code) => write!(f, "initialize refused: {}", code.as_str()),
-            Self::Internal(refusal) => write!(f, "worker message refused by its own tracker: {refusal}"),
+            Self::Internal(refusal) => {
+                write!(f, "worker message refused by its own tracker: {refusal}")
+            }
         }
     }
 }
@@ -60,5 +65,10 @@ impl std::error::Error for WorkerError {}
 
 /// A session-layer protocol violation detected by the worker.
 pub(crate) const fn violation(reason: &'static str) -> Refusal {
-    Refusal::new(ErrorCode::InvalidMessage, Stage::Session, Predicate::WState, reason)
+    Refusal::new(
+        ErrorCode::InvalidMessage,
+        Stage::Session,
+        Predicate::WState,
+        reason,
+    )
 }

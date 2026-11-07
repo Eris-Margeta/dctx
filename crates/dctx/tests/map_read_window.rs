@@ -36,7 +36,10 @@ fn wide_file() -> String {
 
 fn without_mark(source: &str) -> String {
     let mut lines: Vec<&str> = source.split_inclusive('\n').collect();
-    if lines.last().is_some_and(|line| line.starts_with("[DCTX_TRUNCATED]") || *line == "[DCTX_OMITTED]\n") {
+    if lines
+        .last()
+        .is_some_and(|line| line.starts_with("[DCTX_TRUNCATED]") || *line == "[DCTX_OMITTED]\n")
+    {
         lines.pop();
     }
     lines.concat()
@@ -46,24 +49,35 @@ fn without_mark(source: &str) -> String {
 fn line_start_reads_disk_lines_and_a_positive_depth_is_rejected() {
     let text = numbered_file();
     let mut source = MemorySource::new();
-    source.insert_file("lines.rs", text.as_bytes(), 0).expect("lines");
+    source
+        .insert_file("lines.rs", text.as_bytes(), 0)
+        .expect("lines");
     let mut session = open_session(source);
-    let handle = session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
+    let handle = session
+        .snapshot(&SnapshotRequest::immutable())
+        .expect("snapshot");
 
     let mut exact = MapRequest::new(Verb::Read);
     exact.target = "m:lines.rs".to_string();
     exact.line_start = Some(35);
     exact.lines = Some(2);
     assert!(exact.depth.is_none(), "depth stays unset");
-    let page = session.query(&handle, &exact, &mut VecSink::new()).expect("lines");
+    let page = session
+        .query(&handle, &exact, &mut VecSink::new())
+        .expect("lines");
     let got = page.records[0].source_utf8.as_deref().expect("source");
     assert_eq!(got, "// L35\n// L36\n");
     assert!(page.next.is_none(), "{page:?}");
 
     let mut with_depth = exact.clone();
     with_depth.depth = Some(0);
-    let page = session.query(&handle, &with_depth, &mut VecSink::new()).expect("depth 0");
-    assert_eq!(page.records[0].source_utf8.as_deref(), Some("// L35\n// L36\n"));
+    let page = session
+        .query(&handle, &with_depth, &mut VecSink::new())
+        .expect("depth 0");
+    assert_eq!(
+        page.records[0].source_utf8.as_deref(),
+        Some("// L35\n// L36\n")
+    );
 
     let reads = session.content_reads();
     let mut smuggled = MapRequest::new(Verb::Read);
@@ -71,7 +85,9 @@ fn line_start_reads_disk_lines_and_a_positive_depth_is_rejected() {
     smuggled.depth = Some(35);
     smuggled.lines = Some(2);
     let mut sink = VecSink::new();
-    let error = session.query(&handle, &smuggled, &mut sink).expect_err("depth");
+    let error = session
+        .query(&handle, &smuggled, &mut sink)
+        .expect_err("depth");
     assert!(error.to_string().contains("depth"), "{error}");
     assert!(sink.is_empty());
     assert_eq!(session.content_reads(), reads);
@@ -80,7 +96,9 @@ fn line_start_reads_disk_lines_and_a_positive_depth_is_rejected() {
     both.line_start = Some(35);
     both.depth = Some(2);
     let mut sink = VecSink::new();
-    let error = session.query(&handle, &both, &mut sink).expect_err("depth and lines");
+    let error = session
+        .query(&handle, &both, &mut sink)
+        .expect_err("depth and lines");
     assert!(matches!(error, DctxError::InvalidRequest { .. }), "{error}");
     assert!(error.to_string().contains("depth"), "{error}");
     assert!(sink.is_empty());
@@ -92,9 +110,13 @@ fn a_module_past_the_budget_returns_a_marked_prefix_then_the_rest_once() {
     assert!(text.len() >= 4 * 1024, "{}", text.len());
     assert!(text.lines().count() <= 120, "{}", text.lines().count());
     let mut source = MemorySource::new();
-    source.insert_file("wide.rs", text.as_bytes(), 0).expect("wide");
+    source
+        .insert_file("wide.rs", text.as_bytes(), 0)
+        .expect("wide");
     let mut session = open_session(source);
-    let handle = session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
+    let handle = session
+        .snapshot(&SnapshotRequest::immutable())
+        .expect("snapshot");
 
     let mut full = MapRequest::new(Verb::Read);
     full.target = "m:wide.rs".to_string();
@@ -108,13 +130,18 @@ fn a_module_past_the_budget_returns_a_marked_prefix_then_the_rest_once() {
     tiny.target = "m:wide.rs".to_string();
     tiny.limits.encoded_bytes = Some(1);
     let mut refused = VecSink::new();
-    let error = session.query(&handle, &tiny, &mut refused).expect_err("signature");
+    let error = session
+        .query(&handle, &tiny, &mut refused)
+        .expect_err("signature");
     let DctxError::BudgetTooSmall { minimum_bytes } = error else {
         panic!("expected BudgetTooSmall, got {error}");
     };
     assert!(refused.is_empty());
     assert!(minimum_bytes > 1, "{minimum_bytes}");
-    assert!(minimum_bytes < full_len, "needed {minimum_bytes}, full page {full_len}");
+    assert!(
+        minimum_bytes < full_len,
+        "needed {minimum_bytes}, full page {full_len}"
+    );
 
     let mut request = MapRequest::new(Verb::Read);
     request.target = "m:wide.rs".to_string();
@@ -123,7 +150,10 @@ fn a_module_past_the_budget_returns_a_marked_prefix_then_the_rest_once() {
     let mut pages = 0u32;
     loop {
         pages += 1;
-        assert!(pages <= 120, "continuation did not finish after {pages} pages");
+        assert!(
+            pages <= 120,
+            "continuation did not finish after {pages} pages"
+        );
         let mut sink = VecSink::new();
         let page = session.query(&handle, &request, &mut sink).expect("page");
         let source = page.records[0].source_utf8.as_deref().expect("source");
@@ -141,4 +171,61 @@ fn a_module_past_the_budget_returns_a_marked_prefix_then_the_rest_once() {
     }
     assert!(pages > 1, "the module fit in one page");
     assert_eq!(seen, text);
+}
+
+#[test]
+fn json_like_cut_moves_closing_lines_to_the_exact_continuation() {
+    let text = format!(
+        "{{\r\n  \"first\": {{\r\n    \"name\": \"café\"\r\n  }},\r\n\r\n  \"second\": \"{}\"\r\n}}\r\n",
+        "x".repeat(2000)
+    );
+    for format in [2, 1] {
+        let mut source = MemorySource::new();
+        source
+            .insert_file("sample.json", text.as_bytes(), 0)
+            .expect("source");
+        let mut session = open_session(source);
+        let handle = session
+            .snapshot(&SnapshotRequest::immutable())
+            .expect("snapshot");
+        let mut request = MapRequest::new(Verb::Read);
+        request.target = "m:sample.json".to_string();
+        request.output_format = format;
+        request.limits.encoded_bytes = Some(900);
+        let mut sink = VecSink::new();
+        let page = session
+            .query(&handle, &request, &mut sink)
+            .expect("cut page");
+        assert!(sink.as_bytes().len() <= 900);
+        let body = page.records[0].source_utf8.as_deref().expect("source");
+        let prefix = without_mark(body);
+        assert_eq!(prefix, "{\r\n  \"first\": {\r\n    \"name\": \"café\"\r\n");
+        assert_eq!(page.more, 4);
+        let cursor = page.next.expect("continuation");
+        assert!(cursor.contains("|4|7|"), "{cursor}");
+        request.continuation = Some(cursor);
+        let mut refused = VecSink::new();
+        let error = session
+            .query(&handle, &request, &mut refused)
+            .expect_err("next content line needs a larger budget");
+        assert!(matches!(error, DctxError::BudgetTooSmall { .. }), "{error}");
+        assert!(
+            refused.is_empty(),
+            "a refusal must not emit isolated closing lines"
+        );
+        request.limits.encoded_bytes = None;
+        let rest = session
+            .query(&handle, &request, &mut VecSink::new())
+            .expect("rest");
+        assert_eq!(
+            prefix
+                + rest.records[0]
+                    .source_utf8
+                    .as_deref()
+                    .expect("remaining source"),
+            text
+        );
+        assert_eq!(rest.more, 0);
+        assert!(rest.next.is_none());
+    }
 }

@@ -54,15 +54,24 @@ pub(crate) const NONE: u32 = u32::MAX;
 
 impl Lexed {
     /// One-based line of a byte offset; rows advance on `\n` only.
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     pub fn line(&self, byte: u32) -> u32 {
         self.line_starts.partition_point(|&start| start <= byte) as u32
     }
 }
 
 /// Lexes `source` and pairs its brackets.
-#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
-#[allow(clippy::similar_names, reason = "The scanner and its lexed output have established role names used consistently across lexer adapters.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+)]
+#[allow(
+    clippy::similar_names,
+    reason = "The scanner and its lexed output have established role names used consistently across lexer adapters."
+)]
 pub(crate) fn lex(source: &str, dialect: Dialect, limits: &Limits) -> Result<Lexed, LexError> {
     let mut line_starts = vec![0];
     line_starts.extend(

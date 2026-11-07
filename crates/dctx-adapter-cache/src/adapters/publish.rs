@@ -54,10 +54,14 @@ fn temp_beside(path: &Path) -> Result<std::path::PathBuf, CacheError> {
 
 fn same_bytes(path: &Path, len: u64, bytes: &[u8]) -> Result<(), CacheError> {
     let Ok(expected) = u64::try_from(bytes.len()) else {
-        return Err(CacheError::InvalidRequest { reason: "object already published" });
+        return Err(CacheError::InvalidRequest {
+            reason: "object already published",
+        });
     };
     if len != expected {
-        return Err(CacheError::InvalidRequest { reason: "object already published" });
+        return Err(CacheError::InvalidRequest {
+            reason: "object already published",
+        });
     }
     let mut file = open_nofollow(path)?;
     let mut buf = [0u8; 8192];
@@ -65,9 +69,12 @@ fn same_bytes(path: &Path, len: u64, bytes: &[u8]) -> Result<(), CacheError> {
     while offset < bytes.len() {
         let end = offset.saturating_add(buf.len()).min(bytes.len());
         let want = &bytes[offset..end];
-        file.read_exact(&mut buf[..want.len()]).map_err(|_| CacheError::LedgerIo { reason: "read" })?;
+        file.read_exact(&mut buf[..want.len()])
+            .map_err(|_| CacheError::LedgerIo { reason: "read" })?;
         if &buf[..want.len()] != want {
-            return Err(CacheError::InvalidRequest { reason: "object already published" });
+            return Err(CacheError::InvalidRequest {
+                reason: "object already published",
+            });
         }
         offset = end;
     }
@@ -82,7 +89,9 @@ fn open_nofollow(path: &Path) -> Result<std::fs::File, CacheError> {
         use std::os::unix::fs::OpenOptionsExt;
         options.custom_flags(super::no_follow());
     }
-    options.open(path).map_err(|_| CacheError::LedgerIo { reason: "read" })
+    options
+        .open(path)
+        .map_err(|_| CacheError::LedgerIo { reason: "read" })
 }
 
 #[cfg(test)]
@@ -106,7 +115,12 @@ mod tests {
         let path = root.join("objects/1");
         assert_eq!(fs::read(&path).expect("read"), b"alpha");
         let refused = objects.put_object(1, b"beta!");
-        assert!(matches!(refused, Err(CacheError::InvalidRequest { reason: "object already published" })));
+        assert!(matches!(
+            refused,
+            Err(CacheError::InvalidRequest {
+                reason: "object already published"
+            })
+        ));
         assert_eq!(fs::read(&path).expect("kept"), b"alpha");
         objects.put_object(1, b"alpha").expect("same bytes");
         assert_eq!(fs::read(&path).expect("still"), b"alpha");

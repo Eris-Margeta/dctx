@@ -6,9 +6,9 @@
 
 use super::{DeclKind, Scope, SymbolDraft, Walker};
 use crate::domain::{
-    body_fingerprint, javadoc_summary, normalize, DiagnosticReason, LexError, Precision,
+    DiagnosticReason, LexError, Precision, body_fingerprint, javadoc_summary, normalize,
 };
-use crate::lexer::{line_of, Kind, NONE};
+use crate::lexer::{Kind, NONE, line_of};
 use dctx_map_model::{EdgeKind, Node, NodeKind, StableId, Summary, SummarySource};
 
 impl<'a> Walker<'a> {
@@ -72,16 +72,24 @@ impl<'a> Walker<'a> {
         (partner > index).then_some(partner)
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     pub(crate) fn start_byte(&self, index: usize) -> u32 {
         self.toks
-            .get(index).map_or_else(|| self.src.len() as u32, |token| token.start)
+            .get(index)
+            .map_or_else(|| self.src.len() as u32, |token| token.start)
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     pub(crate) fn end_byte(&self, index: usize) -> u32 {
         self.toks
-            .get(index).map_or_else(|| self.src.len() as u32, |token| token.end)
+            .get(index)
+            .map_or_else(|| self.src.len() as u32, |token| token.end)
     }
 
     fn line_of_byte(&self, byte: u32) -> u32 {

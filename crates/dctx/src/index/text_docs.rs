@@ -45,7 +45,10 @@ pub(super) fn symbols(language: &str, text: &str) -> Vec<Symbol> {
     let lines: Vec<Line<'_>> = text
         .split_inclusive('\n')
         .map(|raw| {
-            let line = Line { text: raw.trim_end_matches(['\n', '\r']), start: at };
+            let line = Line {
+                text: raw.trim_end_matches(['\n', '\r']),
+                start: at,
+            };
             at += raw.len();
             line
         })
@@ -67,7 +70,10 @@ fn sections(text: &str, lines: &[Line<'_>], heads: &[Head]) -> Vec<Symbol> {
     for (index, head) in heads.iter().enumerate() {
         let rest = heads.get(index + 1..).unwrap_or_default();
         let next = rest.first().map_or(lines.len(), |other| other.line);
-        let end_line = rest.iter().find(|other| other.level <= head.level).map_or(lines.len(), |other| other.line);
+        let end_line = rest
+            .iter()
+            .find(|other| other.level <= head.level)
+            .map_or(lines.len(), |other| other.line);
         let start = lines.get(head.line).map_or(0, |line| line.start);
         let end = lines.get(end_line).map_or(text.len(), |line| line.start);
         let summary = lines
@@ -76,7 +82,10 @@ fn sections(text: &str, lines: &[Line<'_>], heads: &[Head]) -> Vec<Symbol> {
             .iter()
             .map(|line| line.text.trim())
             .find(|line| !line.is_empty() && !is_rule(line))
-            .map_or_else(|| head.title.clone(), |line| line.chars().take(SUMMARY_MAX).collect());
+            .map_or_else(
+                || head.title.clone(),
+                |line| line.chars().take(SUMMARY_MAX).collect(),
+            );
         let first = u32::try_from(head.line + 1).unwrap_or(u32::MAX);
         let last = u32::try_from(end_line.max(head.line + 1)).unwrap_or(u32::MAX);
         out.push(Symbol {
@@ -84,7 +93,10 @@ fn sections(text: &str, lines: &[Line<'_>], heads: &[Head]) -> Vec<Symbol> {
             kind: "heading".to_string(),
             graph: NodeKind::Doc,
             lines: [first, last],
-            span: [u64::try_from(start).unwrap_or(u64::MAX), u64::try_from(end).unwrap_or(u64::MAX)],
+            span: [
+                u64::try_from(start).unwrap_or(u64::MAX),
+                u64::try_from(end).unwrap_or(u64::MAX),
+            ],
             summary,
             summary_source: "heading".to_string(),
             signature: String::new(),
@@ -95,7 +107,12 @@ fn sections(text: &str, lines: &[Line<'_>], heads: &[Head]) -> Vec<Symbol> {
 
 /// Title text with runs of whitespace folded to one space and a length cap.
 fn norm(text: &str) -> String {
-    text.split_whitespace().collect::<Vec<_>>().join(" ").chars().take(TITLE_MAX).collect()
+    text.split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .chars()
+        .take(TITLE_MAX)
+        .collect()
 }
 
 /// True for a line made only of one repeated adornment character, at least two long.
@@ -103,7 +120,11 @@ fn rule_char(line: &str) -> Option<char> {
     let line = line.trim_end();
     let mut chars = line.chars();
     let first = chars.next()?;
-    (line.chars().count() >= 2 && !first.is_alphanumeric() && !first.is_whitespace() && chars.all(|c| c == first)).then_some(first)
+    (line.chars().count() >= 2
+        && !first.is_alphanumeric()
+        && !first.is_whitespace()
+        && chars.all(|c| c == first))
+    .then_some(first)
 }
 
 /// True when the whole line is an adornment rule.
@@ -114,13 +135,19 @@ fn is_rule(line: &str) -> bool {
 /// Plain-text and reStructuredText titles: a line followed by an adornment line at least as long.
 /// Text also takes ALL-CAPS lines of 3..80 characters between blank lines (level 1).
 fn underlined(lines: &[Line<'_>], rst: bool) -> Vec<Head> {
-    let allowed: &[char] = if rst { &['=', '-', '~', '^'] } else { &['=', '-'] };
+    let allowed: &[char] = if rst {
+        &['=', '-', '~', '^']
+    } else {
+        &['=', '-']
+    };
     let mut seen: Vec<char> = Vec::new();
     let mut heads = Vec::new();
     let mut index = 0usize;
     while index < lines.len() {
         let title = lines[index].text;
-        let under = lines.get(index + 1).and_then(|line| rule_char(line.text).map(|mark| (mark, line.text.trim_end().chars().count())));
+        let under = lines.get(index + 1).and_then(|line| {
+            rule_char(line.text).map(|mark| (mark, line.text.trim_end().chars().count()))
+        });
         if let Some((mark, width)) = under.filter(|(mark, _)| allowed.contains(mark))
             && title_ok(title)
             && title.trim_end().chars().count() <= width
@@ -134,12 +161,22 @@ fn underlined(lines: &[Line<'_>], rst: bool) -> Vec<Head> {
             } else {
                 u8::from(mark != '=') + 1
             };
-            heads.push(Head { level, title: norm(title), line: index, rows: 2 });
+            heads.push(Head {
+                level,
+                title: norm(title),
+                line: index,
+                rows: 2,
+            });
             index += 2;
             continue;
         }
         if !rst && caps_ok(lines, index) {
-            heads.push(Head { level: 1, title: norm(title), line: index, rows: 1 });
+            heads.push(Head {
+                level: 1,
+                title: norm(title),
+                line: index,
+                rows: 1,
+            });
         }
         index += 1;
     }
@@ -149,7 +186,10 @@ fn underlined(lines: &[Line<'_>], rst: bool) -> Vec<Head> {
 /// A title line: not indented, short, has a letter or digit and is not itself an adornment rule.
 fn title_ok(line: &str) -> bool {
     let trimmed = line.trim_end();
-    !trimmed.starts_with(char::is_whitespace) && trimmed.chars().any(char::is_alphanumeric) && trimmed.chars().count() <= TITLE_MAX && !is_rule(trimmed)
+    !trimmed.starts_with(char::is_whitespace)
+        && trimmed.chars().any(char::is_alphanumeric)
+        && trimmed.chars().count() <= TITLE_MAX
+        && !is_rule(trimmed)
 }
 
 /// An ALL-CAPS line of 3..=80 characters with a blank line (or the file edge) on both sides.
@@ -185,7 +225,12 @@ fn asciidoc(lines: &[Line<'_>]) -> Vec<Head> {
         if (1..=6).contains(&marks) && text[marks..].starts_with(' ') {
             let title = norm(text[marks..].trim_end_matches('='));
             if !title.is_empty() {
-                heads.push(Head { level: u8::try_from(marks).unwrap_or(u8::MAX), title, line: index, rows: 1 });
+                heads.push(Head {
+                    level: u8::try_from(marks).unwrap_or(u8::MAX),
+                    title,
+                    line: index,
+                    rows: 1,
+                });
             }
         }
     }
@@ -211,7 +256,12 @@ fn org(lines: &[Line<'_>]) -> Vec<Head> {
         if !inside && stars > 0 && text[stars..].starts_with(' ') {
             let title = norm(&text[stars..]);
             if !title.is_empty() {
-                heads.push(Head { level: u8::try_from(stars).unwrap_or(u8::MAX), title, line: index, rows: 1 });
+                heads.push(Head {
+                    level: u8::try_from(stars).unwrap_or(u8::MAX),
+                    title,
+                    line: index,
+                    rows: 1,
+                });
             }
         }
     }
@@ -219,17 +269,34 @@ fn org(lines: &[Line<'_>]) -> Vec<Head> {
 }
 
 /// LaTeX sectioning commands and their levels.
-const TEX_COMMANDS: &[(&str, u8)] = &[("chapter", 1), ("section", 2), ("subsection", 3), ("subsubsection", 4)];
+const TEX_COMMANDS: &[(&str, u8)] = &[
+    ("chapter", 1),
+    ("section", 2),
+    ("subsection", 3),
+    ("subsubsection", 4),
+];
 
 /// LaTeX titles: `\chapter{..}`, `\section{..}`, `\subsection{..}`, `\subsubsection{..}`, also starred or with `[short]`.
 fn tex(lines: &[Line<'_>]) -> Vec<Head> {
     let mut heads = Vec::new();
     for (index, line) in lines.iter().enumerate() {
-        let Some(rest) = line.text.trim_start().strip_prefix('\\') else { continue };
+        let Some(rest) = line.text.trim_start().strip_prefix('\\') else {
+            continue;
+        };
         for (name, level) in TEX_COMMANDS {
-            let Some(after) = rest.strip_prefix(name) else { continue };
-            if let Some(title) = tex_title(after).map(|title| norm(&title.replace('~', " "))).filter(|title| !title.is_empty()) {
-                heads.push(Head { level: *level, title, line: index, rows: 1 });
+            let Some(after) = rest.strip_prefix(name) else {
+                continue;
+            };
+            if let Some(title) = tex_title(after)
+                .map(|title| norm(&title.replace('~', " ")))
+                .filter(|title| !title.is_empty())
+            {
+                heads.push(Head {
+                    level: *level,
+                    title,
+                    line: index,
+                    rows: 1,
+                });
             }
             break;
         }
@@ -266,7 +333,10 @@ mod tests {
 
     /// Name, level-bearing line range and summary of every heading.
     fn shown(language: &str, text: &str) -> Vec<(String, [u32; 2], String)> {
-        symbols(language, text).into_iter().map(|s| (s.name, s.lines, s.summary)).collect()
+        symbols(language, text)
+            .into_iter()
+            .map(|s| (s.name, s.lines, s.summary))
+            .collect()
     }
 
     /// Text with underlines and ALL-CAPS lines gives nested sections whose span is the section text.
@@ -281,8 +351,15 @@ mod tests {
         assert_eq!(found[2].lines, [11, 13]);
         assert_eq!(found[0].summary, "Intro paragraph.");
         let span = found[1].span;
-        assert_eq!(&text[usize::try_from(span[0]).unwrap_or(0)..usize::try_from(span[1]).unwrap_or(0)], "Deploy Steps\n------------\n\nRun the thing.\n\n");
-        assert!(found.iter().all(|s| s.kind == "heading" && s.summary_source == "heading"));
+        assert_eq!(
+            &text[usize::try_from(span[0]).unwrap_or(0)..usize::try_from(span[1]).unwrap_or(0)],
+            "Deploy Steps\n------------\n\nRun the thing.\n\n"
+        );
+        assert!(
+            found
+                .iter()
+                .all(|s| s.kind == "heading" && s.summary_source == "heading")
+        );
     }
 
     /// A short underline, an indented title and a lone rule are not headings.
@@ -306,10 +383,19 @@ mod tests {
     #[test]
     fn asciidoc_and_org_markers() {
         let adoc = "= Manual Title\n\n== Installation\n\n----\n== not a title\n----\n\n=== Windows ===\nmore\n";
-        assert_eq!(shown("asciidoc", adoc).iter().map(|t| t.0.as_str()).collect::<Vec<_>>(), ["Manual Title", "Installation", "Windows"]);
+        assert_eq!(
+            shown("asciidoc", adoc)
+                .iter()
+                .map(|t| t.0.as_str())
+                .collect::<Vec<_>>(),
+            ["Manual Title", "Installation", "Windows"]
+        );
         let org = "* Inbox\n** Buy milk\n#+BEGIN_SRC sh\n* nope\n#+END_SRC\n* Projects\n";
         let found = symbols("org", org);
-        assert_eq!(found.iter().map(|s| s.name.as_str()).collect::<Vec<_>>(), ["Inbox", "Buy milk", "Projects"]);
+        assert_eq!(
+            found.iter().map(|s| s.name.as_str()).collect::<Vec<_>>(),
+            ["Inbox", "Buy milk", "Projects"]
+        );
         assert_eq!(found[0].lines, [1, 5]);
         assert_eq!(found[1].lines, [2, 5]);
     }
@@ -319,7 +405,10 @@ mod tests {
     fn tex_commands() {
         let tex = "\\section{Introduction}\n%\\section{Hidden}\n\\subsection*{Related~Work}\n\\section[short]{A {big} idea}\n\\section{Open\n";
         let found = shown("tex", tex);
-        assert_eq!(found.iter().map(|t| t.0.as_str()).collect::<Vec<_>>(), ["Introduction", "Related Work", "A {big} idea"]);
+        assert_eq!(
+            found.iter().map(|t| t.0.as_str()).collect::<Vec<_>>(),
+            ["Introduction", "Related Work", "A {big} idea"]
+        );
         assert_eq!(found[0].1, [1, 3]);
         assert!(handles("tex") && handles("text") && !handles("markdown"));
     }

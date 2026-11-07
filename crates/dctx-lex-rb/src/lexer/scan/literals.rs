@@ -2,9 +2,9 @@
 //! Strings, `%`-literals, regexes, symbols and character literals.
 //! Expression position decides whether `/` and `%` open a literal or act as operators.
 //! Dispatch, comments and the shared operator table live in the parent module.
-use super::{is_name_start_byte, LONG_OPS};
+use super::{LONG_OPS, is_name_start_byte};
 use crate::domain::LexError;
-use crate::lexer::{as_u32, Kind, Lx};
+use crate::lexer::{Kind, Lx, as_u32};
 
 impl Lx<'_> {
     pub(super) fn quoted(&mut self, quote: u8) -> Result<(), LexError> {
@@ -17,7 +17,10 @@ impl Lx<'_> {
 
     pub(super) fn percent(&mut self) -> Result<(), LexError> {
         // `puts %{x}` is a command argument. `10 % 2` stays modulo.
-        let command = self.tokens.last().is_some_and(|token| token.kind == Kind::Ident);
+        let command = self
+            .tokens
+            .last()
+            .is_some_and(|token| token.kind == Kind::Ident);
         if !self.fname && (self.expr || command) && self.try_percent()? {
             return Ok(());
         }
@@ -29,7 +32,10 @@ impl Lx<'_> {
         let mut j = self.i + 1;
         let mut letter = None;
         if let Some(byte) = self.byte_at(j)
-            && matches!(byte, b'q' | b'Q' | b'w' | b'W' | b'i' | b'I' | b'r' | b's' | b'x')
+            && matches!(
+                byte,
+                b'q' | b'Q' | b'w' | b'W' | b'i' | b'I' | b'r' | b's' | b'x'
+            )
             && self.byte_at(j + 1).is_some_and(is_delim)
         {
             letter = Some(byte);
@@ -66,15 +72,21 @@ impl Lx<'_> {
         let Some(token) = self.tokens.last().filter(|token| token.kind == Kind::Ident) else {
             return false;
         };
-        let name = self.src.get(token.start as usize..token.end as usize).unwrap_or("");
+        let name = self
+            .src
+            .get(token.start as usize..token.end as usize)
+            .unwrap_or("");
         let gap = self.src.get(token.end as usize..self.i).unwrap_or("");
         !matches!(name, "nil" | "true" | "false" | "self" | "end")
-            && name.chars().next().is_some_and(|ch| ch.is_lowercase() || ch == '_')
+            && name
+                .chars()
+                .next()
+                .is_some_and(|ch| ch.is_lowercase() || ch == '_')
             && !gap.is_empty()
             && gap.bytes().all(|byte| matches!(byte, b' ' | b'\t'))
-            && self.byte_at(self.i + 1).is_some_and(|byte| {
-                !byte.is_ascii_whitespace() && byte != b'='
-            })
+            && self
+                .byte_at(self.i + 1)
+                .is_some_and(|byte| !byte.is_ascii_whitespace() && byte != b'=')
     }
 
     pub(super) fn colon(&mut self) -> Result<(), LexError> {
@@ -86,9 +98,10 @@ impl Lx<'_> {
             return Ok(());
         }
         // `foo:bar` is a label. `attr :width` and `:width` are symbols.
-        let label = self.tokens.last().is_some_and(|token| {
-            token.kind == Kind::Ident && token.end as usize == self.i
-        });
+        let label = self
+            .tokens
+            .last()
+            .is_some_and(|token| token.kind == Kind::Ident && token.end as usize == self.i);
         if !label && !self.fname && self.try_symbol()? {
             return Ok(());
         }
@@ -114,8 +127,10 @@ impl Lx<'_> {
                 self.expr = false;
                 Ok(true)
             }
-            Some(b'[' | b']' | b'+' | b'-' | b'*' | b'/' | b'%' | b'&' | b'|' | b'^' | b'~' | b'!'
-            | b'<' | b'>' | b'=') => {
+            Some(
+                b'[' | b']' | b'+' | b'-' | b'*' | b'/' | b'%' | b'&' | b'|' | b'^' | b'~' | b'!'
+                | b'<' | b'>' | b'=',
+            ) => {
                 self.i += 1;
                 self.consume_op_body();
                 self.emit(Kind::Symbol, start, self.i, false);
@@ -123,7 +138,9 @@ impl Lx<'_> {
                 self.fname = false;
                 Ok(true)
             }
-            Some(byte) if byte == b'@' || byte == b'$' || is_name_start_byte(byte) || byte >= 0x80 => {
+            Some(byte)
+                if byte == b'@' || byte == b'$' || is_name_start_byte(byte) || byte >= 0x80 =>
+            {
                 self.i += 1;
                 self.consume_name();
                 self.consume_suffix(true);
@@ -172,7 +189,8 @@ impl Lx<'_> {
             }
             guard += 1;
             let kind = self.b[self.i];
-            if kind == b'c' || (matches!(kind, b'C' | b'M') && self.byte_at(self.i + 1) == Some(b'-'))
+            if kind == b'c'
+                || (matches!(kind, b'C' | b'M') && self.byte_at(self.i + 1) == Some(b'-'))
             {
                 self.i += 1;
                 if self.byte_at(self.i) == Some(b'-') {
@@ -188,7 +206,10 @@ impl Lx<'_> {
             if kind == b'x' {
                 self.i += 1;
                 for _ in 0..2 {
-                    if self.byte_at(self.i).is_some_and(|byte| byte.is_ascii_hexdigit()) {
+                    if self
+                        .byte_at(self.i)
+                        .is_some_and(|byte| byte.is_ascii_hexdigit())
+                    {
                         self.i += 1;
                     }
                 }
@@ -198,7 +219,10 @@ impl Lx<'_> {
                 self.i += 1;
                 if self.byte_at(self.i) == Some(b'{') {
                     self.i += 1;
-                    while self.byte_at(self.i).is_some_and(|byte| byte.is_ascii_hexdigit()) {
+                    while self
+                        .byte_at(self.i)
+                        .is_some_and(|byte| byte.is_ascii_hexdigit())
+                    {
                         self.i += 1;
                     }
                     if self.byte_at(self.i) == Some(b'}') {
@@ -206,7 +230,10 @@ impl Lx<'_> {
                     }
                 } else {
                     for _ in 0..4 {
-                        if self.byte_at(self.i).is_some_and(|byte| byte.is_ascii_hexdigit()) {
+                        if self
+                            .byte_at(self.i)
+                            .is_some_and(|byte| byte.is_ascii_hexdigit())
+                        {
                             self.i += 1;
                         }
                     }
@@ -216,7 +243,10 @@ impl Lx<'_> {
             if matches!(kind, b'0'..=b'7') {
                 self.i += 1;
                 for _ in 0..2 {
-                    if self.byte_at(self.i).is_some_and(|byte| matches!(byte, b'0'..=b'7')) {
+                    if self
+                        .byte_at(self.i)
+                        .is_some_and(|byte| matches!(byte, b'0'..=b'7'))
+                    {
                         self.i += 1;
                     }
                 }

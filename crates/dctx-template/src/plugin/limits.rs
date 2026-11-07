@@ -70,7 +70,10 @@ pub struct ResourceLimits {
 
 impl ResourceLimits {
     /// Defaults from the v1 git manifest and dts plan fixture.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn standard() -> Self {
         Self {
             frame_bytes: 1_048_576,
@@ -95,8 +98,16 @@ impl ResourceLimits {
         within(self.frame_bytes, ceiling.frame_bytes, "frame_bytes")?;
         within(self.read_bytes, ceiling.read_bytes, "read_bytes")?;
         within(self.actions, ceiling.actions, "actions")?;
-        within(self.outstanding_requests, ceiling.outstanding_requests, "outstanding_requests")?;
-        within(self.diagnostics_bytes, ceiling.diagnostics_bytes, "diagnostics_bytes")?;
+        within(
+            self.outstanding_requests,
+            ceiling.outstanding_requests,
+            "outstanding_requests",
+        )?;
+        within(
+            self.diagnostics_bytes,
+            ceiling.diagnostics_bytes,
+            "diagnostics_bytes",
+        )?;
         within(self.chunk_bytes, ceiling.chunk_bytes, "chunk_bytes")?;
         within(self.state_bytes, ceiling.state_bytes, "state_bytes")?;
         within(self.upload_bytes, ceiling.upload_bytes, "upload_bytes")?;
@@ -108,7 +119,11 @@ impl ResourceLimits {
 
 fn within(requested: u64, ceiling: u64, field: &'static str) -> Result<(), TemplateError> {
     if requested > ceiling {
-        Err(TemplateError::BudgetAboveCeiling { field, requested, ceiling })
+        Err(TemplateError::BudgetAboveCeiling {
+            field,
+            requested,
+            ceiling,
+        })
     } else {
         Ok(())
     }
@@ -144,9 +159,15 @@ pub enum Liveness {
 
 impl Liveness {
     /// Unattended fail-closed defaults from the dts plan fixture.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn fail_closed() -> Self {
-        Self::UnattendedFailClosed { sample_ms: 1000, cancel_grace_ms: 5000 }
+        Self::UnattendedFailClosed {
+            sample_ms: 1000,
+            cancel_grace_ms: 5000,
+        }
     }
 }
 

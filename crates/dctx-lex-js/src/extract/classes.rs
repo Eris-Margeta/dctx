@@ -10,16 +10,27 @@ use crate::lexer::Kind;
 use dctx_map_model::{EdgeKind, NodeKind, SymbolKind};
 
 const MODIFIERS: [&str; 13] = [
-    "static", "public", "private", "protected", "readonly", "abstract", "override", "declare",
-    "accessor", "async", "get", "set", "*",
+    "static",
+    "public",
+    "private",
+    "protected",
+    "readonly",
+    "abstract",
+    "override",
+    "declare",
+    "accessor",
+    "async",
+    "get",
+    "set",
+    "*",
 ];
 
 impl Walker<'_> {
     /// (name token, index after the name, body `{`) of a class at `k`.
     fn class_parts(&self, k: usize, end: usize) -> Option<(Option<usize>, usize, usize)> {
         let mut j = k + usize::from(self.is(k, "abstract")) + 1;
-        let name = (self.ident(j) && !matches!(self.text(j), "extends" | "implements"))
-            .then_some(j);
+        let name =
+            (self.ident(j) && !matches!(self.text(j), "extends" | "implements")).then_some(j);
         j += usize::from(name.is_some());
         let after_name = j;
         while j < end {
@@ -77,7 +88,16 @@ impl Walker<'_> {
             && let Some(n) = name
         {
             let name = self.text(n).to_owned();
-            self.refer(scope.owner, scope, EdgeKind::UsesType, name, None, (n, n), (n, n), Precision::Structural);
+            self.refer(
+                scope.owner,
+                scope,
+                EdgeKind::UsesType,
+                name,
+                None,
+                (n, n),
+                (n, n),
+                Precision::Structural,
+            );
         }
         let close = self.close(body, end);
         self.heritage(after_name, body, scope);
@@ -349,8 +369,15 @@ mod tests {
     #[test]
     fn private_members_and_keyword_accessors_parse() {
         let source = "class Box {\n  #count = 1_000n\n  static { Box.ready = true }\n  static #boot() { return 1 }\n  get #size() { return this.#count }\n  set #size(value) { this.#count = value }\n  async * #items() { yield this.#size }\n  #run = () => this.#count\n  get default() { return 1 }\n  set if(value) { this.#count = value }\n  get catch() { return 0 }\n  visible() {}\n}";
-        let facts = JsLexer::default().extract("box.js", source.as_bytes()).unwrap();
-        assert_eq!(facts.completion, crate::Completion::Complete, "{:?}", facts.diagnostics);
+        let facts = JsLexer::default()
+            .extract("box.js", source.as_bytes())
+            .unwrap();
+        assert_eq!(
+            facts.completion,
+            crate::Completion::Complete,
+            "{:?}",
+            facts.diagnostics
+        );
         let found = names("box.js", source);
         assert_eq!(
             found,
@@ -373,6 +400,9 @@ mod tests {
     fn typescript_signatures_and_abstract_members() {
         let source = "export abstract class S<T> implements I<T> {\n  abstract run(x: T): void;\n  private load(): Promise<T> { return f<T>(); }\n  [key: string]: unknown;\n}";
         let found = names("s.ts", source);
-        assert_eq!(found, [("S".into(), 1), ("S::run".into(), 2), ("S::load".into(), 3)]);
+        assert_eq!(
+            found,
+            [("S".into(), 1), ("S::run".into(), 2), ("S::load".into(), 3)]
+        );
     }
 }

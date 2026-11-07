@@ -11,29 +11,45 @@ use crate::grant::{
     require_semver,
 };
 use crate::model::HostCeiling;
-use crate::plugin::{ConfigEntry, ConfigValue, HookDecl, KnownPlugin, PluginBinding, PluginState, Resolution};
+use crate::plugin::{
+    ConfigEntry, ConfigValue, HookDecl, KnownPlugin, PluginBinding, PluginState, Resolution,
+};
 use crate::source::RawValue;
 
-pub(super) fn check_binding(plugin: &PluginBinding, host: &HostCeiling, aliases: &mut BTreeSet<String>) -> Result<(), TemplateError> {
+pub(super) fn check_binding(
+    plugin: &PluginBinding,
+    host: &HostCeiling,
+    aliases: &mut BTreeSet<String>,
+) -> Result<(), TemplateError> {
     if plugin.state != PluginState::Unavailable && !plugin.alias.is_empty() {
         check_alias(&plugin.alias)?;
         claim_alias(&plugin.alias, aliases)?;
     }
     match (plugin.state, plugin.resolution) {
         (PluginState::Unavailable, Resolution::Unavailable { .. }) => {
-            if plugin.required || plugin.digest.is_some() || plugin.manifest_digest.is_some() || !plugin.allow.is_empty()
-                || !plugin.hooks.is_empty() || !plugin.config.is_empty() || !plugin.version.is_empty()
+            if plugin.required
+                || plugin.digest.is_some()
+                || plugin.manifest_digest.is_some()
+                || !plugin.allow.is_empty()
+                || !plugin.hooks.is_empty()
+                || !plugin.config.is_empty()
+                || !plugin.version.is_empty()
             {
                 return Err(TemplateError::GrantExpansion { kind: "plugin" });
             }
             if host.plugins.iter().any(|catalog| catalog.id == plugin.id) {
-                return Err(TemplateError::InvalidSyntax { line: 0, detail: "plugin lock".into() });
+                return Err(TemplateError::InvalidSyntax {
+                    line: 0,
+                    detail: "plugin lock".into(),
+                });
             }
             Ok(())
         }
         (PluginState::Enabled, Resolution::Available) => {
             if host.disabled_plugins.contains(&plugin.id) {
-                return Err(TemplateError::UserDisabled { id: plugin.id.clone() });
+                return Err(TemplateError::UserDisabled {
+                    id: plugin.id.clone(),
+                });
             }
             let catalog = catalog_of(host, &plugin.id)?;
             match_lock(plugin, catalog)?;
@@ -44,14 +60,24 @@ pub(super) fn check_binding(plugin: &PluginBinding, host: &HostCeiling, aliases:
                 }
             }
             for hook in &plugin.hooks {
-                if hook.version != 1 || !known_hook(&hook.name) || !catalog.hooks.iter().any(|name| name == &hook.name) {
-                    return Err(TemplateError::UnknownCapability { name: format!("hook:{}", hook.name) });
+                if hook.version != 1
+                    || !known_hook(&hook.name)
+                    || !catalog.hooks.iter().any(|name| name == &hook.name)
+                {
+                    return Err(TemplateError::UnknownCapability {
+                        name: format!("hook:{}", hook.name),
+                    });
                 }
             }
             for entry in &plugin.config {
-                let field = catalog.fields.iter().find(|field| field.name == entry.key).ok_or_else(|| {
-                    TemplateError::UnknownField { plugin: plugin.id.clone(), field: entry.key.clone() }
-                })?;
+                let field = catalog
+                    .fields
+                    .iter()
+                    .find(|field| field.name == entry.key)
+                    .ok_or_else(|| TemplateError::UnknownField {
+                        plugin: plugin.id.clone(),
+                        field: entry.key.clone(),
+                    })?;
                 accept_config(field, &entry.value)?;
             }
             Ok(())
@@ -63,24 +89,41 @@ pub(super) fn check_binding(plugin: &PluginBinding, host: &HostCeiling, aliases:
             let catalog = catalog_of(host, &plugin.id)?;
             match_lock(plugin, catalog)
         }
-        _ => Err(TemplateError::Corrupt { reason: "plugin state" }),
+        _ => Err(TemplateError::Corrupt {
+            reason: "plugin state",
+        }),
     }
 }
 
-pub(super) fn catalog_of<'a>(host: &'a HostCeiling, id: &str) -> Result<&'a KnownPlugin, TemplateError> {
-    host.plugins.iter().find(|catalog| catalog.id == id).ok_or_else(|| TemplateError::UnresolvedRef {
-        kind: "plugin",
-        name: id.to_string(),
-    })
+pub(super) fn catalog_of<'a>(
+    host: &'a HostCeiling,
+    id: &str,
+) -> Result<&'a KnownPlugin, TemplateError> {
+    host.plugins
+        .iter()
+        .find(|catalog| catalog.id == id)
+        .ok_or_else(|| TemplateError::UnresolvedRef {
+            kind: "plugin",
+            name: id.to_string(),
+        })
 }
 
-pub(super) fn match_lock(plugin: &PluginBinding, catalog: &KnownPlugin) -> Result<(), TemplateError> {
+pub(super) fn match_lock(
+    plugin: &PluginBinding,
+    catalog: &KnownPlugin,
+) -> Result<(), TemplateError> {
     require_semver(&plugin.version)?;
     if plugin.version != catalog.version {
-        return Err(TemplateError::InvalidSyntax { line: 0, detail: "plugin version".into() });
+        return Err(TemplateError::InvalidSyntax {
+            line: 0,
+            detail: "plugin version".into(),
+        });
     }
     if plugin.digest != catalog.digest || plugin.manifest_digest != catalog.manifest_digest {
-        return Err(TemplateError::InvalidSyntax { line: 0, detail: "plugin digest".into() });
+        return Err(TemplateError::InvalidSyntax {
+            line: 0,
+            detail: "plugin digest".into(),
+        });
     }
     if !catalog.publisher_key.is_empty() && plugin.publisher_key != catalog.publisher_key {
         return Err(TemplateError::GrantExpansion { kind: "plugin" });
@@ -91,17 +134,26 @@ pub(super) fn match_lock(plugin: &PluginBinding, catalog: &KnownPlugin) -> Resul
     Ok(())
 }
 
-pub(super) fn confirm_digest(source: Option<&str>, locked: Option<[u8; 32]>) -> Result<(), TemplateError> {
+pub(super) fn confirm_digest(
+    source: Option<&str>,
+    locked: Option<[u8; 32]>,
+) -> Result<(), TemplateError> {
     match (source, locked) {
         (None, _) => Ok(()),
         (Some(text), Some(pinned)) => {
             if parse_digest(text)? == pinned {
                 Ok(())
             } else {
-                Err(TemplateError::InvalidSyntax { line: 0, detail: "plugin digest mismatch".into() })
+                Err(TemplateError::InvalidSyntax {
+                    line: 0,
+                    detail: "plugin digest mismatch".into(),
+                })
             }
         }
-        (Some(_), None) => Err(TemplateError::InvalidSyntax { line: 0, detail: "plugin digest".into() }),
+        (Some(_), None) => Err(TemplateError::InvalidSyntax {
+            line: 0,
+            detail: "plugin digest".into(),
+        }),
     }
 }
 
@@ -113,12 +165,18 @@ pub(super) fn merge_config(
 ) -> Result<Vec<ConfigEntry>, TemplateError> {
     for (key, _) in template {
         if !fields.iter().any(|field| field.name == *key) {
-            return Err(TemplateError::UnknownField { plugin: id.to_string(), field: key.clone() });
+            return Err(TemplateError::UnknownField {
+                plugin: id.to_string(),
+                field: key.clone(),
+            });
         }
     }
     for entry in user {
         if !fields.iter().any(|field| field.name == entry.key) {
-            return Err(TemplateError::UnknownField { plugin: id.to_string(), field: entry.key.clone() });
+            return Err(TemplateError::UnknownField {
+                plugin: id.to_string(),
+                field: entry.key.clone(),
+            });
         }
     }
     let mut ordered: Vec<&crate::plugin::FieldSpec> = fields.iter().collect();
@@ -135,7 +193,10 @@ pub(super) fn merge_config(
             None
         };
         if let Some(value) = chosen {
-            config.push(ConfigEntry { key: field.name.clone(), value });
+            config.push(ConfigEntry {
+                key: field.name.clone(),
+                value,
+            });
         }
     }
     Ok(config)
@@ -158,39 +219,61 @@ pub(super) fn raw_config(raw: &RawValue) -> Result<ConfigValue, TemplateError> {
     }
 }
 
-pub(super) fn hooks_of(names: &[String], catalog: &KnownPlugin) -> Result<Vec<HookDecl>, TemplateError> {
+pub(super) fn hooks_of(
+    names: &[String],
+    catalog: &KnownPlugin,
+) -> Result<Vec<HookDecl>, TemplateError> {
     let mut hooks = Vec::with_capacity(names.len());
     for name in names {
         if !catalog.hooks.iter().any(|hook| hook == name) {
-            return Err(TemplateError::UnknownCapability { name: format!("hook:{name}") });
+            return Err(TemplateError::UnknownCapability {
+                name: format!("hook:{name}"),
+            });
         }
-        hooks.push(HookDecl { name: name.clone(), version: 1 });
+        hooks.push(HookDecl {
+            name: name.clone(),
+            version: 1,
+        });
     }
     Ok(hooks)
 }
 
 pub(super) fn screen_hooks(names: &[String]) -> Result<(), TemplateError> {
     if names.len() > 5 {
-        return Err(TemplateError::Limit { what: "hooks", limit: 5 });
+        return Err(TemplateError::Limit {
+            what: "hooks",
+            limit: 5,
+        });
     }
     let mut seen = BTreeSet::new();
     for name in names {
         if !seen.insert(name.as_str()) {
-            return Err(TemplateError::Duplicate { kind: "hook", name: name.clone() });
+            return Err(TemplateError::Duplicate {
+                kind: "hook",
+                name: name.clone(),
+            });
         }
         plain_text(name)?;
         if !known_hook(name) {
-            return Err(TemplateError::UnknownCapability { name: format!("hook:{name}") });
+            return Err(TemplateError::UnknownCapability {
+                name: format!("hook:{name}"),
+            });
         }
     }
     Ok(())
 }
 
 pub(super) fn granted_selectors(catalog: &KnownPlugin, denied: &BTreeSet<&str>) -> Vec<String> {
-    let mut items: Vec<String> =
-        catalog.capabilities.iter().filter(|item| !denied.contains(item.as_str())).cloned().collect();
+    let mut items: Vec<String> = catalog
+        .capabilities
+        .iter()
+        .filter(|item| !denied.contains(item.as_str()))
+        .cloned()
+        .collect();
     let program = items.iter().any(|item| item == "program:git.add-ignore");
-    let resource = items.iter().any(|item| item == "resource:git-admin:stage-ignore");
+    let resource = items
+        .iter()
+        .any(|item| item == "resource:git-admin:stage-ignore");
     if program && !resource {
         items.retain(|item| item != "program:git.add-ignore");
     }
@@ -211,15 +294,25 @@ pub(super) fn denied_set<'a>(host: &'a HostCeiling, id: &str) -> BTreeSet<&'a st
     denied
 }
 
-pub(super) fn claim_alias(alias: &str, aliases: &mut BTreeSet<String>) -> Result<(), TemplateError> {
+pub(super) fn claim_alias(
+    alias: &str,
+    aliases: &mut BTreeSet<String>,
+) -> Result<(), TemplateError> {
     check_alias(alias)?;
     if !alias.is_empty() && !aliases.insert(alias.to_string()) {
-        return Err(TemplateError::Duplicate { kind: "alias", name: alias.to_string() });
+        return Err(TemplateError::Duplicate {
+            kind: "alias",
+            name: alias.to_string(),
+        });
     }
     Ok(())
 }
 
-pub(super) fn bounded(items: &[String], kind: &'static str, limit: u64) -> Result<(), TemplateError> {
+pub(super) fn bounded(
+    items: &[String],
+    kind: &'static str,
+    limit: u64,
+) -> Result<(), TemplateError> {
     let len = u64::try_from(items.len()).unwrap_or(u64::MAX);
     if len > limit {
         return Err(TemplateError::Limit { what: kind, limit });
@@ -227,7 +320,10 @@ pub(super) fn bounded(items: &[String], kind: &'static str, limit: u64) -> Resul
     let mut seen = BTreeSet::new();
     for item in items {
         if !seen.insert(item.as_str()) {
-            return Err(TemplateError::Duplicate { kind, name: item.clone() });
+            return Err(TemplateError::Duplicate {
+                kind,
+                name: item.clone(),
+            });
         }
     }
     Ok(())
@@ -235,9 +331,11 @@ pub(super) fn bounded(items: &[String], kind: &'static str, limit: u64) -> Resul
 
 pub(super) fn no_self(id: &str, items: &[String]) -> Result<(), TemplateError> {
     if items.iter().any(|item| item == id) {
-        Err(TemplateError::Cycle { kind: "plugin", name: id.to_string() })
+        Err(TemplateError::Cycle {
+            kind: "plugin",
+            name: id.to_string(),
+        })
     } else {
         Ok(())
     }
 }
-

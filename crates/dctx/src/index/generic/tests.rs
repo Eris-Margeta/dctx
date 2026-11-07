@@ -4,10 +4,22 @@
 use super::{brace, handles, mask, symbols};
 use crate::index::extract::{extract_structural_refs, language_of};
 
-const TAGS: &[&str] = &["scala", "dart", "zig", "solidity", "gleam", "groovy", "perl", "powershell"];
+const TAGS: &[&str] = &[
+    "scala",
+    "dart",
+    "zig",
+    "solidity",
+    "gleam",
+    "groovy",
+    "perl",
+    "powershell",
+];
 
 fn named(tag: &str, text: &str) -> Vec<(String, String)> {
-    symbols(tag, text).into_iter().map(|symbol| (symbol.name, symbol.kind)).collect()
+    symbols(tag, text)
+        .into_iter()
+        .map(|symbol| (symbol.name, symbol.kind))
+        .collect()
 }
 
 fn pair(name: &str, kind: &str) -> (String, String) {
@@ -19,22 +31,80 @@ fn every_brace_language_finds_its_types_and_functions() {
     let scala = "object Main {\n  def run(x: Int): Int = helper(x)\n  def helper(y: Int): Int = {\n    if (y > 0) { y + 1 } else { 0 }\n  }\n}\nclass Box(val v: Int) {\n  def get: Int = v\n}\ntrait Shape\n";
     assert_eq!(
         named("scala", scala),
-        [pair("Main", "type"), pair("Main::run", "fn"), pair("Main::helper", "fn"), pair("Box", "type"), pair("Box::v", "const"), pair("Box::get", "fn"), pair("Shape", "type")]
+        [
+            pair("Main", "type"),
+            pair("Main::run", "fn"),
+            pair("Main::helper", "fn"),
+            pair("Box", "type"),
+            pair("Box::v", "const"),
+            pair("Box::get", "fn"),
+            pair("Shape", "type")
+        ]
     );
     let dart = "class Greeter {\n  String greet(String n) {\n    if (n.isEmpty) { return \"x\"; }\n    return \"hi\";\n  }\n}\nint main() {\n  return 0;\n}\nFuture<void> later() async {}\n";
-    assert_eq!(named("dart", dart), [pair("Greeter", "type"), pair("Greeter::greet", "fn"), pair("main", "fn"), pair("later", "fn")]);
+    assert_eq!(
+        named("dart", dart),
+        [
+            pair("Greeter", "type"),
+            pair("Greeter::greet", "fn"),
+            pair("main", "fn"),
+            pair("later", "fn")
+        ]
+    );
     let zig = "const std = @import(\"std\");\npub fn main() void {\n    helper();\n}\nfn helper() void {\n    while (true) {}\n}\nconst Point = struct { x: i32 };\n";
-    assert_eq!(named("zig", zig), [pair("main", "fn"), pair("helper", "fn"), pair("Point", "type"), pair("Point::x", "field")]);
+    assert_eq!(
+        named("zig", zig),
+        [
+            pair("main", "fn"),
+            pair("helper", "fn"),
+            pair("Point", "type"),
+            pair("Point::x", "field")
+        ]
+    );
     let sol = "contract Token {\n    function transfer(address to, uint v) public returns (bool) {\n        return true;\n    }\n    event Sent(address to);\n}\n";
-    assert_eq!(named("solidity", sol), [pair("Token", "type"), pair("Token::transfer", "fn"), pair("Token::Sent", "fn")]);
-    let gleam = "pub fn main() {\n  helper()\n}\nfn helper() {\n  1\n}\npub type Shape {\n  Circle\n}\n";
-    assert_eq!(named("gleam", gleam), [pair("main", "fn"), pair("helper", "fn"), pair("Shape", "type")]);
+    assert_eq!(
+        named("solidity", sol),
+        [
+            pair("Token", "type"),
+            pair("Token::transfer", "fn"),
+            pair("Token::Sent", "fn")
+        ]
+    );
+    let gleam =
+        "pub fn main() {\n  helper()\n}\nfn helper() {\n  1\n}\npub type Shape {\n  Circle\n}\n";
+    assert_eq!(
+        named("gleam", gleam),
+        [
+            pair("main", "fn"),
+            pair("helper", "fn"),
+            pair("Shape", "type")
+        ]
+    );
     let powershell = "function Get-Config {\n    param([string]$Path)\n    return Read-File -Path $Path\n}\n\nfunction Read-File {\n    param($Path)\n    Get-Content $Path\n}\n\nclass Deployer {\n    [string] Run() {\n        return Get-Config -Path \"x\"\n    }\n}\n";
-    assert_eq!(named("powershell", powershell), [pair("Get-Config", "fn"), pair("Read-File", "fn"), pair("Deployer", "type"), pair("Deployer::Run", "fn")]);
+    assert_eq!(
+        named("powershell", powershell),
+        [
+            pair("Get-Config", "fn"),
+            pair("Read-File", "fn"),
+            pair("Deployer", "type"),
+            pair("Deployer::Run", "fn")
+        ]
+    );
     let groovy = "class Svc {\n  def call(String a) {\n    return a\n  }\n}\ndef x = 1\n";
-    assert_eq!(named("groovy", groovy), [pair("Svc", "type"), pair("Svc::call", "fn")]);
+    assert_eq!(
+        named("groovy", groovy),
+        [pair("Svc", "type"), pair("Svc::call", "fn")]
+    );
     let perl = "package Shop::Cart;\nsub total {\n    my ($self) = @_;\n    return add_tax($self->{sum}) + round_it $self->{sum};\n}\nsub add_tax {\n    my ($x) = @_;\n    return $x * 1.2;\n}\nsub round_it { return int(shift) }\n";
-    assert_eq!(named("perl", perl), [pair("Shop::Cart", "type"), pair("Shop::Cart::total", "fn"), pair("Shop::Cart::add_tax", "fn"), pair("Shop::Cart::round_it", "fn")]);
+    assert_eq!(
+        named("perl", perl),
+        [
+            pair("Shop::Cart", "type"),
+            pair("Shop::Cart::total", "fn"),
+            pair("Shop::Cart::add_tax", "fn"),
+            pair("Shop::Cart::round_it", "fn")
+        ]
+    );
 }
 
 #[test]
@@ -52,26 +122,52 @@ fn symbols_carry_lines_signature_and_the_sig_summary() {
 
 #[test]
 fn a_brace_on_its_own_line_still_opens_the_body() {
-    let found = symbols("solidity", "contract A\n{\n  function f() public\n  {\n  }\n}\n");
-    assert_eq!(found.iter().map(|symbol| symbol.name.as_str()).collect::<Vec<_>>(), ["A", "A::f"]);
+    let found = symbols(
+        "solidity",
+        "contract A\n{\n  function f() public\n  {\n  }\n}\n",
+    );
+    assert_eq!(
+        found
+            .iter()
+            .map(|symbol| symbol.name.as_str())
+            .collect::<Vec<_>>(),
+        ["A", "A::f"]
+    );
     assert_eq!(found[0].lines, [1, 6]);
     assert_eq!(found[1].lines, [3, 5]);
 }
 
 #[test]
 fn denylisted_keywords_are_never_symbols() {
-    for word in ["if", "else", "for", "while", "match", "switch", "return", "case", "catch", "when", "do", "try"] {
+    for word in [
+        "if", "else", "for", "while", "match", "switch", "return", "case", "catch", "when", "do",
+        "try",
+    ] {
         for (tag, text) in [
-            ("scala", format!("class K {{\n  def {word}(x: Int) = x\n}}\n")),
+            (
+                "scala",
+                format!("class K {{\n  def {word}(x: Int) = x\n}}\n"),
+            ),
             ("groovy", format!("def {word}(a) {{\n}}\n")),
             ("gleam", format!("fn {word}() {{\n}}\n")),
             ("zig", format!("fn {word}() void {{\n}}\n")),
-            ("solidity", format!("contract {word} {{\n}}\nfunction {word}() public {{}}\n")),
-            ("dart", format!("class {word} {{\n}}\nint {word}() {{}}\n{word} foo() {{}}\n")),
+            (
+                "solidity",
+                format!("contract {word} {{\n}}\nfunction {word}() public {{}}\n"),
+            ),
+            (
+                "dart",
+                format!("class {word} {{\n}}\nint {word}() {{}}\n{word} foo() {{}}\n"),
+            ),
             ("powershell", format!("function {word} {{\n}}\n")),
         ] {
             let found = named(tag, &text);
-            assert!(found.iter().all(|(name, _)| !name.ends_with(word) || name == "K"), "{tag} {word}: {found:?}");
+            assert!(
+                found
+                    .iter()
+                    .all(|(name, _)| !name.ends_with(word) || name == "K"),
+                "{tag} {word}: {found:?}"
+            );
         }
     }
 }
@@ -82,9 +178,15 @@ fn comments_and_strings_hide_declarations_and_keep_offsets() {
     let masked = mask(text, &brace::syntax_of("scala").expect("scala"));
     assert_eq!(masked.len(), text.len());
     assert_eq!(masked.matches('\n').count(), text.matches('\n').count());
-    assert_eq!(named("scala", text), [pair("s", "const"), pair("shown", "fn")]);
+    assert_eq!(
+        named("scala", text),
+        [pair("s", "const"), pair("shown", "fn")]
+    );
     let multibyte = "// ünïcode \"quote\ndef ok() = 'é'\n";
-    assert_eq!(mask(multibyte, &brace::syntax_of("scala").expect("scala")).len(), multibyte.len());
+    assert_eq!(
+        mask(multibyte, &brace::syntax_of("scala").expect("scala")).len(),
+        multibyte.len()
+    );
     assert_eq!(named("scala", multibyte), [pair("ok", "fn")]);
 }
 
@@ -143,8 +245,15 @@ fn extensions_dispatch_to_the_generic_extractor() {
         assert!(handles(tag));
     }
     assert!(!handles("python") && !handles("opaque"));
-    let (found, refs) = extract_structural_refs("src/Main.scala", b"object Main {\n  def run() = 1\n}\n");
-    assert_eq!(found.iter().map(|symbol| symbol.name.as_str()).collect::<Vec<_>>(), ["Main", "Main::run"]);
+    let (found, refs) =
+        extract_structural_refs("src/Main.scala", b"object Main {\n  def run() = 1\n}\n");
+    assert_eq!(
+        found
+            .iter()
+            .map(|symbol| symbol.name.as_str())
+            .collect::<Vec<_>>(),
+        ["Main", "Main::run"]
+    );
     assert!(refs.is_empty());
     assert!(extract_structural_refs("a.scala", &[0xff]).0.is_empty());
 }

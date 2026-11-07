@@ -13,7 +13,10 @@ use std::path::Path;
 use std::sync::Arc;
 
 use dctx::memory::CancelFlag;
-use dctx::{FsSource, HostGrants, MapRequest, RuleTexts, SelectionPolicy, Session, SnapshotRequest, StoragePolicy, VecSink, Verb};
+use dctx::{
+    FsSource, HostGrants, MapRequest, RuleTexts, SelectionPolicy, Session, SnapshotRequest,
+    StoragePolicy, VecSink, Verb,
+};
 
 /// Bytes that must never appear in any answer.
 const SENTINEL: &str = "PRIVATE_SENTINEL";
@@ -23,8 +26,13 @@ fn open(root: &Path, local_ignore: Option<&str>) -> Session {
         FsSource::open(root).expect("source"),
         Arc::new(CancelFlag::new()),
         HostGrants::PermitAll,
-        StoragePolicy::Ephemeral { max_bytes: 8 * 1024 * 1024 },
-        SelectionPolicy::from_texts(&RuleTexts { local_ignore, ..RuleTexts::default() }),
+        StoragePolicy::Ephemeral {
+            max_bytes: 8 * 1024 * 1024,
+        },
+        SelectionPolicy::from_texts(&RuleTexts {
+            local_ignore,
+            ..RuleTexts::default()
+        }),
     )
 }
 
@@ -53,7 +61,11 @@ fn every_answer(root: &Path, rules: Option<&str>, targets: &[&str]) -> (String, 
             text.push_str(&String::from_utf8_lossy(sink.as_bytes()));
         }
         for format in ["json", "mermaid"] {
-            graph.push_str(&session.export_graph(&handle, format, &MapRequest::new(Verb::Map)).expect("export"));
+            graph.push_str(
+                &session
+                    .export_graph(&handle, format, &MapRequest::new(Verb::Map))
+                    .expect("export"),
+            );
         }
     }
     (text, graph)
@@ -64,7 +76,11 @@ fn git_negations_never_list_or_read_git() {
     for (label, rules, secret) in [
         ("literal", "!.git/\n", ".git/config"),
         ("wildcard", "!.g*/\n", ".git/config"),
-        ("nested", "!nested/.git/\n!nested/.git/**\n", "nested/.git/config"),
+        (
+            "nested",
+            "!nested/.git/\n!nested/.git/**\n",
+            "nested/.git/config",
+        ),
     ] {
         let dir = tempfile::tempdir().expect("temp");
         let root = dir.path();
@@ -72,11 +88,19 @@ fn git_negations_never_list_or_read_git() {
         fs::write(root.join("keep.rs"), b"fn keep_marker() {}\n").expect("keep");
         fs::write(root.join(secret), SENTINEL).expect("secret");
         let mut first = open(root, Some(rules));
-        first.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
+        first
+            .snapshot(&SnapshotRequest::immutable())
+            .expect("snapshot");
         assert_eq!(first.content_reads(), 1, "{label}: only keep.rs is read");
         let (text, graph) = every_answer(root, Some(rules), &[secret, ".git"]);
-        assert!(!text.contains(SENTINEL) && !graph.contains(SENTINEL), "{label} leaked .git bytes");
-        assert!(!graph.contains(".git"), "{label} listed a .git path: {graph}");
+        assert!(
+            !text.contains(SENTINEL) && !graph.contains(SENTINEL),
+            "{label} leaked .git bytes"
+        );
+        assert!(
+            !graph.contains(".git"),
+            "{label} listed a .git path: {graph}"
+        );
         assert!(graph.contains("keep.rs"), "{label}: {graph}");
     }
 }
@@ -89,14 +113,25 @@ fn symlinks_out_of_the_root_never_leak() {
     let dir = tempfile::tempdir().expect("temp");
     let root = dir.path();
     fs::write(root.join("keep.rs"), b"fn keep_marker() {}\n").expect("keep");
-    std::os::unix::fs::symlink(outside.path().join("secret.txt"), root.join("link.txt")).expect("file link");
+    std::os::unix::fs::symlink(outside.path().join("secret.txt"), root.join("link.txt"))
+        .expect("file link");
     std::os::unix::fs::symlink(outside.path(), root.join("linkdir")).expect("dir link");
     let (text, graph) = every_answer(root, None, &["link.txt", "linkdir", "linkdir/secret.txt"]);
-    assert!(!text.contains(SENTINEL) && !graph.contains(SENTINEL), "a symlink leaked outside bytes");
-    assert!(!graph.contains("secret.txt"), "a symlinked directory was walked: {graph}");
+    assert!(
+        !text.contains(SENTINEL) && !graph.contains(SENTINEL),
+        "a symlink leaked outside bytes"
+    );
+    assert!(
+        !graph.contains("secret.txt"),
+        "a symlinked directory was walked: {graph}"
+    );
     let mut session = open(root, None);
-    let handle = session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
+    let handle = session
+        .snapshot(&SnapshotRequest::immutable())
+        .expect("snapshot");
     let mut sink = VecSink::new();
-    session.read(&handle, "m:keep.rs", &mut sink).expect("read keep");
+    session
+        .read(&handle, "m:keep.rs", &mut sink)
+        .expect("read keep");
     assert!(String::from_utf8_lossy(sink.as_bytes()).contains("keep_marker"));
 }

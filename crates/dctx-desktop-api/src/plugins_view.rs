@@ -3,7 +3,10 @@
 //! Projects public distribution records and the facade's bundled catalog into display data.
 //! Depends on serde and distribution types; used by `plugins_ops` and later Tauri commands.
 
-use dctx_plugin_distribution::{CapabilitySet, DistributionError, Document, Enablement, Origin, PluginId, PluginStatus, Registry};
+use dctx_plugin_distribution::{
+    CapabilitySet, DistributionError, Document, Enablement, Origin, PluginId, PluginStatus,
+    Registry,
+};
 use serde::{Deserialize, Serialize};
 
 /// Where the selected plugin comes from.
@@ -67,7 +70,9 @@ impl PluginRow {
         let id = PluginId::parse(&self.id)?;
         let bundled;
         let selected = if let Some(record) = registry.get(&id) {
-            record.active_version().or_else(|| record.versions.iter().max_by_key(|v| v.release_sequence))
+            record
+                .active_version()
+                .or_else(|| record.versions.iter().max_by_key(|v| v.release_sequence))
         } else if self.id == dctx::bundled_git_plugin().id {
             bundled = crate::bundled_plugin_version()?;
             Some(&bundled)
@@ -82,12 +87,20 @@ impl PluginRow {
                 "required": [], "optional": [], "outputs": [], "network": []
             });
             let malformed = DistributionError::Malformed {
-                document: Document::Registry, reason: "capability-display",
+                document: Document::Registry,
+                reason: "capability-display",
             };
-            for (section, entry) in version.capabilities.expansion_over(&CapabilitySet::default()) {
-                let entry: serde_json::Value = serde_json::from_str(&entry).map_err(|_| malformed)?;
-                capabilities.get_mut(&section).and_then(|value| value.as_array_mut())
-                    .ok_or(malformed)?.push(entry);
+            for (section, entry) in version
+                .capabilities
+                .expansion_over(&CapabilitySet::default())
+            {
+                let entry: serde_json::Value =
+                    serde_json::from_str(&entry).map_err(|_| malformed)?;
+                capabilities
+                    .get_mut(&section)
+                    .and_then(|value| value.as_array_mut())
+                    .ok_or(malformed)?
+                    .push(entry);
             }
             self.consent = Some(serde_json::json!({
                 "id": self.id, "version": version.version.as_str(),
@@ -100,7 +113,11 @@ impl PluginRow {
     }
 }
 
-pub(crate) fn row(status: &PluginStatus, capabilities: Vec<String>, failure: Option<String>) -> PluginRow {
+pub(crate) fn row(
+    status: &PluginStatus,
+    capabilities: Vec<String>,
+    failure: Option<String>,
+) -> PluginRow {
     let enabled = status.enablement == Enablement::Enabled;
     let state = if failure.is_some() {
         PluginState::Failed
@@ -114,7 +131,10 @@ pub(crate) fn row(status: &PluginStatus, capabilities: Vec<String>, failure: Opt
     PluginRow {
         id: status.id.as_str().to_owned(),
         name: status.id.as_str().to_owned(),
-        version: status.version.as_ref().map(|version| version.as_str().to_owned()),
+        version: status
+            .version
+            .as_ref()
+            .map(|version| version.as_str().to_owned()),
         source: if status.origin == Origin::Bundled {
             PluginSource::Bundled
         } else {
@@ -129,7 +149,9 @@ pub(crate) fn row(status: &PluginStatus, capabilities: Vec<String>, failure: Opt
     }
 }
 
-pub(crate) fn capability_lines(capabilities: &CapabilitySet) -> Result<Vec<String>, DistributionError> {
+pub(crate) fn capability_lines(
+    capabilities: &CapabilitySet,
+) -> Result<Vec<String>, DistributionError> {
     capabilities
         .expansion_over(&CapabilitySet::default())
         .into_iter()
@@ -155,7 +177,9 @@ pub(crate) fn capability_lines(capabilities: &CapabilitySet) -> Result<Vec<Strin
                 .iter()
                 .filter(|(key, _)| key.as_str() != "kind")
                 .map(|(key, value)| {
-                    let value = value.as_str().map_or_else(|| value.to_string(), str::to_owned);
+                    let value = value
+                        .as_str()
+                        .map_or_else(|| value.to_string(), str::to_owned);
                     format!("{}: {value}", key.replace('_', " "))
                 })
                 .collect::<Vec<_>>()
@@ -175,6 +199,9 @@ mod tests {
             serde_json::to_string(&PluginState::NeedsConsent).unwrap(),
             "\"needs-consent\""
         );
-        assert_eq!(serde_json::to_string(&PluginSource::Bundled).unwrap(), "\"bundled\"");
+        assert_eq!(
+            serde_json::to_string(&PluginSource::Bundled).unwrap(),
+            "\"bundled\""
+        );
     }
 }

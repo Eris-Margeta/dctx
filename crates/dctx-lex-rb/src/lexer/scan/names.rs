@@ -2,7 +2,7 @@
 //! Identifiers, globals, numbers and operators.
 //! Keyword text decides whether an identifier opens an expression; the longest
 //! matching operator wins over its one-byte prefixes.
-use super::{is_name_start_byte, LONG_OPS};
+use super::{LONG_OPS, is_name_start_byte};
 use crate::domain::{DiagnosticReason, LexError};
 use crate::lexer::{Kind, Lx};
 
@@ -82,7 +82,11 @@ impl Lx<'_> {
 
     pub(super) fn number(&mut self) {
         let start = self.i;
-        if self.b[self.i] == b'0' && matches!(self.byte_at(self.i + 1), Some(b'x' | b'X' | b'b' | b'B' | b'o' | b'O' | b'd' | b'D'))
+        if self.b[self.i] == b'0'
+            && matches!(
+                self.byte_at(self.i + 1),
+                Some(b'x' | b'X' | b'b' | b'B' | b'o' | b'O' | b'd' | b'D')
+            )
         {
             self.i += 2;
         }

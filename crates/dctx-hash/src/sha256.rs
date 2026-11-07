@@ -29,7 +29,13 @@ impl Sha256 {
     pub const fn new() -> Self {
         Self {
             state: [
-                0x6a09_e667, 0xbb67_ae85, 0x3c6e_f372, 0xa54f_f53a, 0x510e_527f, 0x9b05_688c, 0x1f83_d9ab,
+                0x6a09_e667,
+                0xbb67_ae85,
+                0x3c6e_f372,
+                0xa54f_f53a,
+                0x510e_527f,
+                0x9b05_688c,
+                0x1f83_d9ab,
                 0x5be0_cd19,
             ],
             buf: [0; 64],
@@ -120,8 +126,8 @@ fn bit_length(bytes: u64) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::algorithm::{IdentityAlgorithm, IDENTITY_VERSION};
     use crate::HashError;
+    use crate::algorithm::{IDENTITY_VERSION, IdentityAlgorithm};
 
     fn hex(digest: &ContentDigest) -> String {
         use std::fmt::Write;
@@ -145,9 +151,18 @@ mod tests {
     /// FIPS 180-4 short messages: empty, one byte, and "abc" (one padded block).
     #[test]
     fn nist_short_message_vectors() {
-        assert_vector(b"", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
-        assert_vector(b"a", "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb");
-        assert_vector(b"abc", "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+        assert_vector(
+            b"",
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        );
+        assert_vector(
+            b"a",
+            "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+        );
+        assert_vector(
+            b"abc",
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+        );
     }
 
     /// FIPS 180-4 multi-block messages: the 448-bit example and the 896-bit example.
@@ -203,13 +218,22 @@ mod tests {
         assert_eq!(checked_message_len(0, 0).unwrap(), 0);
         assert_eq!(checked_message_len(max_bytes, 0).unwrap(), max_bytes);
         assert_eq!(checked_message_len(max_bytes - 1, 1).unwrap(), max_bytes);
-        assert_eq!(checked_message_len(max_bytes, 1), Err(HashError::MessageTooLong));
-        assert_eq!(checked_message_len(u64::MAX, 1), Err(HashError::MessageTooLong));
+        assert_eq!(
+            checked_message_len(max_bytes, 1),
+            Err(HashError::MessageTooLong)
+        );
+        assert_eq!(
+            checked_message_len(u64::MAX, 1),
+            Err(HashError::MessageTooLong)
+        );
         assert!(Sha256::digest(b"abc").is_ok());
         let mut hasher = Sha256::new();
         hasher.update(b"abc").unwrap();
         let before = hasher;
-        assert_eq!(checked_message_len(u64::MAX, 1), Err(HashError::MessageTooLong));
+        assert_eq!(
+            checked_message_len(u64::MAX, 1),
+            Err(HashError::MessageTooLong)
+        );
         assert_eq!(hasher.finalize(), before.finalize());
     }
 

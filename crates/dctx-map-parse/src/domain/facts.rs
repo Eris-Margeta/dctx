@@ -244,20 +244,36 @@ impl Language {
     /// over the extension.
     /// Otherwise the text after the last `.` is folded and looked up in
     /// the supported extension table. A segment with no `.` is [`Language::Unknown`].
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn for_path(path: &str) -> Self {
         let base = path.rsplit(['/', '\\']).next().unwrap_or(path);
-        if RUBY_BASENAMES.iter().any(|name| base.eq_ignore_ascii_case(name)) {
+        if RUBY_BASENAMES
+            .iter()
+            .any(|name| base.eq_ignore_ascii_case(name))
+        {
             return Self::Ruby;
         }
-        if let Some((_, language)) = INFRA_BASENAMES.iter().find(|(name, _)| base.eq_ignore_ascii_case(name)) {
+        if let Some((_, language)) = INFRA_BASENAMES
+            .iter()
+            .find(|(name, _)| base.eq_ignore_ascii_case(name))
+        {
             return *language;
         }
         // `pgtap.sql.in`: a SQL template that a build step turns into `.sql`. Duplicated in `dctx` `index/extract.rs`.
-        if base.len() > ".sql.in".len() && base.get(base.len() - ".sql.in".len()..).is_some_and(|tail| tail.eq_ignore_ascii_case(".sql.in")) {
+        if base.len() > ".sql.in".len()
+            && base
+                .get(base.len() - ".sql.in".len()..)
+                .is_some_and(|tail| tail.eq_ignore_ascii_case(".sql.in"))
+        {
             return Self::Sql;
         }
-        let Some(extension) = base.rsplit_once('.').map(|(_, extension)| extension.to_ascii_lowercase()) else {
+        let Some(extension) = base
+            .rsplit_once('.')
+            .map(|(_, extension)| extension.to_ascii_lowercase())
+        else {
             return Self::Unknown;
         };
         EXTENSIONS
@@ -316,8 +332,8 @@ pub enum ParseError {
     /// Source or fact counts exceed the parser coordinate space.
     #[error("file exceeds parser coordinate limits")]
     TooLarge,
-    /// Optional grammar is incompatible with its runtime.
-    #[error("incompatible grammar: {0}")]
+    /// Parser setup failed: an incompatible grammar or unavailable worker runtime.
+    #[error("parser unavailable: {0}")]
     Grammar(String),
     /// Optional parser did not produce a tree.
     #[error("tree-sitter did not produce a syntax tree")]
@@ -388,17 +404,16 @@ mod tests {
         // `crates/dctx/tests/map_languages.rs`. `tsx` maps to `Tsx` here and to
         // the facade tag `typescript`.
         const LITERAL_EXTENSIONS: &[&str] = &[
-            "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java",
-            "c", "h", "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts",
-            "rb", "rake", "gemspec", "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam",
-            "f90", "f95", "f03", "f08", "f", "for",
-            "pl", "pm", "t", "psgi",
-            "erl", "hrl",
-            "groovy",
-            "gradle",
-            "ps1", "psm1", "psd1", "v", "vh", "sv", "svh",
-            "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs", "tf", "tfvars", "hcl", "sql", "sh", "bash", "zsh", "bats", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql", "vue", "svelte", "astro", "html", "htm",
-            "clj", "cljs", "cljc", "edn", "lisp", "lsp", "cl", "scm", "ss", "el", "nix",
+            "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py",
+            "pyi", "go", "java", "c", "h", "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc",
+            "toml", "yaml", "yml", "cs", "kt", "kts", "rb", "rake", "gemspec", "php", "phtml",
+            "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "f90", "f95", "f03",
+            "f08", "f", "for", "pl", "pm", "t", "psgi", "erl", "hrl", "groovy", "gradle", "ps1",
+            "psm1", "psd1", "v", "vh", "sv", "svh", "txt", "rst", "adoc", "asciidoc", "org", "tex",
+            "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs", "tf", "tfvars", "hcl", "sql", "sh",
+            "bash", "zsh", "bats", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql", "vue",
+            "svelte", "astro", "html", "htm", "clj", "cljs", "cljc", "edn", "lisp", "lsp", "cl",
+            "scm", "ss", "el", "nix",
         ];
         const LITERAL_RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
         let extensions: Vec<&str> = EXTENSIONS.iter().map(|(extension, _)| *extension).collect();
@@ -407,7 +422,10 @@ mod tests {
         assert_eq!(Language::for_path("sql/pgtap.sql.in"), Language::Sql);
         assert_eq!(Language::for_path("Makefile.in"), Language::Unknown);
         for (extension, language) in EXTENSIONS {
-            assert_eq!(Language::for_path(&format!("src/app.{extension}")), *language);
+            assert_eq!(
+                Language::for_path(&format!("src/app.{extension}")),
+                *language
+            );
             assert_eq!(
                 Language::for_path(&format!("dir.dot/app.{}", extension.to_ascii_uppercase())),
                 *language
@@ -415,8 +433,14 @@ mod tests {
         }
         for basename in RUBY_BASENAMES {
             assert_eq!(Language::for_path(basename), Language::Ruby);
-            assert_eq!(Language::for_path(&format!("lib/{}", basename.to_ascii_lowercase())), Language::Ruby);
-            assert_eq!(Language::for_path(&format!("lib\\{basename}")), Language::Ruby);
+            assert_eq!(
+                Language::for_path(&format!("lib/{}", basename.to_ascii_lowercase())),
+                Language::Ruby
+            );
+            assert_eq!(
+                Language::for_path(&format!("lib\\{basename}")),
+                Language::Ruby
+            );
         }
         // A dot-free segment is not an extension. This matches `language_of`.
         assert_eq!(Language::for_path("php"), Language::Unknown);

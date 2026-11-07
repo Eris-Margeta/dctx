@@ -7,7 +7,7 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fmt::Write as _;
 
-use super::{write_node_id, Generation};
+use super::{Generation, write_node_id};
 
 /// One symbol with its incoming calls and imports.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -62,12 +62,22 @@ pub(crate) struct PageHead<'a> {
 pub(crate) fn collect_hubs(generation: &Generation) -> (Vec<Hub>, Vec<DirCount>) {
     let text = &generation.text;
     let nodes = &generation.nodes;
-    let node_path = |index: u32| nodes.get(usize::try_from(index).unwrap_or(usize::MAX)).map_or("", |node| text.get(node.path));
+    let node_path = |index: u32| {
+        nodes
+            .get(usize::try_from(index).unwrap_or(usize::MAX))
+            .map_or("", |node| text.get(node.path))
+    };
     let mut called: HashSet<(u32, &str)> = HashSet::new();
     let mut counts: HashMap<u32, u32> = HashMap::new();
     for pass in ["calls", "imports"] {
-        for edge in generation.edges.iter().filter(|edge| text.get(edge.edge) == pass) {
-            let is_symbol = nodes.get(usize::try_from(edge.dst).unwrap_or(usize::MAX)).is_some_and(|node| node.letter == b's');
+        for edge in generation
+            .edges
+            .iter()
+            .filter(|edge| text.get(edge.edge) == pass)
+        {
+            let is_symbol = nodes
+                .get(usize::try_from(edge.dst).unwrap_or(usize::MAX))
+                .is_some_and(|node| node.letter == b's');
             if edge.src == edge.dst || !is_symbol {
                 continue;
             }
@@ -85,10 +95,20 @@ pub(crate) fn collect_hubs(generation: &Generation) -> (Vec<Hub>, Vec<DirCount>)
             let node = nodes.get(usize::try_from(index).ok()?)?;
             let mut id = String::new();
             write_node_id(&mut id, text, node);
-            Some(Hub { id, kind: node.kind.clone(), path: text.get(node.path).to_string(), in_degree })
+            Some(Hub {
+                id,
+                kind: node.kind.clone(),
+                path: text.get(node.path).to_string(),
+                in_degree,
+            })
         })
         .collect();
-    hubs.sort_by(|left, right| right.in_degree.cmp(&left.in_degree).then_with(|| left.id.cmp(&right.id)));
+    hubs.sort_by(|left, right| {
+        right
+            .in_degree
+            .cmp(&left.in_degree)
+            .then_with(|| left.id.cmp(&right.id))
+    });
     let mut dirs: BTreeMap<String, (u32, u32)> = BTreeMap::new();
     for node in nodes {
         let slot = match node.letter {
@@ -97,7 +117,9 @@ pub(crate) fn collect_hubs(generation: &Generation) -> (Vec<Hub>, Vec<DirCount>)
             _ => continue,
         };
         let path = text.get(node.path);
-        let dir = path.split_once('/').map_or_else(|| "./".to_string(), |(top, _)| format!("{top}/"));
+        let dir = path
+            .split_once('/')
+            .map_or_else(|| "./".to_string(), |(top, _)| format!("{top}/"));
         let entry = dirs.entry(dir).or_insert((0, 0));
         if slot == 0 {
             entry.0 += 1;
@@ -105,13 +127,24 @@ pub(crate) fn collect_hubs(generation: &Generation) -> (Vec<Hub>, Vec<DirCount>)
             entry.1 += 1;
         }
     }
-    let dirs = dirs.into_iter().map(|(dir, (files, symbols))| DirCount { dir, files, symbols }).collect();
+    let dirs = dirs
+        .into_iter()
+        .map(|(dir, (files, symbols))| DirCount {
+            dir,
+            files,
+            symbols,
+        })
+        .collect();
     (hubs, dirs)
 }
 
 /// Encodes one page. `json` selects the JSON v2 style object, otherwise the text page.
 pub(crate) fn encode(head: &PageHead<'_>, hubs: &[Hub], dirs: &[DirCount], json: bool) -> String {
-    if json { encode_json(head, hubs, dirs) } else { encode_text(head, hubs, dirs) }
+    if json {
+        encode_json(head, hubs, dirs)
+    } else {
+        encode_text(head, hubs, dirs)
+    }
 }
 
 /// Text page: `# <place> hubs`, one tab line per hub, then one line per directory.
@@ -122,10 +155,18 @@ fn encode_text(head: &PageHead<'_>, hubs: &[Hub], dirs: &[DirCount]) -> String {
     }
     out.push('\n');
     for hub in hubs {
-        let _ = writeln!(out, "{}\t{}\t{}\t{}", hub.id, hub.kind, hub.path, hub.in_degree);
+        let _ = writeln!(
+            out,
+            "{}\t{}\t{}\t{}",
+            hub.id, hub.kind, hub.path, hub.in_degree
+        );
     }
     for dir in dirs {
-        let _ = writeln!(out, "{}\t{} files\t{} symbols", dir.dir, dir.files, dir.symbols);
+        let _ = writeln!(
+            out,
+            "{}\t{} files\t{} symbols",
+            dir.dir, dir.files, dir.symbols
+        );
     }
     out
 }
@@ -172,7 +213,11 @@ fn encode_json(head: &PageHead<'_>, hubs: &[Hub], dirs: &[DirCount]) -> String {
         }
         out.push_str("{\"dir\":");
         quote(&mut out, &dir.dir);
-        let _ = write!(out, ",\"files\":{},\"symbols\":{}}}", dir.files, dir.symbols);
+        let _ = write!(
+            out,
+            ",\"files\":{},\"symbols\":{}}}",
+            dir.files, dir.symbols
+        );
     }
     out.push_str("]}\n");
     out
@@ -228,10 +273,23 @@ mod tests {
             node(&mut text, b's', "fn", "one", "app/a.py"),
             node(&mut text, b's', "fn", "two", "app/a.py"),
         ];
-        let (calls, imports, exact) = (text.push("calls"), text.push("imports"), text.push("exact"));
-        let edge = |src, dst, edge| IndexedEdge { src, dst, edge, confidence: exact };
+        let (calls, imports, exact) =
+            (text.push("calls"), text.push("imports"), text.push("exact"));
+        let edge = |src, dst, edge| IndexedEdge {
+            src,
+            dst,
+            edge,
+            confidence: exact,
+        };
         // one and two call helper and one calls rare; app/a.py imports both, and its calls already cover those imports. Self-calls never count.
-        let edges = vec![edge(4, 1, calls), edge(5, 1, calls), edge(4, 2, calls), edge(3, 1, imports), edge(3, 2, imports), edge(1, 1, calls)];
+        let edges = vec![
+            edge(4, 1, calls),
+            edge(5, 1, calls),
+            edge(4, 2, calls),
+            edge(3, 1, imports),
+            edge(3, 2, imports),
+            edge(1, 1, calls),
+        ];
         Generation {
             id: 1,
             digest: "v1:sha256:ab:1".to_string(),
@@ -253,9 +311,18 @@ mod tests {
     #[test]
     fn counts_calls_once_even_when_the_importing_file_calls_and_orders_by_degree() {
         let (hubs, dirs) = collect_hubs(&fixture());
-        let seen: Vec<(&str, u32)> = hubs.iter().map(|hub| (hub.id.as_str(), hub.in_degree)).collect();
-        assert_eq!(seen, [("s:lib/util.py#helper", 2), ("s:lib/util.py#rare", 1)]);
-        let counts: Vec<(&str, u32, u32)> = dirs.iter().map(|dir| (dir.dir.as_str(), dir.files, dir.symbols)).collect();
+        let seen: Vec<(&str, u32)> = hubs
+            .iter()
+            .map(|hub| (hub.id.as_str(), hub.in_degree))
+            .collect();
+        assert_eq!(
+            seen,
+            [("s:lib/util.py#helper", 2), ("s:lib/util.py#rare", 1)]
+        );
+        let counts: Vec<(&str, u32, u32)> = dirs
+            .iter()
+            .map(|dir| (dir.dir.as_str(), dir.files, dir.symbols))
+            .collect();
         assert_eq!(counts, [("app/", 1, 2), ("lib/", 1, 2)]);
     }
 
@@ -276,12 +343,21 @@ mod tests {
             meta: false,
         };
         let text = encode(&head, &hubs, &dirs, false);
-        assert!(text.starts_with("# fixture hubs\ns:lib/util.py#helper\tfn\tlib/util.py\t2\n"), "{text}");
+        assert!(
+            text.starts_with("# fixture hubs\ns:lib/util.py#helper\tfn\tlib/util.py\t2\n"),
+            "{text}"
+        );
         assert!(text.ends_with("lib/\t1 files\t2 symbols\n"), "{text}");
         let json = encode(&head, &hubs, &dirs, true);
-        assert!(json.contains("\"in_degree\":2") && json.contains("\"dirs\":[{\"dir\":\"app/\",\"files\":1,\"symbols\":2}"), "{json}");
+        assert!(
+            json.contains("\"in_degree\":2")
+                && json.contains("\"dirs\":[{\"dir\":\"app/\",\"files\":1,\"symbols\":2}"),
+            "{json}"
+        );
         assert!(!json.contains("\"snapshot\""), "{json}");
         let meta = PageHead { meta: true, ..head };
-        assert!(encode(&meta, &hubs, &dirs, false).starts_with("# fixture hubs v1:sha256:ab:1 g=1\n"));
+        assert!(
+            encode(&meta, &hubs, &dirs, false).starts_with("# fixture hubs v1:sha256:ab:1 g=1\n")
+        );
     }
 }

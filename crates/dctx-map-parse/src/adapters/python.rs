@@ -23,12 +23,24 @@ pub(super) fn parse_pure(path: &str, bytes: &[u8]) -> Result<ParsedFile, ParseEr
             line,
         });
     }
-    let parser = format!("{}:{}", dctx_lex_py::PARSER_ID, dctx_lex_py::PARSER_REVISION);
+    let parser = format!(
+        "{}:{}",
+        dctx_lex_py::PARSER_ID,
+        dctx_lex_py::PARSER_REVISION
+    );
     Ok(ParsedFile {
         path: lexed.path,
         language: Language::for_path(path),
-        nodes: lexed.nodes.into_iter().map(|labeled| labeled.fact).collect(),
-        edges: lexed.edges.into_iter().map(|labeled| labeled.fact).collect(),
+        nodes: lexed
+            .nodes
+            .into_iter()
+            .map(|labeled| labeled.fact)
+            .collect(),
+        edges: lexed
+            .edges
+            .into_iter()
+            .map(|labeled| labeled.fact)
+            .collect(),
         references: lexed
             .references
             .into_iter()

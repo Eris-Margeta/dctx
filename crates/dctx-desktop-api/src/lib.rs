@@ -28,14 +28,14 @@ pub use plugins::{
 };
 pub use recent::{RecentProject, RecentStore, MAX_RECENT_PROJECTS};
 pub use settings::{
-    ensure_config_dirs, load_desktop_config, reset_desktop_config, save_desktop_config, DesktopConfig,
-    DESKTOP_APP_NAME, DESKTOP_CONFIG_FILENAME,
+    ensure_config_dirs, load_desktop_config, reset_desktop_config, save_desktop_config,
+    DesktopConfig, DESKTOP_APP_NAME, DESKTOP_CONFIG_FILENAME,
 };
 pub use snapshot::{generate_snapshot, SnapshotResponse};
-/// Records list, metadata and content reads that reach the confined snapshot source.
-pub use snapshot_source::SourceSpy;
 /// Largest rule file the desktop will read from one opened handle, in bytes.
 pub use snapshot_rules::MAX_RULE_FILE_BYTES;
+/// Records list, metadata and content reads that reach the confined snapshot source.
+pub use snapshot_source::SourceSpy;
 
 #[cfg(test)]
 mod isolation {

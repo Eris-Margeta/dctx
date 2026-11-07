@@ -38,7 +38,10 @@ fn excluded(path: &Path) -> bool {
     false
 }
 
-#[allow(clippy::unnecessary_debug_formatting, reason = "Debug formatting quotes and escapes arbitrary corpus paths so diagnostic records remain unambiguous, including paths with control characters.")]
+#[allow(
+    clippy::unnecessary_debug_formatting,
+    reason = "Debug formatting quotes and escapes arbitrary corpus paths so diagnostic records remain unambiguous, including paths with control characters."
+)]
 pub fn collect_files(mut roots: Vec<PathBuf>) -> Vec<CorpusFile> {
     roots.sort();
     roots.dedup();
@@ -140,7 +143,10 @@ fn select_files(
     files
 }
 
-#[allow(clippy::unnecessary_debug_formatting, reason = "Debug formatting quotes and escapes arbitrary corpus paths so diagnostic records remain unambiguous, including paths with control characters.")]
+#[allow(
+    clippy::unnecessary_debug_formatting,
+    reason = "Debug formatting quotes and escapes arbitrary corpus paths so diagnostic records remain unambiguous, including paths with control characters."
+)]
 pub fn read_source(path: &Path) -> Option<Vec<u8>> {
     let read = || -> std::io::Result<Option<Vec<u8>>> {
         let metadata = fs::symlink_metadata(path)?;
@@ -169,7 +175,10 @@ pub fn read_source(path: &Path) -> Option<Vec<u8>> {
 
 /// Copied from tests/lexers.rs: store validation plus spans inside the file.
 /// Place/Package duplication models the query indexer's inserted nodes.
-#[allow(clippy::naive_bytecount, reason = "Standard iterator newline counts keep fixture and bounded 8 MiB corpus checks dependency-free; this is test validation rather than a parser hot path.")]
+#[allow(
+    clippy::naive_bytecount,
+    reason = "Standard iterator newline counts keep fixture and bounded 8 MiB corpus checks dependency-free; this is test validation rather than a parser hot path."
+)]
 pub fn assert_store_accepts(facts: &ParsedFile, source: &[u8]) {
     let file_end = u32::try_from(source.iter().filter(|byte| **byte == b'\n').count()).unwrap() + 1;
     let mut nodes = facts.nodes.clone();

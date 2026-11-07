@@ -26,7 +26,15 @@ impl Walker<'_> {
                 let name = dotted(self, j, paren);
                 let end = group_end(self, paren, hi);
                 if !name.is_empty() {
-                    self.emit_ref(scope, EdgeKind::Calls, name, None, j, end, Precision::Structural);
+                    self.emit_ref(
+                        scope,
+                        EdgeKind::Calls,
+                        name,
+                        None,
+                        j,
+                        end,
+                        Precision::Structural,
+                    );
                 }
                 j = paren;
                 continue;
@@ -69,7 +77,10 @@ impl Walker<'_> {
             kind: NodeKind::Symbol,
             symbol_kind: Some(symbol),
             path: self.path.clone(),
-            lines: [self.line_of(start), self.line_of(end.saturating_sub(1).max(start))],
+            lines: [
+                self.line_of(start),
+                self.line_of(end.saturating_sub(1).max(start)),
+            ],
             name: qualified.to_owned(),
             signature,
             fingerprint: body_fingerprint(""),
@@ -115,7 +126,10 @@ impl Walker<'_> {
             kind: NodeKind::Symbol,
             symbol_kind: Some(SymbolKind::Const),
             path: self.path.clone(),
-            lines: [self.line_of(start), self.line_of(end.saturating_sub(1).max(start))],
+            lines: [
+                self.line_of(start),
+                self.line_of(end.saturating_sub(1).max(start)),
+            ],
             name: qualified,
             signature: signature.clone(),
             fingerprint: body_fingerprint(self.slice(start, end)),
@@ -157,7 +171,10 @@ impl Walker<'_> {
             name,
             scope: scope.name.clone(),
             alias,
-            lines: [self.line_of(start), self.line_of(end.saturating_sub(1).max(start))],
+            lines: [
+                self.line_of(start),
+                self.line_of(end.saturating_sub(1).max(start)),
+            ],
             start,
             end,
             precision,
@@ -217,8 +234,7 @@ fn assignment_targets(walker: &Walker<'_>, lo: usize, hi: usize) -> Vec<(usize, 
     let mut eqs = Vec::new();
     let mut index = lo;
     while index < hi {
-        if depth <= 0 && walker.op_at(index) == Some(":") && colon.is_none() && eqs.is_empty()
-        {
+        if depth <= 0 && walker.op_at(index) == Some(":") && colon.is_none() && eqs.is_empty() {
             colon = Some(index);
         }
         if depth <= 0 && walker.op_at(index) == Some("=") {
@@ -268,8 +284,7 @@ fn chain_paren(walker: &Walker<'_>, start: usize, lo: usize, hi: usize) -> Optio
         return None;
     }
     let mut index = start + 1;
-    while index + 1 < hi && walker.op_at(index) == Some(".") && is_call_name(walker, index + 1)
-    {
+    while index + 1 < hi && walker.op_at(index) == Some(".") && is_call_name(walker, index + 1) {
         index += 2;
     }
     if index < hi && walker.op_at(index) == Some("(") {
@@ -345,9 +360,7 @@ fn is_constant(name: &str) -> bool {
 }
 
 fn name_ok(name: &str) -> bool {
-    !name.is_empty()
-        && !name.contains(['~', '#'])
-        && !name.chars().any(char::is_control)
+    !name.is_empty() && !name.contains(['~', '#']) && !name.chars().any(char::is_control)
 }
 
 pub(super) fn is_keyword(text: &str) -> bool {

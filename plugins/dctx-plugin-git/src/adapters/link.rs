@@ -7,7 +7,9 @@
 use std::collections::BTreeSet;
 use std::io::{Read, Write};
 
-use dctx_plugin_protocol::records::envelope::{Outcome, PendingResult, SessionBody, SessionMessage};
+use dctx_plugin_protocol::records::envelope::{
+    Outcome, PendingResult, SessionBody, SessionMessage,
+};
 use dctx_plugin_protocol::records::events::{Event, Progress, ProgressUnit};
 use dctx_plugin_protocol::records::results::ResultBody;
 use dctx_plugin_protocol::records::scalars::{Name, RequestId, Sender, Token};
@@ -66,9 +68,13 @@ impl<R: Read, W: Write> Link<R, W> {
     /// Returns stream/decode failures or a protocol refusal for bootstrap traffic after negotiation.
     pub fn recv(&mut self) -> Result<Option<SessionMessage>, WorkerError> {
         loop {
-            let Some(frame) = self.reader.next_frame().map_err(stream)? else { return Ok(None) };
+            let Some(frame) = self.reader.next_frame().map_err(stream)? else {
+                return Ok(None);
+            };
             match WireMessage::decode(&frame, DecodeLimits::WIRE).map_err(WorkerError::Protocol)? {
-                WireMessage::Bootstrap(_) => return Err(WorkerError::Protocol(violation("bootstrap-after-hello"))),
+                WireMessage::Bootstrap(_) => {
+                    return Err(WorkerError::Protocol(violation("bootstrap-after-hello")));
+                }
                 WireMessage::Session(message) => {
                     let abandoned = match &message.body {
                         SessionBody::Response { id, .. } => self.abandoned.remove(id),
@@ -86,8 +92,13 @@ impl<R: Read, W: Write> Link<R, W> {
     /// # Errors
     /// Refuses an unstarted session or a host message that violates session state/bindings.
     pub fn observe_host(&mut self, message: &SessionMessage) -> Result<Accepted, WorkerError> {
-        let session = self.session.as_mut().ok_or(WorkerError::Protocol(violation("session-not-started")))?;
-        session.observe(Sender::Host, message).map_err(WorkerError::Protocol)
+        let session = self
+            .session
+            .as_mut()
+            .ok_or(WorkerError::Protocol(violation("session-not-started")))?;
+        session
+            .observe(Sender::Host, message)
+            .map_err(WorkerError::Protocol)
     }
 
     /// Sends a body after the tracker accepts it as a plugin message.
@@ -97,24 +108,41 @@ impl<R: Read, W: Write> Link<R, W> {
         let (Some(session), Some(id)) = (self.session.as_mut(), self.session_id.clone()) else {
             return Err(WorkerError::Protocol(violation("session-not-started")));
         };
-        let message = SessionMessage { session: id, extensions: None, body };
-        session.observe(Sender::Plugin, &message).map_err(WorkerError::Internal)?;
+        let message = SessionMessage {
+            session: id,
+            extensions: None,
+            body,
+        };
+        session
+            .observe(Sender::Plugin, &message)
+            .map_err(WorkerError::Internal)?;
         let cap = session.frame_cap();
-        write_frame(&mut self.writer, &WireMessage::Session(message).encode(), cap).map_err(stream)
+        write_frame(
+            &mut self.writer,
+            &WireMessage::Session(message).encode(),
+            cap,
+        )
+        .map_err(stream)
     }
 
     /// Sends a successful response.
     /// # Errors
     /// Propagates session-transition, framing, or write failures from sending the response.
     pub fn respond(&mut self, id: RequestId, body: &ResultBody) -> Result<(), WorkerError> {
-        self.send(SessionBody::Response { id, outcome: Outcome::Result(PendingResult::from_body(body)) })
+        self.send(SessionBody::Response {
+            id,
+            outcome: Outcome::Result(PendingResult::from_body(body)),
+        })
     }
 
     /// Sends an error response.
     /// # Errors
     /// Propagates session-transition, framing, or write failures from sending the error.
     pub fn respond_error(&mut self, id: RequestId, error: WireError) -> Result<(), WorkerError> {
-        self.send(SessionBody::Response { id, outcome: Outcome::Error(Box::new(error)) })
+        self.send(SessionBody::Response {
+            id,
+            outcome: Outcome::Error(Box::new(error)),
+        })
     }
 
     /// A fresh plugin request ID.
@@ -152,12 +180,28 @@ impl<R: Read, W: Write> Link<R, W> {
     }
 
     /// Best-effort progress sample; dropped after cancellation or if the tracker would refuse it.
-    pub fn progress(&mut self, phase: &'static str, completed: u64, total: Option<u64>, unit: ProgressUnit) {
-        let (Some(invocation), false, Ok(phase)) = (self.invocation.clone(), self.cancelled, Name::new(phase)) else {
+    pub fn progress(
+        &mut self,
+        phase: &'static str,
+        completed: u64,
+        total: Option<u64>,
+        unit: ProgressUnit,
+    ) {
+        let (Some(invocation), false, Ok(phase)) =
+            (self.invocation.clone(), self.cancelled, Name::new(phase))
+        else {
             return;
         };
         let seq = self.progress_seq + 1;
-        let progress = Progress { invocation, seq, phase, completed, total, unit, wait: None };
+        let progress = Progress {
+            invocation,
+            seq,
+            phase,
+            completed,
+            total,
+            unit,
+            wait: None,
+        };
         if self.event(Event::Progress(progress)).is_ok() {
             self.progress_seq = seq;
         }

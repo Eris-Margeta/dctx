@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 
-use dctx_template::{replace_vars, CompiledTemplate, Template, TemplateValidationError};
+use dctx_template::{CompiledTemplate, Template, TemplateValidationError, replace_vars};
 
 #[test]
 fn test_replace_vars_simple() {
@@ -73,7 +73,10 @@ multiline = "line1\nline2"
 [LAYOUT]
 "#;
     let tmpl = Template::parse(raw);
-    assert_eq!(tmpl.variables.get("multiline"), Some(&"line1\nline2".to_string()));
+    assert_eq!(
+        tmpl.variables.get("multiline"),
+        Some(&"line1\nline2".to_string())
+    );
 }
 
 #[test]
@@ -181,7 +184,10 @@ existing = "value"
 "#;
     let mut tmpl = Template::parse(raw);
     tmpl.insert_variable("project", "MyProject");
-    assert_eq!(tmpl.variables.get("project"), Some(&"MyProject".to_string()));
+    assert_eq!(
+        tmpl.variables.get("project"),
+        Some(&"MyProject".to_string())
+    );
     assert_eq!(tmpl.variables.get("existing"), Some(&"value".to_string()));
 }
 
@@ -235,7 +241,10 @@ file_end = "</FILE>"
 {{{comp.files}}}
 "#;
     let tmpl = Template::parse(raw);
-    assert_eq!(tmpl.variables.get("tree_start"), Some(&"<TREE>".to_string()));
+    assert_eq!(
+        tmpl.variables.get("tree_start"),
+        Some(&"<TREE>".to_string())
+    );
     assert_eq!(tmpl.variables.get("file_end"), Some(&"</FILE>".to_string()));
     assert!(tmpl.partial_tree_entry.contains("{{{node.type_char}}}"));
     assert!(tmpl.partial_file_block.contains("{{{file.content}}}"));
@@ -271,7 +280,11 @@ key = "value"
 "#;
     let tmpl = Template::parse(raw);
     let errors = tmpl.validate();
-    assert!(errors.iter().any(|err| matches!(err, TemplateValidationError::EmptySection(_))));
+    assert!(
+        errors
+            .iter()
+            .any(|err| matches!(err, TemplateValidationError::EmptySection(_)))
+    );
 }
 
 #[test]
@@ -284,7 +297,11 @@ defined = "yes"
 "#;
     let tmpl = Template::parse(raw);
     let errors = tmpl.validate();
-    assert!(errors.iter().any(|err| matches!(err, TemplateValidationError::UnresolvedVariable(_))));
+    assert!(
+        errors
+            .iter()
+            .any(|err| matches!(err, TemplateValidationError::UnresolvedVariable(_)))
+    );
 }
 
 #[test]

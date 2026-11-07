@@ -8,7 +8,9 @@ mod common;
 use common::*;
 use dctx_plugin_host::fakes::FakeAudit;
 use dctx_plugin_host::ports::{AuditKind, RecipeOutcome};
-use dctx_plugin_host::{ArgDigest, Decision, EntryStatus, HandleKind, Ledger, Lookup, ModelAction, Reply, Selection};
+use dctx_plugin_host::{
+    ArgDigest, Decision, EntryStatus, HandleKind, Ledger, Lookup, ModelAction, Reply, Selection,
+};
 use dctx_plugin_protocol::records::scalars::Token;
 use dctx_plugin_protocol::{EffectState, ErrorCode};
 use proptest::prelude::*;
@@ -37,7 +39,12 @@ fn intent_precedes_effect_and_completion_control() {
     let trace = broker.ledger().trace();
     assert!(trace.precedes(ModelAction::ReceiptsRequest, ModelAction::ReceiptsExecute));
     assert!(trace.precedes(ModelAction::ReceiptsExecute, ModelAction::ReceiptsComplete));
-    assert!(broker.authority().trace().precedes(ModelAction::AuthorityAdmit, ModelAction::AuthorityCommit));
+    assert!(
+        broker
+            .authority()
+            .trace()
+            .precedes(ModelAction::AuthorityAdmit, ModelAction::AuthorityCommit)
+    );
 }
 
 #[test]
@@ -72,12 +79,26 @@ fn audit_unavailable_refuses_new_effects_with_restore_control() {
     let pre = first_read(&mut broker, &handle);
     let upload = stage(&mut broker, &handle, &pre, b"abc\nx");
     broker.audit_mut().available = false;
-    let refused = broker.handle(&replace_req(&handle, &pre, &upload, "a:1")).expect_err("audit");
-    assert_eq!((refused.code, refused.effect_state), (ErrorCode::AuditUnavailable, EffectState::None));
+    let refused = broker
+        .handle(&replace_req(&handle, &pre, &upload, "a:1"))
+        .expect_err("audit");
+    assert_eq!(
+        (refused.code, refused.effect_state),
+        (ErrorCode::AuditUnavailable, EffectState::None)
+    );
     assert_eq!(broker.files().replaces, 0);
-    assert!(broker.ledger().trace().contains(ModelAction::ReceiptsAuditFailure));
+    assert!(
+        broker
+            .ledger()
+            .trace()
+            .contains(ModelAction::ReceiptsAuditFailure)
+    );
     broker.audit_mut().available = true;
-    assert!(broker.handle(&replace_req(&handle, &pre, &upload, "a:1")).is_ok());
+    assert!(
+        broker
+            .handle(&replace_req(&handle, &pre, &upload, "a:1"))
+            .is_ok()
+    );
     assert_eq!(broker.files().replaces, 1);
 }
 
@@ -86,9 +107,16 @@ fn audit_unavailable_blocks_delivery() {
     let mut broker = broker();
     let handle = file_handle(&mut broker);
     broker.audit_mut().fail_next = Some(AuditKind::Delivery);
-    let refused = broker.handle(&read_req(&handle, 0, 3, None)).expect_err("no delivery");
+    let refused = broker
+        .handle(&read_req(&handle, 0, 3, None))
+        .expect_err("no delivery");
     assert_eq!(refused.code, ErrorCode::AuditUnavailable);
-    assert!(!broker.authority().trace().contains(ModelAction::AuthorityRead));
+    assert!(
+        !broker
+            .authority()
+            .trace()
+            .contains(ModelAction::AuthorityRead)
+    );
     assert!(broker.handle(&read_req(&handle, 0, 3, None)).is_ok());
 }
 
@@ -101,7 +129,10 @@ fn completion_log_failure_leaves_unknown_pinned_until_reconciled() {
     let request = replace_req(&handle, &pre, &upload, "a:1");
     broker.audit_mut().fail_next = Some(AuditKind::Completion);
     let unknown = broker.handle(&request).expect_err("unknown");
-    assert_eq!((unknown.code, unknown.effect_state), (ErrorCode::EffectUnknown, EffectState::Unknown));
+    assert_eq!(
+        (unknown.code, unknown.effect_state),
+        (ErrorCode::EffectUnknown, EffectState::Unknown)
+    );
     assert!(unknown.receipt.is_some() && !unknown.retryable());
     assert_eq!(broker.files().replaces, 1);
     let replay = broker.handle(&request).expect_err("no blind retry");
@@ -111,10 +142,19 @@ fn completion_log_failure_leaves_unknown_pinned_until_reconciled() {
     assert!(broker.rotate(&key).is_err());
     assert!(broker.reconcile(&key, false).is_err());
     broker.reconcile(&key, true).expect("reconciled");
-    assert_eq!(broker.ledger().get(&key).map(|e| e.status), Some(EntryStatus::Committed));
-    assert!(matches!(broker.handle(&request), Ok(Reply::Receipt { replayed: true, .. })));
+    assert_eq!(
+        broker.ledger().get(&key).map(|e| e.status),
+        Some(EntryStatus::Committed)
+    );
+    assert!(matches!(
+        broker.handle(&request),
+        Ok(Reply::Receipt { replayed: true, .. })
+    ));
     broker.rotate(&key).expect("rotated");
-    assert!(matches!(broker.handle(&request), Ok(Reply::Receipt { replayed: true, .. })));
+    assert!(matches!(
+        broker.handle(&request),
+        Ok(Reply::Receipt { replayed: true, .. })
+    ));
     assert_eq!(broker.files().replaces, 1);
 }
 
@@ -124,8 +164,16 @@ fn uncertain_port_outcome_is_unknown_not_success() {
     broker.files_mut().uncertain_next_replace = true;
     let unknown = replace_with(&mut broker, b"abc\nx", "a:1").expect_err("uncertain");
     assert_eq!(unknown.effect_state, EffectState::Unknown);
-    assert!(broker.ledger().trace().contains(ModelAction::ReceiptsCrashOrUncertain));
-    assert_eq!(broker.ledger().committed(&token("op:1")), [] as [dctx_plugin_protocol::records::scalars::Token; 0]);
+    assert!(
+        broker
+            .ledger()
+            .trace()
+            .contains(ModelAction::ReceiptsCrashOrUncertain)
+    );
+    assert_eq!(
+        broker.ledger().committed(&token("op:1")),
+        [] as [dctx_plugin_protocol::records::scalars::Token; 0]
+    );
 }
 
 #[test]
@@ -134,13 +182,30 @@ fn git_recipe_commits_with_admin_trace_and_refuses_excluded_ignore_file() {
     let handle = file_handle(&mut broker);
     let repo = broker.register(HandleKind::Repository).expect("repo");
     let pre = first_read(&mut broker, &handle);
-    let reply = broker.handle(&git_req(&handle, &pre, &repo, "g:1")).expect("staged");
-    assert!(matches!(reply, Reply::Receipt { replayed: false, .. }));
+    let reply = broker
+        .handle(&git_req(&handle, &pre, &repo, "g:1"))
+        .expect("staged");
+    assert!(matches!(
+        reply,
+        Reply::Receipt {
+            replayed: false,
+            ..
+        }
+    ));
     assert_eq!(broker.recipes().recipes.len(), 1);
-    assert!(broker.authority().trace().contains(ModelAction::AuthorityAdmin));
+    assert!(
+        broker
+            .authority()
+            .trace()
+            .contains(ModelAction::AuthorityAdmin)
+    );
 
-    broker.authority_mut().change_selection(Selection::new([(path(), Decision::OmitContent)]));
-    let refused = broker.handle(&git_req(&handle, &pre, &repo, "g:2")).expect_err("excluded");
+    broker
+        .authority_mut()
+        .change_selection(Selection::new([(path(), Decision::OmitContent)]));
+    let refused = broker
+        .handle(&git_req(&handle, &pre, &repo, "g:2"))
+        .expect_err("excluded");
     assert_eq!(refused.code, ErrorCode::Denied);
     assert_eq!(broker.recipes().recipes.len(), 1);
 }
@@ -152,9 +217,17 @@ fn failed_recipe_reports_failure_and_commits_nothing() {
     let repo = broker.register(HandleKind::Repository).expect("repo");
     let pre = first_read(&mut broker, &handle);
     broker.recipes_mut().recipe = RecipeOutcome::Failed;
-    let refused = broker.handle(&git_req(&handle, &pre, &repo, "g:1")).expect_err("failed");
-    assert_eq!((refused.code, refused.effect_state), (ErrorCode::ExternalProgramFailed, EffectState::None));
-    assert_eq!(broker.ledger().committed(&token("op:1")), [] as [dctx_plugin_protocol::records::scalars::Token; 0]);
+    let refused = broker
+        .handle(&git_req(&handle, &pre, &repo, "g:1"))
+        .expect_err("failed");
+    assert_eq!(
+        (refused.code, refused.effect_state),
+        (ErrorCode::ExternalProgramFailed, EffectState::None)
+    );
+    assert_eq!(
+        broker.ledger().committed(&token("op:1")),
+        [] as [dctx_plugin_protocol::records::scalars::Token; 0]
+    );
     broker.recipes_mut().recipe = RecipeOutcome::Succeeded;
     assert!(broker.handle(&git_req(&handle, &pre, &repo, "g:1")).is_ok());
 }
@@ -163,9 +236,16 @@ fn failed_recipe_reports_failure_and_commits_nothing() {
 fn foreign_repository_handle_is_refused() {
     let mut broker = broker();
     let handle = file_handle(&mut broker);
-    let foreign = broker.register_bound(binding("op:9"), HandleKind::Repository).expect("foreign");
+    let foreign = broker
+        .register_bound(binding("op:9"), HandleKind::Repository)
+        .expect("foreign");
     let pre = first_read(&mut broker, &handle);
-    assert_eq!(broker.handle(&git_req(&handle, &pre, &foreign, "g:1")).map_err(|e| e.reason), Err("not-the-bound-repository"));
+    assert_eq!(
+        broker
+            .handle(&git_req(&handle, &pre, &foreign, "g:1"))
+            .map_err(|e| e.reason),
+        Err("not-the-bound-repository")
+    );
     assert_eq!(broker.recipes().recipes.len(), 0);
 }
 
@@ -176,8 +256,17 @@ fn audit_full_log_refuses_admission() {
     let pre = first_read(&mut broker, &handle);
     let upload = stage(&mut broker, &handle, &pre, b"abc\nx");
     let records = broker.audit().records.clone();
-    *broker.audit_mut() = FakeAudit { capacity: records.len(), records, ..FakeAudit::default() };
-    assert_eq!(broker.handle(&replace_req(&handle, &pre, &upload, "a:1")).map_err(|e| e.code), Err(ErrorCode::AuditUnavailable));
+    *broker.audit_mut() = FakeAudit {
+        capacity: records.len(),
+        records,
+        ..FakeAudit::default()
+    };
+    assert_eq!(
+        broker
+            .handle(&replace_req(&handle, &pre, &upload, "a:1"))
+            .map_err(|e| e.code),
+        Err(ErrorCode::AuditUnavailable)
+    );
     assert_eq!(broker.files().replaces, 0);
 }
 

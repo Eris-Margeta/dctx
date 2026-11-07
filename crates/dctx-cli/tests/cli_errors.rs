@@ -5,6 +5,8 @@
 
 #![forbid(unsafe_code)]
 
+mod common;
+
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -19,11 +21,24 @@ struct Fixture {
 impl Fixture {
     fn new() -> Self {
         let root = tempfile::tempdir().expect("fixture root");
-        for folder in ["place", "empty", "home", "config", "cache", "plugins", "empty-path", "tmp"] {
+        for folder in [
+            "place",
+            "empty",
+            "home",
+            "config",
+            "cache",
+            "plugins",
+            "empty-path",
+            "tmp",
+        ] {
             fs::create_dir(root.path().join(folder)).expect("isolated directory");
         }
         let place = root.path().join("place");
-        fs::write(place.join("a.py"), "def alpha():\n    return beta()\n\n\ndef beta():\n    return 1\n").expect("source");
+        fs::write(
+            place.join("a.py"),
+            "def alpha():\n    return beta()\n\n\ndef beta():\n    return 1\n",
+        )
+        .expect("source");
         let binary: Vec<u8> = (0..=255u8).cycle().take(1024).collect();
         fs::write(place.join("logo.png"), binary).expect("binary");
         Self { root }
@@ -35,16 +50,16 @@ impl Fixture {
 
     fn output(&self, args: &[OsString]) -> Output {
         let mut command = Command::new(env!("CARGO_BIN_EXE_dctx-cli"));
-        command.current_dir(self.path("place")).env_clear().args(args).env("DCTX_AUTO_CLEAN", "0");
+        command
+            .current_dir(self.path("place"))
+            .env_clear()
+            .args(args)
+            .env("DCTX_AUTO_CLEAN", "0");
+        common::isolated_dirs(&mut command, self.root.path());
         for (variable, folder) in [
-            ("HOME", "home"),
-            ("USERPROFILE", "home"),
-            ("XDG_CONFIG_HOME", "config"),
-            ("XDG_CACHE_HOME", "cache"),
             ("DCTX_PLUGIN_ROOT", "plugins"),
             ("DCTX_CACHE_DIR", "cache"),
             ("PATH", "empty-path"),
-            ("TMPDIR", "tmp"),
         ] {
             command.env(variable, self.path(folder));
         }
@@ -56,18 +71,38 @@ impl Fixture {
         let output = self.output(args);
         let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);
-        assert_eq!(output.status.code(), Some(code), "{args:?}: stdout {stdout}; stderr {stderr}");
-        assert!(stderr.contains(message), "{args:?}: want {message:?} in {stderr}");
-        assert!(stderr.lines().any(|line| line.starts_with("hint: ") && line.len() > "hint: ".len()), "{args:?}: no hint in {stderr}");
+        assert_eq!(
+            output.status.code(),
+            Some(code),
+            "{args:?}: stdout {stdout}; stderr {stderr}"
+        );
+        assert!(
+            stderr.contains(message),
+            "{args:?}: want {message:?} in {stderr}"
+        );
+        assert!(
+            stderr
+                .lines()
+                .any(|line| line.starts_with("hint: ") && line.len() > "hint: ".len()),
+            "{args:?}: no hint in {stderr}"
+        );
         for text in ["panicked", "RUST_BACKTRACE"] {
-            assert!(!stdout.contains(text) && !stderr.contains(text), "{args:?}: {text} in {stdout}{stderr}");
+            assert!(
+                !stdout.contains(text) && !stderr.contains(text),
+                "{args:?}: {text} in {stdout}{stderr}"
+            );
         }
     }
 
     /// Runs `args` and returns stdout after asserting exit 0.
     fn ok(&self, args: &[OsString]) -> String {
         let output = self.output(args);
-        assert_eq!(output.status.code(), Some(0), "{args:?}: {}", String::from_utf8_lossy(&output.stderr));
+        assert_eq!(
+            output.status.code(),
+            Some(0),
+            "{args:?}: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
         String::from_utf8(output.stdout).expect("UTF-8 stdout")
     }
 }
@@ -85,19 +120,51 @@ fn with_path(head: &[&str], path: &Path) -> Vec<OsString> {
 #[test]
 fn twelve_bad_inputs_get_their_exit_code_and_a_hint() {
     let fixture = Fixture::new();
-    assert!(fixture.ok(&words(&["map", "find", "alpha"])).contains("a.py#alpha"));
+    assert!(fixture
+        .ok(&words(&["map", "find", "alpha"]))
+        .contains("a.py#alpha"));
     fixture.refuse(2, "unknown command `frobnicate`", &words(&["frobnicate"]));
-    fixture.refuse(2, "unknown or inapplicable option --bogus", &words(&["map", "find", "alpha", "--bogus"]));
+    fixture.refuse(
+        2,
+        "unknown or inapplicable option --bogus",
+        &words(&["map", "find", "alpha", "--bogus"]),
+    );
     fixture.refuse(2, "requires a target", &words(&["map", "neighbors"]));
-    fixture.refuse(1, "m:nope.py is not in the index", &words(&["map", "read", "m:nope.py"]));
-    fixture.refuse(2, "limit or depth exceeds", &words(&["map", "neighbors", "s:a.py#alpha", "--depth", "9"]));
+    fixture.refuse(
+        1,
+        "m:nope.py is not in the index",
+        &words(&["map", "read", "m:nope.py"]),
+    );
+    fixture.refuse(
+        2,
+        "limit or depth exceeds",
+        &words(&["map", "neighbors", "s:a.py#alpha", "--depth", "9"]),
+    );
     fixture.refuse(2, "requires a target", &words(&["map", "find", ""]));
     let mut missing = words(&["map", "find", "alpha", "--place"]);
     missing.push(fixture.path("missing").into_os_string());
     fixture.refuse(3, "cannot open the place", &missing);
-    fixture.refuse(2, "stale continuation", &words(&["map", "find", "alpha", "--cursor", "v1|999999|find|s:a.py#alpha"]));
-    fixture.refuse(2, "outside the place", &words(&["map", "read", "m:../outside.py"]));
-    fixture.refuse(1, "logo.png is a binary file", &words(&["map", "read", "logo.png"]));
+    fixture.refuse(
+        2,
+        "stale continuation",
+        &words(&[
+            "map",
+            "find",
+            "alpha",
+            "--cursor",
+            "v1|999999|find|s:a.py#alpha",
+        ]),
+    );
+    fixture.refuse(
+        2,
+        "outside the place",
+        &words(&["map", "read", "m:../outside.py"]),
+    );
+    fixture.refuse(
+        1,
+        "logo.png is a binary file",
+        &words(&["map", "read", "logo.png"]),
+    );
     #[cfg(unix)]
     {
         use std::os::unix::ffi::OsStringExt;
@@ -105,8 +172,14 @@ fn twelve_bad_inputs_get_their_exit_code_and_a_hint() {
         bad.push(OsString::from_vec(vec![0xff, 0xfe, b'.', b'p', b'y']));
         fixture.refuse(2, "not valid UTF-8", &bad);
     }
-    fixture.refuse(1, "nothing to pack", &with_path(&["pack"], &fixture.path("empty")));
-    assert!(fixture.ok(&words(&["map", "read", "s:a.py#alpha"])).contains("return beta()"));
+    fixture.refuse(
+        1,
+        "nothing to pack",
+        &with_path(&["pack"], &fixture.path("empty")),
+    );
+    assert!(fixture
+        .ok(&words(&["map", "read", "s:a.py#alpha"]))
+        .contains("return beta()"));
 }
 
 #[test]
@@ -114,18 +187,41 @@ fn a_gone_page_still_reaches_stdout_before_exit_1() {
     let fixture = Fixture::new();
     let output = fixture.output(&words(&["map", "read", "m:nope.py"]));
     assert_eq!(output.status.code(), Some(1));
-    assert!(String::from_utf8_lossy(&output.stdout).contains("gone\tm:nope.py"), "{}", String::from_utf8_lossy(&output.stdout));
+    assert!(
+        String::from_utf8_lossy(&output.stdout).contains("gone\tm:nope.py"),
+        "{}",
+        String::from_utf8_lossy(&output.stdout)
+    );
 }
 
 #[test]
 fn every_subcommand_help_has_an_example() {
     let fixture = Fixture::new();
-    let mut pages = vec![vec!["map", "--help"], vec!["pack", "--help"], vec!["mcp", "--help"], vec!["languages", "--help"]];
-    for verb in ["map", "find", "neighbors", "explain", "read", "skeleton", "grep", "hubs", "path", "export"] {
+    let mut pages = vec![
+        vec!["map", "--help"],
+        vec!["pack", "--help"],
+        vec!["mcp", "--help"],
+        vec!["languages", "--help"],
+    ];
+    for verb in [
+        "map",
+        "find",
+        "neighbors",
+        "explain",
+        "read",
+        "skeleton",
+        "grep",
+        "hubs",
+        "path",
+        "export",
+    ] {
         pages.push(vec!["map", verb, "--help"]);
     }
     for page in pages {
         let text = fixture.ok(&words(&page));
-        assert!(text.lines().any(|line| line.starts_with("Example: dctx ")), "{page:?}: {text}");
+        assert!(
+            text.lines().any(|line| line.starts_with("Example: dctx ")),
+            "{page:?}: {text}"
+        );
     }
 }

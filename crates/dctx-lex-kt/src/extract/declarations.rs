@@ -11,7 +11,13 @@ const USE_SITE: &[&str] = &[
 ];
 
 impl Walker<'_> {
-    pub(crate) fn declaration(&mut self, index: usize, end: usize, scope: &Scope, file: bool) -> usize {
+    pub(crate) fn declaration(
+        &mut self,
+        index: usize,
+        end: usize,
+        scope: &Scope,
+        file: bool,
+    ) -> usize {
         let begin = self.skip_semis(index, end);
         if begin >= end || self.is(begin, "}") {
             return begin.min(end);
@@ -24,7 +30,14 @@ impl Walker<'_> {
         self.dispatch(begin, &prefix, end, scope, file)
     }
 
-    fn dispatch(&mut self, begin: usize, prefix: &Prefix, end: usize, scope: &Scope, file: bool) -> usize {
+    fn dispatch(
+        &mut self,
+        begin: usize,
+        prefix: &Prefix,
+        end: usize,
+        scope: &Scope,
+        file: bool,
+    ) -> usize {
         let at = prefix.next;
         if file && self.is(at, "package") {
             self.flush_anns(scope, &prefix.anns);
@@ -98,7 +111,14 @@ impl Walker<'_> {
             }
             index += 1;
         }
-        Prefix { next: index, public, data, enum_kind, annotation, anns }
+        Prefix {
+            next: index,
+            public,
+            data,
+            enum_kind,
+            annotation,
+            anns,
+        }
     }
 
     pub(crate) fn read_ann(&self, index: usize, end: usize) -> Ann {
@@ -113,7 +133,12 @@ impl Walker<'_> {
             args = Some(after);
             to = self.after(after).max(after + 1);
         }
-        Ann { name, at: index, to, args }
+        Ann {
+            name,
+            at: index,
+            to,
+            args,
+        }
     }
 
     pub(crate) fn flush_anns(&mut self, scope: &Scope, anns: &[Ann]) {
@@ -122,7 +147,14 @@ impl Walker<'_> {
                 continue;
             }
             let last = ann.args.unwrap_or(ann.to).saturating_sub(1).max(ann.at);
-            self.refer(scope, EdgeKind::UsesType, ann.name.clone(), None, ann.at, last);
+            self.refer(
+                scope,
+                EdgeKind::UsesType,
+                ann.name.clone(),
+                None,
+                ann.at,
+                last,
+            );
             if let Some(args) = ann.args {
                 let close = self.matched(args, usize::MAX).unwrap_or(args);
                 if close > args {
@@ -162,7 +194,13 @@ impl Walker<'_> {
         }
     }
 
-    pub(crate) fn function_decl(&mut self, begin: usize, prefix: &Prefix, end: usize, scope: &Scope) -> usize {
+    pub(crate) fn function_decl(
+        &mut self,
+        begin: usize,
+        prefix: &Prefix,
+        end: usize,
+        scope: &Scope,
+    ) -> usize {
         let keyword_at = prefix.next;
         let (cursor, angles) = self.fun_angles(keyword_at, end);
         let Some(name_at) = self.find_fun_name(cursor, end) else {
@@ -211,7 +249,10 @@ impl Walker<'_> {
     ) {
         let sig_end = self.end_byte(paren);
         let body = (self.start_byte(paren), sig_end);
-        let Some(child) = self.emit(self.fun_symbol(begin, prefix, name_at, (paren, sig_end, body), scope), scope) else {
+        let Some(child) = self.emit(
+            self.fun_symbol(begin, prefix, name_at, (paren, sig_end, body), scope),
+            scope,
+        ) else {
             return;
         };
         self.flush_anns(&child, &prefix.anns);
@@ -222,7 +263,13 @@ impl Walker<'_> {
 
     fn finish_fun(&mut self, fun: &FinishedFun<'_, '_>) {
         let Some(child) = self.emit(
-            self.fun_symbol(fun.begin, fun.prefix, fun.name_at, (fun.last, fun.sig_end, fun.body), fun.scope),
+            self.fun_symbol(
+                fun.begin,
+                fun.prefix,
+                fun.name_at,
+                (fun.last, fun.sig_end, fun.body),
+                fun.scope,
+            ),
             fun.scope,
         ) else {
             return;
@@ -256,7 +303,11 @@ impl Walker<'_> {
     ) -> super::Symbol {
         let (last, sig_end, body) = span;
         super::Symbol {
-            kind: if scope.name.is_empty() { SymbolKind::Function } else { SymbolKind::Method },
+            kind: if scope.name.is_empty() {
+                SymbolKind::Function
+            } else {
+                SymbolKind::Method
+            },
             local: self.bare(name_at),
             first: begin,
             last,
@@ -268,7 +319,9 @@ impl Walker<'_> {
 
     fn fun_angles(&self, keyword_at: usize, end: usize) -> (usize, Option<(usize, usize)>) {
         let cursor = keyword_at + 1;
-        if self.is(cursor, "<") && let Some(close) = self.angles_end(cursor, end) {
+        if self.is(cursor, "<")
+            && let Some(close) = self.angles_end(cursor, end)
+        {
             return (close + 1, Some((cursor, close)));
         }
         (cursor, None)
@@ -293,14 +346,29 @@ impl Walker<'_> {
             where_clause = Some((cursor, next));
             cursor = next;
         }
-        FunHeader { cursor, sig_end, ret, where_clause }
+        FunHeader {
+            cursor,
+            sig_end,
+            ret,
+            where_clause,
+        }
     }
 
-    fn fun_tail(&self, cursor: usize, end: usize, sig_end: u32, keyword_at: usize) -> (usize, usize, (u32, u32)) {
+    fn fun_tail(
+        &self,
+        cursor: usize,
+        end: usize,
+        sig_end: u32,
+        keyword_at: usize,
+    ) -> (usize, usize, (u32, u32)) {
         if self.is(cursor, "{") {
             let after = self.after(cursor).max(cursor + 1).min(end.max(cursor + 1));
             let last = after.saturating_sub(1).max(cursor);
-            return (last, after.min(end.max(after)), (self.start_byte(cursor), self.end_byte(last)));
+            return (
+                last,
+                after.min(end.max(after)),
+                (self.start_byte(cursor), self.end_byte(last)),
+            );
         }
         if self.is(cursor, "=") {
             let stop = self.expr_end(cursor + 1, end);
@@ -309,7 +377,11 @@ impl Walker<'_> {
             return (last, next, (self.start_byte(cursor), self.end_byte(last)));
         }
         let last = cursor.saturating_sub(1).max(keyword_at);
-        (last, self.stop_or_finish(cursor, end), (self.start_byte(keyword_at), sig_end))
+        (
+            last,
+            self.stop_or_finish(cursor, end),
+            (self.start_byte(keyword_at), sig_end),
+        )
     }
 
     fn body_scan(&self, cursor: usize, end: usize) -> Option<(usize, usize)> {
@@ -376,11 +448,19 @@ impl Walker<'_> {
     }
 
     pub(crate) fn receiver_paren(&self, open: usize, end: usize) -> bool {
-        let Some(close) = self.matched(open, end) else { return false };
+        let Some(close) = self.matched(open, end) else {
+            return false;
+        };
         self.is(close + 1, ".") || self.is(close + 1, "?")
     }
 
-    fn typealias_decl(&mut self, begin: usize, prefix: &Prefix, end: usize, scope: &Scope) -> usize {
+    fn typealias_decl(
+        &mut self,
+        begin: usize,
+        prefix: &Prefix,
+        end: usize,
+        scope: &Scope,
+    ) -> usize {
         let keyword_at = prefix.next;
         let name_at = keyword_at + 1;
         if !self.is_decl_name(name_at) {
@@ -389,7 +469,9 @@ impl Walker<'_> {
         }
         let mut cursor = name_at + 1;
         let mut angles = None;
-        if self.is(cursor, "<") && let Some(close) = self.angles_end(cursor, end) {
+        if self.is(cursor, "<")
+            && let Some(close) = self.angles_end(cursor, end)
+        {
             angles = Some((cursor, close));
             cursor = close + 1;
         }
@@ -437,7 +519,11 @@ impl Walker<'_> {
             return (index + 1).min(end);
         }
         let stop = self.expr_end(index, end);
-        let stop = if stop <= index { (index + 1).min(end) } else { stop.min(end) };
+        let stop = if stop <= index {
+            (index + 1).min(end)
+        } else {
+            stop.min(end)
+        };
         self.scan_refs(index, stop, scope);
         self.stop_or_finish(stop, end)
     }
@@ -473,9 +559,9 @@ fn use_site(word: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use super::super::is_modifier;
     use super::USE_SITE;
     use crate::lexer::keyword;
-    use super::super::is_modifier;
 
     #[test]
     fn use_site_targets_are_sorted() {

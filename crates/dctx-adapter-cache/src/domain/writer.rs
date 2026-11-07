@@ -84,10 +84,13 @@ impl Lifecycle {
         session: SessionId,
     ) -> Result<(), CacheError> {
         if !self.roots.contains_key(&root) {
-            return Err(CacheError::InvalidRequest { reason: "unknown root" });
+            return Err(CacheError::InvalidRequest {
+                reason: "unknown root",
+            });
         }
         let writer = self.writers.entry(root).or_insert_with(Writer::fresh);
-        if writer.lock != WriterLock::Free || !matches!(writer.step, WriterStep::Idle | WriterStep::Refused)
+        if writer.lock != WriterLock::Free
+            || !matches!(writer.step, WriterStep::Idle | WriterStep::Refused)
         {
             return Err(CacheError::Busy);
         }
@@ -149,10 +152,14 @@ impl Lifecycle {
     pub fn writer_validate_segment(&mut self, root: super::RootId) -> Result<(), CacheError> {
         self.require_step(root, WriterStep::Staged)?;
         let Some(segment) = self.writers.get(&root).and_then(|writer| writer.segment) else {
-            return Err(CacheError::InvalidRequest { reason: "writer has no segment" });
+            return Err(CacheError::InvalidRequest {
+                reason: "writer has no segment",
+            });
         };
         let Some(object) = self.objects.get_mut(&segment) else {
-            return Err(CacheError::CorruptIndex { reason: "staged segment missing" });
+            return Err(CacheError::CorruptIndex {
+                reason: "staged segment missing",
+            });
         };
         object.validated = true;
         object.complete = true;
@@ -206,11 +213,19 @@ impl Lifecycle {
     /// Refuses the wrong writer phase or a missing staged manifest.
     pub fn writer_validate_manifest(&mut self, root: super::RootId) -> Result<(), CacheError> {
         self.require_step(root, WriterStep::Manifest)?;
-        let Some(object_id) = self.writers.get(&root).and_then(|writer| writer.manifest_object) else {
-            return Err(CacheError::InvalidRequest { reason: "writer has no manifest" });
+        let Some(object_id) = self
+            .writers
+            .get(&root)
+            .and_then(|writer| writer.manifest_object)
+        else {
+            return Err(CacheError::InvalidRequest {
+                reason: "writer has no manifest",
+            });
         };
         let Some(object) = self.objects.get_mut(&object_id) else {
-            return Err(CacheError::CorruptIndex { reason: "staged manifest missing" });
+            return Err(CacheError::CorruptIndex {
+                reason: "staged manifest missing",
+            });
         };
         object.validated = true;
         object.complete = true;
@@ -230,15 +245,24 @@ impl Lifecycle {
             .writers
             .get(&root)
             .and_then(|writer| writer.generation)
-            .ok_or(CacheError::InvalidRequest { reason: "writer has no generation" })?;
+            .ok_or(CacheError::InvalidRequest {
+                reason: "writer has no generation",
+            })?;
         let segment = self.writers.get(&root).and_then(|writer| writer.segment);
-        let manifest_object = self.writers.get(&root).and_then(|writer| writer.manifest_object);
+        let manifest_object = self
+            .writers
+            .get(&root)
+            .and_then(|writer| writer.manifest_object);
         for id in [segment, manifest_object].into_iter().flatten() {
             let Some(object) = self.objects.get_mut(&id) else {
-                return Err(CacheError::CorruptIndex { reason: "publication object missing" });
+                return Err(CacheError::CorruptIndex {
+                    reason: "publication object missing",
+                });
             };
             if !object.validated || !object.complete {
-                return Err(CacheError::InvalidRequest { reason: "publication is not validated" });
+                return Err(CacheError::InvalidRequest {
+                    reason: "publication is not validated",
+                });
             }
             object.state = Physical::Published;
         }
@@ -257,7 +281,10 @@ impl Lifecycle {
     /// Refuses unless the writer has completed the pointer swap.
     pub fn writer_release(&mut self, root: super::RootId) -> Result<(), CacheError> {
         self.require_step(root, WriterStep::Swapped)?;
-        let reservation = self.writers.get(&root).and_then(|writer| writer.reservation);
+        let reservation = self
+            .writers
+            .get(&root)
+            .and_then(|writer| writer.reservation);
         self.release_hold(reservation);
         if let Some(writer) = self.writers.get_mut(&root) {
             writer.lock = WriterLock::Free;
@@ -277,10 +304,14 @@ impl Lifecycle {
     /// Refuses an absent writer or one that is not held.
     pub fn crash_writer(&mut self, root: super::RootId) -> Result<(), CacheError> {
         let Some(writer) = self.writers.get_mut(&root) else {
-            return Err(CacheError::InvalidRequest { reason: "no writer" });
+            return Err(CacheError::InvalidRequest {
+                reason: "no writer",
+            });
         };
         if writer.lock != WriterLock::Held {
-            return Err(CacheError::InvalidRequest { reason: "writer is not held" });
+            return Err(CacheError::InvalidRequest {
+                reason: "writer is not held",
+            });
         }
         writer.lock = WriterLock::Dead;
         self.bump();
@@ -288,7 +319,10 @@ impl Lifecycle {
     }
 
     /// Lock phase for tests and status.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn writer_phase(&self, root: super::RootId) -> WriterPhase {
         match self.writers.get(&root).map(|writer| writer.lock) {
             Some(WriterLock::Held) => WriterPhase::Held,
@@ -310,7 +344,8 @@ impl Lifecycle {
         };
         // Abrupt death leaves Held. A missing session OS lock, not the stored tag, means the holder is gone.
         // A changed boot id does not override a lock that is still held; reconcile uses it for unowned staging.
-        let restart_dead = matches!(writer.lock, WriterLock::Held | WriterLock::Dead) && !os_lock_held;
+        let restart_dead =
+            matches!(writer.lock, WriterLock::Held | WriterLock::Dead) && !os_lock_held;
         if !restart_dead {
             return;
         }
@@ -354,10 +389,14 @@ impl Lifecycle {
 
     fn require_step(&self, root: super::RootId, expected: WriterStep) -> Result<(), CacheError> {
         let Some(writer) = self.writers.get(&root) else {
-            return Err(CacheError::InvalidRequest { reason: "no writer" });
+            return Err(CacheError::InvalidRequest {
+                reason: "no writer",
+            });
         };
         if writer.lock != WriterLock::Held || writer.step != expected {
-            return Err(CacheError::InvalidRequest { reason: "writer step is not ready" });
+            return Err(CacheError::InvalidRequest {
+                reason: "writer step is not ready",
+            });
         }
         Ok(())
     }
@@ -376,13 +415,19 @@ impl Lifecycle {
             .writers
             .get(&root)
             .and_then(|writer| writer.reservation)
-            .ok_or(CacheError::InvalidRequest { reason: "writer has no reservation" })?;
+            .ok_or(CacheError::InvalidRequest {
+                reason: "writer has no reservation",
+            })?;
         let (class, charged_root) = {
             let Some(hold) = self.reservations.get_mut(&reservation_id) else {
-                return Err(CacheError::InvalidRequest { reason: "unknown reservation" });
+                return Err(CacheError::InvalidRequest {
+                    reason: "unknown reservation",
+                });
             };
             if bytes > hold.left {
-                return Err(CacheError::InvalidRequest { reason: "stage exceeds reservation" });
+                return Err(CacheError::InvalidRequest {
+                    reason: "stage exceeds reservation",
+                });
             }
             hold.left -= bytes;
             (hold.class, hold.root)
@@ -404,22 +449,33 @@ impl Lifecycle {
 
     pub(super) fn alloc_generation(&mut self) -> Result<GenerationId, CacheError> {
         let id = GenerationId::new(self.ids.generation);
-        self.ids.generation = self.ids.generation.checked_add(1).ok_or(CacheError::InvalidRequest {
-            reason: "generation id space exhausted",
-        })?;
+        self.ids.generation =
+            self.ids
+                .generation
+                .checked_add(1)
+                .ok_or(CacheError::InvalidRequest {
+                    reason: "generation id space exhausted",
+                })?;
         Ok(id)
     }
 
     pub(super) fn alloc_manifest(&mut self) -> Result<super::ManifestId, CacheError> {
         let id = super::ManifestId::new(self.ids.manifest);
-        self.ids.manifest = self.ids.manifest.checked_add(1).ok_or(CacheError::InvalidRequest {
-            reason: "manifest id space exhausted",
-        })?;
+        self.ids.manifest = self
+            .ids
+            .manifest
+            .checked_add(1)
+            .ok_or(CacheError::InvalidRequest {
+                reason: "manifest id space exhausted",
+            })?;
         Ok(id)
     }
 
     pub(super) fn swap_pointer(&mut self, root: super::RootId, generation: GenerationId) {
-        let pointer = self.pointers.entry(root).or_insert(Pointer { current: None, previous: None });
+        let pointer = self.pointers.entry(root).or_insert(Pointer {
+            current: None,
+            previous: None,
+        });
         let previous = pointer.current;
         pointer.previous = previous;
         pointer.current = Some(generation);
@@ -427,7 +483,9 @@ impl Lifecycle {
 
     pub(super) fn ensure_refs(&self, refs: &[super::ObjectId]) -> Result<(), CacheError> {
         if refs.iter().any(|id| !self.objects.contains_key(id)) {
-            return Err(CacheError::InvalidRequest { reason: "reference is not in the ledger" });
+            return Err(CacheError::InvalidRequest {
+                reason: "reference is not in the ledger",
+            });
         }
         Ok(())
     }

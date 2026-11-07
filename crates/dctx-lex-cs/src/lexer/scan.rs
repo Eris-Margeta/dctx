@@ -119,7 +119,10 @@ impl Scanner<'_> {
         }
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn line_comment(&mut self) {
         let start = self.pos;
         let doc = self.starts("///") && !self.starts("////");
@@ -133,7 +136,10 @@ impl Scanner<'_> {
         });
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn block_comment(&mut self) {
         let start = self.pos;
         self.pos += 2;
@@ -150,7 +156,8 @@ impl Scanner<'_> {
             }
             self.bump();
         }
-        self.problems.push((start as u32, DiagnosticReason::UnterminatedComment));
+        self.problems
+            .push((start as u32, DiagnosticReason::UnterminatedComment));
         self.comments.push(Comment {
             start: start as u32,
             end: self.pos as u32,
@@ -196,7 +203,10 @@ impl Scanner<'_> {
         true
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn raw_body(&mut self, start: usize, quotes: usize, dollars: usize) {
         while self.pos < self.src.len() && self.too_deep_at.is_none() {
             if dollars > 0 && self.try_hole(dollars) {
@@ -207,7 +217,8 @@ impl Scanner<'_> {
             }
             self.bump();
         }
-        self.problems.push((start as u32, DiagnosticReason::UnterminatedString));
+        self.problems
+            .push((start as u32, DiagnosticReason::UnterminatedString));
     }
 
     /// Ends the literal at the first quote run of length `quotes` or more.
@@ -218,14 +229,22 @@ impl Scanner<'_> {
         if run < quotes {
             return false;
         }
-        if run == quotes && self.src[self.pos + run..].chars().next().is_some_and(is_ident_start) {
+        if run == quotes
+            && self.src[self.pos + run..]
+                .chars()
+                .next()
+                .is_some_and(is_ident_start)
+        {
             return false;
         }
         self.pos += quotes;
         true
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn quoted_body(&mut self, start: usize, verbatim: bool, dollars: usize) {
         while self.pos < self.src.len() && self.too_deep_at.is_none() {
             if dollars > 0 && self.try_hole(dollars) {
@@ -238,7 +257,8 @@ impl Scanner<'_> {
             match self.quote_step(verbatim) {
                 Step::Closed => return,
                 Step::Broken => {
-                    self.problems.push((start as u32, DiagnosticReason::UnterminatedString));
+                    self.problems
+                        .push((start as u32, DiagnosticReason::UnterminatedString));
                     return;
                 }
                 Step::Ate => {}
@@ -247,7 +267,8 @@ impl Scanner<'_> {
                 }
             }
         }
-        self.problems.push((start as u32, DiagnosticReason::UnterminatedString));
+        self.problems
+            .push((start as u32, DiagnosticReason::UnterminatedString));
     }
 
     /// Advances over an escape, a doubled verbatim quote, or a real closer.
@@ -305,7 +326,10 @@ impl Scanner<'_> {
         true
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn try_char(&mut self) -> bool {
         if self.byte() != b'\'' {
             return false;
@@ -324,7 +348,8 @@ impl Scanner<'_> {
             self.pos += 1;
             self.push(Kind::Char, start);
         } else {
-            self.problems.push((start as u32, DiagnosticReason::UnterminatedChar));
+            self.problems
+                .push((start as u32, DiagnosticReason::UnterminatedChar));
             while self.pos < self.src.len() && self.byte() != b'\'' && self.byte() != b'\n' {
                 self.bump();
             }
@@ -348,13 +373,22 @@ impl Scanner<'_> {
             }
         } else {
             self.digits();
-            if self.byte() == b'.' && self.src.as_bytes().get(self.pos + 1).is_some_and(u8::is_ascii_digit) {
+            if self.byte() == b'.'
+                && self
+                    .src
+                    .as_bytes()
+                    .get(self.pos + 1)
+                    .is_some_and(u8::is_ascii_digit)
+            {
                 self.pos += 1;
                 self.digits();
             }
             self.exponent();
         }
-        while matches!(self.byte(), b'u' | b'U' | b'l' | b'L' | b'f' | b'F' | b'd' | b'D' | b'm' | b'M') {
+        while matches!(
+            self.byte(),
+            b'u' | b'U' | b'l' | b'L' | b'f' | b'F' | b'd' | b'D' | b'm' | b'M'
+        ) {
             self.pos += 1;
         }
         self.push(Kind::Num, start);
@@ -398,7 +432,10 @@ impl Scanner<'_> {
     }
 
     fn punct(&mut self) {
-        let len = MULTI.iter().find(|op| self.starts(op)).map_or(1, |op| op.len());
+        let len = MULTI
+            .iter()
+            .find(|op| self.starts(op))
+            .map_or(1, |op| op.len());
         if len == 1 && !self.byte().is_ascii() {
             let start = self.pos;
             self.bump();
@@ -408,7 +445,10 @@ impl Scanner<'_> {
         self.push_len(Kind::Punct, len);
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn enter(&mut self) -> bool {
         if self.depth >= self.max_depth {
             self.too_deep_at = Some(self.pos as u32);
@@ -419,20 +459,29 @@ impl Scanner<'_> {
     }
 
     fn skip_space(&mut self) {
-        while self.peek().is_some_and(|ch| ch.is_whitespace() && ch != '\n') {
+        while self
+            .peek()
+            .is_some_and(|ch| ch.is_whitespace() && ch != '\n')
+        {
             self.bump();
         }
     }
 
     fn ident_start(&self) -> bool {
         if self.byte() == b'@' {
-            return self.src[self.pos + 1..].chars().next().is_some_and(is_ident_start);
+            return self.src[self.pos + 1..]
+                .chars()
+                .next()
+                .is_some_and(is_ident_start);
         }
         self.peek().is_some_and(is_ident_start)
     }
 
     fn count(&self, byte: u8) -> usize {
-        self.src.as_bytes()[self.pos..].iter().take_while(|item| **item == byte).count()
+        self.src.as_bytes()[self.pos..]
+            .iter()
+            .take_while(|item| **item == byte)
+            .count()
     }
 
     fn starts(&self, text: &str) -> bool {
@@ -453,7 +502,10 @@ impl Scanner<'_> {
         Some(ch)
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn push(&mut self, kind: Kind, start: usize) {
         if self.pos < start {
             return;

@@ -65,7 +65,10 @@ impl FileHandlingDecision {
     /// assert!(FileHandlingDecision::DebugVisible.should_recurse());
     /// assert!(FileHandlingDecision::OmitContent.should_recurse());
     /// ```
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn should_recurse(self) -> bool {
         match self {
             Self::Include | Self::OmitContent | Self::DebugVisible => true,
@@ -91,7 +94,10 @@ impl FileHandlingDecision {
     /// assert!(!FileHandlingDecision::DebugVisible.should_read_content());
     /// assert!(!FileHandlingDecision::OmitContent.should_read_content());
     /// ```
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn should_read_content(self) -> bool {
         match self {
             Self::Include => true,
@@ -111,7 +117,10 @@ impl FileHandlingDecision {
     /// assert!(FileHandlingDecision::DebugVisible.show_in_tree());
     /// assert!(FileHandlingDecision::OmitContent.show_in_tree());
     /// ```
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn show_in_tree(self) -> bool {
         match self {
             Self::Exclude => false,
@@ -145,12 +154,15 @@ impl FileHandlingDecision {
     /// assert!(FileHandlingDecision::DebugVisible.needs_metadata());
     /// assert!(FileHandlingDecision::OmitContent.needs_metadata());
     /// ```
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn needs_metadata(self) -> bool {
         match self {
             // Included, omitted-content and diagnostic entries all display metadata.
             Self::Include | Self::OmitContent | Self::DebugVisible => true,
-            Self::Exclude => false,     // Never shown, skip metadata
+            Self::Exclude => false, // Never shown, skip metadata
         }
     }
 }

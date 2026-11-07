@@ -1,11 +1,16 @@
 [package]
 name = "dctx-template"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2024"
 license.workspace = true
 repository.workspace = true
+rust-version.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 description = "Pure DTS compiler, versioned ContextPlan and bounded renderer"
 
 [dependencies]
-dctx-core = { path = "../dctx-core" }
-dctx-hash = { path = "../dctx-hash" }
+dctx-core = { version = "=1.2.0", path = "../dctx-core" }
+dctx-hash = { version = "=1.2.0", path = "../dctx-hash" }

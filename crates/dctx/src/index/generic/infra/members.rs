@@ -7,8 +7,21 @@ use super::super::{ident_at, is_denied};
 
 /// First words of a protobuf line inside a message that are statements, never a field type.
 const PROTO_STATEMENTS: &[&str] = &[
-    "option", "syntax", "edition", "import", "package", "reserved", "extensions", "returns", "rpc", "message", "enum", "service", "oneof",
-    "extend", "stream",
+    "option",
+    "syntax",
+    "edition",
+    "import",
+    "package",
+    "reserved",
+    "extensions",
+    "returns",
+    "rpc",
+    "message",
+    "enum",
+    "service",
+    "oneof",
+    "extend",
+    "stream",
 ];
 
 /// What a Dockerfile instruction line continues onto the next line.
@@ -31,16 +44,21 @@ pub(super) fn bracket_delta(line: &str) -> i32 {
 
 /// True for a plain variable or field name: letters, digits and `_`, not starting with a digit, not a keyword.
 fn is_name(word: &str) -> bool {
-    word.starts_with(|c: char| c.is_alphabetic() || c == '_') && word.chars().all(|c| c.is_alphanumeric() || c == '_') && !is_denied(word)
+    word.starts_with(|c: char| c.is_alphabetic() || c == '_')
+        && word.chars().all(|c| c.is_alphanumeric() || c == '_')
+        && !is_denied(word)
 }
 
 /// Terraform `key = value` directly inside a `locals` block: the key, as a `const`.
 pub(super) fn locals_key(line: &str) -> Option<(String, &'static str)> {
-    let end = line.find(|c: char| !(c.is_alphanumeric() || matches!(c, '_' | '-'))).unwrap_or(line.len());
+    let end = line
+        .find(|c: char| !(c.is_alphanumeric() || matches!(c, '_' | '-')))
+        .unwrap_or(line.len());
     let name = &line[..end];
     let rest = line[end..].trim_start();
     let valid = name.starts_with(|c: char| c.is_alphabetic() || c == '_') && !is_denied(name);
-    (valid && rest.starts_with('=') && !rest.starts_with("==") && !rest.starts_with("=>")).then(|| (name.to_string(), "const"))
+    (valid && rest.starts_with('=') && !rest.starts_with("==") && !rest.starts_with("=>"))
+        .then(|| (name.to_string(), "const"))
 }
 
 /// Shell names declared by one top-level line: `alias a=...` (`fn`), `readonly` and `declare -r` (`const`), `export` and
@@ -68,7 +86,11 @@ pub(super) fn shell_vars(line: &str) -> Vec<(String, &'static str)> {
         .filter(|word| !word.starts_with('-'))
         .filter_map(|word| {
             let name = word.split_once('=')?.0.trim_end_matches('+');
-            let ok = if kind == "fn" { alias_name(name) } else { is_name(name) };
+            let ok = if kind == "fn" {
+                alias_name(name)
+            } else {
+                is_name(name)
+            };
             ok.then(|| (name.to_string(), kind))
         })
         .collect()
@@ -76,7 +98,11 @@ pub(super) fn shell_vars(line: &str) -> Vec<(String, &'static str)> {
 
 /// True for an alias name: word characters and `-.:@+`, starting with a letter, digit or `_`.
 fn alias_name(name: &str) -> bool {
-    name.starts_with(|c: char| c.is_alphanumeric() || c == '_') && name.chars().all(|c| c.is_alphanumeric() || matches!(c, '_' | '-' | '.' | ':' | '@' | '+')) && !is_denied(name)
+    name.starts_with(|c: char| c.is_alphanumeric() || c == '_')
+        && name
+            .chars()
+            .all(|c| c.is_alphanumeric() || matches!(c, '_' | '-' | '.' | ':' | '@' | '+'))
+        && !is_denied(name)
 }
 
 /// Protobuf `[label] type name = N;` inside a message (`field`) or `NAME = N;` inside an enum (`const`).
@@ -93,19 +119,30 @@ pub(super) fn proto_member(line: &str, container: Option<&str>) -> Option<(Strin
         return None;
     }
     match container? {
-        "message" if tokens.len() >= 2 && !PROTO_STATEMENTS.contains(&tokens[0]) => Some((name.to_string(), "field")),
-        "enum" if tokens.len() == 1 && !PROTO_STATEMENTS.contains(&name) => Some((name.to_string(), "const")),
+        "message" if tokens.len() >= 2 && !PROTO_STATEMENTS.contains(&tokens[0]) => {
+            Some((name.to_string(), "field"))
+        }
+        "enum" if tokens.len() == 1 && !PROTO_STATEMENTS.contains(&name) => {
+            Some((name.to_string(), "const"))
+        }
         _ => None,
     }
 }
 
 /// GraphQL `name: Type` / `name(args): Type` inside a `type`, `input` or `interface` (`field`), or a bare value in an `enum` (`const`).
-pub(super) fn graphql_member(line: &str, container: Option<&str>) -> Option<(String, &'static str)> {
+pub(super) fn graphql_member(
+    line: &str,
+    container: Option<&str>,
+) -> Option<(String, &'static str)> {
     let name = ident_at(line).filter(|name| !is_denied(name) && !name.contains('$'))?;
     let rest = line[name.len()..].trim_start();
     match container? {
-        "type" | "input" | "interface" if rest.starts_with([':', '(']) => Some((name.to_string(), "field")),
-        "enum" if rest.is_empty() || rest.starts_with('@') || rest.starts_with(',') => Some((name.to_string(), "const")),
+        "type" | "input" | "interface" if rest.starts_with([':', '(']) => {
+            Some((name.to_string(), "field"))
+        }
+        "enum" if rest.is_empty() || rest.starts_with('@') || rest.starts_with(',') => {
+            Some((name.to_string(), "const"))
+        }
         _ => None,
     }
 }
@@ -123,7 +160,9 @@ fn docker_words(line: &str) -> Vec<String> {
                     quote = None;
                 }
             }
-            None if c.is_whitespace() => words.extend((!word.is_empty()).then(|| std::mem::take(&mut word))),
+            None if c.is_whitespace() => {
+                words.extend((!word.is_empty()).then(|| std::mem::take(&mut word)))
+            }
             None => {
                 if c == '"' || c == '\'' {
                     quote = Some(c);
@@ -142,18 +181,35 @@ pub(super) fn docker_names(line: &str, carry: Option<Carry>) -> (Vec<String>, Op
     let mut words = docker_words(line).into_iter();
     let kind = match carry {
         Some(kind) => kind,
-        None => match words.next().map(|word| word.to_ascii_uppercase()).as_deref() {
+        None => match words
+            .next()
+            .map(|word| word.to_ascii_uppercase())
+            .as_deref()
+        {
             Some("ARG") => Carry::Arg,
             Some("ENV") => Carry::Env,
             _ => return (Vec::new(), None),
         },
     };
     let rest: Vec<String> = words.collect();
-    let legacy = carry.is_none() && kind == Carry::Env && rest.first().is_some_and(|word| !word.contains('='));
+    let legacy = carry.is_none()
+        && kind == Carry::Env
+        && rest.first().is_some_and(|word| !word.contains('='));
     let names: Vec<String> = match (kind, legacy) {
         (_, true) => rest.first().cloned().into_iter().collect(),
-        (Carry::Env, false) => rest.iter().filter_map(|word| word.split_once('=')).map(|(name, _)| name.to_string()).collect(),
-        (Carry::Arg, false) => rest.iter().map(|word| word.split_once('=').map_or(word.as_str(), |(name, _)| name).to_string()).collect(),
+        (Carry::Env, false) => rest
+            .iter()
+            .filter_map(|word| word.split_once('='))
+            .map(|(name, _)| name.to_string())
+            .collect(),
+        (Carry::Arg, false) => rest
+            .iter()
+            .map(|word| {
+                word.split_once('=')
+                    .map_or(word.as_str(), |(name, _)| name)
+                    .to_string()
+            })
+            .collect(),
     };
     let names = names.into_iter().filter(|name| is_name(name)).collect();
     let next = (line.trim_end().ends_with('\\') && !legacy).then_some(kind);
@@ -180,16 +236,23 @@ fn quoted(text: &str) -> Option<(&str, &str)> {
 
 /// Terraform `dynamic "ingress" {` (masked `line`, unmasked `source`, both trimmed at the start): the block label.
 pub(super) fn dynamic_label(line: &str, source: &str) -> Option<String> {
-    let after = line.strip_prefix("dynamic").filter(|after| after.starts_with(char::is_whitespace))?;
+    let after = line
+        .strip_prefix("dynamic")
+        .filter(|after| after.starts_with(char::is_whitespace))?;
     let (label, _) = quoted(source.get(line.len() - after.len()..)?.trim_start())?;
-    let valid = !label.is_empty() && label.chars().all(|c| c.is_alphanumeric() || matches!(c, '_' | '-'));
+    let valid = !label.is_empty()
+        && label
+            .chars()
+            .all(|c| c.is_alphanumeric() || matches!(c, '_' | '-'));
     (valid && line.ends_with('{')).then(|| label.to_string())
 }
 
 /// A bats `@test "name" {` block (masked `line`, unmasked `source`, both trimmed at the start): `@test "name"`, as a `fn`.
 /// A name over 80 characters is cut there.
 pub(super) fn bats_test(line: &str, source: &str) -> Option<(String, &'static str)> {
-    let after = line.strip_prefix("@test").filter(|after| after.starts_with(char::is_whitespace))?;
+    let after = line
+        .strip_prefix("@test")
+        .filter(|after| after.starts_with(char::is_whitespace))?;
     let (name, tail) = quoted(source.get(line.len() - after.len()..)?.trim_start())?;
     let name: String = name.chars().take(80).collect();
     (tail.trim() == "{").then(|| (format!("@test \"{name}\""), "fn"))

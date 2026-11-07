@@ -4,7 +4,9 @@
 //! A capability is a requested ceiling, never consent (S-CAPABILITY). Depends on json, scalars, refusal.
 //! Used by `requests::Initialize` and by host grant intersection code.
 
-use crate::json::fields::{Fields, Obj, array, boolean, constant, int_in, positive, string, uint, unique_list};
+use crate::json::fields::{
+    Fields, Obj, array, boolean, constant, int_in, positive, string, uint, unique_list,
+};
 use crate::json::value::Json;
 use crate::records::scalars::{ProjectPath, Role, Token};
 use crate::refusal::Refusal;
@@ -78,7 +80,10 @@ impl Capability {
         let capability = match string(f.req("kind")?)? {
             "file.read" => {
                 constant(f.req("scope")?, "project")?;
-                Self::FileRead { path: ProjectPath::decode(f.req("path")?)?, max_bytes: positive(f.req("max_bytes")?)? }
+                Self::FileRead {
+                    path: ProjectPath::decode(f.req("path")?)?,
+                    max_bytes: positive(f.req("max_bytes")?)?,
+                }
             }
             "file.write" => {
                 constant(f.req("scope")?, "project")?;
@@ -92,11 +97,16 @@ impl Capability {
             "program.run" => {
                 constant(f.req("program")?, "git")?;
                 constant(f.req("operation")?, "git.add-ignore")?;
-                let resources = f.req("resources")?.as_array().ok_or(Refusal::schema("expected-array"))?;
+                let resources = f
+                    .req("resources")?
+                    .as_array()
+                    .ok_or(Refusal::schema("expected-array"))?;
                 if resources.len() != 1 || resources[0].as_str() != Some("git-admin:stage-ignore") {
                     return Err(Refusal::schema("constant-mismatch"));
                 }
-                Self::GitAddIgnore { max_output_bytes: int_in(f.req("max_output_bytes")?, 1, 65_536)? }
+                Self::GitAddIgnore {
+                    max_output_bytes: int_in(f.req("max_output_bytes")?, 1, 65_536)?,
+                }
             }
             "outputs.read" => Self::OutputsRead {
                 roles: unique_list(f.req("roles")?, 1, 32, Role::decode)?,
@@ -125,7 +135,12 @@ impl Capability {
                 .put("path", path.encode())
                 .put("max_bytes", Json::uint(*max_bytes))
                 .build(),
-            Self::FileWrite { path, create, max_growth_bytes, max_bytes } => Obj::new()
+            Self::FileWrite {
+                path,
+                create,
+                max_growth_bytes,
+                max_bytes,
+            } => Obj::new()
                 .put("kind", Json::str("file.write"))
                 .put("scope", Json::str("project"))
                 .put("path", path.encode())
@@ -137,16 +152,29 @@ impl Capability {
                 .put("kind", Json::str("program.run"))
                 .put("program", Json::str("git"))
                 .put("operation", Json::str("git.add-ignore"))
-                .put("resources", Json::Array(vec![Json::str("git-admin:stage-ignore")]))
+                .put(
+                    "resources",
+                    Json::Array(vec![Json::str("git-admin:stage-ignore")]),
+                )
                 .put("max_output_bytes", Json::uint(*max_output_bytes))
                 .build(),
-            Self::OutputsRead { roles, operations, max_bytes } => Obj::new()
+            Self::OutputsRead {
+                roles,
+                operations,
+                max_bytes,
+            } => Obj::new()
                 .put("kind", Json::str("outputs.read"))
                 .put("roles", array(roles, Role::encode))
                 .put("operations", array(operations, |op| op.encode()))
                 .put("max_bytes", Json::uint(*max_bytes))
                 .build(),
-            Self::State { read, write, reclaim, max_bytes, source_content } => Obj::new()
+            Self::State {
+                read,
+                write,
+                reclaim,
+                max_bytes,
+                source_content,
+            } => Obj::new()
                 .put("kind", Json::str("state"))
                 .put("read", Json::Bool(*read))
                 .put("write", Json::Bool(*write))
@@ -225,9 +253,15 @@ impl Liveness {
         let sample_ms = positive(f.req("sample_ms")?)?;
         let cancel_grace_ms = positive(f.req("cancel_grace_ms")?)?;
         let liveness = match mode {
-            "interactive" => Self::Interactive { sample_ms, cancel_grace_ms },
+            "interactive" => Self::Interactive {
+                sample_ms,
+                cancel_grace_ms,
+            },
             "unattended" => match string(f.req("unresolved")?)? {
-                "fail-closed" => Self::UnattendedFailClosed { sample_ms, cancel_grace_ms },
+                "fail-closed" => Self::UnattendedFailClosed {
+                    sample_ms,
+                    cancel_grace_ms,
+                },
                 "bounded-observation" => Self::UnattendedBoundedObservation {
                     sample_ms,
                     cancel_grace_ms,
@@ -243,18 +277,28 @@ impl Liveness {
 
     pub(crate) fn encode(&self) -> Json {
         match *self {
-            Self::Interactive { sample_ms, cancel_grace_ms } => Obj::new()
+            Self::Interactive {
+                sample_ms,
+                cancel_grace_ms,
+            } => Obj::new()
                 .put("mode", Json::str("interactive"))
                 .put("sample_ms", Json::uint(sample_ms))
                 .put("cancel_grace_ms", Json::uint(cancel_grace_ms))
                 .build(),
-            Self::UnattendedFailClosed { sample_ms, cancel_grace_ms } => Obj::new()
+            Self::UnattendedFailClosed {
+                sample_ms,
+                cancel_grace_ms,
+            } => Obj::new()
                 .put("mode", Json::str("unattended"))
                 .put("sample_ms", Json::uint(sample_ms))
                 .put("cancel_grace_ms", Json::uint(cancel_grace_ms))
                 .put("unresolved", Json::str("fail-closed"))
                 .build(),
-            Self::UnattendedBoundedObservation { sample_ms, cancel_grace_ms, inactivity_ms } => Obj::new()
+            Self::UnattendedBoundedObservation {
+                sample_ms,
+                cancel_grace_ms,
+                inactivity_ms,
+            } => Obj::new()
                 .put("mode", Json::str("unattended"))
                 .put("sample_ms", Json::uint(sample_ms))
                 .put("cancel_grace_ms", Json::uint(cancel_grace_ms))
@@ -310,7 +354,12 @@ mod tests {
             let liveness = Liveness::decode(&json(text)).expect(text);
             assert_eq!(Liveness::decode(&liveness.encode()), Ok(liveness));
         }
-        assert!(Liveness::decode(&json(r#"{"mode":"unattended","sample_ms":1,"cancel_grace_ms":1}"#)).is_err());
+        assert!(
+            Liveness::decode(&json(
+                r#"{"mode":"unattended","sample_ms":1,"cancel_grace_ms":1}"#
+            ))
+            .is_err()
+        );
         let unbounded = r#"{"mode":"unattended","sample_ms":1,"cancel_grace_ms":1,"unresolved":"bounded-observation"}"#;
         assert!(Liveness::decode(&json(unbounded)).is_err());
         let extra = r#"{"mode":"interactive","sample_ms":1,"cancel_grace_ms":1,"inactivity_ms":9}"#;

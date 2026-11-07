@@ -3,12 +3,12 @@
 //! Restart, expiry, the system cap and the interval all go through a temp directory.
 //! The fake clock supplies wall time. Nothing here starts a background cleaner.
 
-use dctx_adapter_cache::adapters::{auto_clean, FsLedgerStore, FsObjectStore, LEDGER_FILE};
+use dctx_adapter_cache::adapters::{FsLedgerStore, FsObjectStore, LEDGER_FILE, auto_clean};
 use dctx_adapter_cache::ports::LedgerStore;
 use dctx_adapter_cache::{
-    AutoCleanPolicy, ExportEvidence, FakeClock, KnownExport, Lifecycle, OutputPlace, Physical,
-    Purpose, Quota, RestartEvidence, RootId, SessionId, WriterPhase, HARD_CAP_BYTES,
-    UNLINK_GRACE_MS,
+    AutoCleanPolicy, ExportEvidence, FakeClock, HARD_CAP_BYTES, KnownExport, Lifecycle,
+    OutputPlace, Physical, Purpose, Quota, RestartEvidence, RootId, SessionId, UNLINK_GRACE_MS,
+    WriterPhase,
 };
 use std::collections::BTreeSet;
 use std::fs;
@@ -23,7 +23,10 @@ fn cache_dir() -> (tempfile::TempDir, PathBuf) {
 
 fn rich() -> Lifecycle {
     let mut life = Lifecycle::new(Quota::scaled(500)).expect("quota");
-    life.reconcile(&RestartEvidence { boot_id: 42, held_sessions: BTreeSet::new() });
+    life.reconcile(&RestartEvidence {
+        boot_id: 42,
+        held_sessions: BTreeSet::new(),
+    });
     life.follow(&FakeClock::at(10));
     let root = RootId::new(3);
     life.register_root(root).expect("root");
@@ -32,7 +35,8 @@ fn rich() -> Lifecycle {
     life.reader_confirm(lease).expect("confirm");
     let other = RootId::new(8);
     life.register_root(other).expect("root");
-    life.writer_acquire(other, SessionId::new(9)).expect("acquire");
+    life.writer_acquire(other, SessionId::new(9))
+        .expect("acquire");
     life.writer_reserve(other, 30).expect("reserve");
     life.crash_writer(other).expect("crash");
     life.adopt_legacy(&KnownExport {
@@ -70,13 +74,19 @@ fn restart_round_trip_keeps_lock_evidence_on_disk() {
     let mut held = BTreeSet::new();
     held.insert(SessionId::new(4));
     held.insert(SessionId::new(9));
-    kept.reconcile(&RestartEvidence { boot_id: 42, held_sessions: held });
+    kept.reconcile(&RestartEvidence {
+        boot_id: 42,
+        held_sessions: held,
+    });
     assert_eq!(kept.writer_phase(RootId::new(8)), WriterPhase::Dead);
     assert_eq!(kept.status().active_leases, 1);
 
     let again = store.load(Quota::scaled(9)).expect("load");
     let mut dropped = again.lifecycle;
-    dropped.reconcile(&RestartEvidence { boot_id: 42, held_sessions: BTreeSet::new() });
+    dropped.reconcile(&RestartEvidence {
+        boot_id: 42,
+        held_sessions: BTreeSet::new(),
+    });
     assert_eq!(dropped.writer_phase(RootId::new(8)), WriterPhase::Free);
     assert_eq!(dropped.status().active_leases, 0);
     assert_eq!(dropped.admitted(), admitted - 30);
@@ -98,12 +108,26 @@ fn overlay_ttl_unlinks_the_object_file_after_grace() {
     policy.min_interval_ms = 0;
     policy.overlay_ttl_ms = 1_000;
 
-    auto_clean(&store, &objects, &mut life, FakeClock::at(999).sample(), policy).expect("early");
+    auto_clean(
+        &store,
+        &objects,
+        &mut life,
+        FakeClock::at(999).sample(),
+        policy,
+    )
+    .expect("early");
     assert_eq!(life.manifest_state(manifest), Some(Physical::Published));
     assert_eq!(fs::read(&path).expect("file"), b"overlay");
     assert!(!life.root_expired(id));
 
-    auto_clean(&store, &objects, &mut life, FakeClock::at(1_000).sample(), policy).expect("due");
+    auto_clean(
+        &store,
+        &objects,
+        &mut life,
+        FakeClock::at(1_000).sample(),
+        policy,
+    )
+    .expect("due");
     assert_eq!(life.manifest_state(manifest), Some(Physical::Retired));
     assert_eq!(fs::read(&path).expect("file"), b"overlay");
     assert!(!life.root_expired(id));
@@ -148,8 +172,14 @@ fn system_cap_reclaims_views_across_roots() {
     assert!(life.legacy_frozen());
     // Admission evicts the expired views instead of refusing (P-C11); the files wait for the next commit.
     let mut probe = life.clone();
-    probe.reserve_for(None, Purpose::Payload, 1).expect("eviction makes room");
-    assert_eq!(probe.take_evicted().len(), 2, "oldest first, and only as many as make room");
+    probe
+        .reserve_for(None, Purpose::Payload, 1)
+        .expect("eviction makes room");
+    assert_eq!(
+        probe.take_evicted().len(),
+        2,
+        "oldest first, and only as many as make room"
+    );
     for path in &files {
         assert!(path.is_file());
     }
@@ -157,7 +187,8 @@ fn system_cap_reclaims_views_across_roots() {
     clock.advance(UNLINK_GRACE_MS);
     let mut reclaimed = 0u64;
     for _ in 0..4 {
-        let report = auto_clean(&store, &objects, &mut life, clock.sample(), policy).expect("later");
+        let report =
+            auto_clean(&store, &objects, &mut life, clock.sample(), policy).expect("later");
         reclaimed = reclaimed.saturating_add(report.reclaimed_bytes);
         if life.admitted() == 0 {
             break;
@@ -192,11 +223,23 @@ fn auto_clean_interval_survives_reload_and_disabled_is_a_no_op() {
     assert_eq!(loaded.lifecycle.last_auto_clean(), Some(stamp));
     assert_eq!(loaded.lifecycle.status().hard_cap, 100);
     let mut life = loaded.lifecycle;
-    assert!(!auto_clean(&store, &objects, &mut life, clock.sample(), policy).expect("same").ran);
+    assert!(
+        !auto_clean(&store, &objects, &mut life, clock.sample(), policy)
+            .expect("same")
+            .ran
+    );
     clock.advance(4_999);
-    assert!(!auto_clean(&store, &objects, &mut life, clock.sample(), policy).expect("gap").ran);
+    assert!(
+        !auto_clean(&store, &objects, &mut life, clock.sample(), policy)
+            .expect("gap")
+            .ran
+    );
     clock.advance(1);
-    assert!(auto_clean(&store, &objects, &mut life, clock.sample(), policy).expect("due").ran);
+    assert!(
+        auto_clean(&store, &objects, &mut life, clock.sample(), policy)
+            .expect("due")
+            .ran
+    );
 
     let mut idle = Lifecycle::new(Quota::scaled(80)).expect("quota");
     let staged = idle.load_staged(8, 0).expect("staged");
@@ -206,14 +249,30 @@ fn auto_clean_interval_survives_reload_and_disabled_is_a_no_op() {
     let mut disabled = AutoCleanPolicy::product_default();
     disabled.enabled = false;
     disabled.staging_ttl_ms = 1;
-    let report = auto_clean(&store, &objects, &mut idle, FakeClock::at(10_000).sample(), disabled).expect("off");
+    let report = auto_clean(
+        &store,
+        &objects,
+        &mut idle,
+        FakeClock::at(10_000).sample(),
+        disabled,
+    )
+    .expect("off");
     assert!(!report.ran);
     assert_eq!(idle.logical_revision(), revision);
     assert_eq!(idle.object_state(staged), Some(Physical::Staged));
     assert!(idle.last_auto_clean().is_none());
     assert_eq!(fs::read(root.join(LEDGER_FILE)).expect("image"), image);
     disabled.system_cap_bytes = HARD_CAP_BYTES + 1;
-    assert!(auto_clean(&store, &objects, &mut idle, FakeClock::at(10_000).sample(), disabled).is_err());
+    assert!(
+        auto_clean(
+            &store,
+            &objects,
+            &mut idle,
+            FakeClock::at(10_000).sample(),
+            disabled
+        )
+        .is_err()
+    );
     assert_eq!(idle.logical_revision(), revision);
     assert_eq!(fs::read(root.join(LEDGER_FILE)).expect("image"), image);
 }

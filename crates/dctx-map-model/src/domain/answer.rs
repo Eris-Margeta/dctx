@@ -17,7 +17,10 @@ pub const MAX_BUDGET: u16 = 2000;
 pub struct AnswerBudget(u16);
 impl AnswerBudget {
     /// Default for the selected verb (explain uses 400 tokens).
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn for_verb(verb: Verb) -> Self {
         Self(if matches!(verb, Verb::Explain) {
             400
@@ -37,17 +40,26 @@ impl AnswerBudget {
         }
     }
     /// Token ceiling supplied by the caller.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn tokens(self) -> u16 {
         self.0
     }
     /// Maximum bytes whose ceil(bytes / 3.5) fits the token ceiling.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn bytes(self) -> usize {
         self.0 as usize * 7 / 2
     }
     /// Tests actual serialized output, including all metadata.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn fits(self, output: &str) -> bool {
         output.len() <= self.bytes()
     }
@@ -125,7 +137,10 @@ pub struct Record {
     )]
     pub relation: Option<Relation>,
     /// Whether the record could not be refreshed in time.
-    #[cfg_attr(feature = "wire-json", serde(skip_serializing_if = "is_false", default))]
+    #[cfg_attr(
+        feature = "wire-json",
+        serde(skip_serializing_if = "is_false", default)
+    )]
     pub stale: bool,
     /// Signature shown by explain.
     #[cfg_attr(
@@ -168,7 +183,10 @@ pub struct Record {
     pub score: i64,
 }
 #[cfg(feature = "wire-json")]
-#[allow(clippy::trivially_copy_pass_by_ref, reason = "Serde skip_serializing_if predicates receive a reference to the serialized field.")]
+#[allow(
+    clippy::trivially_copy_pass_by_ref,
+    reason = "Serde skip_serializing_if predicates receive a reference to the serialized field."
+)]
 fn is_false(value: &bool) -> bool {
     !value
 }

@@ -1,13 +1,18 @@
 [package]
 name = "dctx-core"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2021"
-description = "Pure dctx domain (ids, selection, budgets, errors, pack facts) plus legacy compatibility modules"
+description = "Pure dctx domain (ids, selection, budgets, errors, pack facts)"
 license.workspace = true
 repository.workspace = true
+rust-version.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [dependencies]
-dctx-hash = { path = "../dctx-hash" }
+dctx-hash = { version = "=1.2.0", path = "../dctx-hash" }
 
 [dev-dependencies]
 tempfile = "3"

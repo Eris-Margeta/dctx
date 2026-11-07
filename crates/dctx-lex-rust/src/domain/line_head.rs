@@ -123,7 +123,11 @@ pub(crate) fn parse(line: &str) -> Option<Head> {
                         words.name()?
                     };
                     let alias = if words.eat("as") { words.name() } else { None };
-                    return Some(Head::ExternCrate { name, alias, public });
+                    return Some(Head::ExternCrate {
+                        name,
+                        alias,
+                        public,
+                    });
                 }
                 if words.eat("\"") {
                     while words.next().is_some_and(|w| w != "\"") {}
@@ -261,12 +265,30 @@ mod tests {
 
     #[test]
     fn heads_with_visibility_and_modifiers_are_recognised() {
-        assert_eq!(item("pub(crate) async unsafe fn run() {"), Some((Function, "run".into(), true)));
-        assert_eq!(item("const fn k() -> u8 { 3 }"), Some((Function, "k".into(), false)));
-        assert_eq!(item("pub const LIMIT: u32 = 3;"), Some((Const, "LIMIT".into(), true)));
-        assert_eq!(item("static mut X: u8 = 0;"), Some((Static, "X".into(), false)));
-        assert_eq!(item("extern \"C\" fn cb() {}"), Some((Function, "cb".into(), false)));
-        assert_eq!(item("macro_rules! make {"), Some((Macro, "make".into(), false)));
+        assert_eq!(
+            item("pub(crate) async unsafe fn run() {"),
+            Some((Function, "run".into(), true))
+        );
+        assert_eq!(
+            item("const fn k() -> u8 { 3 }"),
+            Some((Function, "k".into(), false))
+        );
+        assert_eq!(
+            item("pub const LIMIT: u32 = 3;"),
+            Some((Const, "LIMIT".into(), true))
+        );
+        assert_eq!(
+            item("static mut X: u8 = 0;"),
+            Some((Static, "X".into(), false))
+        );
+        assert_eq!(
+            item("extern \"C\" fn cb() {}"),
+            Some((Function, "cb".into(), false))
+        );
+        assert_eq!(
+            item("macro_rules! make {"),
+            Some((Macro, "make".into(), false))
+        );
         assert_eq!(item("struct r#type;"), Some((Struct, "type".into(), false)));
         assert_eq!(item("union U { a: u8 }"), Some((Union, "U".into(), false)));
     }
@@ -287,13 +309,29 @@ mod tests {
             item("impl<T: Into<u8>> Work for Vec<T> where T: Copy {"),
             Some((Impl, "Vec<T>::impl<Work>".into(), false))
         );
-        assert_eq!(item("unsafe impl !Send for Raw {}"), Some((Impl, "Raw::impl<Send>".into(), false)));
-        assert_eq!(item("impl Widget {"), Some((Impl, "Widget::impl".into(), false)));
-        assert_eq!(parse("pub mod support;"), Some(Head::ModFile { name: "support".into(), public: true }));
+        assert_eq!(
+            item("unsafe impl !Send for Raw {}"),
+            Some((Impl, "Raw::impl<Send>".into(), false))
+        );
+        assert_eq!(
+            item("impl Widget {"),
+            Some((Impl, "Widget::impl".into(), false))
+        );
+        assert_eq!(
+            parse("pub mod support;"),
+            Some(Head::ModFile {
+                name: "support".into(),
+                public: true
+            })
+        );
         assert_eq!(item("mod tests {"), Some((Module, "tests".into(), false)));
         assert_eq!(
             parse("extern crate alloc as heap;"),
-            Some(Head::ExternCrate { name: "alloc".into(), alias: Some("heap".into()), public: false })
+            Some(Head::ExternCrate {
+                name: "alloc".into(),
+                alias: Some("heap".into()),
+                public: false
+            })
         );
     }
 }

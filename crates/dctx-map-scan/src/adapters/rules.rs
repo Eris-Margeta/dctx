@@ -92,7 +92,7 @@ impl IgnoreEngine {
     }
 
     /// Loads explicit layers with injected IO; `None` disables global config.
-    /// Project precedence is `.gitignore`, `.dctxignore`, then `.legacyignore`.
+    /// Project precedence is `.gitignore`, then `.dctxignore`.
     ///
     /// # Errors
     /// Returns the rule source read or decoding error from any supplied global or project rule layer.
@@ -118,10 +118,9 @@ impl IgnoreEngine {
             stats.global_ignore_count = append(source, &dir.join("ignore"), &mut ignore)?;
             stats.global_omit_count = append(source, &dir.join("omitcontent"), &mut omit)?;
         }
-        for name in [".gitignore", ".dctxignore", ".legacyignore"] {
+        for name in [".gitignore", ".dctxignore"] {
             stats.local_ignore_count += append(source, &base_dir.join(name), &mut ignore)?;
         }
-        stats.local_omit_count = append(source, &base_dir.join(".dctxomitcontent"), &mut omit)?;
         Ok(Self::from_rules(ignore, omit).with_stats(stats))
     }
 }
@@ -175,16 +174,14 @@ mod tests {
         );
     }
     #[test]
-    fn layer_precedence_and_local_omission() {
+    fn layer_precedence_and_global_omission() {
         let temp = tempfile::tempdir().unwrap();
         let global = temp.path().join("global");
         fs::create_dir(&global).unwrap();
         fs::write(global.join("ignore"), "*.log").unwrap();
         fs::write(global.join("omitcontent"), "*.data").unwrap();
-        fs::write(temp.path().join(".gitignore"), "!keep.log").unwrap();
-        fs::write(temp.path().join(".dctxignore"), "keep.log").unwrap();
-        fs::write(temp.path().join(".legacyignore"), "!keep.log").unwrap();
-        fs::write(temp.path().join(".dctxomitcontent"), "*.txt").unwrap();
+        fs::write(temp.path().join(".gitignore"), "keep.log").unwrap();
+        fs::write(temp.path().join(".dctxignore"), "!keep.log").unwrap();
         let engine =
             IgnoreEngine::build_with_source(temp.path(), Some(&global), &FileRuleSource).unwrap();
         let decide = |name| {
@@ -197,9 +194,9 @@ mod tests {
         };
         assert_eq!(decide("other.log"), FileHandlingDecision::Exclude);
         assert_eq!(decide("keep.log"), FileHandlingDecision::Include);
-        assert_eq!(decide("notes.txt"), FileHandlingDecision::OmitContent);
+        assert_eq!(decide("notes.txt"), FileHandlingDecision::Include);
         assert_eq!(decide("notes.data"), FileHandlingDecision::OmitContent);
-        assert_eq!(engine.stats().local_ignore_count, 3);
-        assert_eq!(engine.stats().local_omit_count, 1);
+        assert_eq!(engine.stats().local_ignore_count, 2);
+        assert_eq!(engine.stats().local_omit_count, 0);
     }
 }

@@ -6,11 +6,13 @@
 
 mod common;
 
-use common::fixtures::{FIXTURES, FNEST, ONELINER, PAREN_SRC, PARTIAL_SRC, TRIPLE_CLOSED, TRIPLE_OPEN};
+use common::fixtures::{
+    FIXTURES, FNEST, ONELINER, PAREN_SRC, PARTIAL_SRC, TRIPLE_CLOSED, TRIPLE_OPEN,
+};
 use common::{call_names, check_invariants, extract, names, node};
 use dctx_lex_py::{
-    Completion, DiagnosticReason, LexError, LexedFile, Limits, Precision, PyLexer, PARSER_ID,
-    PARSER_REVISION,
+    Completion, DiagnosticReason, LexError, LexedFile, Limits, PARSER_ID, PARSER_REVISION,
+    Precision, PyLexer,
 };
 use proptest::prelude::*;
 
@@ -35,12 +37,30 @@ fn parser_identity_and_refusal_strings() {
         "nesting deeper than 8 at line 4"
     );
     let lexer = PyLexer::default();
-    assert!(matches!(lexer.extract("x.js", b""), Err(LexError::UnsupportedDialect)));
-    assert!(matches!(lexer.extract("../x.py", b""), Err(LexError::InvalidId(_))));
-    assert!(matches!(lexer.extract("/abs.py", b""), Err(LexError::InvalidId(_))));
-    assert!(matches!(lexer.extract("a\\b.py", b""), Err(LexError::InvalidId(_))));
-    assert!(matches!(lexer.extract("x.py", &[0xff]), Err(LexError::InvalidUtf8(_))));
-    let small = PyLexer::new(Limits { max_bytes: 4, ..Limits::default() });
+    assert!(matches!(
+        lexer.extract("x.js", b""),
+        Err(LexError::UnsupportedDialect)
+    ));
+    assert!(matches!(
+        lexer.extract("../x.py", b""),
+        Err(LexError::InvalidId(_))
+    ));
+    assert!(matches!(
+        lexer.extract("/abs.py", b""),
+        Err(LexError::InvalidId(_))
+    ));
+    assert!(matches!(
+        lexer.extract("a\\b.py", b""),
+        Err(LexError::InvalidId(_))
+    ));
+    assert!(matches!(
+        lexer.extract("x.py", &[0xff]),
+        Err(LexError::InvalidUtf8(_))
+    ));
+    let small = PyLexer::new(Limits {
+        max_bytes: 4,
+        ..Limits::default()
+    });
     assert!(matches!(
         small.extract("a.py", b"hello"),
         Err(LexError::TooLarge { bytes: 5, limit: 4 })
@@ -66,11 +86,20 @@ fn damaged_files_keep_earlier_facts_and_label_later_ones_partial() {
     assert_eq!(facts.references[0].fact.name, "call");
     assert_eq!(facts.references[0].fact.scope, "also");
     assert_eq!(facts.references[0].precision, Precision::Partial);
-    assert!(facts.diagnostics.iter().any(|item| item.reason == DiagnosticReason::UnterminatedString));
+    assert!(
+        facts
+            .diagnostics
+            .iter()
+            .any(|item| item.reason == DiagnosticReason::UnterminatedString)
+    );
     let open = extract("t.py", TRIPLE_OPEN);
     assert_eq!(names(&open), ["t.py", "kept"]);
     assert_eq!(open.completion, Completion::Partial);
-    assert!(open.diagnostics.iter().any(|item| item.reason == DiagnosticReason::UnterminatedString));
+    assert!(
+        open.diagnostics
+            .iter()
+            .any(|item| item.reason == DiagnosticReason::UnterminatedString)
+    );
     assert!(open.nodes.iter().all(|item| item.fact.name != "swallowed"));
     let closed = extract("c.py", TRIPLE_CLOSED);
     assert_eq!(names(&closed), ["c.py"]);
@@ -80,18 +109,33 @@ fn damaged_files_keep_earlier_facts_and_label_later_ones_partial() {
     assert_eq!(names(&paren), ["b.py", "kept"]);
     assert_eq!(node(&paren, "kept").precision, Precision::Structural);
     assert_eq!(paren.completion, Completion::Partial);
-    assert!(paren.diagnostics.iter().any(|item| item.reason == DiagnosticReason::UnbalancedBracket));
+    assert!(
+        paren
+            .diagnostics
+            .iter()
+            .any(|item| item.reason == DiagnosticReason::UnbalancedBracket)
+    );
     assert!(paren.nodes.iter().all(|item| item.fact.name != "later"));
     let many = extract("e.py", &"else\n".repeat(80));
     assert_eq!(many.diagnostics.len(), LexedFile::MAX_DIAGNOSTICS);
     assert_eq!(many.completion, Completion::Partial);
-    assert!(many.diagnostics.iter().all(|item| item.reason == DiagnosticReason::UnexpectedToken));
+    assert!(
+        many.diagnostics
+            .iter()
+            .all(|item| item.reason == DiagnosticReason::UnexpectedToken)
+    );
 }
 
 #[test]
 fn depth_and_fact_limits_refuse_with_a_positive_control() {
-    let deep = PyLexer::new(Limits { max_depth: 2, ..Limits::default() });
-    let bound = PyLexer::new(Limits { max_depth: 3, ..Limits::default() });
+    let deep = PyLexer::new(Limits {
+        max_depth: 2,
+        ..Limits::default()
+    });
+    let bound = PyLexer::new(Limits {
+        max_depth: 3,
+        ..Limits::default()
+    });
     assert!(matches!(
         deep.extract("d.py", ONELINER.as_bytes()),
         Err(LexError::TooDeep { limit: 2, .. })
@@ -103,9 +147,18 @@ fn depth_and_fact_limits_refuse_with_a_positive_control() {
         Err(LexError::TooDeep { limit: 2, .. })
     ));
     assert!(bound.extract("f.py", FNEST.as_bytes()).is_ok());
-    let one = PyLexer::new(Limits { max_facts: 1, ..Limits::default() });
-    let two = PyLexer::new(Limits { max_facts: 2, ..Limits::default() });
-    let zero = PyLexer::new(Limits { max_facts: 0, ..Limits::default() });
+    let one = PyLexer::new(Limits {
+        max_facts: 1,
+        ..Limits::default()
+    });
+    let two = PyLexer::new(Limits {
+        max_facts: 2,
+        ..Limits::default()
+    });
+    let zero = PyLexer::new(Limits {
+        max_facts: 0,
+        ..Limits::default()
+    });
     assert!(matches!(
         one.extract("i.py", b"import os\n"),
         Err(LexError::TooManyFacts { limit: 1 })
@@ -136,7 +189,12 @@ fn every_fixture_prefix_is_deterministic_and_bounded() {
             }
             match first {
                 Err(LexError::InvalidUtf8(_)) => assert!(std::str::from_utf8(bytes).is_err()),
-                Ok(_) | Err(LexError::TooDeep { .. } | LexError::TooManyFacts { .. } | LexError::TooLarge { .. }) => {}
+                Ok(_)
+                | Err(
+                    LexError::TooDeep { .. }
+                    | LexError::TooManyFacts { .. }
+                    | LexError::TooLarge { .. },
+                ) => {}
                 Err(error) => panic!("unexpected {error}"),
             }
         }

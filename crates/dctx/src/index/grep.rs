@@ -6,13 +6,13 @@
 
 use std::collections::BTreeMap;
 
-use dctx_core::filter::is_secret_shaped_name;
 use dctx_core::FileHandlingDecision;
+use dctx_core::filter::is_secret_shaped_name;
 use dctx_hash::ContentDigest;
 
 use super::query::record_of;
 use super::{Generation, IndexedNode};
-use crate::domain::{hit_row, AnswerRecord, DctxError, MapRequest};
+use crate::domain::{AnswerRecord, DctxError, MapRequest, hit_row};
 
 /// True when `line` contains `needle`; ASCII letters fold when `ignore_case` is set.
 fn line_has(line: &str, needle: &str, ignore_case: bool) -> bool {
@@ -20,7 +20,9 @@ fn line_has(line: &str, needle: &str, ignore_case: bool) -> bool {
         return line.contains(needle);
     }
     let pattern = needle.as_bytes();
-    line.as_bytes().windows(pattern.len()).any(|window| window.eq_ignore_ascii_case(pattern))
+    line.as_bytes()
+        .windows(pattern.len())
+        .any(|window| window.eq_ignore_ascii_case(pattern))
 }
 
 /// True when `path` is `prefix` or lies below it. `.` admits every path.
@@ -29,7 +31,11 @@ fn inside(path: &str, prefix: Option<&str>) -> bool {
         return true;
     };
     let prefix = prefix.trim_end_matches('/');
-    prefix == "." || path == prefix || path.strip_prefix(prefix).is_some_and(|rest| rest.starts_with('/'))
+    prefix == "."
+        || path == prefix
+        || path
+            .strip_prefix(prefix)
+            .is_some_and(|rest| rest.starts_with('/'))
 }
 
 /// Position in `nodes` of the narrowest node whose lines hold `line`. The later node wins a tie.
@@ -66,7 +72,10 @@ fn each_source(
         let Some(digest) = file.digest else {
             continue;
         };
-        if file.decision != FileHandlingDecision::Include || is_secret_shaped_name(name) || !inside(&file.path, within) {
+        if file.decision != FileHandlingDecision::Include
+            || is_secret_shaped_name(name)
+            || !inside(&file.path, within)
+        {
             continue;
         }
         let Some(bytes) = read(&file.path, digest)? else {
@@ -100,29 +109,38 @@ pub(crate) fn text_records(
         return Ok(records);
     }
     // A key query keeps a few hits per file, so the cap reaches every file that reads the key.
-    let per_file = if super::key_rank::key_shaped(needle) { super::key_rank::KEY_HITS_PER_FILE } else { usize::MAX };
-    each_source(generation, request.within.as_deref(), &mut read, |path, source| {
-        let mut kept = 0;
-        for (index, line) in source.split('\n').enumerate() {
-            if !line.contains(needle) {
-                continue;
+    let per_file = if super::key_rank::key_shaped(needle) {
+        super::key_rank::KEY_HITS_PER_FILE
+    } else {
+        usize::MAX
+    };
+    each_source(
+        generation,
+        request.within.as_deref(),
+        &mut read,
+        |path, source| {
+            let mut kept = 0;
+            for (index, line) in source.split('\n').enumerate() {
+                if !line.contains(needle) {
+                    continue;
+                }
+                if kept == per_file {
+                    break;
+                }
+                kept += 1;
+                let number = u32::try_from(index + 1).unwrap_or(u32::MAX);
+                let mut record = AnswerRecord::basic(format!("text:{path}:{number}"), "text", path);
+                record.lines = [number, number];
+                record.summary = line.trim().chars().take(TEXT_LINE_CHARS).collect();
+                record.summary_source = "text".to_string();
+                records.push(record);
+                if records.len() >= TEXT_HIT_CAP {
+                    return false;
+                }
             }
-            if kept == per_file {
-                break;
-            }
-            kept += 1;
-            let number = u32::try_from(index + 1).unwrap_or(u32::MAX);
-            let mut record = AnswerRecord::basic(format!("text:{path}:{number}"), "text", path);
-            record.lines = [number, number];
-            record.summary = line.trim().chars().take(TEXT_LINE_CHARS).collect();
-            record.summary_source = "text".to_string();
-            records.push(record);
-            if records.len() >= TEXT_HIT_CAP {
-                return false;
-            }
-        }
-        true
-    })?;
+            true
+        },
+    )?;
     Ok(records)
 }
 
@@ -148,40 +166,55 @@ pub(crate) fn grep_records(
         by_path.entry(text.get(node.path)).or_default().push(node);
     }
     let mut groups: Vec<(String, u32, AnswerRecord)> = Vec::new();
-    each_source(generation, request.within.as_deref(), &mut read, |path, source| {
-        let nodes = by_path.get(path).map_or(&[][..], Vec::as_slice);
-        // `None` is the file itself, for a hit that no indexed node holds.
-        let mut hits: BTreeMap<Option<usize>, (u32, Vec<String>)> = BTreeMap::new();
-        for (index, line) in source.split('\n').enumerate() {
-            let number = u32::try_from(index + 1).unwrap_or(u32::MAX);
-            if !line_has(line, needle, request.ignore_case) {
-                continue;
-            }
-            let entry = hits.entry(innermost(nodes, number)).or_insert_with(|| (number, Vec::new()));
-            entry.1.push(hit_row(number, line));
-        }
-        for (owner, (first, rows)) in hits {
-            let mut record = match owner.and_then(|index| nodes.get(index)) {
-                Some(node) => record_of(text, node),
-                None => {
-                    let mut module = AnswerRecord::basic(format!("m:{path}"), "module", path);
-                    module.lines = [1, u32::try_from(source.split('\n').count()).unwrap_or(u32::MAX)];
-                    module
+    each_source(
+        generation,
+        request.within.as_deref(),
+        &mut read,
+        |path, source| {
+            let nodes = by_path.get(path).map_or(&[][..], Vec::as_slice);
+            // `None` is the file itself, for a hit that no indexed node holds.
+            let mut hits: BTreeMap<Option<usize>, (u32, Vec<String>)> = BTreeMap::new();
+            for (index, line) in source.split('\n').enumerate() {
+                let number = u32::try_from(index + 1).unwrap_or(u32::MAX);
+                if !line_has(line, needle, request.ignore_case) {
+                    continue;
                 }
-            };
-            record.source_utf8 = Some(rows.join("\n"));
-            groups.push((path.to_string(), first, record));
-        }
-        true
-    })?;
-    groups.sort_by(|left, right| left.0.cmp(&right.0).then(left.1.cmp(&right.1)).then(left.2.id.cmp(&right.2.id)));
+                let entry = hits
+                    .entry(innermost(nodes, number))
+                    .or_insert_with(|| (number, Vec::new()));
+                entry.1.push(hit_row(number, line));
+            }
+            for (owner, (first, rows)) in hits {
+                let mut record = match owner.and_then(|index| nodes.get(index)) {
+                    Some(node) => record_of(text, node),
+                    None => {
+                        let mut module = AnswerRecord::basic(format!("m:{path}"), "module", path);
+                        module.lines = [
+                            1,
+                            u32::try_from(source.split('\n').count()).unwrap_or(u32::MAX),
+                        ];
+                        module
+                    }
+                };
+                record.source_utf8 = Some(rows.join("\n"));
+                groups.push((path.to_string(), first, record));
+            }
+            true
+        },
+    )?;
+    groups.sort_by(|left, right| {
+        left.0
+            .cmp(&right.0)
+            .then(left.1.cmp(&right.1))
+            .then(left.2.id.cmp(&right.2.id))
+    });
     Ok(groups.into_iter().map(|(_, _, record)| record).collect())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::{encode_text, Answer, Freshness, FreshnessMode, Precision, Verb};
+    use crate::domain::{Answer, Freshness, FreshnessMode, Precision, Verb, encode_text};
     use crate::index::{IndexedFile, TextBlob};
 
     fn node(text: &mut TextBlob, kind: &str, name: &str, lines: [u32; 2]) -> IndexedNode {
@@ -207,7 +240,14 @@ mod tests {
             node(&mut text, "fn", "beta", [5, 6]),
         ];
         let digest = crate::domain::digest_text(b"x").expect("digest");
-        let file = |path: &str, decision| IndexedFile { path: path.to_string(), decision, digest: Some(digest), size: 1, modified: 0, stamp: None };
+        let file = |path: &str, decision| IndexedFile {
+            path: path.to_string(),
+            decision,
+            digest: Some(digest),
+            size: 1,
+            modified: 0,
+            stamp: None,
+        };
         Generation {
             id: 1,
             digest: "v1".to_string(),
@@ -243,17 +283,33 @@ mod tests {
             Ok(Some(SOURCE.as_bytes().to_vec()))
         })
         .expect("grep");
-        assert_eq!(asked, vec!["a.py".to_string()], "only included, non-env files are read");
+        assert_eq!(
+            asked,
+            vec!["a.py".to_string()],
+            "only included, non-env files are read"
+        );
         let ids: Vec<&str> = records.iter().map(|record| record.id.as_str()).collect();
         assert_eq!(ids, vec!["s:a.py#alpha"]);
-        assert_eq!(records[0].source_utf8.as_deref(), Some("L2: x = \"NEEDLE one\""));
+        assert_eq!(
+            records[0].source_utf8.as_deref(),
+            Some("L2: x = \"NEEDLE one\"")
+        );
 
         request.ignore_case = true;
-        let records = grep_records(&generation, &request, |_, _| Ok(Some(SOURCE.as_bytes().to_vec()))).expect("grep -i");
+        let records = grep_records(&generation, &request, |_, _| {
+            Ok(Some(SOURCE.as_bytes().to_vec()))
+        })
+        .expect("grep -i");
         let ids: Vec<&str> = records.iter().map(|record| record.id.as_str()).collect();
         assert_eq!(ids, vec!["s:a.py#alpha", "s:a.py#beta"]);
         request.within = Some("nowhere".to_string());
-        assert!(grep_records(&generation, &request, |_, _| Ok(Some(SOURCE.as_bytes().to_vec()))).expect("in").is_empty());
+        assert!(
+            grep_records(&generation, &request, |_, _| Ok(Some(
+                SOURCE.as_bytes().to_vec()
+            )))
+            .expect("in")
+            .is_empty()
+        );
 
         let answer = Answer {
             generation: 1,
@@ -262,8 +318,16 @@ mod tests {
             records,
             more: 0,
             next: None,
-            freshness: Freshness { mode: "strict".to_string(), state: "verified".to_string(), age_s: 0 },
-            precision: Precision { coverage: "structural".to_string(), completion: "complete".to_string(), parser: "p".to_string() },
+            freshness: Freshness {
+                mode: "strict".to_string(),
+                state: "verified".to_string(),
+                age_s: 0,
+            },
+            precision: Precision {
+                coverage: "structural".to_string(),
+                completion: "complete".to_string(),
+                parser: "p".to_string(),
+            },
             outcome: None,
         };
         let page = encode_text("p", &answer, false);
@@ -284,13 +348,30 @@ mod tests {
             Ok(Some(SOURCE.as_bytes().to_vec()))
         })
         .expect("text");
-        assert_eq!(asked, vec!["a.py".to_string()], "only included, non-env files are read");
-        assert_eq!(records.len(), 1, "case-sensitive: the lower-case hit is not listed");
+        assert_eq!(
+            asked,
+            vec!["a.py".to_string()],
+            "only included, non-env files are read"
+        );
+        assert_eq!(
+            records.len(),
+            1,
+            "case-sensitive: the lower-case hit is not listed"
+        );
         let hit = &records[0];
-        assert_eq!((hit.kind.as_str(), hit.path.as_str(), hit.lines), ("text", "a.py", [2, 2]));
+        assert_eq!(
+            (hit.kind.as_str(), hit.path.as_str(), hit.lines),
+            ("text", "a.py", [2, 2])
+        );
         assert_eq!(hit.summary, "x = \"NEEDLE one\"");
         assert_eq!(hit.id, "text:a.py:2");
         request.query = "nowhere_zzz".to_string();
-        assert!(text_records(&generation, &request, |_, _| Ok(Some(SOURCE.as_bytes().to_vec()))).expect("none").is_empty());
+        assert!(
+            text_records(&generation, &request, |_, _| Ok(Some(
+                SOURCE.as_bytes().to_vec()
+            )))
+            .expect("none")
+            .is_empty()
+        );
     }
 }

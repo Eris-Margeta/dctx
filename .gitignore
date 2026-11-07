@@ -341,3 +341,6 @@ GEMINI.md
 *_TTrace_*.bin
 /tools/website/.venv/
 /tools/playground/target/
+
+# CLI release helpers (the generic IDE rule above ignores directories named release).
+!/tools/release/

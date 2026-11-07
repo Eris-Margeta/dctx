@@ -8,9 +8,24 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 const FORBIDDEN: &[&str] = &[
-    "std::fs", "fs::", "std::env", "env::", "std::process", "process::", "std::net", "std::thread",
-    "thread::", "println!", "eprintln!", "print!(", "eprint!(", "dbg!(", "SystemTime", "Instant",
-    "Command::", "dctx_pack",
+    "std::fs",
+    "fs::",
+    "std::env",
+    "env::",
+    "std::process",
+    "process::",
+    "std::net",
+    "std::thread",
+    "thread::",
+    "println!",
+    "eprintln!",
+    "print!(",
+    "eprint!(",
+    "dbg!(",
+    "SystemTime",
+    "Instant",
+    "Command::",
+    "dctx_pack",
 ];
 
 fn rust_files(dir: &Path, out: &mut Vec<PathBuf>) {
@@ -31,7 +46,10 @@ fn violations(text: &str) -> usize {
             break;
         }
         let code = line.split("//").next().unwrap_or("");
-        found += FORBIDDEN.iter().filter(|token| code.contains(**token)).count();
+        found += FORBIDDEN
+            .iter()
+            .filter(|token| code.contains(**token))
+            .count();
     }
     found
 }
@@ -43,7 +61,12 @@ fn port_sources_import_no_io() {
     rust_files(&src, &mut files);
     assert!(files.len() >= 9);
     for file in files {
-        assert_eq!(violations(&fs::read_to_string(&file).unwrap()), 0, "{}", file.display());
+        assert_eq!(
+            violations(&fs::read_to_string(&file).unwrap()),
+            0,
+            "{}",
+            file.display()
+        );
     }
 }
 
@@ -55,7 +78,8 @@ fn the_check_catches_io_in_a_positive_control() {
 
 #[test]
 fn ports_depend_only_on_core() {
-    let manifest = fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml")).unwrap();
+    let manifest =
+        fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml")).unwrap();
     let deps = manifest.split("[dependencies]").nth(1).unwrap();
     let names: Vec<&str> = deps
         .lines()

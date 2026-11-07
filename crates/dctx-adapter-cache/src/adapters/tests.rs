@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 use super::*;
-use crate::{CacheError, Lifecycle, Quota, LEDGER_VERSION};
+use crate::{CacheError, LEDGER_VERSION, Lifecycle, Quota};
 use std::fs;
 
 fn root() -> (tempfile::TempDir, PathBuf) {
@@ -22,14 +22,20 @@ fn crash_before_rename_keeps_the_previous_ledger_and_the_temp_file() {
     store.stage(&second).expect("stage");
     let staged = store.staged_path().expect("temp");
     assert!(staged.is_file());
-    assert_ne!(staged.file_name().and_then(|name| name.to_str()), Some(LEDGER_TEMP));
+    assert_ne!(
+        staged.file_name().and_then(|name| name.to_str()),
+        Some(LEDGER_TEMP)
+    );
     let loaded = store.load(Quota::scaled(10)).expect("load");
     assert!(loaded.fault.is_none());
     assert_eq!(loaded.lifecycle.encode_ledger().expect("encode"), bytes);
     assert!(staged.is_file());
     store.commit().expect("commit");
     let loaded = store.load(Quota::scaled(10)).expect("load");
-    assert_eq!(loaded.lifecycle.encode_ledger().expect("encode"), second.encode_ledger().expect("encode"));
+    assert_eq!(
+        loaded.lifecycle.encode_ledger().expect("encode"),
+        second.encode_ledger().expect("encode")
+    );
     assert!(!staged.exists());
 }
 
@@ -46,12 +52,20 @@ fn corrupt_and_unknown_versions_fall_back_without_deleting_strangers() {
     fs::write(&path, &bytes).expect("write");
     fs::write(root.join("notes.txt"), b"keep").expect("notes");
     let loaded = store.load(Quota::scaled(15)).expect("load");
-    assert!(matches!(loaded.fault, Some(CacheError::CorruptLedger { reason: "checksum" })));
+    assert!(matches!(
+        loaded.fault,
+        Some(CacheError::CorruptLedger { reason: "checksum" })
+    ));
     assert_eq!(loaded.lifecycle.status().hard_cap, 15);
     assert_eq!(loaded.lifecycle.admitted(), 0);
     assert_eq!(fs::read(root.join("notes.txt")).expect("notes"), b"keep");
     assert!(path.is_file());
-    assert!(loaded.orphans.iter().any(|file| file.relative == "notes.txt"));
+    assert!(
+        loaded
+            .orphans
+            .iter()
+            .any(|file| file.relative == "notes.txt")
+    );
 
     let mut unknown = life.encode_ledger().expect("encode");
     unknown[8..12].copy_from_slice(&99u32.to_le_bytes());
@@ -59,7 +73,10 @@ fn corrupt_and_unknown_versions_fall_back_without_deleting_strangers() {
     fs::write(&path, &unknown).expect("write");
     fs::write(root.join("stray.bin"), b"x").expect("stray");
     let loaded = store.load(Quota::scaled(15)).expect("load");
-    assert!(matches!(loaded.fault, Some(CacheError::UnknownLedgerVersion { found: 99 })));
+    assert!(matches!(
+        loaded.fault,
+        Some(CacheError::UnknownLedgerVersion { found: 99 })
+    ));
     assert_eq!(fs::read(root.join("stray.bin")).expect("stray"), b"x");
     assert_eq!(fs::read(root.join("notes.txt")).expect("notes"), b"keep");
 }
@@ -88,7 +105,12 @@ fn update_commits_one_observed_revision_and_a_rival_store_stays_stale() {
         .update(quota, |life| life.load_staged(4, 0).map(|_| ((), true)))
         .expect("commit");
     let stale = rival.store(&Lifecycle::new(quota).expect("fresh"));
-    assert!(matches!(stale, Err(CacheError::InvalidRequest { reason: "stale ledger" })));
+    assert!(matches!(
+        stale,
+        Err(CacheError::InvalidRequest {
+            reason: "stale ledger"
+        })
+    ));
     let reloaded = rival.load(quota).expect("reload");
     assert!(reloaded.fault.is_none());
     rival.store(&reloaded.lifecycle).expect("current");

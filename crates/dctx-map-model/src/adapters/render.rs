@@ -2,7 +2,7 @@
 //! Deterministic whole-record text answers, with JSON delegated to `wire-json`.
 //! Implements SPEC-MAP-MODE sections 3, 4.1 and 4.2.
 //! Depends on domain records. Callers transport the returned string. No IO.
-use crate::domain::{Answer, AnswerBudget, Verb, IdentityStatus, Record, StableId, Edge};
+use crate::domain::{Answer, AnswerBudget, Edge, IdentityStatus, Record, StableId, Verb};
 use std::fmt::{self, Write as _};
 
 /// Output wire format.
@@ -269,7 +269,8 @@ fn text(answer: &Answer, records: &[&Record], more: usize, needs_next: bool) -> 
         match identity {
             IdentityStatus::Moved { old, new } => writeln!(output, "moved: {old} -> {new}"),
             IdentityStatus::Gone { old } => writeln!(output, "gone: {old}"),
-        }.expect("writing to a String cannot fail");
+        }
+        .expect("writing to a String cannot fail");
     }
     for r in records {
         match answer.verb {
@@ -287,7 +288,8 @@ fn text(answer: &Answer, records: &[&Record], more: usize, needs_next: bool) -> 
         }
     }
     if more > 0 {
-        writeln!(output, "+{more} more · next: {}", answer.next).expect("writing to a String cannot fail");
+        writeln!(output, "+{more} more · next: {}", answer.next)
+            .expect("writing to a String cannot fail");
     } else if needs_next {
         let reason = answer
             .reason
@@ -297,7 +299,8 @@ fn text(answer: &Answer, records: &[&Record], more: usize, needs_next: bool) -> 
             } else {
                 "no match"
             });
-        writeln!(output, "{} · try: {}", line(reason), answer.next).expect("writing to a String cannot fail");
+        writeln!(output, "{} · try: {}", line(reason), answer.next)
+            .expect("writing to a String cannot fail");
     }
     output
 }
@@ -323,7 +326,10 @@ fn ranked(answer: &Answer) -> Result<Vec<&Record>, RenderError> {
     {
         let mut records: Vec<&Record> = answer.records.iter().collect();
         records.sort_by(|left, right| {
-            right.score.cmp(&left.score).then_with(|| left.id.cmp(&right.id))
+            right
+                .score
+                .cmp(&left.score)
+                .then_with(|| left.id.cmp(&right.id))
         });
         Ok(records)
     }

@@ -31,24 +31,36 @@ pub(crate) fn compile_plugins(
     let limits = admit_limits(&host.limits)?;
     let liveness = admit_liveness(&host.liveness)?;
     if groups.len() > 1 {
-        return Err(TemplateError::Duplicate { kind: "plugins", name: groups[1].name.clone() });
+        return Err(TemplateError::Duplicate {
+            kind: "plugins",
+            name: groups[1].name.clone(),
+        });
     }
     if decls.len() > 64 {
-        return Err(TemplateError::Limit { what: "plugins", limit: 64 });
+        return Err(TemplateError::Limit {
+            what: "plugins",
+            limit: 64,
+        });
     }
     unique_ids(decls)?;
     let mut lowered = Vec::new();
     let mut enabled = None;
     if let Some(group) = groups.first() {
         if !organization_name(&group.name) {
-            return Err(TemplateError::InvalidSyntax { line: 0, detail: "organization".into() });
+            return Err(TemplateError::InvalidSyntax {
+                line: 0,
+                detail: "organization".into(),
+            });
         }
         bounded(&group.enabled, "enabled", 64)?;
         bounded(&group.order, "order", 64)?;
         let declared: BTreeSet<&str> = decls.iter().map(|decl| decl.id.as_str()).collect();
         for id in group.enabled.iter().chain(group.order.iter()) {
             if !declared.contains(id.as_str()) {
-                return Err(TemplateError::UnresolvedRef { kind: "plugin", name: id.clone() });
+                return Err(TemplateError::UnresolvedRef {
+                    kind: "plugin",
+                    name: id.clone(),
+                });
             }
         }
         lowered.push(PluginGroup {
@@ -66,8 +78,18 @@ pub(crate) fn compile_plugins(
     }
     bindings.sort_by(|left, right| left.id.cmp(&right.id));
     let order = schedule(&lowered, &bindings)?;
-    let organization = lowered.first().map(|group| group.name.clone()).unwrap_or_default();
-    Ok(PluginPlan { organization, groups: lowered, plugins: bindings, order, limits, liveness })
+    let organization = lowered
+        .first()
+        .map(|group| group.name.clone())
+        .unwrap_or_default();
+    Ok(PluginPlan {
+        organization,
+        groups: lowered,
+        plugins: bindings,
+        order,
+        limits,
+        liveness,
+    })
 }
 
 /// V1 distribution plan: host catalog filtered by user disable and denied grants.
@@ -92,17 +114,26 @@ pub(crate) fn distribution_plan(host: &HostCeiling) -> Result<PluginPlan, Templa
 }
 
 /// Reloads locks, aliases, order and ceilings. A byte blob is not authority by itself.
-pub(crate) fn revalidate(plan: &crate::model::ContextPlan, host: &HostCeiling) -> Result<(), TemplateError> {
+pub(crate) fn revalidate(
+    plan: &crate::model::ContextPlan,
+    host: &HostCeiling,
+) -> Result<(), TemplateError> {
     let plugins = &plan.plugins;
     plugins.limits.within(&admit_limits(&host.limits)?)?;
     if plugins.liveness != admit_liveness(&host.liveness)? {
         return Err(TemplateError::GrantExpansion { kind: "liveness" });
     }
     if plugins.groups.len() > 1 {
-        return Err(TemplateError::Duplicate { kind: "plugins", name: plugins.groups[1].name.clone() });
+        return Err(TemplateError::Duplicate {
+            kind: "plugins",
+            name: plugins.groups[1].name.clone(),
+        });
     }
     if !plugins.organization.is_empty() && !organization_name(&plugins.organization) {
-        return Err(TemplateError::InvalidSyntax { line: 0, detail: "organization".into() });
+        return Err(TemplateError::InvalidSyntax {
+            line: 0,
+            detail: "organization".into(),
+        });
     }
     for group in &plugins.groups {
         if group.network != NetworkPolicy::None {
@@ -112,13 +143,18 @@ pub(crate) fn revalidate(plan: &crate::model::ContextPlan, host: &HostCeiling) -
     let mut aliases = BTreeSet::new();
     for plugin in &plugins.plugins {
         if !canonical_id(&plugin.id) {
-            return Err(TemplateError::InvalidSyntax { line: 0, detail: "plugin id".into() });
+            return Err(TemplateError::InvalidSyntax {
+                line: 0,
+                detail: "plugin id".into(),
+            });
         }
         check_binding(plugin, host, &mut aliases)?;
     }
     let order = schedule(&plugins.groups, &plugins.plugins)?;
     if order != plugins.order {
-        return Err(TemplateError::Corrupt { reason: "plugin order" });
+        return Err(TemplateError::Corrupt {
+            reason: "plugin order",
+        });
     }
     Ok(())
 }
@@ -134,7 +170,10 @@ fn unique_ids(decls: &[PluginDecl]) -> Result<(), TemplateError> {
     let mut seen = BTreeSet::new();
     for decl in decls {
         if !seen.insert(decl.id.as_str()) {
-            return Err(TemplateError::Duplicate { kind: "plugin", name: decl.id.clone() });
+            return Err(TemplateError::Duplicate {
+                kind: "plugin",
+                name: decl.id.clone(),
+            });
         }
     }
     Ok(())
@@ -156,24 +195,49 @@ fn admit_limits(host: &ResourceLimits) -> Result<ResourceLimits, TemplateError> 
     })
 }
 
-fn take(host: u64, min_value: u64, schema_max: u64, field: &'static str) -> Result<u64, TemplateError> {
+fn take(
+    host: u64,
+    min_value: u64,
+    schema_max: u64,
+    field: &'static str,
+) -> Result<u64, TemplateError> {
     if host < min_value {
-        return Err(TemplateError::BudgetAboveCeiling { field, requested: min_value, ceiling: host });
+        return Err(TemplateError::BudgetAboveCeiling {
+            field,
+            requested: min_value,
+            ceiling: host,
+        });
     }
     Ok(host.min(schema_max))
 }
 
 fn admit_liveness(policy: &Liveness) -> Result<Liveness, TemplateError> {
     let (sample, grace, extra) = match policy {
-        Liveness::Interactive { sample_ms, cancel_grace_ms }
-        | Liveness::UnattendedFailClosed { sample_ms, cancel_grace_ms } => (*sample_ms, *cancel_grace_ms, None),
-        Liveness::UnattendedBounded { sample_ms, cancel_grace_ms, inactivity_ms } => {
-            (*sample_ms, *cancel_grace_ms, Some(*inactivity_ms))
+        Liveness::Interactive {
+            sample_ms,
+            cancel_grace_ms,
         }
+        | Liveness::UnattendedFailClosed {
+            sample_ms,
+            cancel_grace_ms,
+        } => (*sample_ms, *cancel_grace_ms, None),
+        Liveness::UnattendedBounded {
+            sample_ms,
+            cancel_grace_ms,
+            inactivity_ms,
+        } => (*sample_ms, *cancel_grace_ms, Some(*inactivity_ms)),
     };
-    if sample == 0 || grace == 0 || extra == Some(0) || sample > JS_MAX || grace > JS_MAX || extra.unwrap_or(1) > JS_MAX {
-        return Err(TemplateError::InvalidSyntax { line: 0, detail: "liveness".into() });
+    if sample == 0
+        || grace == 0
+        || extra == Some(0)
+        || sample > JS_MAX
+        || grace > JS_MAX
+        || extra.unwrap_or(1) > JS_MAX
+    {
+        return Err(TemplateError::InvalidSyntax {
+            line: 0,
+            detail: "liveness".into(),
+        });
     }
     Ok(policy.clone())
 }
-

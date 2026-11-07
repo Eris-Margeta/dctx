@@ -4,10 +4,15 @@
 use super::super::{handles, symbols};
 use crate::index::extract::{extract_structural_refs, language_of};
 
-const TAGS: &[&str] = &["elixir", "lua", "ocaml", "r", "julia", "haskell", "erlang", "verilog", "fortran"];
+const TAGS: &[&str] = &[
+    "elixir", "lua", "ocaml", "r", "julia", "haskell", "erlang", "verilog", "fortran",
+];
 
 fn named(tag: &str, text: &str) -> Vec<(String, String)> {
-    symbols(tag, text).into_iter().map(|symbol| (symbol.name, symbol.kind)).collect()
+    symbols(tag, text)
+        .into_iter()
+        .map(|symbol| (symbol.name, symbol.kind))
+        .collect()
 }
 
 fn pair(name: &str, kind: &str) -> (String, String) {
@@ -17,22 +22,60 @@ fn pair(name: &str, kind: &str) -> (String, String) {
 #[test]
 fn every_block_language_finds_its_types_and_functions() {
     let elixir = "defmodule Shop.Cart do\n  def add(cart, item) do\n    if item do\n      [item | cart]\n    end\n  end\n\n  defp total(cart), do: length(cart)\nend\n";
-    assert_eq!(named("elixir", elixir), [pair("Shop.Cart", "type"), pair("Shop.Cart::add", "fn"), pair("Shop.Cart::total", "fn")]);
+    assert_eq!(
+        named("elixir", elixir),
+        [
+            pair("Shop.Cart", "type"),
+            pair("Shop.Cart::add", "fn"),
+            pair("Shop.Cart::total", "fn")
+        ]
+    );
     let lua = "local M = {}\nfunction M.start(x)\n  if x then return 1 end\nend\nlocal function helper()\n  return 2\nend\nfunction globalfn() end\nfunction M:run() end\nreturn M\n";
-    assert_eq!(named("lua", lua), [pair("M", "var"), pair("M::start", "fn"), pair("helper", "fn"), pair("globalfn", "fn"), pair("M::run", "fn")]);
+    assert_eq!(
+        named("lua", lua),
+        [
+            pair("M", "var"),
+            pair("M::start", "fn"),
+            pair("helper", "fn"),
+            pair("globalfn", "fn"),
+            pair("M::run", "fn")
+        ]
+    );
     let ocaml = "let add x y = x + y\nlet rec fact n = if n = 0 then 1 else n * fact (n - 1)\ntype shape = Circle | Square\nmodule Geo = struct\n  let area r = r *. r\nend\n";
     assert_eq!(
         named("ocaml", ocaml),
-        [pair("add", "fn"), pair("fact", "fn"), pair("shape", "type"), pair("shape::Circle", "const"), pair("shape::Square", "const"), pair("Geo", "type"), pair("Geo::area", "fn")]
+        [
+            pair("add", "fn"),
+            pair("fact", "fn"),
+            pair("shape", "type"),
+            pair("shape::Circle", "const"),
+            pair("shape::Square", "const"),
+            pair("Geo", "type"),
+            pair("Geo::area", "fn")
+        ]
     );
     let r = "add <- function(x, y) {\n  x + y\n}\nscale = function(v) v * 2\n";
     assert_eq!(named("r", r), [pair("add", "fn"), pair("scale", "fn")]);
     let julia = "function solve(a, b)\n    return a + b\nend\nstruct Point\n    x::Int\nend\nmutable struct Box\nend\n";
-    assert_eq!(named("julia", julia), [pair("solve", "fn"), pair("Point", "type"), pair("Point::x", "field"), pair("Box", "type")]);
+    assert_eq!(
+        named("julia", julia),
+        [
+            pair("solve", "fn"),
+            pair("Point", "type"),
+            pair("Point::x", "field"),
+            pair("Box", "type")
+        ]
+    );
     let haskell = "module Main where\n\nadd :: Int -> Int -> Int\nadd x y = x + y\n\ndata Shape = Circle | Square\n";
-    assert_eq!(named("haskell", haskell), [pair("add", "fn"), pair("Shape", "type")]);
+    assert_eq!(
+        named("haskell", haskell),
+        [pair("add", "fn"), pair("Shape", "type")]
+    );
     let verilog = "module test\n  function test_fn\nendmodule\n";
-    assert_eq!(named("verilog", verilog), [pair("test", "type"), pair("test::test_fn", "fn")]);
+    assert_eq!(
+        named("verilog", verilog),
+        [pair("test", "type"), pair("test::test_fn", "fn")]
+    );
 }
 
 #[test]
@@ -57,23 +100,63 @@ fn fortran_lists_modules_types_procedures_and_programs() {
     assert_eq!(found[4].lines, [14, 19]);
     assert_eq!(found[6].lines, [24, 26]);
     let upper = "SUBROUTINE SHOUT(N)\n  CALL WHISPER(N)\nEND SUBROUTINE SHOUT\nSUBROUTINE WHISPER(N)\nENDSUBROUTINE\n";
-    assert_eq!(named("fortran", upper), [pair("SHOUT", "fn"), pair("WHISPER", "fn")]);
+    assert_eq!(
+        named("fortran", upper),
+        [pair("SHOUT", "fn"), pair("WHISPER", "fn")]
+    );
     assert!(named("fortran", "! subroutine hidden()\ns = 'function fake(x)'\n").is_empty());
 }
 
 #[test]
 fn nesting_and_end_lines_follow_the_blocks() {
-    let elixir = symbols("elixir", "defmodule A do\n  defmodule B do\n    def f(x), do: x\n  end\n  def g(a,\n        b) do\n    a\n  end\nend\n");
-    let found: Vec<(&str, [u32; 2])> = elixir.iter().map(|symbol| (symbol.name.as_str(), symbol.lines)).collect();
-    assert_eq!(found, [("A", [1, 9]), ("A::B", [2, 4]), ("A::B::f", [3, 3]), ("A::g", [5, 8])]);
-    let julia = symbols("julia", "module M\nfunction f(xs)\n  xs[end]\nend\nabstract type S end\nend\n");
-    let found: Vec<(&str, [u32; 2])> = julia.iter().map(|symbol| (symbol.name.as_str(), symbol.lines)).collect();
+    let elixir = symbols(
+        "elixir",
+        "defmodule A do\n  defmodule B do\n    def f(x), do: x\n  end\n  def g(a,\n        b) do\n    a\n  end\nend\n",
+    );
+    let found: Vec<(&str, [u32; 2])> = elixir
+        .iter()
+        .map(|symbol| (symbol.name.as_str(), symbol.lines))
+        .collect();
+    assert_eq!(
+        found,
+        [
+            ("A", [1, 9]),
+            ("A::B", [2, 4]),
+            ("A::B::f", [3, 3]),
+            ("A::g", [5, 8])
+        ]
+    );
+    let julia = symbols(
+        "julia",
+        "module M\nfunction f(xs)\n  xs[end]\nend\nabstract type S end\nend\n",
+    );
+    let found: Vec<(&str, [u32; 2])> = julia
+        .iter()
+        .map(|symbol| (symbol.name.as_str(), symbol.lines))
+        .collect();
     assert_eq!(found, [("M", [1, 6]), ("M::f", [2, 4]), ("M::S", [5, 5])]);
-    let haskell = symbols("haskell", "class Shape a where\n  area :: a -> Double\n\nf :: Int\nf = 1\n  where y = 2\n");
-    let found: Vec<(&str, [u32; 2])> = haskell.iter().map(|symbol| (symbol.name.as_str(), symbol.lines)).collect();
-    assert_eq!(found, [("Shape", [1, 2]), ("Shape::area", [2, 2]), ("f", [4, 6])]);
-    let r = symbols("r", "f <- function(x)\n{\n  g <- function(y) y\n  x\n}\nh <- 1\n");
-    assert_eq!(r.iter().map(|symbol| (symbol.name.as_str(), symbol.lines)).collect::<Vec<_>>(), [("f", [1, 5])]);
+    let haskell = symbols(
+        "haskell",
+        "class Shape a where\n  area :: a -> Double\n\nf :: Int\nf = 1\n  where y = 2\n",
+    );
+    let found: Vec<(&str, [u32; 2])> = haskell
+        .iter()
+        .map(|symbol| (symbol.name.as_str(), symbol.lines))
+        .collect();
+    assert_eq!(
+        found,
+        [("Shape", [1, 2]), ("Shape::area", [2, 2]), ("f", [4, 6])]
+    );
+    let r = symbols(
+        "r",
+        "f <- function(x)\n{\n  g <- function(y) y\n  x\n}\nh <- 1\n",
+    );
+    assert_eq!(
+        r.iter()
+            .map(|symbol| (symbol.name.as_str(), symbol.lines))
+            .collect::<Vec<_>>(),
+        [("f", [1, 5])]
+    );
 }
 
 #[test]
@@ -87,33 +170,105 @@ fn symbols_carry_the_declaration_line_as_signature_and_summary() {
 
 #[test]
 fn comments_strings_and_locals_hide_declarations() {
-    assert_eq!(named("elixir", "# def hidden(x) do\n@doc \"\"\"\ndef fake(x) do\n\"\"\"\ndef shown(x), do: \"def nope\"\n"), [pair("shown", "fn")]);
-    assert_eq!(named("lua", "--[[ function hidden() end\n]]\n-- function nope() end\nlocal s = [[function fake() end]]\nfunction shown() end\n"), [pair("shown", "fn")]);
-    assert_eq!(named("ocaml", "(* let hidden = 1 (* nested *) let alsohidden = 2 *)\nlet s = \"let fake = 1\"\nlet shown = 1\nlet f x =\n  let local = 2 in\n  local\n"), [pair("s", "fn"), pair("shown", "fn"), pair("f", "fn")]);
-    assert_eq!(named("r", "# f <- function() 1\ng <- function() {\n  inner <- function() 2\n}\nx <- list(\n  k = function() 3\n)\n"), [pair("g", "fn")]);
-    assert_eq!(named("julia", "#= function hidden() end =#\n# function nope() end\ns = \"function fake() end\"\nfunction shown() end\n"), [pair("shown", "fn")]);
-    assert_eq!(named("haskell", "-- hidden :: Int\n{- data Hidden = H -}\nf :: Int\nf = 1\n  where g :: Int\n        g = 2\n"), [pair("f", "fn")]);
+    assert_eq!(
+        named(
+            "elixir",
+            "# def hidden(x) do\n@doc \"\"\"\ndef fake(x) do\n\"\"\"\ndef shown(x), do: \"def nope\"\n"
+        ),
+        [pair("shown", "fn")]
+    );
+    assert_eq!(
+        named(
+            "lua",
+            "--[[ function hidden() end\n]]\n-- function nope() end\nlocal s = [[function fake() end]]\nfunction shown() end\n"
+        ),
+        [pair("shown", "fn")]
+    );
+    assert_eq!(
+        named(
+            "ocaml",
+            "(* let hidden = 1 (* nested *) let alsohidden = 2 *)\nlet s = \"let fake = 1\"\nlet shown = 1\nlet f x =\n  let local = 2 in\n  local\n"
+        ),
+        [pair("s", "fn"), pair("shown", "fn"), pair("f", "fn")]
+    );
+    assert_eq!(
+        named(
+            "r",
+            "# f <- function() 1\ng <- function() {\n  inner <- function() 2\n}\nx <- list(\n  k = function() 3\n)\n"
+        ),
+        [pair("g", "fn")]
+    );
+    assert_eq!(
+        named(
+            "julia",
+            "#= function hidden() end =#\n# function nope() end\ns = \"function fake() end\"\nfunction shown() end\n"
+        ),
+        [pair("shown", "fn")]
+    );
+    assert_eq!(
+        named(
+            "haskell",
+            "-- hidden :: Int\n{- data Hidden = H -}\nf :: Int\nf = 1\n  where g :: Int\n        g = 2\n"
+        ),
+        [pair("f", "fn")]
+    );
     // Verilog: a commented-out declaration and one inside a string are never symbols.
     let verilog = "// function hidden(input int x);\nmodule m\n  string s = \"function fake(x);\";\n  function shown(input int y);\n  endfunction\nendmodule\n";
-    assert_eq!(named("verilog", verilog), [pair("m", "type"), pair("m::shown", "fn")]);
+    assert_eq!(
+        named("verilog", verilog),
+        [pair("m", "type"), pair("m::shown", "fn")]
+    );
 }
 
 #[test]
 fn denylisted_keywords_are_never_symbols() {
-    for word in ["if", "else", "for", "while", "match", "switch", "return", "case", "catch", "when", "do", "try"] {
+    for word in [
+        "if", "else", "for", "while", "match", "switch", "return", "case", "catch", "when", "do",
+        "try",
+    ] {
         for (tag, text) in [
-            ("elixir", format!("defmodule {word} do\n  def {word}(x) do\n  end\nend\ndef {word}(y), do: 1\n")),
-            ("lua", format!("function {word}() end\nfunction t.{word}() end\nlocal {word} = function() end\n")),
-            ("ocaml", format!("let {word} x = 1\ntype {word} = A\nval {word} : int\n")),
-            ("r", format!("{word} <- function(x) x\n{word} = function(x) x\n")),
-            ("julia", format!("function {word}(x)\nend\nstruct {word}\nend\n")),
+            (
+                "elixir",
+                format!(
+                    "defmodule {word} do\n  def {word}(x) do\n  end\nend\ndef {word}(y), do: 1\n"
+                ),
+            ),
+            (
+                "lua",
+                format!(
+                    "function {word}() end\nfunction t.{word}() end\nlocal {word} = function() end\n"
+                ),
+            ),
+            (
+                "ocaml",
+                format!("let {word} x = 1\ntype {word} = A\nval {word} : int\n"),
+            ),
+            (
+                "r",
+                format!("{word} <- function(x) x\n{word} = function(x) x\n"),
+            ),
+            (
+                "julia",
+                format!("function {word}(x)\nend\nstruct {word}\nend\n"),
+            ),
             ("haskell", format!("{word} :: Int\ndata {word} = A\n")),
             ("erlang", format!("{word}(X) -> X.\n")),
-            ("fortran", format!("subroutine {word}()\nend subroutine\nmodule {word}\nend module\n")),
-            ("verilog", format!("module {word};\nendmodule\nfunction {word}();\nendfunction\n")),
+            (
+                "fortran",
+                format!("subroutine {word}()\nend subroutine\nmodule {word}\nend module\n"),
+            ),
+            (
+                "verilog",
+                format!("module {word};\nendmodule\nfunction {word}();\nendfunction\n"),
+            ),
         ] {
             let found = named(tag, &text);
-            assert!(found.iter().all(|(name, _)| name != word && !name.ends_with(&format!("::{word}"))), "{tag} {word}: {found:?}");
+            assert!(
+                found
+                    .iter()
+                    .all(|(name, _)| name != word && !name.ends_with(&format!("::{word}"))),
+                "{tag} {word}: {found:?}"
+            );
         }
     }
 }
@@ -187,8 +342,17 @@ fn extensions_dispatch_to_the_block_family() {
         assert_eq!(language_of(path), tag, "{path}");
         assert!(handles(tag));
     }
-    let (found, refs) = extract_structural_refs("lib/cart.ex", b"defmodule Cart do\n  def add(x), do: x\nend\n");
-    assert_eq!(found.iter().map(|symbol| symbol.name.as_str()).collect::<Vec<_>>(), ["Cart", "Cart::add"]);
+    let (found, refs) = extract_structural_refs(
+        "lib/cart.ex",
+        b"defmodule Cart do\n  def add(x), do: x\nend\n",
+    );
+    assert_eq!(
+        found
+            .iter()
+            .map(|symbol| symbol.name.as_str())
+            .collect::<Vec<_>>(),
+        ["Cart", "Cart::add"]
+    );
     assert!(refs.is_empty());
     assert!(extract_structural_refs("a.hs", &[0xff]).0.is_empty());
 }
@@ -217,10 +381,20 @@ fn elixir_lists_structs_types_specs_and_implementations() {
 fn lua_lists_table_fields_and_local_tables() {
     let text = "local M = {}\nM.version = \"1.0\"\nM.handler = function(x) return x end\nfunction M.start() return 1 end\nlocal MAX = 5\nlocal cache = {\n  a = 1,\n}\nlocal n = 1\nreturn M\n";
     let found = symbols("lua", text);
-    let listed: Vec<(&str, &str, [u32; 2])> = found.iter().map(|symbol| (symbol.name.as_str(), symbol.kind.as_str(), symbol.lines)).collect();
+    let listed: Vec<(&str, &str, [u32; 2])> = found
+        .iter()
+        .map(|symbol| (symbol.name.as_str(), symbol.kind.as_str(), symbol.lines))
+        .collect();
     assert_eq!(
         listed,
-        [("M", "var", [1, 1]), ("M::version", "field", [2, 2]), ("M::handler", "fn", [3, 3]), ("M::start", "fn", [4, 4]), ("MAX", "const", [5, 5]), ("cache", "var", [6, 8])]
+        [
+            ("M", "var", [1, 1]),
+            ("M::version", "field", [2, 2]),
+            ("M::handler", "fn", [3, 3]),
+            ("M::start", "fn", [4, 4]),
+            ("MAX", "const", [5, 5]),
+            ("cache", "var", [6, 8])
+        ]
     );
 }
 
@@ -246,10 +420,19 @@ fn julia_lists_constants_short_functions_and_struct_fields() {
 fn r_lists_classes_and_generics() {
     let text = "setClass(\"Person\", representation(name = \"character\"))\nsetGeneric(\"greet\", function(p) standardGeneric(\"greet\"))\nAccount <- R6::R6Class(\"Account\",\n  public = list(deposit = function(x) x)\n)\nPoint <- setRefClass(\"Pt\", fields = list(x = \"numeric\"))\nhelper <- function(x) x\n";
     let found = symbols("r", text);
-    let listed: Vec<(&str, &str, [u32; 2])> = found.iter().map(|symbol| (symbol.name.as_str(), symbol.kind.as_str(), symbol.lines)).collect();
+    let listed: Vec<(&str, &str, [u32; 2])> = found
+        .iter()
+        .map(|symbol| (symbol.name.as_str(), symbol.kind.as_str(), symbol.lines))
+        .collect();
     assert_eq!(
         listed,
-        [("Person", "type", [1, 1]), ("greet", "fn", [2, 2]), ("Account", "type", [3, 5]), ("Pt", "type", [6, 6]), ("helper", "fn", [7, 7])]
+        [
+            ("Person", "type", [1, 1]),
+            ("greet", "fn", [2, 2]),
+            ("Account", "type", [3, 5]),
+            ("Pt", "type", [6, 6]),
+            ("helper", "fn", [7, 7])
+        ]
     );
 }
 
@@ -279,7 +462,10 @@ fn ocaml_lists_exceptions_module_types_classes_and_their_members() {
 fn haskell_lists_record_fields_and_instance_methods() {
     let text = "module Geo where\n\ntype Name = String\nnewtype Meters = Meters Double\ndata Shape = Circle { radius :: Double } | Square { side :: Double }\ndata Person = Person\n  { name :: String\n  , x, y :: Int\n  } deriving Show\nclass HasArea a where\n  area :: a -> Double\ninstance HasArea Shape where\n  area (Circle r) = r\n  area _ = 0\n    where z = 1\n  perimeter _ = 1\n";
     let found = symbols("haskell", text);
-    let listed: Vec<(&str, &str)> = found.iter().map(|symbol| (symbol.name.as_str(), symbol.kind.as_str())).collect();
+    let listed: Vec<(&str, &str)> = found
+        .iter()
+        .map(|symbol| (symbol.name.as_str(), symbol.kind.as_str()))
+        .collect();
     assert_eq!(
         listed,
         [
@@ -299,7 +485,10 @@ fn haskell_lists_record_fields_and_instance_methods() {
             ("HasArea.Shape::perimeter", "fn"),
         ]
     );
-    let area = found.iter().find(|symbol| symbol.name == "HasArea.Shape::area").expect("instance method");
+    let area = found
+        .iter()
+        .find(|symbol| symbol.name == "HasArea.Shape::area")
+        .expect("instance method");
     assert_eq!(area.lines, [13, 15]);
 }
 
@@ -326,7 +515,10 @@ function lume.hotswap(modname)
 end
 "#;
     let found = symbols("lua", text);
-    let listed: Vec<(&str, &str, [u32; 2])> = found.iter().map(|symbol| (symbol.name.as_str(), symbol.kind.as_str(), symbol.lines)).collect();
+    let listed: Vec<(&str, &str, [u32; 2])> = found
+        .iter()
+        .map(|symbol| (symbol.name.as_str(), symbol.kind.as_str(), symbol.lines))
+        .collect();
     assert_eq!(
         listed,
         [
@@ -367,14 +559,29 @@ fn elixir_ex_unit_describe_and_test_blocks_are_symbols() {
 end
 "#;
     let found = symbols("elixir", text);
-    let listed: Vec<(&str, &str, [u32; 2])> = found.iter().map(|symbol| (symbol.name.as_str(), symbol.kind.as_str(), symbol.lines)).collect();
+    let listed: Vec<(&str, &str, [u32; 2])> = found
+        .iter()
+        .map(|symbol| (symbol.name.as_str(), symbol.kind.as_str(), symbol.lines))
+        .collect();
     assert_eq!(
         listed,
         [
             ("NimbleOptionsTest", "type", [1, 21]),
-            ("NimbleOptionsTest::describe \"validate keys\"", "type", [4, 12]),
-            ("NimbleOptionsTest::describe \"validate keys\"::test \"known options without types\"", "fn", [5, 7]),
-            ("NimbleOptionsTest::describe \"validate keys\"::test \"unknown options\"", "fn", [9, 11]),
+            (
+                "NimbleOptionsTest::describe \"validate keys\"",
+                "type",
+                [4, 12]
+            ),
+            (
+                "NimbleOptionsTest::describe \"validate keys\"::test \"known options without types\"",
+                "fn",
+                [5, 7]
+            ),
+            (
+                "NimbleOptionsTest::describe \"validate keys\"::test \"unknown options\"",
+                "fn",
+                [9, 11]
+            ),
             ("NimbleOptionsTest::test \"top level\"", "fn", [14, 16]),
             ("NimbleOptionsTest::buffer_keep", "fn", [18, 20]),
         ]
@@ -424,6 +631,19 @@ let err_cmd exit cmd = Fmt.str "%s" cmd
         ]
     );
     let found = symbols("ocaml", text);
-    let span = |name: &str| found.iter().find(|symbol| symbol.name == name).map(|symbol| symbol.lines);
-    assert_eq!((span("t"), span("conv"), span("find_sub"), span("find_sub::aux")), (Some([3, 8]), Some([6, 8]), Some([9, 15]), Some([11, 13])));
+    let span = |name: &str| {
+        found
+            .iter()
+            .find(|symbol| symbol.name == name)
+            .map(|symbol| symbol.lines)
+    };
+    assert_eq!(
+        (
+            span("t"),
+            span("conv"),
+            span("find_sub"),
+            span("find_sub::aux")
+        ),
+        (Some([3, 8]), Some([6, 8]), Some([9, 15]), Some([11, 13]))
+    );
 }

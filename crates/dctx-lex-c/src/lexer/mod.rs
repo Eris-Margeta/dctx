@@ -11,8 +11,8 @@ mod scan;
 use crate::domain::{Diagnostic, DiagnosticReason, LexError, Limits};
 use std::collections::BTreeMap;
 
-pub(crate) use angles::{opens_template_args, AngleDepth};
-pub(crate) use preprocessor::{classify, define_attribute, define_brace, hidden_include, Dir};
+pub(crate) use angles::{AngleDepth, opens_template_args};
+pub(crate) use preprocessor::{Dir, classify, define_attribute, define_brace, hidden_include};
 
 /// Token category. Keywords stay [`Kind::Ident`] and are compared by text.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -78,7 +78,10 @@ pub(crate) struct SourceMap {
 
 impl SourceMap {
     /// One-based physical line of a logical byte.
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     pub fn line(&self, logical: u32) -> u32 {
         let logical_line = self
             .logical_line_starts
@@ -124,7 +127,10 @@ pub(crate) struct Lexed {
 pub(crate) const NONE: u32 = u32::MAX;
 
 /// Lexes `source`, strips line splices and pairs `()`, `[]` and `{}`.
-#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+)]
 pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
     let (logical, map) = prepare(source);
     let (tokens, comments, mut problems) = {
@@ -155,7 +161,10 @@ pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
 /// Problems found while lexing, as `(logical byte, reason)`.
 pub(crate) type Problems = Vec<(u32, DiagnosticReason)>;
 
-#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+)]
 fn prepare(source: &str) -> (String, SourceMap) {
     let bytes = source.as_bytes();
     let mut logical = String::with_capacity(source.len());
@@ -205,11 +214,7 @@ fn splice_len(bytes: &[u8]) -> usize {
     if bytes.get(1) == Some(&b'\r') && bytes.get(2) == Some(&b'\n') {
         return 3;
     }
-    if bytes.get(1) == Some(&b'\r') {
-        2
-    } else {
-        0
-    }
+    if bytes.get(1) == Some(&b'\r') { 2 } else { 0 }
 }
 
 /// One unmatched opener. `kind` is the bracket spelling, kept when a macro
@@ -317,7 +322,10 @@ fn pair(
         // An object-like `{` macro may be closed by a macro whose body is not a
         // token yet. A real bracket still reports.
         if tokens[open.index].kind != Kind::Ident {
-            problems.push((tokens[open.index].start, DiagnosticReason::UnbalancedBracket));
+            problems.push((
+                tokens[open.index].start,
+                DiagnosticReason::UnbalancedBracket,
+            ));
         }
     }
     Ok(partner)
@@ -335,7 +343,10 @@ fn token_spelling<'a>(source: &'a str, token: &Token, braces: &BTreeMap<String, 
     text
 }
 
-#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+)]
 fn push_open(
     map: &SourceMap,
     tokens: &[Token],
@@ -354,7 +365,10 @@ fn push_open(
     Ok(())
 }
 
-#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+)]
 fn close_bracket(
     tokens: &[Token],
     index: usize,
@@ -374,7 +388,10 @@ fn close_bracket(
     };
     while stack.len() > position + 1 {
         if let Some(orphan) = stack.pop() {
-            problems.push((tokens[orphan.index].start, DiagnosticReason::UnbalancedBracket));
+            problems.push((
+                tokens[orphan.index].start,
+                DiagnosticReason::UnbalancedBracket,
+            ));
         }
     }
     if let Some(open) = stack.pop() {
@@ -522,8 +539,22 @@ pub(crate) fn specifier(word: &str) -> bool {
 pub(crate) fn type_word(word: &str) -> bool {
     matches!(
         word,
-        "void" | "bool" | "_Bool" | "char" | "wchar_t" | "char8_t" | "char16_t" | "char32_t"
-            | "short" | "int" | "long" | "signed" | "unsigned" | "float" | "double" | "auto"
+        "void"
+            | "bool"
+            | "_Bool"
+            | "char"
+            | "wchar_t"
+            | "char8_t"
+            | "char16_t"
+            | "char32_t"
+            | "short"
+            | "int"
+            | "long"
+            | "signed"
+            | "unsigned"
+            | "float"
+            | "double"
+            | "auto"
     )
 }
 
@@ -531,10 +562,29 @@ pub(crate) fn type_word(word: &str) -> bool {
 pub(crate) fn non_callee(word: &str) -> bool {
     matches!(
         word,
-        "if" | "for" | "while" | "switch" | "catch" | "return" | "sizeof" | "alignof"
-            | "_Alignof" | "decltype" | "static_assert" | "_Static_assert" | "typeof"
-            | "typeof_unqual" | "new" | "delete" | "case" | "else" | "static_cast"
-            | "dynamic_cast" | "reinterpret_cast" | "const_cast" | "co_await" | "co_return"
+        "if" | "for"
+            | "while"
+            | "switch"
+            | "catch"
+            | "return"
+            | "sizeof"
+            | "alignof"
+            | "_Alignof"
+            | "decltype"
+            | "static_assert"
+            | "_Static_assert"
+            | "typeof"
+            | "typeof_unqual"
+            | "new"
+            | "delete"
+            | "case"
+            | "else"
+            | "static_cast"
+            | "dynamic_cast"
+            | "reinterpret_cast"
+            | "const_cast"
+            | "co_await"
+            | "co_return"
             | "co_yield"
     )
 }

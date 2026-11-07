@@ -9,8 +9,7 @@ use crate::domain::{Rule, SelectionPolicy, builtin_ignore, builtin_omit, parse_r
 use crate::ports::SourceFs;
 use std::{io, path::Path};
 
-const IGNORE_FILES: [&str; 3] = [".gitignore", ".dctxignore", ".legacyignore"];
-const OMIT_FILE: &str = ".dctxomitcontent";
+const IGNORE_FILES: [&str; 2] = [".gitignore", ".dctxignore"];
 
 pub(crate) fn load_policy<F: SourceFs>(
     root: &Path,
@@ -26,7 +25,6 @@ pub(crate) fn load_policy<F: SourceFs>(
     for name in IGNORE_FILES {
         append_rules(fs, &root.join(name), &mut ignore)?;
     }
-    append_rules(fs, &root.join(OMIT_FILE), &mut omit)?;
     Ok(SelectionPolicy::from_rules(ignore, omit))
 }
 
@@ -77,10 +75,16 @@ mod tests {
             Ok(Vec::new())
         }
         fn read_link(&self, path: &Path) -> io::Result<PathBuf> {
-            Err(io::Error::new(io::ErrorKind::NotFound, path.display().to_string()))
+            Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                path.display().to_string(),
+            ))
         }
         fn read_file(&self, path: &Path) -> io::Result<Vec<u8>> {
-            Err(io::Error::new(io::ErrorKind::NotFound, path.display().to_string()))
+            Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                path.display().to_string(),
+            ))
         }
         fn read_policy(&self, path: &Path) -> io::Result<Option<String>> {
             if self.fail.as_deref() == Some(path) {
@@ -104,7 +108,7 @@ mod tests {
                 (global.join("ignore"), "*.log\n".to_string()),
                 (root.join(".gitignore"), "!keep.log\n".to_string()),
                 (root.join(".dctxignore"), "secret.txt\n".to_string()),
-                (root.join(".dctxomitcontent"), "*.omit\n".to_string()),
+                (global.join("omitcontent"), "*.omit\n".to_string()),
             ],
         };
         let policy = load_policy(root, Some(global), &fs).unwrap();

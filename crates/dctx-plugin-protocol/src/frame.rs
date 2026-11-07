@@ -13,7 +13,12 @@ pub const BOOTSTRAP_FRAME_CAP: u32 = 65_536;
 pub const MAX_FRAME_CAP: u32 = 1_048_576;
 
 fn too_large() -> Refusal {
-    Refusal::new(ErrorCode::ResourceLimit, Stage::Frame, Predicate::WFrame, "frame-too-large")
+    Refusal::new(
+        ErrorCode::ResourceLimit,
+        Stage::Frame,
+        Predicate::WFrame,
+        "frame-too-large",
+    )
 }
 
 /// Encodes one frame, refusing an empty body or one above `cap`.
@@ -52,13 +57,26 @@ impl Default for FrameDecoder {
 
 impl FrameDecoder {
     /// A decoder at the bootstrap cap.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new() -> Self {
-        Self { cap: BOOTSTRAP_FRAME_CAP, prefix: [0; 4], prefix_len: 0, expected: 0, body: Vec::new(), poisoned: false }
+        Self {
+            cap: BOOTSTRAP_FRAME_CAP,
+            prefix: [0; 4],
+            prefix_len: 0,
+            expected: 0,
+            body: Vec::new(),
+            poisoned: false,
+        }
     }
 
     /// Current cap.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn cap(&self) -> u32 {
         self.cap
     }
@@ -75,7 +93,10 @@ impl FrameDecoder {
     }
 
     /// Whether no partial frame is buffered.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn is_idle(&self) -> bool {
         self.prefix_len == 0 && self.body.is_empty()
     }
@@ -180,14 +201,23 @@ mod tests {
         let mut decoder = FrameDecoder::new();
         let (used, body) = decoder.push(&stream).expect("push");
         assert_eq!((used, body), (6, Some(b"{}".to_vec())));
-        assert_eq!(decoder.push_all(&stream[used..]).expect("rest"), vec![b"{\"b\":2}".to_vec()]);
+        assert_eq!(
+            decoder.push_all(&stream[used..]).expect("rest"),
+            vec![b"{\"b\":2}".to_vec()]
+        );
     }
 
     #[test]
     fn refuses_zero_oversize_and_truncation() {
         let mut decoder = FrameDecoder::new();
-        assert_eq!(decoder.push(&[0, 0, 0, 0]).unwrap_err().reason, "zero-length");
-        assert_eq!(decoder.push(b"{}").unwrap_err().reason, "stream-desynchronized");
+        assert_eq!(
+            decoder.push(&[0, 0, 0, 0]).unwrap_err().reason,
+            "zero-length"
+        );
+        assert_eq!(
+            decoder.push(b"{}").unwrap_err().reason,
+            "stream-desynchronized"
+        );
         let mut decoder = FrameDecoder::new();
         let refusal = decoder.push(&65_537u32.to_le_bytes()).unwrap_err();
         assert_eq!(refusal.code, ErrorCode::ResourceLimit);
@@ -212,7 +242,10 @@ mod tests {
         assert!(decoder.set_cap(MAX_FRAME_CAP + 1).is_err());
         assert!(decoder.set_cap(0).is_err());
         assert!(encode_frame(b"", 16).is_err());
-        assert_eq!(encode_frame(&[b' '; 17], 16).unwrap_err().code, ErrorCode::ResourceLimit);
+        assert_eq!(
+            encode_frame(&[b' '; 17], 16).unwrap_err().code,
+            ErrorCode::ResourceLimit
+        );
         assert!(encode_frame(&vec![b' '; 2_000_000], u32::MAX).is_err());
         assert_eq!(FrameDecoder::default().cap(), BOOTSTRAP_FRAME_CAP);
     }

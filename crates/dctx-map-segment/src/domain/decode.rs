@@ -49,7 +49,10 @@ pub fn decode_with_limits(
     let mut dictionary = Vec::new();
     let mut prefixes = Vec::new();
     let mut facts = Vec::new();
-    let mut postings = Postings { lengths: Vec::new(), rows: Vec::new() };
+    let mut postings = Postings {
+        lengths: Vec::new(),
+        rows: Vec::new(),
+    };
     let mut saw_postings = false;
     let mut view_key = None;
     let mut nodes = Vec::new();
@@ -72,7 +75,8 @@ pub fn decode_with_limits(
                 facts = fact_record::decode(body, entry.record_count, &dictionary, &limits)?;
             }
             SectionKind::Postings => {
-                let dict_len = u32::try_from(dictionary.len()).map_err(|_| SegmentError::Arithmetic)?;
+                let dict_len =
+                    u32::try_from(dictionary.len()).map_err(|_| SegmentError::Arithmetic)?;
                 postings = postings::decode(body, entry.record_count, dict_len, role, &limits)?;
                 saw_postings = true;
             }
@@ -82,7 +86,8 @@ pub fn decode_with_limits(
                 nodes = decoded;
             }
             SectionKind::Forward => {
-                let node_count = u32::try_from(nodes.len()).map_err(|_| SegmentError::Arithmetic)?;
+                let node_count =
+                    u32::try_from(nodes.len()).map_err(|_| SegmentError::Arithmetic)?;
                 forward = adjacency::decode_forward(
                     body,
                     entry.record_count,
@@ -92,7 +97,8 @@ pub fn decode_with_limits(
                 )?;
             }
             SectionKind::Reverse => {
-                let node_count = u32::try_from(nodes.len()).map_err(|_| SegmentError::Arithmetic)?;
+                let node_count =
+                    u32::try_from(nodes.len()).map_err(|_| SegmentError::Arithmetic)?;
                 let (resolved, unresolved) = adjacency::decode_reverse(
                     body,
                     entry.record_count,
@@ -256,8 +262,14 @@ mod tests {
             let at = 80 + usize::try_from(index).unwrap() * 64;
             let found = u16::from_le_bytes(bytes[at..at + 2].try_into().unwrap());
             if found == kind {
-                let offset = usize::try_from(u64::from_le_bytes(bytes[at + 8..at + 16].try_into().unwrap())).unwrap();
-                let len = usize::try_from(u64::from_le_bytes(bytes[at + 16..at + 24].try_into().unwrap())).unwrap();
+                let offset = usize::try_from(u64::from_le_bytes(
+                    bytes[at + 8..at + 16].try_into().unwrap(),
+                ))
+                .unwrap();
+                let len = usize::try_from(u64::from_le_bytes(
+                    bytes[at + 16..at + 24].try_into().unwrap(),
+                ))
+                .unwrap();
                 return (at, offset, len);
             }
         }

@@ -12,13 +12,15 @@ use dctx_plugin_git::adapters::WorkerError;
 use dctx_plugin_git::adapters::worker::{LaunchIdentity, serve};
 use dctx_plugin_git::ports::{Broker, BrokerFailure};
 use dctx_plugin_protocol::records::bootstrap::BootstrapMessage;
-use dctx_plugin_protocol::records::envelope::{Outcome, PendingResult, SessionBody, SessionMessage};
+use dctx_plugin_protocol::records::envelope::{
+    Outcome, PendingResult, SessionBody, SessionMessage,
+};
 use dctx_plugin_protocol::records::requests::Request;
 use dctx_plugin_protocol::records::results::ResultBody;
 use dctx_plugin_protocol::records::scalars::{Digest, RequestId, Sender as Side};
 use dctx_plugin_protocol::{
-    Accepted, BOOTSTRAP_FRAME_CAP, DecodeLimits, FrameReader, MAX_FRAME_CAP, Session, WireMessage, accept_answer,
-    write_frame,
+    Accepted, BOOTSTRAP_FRAME_CAP, DecodeLimits, FrameReader, MAX_FRAME_CAP, Session, WireMessage,
+    accept_answer, write_frame,
 };
 
 use super::{FakeBroker, bytes, token};
@@ -51,7 +53,9 @@ pub struct PipeWriter(Sender<Vec<u8>>);
 
 impl Write for PipeWriter {
     fn write(&mut self, data: &[u8]) -> io::Result<usize> {
-        self.0.send(data.to_vec()).map_err(|_| io::Error::from(io::ErrorKind::BrokenPipe))?;
+        self.0
+            .send(data.to_vec())
+            .map_err(|_| io::Error::from(io::ErrorKind::BrokenPipe))?;
         Ok(data.len())
     }
 
@@ -62,13 +66,23 @@ impl Write for PipeWriter {
 
 fn pipe() -> (PipeWriter, PipeReader) {
     let (tx, rx) = channel();
-    (PipeWriter(tx), PipeReader { rx, buffer: Vec::new(), position: 0 })
+    (
+        PipeWriter(tx),
+        PipeReader {
+            rx,
+            buffer: Vec::new(),
+            position: 0,
+        },
+    )
 }
 
 pub fn launch() -> LaunchIdentity {
     LaunchIdentity {
         publisher_key: token("fixture-key-1"),
-        artifact_digest: Digest::new("sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad").expect("digest"),
+        artifact_digest: Digest::new(
+            "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+        )
+        .expect("digest"),
     }
 }
 
@@ -86,7 +100,13 @@ impl Host {
         let (to_worker, worker_in) = pipe();
         let (worker_out, from_worker) = pipe();
         let worker = thread::spawn(move || serve(worker_in, worker_out, &launch()));
-        Self { to_worker: Some(to_worker), from_worker: FrameReader::new(from_worker), worker: Some(worker), session: None, next_id: 0 }
+        Self {
+            to_worker: Some(to_worker),
+            from_worker: FrameReader::new(from_worker),
+            worker: Some(worker),
+            session: None,
+            next_id: 0,
+        }
     }
 
     pub fn send_raw(&mut self, body: &[u8], cap: u32) {
@@ -118,22 +138,39 @@ impl Host {
         let answer = self.hello(&hello_bytes);
         let identity = launch().identity().expect("identity");
         let negotiated = accept_answer(&id, &hello, &answer, &identity, &[]).expect("accepted");
-        self.from_worker.decoder_mut().set_cap(negotiated.frame_cap).expect("cap");
+        self.from_worker
+            .decoder_mut()
+            .set_cap(negotiated.frame_cap)
+            .expect("cap");
         self.session = Some(Session::new(token("s:1"), negotiated));
         answer
     }
 
-    #[allow(clippy::unused_self, reason = "Keep construction of the fixed fixture session message beside the host tracker methods that send it.")]
+    #[allow(
+        clippy::unused_self,
+        reason = "Keep construction of the fixed fixture session message beside the host tracker methods that send it."
+    )]
     fn message(&self, body: SessionBody) -> SessionMessage {
-        SessionMessage { session: token("s:1"), extensions: None, body }
+        SessionMessage {
+            session: token("s:1"),
+            extensions: None,
+            body,
+        }
     }
 
     /// Sends a tracked host request; returns its ID.
     pub fn request(&mut self, request: Request) -> RequestId {
         self.next_id += 1;
         let id = RequestId::new(&format!("h:{}", self.next_id)).expect("id");
-        let message = self.message(SessionBody::Request { id: id.clone(), request });
-        self.session.as_mut().expect("session").observe(Side::Host, &message).expect("host request admitted");
+        let message = self.message(SessionBody::Request {
+            id: id.clone(),
+            request,
+        });
+        self.session
+            .as_mut()
+            .expect("session")
+            .observe(Side::Host, &message)
+            .expect("host request admitted");
         self.send_raw(&WireMessage::Session(message).encode(), MAX_FRAME_CAP);
         id
     }
@@ -141,10 +178,17 @@ impl Host {
     /// Next worker message, observed by the host tracker (a refusal fails the test).
     pub fn next(&mut self) -> (SessionMessage, Accepted) {
         let frame = self.read_raw().expect("worker message");
-        let WireMessage::Session(message) = WireMessage::decode(&frame, DecodeLimits::WIRE).expect("decodes") else {
+        let WireMessage::Session(message) =
+            WireMessage::decode(&frame, DecodeLimits::WIRE).expect("decodes")
+        else {
             panic!("bootstrap after hello")
         };
-        let accepted = self.session.as_mut().expect("session").observe(Side::Plugin, &message).expect("conforms");
+        let accepted = self
+            .session
+            .as_mut()
+            .expect("session")
+            .observe(Side::Plugin, &message)
+            .expect("conforms");
         (message, accepted)
     }
 
@@ -154,10 +198,20 @@ impl Host {
             let (message, accepted) = self.next();
             match message.body {
                 SessionBody::Response { id: answered, .. } if &answered == id => return accepted,
-                SessionBody::Request { id: request_id, request } => {
+                SessionBody::Request {
+                    id: request_id,
+                    request,
+                } => {
                     let outcome = answer(broker, &request);
-                    let reply = self.message(SessionBody::Response { id: request_id, outcome });
-                    self.session.as_mut().expect("session").observe(Side::Host, &reply).expect("host reply");
+                    let reply = self.message(SessionBody::Response {
+                        id: request_id,
+                        outcome,
+                    });
+                    self.session
+                        .as_mut()
+                        .expect("session")
+                        .observe(Side::Host, &reply)
+                        .expect("host reply");
                     self.send_raw(&WireMessage::Session(reply).encode(), MAX_FRAME_CAP);
                 }
                 SessionBody::Event { .. } => {}
@@ -169,22 +223,33 @@ impl Host {
     /// Closes the host end and returns the worker's exit.
     pub fn finish(mut self) -> Result<(), WorkerError> {
         self.to_worker = None;
-        self.worker.take().expect("worker").join().expect("worker thread")
+        self.worker
+            .take()
+            .expect("worker")
+            .join()
+            .expect("worker thread")
     }
 }
 
 fn answer(broker: &mut FakeBroker, request: &Request) -> Outcome {
     let result = match request {
         Request::FileRead(read) => broker.file_read(read).map(ResultBody::Chunk),
-        Request::FileStage(stage) => broker.file_stage(stage).map(|staged| ResultBody::FileStage {
-            upload: staged.upload,
-            next_offset: staged.next_offset,
-            complete: staged.complete,
-            receipt: token("receipt:upload"),
-        }),
-        Request::FileReplace(replace) => broker
-            .file_replace(replace)
-            .map(|done| ResultBody::Replaced { precondition: done.precondition, receipt: done.receipt }),
+        Request::FileStage(stage) => broker
+            .file_stage(stage)
+            .map(|staged| ResultBody::FileStage {
+                upload: staged.upload,
+                next_offset: staged.next_offset,
+                complete: staged.complete,
+                receipt: token("receipt:upload"),
+            }),
+        Request::FileReplace(replace) => {
+            broker
+                .file_replace(replace)
+                .map(|done| ResultBody::Replaced {
+                    precondition: done.precondition,
+                    receipt: done.receipt,
+                })
+        }
         Request::ProgramRun(run) => broker.program_run(run).map(|ran| ResultBody::ProgramRun {
             status: ran.status,
             exit_code: ran.exit_code,

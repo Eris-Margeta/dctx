@@ -6,8 +6,8 @@
 
 use std::io::{self, Read, Write};
 
-use super::parse::replace_vars;
 use super::Template;
+use super::parse::replace_vars;
 use crate::error::TemplateValidationError;
 
 const MAGIC: &[u8; 8] = b"DCTXTMPL";
@@ -65,7 +65,8 @@ impl CompiledTemplate {
             let Some(val) = self.variables.get(key) else {
                 continue;
             };
-            let key_len = u16::try_from(key.len()).map_err(|_| invalid("variable name too long"))?;
+            let key_len =
+                u16::try_from(key.len()).map_err(|_| invalid("variable name too long"))?;
             writer.write_all(&key_len.to_le_bytes())?;
             writer.write_all(key.as_bytes())?;
             write_u32_bytes(writer, val.as_bytes())?;
@@ -102,11 +103,20 @@ impl CompiledTemplate {
         let partial_tree_entry = read_string(reader)?;
         let partial_file_block = read_string(reader)?;
         let layout = read_string(reader)?;
-        Ok(Self { name, variables, partial_tree_entry, partial_file_block, layout })
+        Ok(Self {
+            name,
+            variables,
+            partial_tree_entry,
+            partial_file_block,
+            layout,
+        })
     }
 
     /// Rebuilds a [`Template`] whose partials are already substituted.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn to_template(&self) -> Template {
         Template {
             variables: self.variables.clone(),

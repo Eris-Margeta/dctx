@@ -6,7 +6,10 @@
 use super::{IgnoreRule, PatternType};
 
 /// Parses legacy gitignore-style rules, including inline comments.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn parse_ignore_pattern_line(line: &str) -> Option<IgnoreRule> {
     let mut trimmed = line.trim();
     if trimmed.is_empty() || trimmed.starts_with('#') {

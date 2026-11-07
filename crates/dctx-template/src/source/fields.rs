@@ -10,10 +10,15 @@ use dctx_core::FileHandlingDecision;
 use crate::error::TemplateError;
 use crate::model::{SelectRule, Selection};
 
-use super::draft::{IndexDraft, BudgetDraft, ViewDraft, GroupDraft, PluginDecl};
+use super::draft::{BudgetDraft, GroupDraft, IndexDraft, PluginDecl, ViewDraft};
 use super::value::{once, parse_raw, split_key};
 
-pub(super) fn apply_select(section: &mut Selection, trimmed: &str, line: u32, seen: &mut BTreeSet<String>) -> Result<(), TemplateError> {
+pub(super) fn apply_select(
+    section: &mut Selection,
+    trimmed: &str,
+    line: u32,
+    seen: &mut BTreeSet<String>,
+) -> Result<(), TemplateError> {
     let (key, value) = split_key(trimmed, line)?;
     match key.as_str() {
         "include" | "exclude" | "deny" | "omit" | "debug" => {
@@ -43,11 +48,19 @@ pub(super) fn apply_select(section: &mut Selection, trimmed: &str, line: u32, se
             section.kinds = parse_raw(&value, line)?.list(line)?;
             Ok(())
         }
-        _ => Err(TemplateError::InvalidSyntax { line, detail: format!("unknown select field {key}") }),
+        _ => Err(TemplateError::InvalidSyntax {
+            line,
+            detail: format!("unknown select field {key}"),
+        }),
     }
 }
 
-pub(super) fn apply_index(section: &mut IndexDraft, trimmed: &str, line: u32, seen: &mut BTreeSet<String>) -> Result<(), TemplateError> {
+pub(super) fn apply_index(
+    section: &mut IndexDraft,
+    trimmed: &str,
+    line: u32,
+    seen: &mut BTreeSet<String>,
+) -> Result<(), TemplateError> {
     let (key, value) = split_key(trimmed, line)?;
     once(seen, &key)?;
     match key.as_str() {
@@ -71,11 +84,19 @@ pub(super) fn apply_index(section: &mut IndexDraft, trimmed: &str, line: u32, se
             section.max_bytes = Some(parse_raw(&value, line)?.int(line)?);
             Ok(())
         }
-        _ => Err(TemplateError::InvalidSyntax { line, detail: format!("unknown index field {key}") }),
+        _ => Err(TemplateError::InvalidSyntax {
+            line,
+            detail: format!("unknown index field {key}"),
+        }),
     }
 }
 
-pub(super) fn apply_budget(section: &mut BudgetDraft, trimmed: &str, line: u32, seen: &mut BTreeSet<String>) -> Result<(), TemplateError> {
+pub(super) fn apply_budget(
+    section: &mut BudgetDraft,
+    trimmed: &str,
+    line: u32,
+    seen: &mut BTreeSet<String>,
+) -> Result<(), TemplateError> {
     let (key, value) = split_key(trimmed, line)?;
     once(seen, &key)?;
     let number = parse_raw(&value, line)?.int(line)?;
@@ -85,17 +106,33 @@ pub(super) fn apply_budget(section: &mut BudgetDraft, trimmed: &str, line: u32, 
         "hard_estimated_tokens" => section.hard_estimated_tokens = Some(number),
         "records" => section.records = Some(number),
         "depth" => {
-            section.depth = Some(u32::try_from(number).map_err(|_| TemplateError::InvalidSyntax { line, detail: "depth".into() })?);
+            section.depth =
+                Some(
+                    u32::try_from(number).map_err(|_| TemplateError::InvalidSyntax {
+                        line,
+                        detail: "depth".into(),
+                    })?,
+                );
         }
         "parse_time_ms" => section.parse_time_ms = Some(number),
         "parse_memory" => section.parse_memory = Some(number),
         "work" => section.work = Some(number),
-        _ => return Err(TemplateError::InvalidSyntax { line, detail: format!("unknown budget field {key}") }),
+        _ => {
+            return Err(TemplateError::InvalidSyntax {
+                line,
+                detail: format!("unknown budget field {key}"),
+            });
+        }
     }
     Ok(())
 }
 
-pub(super) fn apply_view(section: &mut ViewDraft, trimmed: &str, line: u32, seen: &mut BTreeSet<String>) -> Result<(), TemplateError> {
+pub(super) fn apply_view(
+    section: &mut ViewDraft,
+    trimmed: &str,
+    line: u32,
+    seen: &mut BTreeSet<String>,
+) -> Result<(), TemplateError> {
     let (key, value) = split_key(trimmed, line)?;
     once(seen, &key)?;
     let text = parse_raw(&value, line)?.string(line)?;
@@ -106,31 +143,56 @@ pub(super) fn apply_view(section: &mut ViewDraft, trimmed: &str, line: u32, seen
         "budget" => section.budget = Some(text),
         "render" => section.render = Some(text),
         "layout" => section.layout_label = Some(text),
-        _ => return Err(TemplateError::InvalidSyntax { line, detail: format!("unknown view field {key}") }),
+        _ => {
+            return Err(TemplateError::InvalidSyntax {
+                line,
+                detail: format!("unknown view field {key}"),
+            });
+        }
     }
     Ok(())
 }
 
-pub(super) fn apply_group(section: &mut GroupDraft, trimmed: &str, line: u32, seen: &mut BTreeSet<String>) -> Result<(), TemplateError> {
+pub(super) fn apply_group(
+    section: &mut GroupDraft,
+    trimmed: &str,
+    line: u32,
+    seen: &mut BTreeSet<String>,
+) -> Result<(), TemplateError> {
     let (key, value) = split_key(trimmed, line)?;
     once(seen, &key)?;
     match key.as_str() {
         "enabled" => section.enabled = parse_raw(&value, line)?.list(line)?,
         "order" => section.order = parse_raw(&value, line)?.list(line)?,
         "network" => section.network = Some(parse_raw(&value, line)?.string(line)?),
-        _ => return Err(TemplateError::InvalidSyntax { line, detail: format!("unknown plugins field {key}") }),
+        _ => {
+            return Err(TemplateError::InvalidSyntax {
+                line,
+                detail: format!("unknown plugins field {key}"),
+            });
+        }
     }
     Ok(())
 }
 
-pub(super) fn apply_plugin(section: &mut PluginDecl, trimmed: &str, line: u32, seen: &mut BTreeSet<String>) -> Result<(), TemplateError> {
+pub(super) fn apply_plugin(
+    section: &mut PluginDecl,
+    trimmed: &str,
+    line: u32,
+    seen: &mut BTreeSet<String>,
+) -> Result<(), TemplateError> {
     let (key, value) = split_key(trimmed, line)?;
     if let Some(field) = key.strip_prefix("config.") {
         if field.is_empty() {
-            return Err(TemplateError::InvalidSyntax { line, detail: "config field".into() });
+            return Err(TemplateError::InvalidSyntax {
+                line,
+                detail: "config field".into(),
+            });
         }
         once(seen, &key)?;
-        section.config.push((field.to_string(), parse_raw(&value, line)?));
+        section
+            .config
+            .push((field.to_string(), parse_raw(&value, line)?));
         return Ok(());
     }
     once(seen, &key)?;
@@ -143,8 +205,12 @@ pub(super) fn apply_plugin(section: &mut PluginDecl, trimmed: &str, line: u32, s
         "allow" => section.allow = parse_raw(&value, line)?.list(line)?,
         "before" => section.before = parse_raw(&value, line)?.list(line)?,
         "after" => section.after = parse_raw(&value, line)?.list(line)?,
-        _ => return Err(TemplateError::InvalidSyntax { line, detail: format!("unknown plugin field {key}") }),
+        _ => {
+            return Err(TemplateError::InvalidSyntax {
+                line,
+                detail: format!("unknown plugin field {key}"),
+            });
+        }
     }
     Ok(())
 }
-

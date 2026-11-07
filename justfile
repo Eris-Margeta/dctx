@@ -167,9 +167,9 @@ release:
 
     # Step 1: Verify changelog entry exists
     echo "📝 Step 1: Verifying changelog entry for $VERSION..."
-    if ! grep -q "^## \[$VERSION\]" docs/DOCUMENTS/CHANGELOG.md; then
+    if ! grep -q "^## \[$VERSION\]" CHANGELOG.md; then
         echo "❌ No changelog entry found for version $VERSION"
-        echo "   Please add a changelog entry in docs/DOCUMENTS/CHANGELOG.md"
+        echo "   Please add a changelog entry in CHANGELOG.md"
         exit 1
     fi
     echo "✅ Changelog entry found"

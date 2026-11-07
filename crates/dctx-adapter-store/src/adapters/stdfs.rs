@@ -10,8 +10,8 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
-use crate::domain::{check_root, Boundary, StoreError};
-use crate::ports::{self, read_ceiling, FsCapabilities, StoreFs};
+use crate::domain::{Boundary, StoreError, check_root};
+use crate::ports::{self, FsCapabilities, StoreFs, read_ceiling};
 
 /// A real directory of immutable segments and generation pointers.
 pub struct StdFs {
@@ -32,7 +32,10 @@ impl StdFs {
             let _ = fs::set_permissions(root, fs::Permissions::from_mode(0o700));
         }
         let root = fs::canonicalize(root).map_err(ports::io_err)?;
-        Ok(Self { root, locks: Mutex::new(BTreeMap::new()) })
+        Ok(Self {
+            root,
+            locks: Mutex::new(BTreeMap::new()),
+        })
     }
 
     fn guard(&self) -> MutexGuard<'_, BTreeMap<String, File>> {
@@ -61,7 +64,11 @@ impl StdFs {
 
 impl StoreFs for StdFs {
     fn capabilities(&self) -> FsCapabilities {
-        FsCapabilities { sync: true, atomic_replace: true, os_lock: true }
+        FsCapabilities {
+            sync: true,
+            atomic_replace: true,
+            os_lock: true,
+        }
     }
 
     fn checkpoint(&self, _boundary: Boundary) -> Result<(), StoreError> {
@@ -170,7 +177,9 @@ impl StoreFs for StdFs {
         self.parent_of(&to)?;
         #[cfg(windows)]
         if fs::symlink_metadata(&to).is_ok() {
-            return Err(StoreError::UnsupportedDurability { capability: "atomic-replace" });
+            return Err(StoreError::UnsupportedDurability {
+                capability: "atomic-replace",
+            });
         }
         fs::rename(from, to).map_err(ports::io_err)
     }
@@ -183,7 +192,9 @@ impl StoreFs for StdFs {
             return Err(StoreError::CorruptIndex { reason: "limit" });
         }
         let mut buf = Vec::new();
-        file.take(max.saturating_add(1)).read_to_end(&mut buf).map_err(ports::io_err)?;
+        file.take(max.saturating_add(1))
+            .read_to_end(&mut buf)
+            .map_err(ports::io_err)?;
         if u64::try_from(buf.len()).unwrap_or(u64::MAX) > max {
             return Err(StoreError::CorruptIndex { reason: "limit" });
         }
@@ -193,7 +204,9 @@ impl StoreFs for StdFs {
     fn exists(&self, path: &str) -> Result<bool, StoreError> {
         let path = self.confine(path)?;
         match fs::symlink_metadata(&path) {
-            Ok(meta) if meta.file_type().is_symlink() => Err(StoreError::InvalidRequest { reason: "path" }),
+            Ok(meta) if meta.file_type().is_symlink() => {
+                Err(StoreError::InvalidRequest { reason: "path" })
+            }
             Ok(_) => Ok(true),
             Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(false),
             Err(err) => Err(ports::io_err(err)),

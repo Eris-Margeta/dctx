@@ -4,10 +4,10 @@
 //! Depends on [`super::store`] inspection. Publication installs the bytes this module trusts.
 //! A newer manifest without a valid pointer is not a generation. Stuck locks are not cleared.
 
-use crate::domain::{current_path, previous_path, Recovery, StoreError};
+use crate::domain::{Recovery, StoreError, current_path, previous_path};
 use crate::ports::StoreFs;
 
-use super::store::{inspect, PointerView, SegmentStore};
+use super::store::{PointerView, SegmentStore, inspect};
 
 enum Class {
     Keep,
@@ -56,7 +56,13 @@ impl<F: StoreFs> SegmentStore<F> {
         }
         for root in &repairs {
             let bytes = self.fs.read(&previous_path(root))?;
-            self.write_durable("recover-pointer.partial", &current_path(root), &bytes, true, |_| Ok(()))?;
+            self.write_durable(
+                "recover-pointer.partial",
+                &current_path(root),
+                &bytes,
+                true,
+                |_| Ok(()),
+            )?;
         }
         let discarded_tmp = self.discard_tmp()?;
         let mut best: Option<(u64, String)> = None;
@@ -98,7 +104,9 @@ fn classify<F: StoreFs>(fs: &F, root: &str) -> Result<Class, StoreError> {
     let current = inspect(fs, &current_path(root))?;
     let previous = inspect(fs, &previous_path(root))?;
     Ok(match (current, previous) {
-        (PointerView::Closed(current), PointerView::Closed(previous)) if previous.generation > current.generation => {
+        (PointerView::Closed(current), PointerView::Closed(previous))
+            if previous.generation > current.generation =>
+        {
             Class::Repair
         }
         (PointerView::Closed(_), _) => Class::Keep,

@@ -37,7 +37,11 @@ pub fn cases() -> Vec<Case> {
         .iter()
         .map(|raw| Case {
             id: text(raw, "id").to_owned(),
-            input: raw.get("input").and_then(|input| input.get("utf8")).and_then(Json::as_str).map(|s| s.as_bytes().to_vec()),
+            input: raw
+                .get("input")
+                .and_then(|input| input.get("utf8"))
+                .and_then(Json::as_str)
+                .map(|s| s.as_bytes().to_vec()),
             raw: raw.clone(),
         })
         .collect()
@@ -56,16 +60,27 @@ pub fn setup(case: &Case) -> (FakeBroker, Binding, Invocation) {
         broker.git = GitScript::Missing;
     }
     let exists = case.input.is_some() || flag(raw, "file_exists", false);
-    let nested: &[&str] = if text(raw, "nested_rule_selection") == "Exclude" { &["file:nested"] } else { &[] };
+    let nested: &[&str] = if text(raw, "nested_rule_selection") == "Exclude" {
+        &["file:nested"]
+    } else {
+        &[]
+    };
     if !nested.is_empty() {
         broker.nested.insert("file:nested".into(), None);
     }
-    let invocation = hook(text(raw, "host_version"), flag(raw, "stage", true), flag(raw, "repository", true));
+    let invocation = hook(
+        text(raw, "host_version"),
+        flag(raw, "stage", true),
+        flag(raw, "repository", true),
+    );
     (broker, binding(exists, nested, true), invocation)
 }
 
 fn count(expected: &Json, key: &str) -> Option<u64> {
-    expected.get(key).and_then(Json::as_int).and_then(|n| u64::try_from(n).ok())
+    expected
+        .get(key)
+        .and_then(Json::as_int)
+        .and_then(|n| u64::try_from(n).ok())
 }
 
 /// Checks status/reason/code, diagnostics, spy counters and exact byte goldens.
@@ -75,28 +90,73 @@ pub fn check(case: &Case, observed: &Observed, broker: &FakeBroker) {
     if let Some(code) = expected.get("code").and_then(Json::as_str) {
         assert_eq!(observed.code.as_deref(), Some(code), "{id}");
     } else {
-        assert_eq!(observed.status.as_deref(), Some(text(expected, "status")), "{id}");
-        assert_eq!(observed.reason.as_deref(), Some(text(expected, "reason")), "{id}");
+        assert_eq!(
+            observed.status.as_deref(),
+            Some(text(expected, "status")),
+            "{id}"
+        );
+        assert_eq!(
+            observed.reason.as_deref(),
+            Some(text(expected, "reason")),
+            "{id}"
+        );
     }
     if let Some(diagnostic) = expected.get("diagnostic").and_then(Json::as_str) {
-        assert!(observed.diagnostics.iter().any(|code| code == diagnostic), "{id}: {:?}", observed.diagnostics);
+        assert!(
+            observed.diagnostics.iter().any(|code| code == diagnostic),
+            "{id}: {:?}",
+            observed.diagnostics
+        );
     }
-    for (key, actual) in [("writes", broker.writes), ("git_spawns", broker.git_spawns), ("reads", broker.reads), ("hashes", broker.hashes)] {
+    for (key, actual) in [
+        ("writes", broker.writes),
+        ("git_spawns", broker.git_spawns),
+        ("reads", broker.reads),
+        ("hashes", broker.hashes),
+    ] {
         if let Some(want) = count(expected, key) {
             assert_eq!(actual, want, "{id}: {key}");
         }
     }
     if let (Some(input), Some(raw_input)) = (&case.input, case.raw.get("input")) {
-        assert_eq!(sha256_hex(input), text(raw_input, "sha256"), "{id}: input digest");
-        assert_eq!(count(raw_input, "bytes"), Some(input.len() as u64), "{id}: input length");
+        assert_eq!(
+            sha256_hex(input),
+            text(raw_input, "sha256"),
+            "{id}: input digest"
+        );
+        assert_eq!(
+            count(raw_input, "bytes"),
+            Some(input.len() as u64),
+            "{id}: input length"
+        );
     }
     if let Some(golden) = expected.get("utf8").and_then(Json::as_str) {
-        assert_eq!(String::from_utf8_lossy(&broker.file), golden, "{id}: committed bytes");
-        assert_eq!(sha256_hex(&broker.file), text(expected, "sha256"), "{id}: committed digest");
-        assert_eq!(count(expected, "bytes"), Some(broker.file.len() as u64), "{id}: committed length");
+        assert_eq!(
+            String::from_utf8_lossy(&broker.file),
+            golden,
+            "{id}: committed bytes"
+        );
+        assert_eq!(
+            sha256_hex(&broker.file),
+            text(expected, "sha256"),
+            "{id}: committed digest"
+        );
+        assert_eq!(
+            count(expected, "bytes"),
+            Some(broker.file.len() as u64),
+            "{id}: committed length"
+        );
     }
     if broker.git_spawns > 0 {
-        assert_eq!(broker.staged.as_deref(), Some(broker.file.as_slice()), "{id}: whole current file staged");
+        assert_eq!(
+            broker.staged.as_deref(),
+            Some(broker.file.as_slice()),
+            "{id}: whole current file staged"
+        );
     }
-    assert_eq!(observed.receipts as u64, broker.writes + broker.git_spawns, "{id}: receipts match effects");
+    assert_eq!(
+        observed.receipts as u64,
+        broker.writes + broker.git_spawns,
+        "{id}: receipts match effects"
+    );
 }

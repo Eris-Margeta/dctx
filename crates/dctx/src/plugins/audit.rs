@@ -6,11 +6,14 @@
 
 #![forbid(unsafe_code)]
 
-use std::fmt::Write as _;
 use std::collections::BTreeMap;
+use std::fmt::Write as _;
 
 use dctx_hash::Sha256;
-use dctx_plugin_host::ports::{AuditKind, AuditPort, AuditRecord, AuditUnavailable, MAX_RECOVERY_RECORDS, RecoveryRecord, RecoveryState};
+use dctx_plugin_host::ports::{
+    AuditKind, AuditPort, AuditRecord, AuditUnavailable, MAX_RECOVERY_RECORDS, RecoveryRecord,
+    RecoveryState,
+};
 use dctx_plugin_host::{ActionKey, ArgDigest};
 use dctx_plugin_protocol::records::scalars::{Digest, PluginId, Token};
 
@@ -45,8 +48,10 @@ struct Entry {
 impl Evidence {
     fn parse(&self, payload: &str) -> Result<Entry, AuditUnavailable> {
         let f: Vec<_> = payload.split('\t').collect();
-        if !matches!((f.first().copied(), f.len()), (Some("1"), 12) | (Some("2"), 16))
-            || f[1].parse::<u64>().ok() != self.sequence.checked_add(1)
+        if !matches!(
+            (f.first().copied(), f.len()),
+            (Some("1"), 12) | (Some("2"), 16)
+        ) || f[1].parse::<u64>().ok() != self.sequence.checked_add(1)
             || PluginId::new(f[3]).is_err()
             || Token::new(f[4]).is_err()
             || f[5].parse::<u64>().is_err()
@@ -100,9 +105,15 @@ impl Evidence {
         } else {
             None
         };
-        let uncertain =
-            recovery.as_ref().map_or(f[11] == "unknown", |r| matches!(r.state, RecoveryState::Unknown | RecoveryState::Partial));
-        Ok(Entry { kind, link, uncertain, recovery })
+        let uncertain = recovery.as_ref().map_or(f[11] == "unknown", |r| {
+            matches!(r.state, RecoveryState::Unknown | RecoveryState::Partial)
+        });
+        Ok(Entry {
+            kind,
+            link,
+            uncertain,
+            recovery,
+        })
     }
 
     fn accept(&mut self, entry: Entry) {
@@ -112,8 +123,12 @@ impl Evidence {
         } else if matches!(entry.kind, AuditKind::Intent | AuditKind::Completion) {
             self.legacy_effects = true;
         }
-        if let Some(link) = entry.link.filter(|_| matches!(entry.kind, AuditKind::Intent | AuditKind::Completion)) {
-            self.links.insert(link, entry.kind == AuditKind::Intent || entry.uncertain);
+        if let Some(link) = entry
+            .link
+            .filter(|_| matches!(entry.kind, AuditKind::Intent | AuditKind::Completion))
+        {
+            self.links
+                .insert(link, entry.kind == AuditKind::Intent || entry.uncertain);
         }
     }
 }
@@ -136,20 +151,29 @@ impl<S: AuditStorage> DurableAudit<S> {
         if bytes.len() > capacity {
             return Err(AuditUnavailable);
         }
-        let mut audit = Self { storage, capacity, used: bytes.len(), damaged: false, evidence: Evidence::default() };
+        let mut audit = Self {
+            storage,
+            capacity,
+            used: bytes.len(),
+            damaged: false,
+            evidence: Evidence::default(),
+        };
         for frame in bytes.split_inclusive(|b| *b == b'\n') {
             let entry = (|| {
                 if frame.len() > MAX_FRAME {
                     return Err(AuditUnavailable);
                 }
-                let line = std::str::from_utf8(frame.strip_suffix(b"\n").ok_or(AuditUnavailable)?).map_err(|_| AuditUnavailable)?;
+                let line = std::str::from_utf8(frame.strip_suffix(b"\n").ok_or(AuditUnavailable)?)
+                    .map_err(|_| AuditUnavailable)?;
                 let (digest, payload) = line.split_once('\t').ok_or(AuditUnavailable)?;
                 if digest != checksum(payload.as_bytes())? {
                     return Err(AuditUnavailable);
                 }
                 audit.evidence.parse(payload)
             })();
-            if let Ok(entry) = entry { audit.evidence.accept(entry) } else {
+            if let Ok(entry) = entry {
+                audit.evidence.accept(entry)
+            } else {
                 audit.damaged = true;
                 break;
             }
@@ -159,12 +183,21 @@ impl<S: AuditStorage> DurableAudit<S> {
 
     #[cfg(test)]
     pub(crate) fn uncertain(&self) -> Vec<Link> {
-        self.evidence.links.iter().filter(|(_, pending)| **pending).map(|(link, _)| link.clone()).collect()
+        self.evidence
+            .links
+            .iter()
+            .filter(|(_, pending)| **pending)
+            .map(|(link, _)| link.clone())
+            .collect()
     }
 }
 
 impl<S: AuditStorage> DurableAudit<S> {
-    fn write(&mut self, r: &AuditRecord, recovery: Option<&RecoveryRecord>) -> Result<(), AuditUnavailable> {
+    fn write(
+        &mut self,
+        r: &AuditRecord,
+        recovery: Option<&RecoveryRecord>,
+    ) -> Result<(), AuditUnavailable> {
         if self.damaged || !safe_name(r.method) || !safe_name(r.reason) {
             return Err(AuditUnavailable);
         }
@@ -175,7 +208,11 @@ impl<S: AuditStorage> DurableAudit<S> {
             AuditKind::Refusal => "refusal",
             AuditKind::Lifecycle => "lifecycle",
         };
-        let sequence = self.evidence.sequence.checked_add(1).ok_or(AuditUnavailable)?;
+        let sequence = self
+            .evidence
+            .sequence
+            .checked_add(1)
+            .ok_or(AuditUnavailable)?;
         let args = r.args.map_or_else(|| "-".to_owned(), |d| hex(d.as_bytes()));
         let version = if recovery.is_some() { 2 } else { 1 };
         let mut payload = format!(
@@ -190,10 +227,14 @@ impl<S: AuditStorage> DurableAudit<S> {
             r.reason
         );
         if let Some(bound) = recovery {
-            if r.invocation != bound.key.invocation || r.args != Some(bound.args) || r.receipt.as_ref() != Some(&bound.receipt) {
+            if r.invocation != bound.key.invocation
+                || r.args != Some(bound.args)
+                || r.receipt.as_ref() != Some(&bound.receipt)
+            {
                 return Err(AuditUnavailable);
             }
-            let _ = write!(payload,
+            let _ = write!(
+                payload,
                 "\t{}\t{}\t{}\t{}",
                 bound.key.artifact.as_str(),
                 bound.key.root.as_str(),
@@ -221,12 +262,19 @@ impl<S: AuditStorage> AuditPort for DurableAudit<S> {
         self.write(record, None)
     }
 
-    fn append_effect(&mut self, record: &AuditRecord, recovery: &RecoveryRecord) -> Result<(), AuditUnavailable> {
+    fn append_effect(
+        &mut self,
+        record: &AuditRecord,
+        recovery: &RecoveryRecord,
+    ) -> Result<(), AuditUnavailable> {
         self.write(record, Some(recovery))
     }
 
     fn recover(&mut self, limit: usize) -> Result<Vec<RecoveryRecord>, AuditUnavailable> {
-        if self.damaged || self.evidence.legacy_effects || self.evidence.recovery.len() > limit.min(MAX_RECOVERY_RECORDS) {
+        if self.damaged
+            || self.evidence.legacy_effects
+            || self.evidence.recovery.len() > limit.min(MAX_RECOVERY_RECORDS)
+        {
             return Err(AuditUnavailable);
         }
         Ok(self.evidence.recovery.clone())
@@ -234,16 +282,30 @@ impl<S: AuditStorage> AuditPort for DurableAudit<S> {
 }
 
 fn safe_name(value: &str) -> bool {
-    !value.is_empty() && value.len() <= 64 && value.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'-' | b'_'))
+    !value.is_empty()
+        && value.len() <= 64
+        && value
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'-' | b'_'))
 }
 
 fn hex(bytes: &[u8]) -> String {
     const DIGITS: &[u8] = b"0123456789abcdef";
-    bytes.iter().flat_map(|b| [char::from(DIGITS[usize::from(b >> 4)]), char::from(DIGITS[usize::from(b & 15)])]).collect()
+    bytes
+        .iter()
+        .flat_map(|b| {
+            [
+                char::from(DIGITS[usize::from(b >> 4)]),
+                char::from(DIGITS[usize::from(b & 15)]),
+            ]
+        })
+        .collect()
 }
 
 fn checksum(bytes: &[u8]) -> Result<String, AuditUnavailable> {
-    Sha256::digest(bytes).map(|digest| hex(digest.as_bytes())).map_err(|_| AuditUnavailable)
+    Sha256::digest(bytes)
+        .map(|digest| hex(digest.as_bytes()))
+        .map_err(|_| AuditUnavailable)
 }
 
 #[cfg(test)]
@@ -251,13 +313,19 @@ fn checksum(bytes: &[u8]) -> Result<String, AuditUnavailable> {
 mod tests;
 
 #[cfg(feature = "fs")]
-pub(crate) fn open(directory: &std::path::Path, capacity: usize) -> Result<Box<dyn AuditPort + Send>, AuditUnavailable> {
+pub(crate) fn open(
+    directory: &std::path::Path,
+    capacity: usize,
+) -> Result<Box<dyn AuditPort + Send>, AuditUnavailable> {
     if capacity > MAX_CAPACITY {
         return Err(AuditUnavailable);
     }
     #[cfg(unix)]
     {
-        Ok(Box::new(DurableAudit::new(disk::Storage::open(directory)?, capacity)?))
+        Ok(Box::new(DurableAudit::new(
+            disk::Storage::open(directory)?,
+            capacity,
+        )?))
     }
     #[cfg(not(unix))]
     {
@@ -296,11 +364,21 @@ pub(crate) mod disk {
                 return Err(denied());
             }
             let path = directory.join("effects.audit");
-            let file = match OpenOptions::new().read(true).append(true).create_new(true).mode(0o600).open(&path) {
+            let file = match OpenOptions::new()
+                .read(true)
+                .append(true)
+                .create_new(true)
+                .mode(0o600)
+                .open(&path)
+            {
                 Ok(file) => file,
                 Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
                     let m = fs::symlink_metadata(&path)?;
-                    if !m.is_file() || m.nlink() != 1 || m.uid() != meta.uid() || m.mode() & 0o777 != 0o600 {
+                    if !m.is_file()
+                        || m.nlink() != 1
+                        || m.uid() != meta.uid()
+                        || m.mode() & 0o777 != 0o600
+                    {
                         return Err(denied());
                     }
                     OpenOptions::new().read(true).append(true).open(&path)?
@@ -321,14 +399,20 @@ pub(crate) mod disk {
             }
             file.sync_all()?;
             dir.sync_all()?;
-            Ok(Self { file, directory: dir })
+            Ok(Self {
+                file,
+                directory: dir,
+            })
         }
     }
 
     impl AuditStorage for Storage {
         fn read(&mut self, capacity: usize) -> Result<Vec<u8>, AuditUnavailable> {
             let mut bytes = Vec::new();
-            Read::by_ref(&mut self.file).take(capacity as u64 + 1).read_to_end(&mut bytes).map_err(|_| AuditUnavailable)?;
+            Read::by_ref(&mut self.file)
+                .take(capacity as u64 + 1)
+                .read_to_end(&mut bytes)
+                .map_err(|_| AuditUnavailable)?;
             if bytes.len() > capacity {
                 return Err(AuditUnavailable);
             }

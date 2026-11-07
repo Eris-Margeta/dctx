@@ -8,27 +8,103 @@ use std::collections::HashMap;
 
 use dctx_map_model::{EdgeKind, NodeKind};
 
-use super::lisp::{handles, mask_lisp, token};
 use super::is_denied;
+use super::lisp::{handles, mask_lisp, token};
 use crate::index::extract::Symbol;
 use crate::index::refs::RawRef;
 use crate::index::write_stable_id;
 
 /// Heads of special forms, binding forms and definitions: `(word ...)` with these is syntax, not a call.
 const SYNTAX: &[&str] = &[
-    "if", "when", "unless", "cond", "case", "let", "let*", "letrec", "letrec*", "lambda", "fn", "fn*", "do", "begin", "progn", "loop", "recur",
-    "quote", "quasiquote", "unquote", "and", "or", "not", "define", "define-syntax", "define-record-type", "defn", "defn-", "defmacro", "def",
-    "defun", "defvar", "defparameter", "defconstant", "defconst", "defcustom", "defclass", "defstruct", "defprotocol", "defrecord", "deftype",
-    "defmulti", "defmethod", "defgeneric", "set!", "setq", "setf", "dolist", "dotimes", "while", "try", "catch", "finally", "throw", "binding",
-    "for", "doseq", "ns", "require", "import", "use", "declare", "comment", "when-let", "if-let", "let-values", "case-lambda", "lambda-case",
-    "destructuring-bind", "multiple-value-bind", "labels", "flet", "macrolet", "function", "with-eval-after-load", "provide", "cl-defun",
+    "if",
+    "when",
+    "unless",
+    "cond",
+    "case",
+    "let",
+    "let*",
+    "letrec",
+    "letrec*",
+    "lambda",
+    "fn",
+    "fn*",
+    "do",
+    "begin",
+    "progn",
+    "loop",
+    "recur",
+    "quote",
+    "quasiquote",
+    "unquote",
+    "and",
+    "or",
+    "not",
+    "define",
+    "define-syntax",
+    "define-record-type",
+    "defn",
+    "defn-",
+    "defmacro",
+    "def",
+    "defun",
+    "defvar",
+    "defparameter",
+    "defconstant",
+    "defconst",
+    "defcustom",
+    "defclass",
+    "defstruct",
+    "defprotocol",
+    "defrecord",
+    "deftype",
+    "defmulti",
+    "defmethod",
+    "defgeneric",
+    "set!",
+    "setq",
+    "setf",
+    "dolist",
+    "dotimes",
+    "while",
+    "try",
+    "catch",
+    "finally",
+    "throw",
+    "binding",
+    "for",
+    "doseq",
+    "ns",
+    "require",
+    "import",
+    "use",
+    "declare",
+    "comment",
+    "when-let",
+    "if-let",
+    "let-values",
+    "case-lambda",
+    "lambda-case",
+    "destructuring-bind",
+    "multiple-value-bind",
+    "labels",
+    "flet",
+    "macrolet",
+    "function",
+    "with-eval-after-load",
+    "provide",
+    "cl-defun",
 ];
 
 /// Raw `calls` references of every function symbol of `text`. Anything but a lisp tag yields none.
 ///
 /// `src` is the caller's stable id exactly as the index writes it (`s:<path>#<name>`, `~N` for a repeated name) and
 /// `scope` is the caller's qualified name, so `refs.rs` looks callees up from the caller's own scope outward.
-pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symbol]) -> Vec<RawRef> {
+pub(super) fn references(
+    language: &str,
+    path: &str,
+    text: &str,
+    symbols: &[Symbol],
+) -> Vec<RawRef> {
     if !handles(language) || language == "nix" {
         return Vec::new();
     }
@@ -78,10 +154,18 @@ fn call_names<'a>(body: &'a str, own: &str) -> Vec<&'a str> {
             continue;
         }
         let (word, _) = token(body, at + 1);
-        let adjacent = bytes.get(at + 1).is_some_and(|next| !next.is_ascii_whitespace());
+        let adjacent = bytes
+            .get(at + 1)
+            .is_some_and(|next| !next.is_ascii_whitespace());
         let named = word.starts_with(|c: char| c.is_alphabetic() || c == '_');
         let own_declaration = at < first_line_end && word == own;
-        if adjacent && named && !own_declaration && !SYNTAX.contains(&word) && !is_denied(word) && !found.contains(&word) {
+        if adjacent
+            && named
+            && !own_declaration
+            && !SYNTAX.contains(&word)
+            && !is_denied(word)
+            && !found.contains(&word)
+        {
             found.push(word);
         }
     }
@@ -95,7 +179,10 @@ mod tests {
 
     /// `(src, name, scope)` of every reference `text` yields for `tag`.
     fn calls(tag: &str, path: &str, text: &str) -> Vec<(String, String, String)> {
-        references(tag, path, text, &symbols(tag, text)).into_iter().map(|r| (r.src, r.name, r.scope)).collect()
+        references(tag, path, text, &symbols(tag, text))
+            .into_iter()
+            .map(|r| (r.src, r.name, r.scope))
+            .collect()
     }
 
     /// One expected `(src, name, scope)` row.
@@ -107,18 +194,33 @@ mod tests {
     #[test]
     fn heads_naming_functions_are_calls() {
         let clj = "(defn helper [x] x)\n(defn run [a]\n  ; (hidden a)\n  (let [b (helper a)]\n    (when b (println \"(nope 1)\" '(quoted 2) (helper b)))))\n";
-        assert_eq!(calls("clojure", "a.clj", clj), [row("s:a.clj#run", "helper", "run"), row("s:a.clj#run", "println", "run")]);
+        assert_eq!(
+            calls("clojure", "a.clj", clj),
+            [
+                row("s:a.clj#run", "helper", "run"),
+                row("s:a.clj#run", "println", "run")
+            ]
+        );
         let scm = "(define (cube x) (* x x x))\n(define (twice y)\n  (cube (cube y)))\n";
-        assert_eq!(calls("scheme", "c.scm", scm), [row("s:c.scm#twice", "cube", "twice")]);
+        assert_eq!(
+            calls("scheme", "c.scm", scm),
+            [row("s:c.scm#twice", "cube", "twice")]
+        );
     }
 
     /// The second copy of a name carries the `~2` ordinal the index gives it; a protocol method is scoped by its protocol.
     #[test]
     fn duplicate_names_get_ordinals_and_scopes_are_qualified() {
         let text = "(defun f () 1)\n(defun f ()\n  (g))\n(defun g () 2)\n";
-        assert_eq!(calls("lisp", "d.lisp", text), [row("s:d.lisp#f~2", "g", "f")]);
+        assert_eq!(
+            calls("lisp", "d.lisp", text),
+            [row("s:d.lisp#f~2", "g", "f")]
+        );
         let protocol = "(defprotocol Shape\n  (area [s])\n  (grow [s] (area s)))\n";
-        assert_eq!(calls("clojure", "p.clj", protocol), [row("s:p.clj#Shape::grow", "area", "Shape::grow")]);
+        assert_eq!(
+            calls("clojure", "p.clj", protocol),
+            [row("s:p.clj#Shape::grow", "area", "Shape::grow")]
+        );
         assert!(calls("nix", "a.nix", "{ f = x: g x; }\n").is_empty());
     }
 }

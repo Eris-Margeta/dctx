@@ -25,14 +25,18 @@ pub(super) fn help_command(arguments: &[String]) -> String {
 /// An argument refusal: exit 2, with a hint fitted to a missing target or else naming the verb's help.
 pub(super) fn usage(arguments: &[String], message: String) -> Failure {
     let verb = arguments.first().map_or("", String::as_str);
-    let hint = if message.contains("requires a target") || message.contains("requires two targets") {
+    let hint = if message.contains("requires a target") || message.contains("requires two targets")
+    {
         match verb {
             "find" => "pass a non-empty name or phrase, for example: dctx map find alpha".to_string(),
             "grep" => "pass a non-empty literal, for example: dctx map grep TODO".to_string(),
             _ => "pass a stable id (list them with `dctx map find <name>`) or a place-relative file path".to_string(),
         }
     } else {
-        format!("run `{}` for the options and an example", help_command(arguments))
+        format!(
+            "run `{}` for the options and an example",
+            help_command(arguments)
+        )
     };
     Failure::usage(message, hint)
 }
@@ -51,7 +55,10 @@ pub(super) fn snapshot(error: &dctx::DctxError) -> Failure {
     if failure.code == exit::INDEX {
         return failure;
     }
-    Failure::index(failure.message, "check that the place exists and is readable, then run the query again")
+    Failure::index(
+        failure.message,
+        "check that the place exists and is readable, then run the query again",
+    )
 }
 
 /// An error text from the hubs, path or export answer: an unknown path end is no result (exit 1), the rest exit 3.
@@ -81,7 +88,14 @@ pub(super) fn targets(options: &Options) -> Result<(), Failure> {
         return Ok(());
     }
     match options.request.target.strip_prefix("m:") {
-        Some(relative) if matches!(options.request.verb, QueryVerb::Map | QueryVerb::Explain | QueryVerb::Read) => text_file(&options.place, relative),
+        Some(relative)
+            if matches!(
+                options.request.verb,
+                QueryVerb::Map | QueryVerb::Explain | QueryVerb::Read
+            ) =>
+        {
+            text_file(&options.place, relative)
+        }
         _ => Ok(()),
     }
 }
@@ -126,22 +140,52 @@ mod tests {
 
     #[test]
     fn usage_hints_name_the_verb_help_or_the_missing_target() {
-        let flag = usage(&words(&["find", "x", "--bogus"]), "unknown or inapplicable option --bogus".into());
+        let flag = usage(
+            &words(&["find", "x", "--bogus"]),
+            "unknown or inapplicable option --bogus".into(),
+        );
         assert_eq!(flag.code, exit::USAGE);
         assert!(flag.hint.contains("dctx map find --help"), "{}", flag.hint);
-        assert!(usage(&words(&["nope"]), "expected map".into()).hint.contains("`dctx map --help`"));
-        assert!(usage(&words(&["find", ""]), "request: this verb requires a target".into()).hint.contains("non-empty name"));
-        assert!(usage(&words(&["neighbors"]), "request: this verb requires a target".into()).hint.contains("stable id"));
+        assert!(usage(&words(&["nope"]), "expected map".into())
+            .hint
+            .contains("`dctx map --help`"));
+        assert!(usage(
+            &words(&["find", ""]),
+            "request: this verb requires a target".into()
+        )
+        .hint
+        .contains("non-empty name"));
+        assert!(usage(
+            &words(&["neighbors"]),
+            "request: this verb requires a target".into()
+        )
+        .hint
+        .contains("stable id"));
     }
 
     #[test]
     fn ids_that_leave_the_place_are_usage_errors() {
-        for target in ["m:../outside.py", "s:../a.py#f", "m:a/../../b.rs", "m:/etc/passwd"] {
+        for target in [
+            "m:../outside.py",
+            "s:../a.py#f",
+            "m:a/../../b.rs",
+            "m:/etc/passwd",
+        ] {
             let failure = inside_place(target).expect_err(target);
             assert_eq!(failure.code, exit::USAGE);
-            assert!(failure.message.contains("outside the place"), "{}", failure.message);
+            assert!(
+                failure.message.contains("outside the place"),
+                "{}",
+                failure.message
+            );
         }
-        for target in ["m:a.py", "s:a.py#f", "s:a.rs#Range..End", "@0a1b2c", "m:dir/..hidden.py"] {
+        for target in [
+            "m:a.py",
+            "s:a.py#f",
+            "s:a.rs#Range..End",
+            "@0a1b2c",
+            "m:dir/..hidden.py",
+        ] {
             assert!(inside_place(target).is_ok(), "{target}");
         }
     }
@@ -149,11 +193,19 @@ mod tests {
     #[test]
     fn a_binary_file_is_no_result_and_a_text_file_passes() {
         let place = tempfile::tempdir().expect("place");
-        std::fs::write(place.path().join("logo.png"), [0x89, b'P', b'N', b'G', 0, 0, 1]).expect("binary");
+        std::fs::write(
+            place.path().join("logo.png"),
+            [0x89, b'P', b'N', b'G', 0, 0, 1],
+        )
+        .expect("binary");
         std::fs::write(place.path().join("a.py"), b"def a():\n    return 1\n").expect("text");
         let failure = text_file(place.path(), "logo.png").expect_err("binary");
         assert_eq!(failure.code, exit::NO_RESULT);
-        assert!(failure.message.contains("logo.png is a binary file"), "{}", failure.message);
+        assert!(
+            failure.message.contains("logo.png is a binary file"),
+            "{}",
+            failure.message
+        );
         assert!(text_file(place.path(), "a.py").is_ok());
         assert!(text_file(place.path(), "missing.py").is_ok());
     }
@@ -161,9 +213,14 @@ mod tests {
     #[test]
     fn gone_ids_and_unknown_path_ends_are_no_result() {
         assert_eq!(gone("m:nope.py").code, exit::NO_RESULT);
-        assert!(gone("m:nope.py").message.contains("m:nope.py is not in the index"));
+        assert!(gone("m:nope.py")
+            .message
+            .contains("m:nope.py is not in the index"));
         assert_eq!(answer("unknown id: s:a.py#x".into()).code, exit::NO_RESULT);
         assert_eq!(answer("io: disk".into()).code, exit::INDEX);
-        assert_eq!(snapshot(&dctx::DctxError::invalid("stale ledger")).code, exit::INDEX);
+        assert_eq!(
+            snapshot(&dctx::DctxError::invalid("stale ledger")).code,
+            exit::INDEX
+        );
     }
 }

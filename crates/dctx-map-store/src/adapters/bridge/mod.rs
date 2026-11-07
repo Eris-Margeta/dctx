@@ -24,12 +24,18 @@ use dctx_core::error::DctxError;
 
 pub(super) fn to_dctx(error: StoreError) -> DctxError {
     match error {
-        StoreError::CacheLimit { requested, available } => {
-            DctxError::CacheLimit { requested, available }
-        }
+        StoreError::CacheLimit {
+            requested,
+            available,
+        } => DctxError::CacheLimit {
+            requested,
+            available,
+        },
         StoreError::Corrupt(reason) => DctxError::CorruptIndex { reason },
         StoreError::InvalidKey(reason) => DctxError::InvalidRequest { reason },
-        StoreError::FactConflict => DctxError::InvalidRequest { reason: "fact payload conflict" },
+        StoreError::FactConflict => DctxError::InvalidRequest {
+            reason: "fact payload conflict",
+        },
         StoreError::RebuildRequired(version) => DctxError::UnsupportedVersion {
             found: u32::try_from(version).unwrap_or(u32::MAX),
         },

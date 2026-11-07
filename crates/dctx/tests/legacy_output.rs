@@ -12,20 +12,26 @@ mod common;
 use std::sync::Arc;
 
 use dctx::memory::{CancelFlag, FixedClock, MemorySource};
-use dctx::{DctxError, HostCeiling, HostGrants, OperationLimits, PackRequest, RuleTexts, SelectionPolicy,
-    Session, Source, StoragePolicy, Timestamp, VecSink};
+use dctx::{
+    DctxError, HostCeiling, HostGrants, OperationLimits, PackRequest, RuleTexts, SelectionPolicy,
+    Session, Source, StoragePolicy, Timestamp, VecSink,
+};
 use dctx_template::{LegacyLayout, LegacyOutput, Template, TreeStamps};
 
 use common::SharedSource;
 
 const SNAPSHOT: &str = include_str!("../../dctx-template/tests/fixtures/legacy-snapshot.txt");
 const TREE: &str = include_str!("../../dctx-template/tests/fixtures/legacy-tree.txt");
-const SNAPSHOT_STAMPED: &str = include_str!("../../dctx-template/tests/fixtures/legacy-snapshot-stamped.txt");
-const TREE_STAMPED: &str = include_str!("../../dctx-template/tests/fixtures/legacy-tree-stamped.txt");
+const SNAPSHOT_STAMPED: &str =
+    include_str!("../../dctx-template/tests/fixtures/legacy-snapshot-stamped.txt");
+const TREE_STAMPED: &str =
+    include_str!("../../dctx-template/tests/fixtures/legacy-tree-stamped.txt");
 
 /// Both built-in modes with their pinned bytes: the default (no `MOD:`) and the stamped 1.0.0 text.
-const MODES: [(TreeStamps, &str, &str); 2] =
-    [(TreeStamps::Off, SNAPSHOT, TREE), (TreeStamps::On, SNAPSHOT_STAMPED, TREE_STAMPED)];
+const MODES: [(TreeStamps, &str, &str); 2] = [
+    (TreeStamps::Off, SNAPSHOT, TREE),
+    (TreeStamps::On, SNAPSHOT_STAMPED, TREE_STAMPED),
+];
 
 fn request(layout: LegacyLayout) -> PackRequest {
     request_with(layout, TreeStamps::Off)
@@ -36,7 +42,10 @@ fn request_with(layout: LegacyLayout, stamps: TreeStamps) -> PackRequest {
     template.insert_variable("project", "Corpus");
     let mut output = LegacyOutput::new(template, layout);
     output.debug_ignored = true;
-    PackRequest { legacy_output: Some(output), ..PackRequest::new() }
+    PackRequest {
+        legacy_output: Some(output),
+        ..PackRequest::new()
+    }
 }
 
 fn session(source: impl Source + Send + 'static, cap: Option<u64>) -> Session {
@@ -50,11 +59,17 @@ fn session(source: impl Source + Send + 'static, cap: Option<u64>) -> Session {
         }))
         .ceiling(HostCeiling::base())
         .grants(HostGrants::PermitAll)
-        .storage(StoragePolicy::Ephemeral { max_bytes: 8 * 1024 * 1024 })
-        .limits(OperationLimits { encoded_bytes: cap, ..OperationLimits::default() })
+        .storage(StoragePolicy::Ephemeral {
+            max_bytes: 8 * 1024 * 1024,
+        })
+        .limits(OperationLimits {
+            encoded_bytes: cap,
+            ..OperationLimits::default()
+        })
         .place("fixture")
         .view("pack")
-        .build().expect("session")
+        .build()
+        .expect("session")
 }
 
 fn snapshot_source() -> MemorySource {
@@ -83,15 +98,27 @@ fn facade_snapshot_and_tree_match_pinned_legacy_bytes() {
         let source = SharedSource::new(snapshot_source());
         let spy = source.handle();
         let mut session = session(source, None);
-        for (layout, expected) in [(LegacyLayout::Snapshot, snapshot), (LegacyLayout::TreeOnly, tree)] {
+        for (layout, expected) in [
+            (LegacyLayout::Snapshot, snapshot),
+            (LegacyLayout::TreeOnly, tree),
+        ] {
             let mut sink = VecSink::new();
-            let report = session.pack(&request_with(layout, stamps), &mut sink).expect("pack");
-            assert_eq!(sink.as_bytes(), expected.as_bytes(), "{stamps:?} {layout:?}");
+            let report = session
+                .pack(&request_with(layout, stamps), &mut sink)
+                .expect("pack");
+            assert_eq!(
+                sink.as_bytes(),
+                expected.as_bytes(),
+                "{stamps:?} {layout:?}"
+            );
             assert_eq!(report.legacy_layout, Some(layout));
         }
         let mut reads = spy.lock().expect("source").reads();
         reads.sort();
-        assert_eq!(reads, ["logo.png", "logo.png", "src/main.rs", "src/main.rs"]);
+        assert_eq!(
+            reads,
+            ["logo.png", "logo.png", "src/main.rs", "src/main.rs"]
+        );
     }
     assert!(!SNAPSHOT.contains("MOD"));
     assert!(SNAPSHOT_STAMPED.contains("MOD:"));
@@ -107,7 +134,9 @@ fn facade_diff_preserves_full_tree_ids_and_changed_content_only() {
 fn diff_case(stamps: TreeStamps) {
     let mut source = MemorySource::new();
     source.insert_file("a.txt", b"unchanged", 1).expect("a");
-    source.insert_file("changed.txt", b"old", 1).expect("changed");
+    source
+        .insert_file("changed.txt", b"old", 1)
+        .expect("changed");
     source.insert_file("icon.svg", b"<svg/>", 1).expect("svg");
     let source = SharedSource::new(source);
     let handle = source.handle();
@@ -116,10 +145,16 @@ fn diff_case(stamps: TreeStamps) {
     let mut first = VecSink::new();
     let report = session.pack(&request, &mut first).expect("first");
     assert_eq!(report.legacy_layout, Some(LegacyLayout::Snapshot));
-    assert!(first.as_bytes().starts_with(b"[DCTX_LLM_CONTEXT_SNAPSHOT_V1]\n"));
+    assert!(
+        first
+            .as_bytes()
+            .starts_with(b"[DCTX_LLM_CONTEXT_SNAPSHOT_V1]\n")
+    );
     {
         let mut source = handle.lock().expect("source");
-        source.insert_file("changed.txt", b"new\n", 2).expect("changed");
+        source
+            .insert_file("changed.txt", b"new\n", 2)
+            .expect("changed");
         // Same size, other bytes: a bare mtime change alone is no longer a modification (DCX-P-C1b).
         source.insert_file("icon.svg", b"<svG/>", 2).expect("svg");
     }
@@ -153,7 +188,11 @@ new\n\n\
     let mut unchanged = VecSink::new();
     let report = session.pack(&request, &mut unchanged).expect("unchanged");
     assert!(!report.published);
-    assert!(!std::str::from_utf8(unchanged.as_bytes()).expect("utf8").contains("FILE_CONTENT_START"));
+    assert!(
+        !std::str::from_utf8(unchanged.as_bytes())
+            .expect("utf8")
+            .contains("FILE_CONTENT_START")
+    );
     {
         let mut source = handle.lock().expect("source");
         for path in ["a.txt", "changed.txt", "icon.svg"] {
@@ -164,7 +203,11 @@ new\n\n\
     let report = session.pack(&request, &mut reset).expect("major reset");
     assert!(report.major_reset);
     assert_eq!(report.legacy_layout, Some(LegacyLayout::Snapshot));
-    assert!(reset.as_bytes().starts_with(b"[DCTX_LLM_CONTEXT_SNAPSHOT_V2]\n"));
+    assert!(
+        reset
+            .as_bytes()
+            .starts_with(b"[DCTX_LLM_CONTEXT_SNAPSHOT_V2]\n")
+    );
 }
 
 #[test]
@@ -178,18 +221,30 @@ fn byte_cap_case(stamps: TreeStamps, snapshot: &str) {
     let expected = snapshot.replace("Corpus", "Ž");
     let length = expected.len() as u64;
     let mut request = request_with(LegacyLayout::Snapshot, stamps);
-    request.legacy_output.as_mut().expect("output").template.insert_variable("project", "Ž");
+    request
+        .legacy_output
+        .as_mut()
+        .expect("output")
+        .template
+        .insert_variable("project", "Ž");
     for host_cap in [false, true] {
         let mut session = session(snapshot_source(), host_cap.then_some(length - 1));
         request.limits.encoded_bytes = Some(if host_cap { length + 100 } else { length - 1 });
         let mut refused = VecSink::new();
-        assert_eq!(session.pack(&request, &mut refused), Err(DctxError::BudgetTooSmall { minimum_bytes: length }));
+        assert_eq!(
+            session.pack(&request, &mut refused),
+            Err(DctxError::BudgetTooSmall {
+                minimum_bytes: length
+            })
+        );
         assert!(refused.is_empty());
     }
     let mut session = session(snapshot_source(), Some(length));
     request.limits.encoded_bytes = Some(length);
     let mut accepted = VecSink::new();
-    session.pack(&request, &mut accepted).expect("exact byte cap");
+    session
+        .pack(&request, &mut accepted)
+        .expect("exact byte cap");
     assert_eq!(accepted.as_bytes(), expected.as_bytes());
 }
 
@@ -197,7 +252,9 @@ fn byte_cap_case(stamps: TreeStamps, snapshot: &str) {
 fn svg_settings_and_templates_are_injected_without_implicit_config_reads() {
     let mut source = MemorySource::new();
     source.insert_file("icon.svg", b"<svg/>", 0).expect("svg");
-    source.insert_file(".dctx/config.json", b"invalid configuration", 0).expect("config");
+    source
+        .insert_file(".dctx/config.json", b"invalid configuration", 0)
+        .expect("config");
     source.fail_reads_of(".dctx/config.json");
     source.fail_listing_of(".dctx");
     let source = SharedSource::new(source);
@@ -206,14 +263,26 @@ fn svg_settings_and_templates_are_injected_without_implicit_config_reads() {
     let mut request = request(LegacyLayout::Snapshot);
     let output = request.legacy_output.as_mut().expect("output");
     output.debug_ignored = false;
-    output.template = Template::parse("[PARTIAL:FILE_BLOCK]\n{{{file.lines}}}:{{{file.content}}}\n[LAYOUT]\n{{{comp.files}}}");
+    output.template = Template::parse(
+        "[PARTIAL:FILE_BLOCK]\n{{{file.lines}}}:{{{file.content}}}\n[LAYOUT]\n{{{comp.files}}}",
+    );
     let mut omitted = VecSink::new();
     session.pack(&request, &mut omitted).expect("omit");
-    assert_eq!(omitted.as_bytes(), b"[DCTX_LLM_CONTEXT_SNAPSHOT_V1]\n0:[SVG file (omit_svg_content=true), content omitted]");
-    request.legacy_output.as_mut().expect("output").omit_svg_content = false;
+    assert_eq!(
+        omitted.as_bytes(),
+        b"[DCTX_LLM_CONTEXT_SNAPSHOT_V1]\n0:[SVG file (omit_svg_content=true), content omitted]"
+    );
+    request
+        .legacy_output
+        .as_mut()
+        .expect("output")
+        .omit_svg_content = false;
     let mut included = VecSink::new();
     session.pack(&request, &mut included).expect("include");
-    assert_eq!(included.as_bytes(), b"[DCTX_LLM_CONTEXT_SNAPSHOT_V1]\n1:<svg/>");
+    assert_eq!(
+        included.as_bytes(),
+        b"[DCTX_LLM_CONTEXT_SNAPSHOT_V1]\n1:<svg/>"
+    );
     let spy = spy.lock().expect("source");
     assert_eq!(spy.reads(), ["icon.svg", "icon.svg"]);
     assert!(!spy.touched(".dctx"));
@@ -232,8 +301,15 @@ fn summaries_remain_the_default() {
     request.output_format = 2;
     let mut json = VecSink::new();
     session.pack(&request, &mut json).expect("json");
-    assert!(json.as_bytes().starts_with(b"{\"v\":2,\"version\":\"V1\",\"previous\":\"V1\""));
-    assert!(!std::str::from_utf8(json.as_bytes()).expect("utf8").contains("legacy"));
+    assert!(
+        json.as_bytes()
+            .starts_with(b"{\"v\":2,\"version\":\"V1\",\"previous\":\"V1\"")
+    );
+    assert!(
+        !std::str::from_utf8(json.as_bytes())
+            .expect("utf8")
+            .contains("legacy")
+    );
 }
 
 fn repeated_content_request(times: usize, cap: u64) -> PackRequest {
@@ -242,7 +318,10 @@ fn repeated_content_request(times: usize, cap: u64) -> PackRequest {
     raw.push_str(&partial);
     raw.push_str("\n[LAYOUT]\n{{{comp.files}}}");
     let mut request = PackRequest::new();
-    request.legacy_output = Some(LegacyOutput::new(Template::parse(&raw), LegacyLayout::Snapshot));
+    request.legacy_output = Some(LegacyOutput::new(
+        Template::parse(&raw),
+        LegacyLayout::Snapshot,
+    ));
     request.limits.encoded_bytes = Some(cap);
     request
 }
@@ -256,8 +335,13 @@ fn capped_text_session(bytes: &[u8], cap: u64) -> Session {
         .selection(SelectionPolicy::from_texts(&RuleTexts::default()))
         .ceiling(HostCeiling::base())
         .grants(HostGrants::PermitAll)
-        .storage(StoragePolicy::Ephemeral { max_bytes: 64 * 1024 * 1024 })
-        .limits(OperationLimits { encoded_bytes: Some(cap), ..OperationLimits::default() })
+        .storage(StoragePolicy::Ephemeral {
+            max_bytes: 64 * 1024 * 1024,
+        })
+        .limits(OperationLimits {
+            encoded_bytes: Some(cap),
+            ..OperationLimits::default()
+        })
         .place("fixture")
         .view("pack")
         .build()
@@ -273,7 +357,9 @@ fn legacy_byte_cap_bounds_file_block_expansion() {
     assert_eq!(expected.len(), 71);
     let mut session = capped_text_session(&expected[header.len()..], 71);
     let mut sink = VecSink::new();
-    session.pack(&repeated_content_request(1, 71), &mut sink).expect("exact fit");
+    session
+        .pack(&repeated_content_request(1, 71), &mut sink)
+        .expect("exact fit");
     assert_eq!(sink.as_bytes(), expected.as_slice());
 
     let mut session = capped_text_session(&expected[header.len()..], 70);
@@ -291,7 +377,9 @@ fn legacy_byte_cap_bounds_file_block_expansion() {
     let mut bomb = VecSink::new();
     assert_eq!(
         session.pack(&repeated_content_request(4096, 1024), &mut bomb),
-        Err(DctxError::BudgetTooSmall { minimum_bytes: minimum })
+        Err(DctxError::BudgetTooSmall {
+            minimum_bytes: minimum
+        })
     );
     assert!(bomb.is_empty());
 }

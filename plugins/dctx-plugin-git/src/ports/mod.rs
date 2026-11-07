@@ -71,5 +71,11 @@ pub trait Broker {
     /// Returns a host refusal, cancellation, or link/protocol failure; uncertain effects must not be retried automatically.
     fn program_run(&mut self, run: &GitAddIgnore) -> Result<ProgramRan, BrokerFailure>;
     /// A progress sample for the active invocation (best effort; a broken link fails the next request).
-    fn progress(&mut self, phase: &'static str, completed: u64, total: Option<u64>, unit: ProgressUnit);
+    fn progress(
+        &mut self,
+        phase: &'static str,
+        completed: u64,
+        total: Option<u64>,
+        unit: ProgressUnit,
+    );
 }

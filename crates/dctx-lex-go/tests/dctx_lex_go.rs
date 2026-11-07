@@ -3,12 +3,13 @@
 //! Implements PARSERS-v1: partial facts for malformed input, no panic on arbitrary bytes.
 #![forbid(unsafe_code)]
 
-use dctx_lex_go::{
-    Completion, Dialect, GoLexer, LexedFile, Precision, PARSER_ID, PARSER_REVISION,
-};
+use dctx_lex_go::{Completion, Dialect, GoLexer, LexedFile, PARSER_ID, PARSER_REVISION, Precision};
 use dctx_map_model::{EdgeKind, NodeKind, SummarySource, SymbolKind};
 
-const BASIC: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/basic.go"));
+const BASIC: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/fixtures/basic.go"
+));
 const INCOMPLETE: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/tests/fixtures/incomplete.go"
@@ -21,7 +22,11 @@ fn extract(path: &str, source: &str) -> LexedFile {
 }
 
 fn names(facts: &LexedFile) -> Vec<&str> {
-    facts.nodes.iter().map(|node| node.fact.name.as_str()).collect()
+    facts
+        .nodes
+        .iter()
+        .map(|node| node.fact.name.as_str())
+        .collect()
 }
 
 fn node<'a>(facts: &'a LexedFile, name: &str) -> &'a dctx_map_model::Node {
@@ -39,13 +44,38 @@ fn golden_fixture_extracts_declarations_imports_and_references() {
     assert_eq!(PARSER_REVISION, 1);
     let facts = extract("pkg/demo.go", BASIC);
     assert_eq!(facts.dialect, Dialect::Go);
-    assert_eq!(facts.completion, Completion::Complete, "{:?}", facts.diagnostics);
+    assert_eq!(
+        facts.completion,
+        Completion::Complete,
+        "{:?}",
+        facts.diagnostics
+    );
     assert_eq!(facts.diagnostics, []);
-    assert!(facts.nodes.iter().all(|node| node.precision == Precision::Structural));
-    assert!(facts.edges.iter().all(|edge| edge.precision == Precision::Structural));
-    assert!(facts.references.iter().all(|reference| reference.precision == Precision::Structural));
+    assert!(
+        facts
+            .nodes
+            .iter()
+            .all(|node| node.precision == Precision::Structural)
+    );
+    assert!(
+        facts
+            .edges
+            .iter()
+            .all(|edge| edge.precision == Precision::Structural)
+    );
+    assert!(
+        facts
+            .references
+            .iter()
+            .all(|reference| reference.precision == Precision::Structural)
+    );
     assert_eq!(facts.edges.len(), facts.nodes.len() - 1);
-    assert!(facts.nodes.iter().all(|node| node.fact.fingerprint.len() == 64));
+    assert!(
+        facts
+            .nodes
+            .iter()
+            .all(|node| node.fact.fingerprint.len() == 64)
+    );
 
     let got = names(&facts);
     let expect = [
@@ -79,27 +109,68 @@ fn golden_fixture_extracts_declarations_imports_and_references() {
     assert!(!package.public);
     assert_eq!(package.summary.text, "Package demo is a sample.");
 
-    assert_symbol(&facts, "Box", Some(SymbolKind::Struct), true, "Box stores one value.");
-    assert_symbol(&facts, "Reader", Some(SymbolKind::Interface), true, "Reader reads bytes.");
+    assert_symbol(
+        &facts,
+        "Box",
+        Some(SymbolKind::Struct),
+        true,
+        "Box stores one value.",
+    );
+    assert_symbol(
+        &facts,
+        "Reader",
+        Some(SymbolKind::Interface),
+        true,
+        "Reader reads bytes.",
+    );
     assert_symbol(&facts, "Reader::Read", Some(SymbolKind::Method), true, "");
-    assert_symbol(&facts, "ID", Some(SymbolKind::Type), true, "ID aliases int.");
-    assert_symbol(&facts, "One", Some(SymbolKind::Const), true, "One is first.");
+    assert_symbol(
+        &facts,
+        "ID",
+        Some(SymbolKind::Type),
+        true,
+        "ID aliases int.",
+    );
+    assert_symbol(
+        &facts,
+        "One",
+        Some(SymbolKind::Const),
+        true,
+        "One is first.",
+    );
     let two = node(&facts, "Two");
     assert_eq!(two.symbol_kind, Some(SymbolKind::Const));
     assert!(two.public);
     assert_eq!(two.summary.source, SummarySource::Signature);
     assert_symbol(&facts, "Name", None, true, "");
     assert_symbol(&facts, "Count", None, true, "");
-    assert_symbol(&facts, "Add", Some(SymbolKind::Function), true, "Add adds a and b.");
+    assert_symbol(
+        &facts,
+        "Add",
+        Some(SymbolKind::Function),
+        true,
+        "Add adds a and b.",
+    );
     assert_eq!(node(&facts, "Add").signature, "func Add[T ~int](a, b T) T");
-    assert_symbol(&facts, "Box::Serve", Some(SymbolKind::Method), true, "Serve handles a box.");
+    assert_symbol(
+        &facts,
+        "Box::Serve",
+        Some(SymbolKind::Method),
+        true,
+        "Serve handles a box.",
+    );
     assert_eq!(
         node(&facts, "Box::Serve").signature,
         "func (s *Box[int]) Serve(r Reader) error"
     );
     assert_symbol(&facts, "main", Some(SymbolKind::Function), false, "");
     assert_symbol(&facts, "sKeep", Some(SymbolKind::Function), false, "");
-    assert!(facts.nodes.iter().all(|node| node.fact.name != "Decoy" && node.fact.name != "Hidden"));
+    assert!(
+        facts
+            .nodes
+            .iter()
+            .all(|node| node.fact.name != "Decoy" && node.fact.name != "Hidden")
+    );
 
     let read_id = node(&facts, "Reader::Read").id.as_str();
     let reader_id = node(&facts, "Reader").id.as_str();
@@ -118,19 +189,33 @@ fn golden_fixture_extracts_declarations_imports_and_references() {
             ("example.com/dot".to_string(), Some(".".to_string())),
             ("example.com/blank".to_string(), Some("_".to_string())),
             ("strings".to_string(), None),
-            ("example.com/renamed".to_string(), Some("renamed".to_string())),
+            (
+                "example.com/renamed".to_string(),
+                Some("renamed".to_string())
+            ),
         ]
     );
     assert_eq!(
         call_names(&facts),
-        vec!["len", "fmt.Println", "strings.TrimSpace", "Add", "box.Serve"]
+        vec![
+            "len",
+            "fmt.Println",
+            "strings.TrimSpace",
+            "Add",
+            "box.Serve"
+        ]
     );
     let types = type_names(&facts);
-    for required in ["T", "fmt.Stringer", "byte", "int", "error", "string", "Reader"] {
-        assert!(
-            types.contains(&required),
-            "{required} missing in {types:?}"
-        );
+    for required in [
+        "T",
+        "fmt.Stringer",
+        "byte",
+        "int",
+        "error",
+        "string",
+        "Reader",
+    ] {
+        assert!(types.contains(&required), "{required} missing in {types:?}");
     }
     assert!(!call_names(&facts).iter().any(|name| name.contains('[')));
 }
@@ -139,10 +224,24 @@ fn golden_fixture_extracts_declarations_imports_and_references() {
 fn incomplete_fixture_keeps_partial_facts() {
     let facts = extract("pkg/partial.go", INCOMPLETE);
     assert_eq!(facts.completion, Completion::Partial);
-    assert!(facts.diagnostics.iter().any(|d| d.reason == dctx_lex_go::DiagnosticReason::UnbalancedBracket));
-    assert!(facts.diagnostics.iter().any(|d| d.reason == dctx_lex_go::DiagnosticReason::UnterminatedString));
+    assert!(
+        facts
+            .diagnostics
+            .iter()
+            .any(|d| d.reason == dctx_lex_go::DiagnosticReason::UnbalancedBracket)
+    );
+    assert!(
+        facts
+            .diagnostics
+            .iter()
+            .any(|d| d.reason == dctx_lex_go::DiagnosticReason::UnterminatedString)
+    );
     for name in ["p", "Ready", "Broken", "Later", "tail"] {
-        assert!(names(&facts).contains(&name), "{name} missing in {:?}", names(&facts));
+        assert!(
+            names(&facts).contains(&name),
+            "{name} missing in {:?}",
+            names(&facts)
+        );
     }
     assert_eq!(node(&facts, "pkg/partial.go").kind, NodeKind::Module);
     assert_eq!(facts.nodes[0].precision, Precision::Structural);
@@ -161,16 +260,34 @@ fn ambiguous_selectors_and_composite_receivers_abstain() {
         "p.go",
         "package p\nfunc f() {\n\tF[int](1)\n\tobj.Field\n\tobj.Method()\n}\n",
     );
-    assert_eq!(calls.completion, Completion::Complete, "{:?}", calls.diagnostics);
+    assert_eq!(
+        calls.completion,
+        Completion::Complete,
+        "{:?}",
+        calls.diagnostics
+    );
     assert_eq!(call_names(&calls), vec!["obj.Method"]);
 
-    let receiver = extract("p.go", "package p\nfunc (s []byte) M() {}\nfunc (s *Box) Ok() {}\n");
+    let receiver = extract(
+        "p.go",
+        "package p\nfunc (s []byte) M() {}\nfunc (s *Box) Ok() {}\n",
+    );
     assert_eq!(receiver.completion, Completion::Partial);
-    assert!(names(&receiver).contains(&"Box::Ok"), "{:?}", names(&receiver));
+    assert!(
+        names(&receiver).contains(&"Box::Ok"),
+        "{:?}",
+        names(&receiver)
+    );
     assert!(!names(&receiver).iter().any(|name| name.ends_with('M')));
 }
 
-fn assert_symbol(facts: &LexedFile, name: &str, symbol: Option<SymbolKind>, public: bool, doc: &str) {
+fn assert_symbol(
+    facts: &LexedFile,
+    name: &str,
+    symbol: Option<SymbolKind>,
+    public: bool,
+    doc: &str,
+) {
     let found = node(facts, name);
     assert_eq!(found.kind, NodeKind::Symbol, "{name}");
     assert_eq!(found.symbol_kind, symbol, "{name}");
@@ -226,7 +343,9 @@ fn type_names(facts: &LexedFile) -> Vec<&str> {
 }
 
 fn file_lines(source: &str) -> u32 {
-    u32::try_from(source.bytes().filter(|byte| *byte == b'\n').count()).expect("bounded test coordinate") + 1
+    u32::try_from(source.bytes().filter(|byte| *byte == b'\n').count())
+        .expect("bounded test coordinate")
+        + 1
 }
 
 fn check_invariants(source: &str, facts: &LexedFile) {
@@ -241,7 +360,10 @@ fn check_invariants(source: &str, facts: &LexedFile) {
     }
     for node in &facts.nodes {
         let [start, end] = node.fact.lines;
-        assert!(start >= 1 && start <= end && end <= lines, "{start}..{end} of {lines}");
+        assert!(
+            start >= 1 && start <= end && end <= lines,
+            "{start}..{end} of {lines}"
+        );
         assert_eq!(node.fact.fingerprint.len(), 64);
     }
     for reference in &facts.references {
@@ -277,7 +399,10 @@ fn xorshift(state: &mut u64) -> u64 {
 }
 
 #[test]
-#[allow(clippy::cast_possible_truncation, reason = "The fuzz length deliberately uses the PRNG's native low word before applying the 301-byte bound.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "The fuzz length deliberately uses the PRNG's native low word before applying the 301-byte bound."
+)]
 fn arbitrary_bytes_and_truncated_fixtures_stay_bounded() {
     let mut state = 0x1234_5678_9abc_def0_u64;
     for _ in 0..200 {

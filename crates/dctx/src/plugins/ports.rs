@@ -8,8 +8,8 @@ use std::sync::{Arc, Mutex, MutexGuard};
 
 use dctx_plugin_host::fakes::{FakeAudit, FakeFiles, FakeProcess};
 use dctx_plugin_host::ports::{
-    AuditPort, AuditRecord, AuditUnavailable, FileFault, FileIdentity, FilePort, ProcessId, ProcessPort, Recipe, RecipeOutcome, RecipePort,
-    RecoveryRecord, SpawnFault,
+    AuditPort, AuditRecord, AuditUnavailable, FileFault, FileIdentity, FilePort, ProcessId,
+    ProcessPort, Recipe, RecipeOutcome, RecipePort, RecoveryRecord, SpawnFault,
 };
 use dctx_plugin_host::{HostRefusal, HostSession};
 use dctx_plugin_platform::{ConfinementProvider, LaunchKind, NativeProvider, PlatformError};
@@ -24,7 +24,10 @@ pub(crate) enum IgnoreSnap {
     /// The file is not there.
     Absent,
     /// Identity and full bytes.
-    Present { identity: FileIdentity, bytes: Vec<u8> },
+    Present {
+        identity: FileIdentity,
+        bytes: Vec<u8>,
+    },
     /// The port cannot say whether the file changed.
     Unknown,
 }
@@ -37,7 +40,12 @@ impl IgnoreSnap {
     pub(crate) fn same_file(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Absent, Self::Absent) => true,
-            (Self::Present { identity: left, .. }, Self::Present { identity: right, .. }) => left == right,
+            (
+                Self::Present { identity: left, .. },
+                Self::Present {
+                    identity: right, ..
+                },
+            ) => left == right,
             _ => false,
         }
     }
@@ -55,8 +63,13 @@ impl IgnoreSnap {
 }
 
 enum Backend {
-    Fake { files: FakeFiles, process: FakeProcess },
-    Platform { provider: NativeProvider },
+    Fake {
+        files: FakeFiles,
+        process: FakeProcess,
+    },
+    Platform {
+        provider: NativeProvider,
+    },
 }
 
 pub(crate) struct PortBody {
@@ -70,14 +83,24 @@ impl PortBody {
     pub(crate) fn fake() -> Self {
         Self {
             audit: Some(Box::new(FakeAudit::default())),
-            backend: Backend::Fake { files: FakeFiles::default(), process: FakeProcess::default() },
+            backend: Backend::Fake {
+                files: FakeFiles::default(),
+                process: FakeProcess::default(),
+            },
             launch: LaunchKind::BundledGit,
             attempts: 0,
         }
     }
 
     pub(crate) fn platform(audit: Option<Box<dyn AuditPort + Send>>) -> Self {
-        Self { audit, backend: Backend::Platform { provider: NativeProvider }, launch: LaunchKind::BundledGit, attempts: 0 }
+        Self {
+            audit,
+            backend: Backend::Platform {
+                provider: NativeProvider,
+            },
+            launch: LaunchKind::BundledGit,
+            attempts: 0,
+        }
     }
 
     pub(crate) fn set_launch(&mut self, kind: LaunchKind) {
@@ -97,7 +120,9 @@ impl PortBody {
 
     pub(crate) fn git_children(&self) -> u64 {
         match &self.backend {
-            Backend::Fake { process, .. } => u64::try_from(process.recipes.len()).unwrap_or(u64::MAX),
+            Backend::Fake { process, .. } => {
+                u64::try_from(process.recipes.len()).unwrap_or(u64::MAX)
+            }
             Backend::Platform { .. } => 0,
         }
     }
@@ -114,7 +139,9 @@ impl PortBody {
     }
 
     pub(crate) fn observe_gitignore(&mut self) -> IgnoreSnap {
-        let Ok(path) = ProjectPath::new(".gitignore") else { return IgnoreSnap::Unknown };
+        let Ok(path) = ProjectPath::new(".gitignore") else {
+            return IgnoreSnap::Unknown;
+        };
         match self.identity(&path) {
             Ok(identity) => match self.read_all(&path, identity) {
                 Ok(bytes) => IgnoreSnap::Present { identity, bytes },
@@ -133,7 +160,11 @@ impl PortBody {
         }
     }
 
-    fn read_all(&mut self, path: &ProjectPath, identity: FileIdentity) -> Result<Vec<u8>, FileFault> {
+    fn read_all(
+        &mut self,
+        path: &ProjectPath,
+        identity: FileIdentity,
+    ) -> Result<Vec<u8>, FileFault> {
         match &mut self.backend {
             Backend::Fake { files, .. } => files.read(path, identity, 0, identity.size),
             Backend::Platform { .. } => Err(FileFault::Uncertain),
@@ -217,9 +248,16 @@ impl AuditPort for AuditAdapter {
         body.audit.as_mut().ok_or(AuditUnavailable)?.append(record)
     }
 
-    fn append_effect(&mut self, record: &AuditRecord, recovery: &RecoveryRecord) -> Result<(), AuditUnavailable> {
+    fn append_effect(
+        &mut self,
+        record: &AuditRecord,
+        recovery: &RecoveryRecord,
+    ) -> Result<(), AuditUnavailable> {
         let mut body = lock(&self.0).map_err(|()| AuditUnavailable)?;
-        body.audit.as_mut().ok_or(AuditUnavailable)?.append_effect(record, recovery)
+        body.audit
+            .as_mut()
+            .ok_or(AuditUnavailable)?
+            .append_effect(record, recovery)
     }
 
     fn recover(&mut self, limit: usize) -> Result<Vec<RecoveryRecord>, AuditUnavailable> {
@@ -234,7 +272,13 @@ impl FilePort for FileAdapter {
         body.identity(path)
     }
 
-    fn read(&mut self, path: &ProjectPath, expected: FileIdentity, offset: u64, length: u64) -> Result<Vec<u8>, FileFault> {
+    fn read(
+        &mut self,
+        path: &ProjectPath,
+        expected: FileIdentity,
+        offset: u64,
+        length: u64,
+    ) -> Result<Vec<u8>, FileFault> {
         let mut body = lock(&self.0).map_err(|()| FileFault::Uncertain)?;
         match &mut body.backend {
             Backend::Fake { files, .. } => files.read(path, expected, offset, length),
@@ -242,7 +286,12 @@ impl FilePort for FileAdapter {
         }
     }
 
-    fn replace(&mut self, path: &ProjectPath, expected: FileIdentity, bytes: &[u8]) -> Result<FileIdentity, FileFault> {
+    fn replace(
+        &mut self,
+        path: &ProjectPath,
+        expected: FileIdentity,
+        bytes: &[u8],
+    ) -> Result<FileIdentity, FileFault> {
         let mut body = lock(&self.0).map_err(|()| FileFault::Uncertain)?;
         match &mut body.backend {
             Backend::Fake { files, .. } => files.replace(path, expected, bytes),
@@ -317,7 +366,14 @@ mod tests {
         let host = crate::plugins::PluginHost::platform();
         let mut adapters = host.adapters();
         assert!(adapters.process.spawn().is_err());
-        let recipe = Recipe::GitAddIgnore { path: ignore(), expected: FileIdentity { object: 1, version: 1, size: 0 } };
+        let recipe = Recipe::GitAddIgnore {
+            path: ignore(),
+            expected: FileIdentity {
+                object: 1,
+                version: 1,
+                size: 0,
+            },
+        };
         assert_eq!(adapters.recipes.run(&recipe), RecipeOutcome::Missing);
         assert_eq!(host.spawns(), 0);
         assert_eq!(host.git_children(), 0);
@@ -330,7 +386,14 @@ mod tests {
         let host = crate::plugins::PluginHost::fake();
         let mut adapters = host.adapters();
         assert!(adapters.process.spawn().is_ok());
-        let recipe = Recipe::GitAddIgnore { path: ignore(), expected: FileIdentity { object: 1, version: 1, size: 0 } };
+        let recipe = Recipe::GitAddIgnore {
+            path: ignore(),
+            expected: FileIdentity {
+                object: 1,
+                version: 1,
+                size: 0,
+            },
+        };
         assert_eq!(adapters.recipes.run(&recipe), RecipeOutcome::Succeeded);
         assert_eq!(host.spawns(), 1);
         assert_eq!(host.git_children(), 1);

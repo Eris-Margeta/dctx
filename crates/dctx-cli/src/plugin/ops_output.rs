@@ -23,10 +23,20 @@ pub(super) fn dist<'a>(env: &'a Env<'_>) -> Distribution<'a> {
 
 pub(super) fn facade_note(env: &Env<'_>) -> String {
     let caps = Capabilities::current();
-    format!("facade_git={} spawns={} git_children={}", caps.git, env.host.spawns(), env.host.git_children())
+    format!(
+        "facade_git={} spawns={} git_children={}",
+        caps.git,
+        env.host.spawns(),
+        env.host.git_children()
+    )
 }
 
-pub(super) fn done(command: &str, json: bool, env: &Env<'_>, fill: impl FnOnce(String) -> String) -> Outcome {
+pub(super) fn done(
+    command: &str,
+    json: bool,
+    env: &Env<'_>,
+    fill: impl FnOnce(String) -> String,
+) -> Outcome {
     let note = facade_note(env);
     if json {
         let fields = format!(
@@ -36,19 +46,30 @@ pub(super) fn done(command: &str, json: bool, env: &Env<'_>, fill: impl FnOnce(S
             env.host.spawns(),
             env.host.git_children()
         );
-        Outcome { code: 0, body: format!("{{{}}}", fill(fields)) }
+        Outcome {
+            code: 0,
+            body: format!("{{{}}}", fill(fields)),
+        }
     } else {
         let extra = fill(String::new());
-        Outcome { code: 0, body: format!("{command} {note} {extra}") }
+        Outcome {
+            code: 0,
+            body: format!("{command} {note} {extra}"),
+        }
     }
 }
 
 pub(super) fn ok(command: &str, text: &str, json: bool, env: &Env<'_>) -> Outcome {
     if json {
-        done(command, true, env, |fields| format!("{fields},\"text\":{}", render::json_string(text)))
+        done(command, true, env, |fields| {
+            format!("{fields},\"text\":{}", render::json_string(text))
+        })
     } else {
         let _ = facade_note(env);
-        Outcome { code: 0, body: text.to_owned() }
+        Outcome {
+            code: 0,
+            body: text.to_owned(),
+        }
     }
 }
 
@@ -65,7 +86,10 @@ pub(super) fn fail(command: &str, error: &DistributionError, json: bool) -> Outc
             ),
         }
     } else {
-        Outcome { code: 1, body: format!("{command}: {error}") }
+        Outcome {
+            code: 1,
+            body: format!("{command}: {error}"),
+        }
     }
 }
 
@@ -80,7 +104,10 @@ pub(super) fn usage(command: &str, reason: &str, json: bool) -> Outcome {
             ),
         }
     } else {
-        Outcome { code: 2, body: format!("{command}: {reason}") }
+        Outcome {
+            code: 2,
+            body: format!("{command}: {reason}"),
+        }
     }
 }
 

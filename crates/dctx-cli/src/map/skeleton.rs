@@ -24,15 +24,31 @@ mod tests {
     #[test]
     fn skeleton_uses_the_facade_budget_and_no_depth() {
         let plain = args::parse(&["skeleton".into(), "m:a.py".into()]).expect("parse");
-        let mut mapped = facade_request(&plain.request, plain.format, plain.continuation, plain.budget_set);
+        let mut mapped = facade_request(
+            &plain.request,
+            plain.format,
+            plain.continuation,
+            plain.budget_set,
+        );
         retarget(&mut mapped, plain.budget_set);
         assert_eq!(mapped.verb, Verb::Skeleton);
         assert_eq!(mapped.target, "m:a.py");
         assert!(mapped.depth.is_none() && mapped.limits.depth.is_none());
         assert!(mapped.limits.estimated_tokens.is_none() && mapped.limits.encoded_bytes.is_none());
 
-        let sized = args::parse(&["skeleton".into(), "m:a.py".into(), "--budget".into(), "300".into()]).expect("sized");
-        let mut mapped = facade_request(&sized.request, sized.format, sized.continuation, sized.budget_set);
+        let sized = args::parse(&[
+            "skeleton".into(),
+            "m:a.py".into(),
+            "--budget".into(),
+            "300".into(),
+        ])
+        .expect("sized");
+        let mut mapped = facade_request(
+            &sized.request,
+            sized.format,
+            sized.continuation,
+            sized.budget_set,
+        );
         retarget(&mut mapped, sized.budget_set);
         assert_eq!(mapped.limits.estimated_tokens, Some(300));
     }

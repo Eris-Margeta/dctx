@@ -5,7 +5,7 @@
 //! Golden files in `fixtures/wire-json/` are the byte oracle for this projection.
 
 use super::RenderError;
-use crate::domain::{Record, Answer, Verb, IdentityStatus};
+use crate::domain::{Answer, IdentityStatus, Record, Verb};
 use serde::Serialize;
 
 pub(super) fn canonical(record: &Record) -> Result<String, RenderError> {

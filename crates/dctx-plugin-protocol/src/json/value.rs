@@ -26,28 +26,43 @@ pub enum Json {
 
 impl Json {
     /// Builds a string value.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn str(value: &str) -> Self {
         Self::Str(value.to_owned())
     }
 
     /// Builds an integer from an already bounded unsigned value.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn uint(value: u64) -> Self {
         Self::Int(i64::try_from(value).unwrap_or(i64::MAX))
     }
 
     /// Member lookup on an object; `None` for other values.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn get(&self, key: &str) -> Option<&Json> {
         match self {
-            Self::Object(members) => members.iter().find(|(name, _)| name == key).map(|(_, value)| value),
+            Self::Object(members) => members
+                .iter()
+                .find(|(name, _)| name == key)
+                .map(|(_, value)| value),
             _ => None,
         }
     }
 
     /// Object members, if this is an object.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn as_object(&self) -> Option<&[(String, Json)]> {
         match self {
             Self::Object(members) => Some(members),
@@ -56,7 +71,10 @@ impl Json {
     }
 
     /// Array items, if this is an array.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn as_array(&self) -> Option<&[Json]> {
         match self {
             Self::Array(items) => Some(items),
@@ -65,7 +83,10 @@ impl Json {
     }
 
     /// String contents, if this is a string.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn as_str(&self) -> Option<&str> {
         match self {
             Self::Str(text) => Some(text),
@@ -74,7 +95,10 @@ impl Json {
     }
 
     /// Integer, if this is a number.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn as_int(&self) -> Option<i64> {
         match self {
             Self::Int(value) => Some(*value),
@@ -83,7 +107,10 @@ impl Json {
     }
 
     /// Boolean, if this is a boolean.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn as_bool(&self) -> Option<bool> {
         match self {
             Self::Bool(value) => Some(*value),
@@ -92,14 +119,17 @@ impl Json {
     }
 
     /// Structural equality that ignores object member order (JSON Schema `uniqueItems` semantics).
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn same_value(&self, other: &Json) -> bool {
         match (self, other) {
             (Self::Object(left), Self::Object(right)) => {
                 left.len() == right.len()
-                    && left
-                        .iter()
-                        .all(|(key, value)| other.get(key).is_some_and(|found| value.same_value(found)))
+                    && left.iter().all(|(key, value)| {
+                        other.get(key).is_some_and(|found| value.same_value(found))
+                    })
             }
             (Self::Array(left), Self::Array(right)) => {
                 left.len() == right.len() && left.iter().zip(right).all(|(a, b)| a.same_value(b))
@@ -115,9 +145,18 @@ mod tests {
 
     #[test]
     fn same_value_ignores_member_order_only() {
-        let a = Json::Object(vec![("a".into(), Json::Int(1)), ("b".into(), Json::Bool(true))]);
-        let b = Json::Object(vec![("b".into(), Json::Bool(true)), ("a".into(), Json::Int(1))]);
-        let c = Json::Object(vec![("b".into(), Json::Bool(false)), ("a".into(), Json::Int(1))]);
+        let a = Json::Object(vec![
+            ("a".into(), Json::Int(1)),
+            ("b".into(), Json::Bool(true)),
+        ]);
+        let b = Json::Object(vec![
+            ("b".into(), Json::Bool(true)),
+            ("a".into(), Json::Int(1)),
+        ]);
+        let c = Json::Object(vec![
+            ("b".into(), Json::Bool(false)),
+            ("a".into(), Json::Int(1)),
+        ]);
         assert!(a.same_value(&b));
         assert!(!a.same_value(&c));
         let left = Json::Array(vec![Json::Int(1), Json::Int(2)]);
@@ -131,6 +170,9 @@ mod tests {
         assert_eq!(value.as_str(), Some("x"));
         assert_eq!(value.as_int(), None);
         assert_eq!(value.get("x"), None);
-        assert_eq!(Json::uint(MAX_SAFE_INTEGER).as_int(), Some(9_007_199_254_740_991));
+        assert_eq!(
+            Json::uint(MAX_SAFE_INTEGER).as_int(),
+            Some(9_007_199_254_740_991)
+        );
     }
 }

@@ -13,7 +13,11 @@ enum Step {
 }
 
 impl Lx<'_> {
-    pub(super) fn take_string(&mut self, prefix_len: usize, prefix: Prefix) -> Result<Emitted, LexError> {
+    pub(super) fn take_string(
+        &mut self,
+        prefix_len: usize,
+        prefix: Prefix,
+    ) -> Result<Emitted, LexError> {
         let start = self.pos();
         self.i += prefix_len;
         let Some((quote, triple)) = self.opening_quote() else {
@@ -334,7 +338,11 @@ impl Lx<'_> {
             }
             self.bump();
             self.fexpr(quote, triple)?;
-            return Ok(if self.string_closed { Step::Done } else { Step::Cont });
+            return Ok(if self.string_closed {
+                Step::Done
+            } else {
+                Step::Cont
+            });
         }
         if self.at_char('}') {
             if self.peek_next() == Some('}') {

@@ -6,8 +6,8 @@
 
 use super::ids::{GenerationId, ManifestId, ObjectId, SessionId};
 use super::restart::{
-    BOOT_ACCELERATES, CLOCK_FAULT, DEFERRED, DISK_FULL, INCOMPATIBLE, LEGACY_FROZEN, PASS_INCOMPLETE,
-    Take, corrupt,
+    BOOT_ACCELERATES, CLOCK_FAULT, DEFERRED, DISK_FULL, INCOMPATIBLE, LEGACY_FROZEN,
+    PASS_INCOMPLETE, Take, corrupt,
 };
 use super::writer::{Writer, WriterLock, WriterStep};
 use super::{Lifecycle, Quota};
@@ -119,12 +119,20 @@ impl Lifecycle {
 
     fn accounting_holds(&self) -> bool {
         self.p4_holds()
-            && self.objects.values().all(|object| object.bytes == object.born)
-            && self.reservations.values().all(|hold| hold.left <= hold.original)
+            && self
+                .objects
+                .values()
+                .all(|object| object.bytes == object.born)
+            && self
+                .reservations
+                .values()
+                .all(|hold| hold.left <= hold.original)
     }
 
     fn ownership_holds(&self) -> bool {
-        self.writers.values().all(|writer| self.writer_owned(writer))
+        self.writers
+            .values()
+            .all(|writer| self.writer_owned(writer))
             && self.leases.values().all(|lease| self.lease_owned(lease))
     }
 
@@ -140,9 +148,15 @@ impl Lifecycle {
             WriterLock::Held | WriterLock::Dead => writer.session.is_some(),
         };
         identity
-            && writer.reservation.is_none_or(|id| self.reservations.contains_key(&id))
-            && writer.segment.is_none_or(|id| self.objects.contains_key(&id))
-            && writer.manifest_object.is_none_or(|id| self.objects.contains_key(&id))
+            && writer
+                .reservation
+                .is_none_or(|id| self.reservations.contains_key(&id))
+            && writer
+                .segment
+                .is_none_or(|id| self.objects.contains_key(&id))
+            && writer
+                .manifest_object
+                .is_none_or(|id| self.objects.contains_key(&id))
             && writer.manifest.is_none_or(|id| {
                 writer.lock == WriterLock::Free || self.manifests.contains_key(&id)
             })
@@ -151,9 +165,8 @@ impl Lifecycle {
 
     fn lease_owned(&self, lease: &super::lease::Lease) -> bool {
         match lease.phase {
-            super::lease::LeasePhase::Active { .. } | super::lease::LeasePhase::Acquiring { .. } => {
-                self.roots.contains_key(&lease.root)
-            }
+            super::lease::LeasePhase::Active { .. }
+            | super::lease::LeasePhase::Acquiring { .. } => self.roots.contains_key(&lease.root),
             super::lease::LeasePhase::Released | super::lease::LeasePhase::OwnerProvenDead => true,
         }
     }
@@ -165,26 +178,38 @@ impl Lifecycle {
                 && manifest.refs.iter().all(|id| self.objects.contains_key(id))
         });
         let objects = self.objects.values().all(|object| {
-            object.roots.iter().all(|root| self.roots.contains_key(root))
+            object
+                .roots
+                .iter()
+                .all(|root| self.roots.contains_key(root))
                 && object.refs.iter().all(|id| self.objects.contains_key(id))
         });
         manifests && objects && self.p3_holds()
     }
 
     fn state_holds(&self) -> bool {
-        self.objects.values().all(|object| {
-            object.state != super::Physical::Retired || object.retired_at.is_some()
-        })
+        self.objects
+            .values()
+            .all(|object| object.state != super::Physical::Retired || object.retired_at.is_some())
     }
 
     fn ids_cover(&self) -> bool {
-        let generations = self.manifests.values().all(|manifest| manifest.generation.raw() < self.ids.generation)
+        let generations = self
+            .manifests
+            .values()
+            .all(|manifest| manifest.generation.raw() < self.ids.generation)
             && self.writers.values().all(|writer| {
-                writer.generation.is_none_or(|id| id.raw() < self.ids.generation)
+                writer
+                    .generation
+                    .is_none_or(|id| id.raw() < self.ids.generation)
             })
             && self.pointers.values().all(|pointer| {
-                pointer.current.is_none_or(|id| id.raw() < self.ids.generation)
-                    && pointer.previous.is_none_or(|id| id.raw() < self.ids.generation)
+                pointer
+                    .current
+                    .is_none_or(|id| id.raw() < self.ids.generation)
+                    && pointer
+                        .previous
+                        .is_none_or(|id| id.raw() < self.ids.generation)
             });
         self.ids.object > 0
             && self.ids.manifest > 0
@@ -194,7 +219,10 @@ impl Lifecycle {
             && self.objects.keys().all(|id| id.raw() < self.ids.object)
             && self.manifests.keys().all(|id| id.raw() < self.ids.manifest)
             && self.leases.keys().all(|id| id.raw() < self.ids.lease)
-            && self.reservations.keys().all(|id| *id < self.ids.reservation)
+            && self
+                .reservations
+                .keys()
+                .all(|id| *id < self.ids.reservation)
             && generations
     }
 }
@@ -249,7 +277,9 @@ fn read_writers(inp: &mut Take<'_>) -> Result<BTreeMap<super::RootId, Writer>, C
     Ok(writers)
 }
 
-fn read_pointers(inp: &mut Take<'_>) -> Result<BTreeMap<super::RootId, super::writer::Pointer>, CacheError> {
+fn read_pointers(
+    inp: &mut Take<'_>,
+) -> Result<BTreeMap<super::RootId, super::writer::Pointer>, CacheError> {
     let len = inp.count()?;
     let mut pointers = BTreeMap::new();
     for _ in 0..len {

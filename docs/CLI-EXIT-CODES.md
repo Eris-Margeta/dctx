@@ -2,6 +2,11 @@
 
 `dctx map`, `dctx pack`, `dctx mcp`, `dctx languages`, an unknown command and a non-UTF-8 argument follow one contract:
 
+`dctx serve [PATH]` and `dctx serve --mcp [PATH]` are aliases for `dctx mcp [PATH]`.
+They use the current directory when PATH is omitted, including a directory named
+`fixtures`; tools index paths relative to that directory. `dctx read` is an alias
+for `dctx map read`, with the same flags and exit codes.
+
 | Code | Meaning | Examples |
 |---|---|---|
 | 0 | ok: the command answered | a `find` page, including one with no hits; `--help` |

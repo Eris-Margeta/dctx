@@ -18,7 +18,10 @@ fn root(parents: &BTreeMap<String, String>, package: &str) -> String {
     }
     current.to_owned()
 }
-#[allow(clippy::too_many_lines, reason = "Keep component discovery, ordering and resolution merging together so cross-package boundaries remain inspectable.")]
+#[allow(
+    clippy::too_many_lines,
+    reason = "Keep component discovery, ordering and resolution merging together so cross-package boundaries remain inspectable."
+)]
 pub(super) fn resolve_components(mut files: Vec<Facts>) -> Result<Resolution> {
     let owners: BTreeMap<_, _> = files
         .iter()

@@ -34,7 +34,10 @@ pub struct DecoderLimits {
 
 impl DecoderLimits {
     /// The SEGMENTS-v1 default ceilings.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn standard() -> Self {
         Self {
             max_segment_bytes: MAX_SEGMENT_BYTES,
@@ -46,7 +49,11 @@ impl DecoderLimits {
     }
 
     /// Returns these limits capped by [`Self::standard`]. The stricter value wins.
-    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        clippy::return_self_not_must_use,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn effective(self) -> Self {
         Self {
             max_segment_bytes: min_u64(self.max_segment_bytes, MAX_SEGMENT_BYTES),

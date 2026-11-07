@@ -4,8 +4,8 @@
 //! Depends on the writer steps and [`RestartEvidence`]. P8 is `p8_recovery_progress`.
 
 use dctx_adapter_cache::{
-    FakeClock, GenerationId, Lifecycle, Quota, RestartEvidence, RootId, SessionId, SliceBudget,
-    WriterPhase, STAGING_TTL_MS, STARTUP_MAX_OBJECTS,
+    FakeClock, GenerationId, Lifecycle, Quota, RestartEvidence, RootId, STAGING_TTL_MS,
+    STARTUP_MAX_OBJECTS, SessionId, SliceBudget, WriterPhase,
 };
 use std::collections::BTreeSet;
 
@@ -20,7 +20,10 @@ fn root() -> RootId {
 }
 
 fn evidence(boot: u64, held: &[SessionId]) -> RestartEvidence {
-    RestartEvidence { boot_id: boot, held_sessions: held.iter().copied().collect::<BTreeSet<_>>() }
+    RestartEvidence {
+        boot_id: boot,
+        held_sessions: held.iter().copied().collect::<BTreeSet<_>>(),
+    }
 }
 
 fn finish_writer(life: &mut Lifecycle, session: SessionId, bytes: u64) -> GenerationId {
@@ -29,7 +32,8 @@ fn finish_writer(life: &mut Lifecycle, session: SessionId, bytes: u64) -> Genera
     let segment = bytes / 2;
     life.writer_stage_segment(root(), segment).expect("segment");
     life.writer_validate_segment(root()).expect("segment");
-    life.writer_stage_manifest(root(), bytes - segment, &[]).expect("manifest");
+    life.writer_stage_manifest(root(), bytes - segment, &[])
+        .expect("manifest");
     life.writer_validate_manifest(root()).expect("manifest");
     life.writer_swap(root()).expect("swap");
     let generation = life.current_generation(root()).expect("current");
@@ -50,7 +54,8 @@ fn p8_recovery_progress() {
 
 fn crash_before_swap_drops_the_temp() {
     let mut life = life(100);
-    life.writer_acquire(root(), SessionId::new(1)).expect("acquire");
+    life.writer_acquire(root(), SessionId::new(1))
+        .expect("acquire");
     life.writer_reserve(root(), 10).expect("reserve");
     life.writer_stage_segment(root(), 6).expect("stage");
     life.crash_writer(root()).expect("crash");
@@ -66,11 +71,13 @@ fn crash_before_swap_drops_the_temp() {
 fn crash_after_swap_keeps_the_generation() {
     let mut life = life(200);
     let first = finish_writer(&mut life, SessionId::new(2), 20);
-    life.writer_acquire(root(), SessionId::new(3)).expect("acquire");
+    life.writer_acquire(root(), SessionId::new(3))
+        .expect("acquire");
     life.writer_reserve(root(), 20).expect("reserve");
     life.writer_stage_segment(root(), 12).expect("segment");
     life.writer_validate_segment(root()).expect("segment");
-    life.writer_stage_manifest(root(), 8, &[]).expect("manifest");
+    life.writer_stage_manifest(root(), 8, &[])
+        .expect("manifest");
     life.writer_validate_manifest(root()).expect("manifest");
     life.writer_swap(root()).expect("swap");
     let second = life.current_generation(root()).expect("current");
@@ -105,7 +112,8 @@ fn boot_change_reclaims_only_unowned_staging() {
     let mut life = life(1_000);
     let staged = life.load_staged(5, 0).expect("staged");
     let fact = life.insert_fact(9, &[root()]).expect("fact");
-    life.writer_acquire(root(), SessionId::new(4)).expect("acquire");
+    life.writer_acquire(root(), SessionId::new(4))
+        .expect("acquire");
     life.writer_reserve(root(), 20).expect("reserve");
     let owned = life.writer_stage_segment(root(), 8).expect("owned");
     life.crash_writer(root()).expect("crash");
@@ -120,15 +128,18 @@ fn boot_change_reclaims_only_unowned_staging() {
 
 fn publish_completes_or_cache_limit() {
     let mut life = life(10);
-    life.writer_acquire(root(), SessionId::new(1)).expect("acquire");
+    life.writer_acquire(root(), SessionId::new(1))
+        .expect("acquire");
     assert!(life.writer_reserve(root(), 11).is_err());
     assert_eq!(life.writer_phase(root()), WriterPhase::Free);
     assert_eq!(life.admitted(), 0);
-    life.writer_acquire(root(), SessionId::new(1)).expect("acquire");
+    life.writer_acquire(root(), SessionId::new(1))
+        .expect("acquire");
     life.writer_reserve(root(), 10).expect("reserve");
     life.writer_stage_segment(root(), 6).expect("segment");
     life.writer_validate_segment(root()).expect("segment");
-    life.writer_stage_manifest(root(), 4, &[]).expect("manifest");
+    life.writer_stage_manifest(root(), 4, &[])
+        .expect("manifest");
     life.writer_validate_manifest(root()).expect("manifest");
     assert!(life.current_generation(root()).is_none());
     life.writer_swap(root()).expect("swap");
@@ -168,7 +179,11 @@ fn startup_stops_on_the_time_budget() {
         .startup_with(
             clock.sample(),
             None,
-            SliceBudget { max_objects: 128, max_millis: 25, millis_per_object: 5 },
+            SliceBudget {
+                max_objects: 128,
+                max_millis: 25,
+                millis_per_object: 5,
+            },
         )
         .expect("startup");
     assert_eq!(report.examined, 5);
@@ -182,7 +197,11 @@ fn startup_stops_on_the_time_budget() {
         .startup_with(
             clock.sample(),
             None,
-            SliceBudget { max_objects: 128, max_millis: 25, millis_per_object: 30 },
+            SliceBudget {
+                max_objects: 128,
+                max_millis: 25,
+                millis_per_object: 30,
+            },
         )
         .expect("startup");
     assert_eq!(report.examined, 1);

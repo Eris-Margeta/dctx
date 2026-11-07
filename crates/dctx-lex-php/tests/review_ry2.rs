@@ -12,7 +12,11 @@ fn parse(path: &str, source: &str) -> LexedFile {
 }
 
 fn names(file: &LexedFile) -> Vec<&str> {
-    file.nodes.iter().skip(1).map(|n| n.fact.name.as_str()).collect()
+    file.nodes
+        .iter()
+        .skip(1)
+        .map(|n| n.fact.name.as_str())
+        .collect()
 }
 
 fn calls(file: &LexedFile) -> Vec<&str> {
@@ -36,7 +40,12 @@ END;
 function real() {}
 ";
     let review = parse("review.php", review);
-    assert_eq!(review.completion, Completion::Complete, "{:?}", review.diagnostics);
+    assert_eq!(
+        review.completion,
+        Completion::Complete,
+        "{:?}",
+        review.diagnostics
+    );
     assert_eq!(names(&review), ["real"]);
     assert_eq!(calls(&review), Vec::<&str>::new());
 
@@ -53,7 +62,12 @@ function ghost_line() {}
 function kept() { kept_call(); }
 ";
     let prefix = parse("prefix.php", prefix);
-    assert_eq!(prefix.completion, Completion::Complete, "{:?}", prefix.diagnostics);
+    assert_eq!(
+        prefix.completion,
+        Completion::Complete,
+        "{:?}",
+        prefix.diagnostics
+    );
     assert_eq!(names(&prefix), ["kept"]);
     assert_eq!(calls(&prefix), ["kept_call"]);
 }
@@ -65,7 +79,12 @@ fn block_comment_close_tag_stays_in_php() {
     // The `//` and `#` arms are the positive control: those comments do end at `?>`.
     let kept = "<?php\n/* ?>\n*/\nfunction kept() { kept_call(); }\n";
     let kept = parse("kept.php", kept);
-    assert_eq!(kept.completion, Completion::Complete, "{:?}", kept.diagnostics);
+    assert_eq!(
+        kept.completion,
+        Completion::Complete,
+        "{:?}",
+        kept.diagnostics
+    );
     assert_eq!(names(&kept), ["kept"]);
     assert_eq!(calls(&kept), ["kept_call"]);
 
@@ -75,13 +94,22 @@ fn block_comment_close_tag_stays_in_php() {
     assert_eq!(names(&buried), Vec::<&str>::new());
     assert_eq!(calls(&buried), Vec::<&str>::new());
     assert_eq!(
-        buried.diagnostics.iter().map(|d| d.reason).collect::<Vec<_>>(),
+        buried
+            .diagnostics
+            .iter()
+            .map(|d| d.reason)
+            .collect::<Vec<_>>(),
         [DiagnosticReason::UnterminatedComment]
     );
 
     let lines = "<?php\n// ?>\nfunction ghost_line() { line_call(); }\n<?php\n# ?>\nfunction ghost_hash() { hash_call(); }\n<?php\nfunction real() { real_call(); }\n";
     let lines = parse("lines.php", lines);
-    assert_eq!(lines.completion, Completion::Complete, "{:?}", lines.diagnostics);
+    assert_eq!(
+        lines.completion,
+        Completion::Complete,
+        "{:?}",
+        lines.diagnostics
+    );
     assert_eq!(names(&lines), ["real"]);
     assert_eq!(calls(&lines), ["real_call"]);
 }

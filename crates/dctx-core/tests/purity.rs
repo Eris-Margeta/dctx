@@ -9,12 +9,32 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 const FORBIDDEN: &[&str] = &[
-    "std::fs", "fs::", "std::env", "env::", "std::process", "process::", "std::net", "std::thread",
-    "thread::", "println!", "eprintln!", "print!", "eprint!", "dbg!", "SystemTime", "Instant",
+    "std::fs",
+    "fs::",
+    "std::env",
+    "env::",
+    "std::process",
+    "process::",
+    "std::net",
+    "std::thread",
+    "thread::",
+    "println!",
+    "eprintln!",
+    "print!",
+    "eprint!",
+    "dbg!",
+    "SystemTime",
+    "Instant",
     "Command::",
 ];
 
-const IO_ROOTS: &[&str] = &["std::fs", "std::env", "std::process", "std::net", "std::thread"];
+const IO_ROOTS: &[&str] = &[
+    "std::fs",
+    "std::env",
+    "std::process",
+    "std::net",
+    "std::thread",
+];
 
 struct Skip {
     end_depth: i32,
@@ -314,7 +334,11 @@ fn use_spec(stmt: &str) -> Option<&str> {
     let trimmed = stmt.trim();
     let use_at = trimmed.find("use ")?;
     let spec = trimmed[use_at + 4..].trim().trim_end_matches(';').trim();
-    if spec.is_empty() { None } else { Some(spec) }
+    if spec.is_empty() {
+        None
+    } else {
+        Some(spec)
+    }
 }
 
 fn forbidden_path(path: &str) -> Option<&'static str> {
@@ -521,7 +545,10 @@ fn violations(text: &str) -> Vec<String> {
         }
         if pending_test {
             pending_test = false;
-            let mut state = Skip { end_depth: depth, seen_open: false };
+            let mut state = Skip {
+                end_depth: depth,
+                seen_open: false,
+            };
             match advance_skip(&mut state, &code, &mut depth) {
                 None => {
                     skip = Some(state);
@@ -559,7 +586,11 @@ fn pure_core_modules_import_no_io() {
     let src = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
     let mut files = Vec::new();
     rust_files(&src, &mut files);
-    assert!(files.len() >= 15, "expected the pure modules, found {}", files.len());
+    assert!(
+        files.len() >= 15,
+        "expected the pure modules, found {}",
+        files.len()
+    );
     let found: Vec<String> = files
         .iter()
         .flat_map(|file| {

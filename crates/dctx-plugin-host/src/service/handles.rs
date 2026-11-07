@@ -85,7 +85,8 @@ impl Handles {
     /// Refuses if the generated token does not fit the protocol token format.
     pub fn mint(&mut self, prefix: &str) -> Result<Token, HostRefusal> {
         self.next = self.next.saturating_add(1);
-        Token::new(&format!("{prefix}:{}", self.next)).map_err(|_| HostRefusal::limit("token-space"))
+        Token::new(&format!("{prefix}:{}", self.next))
+            .map_err(|_| HostRefusal::limit("token-space"))
     }
 
     /// Registers a handle bound to `binding`.
@@ -96,7 +97,8 @@ impl Handles {
             return Err(HostRefusal::limit("too-many-handles"));
         }
         let token = self.mint("h")?;
-        self.records.insert(token.clone(), HandleRecord { binding, kind });
+        self.records
+            .insert(token.clone(), HandleRecord { binding, kind });
         Ok(token)
     }
 
@@ -104,7 +106,9 @@ impl Handles {
     /// # Errors
     /// Refuses an unknown handle.
     pub fn get(&self, token: &Token) -> Result<&HandleRecord, HostRefusal> {
-        self.records.get(token).ok_or(HostRefusal::denied("unknown-handle"))
+        self.records
+            .get(token)
+            .ok_or(HostRefusal::denied("unknown-handle"))
     }
 
     /// Revokes every handle (shutdown/halt).
@@ -117,19 +121,30 @@ impl Handles {
     /// Issues a precondition token for `handle` at `identity`.
     /// # Errors
     /// Refuses when the precondition table is full or a token cannot be minted.
-    pub fn precondition(&mut self, handle: &Token, identity: FileIdentity) -> Result<Token, HostRefusal> {
+    pub fn precondition(
+        &mut self,
+        handle: &Token,
+        identity: FileIdentity,
+    ) -> Result<Token, HostRefusal> {
         if self.preconditions.len() >= MAX_HANDLES {
             return Err(HostRefusal::limit("too-many-preconditions"));
         }
         let token = self.mint("pre")?;
-        self.preconditions.insert(token.clone(), (handle.clone(), PreconditionRecord { identity }));
+        self.preconditions.insert(
+            token.clone(),
+            (handle.clone(), PreconditionRecord { identity }),
+        );
         Ok(token)
     }
 
     /// The identity a precondition was issued at, if it is bound to `handle`.
     /// # Errors
     /// Refuses an unknown precondition or one bound to another handle.
-    pub fn check_precondition(&self, handle: &Token, token: &Token) -> Result<FileIdentity, HostRefusal> {
+    pub fn check_precondition(
+        &self,
+        handle: &Token,
+        token: &Token,
+    ) -> Result<FileIdentity, HostRefusal> {
         match self.preconditions.get(token) {
             Some((bound, record)) if bound == handle => Ok(record.identity),
             Some(_) => Err(HostRefusal::conflict("precondition-bound-elsewhere")),
@@ -158,7 +173,9 @@ impl Handles {
     /// # Errors
     /// Refuses an unknown upload token.
     pub fn upload_mut(&mut self, token: &Token) -> Result<&mut Upload, HostRefusal> {
-        self.uploads.get_mut(token).ok_or(HostRefusal::conflict("unknown-upload"))
+        self.uploads
+            .get_mut(token)
+            .ok_or(HostRefusal::conflict("unknown-upload"))
     }
 
     /// Reclaims an upload.
@@ -176,9 +193,17 @@ mod tests {
     fn preconditions_bind_their_handle() {
         let mut handles = Handles::default();
         let path = ProjectPath::new(".gitignore").expect("path");
-        let a = handles.register(context("op:1"), HandleKind::File { path: path.clone() }).expect("a");
-        let b = handles.register(context("op:1"), HandleKind::File { path }).expect("b");
-        let identity = FileIdentity { object: 1, version: 1, size: 3 };
+        let a = handles
+            .register(context("op:1"), HandleKind::File { path: path.clone() })
+            .expect("a");
+        let b = handles
+            .register(context("op:1"), HandleKind::File { path })
+            .expect("b");
+        let identity = FileIdentity {
+            object: 1,
+            version: 1,
+            size: 3,
+        };
         let pre = handles.precondition(&a, identity).expect("pre");
         assert_eq!(handles.check_precondition(&a, &pre), Ok(identity));
         assert!(handles.check_precondition(&b, &pre).is_err());

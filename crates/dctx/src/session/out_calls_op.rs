@@ -6,17 +6,28 @@
 
 use super::Session;
 use crate::domain::{AnswerRecord, MapRequest};
-use crate::index::{out_calls, Generation};
+use crate::index::{Generation, out_calls};
 
 impl Session {
     /// Appends the unresolved outbound call records of `request` to `records`, after every existing record.
-    pub(super) fn attach_out_calls(&mut self, generation: &Generation, request: &MapRequest, records: &mut Vec<AnswerRecord>) {
+    pub(super) fn attach_out_calls(
+        &mut self,
+        generation: &Generation,
+        request: &MapRequest,
+        records: &mut Vec<AnswerRecord>,
+    ) {
         let Some(plan) = out_calls::plan(generation, request, records) else {
             return;
         };
-        let digest = generation.files.iter().find(|file| file.path == plan.path).and_then(|file| file.digest);
+        let digest = generation
+            .files
+            .iter()
+            .find(|file| file.path == plan.path)
+            .and_then(|file| file.digest);
         let bytes = match digest {
-            Some(expected) if self.authorize(&plan.path).is_ok() => self.read_verified(&plan.path, expected).ok(),
+            Some(expected) if self.authorize(&plan.path).is_ok() => {
+                self.read_verified(&plan.path, expected).ok()
+            }
             _ => None,
         };
         let Some(bytes) = bytes else {

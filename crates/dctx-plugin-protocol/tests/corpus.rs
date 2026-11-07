@@ -10,8 +10,8 @@ use dctx_plugin_protocol::records::method::Method;
 use dctx_plugin_protocol::records::requests::Request;
 use dctx_plugin_protocol::session::check_result;
 use dctx_plugin_protocol::{
-    DecodeLimits, ErrorCode, FrameDecoder, Json, Outcome, Refusal, SessionBody, WireMessage, decode_object,
-    encode_frame, to_canonical,
+    DecodeLimits, ErrorCode, FrameDecoder, Json, Outcome, Refusal, SessionBody, WireMessage,
+    decode_object, encode_frame, to_canonical,
 };
 
 const WIRE: &str = "urn:dctx:plugin-api:v1:wire";
@@ -60,18 +60,32 @@ fn request_for(method: Method, hook: &str) -> Request {
 /// Decodes a body; when the case names a pending method, resolves and checks the result against it.
 fn body_outcome(case: &Json, bytes: &[u8]) -> Result<WireMessage, Refusal> {
     let message = WireMessage::decode(bytes, DecodeLimits::WIRE)?;
-    let pending = case.get("context").map_or("", |context| text(context, "pending_method"));
-    let hook = case.get("context").map_or("", |context| text(context, "hook"));
+    let pending = case
+        .get("context")
+        .map_or("", |context| text(context, "pending_method"));
+    let hook = case
+        .get("context")
+        .map_or("", |context| text(context, "hook"));
     if let (Some(method), WireMessage::Session(session)) = (Method::parse(pending), &message)
-        && let SessionBody::Response { outcome: Outcome::Result(result), .. } = &session.body {
-            let body = result.resolve(method)?;
-            check_result(&request_for(method, hook), &body)?;
-            assert!(body.encode().same_value(result.as_json()), "typed result re-encodes exactly");
-        }
+        && let SessionBody::Response {
+            outcome: Outcome::Result(result),
+            ..
+        } = &session.body
+    {
+        let body = result.resolve(method)?;
+        check_result(&request_for(method, hook), &body)?;
+        assert!(
+            body.encode().same_value(result.as_json()),
+            "typed result re-encodes exactly"
+        );
+    }
     Ok(message)
 }
 
-#[allow(clippy::needless_pass_by_value, reason = "The assertion consumes one completed decode outcome; retaining ownership keeps the fixture call sites and failure reporting together.")]
+#[allow(
+    clippy::needless_pass_by_value,
+    reason = "The assertion consumes one completed decode outcome; retaining ownership keeps the fixture call sites and failure reporting together."
+)]
 fn assert_expectation(id: &str, case: &Json, outcome: Result<WireMessage, Refusal>) {
     let valid = expect_field(case, "valid") == Some(&Json::Bool(true));
     match outcome {
@@ -82,7 +96,11 @@ fn assert_expectation(id: &str, case: &Json, outcome: Result<WireMessage, Refusa
             let expect = |key| expect_field(case, key).and_then(Json::as_str).unwrap_or("");
             assert_eq!(refusal.code.as_str(), expect("code"), "{id}: {refusal}");
             assert_eq!(refusal.stage.as_str(), expect("stage"), "{id}: {refusal}");
-            assert_eq!(refusal.predicate.as_str(), expect("predicate"), "{id}: {refusal}");
+            assert_eq!(
+                refusal.predicate.as_str(),
+                expect("predicate"),
+                "{id}: {refusal}"
+            );
         }
     }
 }
@@ -93,7 +111,10 @@ fn every_wire_catalog_case_meets_its_expectation() {
     let mut session_cases = Vec::new();
     for case in catalog() {
         let id = text(&case, "id").to_owned();
-        let stage = expect_field(&case, "stage").and_then(Json::as_str).unwrap_or("").to_owned();
+        let stage = expect_field(&case, "stage")
+            .and_then(Json::as_str)
+            .unwrap_or("")
+            .to_owned();
         let is_wire = text(&case, "schema") == WIRE;
         let outcome = match stage.as_str() {
             "frame" => frame_outcome(&document(text(&case, "path"))),
@@ -102,7 +123,8 @@ fn every_wire_catalog_case_meets_its_expectation() {
                 session_cases.push(id);
                 continue;
             }
-            "session" | "decode" | "schema" | "semantic" | "artifact" | "dts-source" | "scenario" => continue,
+            "session" | "decode" | "schema" | "semantic" | "artifact" | "dts-source"
+            | "scenario" => continue,
             other => panic!("{id}: unknown stage {other}"),
         };
         assert_expectation(&id, &case, outcome);
@@ -111,34 +133,62 @@ fn every_wire_catalog_case_meets_its_expectation() {
     session_cases.sort();
     let mut expected: Vec<String> = SESSION_CASES.iter().map(|id| (*id).to_owned()).collect();
     expected.sort();
-    assert_eq!(session_cases, expected, "session cases must all be covered by name");
+    assert_eq!(
+        session_cases, expected,
+        "session cases must all be covered by name"
+    );
     assert!(checked >= 60, "checked {checked}");
 }
 
 #[test]
 fn decode_stage_bodies_also_fail_through_the_stream_codec() {
-    for case in catalog().iter().filter(|case| expect_field(case, "stage").and_then(Json::as_str) == Some("decode")) {
+    for case in catalog()
+        .iter()
+        .filter(|case| expect_field(case, "stage").and_then(Json::as_str) == Some("decode"))
+    {
         let body = case_bytes(text(case, "id"));
         let frame = encode_frame(&body, dctx_plugin_protocol::MAX_FRAME_CAP).expect("frames");
         let mut decoder = FrameDecoder::new();
-        decoder.set_cap(dctx_plugin_protocol::MAX_FRAME_CAP).expect("cap");
+        decoder
+            .set_cap(dctx_plugin_protocol::MAX_FRAME_CAP)
+            .expect("cap");
         let bodies = decoder.push_all(&frame).expect("framing is valid");
         let refusal = WireMessage::decode(&bodies[0], DecodeLimits::WIRE).unwrap_err();
-        assert_eq!(Some(refusal.code.as_str()), expect_field(case, "code").and_then(Json::as_str));
+        assert_eq!(
+            Some(refusal.code.as_str()),
+            expect_field(case, "code").and_then(Json::as_str)
+        );
     }
 }
 
 #[test]
 fn depth_and_member_fixtures_are_refused_at_decode() {
-    for (path, reason) in [("fixtures/invalid/json-depth.txt", "depth-limit"), ("fixtures/invalid/json-members.txt", "member-limit")] {
+    for (path, reason) in [
+        ("fixtures/invalid/json-depth.txt", "depth-limit"),
+        ("fixtures/invalid/json-members.txt", "member-limit"),
+    ] {
         let refusal = WireMessage::decode(&bytes(path), DecodeLimits::WIRE).unwrap_err();
-        assert_eq!((refusal.stage.as_str(), refusal.reason), ("decode", reason), "{path}");
+        assert_eq!(
+            (refusal.stage.as_str(), refusal.reason),
+            ("decode", reason),
+            "{path}"
+        );
     }
 }
 
 fn wire_fixture_stems() -> Vec<String> {
     let dir = api_dir().join("fixtures/valid");
-    let prefixes = ["error-", "event-", "result-", "request-", "invoke-", "hello", "initialize", "command-result", "file-"];
+    let prefixes = [
+        "error-",
+        "event-",
+        "result-",
+        "request-",
+        "invoke-",
+        "hello",
+        "initialize",
+        "command-result",
+        "file-",
+    ];
     let mut stems: Vec<String> = std::fs::read_dir(dir)
         .expect("valid dir")
         .filter_map(|entry| entry.ok()?.file_name().into_string().ok())
@@ -155,17 +205,29 @@ fn every_valid_wire_fixture_round_trips_canonically() {
     assert!(stems.len() >= 60, "{} fixtures", stems.len());
     for stem in &stems {
         let original = decode_object(&fixture_bytes(stem), DecodeLimits::WIRE).expect("json");
-        let message = WireMessage::from_json(&original).unwrap_or_else(|refusal| panic!("{stem}: {refusal}"));
+        let message =
+            WireMessage::from_json(&original).unwrap_or_else(|refusal| panic!("{stem}: {refusal}"));
         assert_eq!(message.encode(), to_canonical(&original), "{stem}");
-        assert_eq!(WireMessage::decode(&message.encode(), DecodeLimits::WIRE).as_ref(), Ok(&message), "{stem}");
+        assert_eq!(
+            WireMessage::decode(&message.encode(), DecodeLimits::WIRE).as_ref(),
+            Ok(&message),
+            "{stem}"
+        );
     }
 }
 
 #[test]
 fn all_eighteen_error_codes_have_round_tripping_fixtures() {
     let mut codes: Vec<ErrorCode> = Vec::new();
-    for stem in wire_fixture_stems().iter().filter(|stem| stem.starts_with("error-code-")) {
-        if let SessionBody::Response { outcome: Outcome::Error(error), .. } = session_message(stem).body {
+    for stem in wire_fixture_stems()
+        .iter()
+        .filter(|stem| stem.starts_with("error-code-"))
+    {
+        if let SessionBody::Response {
+            outcome: Outcome::Error(error),
+            ..
+        } = session_message(stem).body
+        {
             assert!(!error.retryable);
             codes.push(error.code);
         }

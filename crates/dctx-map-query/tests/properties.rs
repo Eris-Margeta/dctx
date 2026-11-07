@@ -5,9 +5,7 @@
 use dctx_adapter_cache::{Lifecycle, Quota, RootId};
 use dctx_adapter_store::{GcBudget, SegmentRole, SegmentStore, StdFs, StoreOptions};
 use dctx_core::error::DctxError;
-use dctx_map_query::{
-    FileSource, Format, Index, Request, Verb, render_answer,
-};
+use dctx_map_query::{FileSource, Format, Index, Request, Verb, render_answer};
 use dctx_map_segment::decode;
 use dctx_map_store::{ExtractionContract, FactKey, MapStore, SqliteStore};
 use dctx_ports::Cache;
@@ -27,7 +25,12 @@ fn p1_denied_paths_are_not_read_indexed_or_served() {
     let answer = index
         .query(&source, &Request::new(Verb::Find, "kept"))
         .unwrap();
-    assert!(answer.records.iter().any(|record| record.id.as_str() == "s:keep.rs#kept"));
+    assert!(
+        answer
+            .records
+            .iter()
+            .any(|record| record.id.as_str() == "s:keep.rs#kept")
+    );
     let hidden = index
         .answer(&source, &Request::new(Verb::Find, "hidden"))
         .unwrap();
@@ -128,11 +131,21 @@ fn p5_wire_output_names_budget_cuts_and_unknown_or_unparseable_facts() {
     let answer = index.answer(&source, &request).unwrap();
     let output = render_answer(&answer, &request, Format::Text).unwrap();
     assert!(request.budget.fits(&output));
-    assert!(output.contains("unparseable") || output.contains("no match") || answer.records.is_empty() || output.contains("more"));
+    assert!(
+        output.contains("unparseable")
+            || output.contains("no match")
+            || answer.records.is_empty()
+            || output.contains("more")
+    );
     let unknown = index
         .answer(&source, &Request::new(Verb::Find, "notexistinganywhere"))
         .unwrap();
-    let text = render_answer(&unknown, &Request::new(Verb::Find, "notexistinganywhere"), Format::Text).unwrap();
+    let text = render_answer(
+        &unknown,
+        &Request::new(Verb::Find, "notexistinganywhere"),
+        Format::Text,
+    )
+    .unwrap();
     assert!(text.contains("no match") || unknown.reason.as_deref() == Some("no match"));
 }
 
@@ -220,7 +233,12 @@ fn overlay_records_dirty_added_and_deleted_after_a_clean_base() {
         .answer(&source, &Request::new(Verb::Find, "keep_changed"))
         .unwrap();
     assert_eq!(answer.dirty, 0);
-    assert!(answer.records.iter().any(|record| record.id.as_str() == "s:keep.rs#keep_changed"));
+    assert!(
+        answer
+            .records
+            .iter()
+            .any(|record| record.id.as_str() == "s:keep.rs#keep_changed")
+    );
     let removed = index
         .answer(&source, &Request::new(Verb::Find, "gone"))
         .unwrap();
@@ -240,7 +258,15 @@ fn both_stores_agree_and_cancellation_refuses_one_index_only() {
         .unwrap();
     assert!(index.stores_agree().unwrap());
     index.cancel();
-    assert!(index.query(&source, &Request::new(Verb::Find, "agreed")).is_err());
+    assert!(
+        index
+            .query(&source, &Request::new(Verb::Find, "agreed"))
+            .is_err()
+    );
     let mut other = Index::open("agree", &db).unwrap();
-    assert!(other.query(&source, &Request::new(Verb::Find, "agreed")).is_ok());
+    assert!(
+        other
+            .query(&source, &Request::new(Verb::Find, "agreed"))
+            .is_ok()
+    );
 }

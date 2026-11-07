@@ -4,11 +4,17 @@
 use super::symbols;
 
 fn named(tag: &str, text: &str) -> Vec<(String, String)> {
-    symbols(tag, text).into_iter().map(|symbol| (symbol.name, symbol.kind)).collect()
+    symbols(tag, text)
+        .into_iter()
+        .map(|symbol| (symbol.name, symbol.kind))
+        .collect()
 }
 
 fn expect(found: Vec<(String, String)>, wanted: &[(&str, &str)]) {
-    let wanted: Vec<(String, String)> = wanted.iter().map(|(name, kind)| (name.to_string(), kind.to_string())).collect();
+    let wanted: Vec<(String, String)> = wanted
+        .iter()
+        .map(|(name, kind)| (name.to_string(), kind.to_string()))
+        .collect();
     assert_eq!(found, wanted);
 }
 
@@ -99,26 +105,49 @@ fn solidity_state_variables_structs_enums_errors_and_split_headers_are_symbols()
         ],
     );
     let found = symbols("solidity", text);
-    let deposit = found.iter().find(|symbol| symbol.name == "Vault::deposit").expect("deposit");
+    let deposit = found
+        .iter()
+        .find(|symbol| symbol.name == "Vault::deposit")
+        .expect("deposit");
     assert_eq!(deposit.lines, [10, 16]);
 }
 
 #[test]
 fn gleam_constants_are_symbols() {
     let text = "pub const limit = 5\npub const name: String = \"x\"\nconst Hidden = 1\npub fn main() {\n  1\n}\npub type Shape {\n  Circle\n}\n";
-    expect(named("gleam", text), &[("limit", "const"), ("name", "const"), ("Hidden", "const"), ("main", "fn"), ("Shape", "type")]);
+    expect(
+        named("gleam", text),
+        &[
+            ("limit", "const"),
+            ("name", "const"),
+            ("Hidden", "const"),
+            ("main", "fn"),
+            ("Shape", "type"),
+        ],
+    );
 }
 
 #[test]
 fn perl_packages_and_subs_are_symbols() {
     let text = "package Shop::Cart;\nsub total {\n    my ($self) = @_;\n    return add_tax($self->{sum}) + round_it $self->{sum};\n}\nsub add_tax {\n    my ($x) = @_;\n    return $x * 1.2;\n}\nsub round_it { return int(shift) }\n";
-    expect(named("perl", text), &[("Shop::Cart", "type"), ("Shop::Cart::total", "fn"), ("Shop::Cart::add_tax", "fn"), ("Shop::Cart::round_it", "fn")]);
+    expect(
+        named("perl", text),
+        &[
+            ("Shop::Cart", "type"),
+            ("Shop::Cart::total", "fn"),
+            ("Shop::Cart::add_tax", "fn"),
+            ("Shop::Cart::round_it", "fn"),
+        ],
+    );
 }
 
 #[test]
 fn perl_pod_masked() {
     let text = "package P;\n# sub hidden(1)\nsub run {\n    my $c = P->new;\n    print $c->total;\n    &help;\n    my $x = helper(1);\n}\nsub help {\n    1\n}\n=pod\n\nsub in_pod { }\n\n=cut\n\n1;\n";
-    let names: Vec<_> = symbols("perl", text).into_iter().map(|symbol| symbol.name).collect();
+    let names: Vec<_> = symbols("perl", text)
+        .into_iter()
+        .map(|symbol| symbol.name)
+        .collect();
     assert_eq!(names, ["P", "P::run", "P::help"]);
 }
 
@@ -127,7 +156,14 @@ fn groovy_fields_in_a_class_are_symbols_and_script_variables_are_not() {
     let text = "class Svc {\n  static final String LIMIT = 'x'\n  private int count = 0\n  def label = 1\n  String title\n  def call(String a) {\n    return a\n  }\n}\ndef top = 1\n";
     expect(
         named("groovy", text),
-        &[("Svc", "type"), ("Svc::LIMIT", "const"), ("Svc::count", "field"), ("Svc::label", "field"), ("Svc::title", "field"), ("Svc::call", "fn")],
+        &[
+            ("Svc", "type"),
+            ("Svc::LIMIT", "const"),
+            ("Svc::count", "field"),
+            ("Svc::label", "field"),
+            ("Svc::title", "field"),
+            ("Svc::call", "fn"),
+        ],
     );
 }
 
@@ -136,14 +172,25 @@ fn powershell_symbols_and_methods_are_recognized() {
     let text = "class Deployer {\n  [string] Run() {\n    return $null\n  }\n}\nfunction Get-Config {\n}\nfunction Read-File {\n}\nenum Status {\n  Good\n  Bad\n}\n";
     expect(
         named("powershell", text),
-        &[("Deployer", "type"), ("Deployer::Run", "fn"), ("Get-Config", "fn"), ("Read-File", "fn"), ("Status", "type"), ("Status::Good", "const"), ("Status::Bad", "const")]
+        &[
+            ("Deployer", "type"),
+            ("Deployer::Run", "fn"),
+            ("Get-Config", "fn"),
+            ("Read-File", "fn"),
+            ("Status", "type"),
+            ("Status::Good", "const"),
+            ("Status::Bad", "const"),
+        ],
     );
 }
 
 #[test]
 fn an_open_parenthesis_does_not_turn_parameters_into_fields() {
     let zig = "const P = struct {\n    pub fn f(\n        a: i32,\n        b: i32,\n    ) void {\n    }\n    z: i32,\n};\n";
-    expect(named("zig", zig), &[("P", "type"), ("P::f", "fn"), ("P::z", "field")]);
+    expect(
+        named("zig", zig),
+        &[("P", "type"), ("P::f", "fn"), ("P::z", "field")],
+    );
     let found = symbols("zig", zig);
     assert_eq!(found[1].lines, [2, 6]);
     // A stray parenthesis ends its effect after a while instead of hiding the rest of the file.

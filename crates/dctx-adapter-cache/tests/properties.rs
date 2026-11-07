@@ -72,7 +72,10 @@ fn drive(steps: Vec<u8>) -> Result<(), TestCaseError> {
             8 => {
                 let _ = life.startup(
                     clock.sample(),
-                    Some(&RestartEvidence { boot_id: life.boot_id(), held_sessions: BTreeSet::new() }),
+                    Some(&RestartEvidence {
+                        boot_id: life.boot_id(),
+                        held_sessions: BTreeSet::new(),
+                    }),
                 );
             }
             9 => {
@@ -146,6 +149,9 @@ fn sources_do_not_invoke_git_or_start_a_thread() {
         assert!(!source.contains("std::process"), "process spawn");
         assert!(!source.contains("std::thread"), "thread");
         assert!(!source.contains("Command::"), "command");
-        assert!(!source.contains(dot_git.as_str()), "version-control metadata");
+        assert!(
+            !source.contains(dot_git.as_str()),
+            "version-control metadata"
+        );
     }
 }

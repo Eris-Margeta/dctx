@@ -39,9 +39,14 @@ pub(crate) struct Lexed {
 
 impl Lexed {
     /// One-based line of a byte offset. `\n`, `\r\n` and `\r` all break lines.
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     pub fn line(&self, byte: u32) -> u32 {
-        self.line_starts.partition_point(|&start| start <= byte).max(1) as u32
+        self.line_starts
+            .partition_point(|&start| start <= byte)
+            .max(1) as u32
     }
 }
 
@@ -111,7 +116,10 @@ pub(crate) fn lex(source: &str, max_depth: u32) -> Result<Lexed, LexError> {
     })
 }
 
-#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+)]
 fn line_starts(source: &str) -> Vec<u32> {
     let bytes = source.as_bytes();
     let mut starts = vec![0];
@@ -133,7 +141,10 @@ fn line_starts(source: &str) -> Vec<u32> {
     starts
 }
 
-#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+)]
 fn line_of(starts: &[u32], byte: u32) -> u32 {
     starts.partition_point(|&start| start <= byte).max(1) as u32
 }
@@ -162,7 +173,10 @@ impl Lx<'_> {
         line_of(&self.line_starts, self.pos())
     }
 
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     fn pos(&self) -> u32 {
         self.i.min(self.src.len()) as u32
     }
@@ -190,13 +204,15 @@ impl Lx<'_> {
     }
 
     fn starts_with(&self, text: &str) -> bool {
-        self.src.get(self.i..).is_some_and(|rest| rest.starts_with(text))
+        self.src
+            .get(self.i..)
+            .is_some_and(|rest| rest.starts_with(text))
     }
 
     fn last_text_is(&self, text: &str) -> bool {
-        self.tokens.last().is_some_and(|token| {
-            token.kind == Kind::Ident && self.token_text(token) == text
-        })
+        self.tokens
+            .last()
+            .is_some_and(|token| token.kind == Kind::Ident && self.token_text(token) == text)
     }
 
     fn token_text(&self, token: &Token) -> &str {

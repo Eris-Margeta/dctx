@@ -45,7 +45,12 @@ impl Walker<'_> {
             }
             break;
         }
-        Prefix { next: index, public, private, attrs }
+        Prefix {
+            next: index,
+            public,
+            private,
+            attrs,
+        }
     }
 
     fn attr_names(&self, open: usize, close: usize) -> Vec<(usize, usize)> {
@@ -75,7 +80,15 @@ impl Walker<'_> {
         for &(start, end) in &prefix.attrs {
             let last = end.saturating_sub(1);
             let name = self.span_text(start, last);
-            self.refer(scope.owner, &scope.name, EdgeKind::UsesType, name, None, start, last);
+            self.refer(
+                scope.owner,
+                &scope.name,
+                EdgeKind::UsesType,
+                name,
+                None,
+                start,
+                last,
+            );
         }
     }
 
@@ -85,7 +98,10 @@ impl Walker<'_> {
             return None;
         }
         let mut cursor = index + 1;
-        while cursor < end && (self.is(cursor, ".") || self.is(cursor, "::")) && self.word(cursor + 1) {
+        while cursor < end
+            && (self.is(cursor, ".") || self.is(cursor, "::"))
+            && self.word(cursor + 1)
+        {
             cursor += 2;
         }
         Some(cursor)
@@ -154,7 +170,13 @@ impl Walker<'_> {
         names
     }
 
-    pub(crate) fn uses_from(&mut self, mut index: usize, end: usize, scope: &Scope, skip: &[String]) {
+    pub(crate) fn uses_from(
+        &mut self,
+        mut index: usize,
+        end: usize,
+        scope: &Scope,
+        skip: &[String],
+    ) {
         while index < end {
             if !self.type_word(index) || constraint(self.text(index)) {
                 index += 1;
@@ -168,7 +190,15 @@ impl Walker<'_> {
             let name = self.span_text(index, last);
             let skipped = !name.contains('.') && skip.iter().any(|item| item == &name);
             if !skipped && !name.is_empty() {
-                self.refer(scope.owner, &scope.name, EdgeKind::UsesType, name, None, index, last);
+                self.refer(
+                    scope.owner,
+                    &scope.name,
+                    EdgeKind::UsesType,
+                    name,
+                    None,
+                    index,
+                    last,
+                );
             }
             index = name_end;
             if self.is(index, "<")
@@ -194,7 +224,11 @@ impl Walker<'_> {
 
     pub(crate) fn skip_param_prefix(&self, mut index: usize, end: usize) -> usize {
         while index < end && (self.is(index, "[") || self.param_mod(index)) {
-            index = if self.is(index, "[") { self.after(index, end) } else { index + 1 };
+            index = if self.is(index, "[") {
+                self.after(index, end)
+            } else {
+                index + 1
+            };
         }
         index
     }
@@ -202,7 +236,10 @@ impl Walker<'_> {
     fn param_mod(&self, index: usize) -> bool {
         self.word(index)
             && (modifier(self.text(index))
-                || matches!(self.text(index), "params" | "ref" | "out" | "in" | "this" | "scoped"))
+                || matches!(
+                    self.text(index),
+                    "params" | "ref" | "out" | "in" | "this" | "scoped"
+                ))
     }
 
     pub(crate) fn split_commas(&self, start: usize, end: usize) -> Vec<(usize, usize)> {
@@ -280,9 +317,15 @@ fn implements(kind: DeclKind, record_struct: bool, ordinal: usize, name: &str) -
 }
 
 fn integral(name: &str) -> bool {
-    matches!(name, "byte" | "sbyte" | "short" | "ushort" | "int" | "uint" | "long" | "ulong")
+    matches!(
+        name,
+        "byte" | "sbyte" | "short" | "ushort" | "int" | "uint" | "long" | "ulong"
+    )
 }
 
 fn constraint(word: &str) -> bool {
-    matches!(word, "class" | "struct" | "unmanaged" | "notnull" | "default" | "new" | "where")
+    matches!(
+        word,
+        "class" | "struct" | "unmanaged" | "notnull" | "default" | "new" | "where"
+    )
 }

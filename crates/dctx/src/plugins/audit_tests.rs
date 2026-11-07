@@ -35,7 +35,11 @@ fn pending_receipt_survives_reopen_and_completion_clears_it() {
         reason: "intent",
     };
     audit.append(&record).unwrap();
-    let pending = vec![("dctx/test".to_owned(), "op:1".to_owned(), "receipt:1".to_owned())];
+    let pending = vec![(
+        "dctx/test".to_owned(),
+        "op:1".to_owned(),
+        "receipt:1".to_owned(),
+    )];
     assert_eq!(audit.uncertain(), pending);
 
     let mut reopened = DurableAudit::new(audit.storage.clone(), 8192).unwrap();
@@ -43,6 +47,22 @@ fn pending_receipt_survives_reopen_and_completion_clears_it() {
     record.kind = AuditKind::Completion;
     record.reason = "committed";
     reopened.append(&record).unwrap();
-    assert_eq!(reopened.uncertain(), [] as [(std::string::String, std::string::String, std::string::String); 0]);
-    assert_eq!(DurableAudit::new(reopened.storage, 8192).unwrap().uncertain(), [] as [(std::string::String, std::string::String, std::string::String); 0]);
+    assert_eq!(
+        reopened.uncertain(),
+        [] as [(
+            std::string::String,
+            std::string::String,
+            std::string::String
+        ); 0]
+    );
+    assert_eq!(
+        DurableAudit::new(reopened.storage, 8192)
+            .unwrap()
+            .uncertain(),
+        [] as [(
+            std::string::String,
+            std::string::String,
+            std::string::String
+        ); 0]
+    );
 }

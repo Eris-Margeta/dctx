@@ -9,8 +9,8 @@ use std::fmt::Write;
 
 use dctx_core::FileHandlingDecision;
 
-use super::{write_endpoint, write_node_id, IndexedEdge, IndexedFile, IndexedNode, TextBlob};
-use crate::domain::{digest_text, DctxError, Resource};
+use super::{IndexedEdge, IndexedFile, IndexedNode, TextBlob, write_endpoint, write_node_id};
+use crate::domain::{DctxError, Resource, digest_text};
 
 /// Canonical UTF-8 payload and its content digest display form.
 pub(crate) fn canonical_bytes(
@@ -55,7 +55,11 @@ fn edge_rows(
         push_row(
             &mut raw,
             &mut spans,
-            format_args!("E\t{src}\t{dst}\t{}\t{}", text.get(edge.edge), text.get(edge.confidence)),
+            format_args!(
+                "E\t{src}\t{dst}\t{}\t{}",
+                text.get(edge.edge),
+                text.get(edge.confidence)
+            ),
         )?;
     }
     Ok((raw, spans))
@@ -93,7 +97,10 @@ fn file_rows(files: &[IndexedFile]) -> Result<(Vec<u8>, Vec<(usize, usize)>), Dc
     Ok((raw, spans))
 }
 
-fn node_rows(nodes: &[IndexedNode], text: &TextBlob) -> Result<(Vec<u8>, Vec<(usize, usize)>), DctxError> {
+fn node_rows(
+    nodes: &[IndexedNode],
+    text: &TextBlob,
+) -> Result<(Vec<u8>, Vec<(usize, usize)>), DctxError> {
     let mut raw = Vec::new();
     let mut spans = Vec::with_capacity(nodes.len());
     let mut id = String::new();
@@ -119,10 +126,19 @@ fn node_rows(nodes: &[IndexedNode], text: &TextBlob) -> Result<(Vec<u8>, Vec<(us
     Ok((raw, spans))
 }
 
-fn push_row(raw: &mut Vec<u8>, spans: &mut Vec<(usize, usize)>, args: std::fmt::Arguments<'_>) -> Result<(), DctxError> {
+fn push_row(
+    raw: &mut Vec<u8>,
+    spans: &mut Vec<(usize, usize)>,
+    args: std::fmt::Arguments<'_>,
+) -> Result<(), DctxError> {
     let start = raw.len();
     let mut writer = RowWriter { raw };
-    writer.write_fmt(args).map_err(|_| DctxError::ResourceLimit { resource: Resource::Memory, limit: u64::MAX })?;
+    writer
+        .write_fmt(args)
+        .map_err(|_| DctxError::ResourceLimit {
+            resource: Resource::Memory,
+            limit: u64::MAX,
+        })?;
     spans.push((start, raw.len()));
     Ok(())
 }
@@ -182,7 +198,10 @@ mod tests {
             modified: 7,
             stamp: None,
         };
-        let other = IndexedFile { path: "README.md".to_string(), ..file.clone() };
+        let other = IndexedFile {
+            path: "README.md".to_string(),
+            ..file.clone()
+        };
         let text = TextBlob::default();
         let left = canonical_bytes(&[file.clone(), other.clone()], &[], &[], &text).expect("left");
         let right = canonical_bytes(&[other, file], &[], &[], &text).expect("right");
@@ -268,8 +287,18 @@ mod tests {
             },
         ];
         let edges = vec![
-            IndexedEdge { src: 0, dst: 1, edge: contains, confidence: exact },
-            IndexedEdge { src: 2, dst: 3, edge: contains, confidence: name },
+            IndexedEdge {
+                src: 0,
+                dst: 1,
+                edge: contains,
+                confidence: exact,
+            },
+            IndexedEdge {
+                src: 2,
+                dst: 3,
+                edge: contains,
+                confidence: name,
+            },
         ];
         let (payload, digest) = canonical_bytes(&files, &nodes, &edges, &text).expect("canonical");
         assert_eq!(payload, joined_rows(&files, &nodes, &edges, &text));
@@ -278,7 +307,12 @@ mod tests {
         assert_eq!(empty.0, b"\n");
     }
 
-    fn joined_rows(files: &[IndexedFile], nodes: &[IndexedNode], edges: &[IndexedEdge], text: &TextBlob) -> Vec<u8> {
+    fn joined_rows(
+        files: &[IndexedFile],
+        nodes: &[IndexedNode],
+        edges: &[IndexedEdge],
+        text: &TextBlob,
+    ) -> Vec<u8> {
         let mut lines = Vec::new();
         for file in files {
             let digest = match &file.digest {
@@ -313,7 +347,11 @@ mod tests {
             let mut dst = String::new();
             write_endpoint(&mut src, nodes, text, edge.src);
             write_endpoint(&mut dst, nodes, text, edge.dst);
-            lines.push(format!("E\t{src}\t{dst}\t{}\t{}", text.get(edge.edge), text.get(edge.confidence)));
+            lines.push(format!(
+                "E\t{src}\t{dst}\t{}\t{}",
+                text.get(edge.edge),
+                text.get(edge.confidence)
+            ));
         }
         lines.sort();
         let mut text = lines.join("\n");

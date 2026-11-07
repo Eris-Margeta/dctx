@@ -19,7 +19,10 @@ fn extract(source: &str) -> LexedFile {
         .unwrap()
 }
 
-#[allow(clippy::cast_possible_truncation, reason = "The invariant helper receives fixed fixtures, their prefixes and fuzz snippets of at most 511 bytes.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "The invariant helper receives fixed fixtures, their prefixes and fuzz snippets of at most 511 bytes."
+)]
 fn invariants(facts: &LexedFile, source: &str) {
     let lines = source.bytes().filter(|&b| b == b'\n').count() as u32 + 1;
     let root = &facts.nodes[0].fact;

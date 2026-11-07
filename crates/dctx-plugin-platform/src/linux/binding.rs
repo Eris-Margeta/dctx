@@ -22,7 +22,10 @@ pub struct ObjectIdentity {
 }
 
 impl ObjectIdentity {
-    #[allow(clippy::cast_possible_wrap, reason = "Linux stat nanosecond fields are in 0..1_000_000_000, which fits i64.")]
+    #[allow(
+        clippy::cast_possible_wrap,
+        reason = "Linux stat nanosecond fields are in 0..1_000_000_000, which fits i64."
+    )]
     fn checked(stat: &Stat) -> Result<Self, PlatformError> {
         if FileType::from_raw_mode(stat.st_mode) != FileType::RegularFile || stat.st_nlink != 1 {
             return Err(PlatformError::Conflict);

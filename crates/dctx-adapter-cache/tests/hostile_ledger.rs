@@ -49,7 +49,9 @@ mod tests {
         assert_eq!(digest.as_bytes().as_slice(), &hostile[framed..]);
         assert!(matches!(
             Lifecycle::decode_ledger(&hostile),
-            Err(CacheError::CorruptLedger { reason: "accounting" })
+            Err(CacheError::CorruptLedger {
+                reason: "accounting"
+            })
         ));
     }
 }

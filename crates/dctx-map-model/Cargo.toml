@@ -1,9 +1,14 @@
 [package]
 name = "dctx-map-model"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2024"
 license.workspace = true
 repository.workspace = true
+rust-version.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 description = "IO-free map domain: spans, precision, provenance, content identity and bounded answers"
 
 # `wire-json` is the JSON v1 conversion for current dependents and the future wire adapter.
@@ -13,7 +18,7 @@ default = ["wire-json"]
 wire-json = ["dep:serde", "dep:serde_json"]
 
 [dependencies]
-dctx-hash = { path = "../dctx-hash" }
+dctx-hash = { version = "=1.2.0", path = "../dctx-hash" }
 serde = { version = "1", features = ["derive"], optional = true }
 serde_json = { version = "1", optional = true }
 

@@ -2,9 +2,7 @@
 //! Gap oracles for PHP template regions, literal frames and scoped aliases.
 //! Implements DX-G10 / PHP1–PHP3. Positive controls sit beside every refusal.
 //! Existing fixtures and the public extractor API stay unchanged.
-use dctx_lex_php::{
-    Completion, DiagnosticReason, LexError, LexedFile, Limits, PhpLexer,
-};
+use dctx_lex_php::{Completion, DiagnosticReason, LexError, LexedFile, Limits, PhpLexer};
 use dctx_map_model::EdgeKind;
 
 fn parse(path: &str, source: &str) -> LexedFile {
@@ -14,7 +12,11 @@ fn parse(path: &str, source: &str) -> LexedFile {
 }
 
 fn names(file: &LexedFile) -> Vec<&str> {
-    file.nodes.iter().skip(1).map(|n| n.fact.name.as_str()).collect()
+    file.nodes
+        .iter()
+        .skip(1)
+        .map(|n| n.fact.name.as_str())
+        .collect()
 }
 
 fn calls(file: &LexedFile) -> Vec<&str> {
@@ -27,7 +29,10 @@ fn calls(file: &LexedFile) -> Vec<&str> {
 
 #[test]
 fn php1_template_region_properties() {
-    let control = parse("control.php", "<?php function real(): void { real_call(); }\n");
+    let control = parse(
+        "control.php",
+        "<?php function real(): void { real_call(); }\n",
+    );
     assert_eq!(names(&control), ["real"]);
     assert_eq!(calls(&control), ["real_call"]);
     assert_eq!(control.completion, Completion::Complete);
@@ -65,16 +70,29 @@ function real(): void { real_call(); }
 <?= echo_call(); ?>
 "#;
     let file = parse("regions.phtml", source);
-    assert_eq!(file.completion, Completion::Complete, "{:?}", file.diagnostics);
+    assert_eq!(
+        file.completion,
+        Completion::Complete,
+        "{:?}",
+        file.diagnostics
+    );
     // `?>` does not end `/* */`, so the function after `*/` is PHP.
     // Only the `//` and `#` comments above end at `?>`.
     assert_eq!(names(&file), ["kept", "decoy_block", "real"]);
-    assert_eq!(calls(&file), ["kept_call", "block_call", "real_call", "echo_call"]);
+    assert_eq!(
+        calls(&file),
+        ["kept_call", "block_call", "real_call", "echo_call"]
+    );
     assert!(file.references.iter().all(|r| {
-        !r.fact.name.contains("decoy") && !r.fact.name.contains("html") && !r.fact.name.contains("single")
-            && !r.fact.name.contains("double") && !r.fact.name.contains("shell")
-            && !r.fact.name.contains("doc_") && !r.fact.name.contains("now_")
-            && !r.fact.name.contains("line_") && !r.fact.name.contains("hash")
+        !r.fact.name.contains("decoy")
+            && !r.fact.name.contains("html")
+            && !r.fact.name.contains("single")
+            && !r.fact.name.contains("double")
+            && !r.fact.name.contains("shell")
+            && !r.fact.name.contains("doc_")
+            && !r.fact.name.contains("now_")
+            && !r.fact.name.contains("line_")
+            && !r.fact.name.contains("hash")
     }));
 }
 
@@ -99,7 +117,12 @@ function ghost(): void { ghost_call(); }
 function real(): void { real_call(); }
 "#;
     let file = parse("literals.php", source);
-    assert_eq!(file.completion, Completion::Complete, "{:?}", file.diagnostics);
+    assert_eq!(
+        file.completion,
+        Completion::Complete,
+        "{:?}",
+        file.diagnostics
+    );
     assert_eq!(names(&file), ["real"]);
     assert_eq!(calls(&file), ["real_call"]);
 
@@ -110,7 +133,10 @@ function real(): void { real_call(); }
     assert_eq!(open.completion, Completion::Partial);
     assert_eq!(names(&open), Vec::<&str>::new());
     assert_eq!(
-        open.diagnostics.iter().map(|d| d.reason).collect::<Vec<_>>(),
+        open.diagnostics
+            .iter()
+            .map(|d| d.reason)
+            .collect::<Vec<_>>(),
         [DiagnosticReason::UnterminatedString]
     );
     let closed = parse(
@@ -128,7 +154,11 @@ function real(): void { real_call(); }
     assert_eq!(open_doc.completion, Completion::Partial);
     assert_eq!(names(&open_doc), Vec::<&str>::new());
     assert_eq!(
-        open_doc.diagnostics.iter().map(|d| d.reason).collect::<Vec<_>>(),
+        open_doc
+            .diagnostics
+            .iter()
+            .map(|d| d.reason)
+            .collect::<Vec<_>>(),
         [DiagnosticReason::UnterminatedHeredoc]
     );
     let closed_doc = parse(
@@ -146,7 +176,12 @@ function real(): void { real_call(); }
     let lexer = PhpLexer::new(limits);
     let accepted = "<?php\n$a = \"{$a{0} decoy_call();}\";\n$b = `{$b{0}}`;\n$c = '{${a{{0}}} decoy_call();}';\nfunction kept(): void { kept_call(); }\n";
     let kept = lexer.extract("depth.php", accepted.as_bytes()).unwrap();
-    assert_eq!(kept.completion, Completion::Complete, "{:?}", kept.diagnostics);
+    assert_eq!(
+        kept.completion,
+        Completion::Complete,
+        "{:?}",
+        kept.diagnostics
+    );
     assert_eq!(names(&kept), ["kept"]);
     assert_eq!(calls(&kept), ["kept_call"]);
     let too_deep = "<?php\n$a = \"{$a{{0}}}\";\nfunction swallowed(): void { swallowed_call(); }\n";
@@ -190,7 +225,12 @@ namespace Two {
 }
 ";
     let file = parse("aliases.php", source);
-    assert_eq!(file.completion, Completion::Complete, "{:?}", file.diagnostics);
+    assert_eq!(
+        file.completion,
+        Completion::Complete,
+        "{:?}",
+        file.diagnostics
+    );
     assert_eq!(
         names(&file),
         [
@@ -228,19 +268,110 @@ namespace Two {
     assert_eq!(
         refs,
         [
-            ("One", EdgeKind::Imports, "Foo\\Type", Some("Shared"), "One", "aliases.php"),
-            ("One", EdgeKind::Imports, "Foo\\bar", Some("run"), "One", "aliases.php"),
-            ("One", EdgeKind::Imports, "Foo\\baz", Some("run"), "One", "aliases.php"),
-            ("One", EdgeKind::Imports, "Foo\\FLAG", Some("MARK"), "One", "aliases.php"),
-            ("One::Box", EdgeKind::UsesType, "LocalTrait", None, "One::Box", "aliases.php"),
-            ("One::Box", EdgeKind::UsesType, "Other\\Adapted", None, "One::Box", "aliases.php"),
-            ("One::Box::work", EdgeKind::Calls, "run", None, "One::Box::work", "aliases.php"),
-            ("One::Box::work", EdgeKind::Calls, "shown", None, "One::Box::work", "aliases.php"),
-            ("Two", EdgeKind::Imports, "Bar\\qux", Some("run"), "Two", "aliases.php"),
-            ("Two", EdgeKind::Imports, "Bar\\FLAG", Some("MARK"), "Two", "aliases.php"),
-            ("Two", EdgeKind::Imports, "Bar\\Type", Some("Shared"), "Two", "aliases.php"),
-            ("Two::live", EdgeKind::Calls, "run", None, "Two::live", "aliases.php"),
-            ("Two::live", EdgeKind::Calls, "outside", None, "Two::live", "aliases.php"),
+            (
+                "One",
+                EdgeKind::Imports,
+                "Foo\\Type",
+                Some("Shared"),
+                "One",
+                "aliases.php"
+            ),
+            (
+                "One",
+                EdgeKind::Imports,
+                "Foo\\bar",
+                Some("run"),
+                "One",
+                "aliases.php"
+            ),
+            (
+                "One",
+                EdgeKind::Imports,
+                "Foo\\baz",
+                Some("run"),
+                "One",
+                "aliases.php"
+            ),
+            (
+                "One",
+                EdgeKind::Imports,
+                "Foo\\FLAG",
+                Some("MARK"),
+                "One",
+                "aliases.php"
+            ),
+            (
+                "One::Box",
+                EdgeKind::UsesType,
+                "LocalTrait",
+                None,
+                "One::Box",
+                "aliases.php"
+            ),
+            (
+                "One::Box",
+                EdgeKind::UsesType,
+                "Other\\Adapted",
+                None,
+                "One::Box",
+                "aliases.php"
+            ),
+            (
+                "One::Box::work",
+                EdgeKind::Calls,
+                "run",
+                None,
+                "One::Box::work",
+                "aliases.php"
+            ),
+            (
+                "One::Box::work",
+                EdgeKind::Calls,
+                "shown",
+                None,
+                "One::Box::work",
+                "aliases.php"
+            ),
+            (
+                "Two",
+                EdgeKind::Imports,
+                "Bar\\qux",
+                Some("run"),
+                "Two",
+                "aliases.php"
+            ),
+            (
+                "Two",
+                EdgeKind::Imports,
+                "Bar\\FLAG",
+                Some("MARK"),
+                "Two",
+                "aliases.php"
+            ),
+            (
+                "Two",
+                EdgeKind::Imports,
+                "Bar\\Type",
+                Some("Shared"),
+                "Two",
+                "aliases.php"
+            ),
+            (
+                "Two::live",
+                EdgeKind::Calls,
+                "run",
+                None,
+                "Two::live",
+                "aliases.php"
+            ),
+            (
+                "Two::live",
+                EdgeKind::Calls,
+                "outside",
+                None,
+                "Two::live",
+                "aliases.php"
+            ),
         ]
     );
 }

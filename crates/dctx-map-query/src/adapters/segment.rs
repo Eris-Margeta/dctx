@@ -2,12 +2,10 @@
 //! Segment generations for the query journal and a file-level view.
 //! Implements DX-C3 publication and DX-C4 admission for one map root.
 //! Cache load pins the latest generation; sqlite remains the comparison backend.
+use super::Index;
 use super::journal::{self, Journal};
 use super::source::digest_bytes;
-use super::Index;
 use crate::{Error, Result, ports::SourceFile};
-use std::path::Path;
-use std::sync::{Mutex, MutexGuard};
 use dctx_adapter_cache::{Lifecycle, RootId};
 use dctx_adapter_store::{
     Pin, PublishRequest, Revisions, SegmentBlob, SegmentRole, SegmentStore, StdFs as StoreFs,
@@ -18,6 +16,8 @@ use dctx_map_segment::{
     SegmentBuilder, SummarySource, ViewKeyDraft, decode,
 };
 use dctx_ports::Cache;
+use std::path::Path;
+use std::sync::{Mutex, MutexGuard};
 
 /// On-disk segment store next to the sqlite comparison file.
 pub(crate) type Segments = SegmentStore<StoreFs>;
@@ -148,7 +148,9 @@ struct Remembered {
 
 fn memory() -> MutexGuard<'static, Option<Remembered>> {
     static CACHE: Mutex<Option<Remembered>> = Mutex::new(None);
-    CACHE.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
+    CACHE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
 fn remember(database: std::path::PathBuf, root: String, generation: u64, journal: Journal) {
@@ -174,8 +176,8 @@ fn decode_pin(segments: &Segments, pin: &Pin) -> Result<Journal> {
             continue;
         }
         let bytes = segments.read_segment(pin, segment.digest())?;
-        let decoded = decode(&bytes, SegmentRole::Fact)
-            .map_err(|error| Error::Request(error.to_string()))?;
+        let decoded =
+            decode(&bytes, SegmentRole::Fact).map_err(|error| Error::Request(error.to_string()))?;
         for fact in decoded.facts() {
             for declaration in &fact.declarations {
                 let name = decoded
@@ -297,7 +299,10 @@ fn node_draft(path: &str, file: &SourceFile) -> Result<NodeDraft> {
     })
 }
 
-#[allow(clippy::case_sensitive_file_extension_comparisons, reason = "Preserve the existing literal suffix policy for source language dispatch and privacy exclusions; case folding would change which paths are parsed or denied.")]
+#[allow(
+    clippy::case_sensitive_file_extension_comparisons,
+    reason = "Preserve the existing literal suffix policy for source language dispatch and privacy exclusions; case folding would change which paths are parsed or denied."
+)]
 fn language(path: &str) -> Language {
     if path.ends_with(".rs") {
         Language::Rust
@@ -365,8 +370,8 @@ fn admit(bytes: u64) -> Result<()> {
     let object = life.insert_segment(bytes, 0, &[root])?;
     life.publish_view(root, bytes, &[object])?;
     life.publish_overlay(root, bytes, &[object])?;
-    let reservation = Cache::reserve(&mut life, bytes)
-        .map_err(|error| Error::Request(error.to_string()))?;
+    let reservation =
+        Cache::reserve(&mut life, bytes).map_err(|error| Error::Request(error.to_string()))?;
     Cache::commit(&mut life, reservation, bytes)
         .map_err(|error| Error::Request(error.to_string()))?;
     Ok(())

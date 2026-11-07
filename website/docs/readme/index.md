@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.0-8b5cf6" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.2.0-8b5cf6" alt="Version">
   <a href="https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml?query=branch%3Amain">
     <img src="https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI">
   </a>
@@ -18,6 +18,9 @@
     <img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="License">
   </a>
   <img src="https://img.shields.io/badge/language-Rust-orange" alt="Rust">
+  <a href="https://github.com/sponsors/Eris-Margeta">
+    <img src="https://img.shields.io/badge/sponsor-%E2%99%A5-ea4aaa?logo=githubsponsors&logoColor=white" alt="Sponsor dctx">
+  </a>
   <a href="https://www.dctx.internet.technology/maintenance/">
     <img src="https://img.shields.io/badge/commercial-maintenance%20available-8b5cf6" alt="Commercial maintenance available">
   </a>
@@ -309,7 +312,7 @@ An earlier two-way study against Trail-Code (October 2026, dctx `17dff0b`, befor
 
 ## Open source and maintenance
 
-dctx is open source under the [Apache-2.0](https://github.com/Eris-Margeta/dctx/blob/main/LICENSE) license, which makes it free for any use, including commercial use. The core (`pack`) and every modality stay open, and no feature is held back behind a paid edition. Companies that depend on dctx can fund its upkeep through a [maintenance agreement](https://www.dctx.internet.technology/maintenance/), which covers security response times, long-term support and a written commitment for procurement, or through [GitHub Sponsors](https://github.com/sponsors/Eris-Margeta). Paying never changes the license and never closes a feature. The "dctx" name and logo are trademarks of Eris Margeta; see [TRADEMARK.md](https://www.dctx.internet.technology/trademark/) for what forks may call themselves.
+dctx is open source under the [Apache-2.0](https://github.com/Eris-Margeta/dctx/blob/main/LICENSE) license, which makes it free for any use, including commercial use. The core (`pack`) and every modality stay open, and no feature is held back behind a paid edition. Individuals and teams can support the project through [GitHub Sponsors](https://github.com/sponsors/Eris-Margeta). Companies that depend on dctx can fund its upkeep through a [maintenance agreement](https://www.dctx.internet.technology/maintenance/), which covers security response times, long-term support and a written commitment for procurement (see [maintenance](https://www.dctx.internet.technology/maintenance/)). Paying never changes the license and never closes a feature. The "dctx" name and logo are trademarks of Eris Margeta; see [TRADEMARK.md](https://www.dctx.internet.technology/trademark/) for what forks may call themselves.
 
 Project code is open source (Apache-2.0) and **ongoing work**; third-party dependencies retain their own licenses. Parts of the current development line use third-party crates; anything with third-party dependencies is not considered enterprise-ready.
 

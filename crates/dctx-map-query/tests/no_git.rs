@@ -6,8 +6,8 @@
 
 #![forbid(unsafe_code)]
 
-use dctx_map_query::ports::Source;
 use dctx_map_query::FileSource;
+use dctx_map_query::ports::Source;
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -18,7 +18,8 @@ use std::{
 
 fn exclusive() -> MutexGuard<'static, ()> {
     static LOCK: Mutex<()> = Mutex::new(());
-    LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
+    LOCK.lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
 fn git_spawn_markers() -> Vec<String> {
@@ -60,7 +61,10 @@ fn walk_sources(dir: &Path, hits: &mut Vec<PathBuf>) {
                 continue;
             };
             let compact = compact(&text);
-            if git_spawn_markers().iter().any(|marker| compact.contains(marker)) {
+            if git_spawn_markers()
+                .iter()
+                .any(|marker| compact.contains(marker))
+            {
                 hits.push(path);
             }
         }
@@ -97,21 +101,22 @@ fn ignored_and_omitted_paths_are_not_opened() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path();
     fs::write(root.join(".gitignore"), "secret.rs\nhidden/\n").unwrap();
-    fs::write(root.join(".dctxomitcontent"), "omitted.txt\n").unwrap();
     fs::write(root.join("keep.rs"), b"abc").unwrap();
     fs::write(root.join("secret.rs"), b"SECRET-IGNORED").unwrap();
-    fs::write(root.join("omitted.txt"), b"SECRET-OMITTED").unwrap();
+    fs::write(root.join("Cargo.lock"), b"SECRET-OMITTED").unwrap();
     fs::create_dir(root.join("hidden")).unwrap();
     fs::write(root.join("hidden/note.rs"), b"SECRET-HIDDEN").unwrap();
     mode(&root.join("secret.rs"), 0);
-    mode(&root.join("omitted.txt"), 0);
+    mode(&root.join("Cargo.lock"), 0);
     mode(&root.join("hidden"), 0);
     let _restore = Restore {
         path: root.join("hidden"),
     };
 
     let source = FileSource::new(root).unwrap();
-    let snapshot = source.snapshot().expect("unreadable ignored paths must not be opened");
+    let snapshot = source
+        .snapshot()
+        .expect("unreadable ignored paths must not be opened");
     assert_eq!(
         snapshot.files["keep.rs"].hash,
         "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
@@ -119,7 +124,7 @@ fn ignored_and_omitted_paths_are_not_opened() {
     assert!(!snapshot.files.contains_key("secret.rs"));
     assert!(!snapshot.files.contains_key("hidden/note.rs"));
     assert!(!snapshot.directories.contains_key("hidden"));
-    let omitted = &snapshot.files["omitted.txt"];
+    let omitted = &snapshot.files["Cargo.lock"];
     assert_eq!(omitted.hash, "");
     assert!(!omitted.allowed);
     assert!(!omitted.readable);
@@ -128,11 +133,20 @@ fn ignored_and_omitted_paths_are_not_opened() {
         snapshot.rules[".gitignore"].text.as_deref(),
         Some("secret.rs\nhidden/\n")
     );
-    assert_eq!(source.content_reads(), 5);
+    assert_eq!(
+        snapshot
+            .rules
+            .keys()
+            .map(String::as_str)
+            .collect::<Vec<_>>(),
+        [".dctxignore", ".gitignore"]
+    );
+    // The rule capture, the visible .gitignore body and keep.rs are the only reads.
+    assert_eq!(source.content_reads(), 3);
 
     let reads = source.content_reads();
     assert!(source.read("secret.rs").is_err());
-    assert!(source.read("omitted.txt").is_err());
+    assert!(source.read("Cargo.lock").is_err());
     assert!(source.read("hidden/note.rs").is_err());
     assert_eq!(source.read("keep.rs").unwrap(), b"abc");
     assert_eq!(source.content_reads(), reads + 1);
@@ -180,7 +194,10 @@ fn plain_folder_gets_full_freshness_from_metadata_and_hash() {
         .set_modified(modified + Duration::from_secs(2))
         .unwrap();
     let touched = source.snapshot_since(Some(&warm)).unwrap();
-    assert_eq!(touched.files["b.rs"].hash, b.hash, "mtime is only a pre-filter");
+    assert_eq!(
+        touched.files["b.rs"].hash, b.hash,
+        "mtime is only a pre-filter"
+    );
     assert_eq!(touched.revision, cold.revision);
     assert_eq!(source.content_reads(), reads + 1);
 
@@ -240,12 +257,26 @@ fn assert_plain_and_git_dirs_match() {
     let repo_snapshot = repo_source.snapshot().unwrap();
     assert_eq!(repo_snapshot.revision, plain_snapshot.revision);
     assert_eq!(repo_snapshot.revision.len(), 64);
-    assert_ne!(repo_snapshot.revision, "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
+    assert_ne!(
+        repo_snapshot.revision,
+        "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+    );
     assert_eq!(repo_snapshot.dirty, plain_snapshot.dirty);
     assert_eq!(repo_snapshot.recent, plain_snapshot.recent);
-    assert_eq!(repo_snapshot.files["a.rs"].hash, plain_snapshot.files["a.rs"].hash);
-    assert_eq!(repo_snapshot.files["b.rs"].hash, plain_snapshot.files["b.rs"].hash);
-    assert!(!repo_snapshot.files.keys().any(|path| path.starts_with(".git")));
+    assert_eq!(
+        repo_snapshot.files["a.rs"].hash,
+        plain_snapshot.files["a.rs"].hash
+    );
+    assert_eq!(
+        repo_snapshot.files["b.rs"].hash,
+        plain_snapshot.files["b.rs"].hash
+    );
+    assert!(
+        !repo_snapshot
+            .files
+            .keys()
+            .any(|path| path.starts_with(".git"))
+    );
     assert_eq!(plain_source.content_reads(), 2);
     assert_eq!(repo_source.content_reads(), 2);
 }
@@ -292,8 +323,7 @@ fn git_directory_matches_plain_folder_and_never_spawns() {
     let stdout = String::from_utf8_lossy(&child.stdout);
     let stderr = String::from_utf8_lossy(&child.stderr);
     assert!(
-        child.status.success()
-            && (stdout.contains("1 passed") || stderr.contains("1 passed")),
+        child.status.success() && (stdout.contains("1 passed") || stderr.contains("1 passed")),
         "child failed\n{stdout}{stderr}"
     );
     assert_eq!(fs::read(&log).unwrap(), b"");

@@ -2,9 +2,9 @@
 //! Budget-aware pagination around the model's whole-record renderer.
 //! Implements SPEC-MAP-MODE section 3 without skipping budget-cut records.
 //! Used by library and CLI; source records are shortened only at line boundaries.
-use std::fmt::Write as _;
 use crate::{Answer, AnswerBudget, Error, Format, Request, Result, Verb};
 use dctx_map_model::adapters::{RenderError, render as model_render};
+use std::fmt::Write as _;
 
 /// Renders complete records and an exact continuation in the selected format.
 ///
@@ -69,7 +69,8 @@ fn render(
 ) -> Result<String> {
     let mut page = page.clone();
     if let Some(place) = place {
-        write!(page.next," --place {}", crate::domain::quote(place)).expect("writing to a String cannot fail");
+        write!(page.next, " --place {}", crate::domain::quote(place))
+            .expect("writing to a String cannot fail");
     }
     if format == Format::Json && !page.next.ends_with(" --json") {
         page.next.push_str(" --json");
@@ -123,7 +124,10 @@ fn explain_page(
         }
     }
 }
-#[allow(clippy::cast_possible_truncation, reason = "Head, tail and maximum are derived from a page ceiling of 120 or 400 lines, so they fit u32.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "Head, tail and maximum are derived from a page ceiling of 120 or 400 lines, so they fit u32."
+)]
 #[allow(clippy::expect_used, reason = "writing to a String cannot fail")]
 fn read_page(
     page: &mut Answer,
@@ -162,7 +166,8 @@ fn read_page(
             if !body.ends_with('\n') {
                 body.push('\n');
             }
-            writeln!(body, "… {omitted} lines ({})", page.next).expect("writing to a String cannot fail");
+            writeln!(body, "… {omitted} lines ({})", page.next)
+                .expect("writing to a String cannot fail");
             if tail > 0 {
                 body.push_str(&lines[lines.len() - tail..].concat());
             }

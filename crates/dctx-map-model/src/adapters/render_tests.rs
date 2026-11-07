@@ -4,7 +4,7 @@
 //! JSON oracles live in `fixtures/wire-json/` for the future wire adapter.
 //! Uses pure fixture records; executed as the render module's unit tests.
 use super::*;
-use crate::{SummarySource, Relation, EdgeKind, Confidence};
+use crate::{Confidence, EdgeKind, Relation, SummarySource};
 
 fn fixture(name: &str) -> &'static str {
     match name {

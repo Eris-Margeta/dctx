@@ -6,7 +6,7 @@
 
 use super::cursor::{read_array, read_u16, read_u32, read_u64};
 use super::error::SegmentError;
-use super::limits::{offset_of, DecoderLimits};
+use super::limits::{DecoderLimits, offset_of};
 
 pub(crate) const MAGIC: [u8; 8] = *b"DCTXSEG\0";
 pub(crate) const MAJOR: u16 = 1;
@@ -46,7 +46,10 @@ pub(crate) fn parse(bytes: &[u8], limits: &DecoderLimits) -> Result<Header, Segm
         return Err(SegmentError::Limit("segment"));
     }
     if len < file_len {
-        return Err(SegmentError::Truncated { at: len, need: file_len });
+        return Err(SegmentError::Truncated {
+            at: len,
+            need: file_len,
+        });
     }
     if len > file_len {
         return Err(SegmentError::TrailingBytes);
@@ -109,10 +112,16 @@ mod tests {
         );
         let mut bad_magic = header(1, 80, 0);
         bad_magic[0] = b'X';
-        assert_eq!(parse(&bad_magic, &limits).unwrap_err(), SegmentError::BadMagic);
+        assert_eq!(
+            parse(&bad_magic, &limits).unwrap_err(),
+            SegmentError::BadMagic
+        );
         let mut long = header(1, 80, 0);
         long.push(0);
-        assert_eq!(parse(&long, &limits).unwrap_err(), SegmentError::TrailingBytes);
+        assert_eq!(
+            parse(&long, &limits).unwrap_err(),
+            SegmentError::TrailingBytes
+        );
         let mut short = header(1, 100, 0);
         short.truncate(80);
         assert_eq!(

@@ -43,13 +43,19 @@ pub struct LockToken(u64);
 
 impl LockToken {
     /// Wraps an adapter-chosen token value.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn new(value: u64) -> Self {
         Self(value)
     }
 
     /// The adapter's token value.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn value(self) -> u64 {
         self.0
     }
@@ -68,10 +74,18 @@ pub struct InstallKey {
 
 impl InstallKey {
     /// Validated relative path components; never string-concatenated from untrusted input.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn components(&self) -> [String; 4] {
         let (publisher, name) = self.id.components();
-        [publisher.to_owned(), name.to_owned(), self.version.as_str().to_owned(), self.digest.to_string()]
+        [
+            publisher.to_owned(),
+            name.to_owned(),
+            self.version.as_str().to_owned(),
+            self.digest.to_string(),
+        ]
     }
 }
 
@@ -94,7 +108,13 @@ pub trait Store {
     /// Appends bytes to a staged regular file (owner-only permissions, same filesystem as installs).
     /// # Errors
     /// Returns a lock/storage error if safe staging or append fails.
-    fn stage_append(&self, token: LockToken, key: &InstallKey, file: &SafeFileName, bytes: &[u8]) -> Result<(), DistributionError>;
+    fn stage_append(
+        &self,
+        token: LockToken,
+        key: &InstallKey,
+        file: &SafeFileName,
+        bytes: &[u8],
+    ) -> Result<(), DistributionError>;
     /// Atomically publishes the staging directory as an immutable version directory.
     /// # Errors
     /// Returns a lock/storage error if the staging directory cannot be atomically published.
@@ -114,11 +134,16 @@ pub trait Store {
     /// Reads one published file for reverification.
     /// # Errors
     /// Returns a storage error if the published file cannot be safely read.
-    fn read_installed(&self, key: &InstallKey, file: &SafeFileName) -> Result<Vec<u8>, DistributionError>;
+    fn read_installed(
+        &self,
+        key: &InstallKey,
+        file: &SafeFileName,
+    ) -> Result<Vec<u8>, DistributionError>;
     /// Unlinks a published version directory.
     /// # Errors
     /// Returns a lock/storage error if the immutable version directory cannot be safely removed.
-    fn remove_installed(&self, token: LockToken, key: &InstallKey) -> Result<(), DistributionError>;
+    fn remove_installed(&self, token: LockToken, key: &InstallKey)
+    -> Result<(), DistributionError>;
 }
 
 /// Wall clock in Unix seconds, injected for deterministic freshness tests.

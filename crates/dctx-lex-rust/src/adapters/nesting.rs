@@ -123,7 +123,10 @@ mod tests {
     fn chains_and_nesting_accumulate() {
         assert!(!cost_ok(&"-".repeat(40), 16));
         assert!(!cost_ok(&"a.b()".repeat(20), 16));
-        assert!(!cost_ok(&format!("{}x{}", "(".repeat(20), ")".repeat(20)), 16));
+        assert!(!cost_ok(
+            &format!("{}x{}", "(".repeat(20), ")".repeat(20)),
+            16
+        ));
         assert!(!cost_ok(&"|a,| ".repeat(20), 16));
         assert!(!cost_ok(&format!("Vec<{}T>", "A, Vec<".repeat(10)), 16));
         assert!(!cost_ok(&"if a {} else ".repeat(10), 16));
@@ -134,6 +137,9 @@ mod tests {
     fn refusal_reports_the_line() {
         let source = format!("fn a() {{}}\n{}", "-".repeat(40));
         let stream = TokenStream::from_str(&source).unwrap_or_default();
-        assert_eq!(check(&stream, 16), Err(Refusal::TooDeep { line: 2, limit: 16 }));
+        assert_eq!(
+            check(&stream, 16),
+            Err(Refusal::TooDeep { line: 2, limit: 16 })
+        );
     }
 }

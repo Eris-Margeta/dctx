@@ -4,12 +4,12 @@
 //! Uses injected nodes and templates; SVG and pattern decisions have positive controls.
 
 use dctx_core::FileHandlingDecision;
-use dctx_core::diff::{ChangeType, DiffEntry, DiffReport};
 use dctx_core::datatypes::NodeType;
+use dctx_core::diff::{ChangeType, DiffEntry, DiffReport};
 use dctx_core::version::Version;
 use dctx_template::{
-    compile, render_legacy_diff, render_legacy_snapshot, render_markers, render_plan,
-    AnswerRecord, GrantRule, HostCeiling, MarkerNode, Template,
+    AnswerRecord, GrantRule, HostCeiling, MarkerNode, Template, compile, render_legacy_diff,
+    render_legacy_snapshot, render_markers, render_plan,
 };
 
 const FIXTURE: &str = r#"
@@ -58,8 +58,12 @@ fn marker_fixture_matches_the_hand_computed_bytes() {
 #[test]
 fn legacy_header_wraps_custom_template_and_version_without_changing_body() {
     let version = Version { major: 2, minor: 5 };
-    let output = render_legacy_snapshot(&fixture_template(), &fixture_tree(), &version, false, true);
-    assert_eq!(output, format!("[DCTX_LLM_CONTEXT_SNAPSHOT_V2.5]\n{EXPECTED}"));
+    let output =
+        render_legacy_snapshot(&fixture_template(), &fixture_tree(), &version, false, true);
+    assert_eq!(
+        output,
+        format!("[DCTX_LLM_CONTEXT_SNAPSHOT_V2.5]\n{EXPECTED}")
+    );
 }
 
 #[test]
@@ -86,16 +90,33 @@ fn svg_setting_is_explicit_and_cannot_enable_pattern_omitted_content() {
 #[test]
 fn diff_ignores_removed_and_ignored_bytes_but_preserves_full_tree_ids() {
     let mut root = MarkerNode::dir("", 1);
-    root.children.push(MarkerNode::file("removed", b"REMOVED", 2));
+    root.children
+        .push(MarkerNode::file("removed", b"REMOVED", 2));
     let mut hidden = MarkerNode::file("ignored", b"PRIVATE", 2);
     hidden.is_ignored = true;
     root.children.push(hidden);
-    root.children.push(MarkerNode::file("included", b"PUBLIC", 2));
+    root.children
+        .push(MarkerNode::file("included", b"PUBLIC", 2));
     let mut diff = DiffReport::default();
-    for (path, change_type) in [("included", ChangeType::Added), ("ignored", ChangeType::Modified), ("removed", ChangeType::Removed)] {
-        diff.entries.push(DiffEntry { relative_path: path.to_string(), change_type, node_type: NodeType::File });
+    for (path, change_type) in [
+        ("included", ChangeType::Added),
+        ("ignored", ChangeType::Modified),
+        ("removed", ChangeType::Removed),
+    ] {
+        diff.entries.push(DiffEntry {
+            relative_path: path.to_string(),
+            change_type,
+            node_type: NodeType::File,
+        });
     }
-    let output = render_legacy_diff(&fixture_template(), &root, &diff, &Version::new_v1(), &Version { major: 1, minor: 1 }, true);
+    let output = render_legacy_diff(
+        &fixture_template(),
+        &root,
+        &diff,
+        &Version::new_v1(),
+        &Version { major: 1, minor: 1 },
+        true,
+    );
     assert!(output.contains("[ADDED] included\n[MODIFIED] ignored\n[REMOVED] removed\n"));
     assert!(output.contains("<FILE ID=\"F003\">\nPUBLIC\n</FILE ID=\"F003\">\n"));
     assert!(!output.contains("PRIVATE"));
@@ -107,11 +128,28 @@ fn diff_ignores_removed_and_ignored_bytes_but_preserves_full_tree_ids() {
 #[test]
 fn plan_render_matches_the_marker_fixture_for_a_flat_root() {
     let mut host = HostCeiling::base();
-    host.grants.push(GrantRule { pattern: "**".to_string(), decision: FileHandlingDecision::Include });
+    host.grants.push(GrantRule {
+        pattern: "**".to_string(),
+        decision: FileHandlingDecision::Include,
+    });
     let plan = compile(FIXTURE, &host).expect("plan");
     let records = vec![
-        AnswerRecord { path: String::new(), is_dir: true, depth: 0, size: 0, modified: 9, content: Vec::new() },
-        AnswerRecord { path: "a.txt".to_string(), is_dir: false, depth: 1, size: 2, modified: 5, content: b"hi".to_vec() },
+        AnswerRecord {
+            path: String::new(),
+            is_dir: true,
+            depth: 0,
+            size: 0,
+            modified: 9,
+            content: Vec::new(),
+        },
+        AnswerRecord {
+            path: "a.txt".to_string(),
+            is_dir: false,
+            depth: 1,
+            size: 2,
+            modified: 5,
+            content: b"hi".to_vec(),
+        },
     ];
     let output = render_plan(&plan, "pack", &records, "demo", &host).expect("render");
     assert_eq!(output, EXPECTED);
@@ -147,15 +185,26 @@ fn marker_tree_keeps_caller_child_order() {
 
 #[test]
 fn default_template_resolves_markers_and_renders_the_project() {
-    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/templates/default.dctx_template");
+    let path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/templates/default.dctx_template"
+    );
     let raw = std::fs::read_to_string(path).expect("default template");
     let mut template = Template::parse(&raw);
-    let instructions = template.variables.get("instructions_text").expect("instructions").clone();
+    let instructions = template
+        .variables
+        .get("instructions_text")
+        .expect("instructions")
+        .clone();
     assert!(instructions.contains("<DIRECTORY_TREE>"));
     assert!(instructions.contains("\\\""));
     let compiled = template.compile("default").expect("compile");
     assert!(compiled.partial_file_block.contains("<FILE_CONTENT_START"));
-    assert!(!compiled.partial_file_block.contains("{{start_marker_open}}"));
+    assert!(
+        !compiled
+            .partial_file_block
+            .contains("{{start_marker_open}}")
+    );
     template.insert_variable("project", "demo");
     let mut root = MarkerNode::dir("", 1);
     root.children.push(MarkerNode::file("a.txt", b"hello", 2));

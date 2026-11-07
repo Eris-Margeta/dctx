@@ -68,7 +68,10 @@ pub(super) fn parse_changed(
         Ok(parsed)
     })
 }
-#[allow(clippy::cast_possible_truncation, reason = "The line count is explicitly clamped to 1..=u32::MAX before conversion.")]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "The line count is explicitly clamped to 1..=u32::MAX before conversion."
+)]
 fn parse(file: &SourceFile, path: &str, started: Instant, deadline: Option<Duration>) -> Parsed {
     if deadline.is_some_and(|limit| started.elapsed() >= limit) {
         return Err("refresh deadline exceeded".into());

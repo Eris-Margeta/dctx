@@ -16,18 +16,28 @@ const SENTINEL: &str = "SENTINEL_GO3_SOURCE";
 fn go1_compound_type_dependencies() {
     let source = "package p; type Key int; type Value int; var M map[Key]Value; var G Box[Value]; var V Value\n";
     let facts = extract(PATH, source);
-    assert_eq!(facts.completion, Completion::Complete, "{:?}", facts.diagnostics);
+    assert_eq!(
+        facts.completion,
+        Completion::Complete,
+        "{:?}",
+        facts.diagnostics
+    );
     // Direct name, the control for the map-key and type-argument walks.
     assert_eq!(uses(&facts, "V"), ["Value"]);
     assert_eq!(uses(&facts, "M"), ["Key", "Value"]);
     assert_eq!(uses(&facts, "G"), ["Box", "Value"]);
     for scope in ["M", "G", "V"] {
         let id = node_id(&facts, scope);
-        assert!(facts.references.iter().filter(|reference| reference.fact.scope == scope).all(
-            |reference| {
-                reference.fact.src.as_str() == id && reference.precision == Precision::Structural
-            }
-        ));
+        assert!(
+            facts
+                .references
+                .iter()
+                .filter(|reference| reference.fact.scope == scope)
+                .all(|reference| {
+                    reference.fact.src.as_str() == id
+                        && reference.precision == Precision::Structural
+                })
+        );
     }
 }
 
@@ -52,13 +62,22 @@ func F() { Right() }
 func Δ() { Δ() }
 ";
     let facts = extract(PATH, source);
-    assert_eq!(facts.completion, Completion::Complete, "{:?}", facts.diagnostics);
+    assert_eq!(
+        facts.completion,
+        Completion::Complete,
+        "{:?}",
+        facts.diagnostics
+    );
     let ids = node_ids(&facts);
     assert_eq!(ids.len(), facts.nodes.len(), "duplicate ids in {ids:?}");
     assert_eq!(facts.edges.len(), facts.nodes.len() - 1);
 
     let module = "m:p.go";
-    let destinations: BTreeSet<_> = facts.edges.iter().map(|edge| edge.fact.dst.as_str()).collect();
+    let destinations: BTreeSet<_> = facts
+        .edges
+        .iter()
+        .map(|edge| edge.fact.dst.as_str())
+        .collect();
     let mut expected = ids.clone();
     expected.remove(module);
     assert_eq!(destinations, expected);
@@ -73,7 +92,15 @@ func Δ() { Δ() }
     }
     assert_contains(&facts, "s:p.go#Holder", "s:p.go#Holder::N");
     assert_ne!(node_id(&facts, "A::M"), node_id(&facts, "B::M"));
-    assert!(facts.nodes.iter().find(|node| node.fact.name == "Δ").unwrap().fact.public);
+    assert!(
+        facts
+            .nodes
+            .iter()
+            .find(|node| node.fact.name == "Δ")
+            .unwrap()
+            .fact
+            .public
+    );
     assert!(facts.nodes.iter().all(|node| node.fact.path == PATH));
 
     assert_eq!(ref_src(&facts, EdgeKind::Calls, "Keep"), "s:p.go#A::M");
@@ -81,7 +108,10 @@ func Δ() { Δ() }
     assert_eq!(ref_src(&facts, EdgeKind::Calls, "Left"), "s:p.go#F~1");
     assert_eq!(ref_src(&facts, EdgeKind::Calls, "Right"), "s:p.go#F~2");
     assert_eq!(ref_src(&facts, EdgeKind::Calls, "Δ"), "s:p.go#Δ");
-    assert_eq!(ref_src(&facts, EdgeKind::UsesType, "Value"), "s:p.go#Holder::N");
+    assert_eq!(
+        ref_src(&facts, EdgeKind::UsesType, "Value"),
+        "s:p.go#Holder::N"
+    );
     assert!(facts.references.iter().all(|reference| {
         ids.contains(reference.fact.src.as_str()) && reference.fact.owner_path == PATH
     }));
@@ -117,7 +147,12 @@ fn assert_import_width() {
     let source = format!("{head}{body}{tail}");
     assert_eq!(source.len(), budget);
     let facts = extract_with(&source, budget, 8, 32);
-    assert_eq!(facts.completion, Completion::Complete, "{:?}", facts.diagnostics);
+    assert_eq!(
+        facts.completion,
+        Completion::Complete,
+        "{:?}",
+        facts.diagnostics
+    );
     assert_eq!(import_names(&facts), [body.as_str()]);
     assert!(facts.nodes.iter().any(|node| node.fact.name == "F"));
     let refused = extract_err(&source, budget - 1, 8, 32);
@@ -127,7 +162,10 @@ fn assert_import_width() {
             bytes: budget,
             limit: budget - 1,
         },
-        &format!("file of {budget} bytes exceeds the {}-byte limit", budget - 1),
+        &format!(
+            "file of {budget} bytes exceeds the {}-byte limit",
+            budget - 1
+        ),
     );
 }
 
@@ -139,7 +177,12 @@ fn assert_declaration_width() {
     let source = format!("{head}{name}{tail}");
     assert_eq!(source.len(), budget);
     let facts = extract_with(&source, budget, 8, 32);
-    assert_eq!(facts.completion, Completion::Complete, "{:?}", facts.diagnostics);
+    assert_eq!(
+        facts.completion,
+        Completion::Complete,
+        "{:?}",
+        facts.diagnostics
+    );
     assert_eq!(node_id(&facts, &name), format!("s:p.go#{name}"));
     let refused = extract_err(&source, budget - 1, 8, 32);
     assert_exact(
@@ -148,7 +191,10 @@ fn assert_declaration_width() {
             bytes: budget,
             limit: budget - 1,
         },
-        &format!("file of {budget} bytes exceeds the {}-byte limit", budget - 1),
+        &format!(
+            "file of {budget} bytes exceeds the {}-byte limit",
+            budget - 1
+        ),
     );
 }
 
@@ -156,7 +202,12 @@ fn assert_fact_width() {
     // Module, package, two imports and one function fill five facts.
     let source = format!("package p\nimport \"a\"\nimport \"b\"\nfunc F() {{}}\n// {SENTINEL}\n");
     let facts = extract_with(&source, 1024, 8, 5);
-    assert_eq!(facts.completion, Completion::Complete, "{:?}", facts.diagnostics);
+    assert_eq!(
+        facts.completion,
+        Completion::Complete,
+        "{:?}",
+        facts.diagnostics
+    );
     assert_eq!(import_names(&facts), ["a", "b"]);
     assert!(facts.nodes.iter().any(|node| node.fact.name == "F"));
     let refused = extract_err(&source, 1024, 8, 4);
@@ -171,7 +222,12 @@ fn assert_depth_limit() {
     let shallow = format!("package p\nfunc f() {{}} // {SENTINEL}\n");
     let deep = format!("package p\nfunc f() {{{{{{}}}}}} // {SENTINEL}\n");
     let facts = extract_with(&shallow, 1024, 2, 32);
-    assert_eq!(facts.completion, Completion::Complete, "{:?}", facts.diagnostics);
+    assert_eq!(
+        facts.completion,
+        Completion::Complete,
+        "{:?}",
+        facts.diagnostics
+    );
     assert!(facts.nodes.iter().any(|node| node.fact.name == "f"));
     let refused = extract_err(&deep, 1024, 2, 32);
     assert_exact(
@@ -194,12 +250,25 @@ fn assert_malformed_brackets() {
     assert_eq!(facts.diagnostics.len(), LexedFile::MAX_DIAGNOSTICS);
     assert_eq!(facts.completion, Completion::Partial);
     assert!(facts.nodes.iter().any(|node| node.fact.name == "Kept"));
-    assert!(facts.diagnostics.windows(2).all(|pair| pair[0].byte <= pair[1].byte));
-    assert!(facts.diagnostics.iter().any(|diagnostic| diagnostic.reason == DiagnosticReason::UnbalancedBracket));
+    assert!(
+        facts
+            .diagnostics
+            .windows(2)
+            .all(|pair| pair[0].byte <= pair[1].byte)
+    );
+    assert!(
+        facts
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.reason == DiagnosticReason::UnbalancedBracket)
+    );
     assert!(!format!("{:?}", facts.diagnostics).contains(SENTINEL));
 }
 
-#[allow(clippy::needless_pass_by_value, reason = "This test helper owns the two throwaway typed errors for a single equality and redaction check.")]
+#[allow(
+    clippy::needless_pass_by_value,
+    reason = "This test helper owns the two throwaway typed errors for a single equality and redaction check."
+)]
 fn assert_exact(error: LexError, expected: LexError, display: &str) {
     assert_eq!(error, expected);
     assert_eq!(error.to_string(), display);
@@ -226,41 +295,83 @@ fn extract_err(source: &str, max_bytes: usize, max_depth: u32, max_facts: usize)
 }
 
 fn lexer(max_bytes: usize, max_depth: u32, max_facts: usize) -> GoLexer {
-    GoLexer::new(Limits { max_bytes, max_depth, max_facts })
+    GoLexer::new(Limits {
+        max_bytes,
+        max_depth,
+        max_facts,
+    })
 }
 
 fn uses<'a>(facts: &'a LexedFile, scope: &str) -> Vec<&'a str> {
-    facts.references.iter().filter(|reference| reference.fact.kind == EdgeKind::UsesType && reference.fact.scope == scope)
-        .map(|reference| reference.fact.name.as_str()).collect()
+    facts
+        .references
+        .iter()
+        .filter(|reference| {
+            reference.fact.kind == EdgeKind::UsesType && reference.fact.scope == scope
+        })
+        .map(|reference| reference.fact.name.as_str())
+        .collect()
 }
 
 fn node_id<'a>(facts: &'a LexedFile, name: &str) -> &'a str {
-    facts.nodes.iter().find(|node| node.fact.name == name).unwrap_or_else(|| panic!("missing {name}")).fact.id.as_str()
+    facts
+        .nodes
+        .iter()
+        .find(|node| node.fact.name == name)
+        .unwrap_or_else(|| panic!("missing {name}"))
+        .fact
+        .id
+        .as_str()
 }
 
 fn node_ids(facts: &LexedFile) -> BTreeSet<&str> {
-    facts.nodes.iter().map(|node| node.fact.id.as_str()).collect()
+    facts
+        .nodes
+        .iter()
+        .map(|node| node.fact.id.as_str())
+        .collect()
 }
 
 fn assert_contains(facts: &LexedFile, parent: &str, child: &str) {
     assert!(
-        facts.edges.iter().any(|edge| edge.fact.src.as_str() == parent && edge.fact.dst.as_str() == child),
+        facts
+            .edges
+            .iter()
+            .any(|edge| edge.fact.src.as_str() == parent && edge.fact.dst.as_str() == child),
         "missing {parent} -> {child}"
     );
 }
 
 fn ref_src<'a>(facts: &'a LexedFile, kind: EdgeKind, name: &str) -> &'a str {
-    facts.references.iter().find(|reference| reference.fact.kind == kind && reference.fact.name == name)
-        .unwrap_or_else(|| panic!("missing {kind:?} {name}")).fact.src.as_str()
+    facts
+        .references
+        .iter()
+        .find(|reference| reference.fact.kind == kind && reference.fact.name == name)
+        .unwrap_or_else(|| panic!("missing {kind:?} {name}"))
+        .fact
+        .src
+        .as_str()
 }
 
 fn endpoints(facts: &LexedFile) -> (Vec<(String, String)>, Vec<(String, String)>) {
-    let edges = facts.edges.iter().map(|edge| (edge.fact.src.to_string(), edge.fact.dst.to_string())).collect();
-    let references = facts.references.iter().map(|reference| (reference.fact.src.to_string(), reference.fact.name.clone())).collect();
+    let edges = facts
+        .edges
+        .iter()
+        .map(|edge| (edge.fact.src.to_string(), edge.fact.dst.to_string()))
+        .collect();
+    let references = facts
+        .references
+        .iter()
+        .map(|reference| (reference.fact.src.to_string(), reference.fact.name.clone()))
+        .collect();
     (edges, references)
 }
 
 fn import_names(facts: &LexedFile) -> Vec<&str> {
-    facts.references.iter().filter(|reference| reference.fact.kind == EdgeKind::Imports)
-        .map(|reference| reference.fact.name.as_str()).collect()
+    facts
+        .references
+        .iter()
+        .filter(|reference| reference.fact.kind == EdgeKind::Imports)
+        .map(|reference| reference.fact.name.as_str())
+        .collect()
 }

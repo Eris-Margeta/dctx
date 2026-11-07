@@ -56,7 +56,7 @@ def footer() -> str:
    </div>
    {col("f-product", "Product", [("/docs/", "Documentation"), ("/cli/", "CLI reference"), ("/examples/", "Examples"), ("/templates/", "Templates"), ("/playground/", "Playground"), ("/languages/", "Languages"), ("/benchmarks/", "Benchmarks")])}
    {col("f-res", "Resources", [("/docs/spec/", "Specification"), ("/changelog/", "Changelog"), ("/news/", "News"), ("/news/feed.xml", "News feed (Atom)"), ("/changelog/feed.xml", "Release feed (Atom)"), ("/llms.txt", "llms.txt"), ("/llms-full.txt", "llms-full.txt"), ("/search/", "Search")])}
-   {col("f-proj", "Project", [(REPO, "Source code"), (REPO + "/issues", "Issues"), ("/security/", "Security policy"), ("/.well-known/security.txt", "security.txt"), ("/maintenance/", "Maintenance"), ("/trademark/", "Trademark"), (BLOB + "LICENSE", "License (Apache-2.0)"), (f"mailto:{CONTACT}?subject=dctx", "Contact")])}
+   {col("f-proj", "Project", [(REPO, "Source code"), (REPO + "/issues", "Issues"), ("/security/", "Security policy"), ("/.well-known/security.txt", "security.txt"), ("https://github.com/sponsors/Eris-Margeta", "Sponsor"), ("/maintenance/", "Maintenance"), ("/trademark/", "Trademark"), (BLOB + "LICENSE", "License (Apache-2.0)"), (f"mailto:{CONTACT}?subject=dctx", "Contact")])}
   </div>
   <div class="ftr-bottom">
    <div>
@@ -76,15 +76,15 @@ def og_tags(route: Route, assets) -> tuple[str, str]:
     """OG image meta (GIF first on the home page, then dark, then light) and the twitter image."""
     slug = route.slug if route.kind != "error" else "home"
     alt = f"dctx: {route.title}" if route.kind != "home" else "dctx: a repository flows through ignore rules into a graph, then into one bounded, stable page."
-    images = []
-    if route.kind == "home":
-        images.append(("/assets/og/home.gif", "image/gif"))
-    images += [(f"/assets/og/{slug}.dark.png", "image/png"), (f"/assets/og/{slug}.light.png", "image/png")]
+    if route.kind == "home":  # owner 07.11: the classic card only, so every platform picks it
+        images = [("/assets/og/home.png", "image/png")]
+    else:
+        images = [(f"/assets/og/{slug}.dark.png", "image/png"), (f"/assets/og/{slug}.light.png", "image/png")]
     tags = "".join(
         f'<meta property="og:image" content="{ORIGIN}{u}">\n<meta property="og:image:type" content="{t}">\n'
         f'<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n'
         f'<meta property="og:image:alt" content="{e(alt)}">\n' for u, t in images)
-    twitter = (f'<meta name="twitter:image" content="{ORIGIN}/assets/og/{slug}.dark.png">\n'
+    twitter = (f'<meta name="twitter:image" content="{ORIGIN}{images[0][0]}">\n'
                f'<meta name="twitter:image:alt" content="{e(alt)}">\n')
     for url, _ in images:
         assets.require(url)

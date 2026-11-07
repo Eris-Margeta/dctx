@@ -3,7 +3,9 @@
 //! Implements SPEC-MAP-MODE 5.3 for Java calls, implements and uses-type.
 //! Uses declaration scopes from the walker; bodies stay inside their owner.
 //! Field reads and `::` method references are left unresolved on purpose.
-use super::{is_modifier_word, is_non_callee, is_primitive, Prefix, Scope, ScopeKind, SymbolDraft, Walker};
+use super::{
+    Prefix, Scope, ScopeKind, SymbolDraft, Walker, is_modifier_word, is_non_callee, is_primitive,
+};
 use crate::domain::Precision;
 use dctx_map_model::{EdgeKind, NodeKind, SymbolKind};
 
@@ -20,7 +22,12 @@ impl Walker<'_> {
         self.leave();
     }
 
-    pub(crate) fn scan_initializer(&mut self, mut index: usize, end: usize, scope: &Scope) -> usize {
+    pub(crate) fn scan_initializer(
+        &mut self,
+        mut index: usize,
+        end: usize,
+        scope: &Scope,
+    ) -> usize {
         while index < end && self.ok() {
             if self.is_punct(index, ",") || self.is_punct(index, ";") {
                 return index;
@@ -175,7 +182,8 @@ impl Walker<'_> {
             return brace + 1;
         };
         let local = format!("new {}", found.qualified);
-        let sig_end = paren_close.map_or_else(|| self.start_byte(brace), |token| self.end_byte(token));
+        let sig_end =
+            paren_close.map_or_else(|| self.start_byte(brace), |token| self.end_byte(token));
         if let Some(child) = self.emit(
             SymbolDraft {
                 node_kind: NodeKind::Symbol,
@@ -263,7 +271,13 @@ impl Walker<'_> {
         self.type_uses_skip(from, to, scope, &[]);
     }
 
-    pub(crate) fn type_uses_skip(&mut self, from: usize, to: usize, scope: &Scope, extra: &[String]) {
+    pub(crate) fn type_uses_skip(
+        &mut self,
+        from: usize,
+        to: usize,
+        scope: &Scope,
+        extra: &[String],
+    ) {
         let mut cursor = from;
         let mut part = None;
         while cursor < to && self.ok() {
@@ -393,8 +407,16 @@ fn skips_type_word(word: &str) -> bool {
         || is_non_callee(word)
         || matches!(
             word,
-            "var" | "true" | "false" | "null" | "this" | "super" | "extends" | "implements"
-                | "permits" | "throws"
+            "var"
+                | "true"
+                | "false"
+                | "null"
+                | "this"
+                | "super"
+                | "extends"
+                | "implements"
+                | "permits"
+                | "throws"
         )
 }
 
@@ -416,8 +438,23 @@ mod tests {
             .map(|reference| reference.fact.name.as_str())
             .collect();
         assert_eq!(calls, ["this", "super.run", "a.b"]);
-        assert!(facts.references.iter().all(|reference| reference.precision == Precision::Structural));
-        assert!(facts.references.iter().all(|reference| reference.fact.name != "c.d"));
-        assert!(facts.references.iter().all(|reference| !reference.fact.name.contains("::")));
+        assert!(
+            facts
+                .references
+                .iter()
+                .all(|reference| reference.precision == Precision::Structural)
+        );
+        assert!(
+            facts
+                .references
+                .iter()
+                .all(|reference| reference.fact.name != "c.d")
+        );
+        assert!(
+            facts
+                .references
+                .iter()
+                .all(|reference| !reference.fact.name.contains("::"))
+        );
     }
 }

@@ -165,15 +165,21 @@ pub struct SegmentInfo {
 /// Refuses short/invalid segment framing, unsupported versions, hash length overflow, or digest mismatches.
 pub fn validate_segment(bytes: &[u8]) -> Result<SegmentInfo, DctxError> {
     if bytes.len() < MIN_SEGMENT {
-        return Err(DctxError::CorruptIndex { reason: "segment too short" });
+        return Err(DctxError::CorruptIndex {
+            reason: "segment too short",
+        });
     }
     if bytes.get(..8) != Some(MAGIC.as_slice()) {
-        return Err(DctxError::CorruptIndex { reason: "segment magic" });
+        return Err(DctxError::CorruptIndex {
+            reason: "segment magic",
+        });
     }
     let version_bytes: [u8; 4] = bytes
         .get(8..12)
         .and_then(|slice| slice.try_into().ok())
-        .ok_or(DctxError::CorruptIndex { reason: "segment version" })?;
+        .ok_or(DctxError::CorruptIndex {
+            reason: "segment version",
+        })?;
     let version = u32::from_le_bytes(version_bytes);
     if version != 1 {
         return Err(DctxError::UnsupportedVersion { found: version });
@@ -185,10 +191,15 @@ pub fn validate_segment(bytes: &[u8]) -> Result<SegmentInfo, DctxError> {
         limit: u64::MAX,
     })?;
     if sum != digest.as_bytes().as_slice() {
-        return Err(DctxError::CorruptIndex { reason: "segment digest" });
+        return Err(DctxError::CorruptIndex {
+            reason: "segment digest",
+        });
     }
     let payload_len = u64::try_from(split - 12).unwrap_or(u64::MAX);
-    Ok(SegmentInfo { version, payload_len })
+    Ok(SegmentInfo {
+        version,
+        payload_len,
+    })
 }
 
 /// Builds a version-1 segment around `payload`.
@@ -231,10 +242,15 @@ mod tests {
         sealed[last] ^= 0xff;
         assert_eq!(
             validate_segment(&sealed).expect_err("corrupt"),
-            DctxError::CorruptIndex { reason: "segment digest" }
+            DctxError::CorruptIndex {
+                reason: "segment digest"
+            }
         );
         let mut bad = seal_segment(b"payload").expect("seal");
         bad[8] = 9;
-        assert!(matches!(validate_segment(&bad), Err(DctxError::UnsupportedVersion { found: 9 })));
+        assert!(matches!(
+            validate_segment(&bad),
+            Err(DctxError::UnsupportedVersion { found: 9 })
+        ));
     }
 }

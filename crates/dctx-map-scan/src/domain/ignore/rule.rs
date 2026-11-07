@@ -43,7 +43,10 @@ impl Default for IgnoreRule {
 }
 impl IgnoreRule {
     /// Creates an empty, invalid rule.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn new() -> Self {
         Self::default()
     }

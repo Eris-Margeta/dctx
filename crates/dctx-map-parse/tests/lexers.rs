@@ -23,7 +23,13 @@ fn references(facts: &ParsedFile) -> Vec<(EdgeKind, &str, Option<&str>)> {
     facts
         .references
         .iter()
-        .map(|reference| (reference.kind, reference.name.as_str(), reference.alias.as_deref()))
+        .map(|reference| {
+            (
+                reference.kind,
+                reference.name.as_str(),
+                reference.alias.as_deref(),
+            )
+        })
         .collect()
 }
 
@@ -32,13 +38,21 @@ fn assert_structural(facts: &ParsedFile, parser: &str) {
     assert_eq!(facts.precision.completion().as_str(), "complete");
     assert_eq!(facts.precision.parser().as_str(), parser);
     assert_eq!(facts.edges.len(), facts.nodes.len() - 1);
-    assert!(facts.edges.iter().all(|edge| edge.kind == EdgeKind::Contains));
+    assert!(
+        facts
+            .edges
+            .iter()
+            .all(|edge| edge.kind == EdgeKind::Contains)
+    );
 }
 
 /// Same checks as `dctx_map_store` `validate`, plus spans inside the file.
 /// Place and Package nodes are inserted again by the query indexer, so a file
 /// that already contains one fails the unique-id rule.
-#[allow(clippy::naive_bytecount, reason = "Standard iterator newline counts keep fixture and bounded 8 MiB corpus checks dependency-free; this is test validation rather than a parser hot path.")]
+#[allow(
+    clippy::naive_bytecount,
+    reason = "Standard iterator newline counts keep fixture and bounded 8 MiB corpus checks dependency-free; this is test validation rather than a parser hot path."
+)]
 fn assert_store_accepts(facts: &ParsedFile, source: &[u8]) {
     let file_end = u32::try_from(source.iter().filter(|byte| **byte == b'\n').count()).unwrap() + 1;
     let mut nodes = facts.nodes.clone();
@@ -52,16 +66,36 @@ fn assert_store_accepts(facts: &ParsedFile, source: &[u8]) {
     let mut ids = BTreeSet::new();
     assert_eq!(nodes[0].kind, NodeKind::Module, "{}", facts.path);
     for node in &nodes {
-        let identity = node.id.as_str().split_once(':').map(|(_, rest)| match rest.split_once('#') {
-            Some((path, _)) => path,
-            None => rest,
-        });
+        let identity =
+            node.id
+                .as_str()
+                .split_once(':')
+                .map(|(_, rest)| match rest.split_once('#') {
+                    Some((path, _)) => path,
+                    None => rest,
+                });
         assert_eq!(node.path, facts.path, "{}", node.name);
         assert_eq!(identity, Some(facts.path.as_str()), "{}", node.id);
-        assert!(node.id.as_str().starts_with(node.kind.letter()), "{}", node.id);
-        assert!(node.lines[0] >= 1 && node.lines[1] >= node.lines[0], "{}", node.name);
-        assert!(node.lines[1] <= file_end, "{} spans past the file", node.name);
-        assert!(ids.insert(node.id.as_str().to_owned()), "duplicate id {}", node.id);
+        assert!(
+            node.id.as_str().starts_with(node.kind.letter()),
+            "{}",
+            node.id
+        );
+        assert!(
+            node.lines[0] >= 1 && node.lines[1] >= node.lines[0],
+            "{}",
+            node.name
+        );
+        assert!(
+            node.lines[1] <= file_end,
+            "{} spans past the file",
+            node.name
+        );
+        assert!(
+            ids.insert(node.id.as_str().to_owned()),
+            "duplicate id {}",
+            node.id
+        );
     }
     let mut owned = BTreeSet::from([facts.nodes[0].id.as_str()]);
     loop {
@@ -80,7 +114,11 @@ fn assert_store_accepts(facts: &ParsedFile, source: &[u8]) {
         }
     }
     for node in &facts.nodes {
-        assert!(owned.contains(node.id.as_str()), "{} is not owned by the file node", node.name);
+        assert!(
+            owned.contains(node.id.as_str()),
+            "{} is not owned by the file node",
+            node.name
+        );
     }
 }
 

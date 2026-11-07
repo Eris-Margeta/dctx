@@ -21,7 +21,10 @@ pub struct SealedSnapshot {
 }
 
 impl SealedSnapshot {
-    #[allow(clippy::cast_possible_truncation, reason = "The requested copy chunk is clamped to the 16 KiB stack buffer before converting to usize.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "The requested copy chunk is clamped to the 16 KiB stack buffer before converting to usize."
+    )]
     pub(super) fn copy_checked(
         mut source: &File,
         digest: ContentDigest,
@@ -73,7 +76,10 @@ impl SealedSnapshot {
     }
 
     /// Exact digest and byte count of the immutable copy.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn digest(&self) -> ContentDigest {
         self.digest
     }

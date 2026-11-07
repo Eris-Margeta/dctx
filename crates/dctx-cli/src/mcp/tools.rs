@@ -35,7 +35,11 @@ const fn prop(name: &'static str, ty: &'static str, help: &'static str) -> Prop 
 /// Properties every verb accepts (some verbs drop some of them).
 const COMMON: [Prop; 3] = [
     prop("budget", "integer", "Output token budget, 1..2000"),
-    prop("cursor", "string", "The next token of an earlier page, to continue it"),
+    prop(
+        "cursor",
+        "string",
+        "The next token of an earlier page, to continue it",
+    ),
     prop("json", "boolean", "Return facade JSON v2 instead of text"),
 ];
 
@@ -147,14 +151,25 @@ const TOOLS: &[Tool] = &[
 /// Every property `tool` accepts: its own, then the common ones not already in its own set.
 fn accepted(tool: &Tool) -> Vec<&Prop> {
     let own_names: std::collections::HashSet<&str> = tool.props.iter().map(|p| p.name).collect();
-    tool.props.iter().chain(COMMON.iter().filter(|extra| !own_names.contains(extra.name) && !(tool.name == "hubs" && extra.name == "cursor") && !(tool.name == "export" && extra.name != "budget") && !(tool.name == "skeleton" && extra.name != "budget" && extra.name != "json"))).collect()
+    tool.props
+        .iter()
+        .chain(COMMON.iter().filter(|extra| {
+            !own_names.contains(extra.name)
+                && !(tool.name == "hubs" && extra.name == "cursor")
+                && !(tool.name == "export" && extra.name != "budget")
+                && !(tool.name == "skeleton" && extra.name != "budget" && extra.name != "json")
+        }))
+        .collect()
 }
 
 fn schema_of(tool: &Tool) -> Json {
     let properties = accepted(tool)
         .into_iter()
         .map(|p| {
-            let mut members = vec![("type", Json::str(p.ty)), ("description", Json::str(p.help))];
+            let mut members = vec![
+                ("type", Json::str(p.ty)),
+                ("description", Json::str(p.help)),
+            ];
             if p.ty == "array" {
                 members.insert(1, ("items", Json::obj(vec![("type", Json::str("string"))])));
             }
@@ -171,14 +186,25 @@ fn schema_of(tool: &Tool) -> Json {
     if tool.name == "export" {
         required_names.push(Json::str("format"));
     }
-    Json::obj(vec![("type", Json::str("object")), ("properties", Json::Obj(properties)), ("required", Json::Arr(required_names)), ("additionalProperties", Json::Bool(false))])
+    Json::obj(vec![
+        ("type", Json::str("object")),
+        ("properties", Json::Obj(properties)),
+        ("required", Json::Arr(required_names)),
+        ("additionalProperties", Json::Bool(false)),
+    ])
 }
 
 /// The `tools/list` result.
 pub(super) fn list() -> Json {
     let tools = TOOLS
         .iter()
-        .map(|tool| Json::obj(vec![("name", Json::str(tool.name)), ("description", Json::str(tool.help)), ("inputSchema", schema_of(tool))]))
+        .map(|tool| {
+            Json::obj(vec![
+                ("name", Json::str(tool.name)),
+                ("description", Json::str(tool.help)),
+                ("inputSchema", schema_of(tool)),
+            ])
+        })
         .collect();
     Json::obj(vec![("tools", Json::Arr(tools))])
 }
@@ -190,7 +216,10 @@ pub(super) fn exists(name: &str) -> bool {
 
 /// Turns a call into the argument vector of `dctx map`, or a message naming the bad argument.
 pub(super) fn to_args(name: &str, arguments: Option<&Json>) -> Result<Vec<String>, String> {
-    let tool = TOOLS.iter().find(|tool| tool.name == name).ok_or_else(|| format!("unknown tool {name}"))?;
+    let tool = TOOLS
+        .iter()
+        .find(|tool| tool.name == name)
+        .ok_or_else(|| format!("unknown tool {name}"))?;
     let members: &[(String, Json)] = match arguments {
         None | Some(Json::Null) => &[],
         Some(Json::Obj(members)) => members,
@@ -204,28 +233,53 @@ pub(super) fn to_args(name: &str, arguments: Option<&Json>) -> Result<Vec<String
     }
     let mut out = vec![name.to_string()];
     if let Some(first) = tool.positional {
-        let value = members.iter().find(|(key, _)| key == first).map(|(_, value)| value);
+        let value = members
+            .iter()
+            .find(|(key, _)| key == first)
+            .map(|(_, value)| value);
         match value.and_then(Json::as_str) {
             Some(text) if !text.is_empty() => out.push(text.to_string()),
-            _ => return Err(format!("{first} is required and must be a non-empty string")),
+            _ => {
+                return Err(format!(
+                    "{first} is required and must be a non-empty string"
+                ))
+            }
         }
     }
     if let Some(second) = tool.second_positional {
-        let value = members.iter().find(|(key, _)| key == second).map(|(_, value)| value);
+        let value = members
+            .iter()
+            .find(|(key, _)| key == second)
+            .map(|(_, value)| value);
         match value.and_then(Json::as_str) {
             Some(text) if !text.is_empty() => out.push(text.to_string()),
-            _ => return Err(format!("{second} is required and must be a non-empty string")),
+            _ => {
+                return Err(format!(
+                    "{second} is required and must be a non-empty string"
+                ))
+            }
         }
     }
     if tool.name == "export" {
-        let value = members.iter().find(|(key, _)| key == "format").map(|(_, value)| value);
+        let value = members
+            .iter()
+            .find(|(key, _)| key == "format")
+            .map(|(_, value)| value);
         match value.and_then(Json::as_str) {
-            Some(text) if !text.is_empty() => out.extend(["--format".to_string(), text.to_string()]),
+            Some(text) if !text.is_empty() => {
+                out.extend(["--format".to_string(), text.to_string()])
+            }
             _ => return Err("format is required and must be json or mermaid".into()),
         }
     }
-    for p in known.iter().filter(|p| Some(p.name) != tool.positional && Some(p.name) != tool.second_positional && !(tool.name == "export" && p.name == "format")) {
-        let Some((_, value)) = members.iter().find(|(key, _)| key == p.name) else { continue };
+    for p in known.iter().filter(|p| {
+        Some(p.name) != tool.positional
+            && Some(p.name) != tool.second_positional
+            && !(tool.name == "export" && p.name == "format")
+    }) {
+        let Some((_, value)) = members.iter().find(|(key, _)| key == p.name) else {
+            continue;
+        };
         if matches!(value, Json::Null) {
             continue;
         }
@@ -233,10 +287,16 @@ pub(super) fn to_args(name: &str, arguments: Option<&Json>) -> Result<Vec<String
         match (p.ty, value) {
             ("boolean", Json::Bool(true)) => out.push(flag),
             ("boolean", Json::Bool(false)) => {}
-            ("integer", Json::Num(text) | Json::Str(text)) | ("string" | "array", Json::Str(text)) => out.extend([flag, text.clone()]),
+            ("integer", Json::Num(text) | Json::Str(text))
+            | ("string" | "array", Json::Str(text)) => out.extend([flag, text.clone()]),
             ("array", Json::Arr(items)) => {
                 let parts: Option<Vec<&str>> = items.iter().map(Json::as_str).collect();
-                out.extend([flag, parts.ok_or_else(|| format!("{} must be an array of strings", p.name))?.join(",")]);
+                out.extend([
+                    flag,
+                    parts
+                        .ok_or_else(|| format!("{} must be an array of strings", p.name))?
+                        .join(","),
+                ]);
             }
             _ => return Err(format!("{} must be of type {}", p.name, p.ty)),
         }
@@ -255,37 +315,95 @@ mod tests {
 
     #[test]
     fn calls_become_the_cli_argument_vector() {
-        assert_eq!(args("find", r#"{"query":"beta","kind":["fn","type"],"in":"src","json":true}"#).unwrap(), ["find", "beta", "--kind", "fn,type", "--in", "src", "--json"]);
-        assert_eq!(args("neighbors", r#"{"id":"s:a#b","depth":3,"dir":"in"}"#).unwrap(), ["neighbors", "s:a#b", "--dir", "in", "--depth", "3"]);
-        assert_eq!(args("grep", r#"{"query":"x","ignore_case":true}"#).unwrap(), ["grep", "x", "--ignore-case"]);
+        assert_eq!(
+            args(
+                "find",
+                r#"{"query":"beta","kind":["fn","type"],"in":"src","json":true}"#
+            )
+            .unwrap(),
+            ["find", "beta", "--kind", "fn,type", "--in", "src", "--json"]
+        );
+        assert_eq!(
+            args("neighbors", r#"{"id":"s:a#b","depth":3,"dir":"in"}"#).unwrap(),
+            ["neighbors", "s:a#b", "--dir", "in", "--depth", "3"]
+        );
+        assert_eq!(
+            args("grep", r#"{"query":"x","ignore_case":true}"#).unwrap(),
+            ["grep", "x", "--ignore-case"]
+        );
         assert_eq!(args("hubs", "{}").unwrap(), ["hubs"]);
-        assert_eq!(args("read", r#"{"id":"s:a#b","lines":"3-9"}"#).unwrap(), ["read", "s:a#b", "--lines", "3-9"]);
+        assert_eq!(
+            args("read", r#"{"id":"s:a#b","lines":"3-9"}"#).unwrap(),
+            ["read", "s:a#b", "--lines", "3-9"]
+        );
     }
 
     #[test]
     fn bad_arguments_are_named() {
         assert!(args("find", "{}").unwrap_err().contains("query"));
-        assert!(args("find", r#"{"query":"a","bogus":1}"#).unwrap_err().contains("bogus"));
-        assert!(args("find", r#"{"query":"a","limit":true}"#).unwrap_err().contains("limit"));
+        assert!(args("find", r#"{"query":"a","bogus":1}"#)
+            .unwrap_err()
+            .contains("bogus"));
+        assert!(args("find", r#"{"query":"a","limit":true}"#)
+            .unwrap_err()
+            .contains("limit"));
         assert!(args("hubs", r#"{"cursor":"x"}"#).is_err());
         assert!(list().get("tools").is_some() && exists("map") && exists("path"));
     }
 
     #[test]
     fn new_tools_become_cli_arguments() {
-        assert_eq!(args("skeleton", r#"{"target":"m:a.py"}"#).unwrap(), ["skeleton", "m:a.py"]);
-        assert_eq!(args("skeleton", r#"{"target":"m:a.py","json":true}"#).unwrap(), ["skeleton", "m:a.py", "--json"]);
-        assert_eq!(args("path", r#"{"from":"s:a.py#a","to":"s:a.py#b"}"#).unwrap(), ["path", "s:a.py#a", "s:a.py#b"]);
-        assert_eq!(args("path", r#"{"from":"s:a.py#a","to":"s:a.py#b","json":true,"meta":true}"#).unwrap(), ["path", "s:a.py#a", "s:a.py#b", "--meta", "--json"]);
-        assert_eq!(args("export", r#"{"format":"json"}"#).unwrap(), ["export", "--format", "json"]);
-        assert_eq!(args("export", r#"{"format":"mermaid"}"#).unwrap(), ["export", "--format", "mermaid"]);
-        assert!(args("path", r#"{"from":"s:a"}"#).unwrap_err().contains("to"));
+        assert_eq!(
+            args("skeleton", r#"{"target":"m:a.py"}"#).unwrap(),
+            ["skeleton", "m:a.py"]
+        );
+        assert_eq!(
+            args("skeleton", r#"{"target":"m:a.py","json":true}"#).unwrap(),
+            ["skeleton", "m:a.py", "--json"]
+        );
+        assert_eq!(
+            args("path", r#"{"from":"s:a.py#a","to":"s:a.py#b"}"#).unwrap(),
+            ["path", "s:a.py#a", "s:a.py#b"]
+        );
+        assert_eq!(
+            args(
+                "path",
+                r#"{"from":"s:a.py#a","to":"s:a.py#b","json":true,"meta":true}"#
+            )
+            .unwrap(),
+            ["path", "s:a.py#a", "s:a.py#b", "--meta", "--json"]
+        );
+        assert_eq!(
+            args("export", r#"{"format":"json"}"#).unwrap(),
+            ["export", "--format", "json"]
+        );
+        assert_eq!(
+            args("export", r#"{"format":"mermaid"}"#).unwrap(),
+            ["export", "--format", "mermaid"]
+        );
+        assert!(args("path", r#"{"from":"s:a"}"#)
+            .unwrap_err()
+            .contains("to"));
         assert!(args("export", "{}").unwrap_err().contains("format"));
     }
 
     #[test]
     fn all_ten_tools_are_registered() {
         let names: Vec<&str> = TOOLS.iter().map(|t| t.name).collect();
-        assert_eq!(names, ["map", "find", "neighbors", "explain", "read", "hubs", "grep", "skeleton", "path", "export"]);
+        assert_eq!(
+            names,
+            [
+                "map",
+                "find",
+                "neighbors",
+                "explain",
+                "read",
+                "hubs",
+                "grep",
+                "skeleton",
+                "path",
+                "export"
+            ]
+        );
     }
 }

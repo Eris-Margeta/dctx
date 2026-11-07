@@ -108,7 +108,9 @@ fn slice_at(bytes: &[u8], at: usize, len: usize) -> Result<&[u8], SegmentError> 
 }
 
 pub(crate) fn put(out: &mut [u8], at: usize, bytes: &[u8]) -> Result<(), SegmentError> {
-    let end = at.checked_add(bytes.len()).ok_or(SegmentError::OffsetOverflow)?;
+    let end = at
+        .checked_add(bytes.len())
+        .ok_or(SegmentError::OffsetOverflow)?;
     let slot = out.get_mut(at..end).ok_or(SegmentError::OffsetOverflow)?;
     slot.copy_from_slice(bytes);
     Ok(())
@@ -144,7 +146,11 @@ pub(crate) fn push_narrow(out: &mut Vec<u8>, code: u16) -> Result<(), SegmentErr
     Ok(())
 }
 
-pub(crate) fn push_record(out: &mut Vec<u8>, payload: &[u8], max_record: u32) -> Result<(), SegmentError> {
+pub(crate) fn push_record(
+    out: &mut Vec<u8>,
+    payload: &[u8],
+    max_record: u32,
+) -> Result<(), SegmentError> {
     let len = u32::try_from(payload.len()).map_err(|_| SegmentError::Limit("record"))?;
     if len > max_record {
         return Err(SegmentError::Limit("record"));

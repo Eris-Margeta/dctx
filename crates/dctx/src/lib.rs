@@ -26,13 +26,14 @@ pub const FACADE_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const WIRE_VERSION: u32 = 2;
 
 pub use domain::{
-    encode_answer, encode_answer_with, object_key, validate_segment, Answer, AnswerRecord, AutoCleanConfig, BoundedSink, CacheLedger,
-    CacheReport, Capabilities,
-    Direction, DctxError, ErrorCode, Freshness, FreshnessMode, GcRequest, HostGrants, IdentityOutcome, MapRequest,
-    OperationLimits, PackReport, PackRequest, Precision, PurgeRequest, PurgeScope, Resource, RuleSources, SegmentInfo,
-    SnapshotRequest, VecSink, Verb, parse_source_ceiling, source_ceiling, ENTRIES_ENV, RECORDS_ENV, REQUEST_VERSION, SOURCE_ENV, STRUCTURAL_PARSER,
+    Answer, AnswerRecord, AutoCleanConfig, BoundedSink, CacheLedger, CacheReport, Capabilities,
+    DctxError, Direction, ENTRIES_ENV, ErrorCode, Freshness, FreshnessMode, GcRequest, HostGrants,
+    IdentityOutcome, MapRequest, OperationLimits, PackReport, PackRequest, Precision, PurgeRequest,
+    PurgeScope, RECORDS_ENV, REQUEST_VERSION, Resource, RuleSources, SOURCE_ENV, STRUCTURAL_PARSER,
+    SegmentInfo, SnapshotRequest, VecSink, Verb, encode_answer, encode_answer_with, object_key,
+    parse_source_ceiling, source_ceiling, validate_segment,
 };
-pub use languages::{Confidence, Language, Tier, LANGUAGES};
+pub use languages::{Confidence, LANGUAGES, Language, Tier};
 pub use plugins::{Boundary, HookEffect, HookWarning, PluginHost};
 pub use ports::{Cache, Cancellation, Clock, FactStore, Source};
 pub use session::{Session, SessionBuilder, SnapshotHandle, StoragePolicy};
@@ -43,7 +44,7 @@ pub use adapters::FsSource;
 pub use dctx_core::selection::RuleTexts;
 pub use dctx_core::{FileHandlingDecision, SelectionPolicy, Timestamp};
 pub use dctx_ports::memory;
-pub use dctx_template::{bundled_git_plugin, ContextPlan, GrantRule, HostCeiling, KnownPlugin};
+pub use dctx_template::{ContextPlan, GrantRule, HostCeiling, KnownPlugin, bundled_git_plugin};
 
 #[cfg(test)]
 mod isolation_scan {
@@ -53,7 +54,10 @@ mod isolation_scan {
             ("lib.rs", include_str!("lib.rs")),
             ("domain/mod.rs", include_str!("domain/mod.rs")),
             ("domain/answer.rs", include_str!("domain/answer.rs")),
-            ("domain/capabilities.rs", include_str!("domain/capabilities.rs")),
+            (
+                "domain/capabilities.rs",
+                include_str!("domain/capabilities.rs"),
+            ),
             ("domain/error.rs", include_str!("domain/error.rs")),
             ("domain/identity.rs", include_str!("domain/identity.rs")),
             ("domain/limits.rs", include_str!("domain/limits.rs")),
@@ -74,11 +78,17 @@ mod isolation_scan {
             ("session/build.rs", include_str!("session/build.rs")),
             ("session/cache_op.rs", include_str!("session/cache_op.rs")),
             ("session/ledger.rs", include_str!("session/ledger.rs")),
-            ("session/ledger/cache_bind.rs", include_str!("session/ledger/cache_bind.rs")),
+            (
+                "session/ledger/cache_bind.rs",
+                include_str!("session/ledger/cache_bind.rs"),
+            ),
             ("session/pack_op.rs", include_str!("session/pack_op.rs")),
             ("session/query_op.rs", include_str!("session/query_op.rs")),
             ("session/hooks.rs", include_str!("session/hooks.rs")),
-            ("session/template_op.rs", include_str!("session/template_op.rs")),
+            (
+                "session/template_op.rs",
+                include_str!("session/template_op.rs"),
+            ),
             ("plugins/mod.rs", include_str!("plugins/mod.rs")),
             ("plugins/disabled.rs", include_str!("plugins/disabled.rs")),
             ("plugins/ports.rs", include_str!("plugins/ports.rs")),

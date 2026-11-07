@@ -1,14 +1,19 @@
 [package]
 name = "dctx-map-scan"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2024"
 license.workspace = true
 repository.workspace = true
+rust-version.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 description = "Model-independent scan privacy rules"
 
 [dev-dependencies]
 tempfile = "3"
 
 [dependencies]
-dctx-hash = { path = "../dctx-hash" }
+dctx-hash = { version = "=1.2.0", path = "../dctx-hash" }
 thiserror = "2"

@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Tests for the infra family: eight formats, the denylist, truncated input and extension dispatch.
 
-use super::{handles, symbols, TAGS};
+use super::{TAGS, handles, symbols};
 use crate::index::extract::{extract_structural_refs, language_of};
 
 /// Name and wire kind of every symbol, in source order.
 fn named(tag: &str, text: &str) -> Vec<(String, String)> {
-    symbols(tag, text).into_iter().map(|symbol| (symbol.name, symbol.kind)).collect()
+    symbols(tag, text)
+        .into_iter()
+        .map(|symbol| (symbol.name, symbol.kind))
+        .collect()
 }
 
 /// An expected `(name, kind)` pair.
@@ -16,7 +19,11 @@ fn pair(name: &str, kind: &str) -> (String, String) {
 
 /// Start and end line of the symbol called `name`.
 fn lines_of(tag: &str, text: &str, name: &str) -> [u32; 2] {
-    symbols(tag, text).into_iter().find(|symbol| symbol.name == name).map(|symbol| symbol.lines).unwrap_or([0, 0])
+    symbols(tag, text)
+        .into_iter()
+        .find(|symbol| symbol.name == name)
+        .map(|symbol| symbol.lines)
+        .unwrap_or([0, 0])
 }
 
 const HCL: &str = "resource \"aws_s3_bucket\" \"logs\" {\n  bucket = \"x\"\n}\ndata \"aws_ami\" \"ubuntu\" {\n}\nvariable \"region\" {\n  default = \"eu\"\n}\nmodule \"vpc\" {\n  source = \"./vpc\"\n}\noutput \"id\" {\n  value = 1\n}\nprovider \"aws\" {}\n# resource \"aws_x\" \"hidden\" {}\nlocals {\n  resource = \"fake\"\n}\n";
@@ -85,7 +92,17 @@ fn shell_variables_and_aliases_are_symbols_at_file_level() {
 
 #[test]
 fn makefile_variable_assignments_are_symbols() {
-    assert_eq!(named("make", MEMBERS_MAKE), [pair("CC", "var"), pair("CFLAGS", "var"), pair("LIBS", "var"), pair("SRCS", "var"), pair("build", "fn"), pair("X", "var")]);
+    assert_eq!(
+        named("make", MEMBERS_MAKE),
+        [
+            pair("CC", "var"),
+            pair("CFLAGS", "var"),
+            pair("LIBS", "var"),
+            pair("SRCS", "var"),
+            pair("build", "fn"),
+            pair("X", "var")
+        ]
+    );
     assert_eq!(lines_of("make", MEMBERS_MAKE, "SRCS"), [4, 5]);
 }
 
@@ -171,12 +188,31 @@ fn every_infra_format_finds_its_declarations() {
             pair("Quoted", "type")
         ]
     );
-    assert_eq!(named("shell", SHELL), [pair("setup", "fn"), pair("teardown", "fn"), pair("build-all", "fn"), pair("run_it", "fn")]);
+    assert_eq!(
+        named("shell", SHELL),
+        [
+            pair("setup", "fn"),
+            pair("teardown", "fn"),
+            pair("build-all", "fn"),
+            pair("run_it", "fn")
+        ]
+    );
     assert_eq!(
         named("make", MAKE),
-        [pair("CC", "var"), pair("OBJS", "var"), pair("build", "fn"), pair("test", "fn"), pair("lint", "fn"), pair("all", "fn"), pair("FOO", "var")]
+        [
+            pair("CC", "var"),
+            pair("OBJS", "var"),
+            pair("build", "fn"),
+            pair("test", "fn"),
+            pair("lint", "fn"),
+            pair("all", "fn"),
+            pair("FOO", "var")
+        ]
     );
-    assert_eq!(named("docker", DOCKER), [pair("builder", "type"), pair("runtime", "type")]);
+    assert_eq!(
+        named("docker", DOCKER),
+        [pair("builder", "type"), pair("runtime", "type")]
+    );
     assert_eq!(
         named("proto", PROTO),
         [
@@ -194,7 +230,13 @@ fn every_infra_format_finds_its_declarations() {
     );
     assert_eq!(
         named("pascal", PASCAL),
-        [pair("Hello", "fn"), pair("Twice", "fn"), pair("Bar", "fn"), pair("TFoo.Bar", "fn"), pair("TFoo.Make", "fn")]
+        [
+            pair("Hello", "fn"),
+            pair("Twice", "fn"),
+            pair("Bar", "fn"),
+            pair("TFoo.Bar", "fn"),
+            pair("TFoo.Make", "fn")
+        ]
     );
     assert_eq!(
         named("graphql", GRAPHQL),
@@ -242,16 +284,34 @@ fn symbols_carry_the_signature_and_the_sig_summary() {
 
 #[test]
 fn denylisted_keywords_are_never_symbols() {
-    for word in ["if", "else", "for", "while", "match", "switch", "return", "case", "catch", "when", "do", "try"] {
+    for word in [
+        "if", "else", "for", "while", "match", "switch", "return", "case", "catch", "when", "do",
+        "try",
+    ] {
         for (tag, text) in [
-            ("shell", format!("{word}() {{\n}}\nfunction {word} {{\n}}\n")),
-            ("pascal", format!("procedure {word};\nfunction {word}: Integer;\n")),
-            ("proto", format!("message {word} {{\n}}\nenum {word} {{}}\n")),
+            (
+                "shell",
+                format!("{word}() {{\n}}\nfunction {word} {{\n}}\n"),
+            ),
+            (
+                "pascal",
+                format!("procedure {word};\nfunction {word}: Integer;\n"),
+            ),
+            (
+                "proto",
+                format!("message {word} {{\n}}\nenum {word} {{}}\n"),
+            ),
             ("graphql", format!("type {word} {{\n}}\n")),
             ("make", format!("{word}:\n\t@true\n")),
             ("docker", format!("FROM x AS {word}\n")),
-            ("sql", format!("CREATE TABLE {word} (id int);\nCREATE FUNCTION {word}() RETURNS int;\n")),
-            ("hcl", format!("variable \"{word}\" {{}}\nmodule \"{word}\" {{}}\n")),
+            (
+                "sql",
+                format!("CREATE TABLE {word} (id int);\nCREATE FUNCTION {word}() RETURNS int;\n"),
+            ),
+            (
+                "hcl",
+                format!("variable \"{word}\" {{}}\nmodule \"{word}\" {{}}\n"),
+            ),
         ] {
             let found = named(tag, &text);
             assert!(found.is_empty(), "{tag} {word}: {found:?}");
@@ -262,13 +322,72 @@ fn denylisted_keywords_are_never_symbols() {
 #[test]
 fn malformed_and_truncated_input_never_panics() {
     let samples = [
-        "", "resource \"a", "resource \"a\" \"b", "variable \"\" {", "CREATE", "CREATE TABLE", "create or replace", "CREATE OR REPLACE FUNCTION f(",
-        "$$ $$ $$", "function", "function ", "f(", "f()", "<<", "<<EOF", "<<-'", "FROM", "FROM x AS", "message", "message {",
-        "rpc", "}}}} message A {{ rpc b(", "\"\"\" unterminated", "/* unterminated", "(* unterminated", "{ unterminated",
-        "procedure", "class", "procedure .", "procedure 1x;", "x:", ":", "::=", "define", "define X\n", "a b c: \n\t",
-        "locals {", "locals {\n  a =", "locals {\n  a = [\n", "export", "export A=", "alias =", "alias", "declare -r", "ARG", "ENV", "ENV A=\"", "ENV A=1 \\\n", "CC :=", "export X ?=", "X = a \\\n",
-        "enum E {\n A = ", "type T {\n a(", "type T {\n a(\n", "message M {\noneof ", "message M {\noneof x {\n int32 a = 1;\n}\n", "CREATE SCHEMA", "CREATE SEQUENCE", "CREATE SCHEMA AUTHORIZATION",
-        "\u{1F600}: x", "r\u{e9}sum\u{e9}() {", "\r\n\r\n", "\u{0}\u{1}", "type", "type X", "scalar\n",
+        "",
+        "resource \"a",
+        "resource \"a\" \"b",
+        "variable \"\" {",
+        "CREATE",
+        "CREATE TABLE",
+        "create or replace",
+        "CREATE OR REPLACE FUNCTION f(",
+        "$$ $$ $$",
+        "function",
+        "function ",
+        "f(",
+        "f()",
+        "<<",
+        "<<EOF",
+        "<<-'",
+        "FROM",
+        "FROM x AS",
+        "message",
+        "message {",
+        "rpc",
+        "}}}} message A {{ rpc b(",
+        "\"\"\" unterminated",
+        "/* unterminated",
+        "(* unterminated",
+        "{ unterminated",
+        "procedure",
+        "class",
+        "procedure .",
+        "procedure 1x;",
+        "x:",
+        ":",
+        "::=",
+        "define",
+        "define X\n",
+        "a b c: \n\t",
+        "locals {",
+        "locals {\n  a =",
+        "locals {\n  a = [\n",
+        "export",
+        "export A=",
+        "alias =",
+        "alias",
+        "declare -r",
+        "ARG",
+        "ENV",
+        "ENV A=\"",
+        "ENV A=1 \\\n",
+        "CC :=",
+        "export X ?=",
+        "X = a \\\n",
+        "enum E {\n A = ",
+        "type T {\n a(",
+        "type T {\n a(\n",
+        "message M {\noneof ",
+        "message M {\noneof x {\n int32 a = 1;\n}\n",
+        "CREATE SCHEMA",
+        "CREATE SEQUENCE",
+        "CREATE SCHEMA AUTHORIZATION",
+        "\u{1F600}: x",
+        "r\u{e9}sum\u{e9}() {",
+        "\r\n\r\n",
+        "\u{0}\u{1}",
+        "type",
+        "type X",
+        "scalar\n",
     ];
     for tag in TAGS {
         for sample in samples {
@@ -278,7 +397,23 @@ fn malformed_and_truncated_input_never_panics() {
         let _ = symbols(tag, &deep);
         assert!(symbols(tag, "").is_empty());
     }
-    for (tag, full) in [("hcl", HCL), ("sql", SQL), ("shell", SHELL), ("make", MAKE), ("docker", DOCKER), ("proto", PROTO), ("pascal", PASCAL), ("graphql", GRAPHQL), ("hcl", MEMBERS_HCL), ("sql", MEMBERS_SQL), ("shell", MEMBERS_SHELL), ("make", MEMBERS_MAKE), ("docker", MEMBERS_DOCKER), ("proto", MEMBERS_PROTO), ("graphql", MEMBERS_GRAPHQL)] {
+    for (tag, full) in [
+        ("hcl", HCL),
+        ("sql", SQL),
+        ("shell", SHELL),
+        ("make", MAKE),
+        ("docker", DOCKER),
+        ("proto", PROTO),
+        ("pascal", PASCAL),
+        ("graphql", GRAPHQL),
+        ("hcl", MEMBERS_HCL),
+        ("sql", MEMBERS_SQL),
+        ("shell", MEMBERS_SHELL),
+        ("make", MEMBERS_MAKE),
+        ("docker", MEMBERS_DOCKER),
+        ("proto", MEMBERS_PROTO),
+        ("graphql", MEMBERS_GRAPHQL),
+    ] {
         for cut in (0..full.len()).filter(|&at| full.is_char_boundary(at)) {
             let _ = symbols(tag, &full[..cut]);
         }
@@ -319,7 +454,13 @@ fn extensions_and_basenames_dispatch_to_the_infra_family() {
     assert_eq!(language_of("Makefile.bak"), "opaque");
     assert!(!handles("python") && !handles("scala") && !handles("opaque"));
     let (found, refs) = extract_structural_refs("Makefile", b"build: deps\n\tcc -o x x.c\n");
-    assert_eq!(found.iter().map(|symbol| symbol.name.as_str()).collect::<Vec<_>>(), ["build"]);
+    assert_eq!(
+        found
+            .iter()
+            .map(|symbol| symbol.name.as_str())
+            .collect::<Vec<_>>(),
+        ["build"]
+    );
     assert!(refs.is_empty());
     assert!(extract_structural_refs("a.sh", &[0xff]).0.is_empty());
 }
@@ -328,15 +469,51 @@ fn extensions_and_basenames_dispatch_to_the_infra_family() {
 #[test]
 fn bats_tests_more_sql_objects_and_terraform_dynamic_blocks_are_symbols() {
     let bats = "#!/usr/bin/env bats\n\nsetup() {\n  load test_helper\n}\n\n@test \"no arguments prints message and usage instructions\" {\n  reentrant_run bats\n  [ $status -eq 1 ]\n}\n\n@test 'single quoted' {\n  true\n}\n";
-    assert_eq!(named("shell", bats), [pair("setup", "fn"), pair("@test \"no arguments prints message and usage instructions\"", "fn"), pair("@test \"single quoted\"", "fn")]);
-    assert_eq!(lines_of("shell", bats, "@test \"no arguments prints message and usage instructions\""), [7, 10]);
+    assert_eq!(
+        named("shell", bats),
+        [
+            pair("setup", "fn"),
+            pair(
+                "@test \"no arguments prints message and usage instructions\"",
+                "fn"
+            ),
+            pair("@test \"single quoted\"", "fn")
+        ]
+    );
+    assert_eq!(
+        lines_of(
+            "shell",
+            bats,
+            "@test \"no arguments prints message and usage instructions\""
+        ),
+        [7, 10]
+    );
     let sql = "CREATE DOMAIN public.us_postal_code AS TEXT CHECK(\n  VALUE ~ '^\\d{5}$'\n);\nCREATE AGGREGATE public.tap_accum (\n  sfunc = array_append\n);\nCREATE RULE ins_me AS ON INSERT TO public.fou DO NOTHING;\nCREATE POLICY p_read ON public.t USING (true);\nCREATE FOREIGN TABLE public.ft_foo(id int) SERVER s;\nCREATE FOREIGN DATA WRAPPER dummy;\n";
     assert_eq!(
         named("sql", sql),
-        [pair("us_postal_code", "type"), pair("tap_accum", "fn"), pair("ins_me", "fn"), pair("p_read", "fn"), pair("ft_foo", "type")]
+        [
+            pair("us_postal_code", "type"),
+            pair("tap_accum", "fn"),
+            pair("ins_me", "fn"),
+            pair("p_read", "fn"),
+            pair("ft_foo", "type")
+        ]
     );
     assert_eq!(lines_of("sql", sql, "us_postal_code"), [1, 3]);
     let hcl = "resource \"aws_default_security_group\" \"this\" {\n  vpc_id = aws_vpc.this[0].id\n\n  dynamic \"ingress\" {\n    for_each = var.ingress\n    content {\n      self = lookup(ingress.value, \"self\", null)\n    }\n  }\n}\n";
-    assert_eq!(named("hcl", hcl), [pair("aws_default_security_group.this", "type"), pair("aws_default_security_group.this::dynamic.ingress", "type")]);
-    assert_eq!(lines_of("hcl", hcl, "aws_default_security_group.this::dynamic.ingress"), [4, 9]);
+    assert_eq!(
+        named("hcl", hcl),
+        [
+            pair("aws_default_security_group.this", "type"),
+            pair("aws_default_security_group.this::dynamic.ingress", "type")
+        ]
+    );
+    assert_eq!(
+        lines_of(
+            "hcl",
+            hcl,
+            "aws_default_security_group.this::dynamic.ingress"
+        ),
+        [4, 9]
+    );
 }

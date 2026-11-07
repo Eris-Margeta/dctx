@@ -9,7 +9,8 @@
 use dctx_plugin_distribution::domain::signature::{INDEX_DOMAIN, MANIFEST_DOMAIN};
 use dctx_plugin_distribution::fakes::{FakeNetwork, FixedClock, MemoryStore};
 use dctx_plugin_distribution::{
-    Distribution, InstallPolicy, KeyId, OfflineBundle, PluginId, Sha256Hex, Target, TrustStore, fingerprint,
+    Distribution, InstallPolicy, KeyId, OfflineBundle, PluginId, Sha256Hex, Target, TrustStore,
+    fingerprint,
 };
 use ed25519_dalek::{Signer, SigningKey};
 
@@ -53,14 +54,20 @@ pub struct Release {
 
 impl Release {
     pub fn git(version: &str, sequence: u64) -> Self {
-        let executable = format!("#!/bin/sh\necho installed-code-ran-{version} > /tmp/dctx-pl-i-marker\n").into_bytes();
+        let executable =
+            format!("#!/bin/sh\necho installed-code-ran-{version} > /tmp/dctx-pl-i-marker\n")
+                .into_bytes();
         Self {
             id: GIT.into(),
             version: version.into(),
             sequence,
             key_id: OFFICIAL.into(),
             capabilities: NARROW.into(),
-            artifacts: vec![("aarch64-apple-darwin".into(), format!("dctx-plugin-git-{version}-aarch64-apple-darwin"), executable)],
+            artifacts: vec![(
+                "aarch64-apple-darwin".into(),
+                format!("dctx-plugin-git-{version}-aarch64-apple-darwin"),
+                executable,
+            )],
             resources: Vec::new(),
         }
     }
@@ -75,9 +82,17 @@ impl Release {
 
     pub fn manifest(&self) -> Vec<u8> {
         let payload = |file: &str, bytes: &[u8]| {
-            format!("\"file\":\"{file}\",\"bytes\":{},\"sha256\":\"{}\"", bytes.len(), Sha256Hex::of(bytes).unwrap())
+            format!(
+                "\"file\":\"{file}\",\"bytes\":{},\"sha256\":\"{}\"",
+                bytes.len(),
+                Sha256Hex::of(bytes).unwrap()
+            )
         };
-        let resources: Vec<String> = self.resources.iter().map(|(file, bytes)| format!("{{{}}}", payload(file, bytes))).collect();
+        let resources: Vec<String> = self
+            .resources
+            .iter()
+            .map(|(file, bytes)| format!("{{{}}}", payload(file, bytes)))
+            .collect();
         let artifacts: Vec<String> = self
             .artifacts
             .iter()
@@ -115,7 +130,10 @@ impl Release {
     pub fn bundle_with(&self, key: &SigningKey, extra: &[(&str, &[u8])]) -> Vec<u8> {
         let manifest = self.manifest();
         let signature = self.signature(key);
-        let mut entries: Vec<(&str, &[u8])> = vec![("plugin.json", manifest.as_slice()), ("plugin.json.sig", signature.as_slice())];
+        let mut entries: Vec<(&str, &[u8])> = vec![
+            ("plugin.json", manifest.as_slice()),
+            ("plugin.json.sig", signature.as_slice()),
+        ];
         entries.push((self.artifacts[0].1.as_str(), self.artifacts[0].2.as_slice()));
         for (file, bytes) in &self.resources {
             entries.push((file.as_str(), bytes.as_slice()));
@@ -143,7 +161,9 @@ impl World {
     pub fn new() -> Self {
         let official = test_key(1);
         let mut trust = TrustStore::new();
-        let signer = trust.pin_official(KeyId::parse(OFFICIAL).unwrap(), public(&official)).unwrap();
+        let signer = trust
+            .pin_official(KeyId::parse(OFFICIAL).unwrap(), public(&official))
+            .unwrap();
         trust.pin_publisher(id(GIT), signer);
         trust.record_revocations([], [], NOW);
         Self {
@@ -157,14 +177,21 @@ impl World {
     }
 
     pub fn dist(&self) -> Distribution<'_> {
-        Distribution::new(&self.net, &self.store, &self.clock, &self.trust, &self.policy)
+        Distribution::new(
+            &self.net,
+            &self.store,
+            &self.clock,
+            &self.trust,
+            &self.policy,
+        )
     }
 
     /// Serves manifest, signature and payloads beside `release.url()`.
     pub fn publish(&self, release: &Release, key: &SigningKey) {
         let dir = format!("{BASE}/{}", release.version);
         self.net.serve(&release.url(), &release.manifest());
-        self.net.serve(&format!("{dir}/plugin.json.sig"), &release.signature(key));
+        self.net
+            .serve(&format!("{dir}/plugin.json.sig"), &release.signature(key));
         for (_, file, bytes) in &release.artifacts {
             self.net.serve(&format!("{dir}/{file}"), bytes);
         }
@@ -173,24 +200,36 @@ impl World {
         }
     }
 
-    pub fn install(&self, release: &Release) -> Result<dctx_plugin_distribution::InstallReport, dctx_plugin_distribution::DistributionError> {
+    pub fn install(
+        &self,
+        release: &Release,
+    ) -> Result<dctx_plugin_distribution::InstallReport, dctx_plugin_distribution::DistributionError>
+    {
         let url = dctx_plugin_distribution::HttpsUrl::parse(&release.url()).unwrap();
         self.dist().install_url(&id(GIT), &url)
     }
 
-    pub fn publish_and_install(&self, release: &Release) -> dctx_plugin_distribution::InstallReport {
+    pub fn publish_and_install(
+        &self,
+        release: &Release,
+    ) -> dctx_plugin_distribution::InstallReport {
         self.publish(release, &self.official);
         self.install(release).unwrap()
     }
 
     pub fn active(&self) -> Option<Sha256Hex> {
-        self.dist().registry().unwrap().get(&id(GIT)).and_then(|record| record.active)
+        self.dist()
+            .registry()
+            .unwrap()
+            .get(&id(GIT))
+            .and_then(|record| record.active)
     }
 }
 
 /// Signed index bytes for `entries_json` under `key`.
 pub fn signed_index(entries_json: &str, sequence: u64, key: &SigningKey) -> (Vec<u8>, Vec<u8>) {
-    let bytes = format!("{{\"schema\":1,\"sequence\":{sequence},\"plugins\":[{entries_json}]}}").into_bytes();
+    let bytes = format!("{{\"schema\":1,\"sequence\":{sequence},\"plugins\":[{entries_json}]}}")
+        .into_bytes();
     let signature = sign(INDEX_DOMAIN, &bytes, key);
     (bytes, signature)
 }

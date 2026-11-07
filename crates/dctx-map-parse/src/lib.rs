@@ -14,9 +14,9 @@ pub mod domain;
 pub mod ports;
 
 pub use adapters::PureParser;
-#[cfg(feature = "syntax-tree-sitter")]
-pub use adapters::TreeSitterParser;
 #[cfg(not(feature = "syntax-tree-sitter"))]
 pub use adapters::PureParser as TreeSitterParser;
+#[cfg(feature = "syntax-tree-sitter")]
+pub use adapters::TreeSitterParser;
 pub use domain::{Language, ParseError, ParsedFile, RawReference, body_fingerprint};
 pub use ports::Parser;

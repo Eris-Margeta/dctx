@@ -12,7 +12,7 @@ pub mod domain;
 pub mod ports;
 
 pub use adapters::SqliteStore;
-pub use domain::*;
 /// Frozen pack snapshot port. [`SqliteStore`] implements it.
 pub use dctx_ports::FactStore;
+pub use domain::*;
 pub use ports::MapStore;

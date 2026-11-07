@@ -12,7 +12,10 @@ use crate::datatypes::{IgnoreRule, PatternType};
 /// A leading `!` negates, a trailing `/` restricts to directories and inline `#`
 /// comments are stripped. Simple shapes are classified as `Basename`, `Path`,
 /// `Suffix` (`*.ext`) or `Prefix` (`dir/*`); everything else with wildcards is `Glob`.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn parse_ignore_pattern_line(line: &str) -> Option<IgnoreRule> {
     let mut trimmed = line.trim();
     if trimmed.is_empty() || trimmed.starts_with('#') {
@@ -72,14 +75,23 @@ pub fn parse_rules(text: &str) -> Vec<IgnoreRule> {
 }
 
 /// Parses a static list of rule lines, in order.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn parse_rule_lines(lines: &[&str]) -> Vec<IgnoreRule> {
-    lines.iter().filter_map(|line| parse_ignore_pattern_line(line)).collect()
+    lines
+        .iter()
+        .filter_map(|line| parse_ignore_pattern_line(line))
+        .collect()
 }
 
 /// The text a glob rule is matched against: the relative path when the pattern
 /// contains `/`, otherwise the item name.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn glob_subject<'a>(rule: &IgnoreRule, relative_path: &'a str, name: &'a str) -> &'a str {
     if rule.pattern.contains('/') {
         relative_path
@@ -95,7 +107,10 @@ fn anchored(pattern: &str) -> &str {
 }
 
 /// Returns true if `rule` matches the item, ignoring negation.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn rule_matches(rule: &IgnoreRule, relative_path: &str, name: &str, is_dir: bool) -> bool {
     if rule.is_dir_only && !is_dir {
         return false;
@@ -116,7 +131,10 @@ pub fn rule_matches(rule: &IgnoreRule, relative_path: &str, name: &str, is_dir: 
         PatternType::Glob => {
             let (pattern, subject) = match rule.pattern.strip_prefix('/') {
                 Some(pattern) => (pattern, relative_path),
-                None => (rule.pattern.as_str(), glob_subject(rule, relative_path, name)),
+                None => (
+                    rule.pattern.as_str(),
+                    glob_subject(rule, relative_path, name),
+                ),
             };
             glob_match(pattern.as_bytes(), subject.as_bytes())
         }
@@ -125,7 +143,10 @@ pub fn rule_matches(rule: &IgnoreRule, relative_path: &str, name: &str, is_dir: 
 
 /// Applies `rules` in order with last-match-wins semantics: a matching rule sets the
 /// item selected, a matching negation clears it. Returns the final state.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(
+    clippy::must_use_candidate,
+    reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+)]
 pub fn last_match(rules: &[IgnoreRule], relative_path: &str, name: &str, is_dir: bool) -> bool {
     let mut selected = false;
     for rule in rules {
@@ -213,7 +234,12 @@ mod tests {
 
     #[test]
     fn inline_comment_is_stripped_and_comment_only_tail_is_dropped() {
-        assert_eq!(parse_ignore_pattern_line("*.tmp # scratch").unwrap().pattern, ".tmp");
+        assert_eq!(
+            parse_ignore_pattern_line("*.tmp # scratch")
+                .unwrap()
+                .pattern,
+            ".tmp"
+        );
         assert!(parse_ignore_pattern_line(" #only").is_none());
     }
 
@@ -244,10 +270,20 @@ mod tests {
     #[test]
     fn glob_with_slash_matches_the_path_and_without_matches_the_name() {
         let path_rule = parse_ignore_pattern_line("src/**/gen_*.rs").unwrap();
-        assert!(rule_matches(&path_rule, "src/a/gen_x.rs", "gen_x.rs", false));
+        assert!(rule_matches(
+            &path_rule,
+            "src/a/gen_x.rs",
+            "gen_x.rs",
+            false
+        ));
         assert!(!rule_matches(&path_rule, "lib/gen_x.rs", "gen_x.rs", false));
         let name_rule = parse_ignore_pattern_line("gen_?.rs").unwrap();
-        assert!(rule_matches(&name_rule, "deep/dir/gen_x.rs", "gen_x.rs", false));
+        assert!(rule_matches(
+            &name_rule,
+            "deep/dir/gen_x.rs",
+            "gen_x.rs",
+            false
+        ));
     }
 
     #[test]
@@ -255,7 +291,12 @@ mod tests {
         let corpus = parse_ignore_pattern_line("/corpus/").expect("rule");
         assert!(rule_matches(&corpus, "corpus", "corpus", true));
         assert!(!rule_matches(&corpus, "src/corpus", "corpus", true));
-        assert!(!rule_matches(&corpus, "corpus/ready.json", "ready.json", false));
+        assert!(!rule_matches(
+            &corpus,
+            "corpus/ready.json",
+            "ready.json",
+            false
+        ));
         let rooted = parse_rules("/*.log\n");
         assert!(last_match(&rooted, "a.log", "a.log", false));
         assert!(!last_match(&rooted, "sub/a.log", "a.log", false));
@@ -264,7 +305,12 @@ mod tests {
         assert!(last_match(&anywhere, "sub/a.log", "a.log", false));
         let negated = parse_rules("/corpus/*\n!/corpus/keep.json\n");
         assert!(last_match(&negated, "corpus/drop.json", "drop.json", false));
-        assert!(!last_match(&negated, "corpus/keep.json", "keep.json", false));
+        assert!(!last_match(
+            &negated,
+            "corpus/keep.json",
+            "keep.json",
+            false
+        ));
         assert!(!last_match(&negated, "other/drop.json", "drop.json", false));
         let root_children = parse_rules("/*\n");
         assert!(last_match(&root_children, "README", "README", false));

@@ -41,7 +41,10 @@ pub struct Capabilities {
 
 impl Capabilities {
     /// Capabilities of the build that is running, independent of session grants.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn current() -> Self {
         let enhanced = cfg!(feature = "syntax-rust") || cfg!(feature = "wire-json");
         let mut parsers = vec!["dctx-structural/2", "dctx-lex-js:1", "dctx-lex-md:1"];
@@ -71,12 +74,20 @@ impl Capabilities {
             segment_version: 1,
             languages: crate::languages::TAGS,
             parsers,
-            storage: if cfg!(feature = "segments") { "buffered-segments" } else { "caller-ports" },
+            storage: if cfg!(feature = "segments") {
+                "buffered-segments"
+            } else {
+                "caller-ports"
+            },
             cancellation: "checkpoint",
             native_code: false,
             subprocess: "none",
             git: false,
-            unsafe_boundary: if cfg!(feature = "syntax-rust") { "syn-dependency" } else { "none" },
+            unsafe_boundary: if cfg!(feature = "syntax-rust") {
+                "syn-dependency"
+            } else {
+                "none"
+            },
             features,
             freshness_modes: &["immutable_snapshot", "strict", "metadata"],
         }

@@ -125,7 +125,16 @@ impl Walker<'_> {
                 } else {
                     module
                 };
-                self.refer(0, scope, kind, target, None, key, key, Precision::Structural);
+                self.refer(
+                    0,
+                    scope,
+                    kind,
+                    target,
+                    None,
+                    key,
+                    key,
+                    Precision::Structural,
+                );
             }
             return;
         }
@@ -135,7 +144,16 @@ impl Walker<'_> {
                 Some(module) => format!("{module}::{name}"),
                 None => name,
             };
-            self.refer(0, scope, kind, target, alias, site, key, Precision::Structural);
+            self.refer(
+                0,
+                scope,
+                kind,
+                target,
+                alias,
+                site,
+                key,
+                Precision::Structural,
+            );
         }
     }
 }
@@ -150,7 +168,14 @@ mod tests {
         facts
             .references
             .iter()
-            .map(|r| (r.fact.kind, r.fact.name.clone(), r.fact.alias.clone(), r.fact.lines[0]))
+            .map(|r| {
+                (
+                    r.fact.kind,
+                    r.fact.name.clone(),
+                    r.fact.alias.clone(),
+                    r.fact.lines[0],
+                )
+            })
             .collect()
     }
 
@@ -166,7 +191,12 @@ mod tests {
                 (EdgeKind::Imports, "b::y".into(), Some("z".into()), 4),
                 (EdgeKind::Imports, "c".into(), None, 6),
                 (EdgeKind::Reexports, "e".into(), Some("all".into()), 7),
-                (EdgeKind::Reexports, "local".into(), Some("default".into()), 8),
+                (
+                    EdgeKind::Reexports,
+                    "local".into(),
+                    Some("default".into()),
+                    8
+                ),
             ]
         );
     }

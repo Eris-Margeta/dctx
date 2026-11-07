@@ -19,7 +19,12 @@ fn every_parity_case_matches_its_golden_outcome() {
                 status: Some(answer.report.status.as_str().to_owned()),
                 reason: Some(answer.report.reason.to_owned()),
                 code: None,
-                diagnostics: answer.report.diagnostics.iter().map(|(code, _)| code.as_str().to_owned()).collect(),
+                diagnostics: answer
+                    .report
+                    .diagnostics
+                    .iter()
+                    .map(|(code, _)| code.as_str().to_owned())
+                    .collect(),
                 receipts: answer.report.receipts.len(),
             },
             Err(failure) => Observed {
@@ -34,16 +39,32 @@ fn every_parity_case_matches_its_golden_outcome() {
 
 #[test]
 fn second_run_after_an_edit_is_already_protected_with_zero_effects() {
-    for case in cases().iter().filter(|case| case.raw.get("expected").and_then(|e| e.get("writes")).is_some()) {
+    for case in cases().iter().filter(|case| {
+        case.raw
+            .get("expected")
+            .and_then(|e| e.get("writes"))
+            .is_some()
+    }) {
         let (mut broker, binding, invocation) = setup(case);
-        let Ok(first) = invoke(&mut broker, &binding, &invocation) else { continue };
+        let Ok(first) = invoke(&mut broker, &binding, &invocation) else {
+            continue;
+        };
         if broker.writes == 0 {
             continue;
         }
         let (writes, spawns) = (broker.writes, broker.git_spawns);
         let second = invoke(&mut broker, &binding, &invocation).expect("second run");
         assert_eq!(second.report.reason, "already-protected", "{}", case.id);
-        assert_eq!((broker.writes, broker.git_spawns), (writes, spawns), "{}: no retry of staging", case.id);
-        assert!(first.report.protected && second.report.protected, "{}", case.id);
+        assert_eq!(
+            (broker.writes, broker.git_spawns),
+            (writes, spawns),
+            "{}: no retry of staging",
+            case.id
+        );
+        assert!(
+            first.report.protected && second.report.protected,
+            "{}",
+            case.id
+        );
     }
 }

@@ -7,6 +7,8 @@
 
 #![forbid(unsafe_code)]
 
+mod common;
+
 use std::fmt::Write as _;
 use std::fs;
 use std::path::PathBuf;
@@ -22,10 +24,20 @@ struct Repository {
 impl Repository {
     fn new(label: &str) -> Self {
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
-        let root = std::env::temp_dir().join(format!("dctx-e02n-{label}-{}-{n}", std::process::id()));
+        let root =
+            std::env::temp_dir().join(format!("dctx-e02n-{label}-{}-{n}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
         fs::create_dir_all(root.join("repo")).expect("repo");
-        for folder in ["home", "config", "cache", "plugins", "map-cache", "local-app-data", "empty-path", "tmp"] {
+        for folder in [
+            "home",
+            "config",
+            "cache",
+            "plugins",
+            "map-cache",
+            "local-app-data",
+            "empty-path",
+            "tmp",
+        ] {
             fs::create_dir(root.join(folder)).expect("isolated directory");
         }
         Self { root }
@@ -37,20 +49,18 @@ impl Repository {
 
     fn output(&self, args: &[&str]) -> Output {
         let mut command = Command::new(env!("CARGO_BIN_EXE_dctx-cli"));
-        command.current_dir(self.repo()).env_clear().args(args).env("DCTX_AUTO_CLEAN", "0").env("NO_COLOR", "1");
+        command
+            .current_dir(self.repo())
+            .env_clear()
+            .args(args)
+            .env("DCTX_AUTO_CLEAN", "0")
+            .env("NO_COLOR", "1");
+        common::isolated_dirs(&mut command, &self.root);
         for (variable, folder) in [
-            ("HOME", "home"),
-            ("USERPROFILE", "home"),
-            ("XDG_CONFIG_HOME", "config"),
-            ("XDG_CACHE_HOME", "cache"),
-            ("LOCALAPPDATA", "local-app-data"),
             ("DCTX_PLUGIN_ROOT", "plugins"),
             ("DCTX_CACHE_DIR", "cache"),
             ("DCTX_MAP_CACHE", "map-cache"),
             ("PATH", "empty-path"),
-            ("TMPDIR", "tmp"),
-            ("TMP", "tmp"),
-            ("TEMP", "tmp"),
         ] {
             command.env(variable, self.root.join(folder));
         }
@@ -134,7 +144,10 @@ fn line_slice(text: &str, start: u32, end: u32) -> String {
 
 fn without_mark(source: &str) -> String {
     let mut lines: Vec<&str> = source.split_inclusive('\n').collect();
-    if lines.last().is_some_and(|line| line.starts_with("[DCTX_TRUNCATED]") || *line == "[DCTX_OMITTED]\n") {
+    if lines
+        .last()
+        .is_some_and(|line| line.starts_with("[DCTX_TRUNCATED]") || *line == "[DCTX_OMITTED]\n")
+    {
         lines.pop();
     }
     lines.concat()
@@ -192,7 +205,16 @@ fn a_module_past_the_budget_returns_a_marked_prefix_and_the_rest_once() {
                 "--cursor",
                 token,
             ]),
-            None => repo.run(&["map", "read", "m:wide.rs", "--limit", "1", "--json", "--budget", "1000"]),
+            None => repo.run(&[
+                "map",
+                "read",
+                "m:wide.rs",
+                "--limit",
+                "1",
+                "--json",
+                "--budget",
+                "1000",
+            ]),
         };
         let source = json_field(&page, "source_utf8").expect("source");
         let marked = source.contains("[DCTX_TRUNCATED]");

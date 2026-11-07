@@ -2,10 +2,9 @@
 //! Visibility, attributes, aliases and final fact assembly.
 //! Implements Ruby's attribute and alias conventions as method symbols.
 //! A dynamic name is skipped; the extractor does not call `define_method`.
-use super::{assign_ordinals, labeled, qualify, references::symbol_name, Scope, Sym, Walker};
+use super::{Scope, Sym, Walker, assign_ordinals, labeled, qualify, references::symbol_name};
 use crate::domain::{
-    Completion, Diagnostic, Dialect, Labeled, LexError, LexedFile, Precision,
-    RawReference,
+    Completion, Diagnostic, Dialect, Labeled, LexError, LexedFile, Precision, RawReference,
 };
 use crate::lexer::{Kind, Lexed};
 use dctx_map_model::{Confidence, Edge, EdgeKind, StableId, SymbolKind};
@@ -219,8 +218,14 @@ impl Walker<'_> {
         diagnostics.sort_by_key(|diagnostic| diagnostic.byte);
         let partial = !diagnostics.is_empty();
         diagnostics.truncate(LexedFile::MAX_DIAGNOSTICS);
-        let first = diagnostics.first().map_or(u32::MAX, |diagnostic| diagnostic.byte);
-        let ids: Vec<StableId> = self.nodes.iter().map(|draft| draft.node.id.clone()).collect();
+        let first = diagnostics
+            .first()
+            .map_or(u32::MAX, |diagnostic| diagnostic.byte);
+        let ids: Vec<StableId> = self
+            .nodes
+            .iter()
+            .map(|draft| draft.node.id.clone())
+            .collect();
         let parents: Vec<usize> = self.nodes.iter().map(|draft| draft.parent).collect();
         let path = self.path.clone();
         let edges = self
@@ -243,7 +248,8 @@ impl Walker<'_> {
                 }
             })
             .collect();
-        self.refs.sort_by_key(|reference| (reference.start, reference.end));
+        self.refs
+            .sort_by_key(|reference| (reference.start, reference.end));
         let references = self
             .refs
             .iter()
@@ -359,13 +365,17 @@ impl Walker<'_> {
     pub(super) fn tok_end(&self) -> u32 {
         self.toks
             .get(self.i)
-            .map_or(u32::try_from(self.src.len()).unwrap_or(u32::MAX), |token| token.end)
+            .map_or(u32::try_from(self.src.len()).unwrap_or(u32::MAX), |token| {
+                token.end
+            })
     }
 
     pub(super) fn end_at(&self, index: usize) -> u32 {
         self.toks
             .get(index)
-            .map_or(u32::try_from(self.src.len()).unwrap_or(u32::MAX), |token| token.end)
+            .map_or(u32::try_from(self.src.len()).unwrap_or(u32::MAX), |token| {
+                token.end
+            })
     }
 
     pub(super) fn prev_end(&self) -> u32 {
@@ -409,7 +419,11 @@ impl Walker<'_> {
 
     pub(super) fn is_const(&self) -> bool {
         self.kind_at(self.i) == Some(Kind::Ident)
-            && self.cur().chars().next().is_some_and(|ch| ch.is_ascii_uppercase())
+            && self
+                .cur()
+                .chars()
+                .next()
+                .is_some_and(|ch| ch.is_ascii_uppercase())
     }
 
     pub(super) fn block_word(&self) -> bool {
@@ -466,7 +480,11 @@ mod tests {
         let facts = RubyLexer::default()
             .extract("p.rb", b"class A\nattr_accessor :width\nend\n")
             .expect("extract");
-        let names: Vec<_> = facts.nodes.iter().map(|node| node.fact.name.as_str()).collect();
+        let names: Vec<_> = facts
+            .nodes
+            .iter()
+            .map(|node| node.fact.name.as_str())
+            .collect();
         assert!(names.contains(&"A::width"), "{names:?}");
         assert!(names.contains(&"A::width="), "{names:?}");
         assert!(facts.nodes.iter().any(|node| {

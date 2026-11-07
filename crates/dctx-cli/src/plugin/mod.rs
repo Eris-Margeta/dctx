@@ -138,7 +138,10 @@ pub(crate) fn outcome_at(
 ) -> Result<(bool, Outcome), String> {
     let request = parse::parse_argv(args)?;
     if matches!(request.action, Action::Help) {
-        return Ok((request.json, help_outcome(&render::help_text(), request.json)));
+        return Ok((
+            request.json,
+            help_outcome(&render::help_text(), request.json),
+        ));
     }
     if matches!(request.action, Action::List) {
         return Ok((request.json, list_at(root, request.json)));
@@ -148,13 +151,18 @@ pub(crate) fn outcome_at(
         Err(error) => {
             let command = if args.get(1).is_some_and(|arg| arg == "plugin") {
                 args.get(2).map_or("plugin", String::as_str)
-            } else { "git" };
+            } else {
+                "git"
+            };
             let body = if request.json {
                 format!(
                     "{{\"ok\":false,\"command\":{},\"error\":\"UnsupportedTarget\",\"detail\":{}}}",
-                    render::json_string(command), render::json_string(&error.to_string())
+                    render::json_string(command),
+                    render::json_string(&error.to_string())
                 )
-            } else { format!("{command}: {error}") };
+            } else {
+                format!("{command}: {error}")
+            };
             return Ok((request.json, Outcome { code: 1, body }));
         }
     };
@@ -181,14 +189,23 @@ fn list_at(root: &std::path::Path, json: bool) -> Outcome {
             Some(bytes) => dctx_plugin_distribution::domain::registry_codec::decode(&bytes)?,
             None => Registry::default(),
         };
-        let mut rows = registry.records().map(|(id, _)| registry.status(id, &trust, now))
+        let mut rows = registry
+            .records()
+            .map(|(id, _)| registry.status(id, &trust, now))
             .collect::<Result<Vec<_>, _>>()?;
         if let (Ok(id), Ok(version)) = (bundled::id(), bundled::installed_version()) {
             if !rows.iter().any(|row| row.id == id) {
                 rows.push(PluginStatus {
-                    id, origin: Origin::Bundled, version: Some(version.version),
-                    enablement: if bundled::worker_linked() { Enablement::Enabled } else { Enablement::Disabled },
-                    needs_consent: bundled::worker_linked(), blocked: !bundled::worker_linked(),
+                    id,
+                    origin: Origin::Bundled,
+                    version: Some(version.version),
+                    enablement: if bundled::worker_linked() {
+                        Enablement::Enabled
+                    } else {
+                        Enablement::Disabled
+                    },
+                    needs_consent: bundled::worker_linked(),
+                    blocked: !bundled::worker_linked(),
                     revocation_age_secs: trust.revocation_age(now),
                 });
             }
@@ -200,37 +217,70 @@ fn list_at(root: &std::path::Path, json: bool) -> Outcome {
         Err(error) => {
             let name = match error {
                 dctx_plugin_distribution::DistributionError::Malformed { .. } => "Malformed",
-                dctx_plugin_distribution::DistributionError::LimitExceeded { .. } => "LimitExceeded",
+                dctx_plugin_distribution::DistributionError::LimitExceeded { .. } => {
+                    "LimitExceeded"
+                }
                 _ => "Interrupted",
             };
             let body = if json {
-                format!("{{\"ok\":false,\"command\":\"list\",\"error\":\"{name}\",\"detail\":{}}}",
-                    render::json_string(&error.to_string()))
-            } else { format!("list: {error}") };
+                format!(
+                    "{{\"ok\":false,\"command\":\"list\",\"error\":\"{name}\",\"detail\":{}}}",
+                    render::json_string(&error.to_string())
+                )
+            } else {
+                format!("list: {error}")
+            };
             return Outcome { code: 1, body };
         }
     };
-    let rendered = rows.iter().map(|row| {
-        let bundled = row.id.as_str() == "dctx/git";
-        let alias = if bundled { bundled::catalog().alias } else { String::new() };
-        let excluded = bundled && !bundled::worker_linked();
-        let consent = if excluded { "unavailable" } else { render::consent_name(row.needs_consent, row.enablement) };
-        let worker = if excluded { "excluded" }
-            else if row.origin == Origin::Bundled && bundled::worker_linked() { "same-binary" } else { "host-target" };
-        render::status_line(row, &alias, consent, worker, json)
-    }).collect::<Vec<_>>();
+    let rendered = rows
+        .iter()
+        .map(|row| {
+            let bundled = row.id.as_str() == "dctx/git";
+            let alias = if bundled {
+                bundled::catalog().alias
+            } else {
+                String::new()
+            };
+            let excluded = bundled && !bundled::worker_linked();
+            let consent = if excluded {
+                "unavailable"
+            } else {
+                render::consent_name(row.needs_consent, row.enablement)
+            };
+            let worker = if excluded {
+                "excluded"
+            } else if row.origin == Origin::Bundled && bundled::worker_linked() {
+                "same-binary"
+            } else {
+                "host-target"
+            };
+            render::status_line(row, &alias, consent, worker, json)
+        })
+        .collect::<Vec<_>>();
     let body = if json {
         format!("{{\"ok\":true,\"command\":\"list\",\"facade_git\":{},\"facade_spawns\":0,\"facade_git_children\":0,\"plugins\":[{}]}}",
             dctx::Capabilities::current().git, rendered.join(","))
-    } else { rendered.join("\n") };
+    } else {
+        rendered.join("\n")
+    };
     Outcome { code: 0, body }
 }
 
 fn help_outcome(text: &str, json: bool) -> Outcome {
     if json {
-        Outcome { code: 0, body: format!("{{\"ok\":true,\"command\":\"help\",\"text\":{}}}", render::json_string(text)) }
+        Outcome {
+            code: 0,
+            body: format!(
+                "{{\"ok\":true,\"command\":\"help\",\"text\":{}}}",
+                render::json_string(text)
+            ),
+        }
     } else {
-        Outcome { code: 0, body: text.to_owned() }
+        Outcome {
+            code: 0,
+            body: text.to_owned(),
+        }
     }
 }
 

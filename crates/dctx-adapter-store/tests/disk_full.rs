@@ -17,12 +17,22 @@ fn disk_full_keeps_the_committed_generation() {
     let first = segment("kept");
     store.publish(req("main", 1, first.clone())).unwrap();
     fs.set_disk_budget(Some(0));
-    let err = store.publish(req("main", 2, segment("blocked"))).unwrap_err();
+    let err = store
+        .publish(req("main", 2, segment("blocked")))
+        .unwrap_err();
     assert_eq!(err, StoreError::DiskFull);
-    assert_ne!(err, StoreError::CacheLimit { requested: 0, available: 0 });
+    assert_ne!(
+        err,
+        StoreError::CacheLimit {
+            requested: 0,
+            available: 0
+        }
+    );
     let pin = store.pin("main").unwrap();
     assert_eq!(pin.generation(), 1);
-    let bytes = store.read_segment(&pin, pin.segments()[0].digest()).unwrap();
+    let bytes = store
+        .read_segment(&pin, pin.segments()[0].digest())
+        .unwrap();
     assert_eq!(bytes, first);
     decode(&bytes, SegmentRole::Fact).unwrap();
     fs.set_disk_budget(None);
@@ -34,9 +44,17 @@ fn disk_full_keeps_the_committed_generation() {
 fn durable_mode_refuses_a_filesystem_without_sync() {
     let fs = MemoryFs::no_sync();
     let store = open(fs.clone());
-    let err = store.publish(req("main", 1, segment("unsynced"))).unwrap_err();
-    assert_eq!(err, StoreError::UnsupportedDurability { capability: "sync" });
-    assert_eq!(fs.list_prefix("segments/").unwrap(), [] as [std::string::String; 0]);
+    let err = store
+        .publish(req("main", 1, segment("unsynced")))
+        .unwrap_err();
+    assert_eq!(
+        err,
+        StoreError::UnsupportedDurability { capability: "sync" }
+    );
+    assert_eq!(
+        fs.list_prefix("segments/").unwrap(),
+        [] as [std::string::String; 0]
+    );
 
     let fs = MemoryFs::posix();
     let store = open(fs.clone());

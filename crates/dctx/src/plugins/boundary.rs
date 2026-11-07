@@ -6,8 +6,8 @@
 
 use dctx_plugin_host::ports::{AuditPort, MAX_RECOVERY_RECORDS};
 use dctx_plugin_host::{
-    Broker, Budget, HandleKind, HookRun, HookStatus, HostRefusal, HostSession, LaunchFacts, Ledger, Need, Reply, StopReason, Supervisor,
-    WorkerPhase,
+    Broker, Budget, HandleKind, HookRun, HookStatus, HostRefusal, HostSession, LaunchFacts, Ledger,
+    Need, Reply, StopReason, Supervisor, WorkerPhase,
 };
 use dctx_plugin_protocol::records::broker::{ChunkRead, FileReplace, FileStage, GitAddIgnore};
 use dctx_plugin_protocol::records::bytes::Chunk;
@@ -38,16 +38,33 @@ pub(crate) struct BoundaryInput<'a> {
     pub committed: bool,
 }
 
-#[allow(clippy::needless_pass_by_value, reason = "The invocation consumes its assembled boundary input at the hook transaction boundary.")]
-pub(crate) fn run_plan(host: &mut PluginHost, input: BoundaryInput<'_>, warnings: &mut Vec<HookWarning>) -> Result<(), DctxError> {
-    let BoundaryInput { plan, boundary, included, epoch, now, committed } = input;
+#[allow(
+    clippy::needless_pass_by_value,
+    reason = "The invocation consumes its assembled boundary input at the hook transaction boundary."
+)]
+pub(crate) fn run_plan(
+    host: &mut PluginHost,
+    input: BoundaryInput<'_>,
+    warnings: &mut Vec<HookWarning>,
+) -> Result<(), DctxError> {
+    let BoundaryInput {
+        plan,
+        boundary,
+        included,
+        epoch,
+        now,
+        committed,
+    } = input;
     let plugins = plan::participants(plan, boundary);
     if plugins.is_empty() {
         return Ok(());
     }
-    let entries = plan::entries(&plugins).map_err(|refusal| hook_err(boundary, refusal.reason, committed))?;
-    let edges = plan::edges(&plugins).map_err(|refusal| hook_err(boundary, refusal.reason, committed))?;
-    let mut run = HookRun::plan(&entries, &edges).map_err(|refusal| hook_err(boundary, refusal.reason, committed))?;
+    let entries =
+        plan::entries(&plugins).map_err(|refusal| hook_err(boundary, refusal.reason, committed))?;
+    let edges =
+        plan::edges(&plugins).map_err(|refusal| hook_err(boundary, refusal.reason, committed))?;
+    let mut run = HookRun::plan(&entries, &edges)
+        .map_err(|refusal| hook_err(boundary, refusal.reason, committed))?;
     if committed {
         run.published();
     }
@@ -69,9 +86,15 @@ pub(crate) fn run_plan(host: &mut PluginHost, input: BoundaryInput<'_>, warnings
             Ok(receipts) => (true, "ok", receipts),
             Err((reason, receipts)) => (false, reason, receipts),
         };
-        let status = run.record(ok, receipts, Vec::new()).map_err(|refusal| hook_err(boundary, refusal.reason, committed))?;
+        let status = run
+            .record(ok, receipts, Vec::new())
+            .map_err(|refusal| hook_err(boundary, refusal.reason, committed))?;
         if status == HookStatus::AdvisoryFailure {
-            warnings.push(HookWarning { hook: boundary.as_str(), reason, output_committed: committed });
+            warnings.push(HookWarning {
+                hook: boundary.as_str(),
+                reason,
+                output_committed: committed,
+            });
         }
         if status == HookStatus::RequiredFailure {
             failure.get_or_insert(reason);
@@ -85,7 +108,10 @@ pub(crate) fn run_plan(host: &mut PluginHost, input: BoundaryInput<'_>, warnings
 }
 
 fn find_plugin<'a>(plugins: &[&'a PluginBinding], id: &PluginId) -> Option<&'a PluginBinding> {
-    plugins.iter().copied().find(|plugin| plugin.id == id.as_str())
+    plugins
+        .iter()
+        .copied()
+        .find(|plugin| plugin.id == id.as_str())
 }
 
 fn invoke(
@@ -97,8 +123,11 @@ fn invoke(
     epoch: u64,
     now: u64,
 ) -> Result<Vec<Token>, (&'static str, Vec<Token>)> {
-    let invocation = host.next_token("inv").map_err(|refusal| (refusal.reason, Vec::new()))?;
-    let authority = plan::authority(host, plugin, &invocation, included, epoch).map_err(|refusal| (refusal.reason, Vec::new()))?;
+    let invocation = host
+        .next_token("inv")
+        .map_err(|refusal| (refusal.reason, Vec::new()))?;
+    let authority = plan::authority(host, plugin, &invocation, included, epoch)
+        .map_err(|refusal| (refusal.reason, Vec::new()))?;
     let gate = RequestGate::new(plugin, &authority, included, epoch);
     let origin = plan::origin_of(plugin.origin);
     host.set_launch(plan::launch_kind(origin));
@@ -115,18 +144,27 @@ fn invoke(
         &[plan.limits.diagnostics_bytes],
         &[plan.limits.outstanding_requests.max(1)],
     );
-    let outstanding = usize::try_from(plan.limits.outstanding_requests.min(16)).unwrap_or(1).max(1);
+    let outstanding = usize::try_from(plan.limits.outstanding_requests.min(16))
+        .unwrap_or(1)
+        .max(1);
     let mut adapters = host.adapters();
-    let recovered = adapters.audit.recover(MAX_RECOVERY_RECORDS).map_err(|_| "recovery-unavailable").and_then(|records| {
-        let mut ledger = Ledger::new(64);
-        ledger.restore(&records).map_err(|refusal| refusal.reason)?;
-        Ok(ledger)
-    });
+    let recovered = adapters
+        .audit
+        .recover(MAX_RECOVERY_RECORDS)
+        .map_err(|_| "recovery-unavailable")
+        .and_then(|records| {
+            let mut ledger = Ledger::new(64);
+            ledger.restore(&records).map_err(|refusal| refusal.reason)?;
+            Ok(ledger)
+        });
     let mut supervisor = Supervisor::new(facts, liveness(&plan.liveness), adapters.process);
     if let Err(refusal) = supervisor.launch() {
         return Err((refusal.reason, Vec::new()));
     }
-    if let Err(refusal) = supervisor.negotiated().and_then(|()| supervisor.initialized()) {
+    if let Err(refusal) = supervisor
+        .negotiated()
+        .and_then(|()| supervisor.initialized())
+    {
         return Err((refusal.reason, Vec::new()));
     }
     let ledger = match recovered {
@@ -137,7 +175,13 @@ fn invoke(
             return Err((reason, Vec::new()));
         }
     };
-    let broker = Broker::new(authority, ledger, budget, plan.limits.frame_bytes.max(1), (adapters.audit, adapters.files, adapters.recipes));
+    let broker = Broker::new(
+        authority,
+        ledger,
+        budget,
+        plan.limits.frame_bytes.max(1),
+        (adapters.audit, adapters.files, adapters.recipes),
+    );
     let mut session = HostSession::new(broker, supervisor, outstanding);
     if let Err(refusal) = session.supervisor_mut().invoke(now) {
         shutdown(&mut session, now);
@@ -161,17 +205,46 @@ fn apply(
     now: u64,
 ) -> Result<(), HostRefusal> {
     let path = ProjectPath::new(".gitignore").map_err(|_| super::ports::bad_token())?;
-    let file = session.broker_mut().register(HandleKind::File { path: path.clone() })?;
+    let file = session
+        .broker_mut()
+        .register(HandleKind::File { path: path.clone() })?;
     let repository = session.broker_mut().register(HandleKind::Repository)?;
     for effect in effects {
         match effect {
-            HookEffect::Fail => return Err(HostRefusal::new(ErrorCode::ExternalProgramFailed, Phase::Invoke, "hook-failed")),
-            HookEffect::Warn => return Err(HostRefusal::new(ErrorCode::ExternalProgramFailed, Phase::Invoke, "hook-warning")),
+            HookEffect::Fail => {
+                return Err(HostRefusal::new(
+                    ErrorCode::ExternalProgramFailed,
+                    Phase::Invoke,
+                    "hook-failed",
+                ));
+            }
+            HookEffect::Warn => {
+                return Err(HostRefusal::new(
+                    ErrorCode::ExternalProgramFailed,
+                    Phase::Invoke,
+                    "hook-warning",
+                ));
+            }
             _ => {}
         }
-        let read = Request::FileRead(ChunkRead { handle: file.clone(), offset: 0, length: 64, precondition: None });
-        let need = Need::FileRead { path: path.clone(), bytes: 64 };
-        let Reply::Chunk { precondition: Some(precondition), size, .. } = gate.call(session, host, read, need, now)? else { return Err(super::ports::bad_token()) };
+        let read = Request::FileRead(ChunkRead {
+            handle: file.clone(),
+            offset: 0,
+            length: 64,
+            precondition: None,
+        });
+        let need = Need::FileRead {
+            path: path.clone(),
+            bytes: 64,
+        };
+        let Reply::Chunk {
+            precondition: Some(precondition),
+            size,
+            ..
+        } = gate.call(session, host, read, need, now)?
+        else {
+            return Err(super::ports::bad_token());
+        };
         let (request, need) = match effect {
             HookEffect::ReadGitignore | HookEffect::Fail | HookEffect::Warn => continue,
             HookEffect::ReplaceGitignore(bytes) => {
@@ -189,8 +262,22 @@ fn apply(
                     bytes: Chunk::new(bytes).map_err(|_| HostRefusal::limit("chunk"))?,
                     final_chunk: true,
                 });
-                let Reply::Staged { upload, sealed: true } = gate.call(session, host, stage, need.clone(), now)? else { return Err(super::ports::bad_token()) };
-                (Request::FileReplace(FileReplace { resource: file.clone(), precondition, upload, action_id: host.next_token("a")? }), need)
+                let Reply::Staged {
+                    upload,
+                    sealed: true,
+                } = gate.call(session, host, stage, need.clone(), now)?
+                else {
+                    return Err(super::ports::bad_token());
+                };
+                (
+                    Request::FileReplace(FileReplace {
+                        resource: file.clone(),
+                        precondition,
+                        upload,
+                        action_id: host.next_token("a")?,
+                    }),
+                    need,
+                )
             }
             HookEffect::StageGitignore => (
                 Request::ProgramRun(GitAddIgnore {
@@ -202,7 +289,10 @@ fn apply(
                 Need::GitAddIgnore { path: path.clone() },
             ),
         };
-        if !matches!(gate.call(session, host, request, need, now)?, Reply::Receipt { .. }) {
+        if !matches!(
+            gate.call(session, host, request, need, now)?,
+            Reply::Receipt { .. }
+        ) {
             return Err(super::ports::bad_token());
         }
     }
@@ -219,18 +309,38 @@ fn shutdown(session: &mut LiveSession, now: u64) {
 
 fn liveness(policy: &PlanLiveness) -> WireLiveness {
     match *policy {
-        PlanLiveness::Interactive { sample_ms, cancel_grace_ms } => WireLiveness::Interactive { sample_ms, cancel_grace_ms },
-        PlanLiveness::UnattendedFailClosed { sample_ms, cancel_grace_ms } => {
-            WireLiveness::UnattendedFailClosed { sample_ms, cancel_grace_ms }
-        }
-        PlanLiveness::UnattendedBounded { sample_ms, cancel_grace_ms, inactivity_ms } => {
-            WireLiveness::UnattendedBoundedObservation { sample_ms, cancel_grace_ms, inactivity_ms }
-        }
+        PlanLiveness::Interactive {
+            sample_ms,
+            cancel_grace_ms,
+        } => WireLiveness::Interactive {
+            sample_ms,
+            cancel_grace_ms,
+        },
+        PlanLiveness::UnattendedFailClosed {
+            sample_ms,
+            cancel_grace_ms,
+        } => WireLiveness::UnattendedFailClosed {
+            sample_ms,
+            cancel_grace_ms,
+        },
+        PlanLiveness::UnattendedBounded {
+            sample_ms,
+            cancel_grace_ms,
+            inactivity_ms,
+        } => WireLiveness::UnattendedBoundedObservation {
+            sample_ms,
+            cancel_grace_ms,
+            inactivity_ms,
+        },
     }
 }
 
 fn hook_err(boundary: Boundary, reason: &'static str, committed: bool) -> DctxError {
-    DctxError::Hook { hook: boundary.as_str(), reason, output_committed: committed }
+    DctxError::Hook {
+        hook: boundary.as_str(),
+        reason,
+        output_committed: committed,
+    }
 }
 
 #[cfg(test)]
@@ -240,7 +350,18 @@ mod tests {
 
     #[test]
     fn bundled_origin_is_not_marked_confined_by_the_mapper() {
-        assert_eq!(plan::origin_of(Some(dctx_template::PluginOrigin::Bundled)), Origin::BundledGit);
-        assert!(!LaunchFacts { origin: Origin::BundledGit, verified: true, compatible: true, confined: false }.confined);
+        assert_eq!(
+            plan::origin_of(Some(dctx_template::PluginOrigin::Bundled)),
+            Origin::BundledGit
+        );
+        assert!(
+            !LaunchFacts {
+                origin: Origin::BundledGit,
+                verified: true,
+                compatible: true,
+                confined: false
+            }
+            .confined
+        );
     }
 }

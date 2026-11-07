@@ -8,9 +8,9 @@ use crate::error::TemplateError;
 use crate::plugin::{ConfigValue, FieldKind, FieldSpec, RESERVED_ALIASES};
 
 #[cfg(test)]
-use std::collections::BTreeSet;
-#[cfg(test)]
 use crate::plugin::Capability;
+#[cfg(test)]
+use std::collections::BTreeSet;
 
 mod records;
 mod selectors;
@@ -48,13 +48,38 @@ fn component(text: &str) -> bool {
     if !first.is_ascii_lowercase() && !first.is_ascii_digit() {
         return false;
     }
-    bytes.iter().all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || matches!(byte, b'.' | b'_' | b'-'))
-        && !reserved_device(text)
+    bytes.iter().all(|byte| {
+        byte.is_ascii_lowercase() || byte.is_ascii_digit() || matches!(byte, b'.' | b'_' | b'-')
+    }) && !reserved_device(text)
 }
 
 fn reserved_device(text: &str) -> bool {
     let stem = text.split('.').next().unwrap_or(text);
-    matches!(stem, "con" | "prn" | "aux" | "nul" | "com1" | "com2" | "com3" | "com4" | "com5" | "com6" | "com7" | "com8" | "com9" | "lpt1" | "lpt2" | "lpt3" | "lpt4" | "lpt5" | "lpt6" | "lpt7" | "lpt8" | "lpt9")
+    matches!(
+        stem,
+        "con"
+            | "prn"
+            | "aux"
+            | "nul"
+            | "com1"
+            | "com2"
+            | "com3"
+            | "com4"
+            | "com5"
+            | "com6"
+            | "com7"
+            | "com8"
+            | "com9"
+            | "lpt1"
+            | "lpt2"
+            | "lpt3"
+            | "lpt4"
+            | "lpt5"
+            | "lpt6"
+            | "lpt7"
+            | "lpt8"
+            | "lpt9"
+    )
 }
 
 /// Exact semver, not a range, URL or branch.
@@ -62,12 +87,21 @@ pub(crate) fn require_semver(text: &str) -> Result<(), TemplateError> {
     if semver_ok(text) {
         Ok(())
     } else {
-        Err(TemplateError::InvalidSyntax { line: 0, detail: "plugin version".into() })
+        Err(TemplateError::InvalidSyntax {
+            line: 0,
+            detail: "plugin version".into(),
+        })
     }
 }
 
 fn semver_ok(text: &str) -> bool {
-    if text.len() > 128 || text.contains("://") || text.contains('^') || text.contains('~') || text.contains('*') || text.contains(' ') {
+    if text.len() > 128
+        || text.contains("://")
+        || text.contains('^')
+        || text.contains('~')
+        || text.contains('*')
+        || text.contains(' ')
+    {
         return false;
     }
     let (body, build) = match text.split_once('+') {
@@ -95,7 +129,9 @@ fn semver_ok(text: &str) -> bool {
 }
 
 fn numeric(part: &str) -> bool {
-    !part.is_empty() && (part.len() <= 1 || !part.starts_with('0')) && part.bytes().all(|byte| byte.is_ascii_digit())
+    !part.is_empty()
+        && (part.len() <= 1 || !part.starts_with('0'))
+        && part.bytes().all(|byte| byte.is_ascii_digit())
 }
 
 fn pre_ok(text: &str, reject_leading_zero: bool) -> bool {
@@ -106,7 +142,9 @@ fn pre_ok(text: &str, reject_leading_zero: bool) -> bool {
         if part.is_empty() {
             return false;
         }
-        let ident = part.bytes().all(|byte| byte.is_ascii_alphanumeric() || byte == b'-');
+        let ident = part
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-');
         let numeric_part = part.bytes().all(|byte| byte.is_ascii_digit());
         ident && !(reject_leading_zero && numeric_part && part.len() > 1 && part.starts_with('0'))
     })
@@ -118,7 +156,9 @@ pub(crate) fn organization_name(name: &str) -> bool {
     !bytes.is_empty()
         && bytes.len() <= 128
         && bytes[0].is_ascii_lowercase()
-        && bytes.iter().all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || matches!(byte, b'.' | b'_' | b'-'))
+        && bytes.iter().all(|byte| {
+            byte.is_ascii_lowercase() || byte.is_ascii_digit() || matches!(byte, b'.' | b'_' | b'-')
+        })
 }
 
 /// Alias grammar, including the reserved built-ins.
@@ -129,12 +169,19 @@ pub(crate) fn check_alias(alias: &str) -> Result<(), TemplateError> {
     let bytes = alias.as_bytes();
     let shape = bytes.len() <= 64
         && bytes[0].is_ascii_lowercase()
-        && bytes.iter().all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || *byte == b'-');
+        && bytes
+            .iter()
+            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || *byte == b'-');
     if !shape {
-        return Err(TemplateError::InvalidSyntax { line: 0, detail: "alias".into() });
+        return Err(TemplateError::InvalidSyntax {
+            line: 0,
+            detail: "alias".into(),
+        });
     }
     if RESERVED_ALIASES.contains(&alias) {
-        return Err(TemplateError::ReservedAlias { alias: alias.to_string() });
+        return Err(TemplateError::ReservedAlias {
+            alias: alias.to_string(),
+        });
     }
     Ok(())
 }
@@ -142,8 +189,15 @@ pub(crate) fn check_alias(alias: &str) -> Result<(), TemplateError> {
 /// `sha256:` digest or 64 hex digits.
 pub(crate) fn parse_digest(text: &str) -> Result<[u8; 32], TemplateError> {
     let hex = text.strip_prefix("sha256:").unwrap_or(text);
-    let bad = || TemplateError::InvalidSyntax { line: 0, detail: "plugin digest".into() };
-    if hex.len() != 64 || !hex.bytes().all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f')) {
+    let bad = || TemplateError::InvalidSyntax {
+        line: 0,
+        detail: "plugin digest".into(),
+    };
+    if hex.len() != 64
+        || !hex
+            .bytes()
+            .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'))
+    {
         return Err(bad());
     }
     let mut out = [0u8; 32];
@@ -157,36 +211,58 @@ pub(crate) fn parse_digest(text: &str) -> Result<[u8; 32], TemplateError> {
 /// Rejects `${...}` and `{{...}}` in a plugin scalar.
 pub(crate) fn plain_text(text: &str) -> Result<(), TemplateError> {
     if text.contains("${") || text.contains("{{") || text.contains('\0') {
-        return Err(TemplateError::InvalidSyntax { line: 0, detail: "interpolation".into() });
+        return Err(TemplateError::InvalidSyntax {
+            line: 0,
+            detail: "interpolation".into(),
+        });
     }
     if text.contains("://") || text.starts_with('/') || text.starts_with('\\') {
-        return Err(TemplateError::InvalidSyntax { line: 0, detail: "executable path".into() });
+        return Err(TemplateError::InvalidSyntax {
+            line: 0,
+            detail: "executable path".into(),
+        });
     }
     Ok(())
 }
 
 /// Value matches the manifest field.
-pub(crate) fn accept_config(field: &FieldSpec, value: &ConfigValue) -> Result<ConfigValue, TemplateError> {
-    let bad = || TemplateError::InvalidSyntax { line: 0, detail: format!("config {}", field.name) };
+pub(crate) fn accept_config(
+    field: &FieldSpec,
+    value: &ConfigValue,
+) -> Result<ConfigValue, TemplateError> {
+    let bad = || TemplateError::InvalidSyntax {
+        line: 0,
+        detail: format!("config {}", field.name),
+    };
     match (&field.kind, value) {
         (FieldKind::Bool, ConfigValue::Bool(value)) => Ok(ConfigValue::Bool(*value)),
-        (FieldKind::Int { min, max }, ConfigValue::Int(value)) if *value >= *min && *value <= *max => {
+        (FieldKind::Int { min, max }, ConfigValue::Int(value))
+            if *value >= *min && *value <= *max =>
+        {
             Ok(ConfigValue::Int(*value))
         }
         (FieldKind::Str { max_bytes }, ConfigValue::Str(value)) if value.len() <= *max_bytes => {
             plain_text(value)?;
             Ok(ConfigValue::Str(value.clone()))
         }
-        (FieldKind::Enum { options }, other) if options.iter().any(|item| item == other) => match other {
-            ConfigValue::Str(text) => {
-                plain_text(text)?;
-                Ok(other.clone())
+        (FieldKind::Enum { options }, other) if options.iter().any(|item| item == other) => {
+            match other {
+                ConfigValue::Str(text) => {
+                    plain_text(text)?;
+                    Ok(other.clone())
+                }
+                ConfigValue::Bool(_) | ConfigValue::Int(_) => Ok(other.clone()),
+                ConfigValue::List(_) | ConfigValue::Enum(_) => Err(bad()),
             }
-            ConfigValue::Bool(_) | ConfigValue::Int(_) => Ok(other.clone()),
-            ConfigValue::List(_) | ConfigValue::Enum(_) => Err(bad()),
-        },
-        (FieldKind::List { max_items, item_max_bytes }, ConfigValue::List(items))
-            if items.len() <= *max_items && items.iter().all(|item| item.len() <= *item_max_bytes) =>
+        }
+        (
+            FieldKind::List {
+                max_items,
+                item_max_bytes,
+            },
+            ConfigValue::List(items),
+        ) if items.len() <= *max_items
+            && items.iter().all(|item| item.len() <= *item_max_bytes) =>
         {
             for item in items {
                 plain_text(item)?;
@@ -216,7 +292,10 @@ mod tests {
         let git = bundled_git_plugin();
         let denied = BTreeSet::new();
         let lone = vec!["program:git.add-ignore".to_string()];
-        assert!(matches!(screen_selectors(&lone), Err(TemplateError::GrantExpansion { kind: "plugin" })));
+        assert!(matches!(
+            screen_selectors(&lone),
+            Err(TemplateError::GrantExpansion { kind: "plugin" })
+        ));
         let pair = vec![
             "file.read:.gitignore".to_string(),
             "program:git.add-ignore".to_string(),
@@ -225,11 +304,20 @@ mod tests {
         assert!(screen_selectors(&pair).is_ok());
         let caps = expand_allow(&pair, &git, &denied).expect("expand");
         assert_eq!(caps.len(), 2);
-        assert!(caps.iter().any(|cap| matches!(cap, Capability::FileRead { .. })));
-        assert!(caps.iter().any(|cap| matches!(cap, Capability::Program { .. })));
+        assert!(
+            caps.iter()
+                .any(|cap| matches!(cap, Capability::FileRead { .. }))
+        );
+        assert!(
+            caps.iter()
+                .any(|cap| matches!(cap, Capability::Program { .. }))
+        );
         let mut denied_write = BTreeSet::new();
         denied_write.insert("file.write:.gitignore");
         let write = vec!["file.write:.gitignore".to_string()];
-        assert!(matches!(expand_allow(&write, &git, &denied_write), Err(TemplateError::GrantExpansion { .. })));
+        assert!(matches!(
+            expand_allow(&write, &git, &denied_write),
+            Err(TemplateError::GrantExpansion { .. })
+        ));
     }
 }

@@ -135,7 +135,10 @@ impl DctxError {
     }
 
     /// The stable code of this error.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn code(&self) -> ErrorCode {
         match self {
             Self::InvalidRequest { .. } => ErrorCode::InvalidRequest,
@@ -156,9 +159,15 @@ impl DctxError {
     }
 
     /// True if the same request may succeed when retried unchanged.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn is_retryable(&self) -> bool {
-        matches!(self.code(), ErrorCode::Busy | ErrorCode::SourceChanged | ErrorCode::Io)
+        matches!(
+            self.code(),
+            ErrorCode::Busy | ErrorCode::SourceChanged | ErrorCode::Io
+        )
     }
 }
 
@@ -178,8 +187,14 @@ impl fmt::Display for DctxError {
             Self::ResourceLimit { resource, limit } => {
                 write!(f, "resource limit exceeded: {resource:?} > {limit}")
             }
-            Self::CacheLimit { requested, available } => {
-                write!(f, "cache limit: requested {requested} bytes, {available} available")
+            Self::CacheLimit {
+                requested,
+                available,
+            } => {
+                write!(
+                    f,
+                    "cache limit: requested {requested} bytes, {available} available"
+                )
             }
             Self::Busy => f.write_str("busy"),
             Self::Cancelled => f.write_str("cancelled"),
@@ -217,7 +232,10 @@ mod tests {
         assert!(!DctxError::Cancelled.is_retryable());
         assert!(DctxError::Busy.is_retryable());
         assert!(DctxError::io("x").is_retryable());
-        let limit = DctxError::ResourceLimit { resource: Resource::Entries, limit: 3 };
+        let limit = DctxError::ResourceLimit {
+            resource: Resource::Entries,
+            limit: 3,
+        };
         assert_eq!(limit.code(), ErrorCode::ResourceLimit);
         assert_eq!(limit.to_string(), "resource limit exceeded: Entries > 3");
     }

@@ -76,7 +76,10 @@ pub enum RecoveryState {
 
 impl RecoveryState {
     /// Stable, source-free storage tag.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Pending => "pending",
@@ -130,7 +133,11 @@ pub trait AuditPort {
     /// The default is for volatile adapters only; persistent adapters must override it.
     /// # Errors
     /// Returns `AuditUnavailable` when the event and recovery transition cannot be durably recorded.
-    fn append_effect(&mut self, record: &AuditRecord, _recovery: &RecoveryRecord) -> Result<(), AuditUnavailable> {
+    fn append_effect(
+        &mut self,
+        record: &AuditRecord,
+        _recovery: &RecoveryRecord,
+    ) -> Result<(), AuditUnavailable> {
         self.append(record)
     }
 
@@ -174,11 +181,22 @@ pub trait FilePort {
     /// Reads `length` bytes at `offset` if the file still has `expected` identity.
     /// # Errors
     /// Returns `FileFault` if the file is missing or changed, or the identity-checked read cannot complete.
-    fn read(&mut self, path: &ProjectPath, expected: FileIdentity, offset: u64, length: u64) -> Result<Vec<u8>, FileFault>;
+    fn read(
+        &mut self,
+        path: &ProjectPath,
+        expected: FileIdentity,
+        offset: u64,
+        length: u64,
+    ) -> Result<Vec<u8>, FileFault>;
     /// Atomically replaces `path` if it still has `expected` identity; returns the new identity.
     /// # Errors
     /// Returns `FileFault` if the file is missing/changed or replacement has an uncertain outcome.
-    fn replace(&mut self, path: &ProjectPath, expected: FileIdentity, bytes: &[u8]) -> Result<FileIdentity, FileFault>;
+    fn replace(
+        &mut self,
+        path: &ProjectPath,
+        expected: FileIdentity,
+        bytes: &[u8],
+    ) -> Result<FileIdentity, FileFault>;
 }
 
 /// A registered program recipe; never argv text or a shell.

@@ -7,8 +7,8 @@
 mod common;
 
 use common::fixtures::{
-    ASYNC_FOR, BOM_SRC, CALLS_SRC, CRLF_SRC, DEDENT_SRC, DOC_SRC, MASKING, MATCH_SRC,
-    MIXED_SRC, ORDINALS, SHEBANG, TABS_SRC, UNICODE_SRC,
+    ASYNC_FOR, BOM_SRC, CALLS_SRC, CRLF_SRC, DEDENT_SRC, DOC_SRC, MASKING, MATCH_SRC, MIXED_SRC,
+    ORDINALS, SHEBANG, TABS_SRC, UNICODE_SRC,
 };
 use common::{call_names, check_invariants, extract, names, node};
 use dctx_lex_py::{Completion, DiagnosticReason};
@@ -34,10 +34,23 @@ fn match_patterns_abstain_and_guards_are_calls() {
     check_invariants(MATCH_SRC, &facts);
     assert_eq!(facts.completion, Completion::Complete);
     assert_eq!(names(&facts), ["m.py", "outer"]);
-    assert_eq!(node(&facts, "outer").fact.symbol_kind, Some(SymbolKind::Function));
+    assert_eq!(
+        node(&facts, "outer").fact.symbol_kind,
+        Some(SymbolKind::Function)
+    );
     assert_eq!(call_names(&facts), ["subject", "inside", "guard", "taken"]);
-    assert!(facts.references.iter().all(|item| item.fact.scope == "outer"));
-    assert!(facts.references.iter().all(|item| item.fact.name != "Point"));
+    assert!(
+        facts
+            .references
+            .iter()
+            .all(|item| item.fact.scope == "outer")
+    );
+    assert!(
+        facts
+            .references
+            .iter()
+            .all(|item| item.fact.name != "Point")
+    );
 }
 
 #[test]
@@ -51,10 +64,18 @@ fn dynamic_callees_abstain_and_compound_headers_keep_the_enclosing_scope() {
     );
     assert!(facts.references.iter().all(|item| item.fact.scope == "f"));
     let async_for = extract("a.py", ASYNC_FOR);
-    assert_eq!(node(&async_for, "f").fact.symbol_kind, Some(SymbolKind::Function));
+    assert_eq!(
+        node(&async_for, "f").fact.symbol_kind,
+        Some(SymbolKind::Function)
+    );
     assert_eq!(node(&async_for, "f").fact.signature, "async def f():");
     assert_eq!(call_names(&async_for), ["items", "use"]);
-    assert!(async_for.references.iter().all(|item| item.fact.scope == "f"));
+    assert!(
+        async_for
+            .references
+            .iter()
+            .all(|item| item.fact.scope == "f")
+    );
     assert_eq!(async_for.completion, Completion::Complete);
 }
 
@@ -98,11 +119,21 @@ fn indentation_newlines_unicode_and_ordinals_stay_bounded() {
     let mixed = extract("m.py", MIXED_SRC);
     assert_eq!(names(&mixed), ["m.py", "f"]);
     assert_eq!(mixed.completion, Completion::Partial);
-    assert!(mixed.diagnostics.iter().any(|item| item.reason == DiagnosticReason::MixedTabs));
+    assert!(
+        mixed
+            .diagnostics
+            .iter()
+            .any(|item| item.reason == DiagnosticReason::MixedTabs)
+    );
     let dedent = extract("d.py", DEDENT_SRC);
     assert_eq!(names(&dedent), ["d.py", "f"]);
     assert_eq!(dedent.completion, Completion::Partial);
-    assert!(dedent.diagnostics.iter().any(|item| item.reason == DiagnosticReason::InconsistentIndent));
+    assert!(
+        dedent
+            .diagnostics
+            .iter()
+            .any(|item| item.reason == DiagnosticReason::InconsistentIndent)
+    );
     let unicode = extract("u.py", UNICODE_SRC);
     assert_eq!(names(&unicode), ["u.py", "café"]);
     assert!(node(&unicode, "café").fact.public);

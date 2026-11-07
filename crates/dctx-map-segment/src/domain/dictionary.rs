@@ -6,16 +6,19 @@
 
 use std::collections::BTreeSet;
 
-use super::cursor::{push_u32, Cursor};
+use super::cursor::{Cursor, push_u32};
 use super::error::SegmentError;
-use super::limits::{bounded_count, DecoderLimits};
+use super::limits::{DecoderLimits, bounded_count};
 
 pub(crate) struct OwnedStrings {
     strings: Vec<String>,
 }
 
 impl OwnedStrings {
-    pub(crate) fn from_set(set: BTreeSet<String>, limits: &DecoderLimits) -> Result<Self, SegmentError> {
+    pub(crate) fn from_set(
+        set: BTreeSet<String>,
+        limits: &DecoderLimits,
+    ) -> Result<Self, SegmentError> {
         if offset_len(set.len())? > limits.max_records {
             return Err(SegmentError::Limit("records"));
         }
@@ -34,7 +37,10 @@ impl OwnedStrings {
     }
 
     pub(crate) fn id(&self, value: &str) -> Result<u32, SegmentError> {
-        match self.strings.binary_search_by(|item| item.as_str().cmp(value)) {
+        match self
+            .strings
+            .binary_search_by(|item| item.as_str().cmp(value))
+        {
             Ok(index) => u32::try_from(index).map_err(|_| SegmentError::Arithmetic),
             Err(_) => Err(SegmentError::Dictionary("missing string")),
         }

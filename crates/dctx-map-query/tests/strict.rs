@@ -32,7 +32,8 @@ fn metadata_trusts_a_preserved_stamp_and_strict_mode_sees_the_new_bytes() {
         .query(&metadata, &Request::new(Verb::Read, "s:lib.rs#work"))
         .unwrap();
     assert!(
-        hidden.records.is_empty() || hidden.reason.as_deref() == Some("stale: source changed after indexing"),
+        hidden.records.is_empty()
+            || hidden.reason.as_deref() == Some("stale: source changed after indexing"),
         "{hidden:?}"
     );
     assert_eq!(metadata.content_reads(), reads + 1);

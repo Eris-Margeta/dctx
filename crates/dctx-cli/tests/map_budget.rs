@@ -7,6 +7,8 @@
 
 #![forbid(unsafe_code)]
 
+mod common;
+
 use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Output};
@@ -21,10 +23,20 @@ struct Repository {
 impl Repository {
     fn new(label: &str) -> Self {
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
-        let root = std::env::temp_dir().join(format!("dctx-e02j-{label}-{}-{n}", std::process::id()));
+        let root =
+            std::env::temp_dir().join(format!("dctx-e02j-{label}-{}-{n}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
         fs::create_dir_all(root.join("repo")).expect("repo");
-        for folder in ["home", "config", "cache", "plugins", "map-cache", "local-app-data", "empty-path", "tmp"] {
+        for folder in [
+            "home",
+            "config",
+            "cache",
+            "plugins",
+            "map-cache",
+            "local-app-data",
+            "empty-path",
+            "tmp",
+        ] {
             fs::create_dir(root.join(folder)).expect("isolated directory");
         }
         Self { root }
@@ -36,20 +48,18 @@ impl Repository {
 
     fn output(&self, args: &[&str]) -> Output {
         let mut command = Command::new(env!("CARGO_BIN_EXE_dctx-cli"));
-        command.current_dir(self.repo()).env_clear().args(args).env("DCTX_AUTO_CLEAN", "0").env("NO_COLOR", "1");
+        command
+            .current_dir(self.repo())
+            .env_clear()
+            .args(args)
+            .env("DCTX_AUTO_CLEAN", "0")
+            .env("NO_COLOR", "1");
+        common::isolated_dirs(&mut command, &self.root);
         for (variable, folder) in [
-            ("HOME", "home"),
-            ("USERPROFILE", "home"),
-            ("XDG_CONFIG_HOME", "config"),
-            ("XDG_CACHE_HOME", "cache"),
-            ("LOCALAPPDATA", "local-app-data"),
             ("DCTX_PLUGIN_ROOT", "plugins"),
             ("DCTX_CACHE_DIR", "cache"),
             ("DCTX_MAP_CACHE", "map-cache"),
             ("PATH", "empty-path"),
-            ("TMPDIR", "tmp"),
-            ("TMP", "tmp"),
-            ("TEMP", "tmp"),
         ] {
             command.env(variable, self.root.join(folder));
         }
@@ -86,8 +96,16 @@ fn needed_bytes(stderr: &str) -> Option<u64> {
 fn read_of_a_five_kilobyte_module_returns_its_source() {
     let repo = Repository::new("module");
     let source = module_source();
-    assert!(source.len() >= 5 * 1024, "fixture is {} bytes", source.len());
-    assert!(source.lines().count() <= 120, "fixture has {} lines", source.lines().count());
+    assert!(
+        source.len() >= 5 * 1024,
+        "fixture is {} bytes",
+        source.len()
+    );
+    assert!(
+        source.lines().count() <= 120,
+        "fixture has {} lines",
+        source.lines().count()
+    );
     fs::write(repo.repo().join("wide.rs"), &source).expect("source");
     let output = repo.output(&["map", "read", "m:wide.rs", "--limit", "1", "--json"]);
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -111,14 +129,26 @@ fn tiny_budget_names_the_needed_size() {
     // E-02n: `--budget 400` used to refuse with the full page size. A budget that fits
     // the signature now returns a marked prefix (map_read_followups). This budget is
     // below that signature, so the refusal stays and names the signature page.
-    let output = repo.output(&["map", "read", "m:wide.rs", "--limit", "1", "--json", "--budget", "8"]);
+    let output = repo.output(&[
+        "map",
+        "read",
+        "m:wide.rs",
+        "--limit",
+        "1",
+        "--json",
+        "--budget",
+        "8",
+    ]);
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(!output.status.success(), "tiny budget succeeded: {stdout}");
     assert!(stdout.is_empty(), "stdout on refusal: {stdout}");
     let needed = needed_bytes(&stderr).unwrap_or_else(|| panic!("no needed size in {stderr}"));
     let ceiling = 8u64 * 7 / 2;
-    assert!(needed > ceiling, "needed {needed} is not above the {ceiling}-byte ceiling: {stderr}");
+    assert!(
+        needed > ceiling,
+        "needed {needed} is not above the {ceiling}-byte ceiling: {stderr}"
+    );
     assert!(
         needed < u64::try_from(source.len()).unwrap_or(u64::MAX),
         "needed {needed} still reports the whole module ({} bytes)",

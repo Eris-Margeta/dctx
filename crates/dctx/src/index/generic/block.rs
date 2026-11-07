@@ -8,18 +8,18 @@
 
 mod elixir;
 mod erlang;
+mod fortran;
 mod haskell;
 mod julia;
 mod layout;
-mod ocaml_body;
-mod fortran;
 mod lua;
+mod ocaml_body;
 mod r;
-mod verilog;
 #[cfg(test)]
 mod tests;
+mod verilog;
 
-use super::{signature_of, to_symbols, Decl};
+use super::{Decl, signature_of, to_symbols};
 use crate::index::extract::Symbol;
 
 /// The Erlang source with `%` comments, quoted strings and `$c` char literals blanked, shared with the call side.
@@ -53,7 +53,10 @@ struct Block {
 
 /// True for the nine tags of this family.
 pub(super) fn handles(language: &str) -> bool {
-    matches!(language, "elixir" | "lua" | "ocaml" | "r" | "julia" | "haskell" | "erlang" | "verilog" | "fortran")
+    matches!(
+        language,
+        "elixir" | "lua" | "ocaml" | "r" | "julia" | "haskell" | "erlang" | "verilog" | "fortran"
+    )
 }
 
 /// Symbols of `text`, or none for an unknown tag.
@@ -111,7 +114,11 @@ fn words<'a>(line: &'a str, brackets: &mut usize, flat: bool) -> Vec<Word<'a>> {
                 at += 1;
             }
             if !(flat && *brackets > 0) {
-                found.push(Word { text: &line[start..at], prev: start.checked_sub(1).map(|before| bytes[before]), next: bytes.get(at).copied() });
+                found.push(Word {
+                    text: &line[start..at],
+                    prev: start.checked_sub(1).map(|before| bytes[before]),
+                    next: bytes.get(at).copied(),
+                });
             }
             continue;
         }
@@ -144,7 +151,9 @@ fn scan(block: &Block, text: &str) -> Vec<Decl> {
         let in_scope = stack.last().is_none_or(|frame| frame.container.is_some());
         let in_body = stack.last().is_some_and(|frame| frame.body);
         let owner = stack.last().and_then(|frame| frame.container.as_deref());
-        let source = original.get(shown.len() - shown.trim_start().len()..).unwrap_or("");
+        let source = original
+            .get(shown.len() - shown.trim_start().len()..)
+            .unwrap_or("");
         if open.is_none()
             && in_scope
             && at_top
@@ -156,12 +165,20 @@ fn scan(block: &Block, text: &str) -> Vec<Decl> {
                 None => name,
             };
             // Consecutive clauses of one function are one symbol.
-            let again = kind == "fn" && decls.last().is_some_and(|last| last.kind == "fn" && last.name == name);
+            let again = kind == "fn"
+                && decls
+                    .last()
+                    .is_some_and(|last| last.kind == "fn" && last.name == name);
             if again {
                 let last = decls.len() - 1;
                 decls[last].lines[1] = number;
             } else {
-                decls.push(Decl { name, kind, lines: [number, number], signature: signature_of(original) });
+                decls.push(Decl {
+                    name,
+                    kind,
+                    lines: [number, number],
+                    signature: signature_of(original),
+                });
             }
             open = Some(decls.len() - 1);
         }
@@ -173,8 +190,12 @@ fn scan(block: &Block, text: &str) -> Vec<Decl> {
                 Tok::Open => {
                     let decl = open.take();
                     let (container, body) = match decl {
-                        Some(at) if decls[at].kind == "type" => (Some(decls[at].name.clone()), false),
-                        Some(at) if block.nested && decls[at].kind == "fn" => (Some(decls[at].name.clone()), true),
+                        Some(at) if decls[at].kind == "type" => {
+                            (Some(decls[at].name.clone()), false)
+                        }
+                        Some(at) if block.nested && decls[at].kind == "fn" => {
+                            (Some(decls[at].name.clone()), true)
+                        }
                         Some(_) => (None, false),
                         // A loop or branch inside a function body is still that body.
                         None => match stack.last() {
@@ -182,7 +203,11 @@ fn scan(block: &Block, text: &str) -> Vec<Decl> {
                             _ => (None, false),
                         },
                     };
-                    stack.push(Frame { container, decl, body });
+                    stack.push(Frame {
+                        container,
+                        decl,
+                        body,
+                    });
                 }
                 Tok::Close => {
                     if let Some(frame) = stack.pop()
@@ -205,4 +230,3 @@ fn scan(block: &Block, text: &str) -> Vec<Decl> {
     }
     decls
 }
-

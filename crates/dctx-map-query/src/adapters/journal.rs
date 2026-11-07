@@ -3,8 +3,8 @@
 //! Implements DX-C5 persistence: one journal, chunked into fact summaries.
 //! Segment publication and cache load are the only callers.
 use super::Index;
-use crate::{domain::cached::CachedFile, ports::Snapshot};
 use crate::Overlay;
+use crate::{domain::cached::CachedFile, ports::Snapshot};
 use dctx_map_model::{Edge, Node, StableId};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -56,7 +56,6 @@ impl Journal {
             generation: index.generation,
         }
     }
-
 }
 
 pub(super) fn chunk(text: &str) -> Vec<String> {

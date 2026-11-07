@@ -11,7 +11,8 @@ use dctx_core::datatypes::NodeType;
 use dctx_core::diff::{ChangeType, DiffEntry, DiffReport};
 use dctx_core::version::Version;
 use dctx_template::{
-    render_legacy_diff, render_legacy_snapshot, render_markers, CompiledTemplate, MarkerNode, Template, TreeStamps,
+    CompiledTemplate, MarkerNode, Template, TreeStamps, render_legacy_diff, render_legacy_snapshot,
+    render_markers,
 };
 
 const SNAPSHOT: &str = include_str!("fixtures/legacy-snapshot.txt");
@@ -77,20 +78,27 @@ fn ignored(path: &str, bytes: &[u8], modified: u64) -> MarkerNode {
 fn snapshot_tree() -> MarkerNode {
     let mut git = MarkerNode::dir(".git", 1600);
     git.is_ignored = true;
-    git.children.push(ignored(".git/config", b"sensitive", 1700));
+    git.children
+        .push(ignored(".git/config", b"sensitive", 1700));
     let mut src = MarkerNode::dir("src", 1100);
-    src.children.push(MarkerNode::file("src/main.rs", b"fn main() {}\n", 1200));
+    src.children
+        .push(MarkerNode::file("src/main.rs", b"fn main() {}\n", 1200));
     let mut root = MarkerNode::dir("", 1000);
     root.children.push(git);
     root.children.push(omitted("Cargo.lock", 7, 1500));
     root.children.push(binary("logo.png", 7, 1400, "PNG image"));
-    root.children.push(ignored("secret.env", b"SECRET=1\n", 1300));
+    root.children
+        .push(ignored("secret.env", b"SECRET=1\n", 1300));
     root.children.push(src);
     root
 }
 
 fn body(fixture: &str) -> &str {
-    fixture.strip_prefix(HEADER).expect("header").strip_prefix('\n').expect("newline")
+    fixture
+        .strip_prefix(HEADER)
+        .expect("header")
+        .strip_prefix('\n')
+        .expect("newline")
 }
 
 fn decode_hex(text: &str) -> Vec<u8> {
@@ -151,7 +159,16 @@ fn snapshot_body_matches_legacy_layout() {
 
 #[test]
 fn snapshot_envelope_matches_legacy_bytes() {
-    assert_eq!(render_legacy_snapshot(&template(), &snapshot_tree(), &Version::new_v1(), false, true), SNAPSHOT);
+    assert_eq!(
+        render_legacy_snapshot(
+            &template(),
+            &snapshot_tree(),
+            &Version::new_v1(),
+            false,
+            true
+        ),
+        SNAPSHOT
+    );
 }
 
 #[test]
@@ -166,39 +183,81 @@ fn tree_only_body_matches_legacy_layout() {
 
 #[test]
 fn tree_only_envelope_matches_legacy_bytes() {
-    assert_eq!(render_legacy_snapshot(&template(), &snapshot_tree(), &Version::new_v1(), true, true), TREE);
+    assert_eq!(
+        render_legacy_snapshot(
+            &template(),
+            &snapshot_tree(),
+            &Version::new_v1(),
+            true,
+            true
+        ),
+        TREE
+    );
 }
 
 #[test]
 fn stamped_snapshot_and_tree_match_the_1_0_0_bytes() {
     let tree = snapshot_tree();
     let version = Version::new_v1();
-    assert_eq!(render_legacy_snapshot(&stamped_template(), &tree, &version, false, true), SNAPSHOT_STAMPED);
-    assert_eq!(render_legacy_snapshot(&stamped_template(), &tree, &version, true, true), TREE_STAMPED);
+    assert_eq!(
+        render_legacy_snapshot(&stamped_template(), &tree, &version, false, true),
+        SNAPSHOT_STAMPED
+    );
+    assert_eq!(
+        render_legacy_snapshot(&stamped_template(), &tree, &version, true, true),
+        TREE_STAMPED
+    );
 }
 
 #[test]
 fn default_output_has_no_timestamps_and_ignores_them() {
-    let first = render_legacy_snapshot(&template(), &snapshot_tree(), &Version::new_v1(), false, true);
-    assert!(!first.contains("MOD"), "default snapshot must not mention MOD");
+    let first = render_legacy_snapshot(
+        &template(),
+        &snapshot_tree(),
+        &Version::new_v1(),
+        false,
+        true,
+    );
+    assert!(
+        !first.contains("MOD"),
+        "default snapshot must not mention MOD"
+    );
     let mut touched = snapshot_tree();
     touched.modified += 1;
     for child in &mut touched.children {
         child.modified += 7;
     }
-    assert_eq!(render_legacy_snapshot(&template(), &touched, &Version::new_v1(), false, true), first);
-    let stamped = render_legacy_snapshot(&stamped_template(), &touched, &Version::new_v1(), false, true);
-    assert_ne!(stamped, SNAPSHOT_STAMPED, "the stamped text does follow the timestamps");
+    assert_eq!(
+        render_legacy_snapshot(&template(), &touched, &Version::new_v1(), false, true),
+        first
+    );
+    let stamped = render_legacy_snapshot(
+        &stamped_template(),
+        &touched,
+        &Version::new_v1(),
+        false,
+        true,
+    );
+    assert_ne!(
+        stamped, SNAPSHOT_STAMPED,
+        "the stamped text does follow the timestamps"
+    );
 }
 
 #[test]
 fn the_two_default_template_copies_are_identical_and_mod_free() {
     let template_copy = include_str!("../templates/default.dctx_template");
     let core_copy = include_str!("../../dctx-core/templates/default.dctx_template");
-    assert_eq!(template_copy, core_copy, "dctx-template and dctx-core ship one default template");
+    assert_eq!(
+        template_copy, core_copy,
+        "dctx-template and dctx-core ship one default template"
+    );
     assert!(!template_copy.contains("MOD:TIMESTAMP") && !template_copy.contains(", {{attr_mod}}:"));
     let stamped = include_str!("../templates/stamped.dctx_template");
-    assert!(stamped.contains("{{attr_mod}}:TIMESTAMP") && stamped.contains("{{attr_mod}}:{{{node.mod}}}"));
+    assert!(
+        stamped.contains("{{attr_mod}}:TIMESTAMP")
+            && stamped.contains("{{attr_mod}}:{{{node.mod}}}")
+    );
 }
 
 #[test]
@@ -222,9 +281,15 @@ fn diff_fixture_pins_the_legacy_diff_envelope() {
     assert!(DIFF.contains("[ADDED] added.txt\n[MODIFIED] changed.txt\n"));
     assert!(DIFF.contains("[REMOVED] deleted_file.txt\n[ADDED] new_dir/\n[MODIFIED] icon.svg\n"));
     let glued = "  [F] unchanged.txt (ID:F005)</UPDATED_DIRECTORY_TREE>\n";
-    assert!(DIFF.contains(glued), "legacy diff glues the closing tag to the last tree line");
+    assert!(
+        DIFF.contains(glued),
+        "legacy diff glues the closing tag to the last tree line"
+    );
     let stamped = "  [F] unchanged.txt (ID:F005, MOD:2400, SIZE:11)</UPDATED_DIRECTORY_TREE>\n";
-    assert!(DIFF_STAMPED.contains(stamped), "the stamped diff keeps the 1.0.0 line");
+    assert!(
+        DIFF_STAMPED.contains(stamped),
+        "the stamped diff keeps the 1.0.0 line"
+    );
     assert!(!DIFF.contains("MOD:") && !DIFF.contains("SIZE:"));
     assert!(DIFF.contains("[SVG file, content omitted (omit_svg_content=true)]"));
     assert!(DIFF.contains("NEW!"));
@@ -251,14 +316,25 @@ fn diff_tree() -> (MarkerNode, DiffReport) {
         ("new_dir", ChangeType::Added, NodeType::Directory),
         ("icon.svg", ChangeType::Modified, NodeType::File),
     ] {
-        diff.entries.push(DiffEntry { change_type, node_type, relative_path: path.to_string() });
+        diff.entries.push(DiffEntry {
+            change_type,
+            node_type,
+            relative_path: path.to_string(),
+        });
     }
     (root, diff)
 }
 
 fn render_diff(template: &Template) -> String {
     let (root, diff) = diff_tree();
-    render_legacy_diff(template, &root, &diff, &Version::new_v1(), &Version { major: 1, minor: 1 }, true)
+    render_legacy_diff(
+        template,
+        &root,
+        &diff,
+        &Version::new_v1(),
+        &Version { major: 1, minor: 1 },
+        true,
+    )
 }
 
 #[test]
@@ -270,7 +346,6 @@ fn diff_envelope_matches_legacy_bytes() {
 fn stamped_diff_envelope_matches_the_1_0_0_bytes() {
     assert_eq!(render_diff(&stamped_template()), DIFF_STAMPED);
 }
-
 
 #[test]
 fn svg_snapshot_sentence_matches_legacy() {

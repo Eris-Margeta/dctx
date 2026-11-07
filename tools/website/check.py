@@ -4,6 +4,9 @@
     DCTX_BIN=target/release/dctx-cli DCTX_DENY_LIST=path/to/deny-list.txt \\
         tools/website/.venv/bin/python tools/website/check.py [--no-capture]
 
+    # Deployment: check freshly built website/ instead of committed HEAD bytes.
+    tools/website/.venv/bin/python tools/website/check.py --working-tree --no-capture
+
 1. Rebuild from the tracked files into a temporary directory; every generated file must equal HEAD.
 2. Capture drift: re-run capture.py with DCTX_BIN; data/demo.json must not change (and --version = VERSION).
 3. Deny-list (DCTX_DENY_LIST, one Python bytes regex per line) over website/, tools/website/, tools/playground/.
@@ -74,16 +77,22 @@ def rebuild(dest: Path) -> Path:
     return dest / "website"
 
 
-def staleness(site: Path, errors: list[str]) -> int:
-    committed = {n.decode().removeprefix("website/") for n in git("ls-tree", "-r", "--name-only", "-z", "HEAD", "--", "website").split(b"\0") if n}
+def staleness(site: Path, errors: list[str], working_tree: bool = False) -> int:
+    if working_tree:
+        committed = {p.relative_to(ROOT / "website").as_posix() for p in (ROOT / "website").rglob("*") if p.is_file()}
+    else:
+        committed = {n.decode().removeprefix("website/") for n in git("ls-tree", "-r", "--name-only", "-z", "HEAD", "--", "website").split(b"\0") if n}
+    reference = "website/" if working_tree else "the committed bytes"
     generated = {p.relative_to(site).as_posix() for p in site.rglob("*") if p.is_file()}
     for name in sorted(committed | generated):
         if name not in generated:
-            errors.append(f"stale: website/{name} is committed but no longer generated")
+            errors.append(f"stale: website/{name} exists in {reference} but is no longer generated")
         elif name not in committed:
-            errors.append(f"stale: website/{name} is generated but not committed")
-        elif (site / name).read_bytes() != git("show", f"HEAD:website/{name}"):
-            errors.append(f"stale: website/{name} differs from the committed bytes")
+            errors.append(f"stale: website/{name} is generated but missing from {reference}")
+        else:
+            expected = (ROOT / "website" / name).read_bytes() if working_tree else git("show", f"HEAD:website/{name}")
+            if (site / name).read_bytes() != expected:
+                errors.append(f"stale: website/{name} differs from {reference}")
     return len(generated)
 
 
@@ -373,8 +382,8 @@ def check_site(site: Path, errors: list[str], report: dict) -> None:
         metas = {(m.get("property") or m.get("name")): m.get("content") for m in d.meta}
         og_images = [m.get("content") for m in d.meta if m.get("property") == "og:image"]
         if label == "index.html":
-            if len(og_images) != 3 or not og_images[0].endswith("home.gif") or not og_images[1].endswith(".dark.png") or not og_images[2].endswith(".light.png"):
-                errors.append("index.html: og:image must be the GIF, then the dark and the light PNG")
+            if og_images != [f"{ORIGIN}/assets/og/home.png"]:  # owner 07.11: the classic card only
+                errors.append("index.html: og:image must be the classic card /assets/og/home.png only")
         elif len(og_images) != 2 or not og_images[0].endswith(".dark.png") or not og_images[1].endswith(".light.png"):
             errors.append(f"{label}: og:image must be the dark then the light PNG")
         for key in ("og:title", "og:description", "og:url", "og:image:alt", "twitter:card", "twitter:image", "twitter:image:alt", "description"):
@@ -594,7 +603,7 @@ def main(argv: list[str]) -> int:
     try:
         with tempfile.TemporaryDirectory(prefix="dctx-sitecheck-") as tmp:
             site = rebuild(Path(tmp))
-            files = staleness(site, errors)
+            files = staleness(site, errors, "--working-tree" in argv)
             check_site(site, errors, report)
         capture_drift(errors, warnings, "--no-capture" in argv)
         hits = deny_list(errors, warnings)
@@ -615,7 +624,8 @@ def main(argv: list[str]) -> int:
             print(f"- {e}", file=sys.stderr)
         print(f"FAIL: {len(errors)} errors")
         return 1
-    print("PASS: 0 errors; the generated website matches HEAD and every check passed.")
+    reference = "website/" if "--working-tree" in argv else "HEAD"
+    print(f"PASS: 0 errors; the generated website matches {reference} and every check passed.")
     return 0
 
 

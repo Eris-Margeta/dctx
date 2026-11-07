@@ -248,7 +248,7 @@ cargo build --manifest-path src-tauri/Cargo.toml
 ## Get Help
 
 - **Issues**: GitHub Issues
-- **Email**: support@dctx.app
+- **Email**: info@tejl.com
 - **Docs**: See `docs/` folder
 
 ---

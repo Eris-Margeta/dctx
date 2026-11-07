@@ -147,8 +147,14 @@ fn bundled_fts5_queries_all_lexical_fields() {
     ] {
         assert_eq!(store.search(query, 10).unwrap().len(), 1, "{query}");
     }
-    assert_eq!(store.search("absent", 10).unwrap(), [] as [crate::domain::SearchHit; 0]);
-    assert_eq!(store.search("http", 0).unwrap(), [] as [crate::domain::SearchHit; 0]);
+    assert_eq!(
+        store.search("absent", 10).unwrap(),
+        [] as [crate::domain::SearchHit; 0]
+    );
+    assert_eq!(
+        store.search("http", 0).unwrap(),
+        [] as [crate::domain::SearchHit; 0]
+    );
     assert!(store.search("\"", 10).is_err());
     let many = facts(
         "many.rs",
@@ -172,7 +178,10 @@ fn constraint_failure_rolls_back_the_complete_replacement() {
     bad.edges.pop();
     store.reindex(&bad).unwrap();
     assert_ne!(snapshot(&store, "a.rs"), before);
-    assert_eq!(store.search("original", 10).unwrap(), [] as [crate::domain::SearchHit; 0]);
+    assert_eq!(
+        store.search("original", 10).unwrap(),
+        [] as [crate::domain::SearchHit; 0]
+    );
     assert_eq!(store.search("replacement", 10).unwrap().len(), 1);
 }
 
@@ -237,7 +246,9 @@ fn five_verb_rows_stay_stable_beside_shared_facts() {
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .unwrap();
     assert_eq!(version, 1);
-    store.reindex(&facts("src/job.rs", &["work".into()], 1)).unwrap();
+    store
+        .reindex(&facts("src/job.rs", &["work".into()], 1))
+        .unwrap();
     let hits = store.search("work", 10).unwrap();
     assert_eq!(hits.len(), 1);
     let key = FactKey::from_bytes(
@@ -245,11 +256,23 @@ fn five_verb_rows_stay_stable_beside_shared_facts() {
         ExtractionContract::new(1, "rust-2024", "dctx-map-parse", "rev-1", "plan-1", 1).unwrap(),
     )
     .unwrap();
-    assert_eq!(store.retain_fact("team", "root-a", &key, b"facts").unwrap(), Retain::Parsed);
-    assert_eq!(store.retain_fact("team", "root-b", &key, b"facts").unwrap(), Retain::Reused);
-    assert_eq!(store.retain_fact("team", "root-c", &key, b"facts").unwrap(), Retain::Reused);
+    assert_eq!(
+        store.retain_fact("team", "root-a", &key, b"facts").unwrap(),
+        Retain::Parsed
+    );
+    assert_eq!(
+        store.retain_fact("team", "root-b", &key, b"facts").unwrap(),
+        Retain::Reused
+    );
+    assert_eq!(
+        store.retain_fact("team", "root-c", &key, b"facts").unwrap(),
+        Retain::Reused
+    );
     assert_eq!(store.parse_count().unwrap(), 1);
-    assert_eq!(store.cached_bytes().unwrap(), crate::accounted_bytes(5).unwrap());
+    assert_eq!(
+        store.cached_bytes().unwrap(),
+        crate::accounted_bytes(5).unwrap()
+    );
     let view = ViewKey::parse("root-a").unwrap();
     let snapshot = PackSnapshot::new(
         DirContextTreeNode::new(NodeType::Directory, "", PathBuf::new()),
@@ -259,7 +282,10 @@ fn five_verb_rows_stay_stable_beside_shared_facts() {
     )
     .unwrap();
     store.publish(&view, &snapshot).unwrap();
-    assert_eq!(store.load(&view).unwrap().unwrap().digest(), snapshot.digest());
+    assert_eq!(
+        store.load(&view).unwrap().unwrap().digest(),
+        snapshot.digest()
+    );
     let again = store.search("work", 10).unwrap();
     assert_eq!(again.len(), 1);
     assert_eq!(again[0].id.as_str(), hits[0].id.as_str());

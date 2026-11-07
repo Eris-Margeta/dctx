@@ -7,8 +7,8 @@
 mod support;
 
 use dctx_adapter_cache::{
-    CacheError, CompactOutcome, Lifecycle, Physical, Purpose, Quota, RootId, EMERGENCY_METADATA_BYTES,
-    HARD_CAP_BYTES,
+    CacheError, CompactOutcome, EMERGENCY_METADATA_BYTES, HARD_CAP_BYTES, Lifecycle, Physical,
+    Purpose, Quota, RootId,
 };
 use dctx_core::budget::Reservation;
 use dctx_core::error::DctxError;
@@ -31,18 +31,28 @@ fn p4_global_reservations() {
     let second_root = RootId::new(2);
     life.register_root(first_root).expect("root");
     life.register_root(second_root).expect("root");
-    let first = life.reserve_for(Some(first_root), Purpose::View, 6).expect("reserve");
+    let first = life
+        .reserve_for(Some(first_root), Purpose::View, 6)
+        .expect("reserve");
     match life.reserve_for(Some(second_root), Purpose::View, 5) {
-        Err(CacheError::CacheLimit { requested, available, .. }) => {
+        Err(CacheError::CacheLimit {
+            requested,
+            available,
+            ..
+        }) => {
             assert_eq!(requested, 5);
             assert_eq!(available, 4);
         }
         other => panic!("expected cache limit, got {other:?}"),
     }
-    let fitting = life.reserve_for(Some(second_root), Purpose::Fact, 4).expect("room for 4");
+    let fitting = life
+        .reserve_for(Some(second_root), Purpose::Fact, 4)
+        .expect("room for 4");
     life.abort_reservation(fitting);
     life.abort_reservation(first);
-    let again = life.reserve_for(Some(second_root), Purpose::Pack, 5).expect("cap is free");
+    let again = life
+        .reserve_for(Some(second_root), Purpose::Pack, 5)
+        .expect("cap is free");
     life.abort_reservation(again);
     assert_eq!(life.admitted(), 0);
     assert!(life.p4_holds());
@@ -59,7 +69,9 @@ fn p4_global_reservations() {
     ));
     legacy.reclaim_legacy(big).expect("reclaim");
     assert!(!legacy.legacy_frozen());
-    legacy.reserve_for(None, Purpose::Payload, 4).expect("growth resumes");
+    legacy
+        .reserve_for(None, Purpose::Payload, 4)
+        .expect("growth resumes");
     assert!(legacy.p4_holds());
 
     let mut product = Lifecycle::product_default();
@@ -77,7 +89,9 @@ fn p4_global_reservations() {
 #[test]
 fn commit_partial_releases_the_unused_reservation() {
     let mut life = Lifecycle::new(Quota::scaled(20)).expect("quota");
-    let reservation = life.reserve_for(None, Purpose::Payload, 6).expect("reserve");
+    let reservation = life
+        .reserve_for(None, Purpose::Payload, 6)
+        .expect("reserve");
     let id = reservation.id();
     let bytes = reservation.bytes();
     assert!(life.commit_reservation(reservation, 7).is_err());
@@ -95,7 +109,8 @@ fn commit_partial_releases_the_unused_reservation() {
 #[test]
 fn stage_consumes_the_reservation_without_double_counting() {
     let mut life = ledger(100);
-    life.writer_acquire(root(), dctx_adapter_cache::SessionId::new(1)).expect("acquire");
+    life.writer_acquire(root(), dctx_adapter_cache::SessionId::new(1))
+        .expect("acquire");
     life.writer_reserve(root(), 10).expect("reserve");
     assert_eq!(life.buckets().reserved, 10);
     assert_eq!(life.admitted(), 10);
@@ -112,7 +127,9 @@ fn lowering_the_cap_freezes_until_bytes_fit() {
     let fact = life.insert_fact(80, &[root()]).expect("fact");
     life.set_hard_cap(90).expect("cap");
     assert!(!life.legacy_frozen());
-    let hold = life.reserve_for(None, Purpose::Payload, 10).expect("still fits");
+    let hold = life
+        .reserve_for(None, Purpose::Payload, 10)
+        .expect("still fits");
     assert!(life.set_hard_cap(70).is_err());
     assert!(!life.legacy_frozen());
     life.abort_reservation(hold);
@@ -125,7 +142,8 @@ fn lowering_the_cap_freezes_until_bytes_fit() {
     assert!(life.reclaim_legacy(fact).is_err());
     support::drain(&mut life, true);
     assert!(!life.legacy_frozen());
-    life.reserve_for(None, Purpose::Payload, 1).expect("growth resumes");
+    life.reserve_for(None, Purpose::Payload, 1)
+        .expect("growth resumes");
     assert!(life.p4_holds());
 }
 
@@ -139,7 +157,8 @@ fn root_ceilings_sit_inside_the_global_cap() {
     life.publish_view(root(), 80, &[]).expect("view");
     assert!(life.publish_view(root(), 30, &[]).is_err());
     assert_eq!(life.admitted(), 80);
-    life.insert_fact(200, &[root()]).expect("facts use the global pool");
+    life.insert_fact(200, &[root()])
+        .expect("facts use the global pool");
     assert_eq!(life.admitted(), 280);
     life.publish_pack(root(), 40, &[]).expect("pack");
     assert!(life.publish_pack(root(), 20, &[]).is_err());
@@ -149,8 +168,16 @@ fn root_ceilings_sit_inside_the_global_cap() {
     assert_eq!(life.object_bytes(shared), Some(50));
     assert_eq!(life.admitted(), 280 + 40 + 30 + 50);
     let status = life.status();
-    let row = status.roots.iter().find(|row| row.id == root()).expect("root status");
-    let other_row = status.roots.iter().find(|row| row.id == other).expect("other");
+    let row = status
+        .roots
+        .iter()
+        .find(|row| row.id == root())
+        .expect("root status");
+    let other_row = status
+        .roots
+        .iter()
+        .find(|row| row.id == other)
+        .expect("other");
     assert_eq!(row.shared_bytes, 50);
     assert_eq!(other_row.shared_bytes, 50);
     assert_eq!(other_row.exclusive_bytes, 0);
@@ -160,14 +187,21 @@ fn root_ceilings_sit_inside_the_global_cap() {
 #[test]
 fn compaction_refuses_without_headroom_and_counts_the_peak() {
     let mut tight = ledger(100);
-    let segment = tight.insert_segment(80, 500_000, &[root()]).expect("segment");
-    assert!(matches!(tight.compact_segment(segment), Err(CacheError::CacheLimit { .. })));
+    let segment = tight
+        .insert_segment(80, 500_000, &[root()])
+        .expect("segment");
+    assert!(matches!(
+        tight.compact_segment(segment),
+        Err(CacheError::CacheLimit { .. })
+    ));
     assert_eq!(tight.object_bytes(segment), Some(80));
     assert_eq!(tight.admitted(), 80);
     assert!(tight.p4_holds());
 
     let mut life = ledger(100);
-    let segment = life.insert_segment(40, 500_000, &[root()]).expect("segment");
+    let segment = life
+        .insert_segment(40, 500_000, &[root()])
+        .expect("segment");
     let outcome = life.compact_segment(segment).expect("headroom");
     assert_eq!(outcome.old_bytes, 40);
     assert_eq!(outcome.peak_admitted, 60);
@@ -178,12 +212,20 @@ fn compaction_refuses_without_headroom_and_counts_the_peak() {
     assert!(life.p3_holds() && life.p4_holds());
 
     let mut pinned = ledger(100);
-    let segment = pinned.insert_segment(40, 500_000, &[root()]).expect("segment");
+    let segment = pinned
+        .insert_segment(40, 500_000, &[root()])
+        .expect("segment");
     let generation = pinned.publish_view(root(), 10, &[segment]).expect("view");
-    let lease = pinned.reader_begin(root(), dctx_adapter_cache::SessionId::new(2)).expect("begin");
+    let lease = pinned
+        .reader_begin(root(), dctx_adapter_cache::SessionId::new(2))
+        .expect("begin");
     pinned.reader_confirm(lease).expect("confirm");
-    let CompactOutcome { old_retained, peak_admitted, new_segment, old_bytes } =
-        pinned.compact_segment(segment).expect("leased copy");
+    let CompactOutcome {
+        old_retained,
+        peak_admitted,
+        new_segment,
+        old_bytes,
+    } = pinned.compact_segment(segment).expect("leased copy");
     assert!(old_retained);
     assert_eq!(old_bytes, 40);
     assert_eq!(pinned.object_bytes(segment), Some(40));
@@ -231,10 +273,15 @@ fn disk_full_is_not_a_cache_limit() {
     assert!(life.admitted() > before);
 
     let mut writer = ledger(100);
-    writer.writer_acquire(root(), dctx_adapter_cache::SessionId::new(3)).expect("acquire");
+    writer
+        .writer_acquire(root(), dctx_adapter_cache::SessionId::new(3))
+        .expect("acquire");
     writer.writer_reserve(root(), 10).expect("reserve");
     writer.inject_disk_full(true);
-    assert!(matches!(writer.writer_stage_segment(root(), 10), Err(CacheError::DiskFull)));
+    assert!(matches!(
+        writer.writer_stage_segment(root(), 10),
+        Err(CacheError::DiskFull)
+    ));
     assert_eq!(writer.buckets().reserved, 10);
     assert_eq!(writer.buckets().staged, 0);
     assert_eq!(writer.admitted(), 10);
@@ -248,8 +295,12 @@ fn disk_full_is_not_a_cache_limit() {
 #[test]
 fn segments_above_a_quarter_dead_are_compaction_candidates() {
     let mut life = ledger(1_000);
-    let quiet = life.insert_segment(100, 250_000, &[root()]).expect("segment");
-    let dirty = life.insert_segment(100, 250_001, &[root()]).expect("segment");
+    let quiet = life
+        .insert_segment(100, 250_000, &[root()])
+        .expect("segment");
+    let dirty = life
+        .insert_segment(100, 250_001, &[root()])
+        .expect("segment");
     assert!(!life.compaction_candidate(quiet));
     assert!(life.compaction_candidate(dirty));
     let _pressure = life.insert_segment(800, 0, &[root()]).expect("pressure");

@@ -21,14 +21,21 @@ impl Version {
     /// Exhaustion cannot be a `Result` here: existing callers destructure the tuple.
     /// Major 0 is the legacy unknown-version sentinel, so a later encode refuses it.
     /// Callers that publish use [`Self::try_calculate_next`] and stop before publication.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
+    )]
     pub fn calculate_next(
         &self,
         files_unchanged_count: usize,
         total_files_in_new_state: usize,
         max_diff_files: u32,
     ) -> (Version, bool) {
-        match self.try_calculate_next(files_unchanged_count, total_files_in_new_state, max_diff_files) {
+        match self.try_calculate_next(
+            files_unchanged_count,
+            total_files_in_new_state,
+            max_diff_files,
+        ) {
             Ok(next) => next,
             Err(_) => (Version { major: 0, minor: 0 }, true),
         }
@@ -56,7 +63,10 @@ impl Version {
 
         // TRIGGER B: Diff Limit Exceeded
         let is_limit_exceeded = self.minor >= max_diff_files;
-        let exhausted = VersionExhausted { major: self.major, minor: self.minor };
+        let exhausted = VersionExhausted {
+            major: self.major,
+            minor: self.minor,
+        };
 
         if is_massive_change || is_limit_exceeded {
             let major = self.major.checked_add(1).ok_or(exhausted)?;
@@ -64,7 +74,13 @@ impl Version {
         }
 
         let minor = self.minor.checked_add(1).ok_or(exhausted)?;
-        Ok((Version { major: self.major, minor }, false))
+        Ok((
+            Version {
+                major: self.major,
+                minor,
+            },
+            false,
+        ))
     }
 }
 
@@ -158,13 +174,43 @@ mod tests {
     fn maximum_revision_refuses_and_the_prior_revision_advances() {
         // Direct arithmetic reproducer: calculate_next(0, 1, 999) on the maximum major.
         // The tuple API cannot carry the error; try_calculate_next is the typed refusal.
-        let max = Version { major: u32::MAX, minor: 7 };
+        let max = Version {
+            major: u32::MAX,
+            minor: 7,
+        };
         let (sentinel, reset) = max.calculate_next(0, 1, 999);
         assert_eq!(sentinel, Version { major: 0, minor: 0 });
         assert!(reset);
-        assert_eq!(max.try_calculate_next(0, 1, 999), Err(VersionExhausted { major: u32::MAX, minor: 7 }));
-        let prior = Version { major: u32::MAX - 1, minor: 7 };
-        assert_eq!(prior.try_calculate_next(0, 1, 999), Ok((Version { major: u32::MAX, minor: 0 }, true)));
-        assert_eq!(prior.try_calculate_next(3, 4, 999), Ok((Version { major: u32::MAX - 1, minor: 8 }, false)));
+        assert_eq!(
+            max.try_calculate_next(0, 1, 999),
+            Err(VersionExhausted {
+                major: u32::MAX,
+                minor: 7
+            })
+        );
+        let prior = Version {
+            major: u32::MAX - 1,
+            minor: 7,
+        };
+        assert_eq!(
+            prior.try_calculate_next(0, 1, 999),
+            Ok((
+                Version {
+                    major: u32::MAX,
+                    minor: 0
+                },
+                true
+            ))
+        );
+        assert_eq!(
+            prior.try_calculate_next(3, 4, 999),
+            Ok((
+                Version {
+                    major: u32::MAX - 1,
+                    minor: 8
+                },
+                false
+            ))
+        );
     }
 }

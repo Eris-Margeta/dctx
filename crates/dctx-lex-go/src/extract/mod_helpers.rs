@@ -4,8 +4,8 @@
 //! Depends on lexer positions and dctx-map-model nodes. The walker in `extract`
 //! emits into a draft here and finishes it into a `LexedFile`.
 use crate::domain::{
-    body_fingerprint, Completion, Diagnostic, DiagnosticReason, Dialect, Labeled, LexError,
-    LexedFile, Precision, RawReference,
+    Completion, Diagnostic, DiagnosticReason, Dialect, Labeled, LexError, LexedFile, Precision,
+    RawReference, body_fingerprint,
 };
 use crate::lexer::Lexed;
 use dctx_map_model::{
@@ -41,7 +41,10 @@ pub(super) fn comment_body(src: &str, start: u32, end: u32) -> String {
     if let Some(rest) = text.strip_prefix("//") {
         return rest.trim().to_string();
     }
-    if let Some(inner) = text.strip_prefix("/*").and_then(|body| body.strip_suffix("*/")) {
+    if let Some(inner) = text
+        .strip_prefix("/*")
+        .and_then(|body| body.strip_suffix("*/"))
+    {
         return inner
             .lines()
             .map(|line| line.trim().trim_start_matches('*').trim())
@@ -61,7 +64,9 @@ pub(super) fn gap_ok(src: &str, from: u32, to: u32) -> bool {
         return false;
     };
     gap.bytes().filter(|&byte| byte == b'\n').count() <= 1
-        && gap.bytes().all(|byte| matches!(byte, b' ' | b'\t' | b'\r' | b'\n'))
+        && gap
+            .bytes()
+            .all(|byte| matches!(byte, b' ' | b'\t' | b'\r' | b'\n'))
 }
 
 pub(super) struct DraftNode {
@@ -94,7 +99,10 @@ pub(super) struct Draft {
 }
 
 impl Draft {
-    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling."
+    )]
     pub(super) fn new(path: &str, source: &str, max_facts: usize) -> Result<Self, LexError> {
         let id = StableId::new(NodeKind::Module, path, None, None)?;
         let module = Node {
@@ -192,7 +200,8 @@ impl Draft {
             node.parent = remap.get(node.parent).copied().unwrap_or(0);
         }
         assign_ordinals(&mut nodes)?;
-        self.refs.sort_by_key(|reference| (reference.start, Reverse(reference.end)));
+        self.refs
+            .sort_by_key(|reference| (reference.start, Reverse(reference.end)));
         let mut diagnostics = lexed.diagnostics.clone();
         diagnostics.extend(self.problems.iter().map(|&(byte, reason)| Diagnostic {
             line: lexed.line(byte),
@@ -200,7 +209,9 @@ impl Draft {
             reason,
         }));
         diagnostics.sort_by_key(|diagnostic| (diagnostic.byte, diagnostic.reason as u8));
-        let first = diagnostics.first().map_or(u32::MAX, |diagnostic| diagnostic.byte);
+        let first = diagnostics
+            .first()
+            .map_or(u32::MAX, |diagnostic| diagnostic.byte);
         let completion = if diagnostics.is_empty() {
             Completion::Complete
         } else {
@@ -268,15 +279,26 @@ impl Draft {
 fn assign_ordinals(nodes: &mut [DraftNode]) -> Result<(), LexError> {
     let mut counts = BTreeMap::new();
     for draft in nodes.iter().skip(1).filter(|draft| named(draft.node.kind)) {
-        *counts.entry((draft.node.kind, draft.node.name.clone())).or_insert(0_u32) += 1;
+        *counts
+            .entry((draft.node.kind, draft.node.name.clone()))
+            .or_insert(0_u32) += 1;
     }
     let mut ordinals = BTreeMap::new();
-    for draft in nodes.iter_mut().skip(1).filter(|draft| named(draft.node.kind)) {
+    for draft in nodes
+        .iter_mut()
+        .skip(1)
+        .filter(|draft| named(draft.node.kind))
+    {
         let key = (draft.node.kind, draft.node.name.clone());
         let next = ordinals.entry(key.clone()).or_insert(0_u32);
         *next += 1;
         let ordinal = (counts[&key] > 1).then_some(*next);
-        draft.node.id = StableId::new(draft.node.kind, &draft.node.path, Some(&draft.node.name), ordinal)?;
+        draft.node.id = StableId::new(
+            draft.node.kind,
+            &draft.node.path,
+            Some(&draft.node.name),
+            ordinal,
+        )?;
     }
     Ok(())
 }
@@ -294,7 +316,11 @@ mod tests {
         let facts = GoLexer::default()
             .extract("p.go", b"package p\nfunc F() {}\nfunc F() {}\n")
             .unwrap();
-        let ids: Vec<_> = facts.nodes.iter().map(|node| node.fact.id.as_str()).collect();
+        let ids: Vec<_> = facts
+            .nodes
+            .iter()
+            .map(|node| node.fact.id.as_str())
+            .collect();
         assert!(ids.contains(&"s:p.go#F~1"), "{ids:?}");
         assert!(ids.contains(&"s:p.go#F~2"), "{ids:?}");
         assert_eq!(facts.edges.len(), facts.nodes.len() - 1);

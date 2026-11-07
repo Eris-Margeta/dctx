@@ -101,6 +101,12 @@ mod tests {
         assert!(detail.len() <= MAX_DETAIL);
         assert!(detail.chars().all(|ch| ch == 'é'));
         assert_eq!(StoreError::DiskFull.to_string(), "disk full");
-        assert_ne!(StoreError::DiskFull, StoreError::CacheLimit { requested: 1, available: 0 });
+        assert_ne!(
+            StoreError::DiskFull,
+            StoreError::CacheLimit {
+                requested: 1,
+                available: 0
+            }
+        );
     }
 }
