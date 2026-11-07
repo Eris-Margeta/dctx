@@ -29,7 +29,7 @@ dist/bin/dctx-play --listen 127.0.0.1:8080 --samples dist/samples --dctx "$PWD/d
 ./smoke.sh http://127.0.0.1:8080 # real dctx: recorded bytes, files, MCP, form, 400/413/429
 ```
 
-`RLIMIT_NPROC` counts every process and thread of the user. In the container (uid 65532) that is the
+`RLIMIT_NPROC` counts every process and thread of the user. In the container (uid 61802, a uid no other container on the host uses: the count is host-wide) that is the
 server (5 threads) and at most two runs; dctx parses with `min(available_parallelism, 8)` threads,
 which a 0.5-CPU container limits to one. Pass `--nproc 0` when running the server as a normal user.
 

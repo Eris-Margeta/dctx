@@ -24,7 +24,10 @@ services:
     mem_limit: 192m
     mem_reservation: 48m
     cpus: "0.50"
-    user: "65532:65532"
+    # A uid of its own: RLIMIT_NPROC counts every thread of the uid host-wide, and 65532 (distroless
+    # nonroot) is shared with other containers on the host; with it the parser threads fail and
+    # spans degrade (find printed L2 instead of L2-4 on the shared host).
+    user: "61802:61802"
     healthcheck:
       test: ["CMD", "/usr/local/bin/dctx-play", "--health"]
       interval: 30s
