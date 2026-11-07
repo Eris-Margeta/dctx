@@ -47,41 +47,13 @@
 
 ## Installation
 
-<<<<<<< HEAD
 **System binary — available now.** Download the archive for your OS and architecture
 from [GitHub Releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0),
 compare its SHA-256 with the matching entry in `SHA256SUMS`, extract it, and put
 `dctx` (`dctx.exe` on Windows) on `PATH`. Archives cover Linux x64/ARM64,
-macOS x64/ARM64 and Windows x64. Signed binary releases are planned.
-=======
-Download the archive for your OS and architecture from
-[GitHub Releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0), verify
-its signature and signed `SHA256SUMS`, extract it, and put `dctx` (`dctx.exe` on
-Windows) on `PATH`. Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.
-CLI releases produced by the supply-chain workflow include cosign bundles,
-CycloneDX SBOMs, GitHub provenance and per-platform air-gap bundles. For an archive
-and its `.sigstore.json` downloaded from the same release, use cosign 3.1.4:
-
-```sh
-TAG=v1.2.0 # select a release produced by the supply-chain workflow
-ASSET=dctx-x86_64-unknown-linux-musl.tar.gz
-cosign verify-blob --bundle "$ASSET.sigstore.json" \
-  --certificate-identity "https://github.com/Eris-Margeta/dctx/.github/workflows/release.yml@refs/tags/$TAG" \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com "$ASSET"
-```
-
-See [verification, provenance and offline installation](https://github.com/Eris-Margeta/dctx/blob/main/docs/VERIFYING.md) for
-signed-checksum commands, `gh attestation verify`, trust preparation and build
-reproducibility limits. Earlier releases do not retroactively gain this evidence.
-CI covers Linux, macOS and Windows; see [the matrix and desktop exclusions](https://github.com/Eris-Margeta/dctx/blob/main/docs/TESTING.md).
-
-**Coming soon:** `cargo install dctx-cli` and `npx dctx`. Registry packages are
-not live yet; use the release archives now.
-
-### From source
-
-Requires Rust 1.91 or newer.
->>>>>>> main
+macOS x64/ARM64 and Windows x64. Releases after 1.2.0 also ship cosign signatures,
+a CycloneDX SBOM, build provenance and offline bundles; see
+[verification, provenance and offline installation](https://github.com/Eris-Margeta/dctx/blob/main/docs/VERIFYING.md).
 
 ```sh
 dctx --version
@@ -92,7 +64,7 @@ pinned binary are planned. The [Rust facade](https://www.dctx.internet.technolog
 is available from tagged Git today; crates.io, `cargo install dctx-cli` and the
 npm CLI (`npx dctx`) are publishing soon. Use release archives now.
 
-Follow [the safe path in ten minutes](https://github.com/Eris-Margeta/dctx/blob/main/docs/START.md#safe-path-in-ten-minutes)
+Follow [the safe path in ten minutes](https://www.dctx.internet.technology/docs/start/#safe-path-in-ten-minutes)
 for one project, lean MCP setup and whole-session measurement.
 
 <!-- output:begin -->
@@ -240,9 +212,9 @@ Historical cold indexing of six benchmark corpora took dctx 0.13–1.20 s on one
 
 ## Start and choose your path
 
-[What dctx is](https://github.com/Eris-Margeta/dctx/blob/main/docs/START.md), [four user paths](https://github.com/Eris-Margeta/dctx/blob/main/docs/START.md#choose-your-path),
-[responsibilities](https://github.com/Eris-Margeta/dctx/blob/main/docs/START.md#responsibilities), and
-[two scopes, one binary](https://github.com/Eris-Margeta/dctx/blob/main/docs/START.md#two-scopes-one-binary) explain setup and
+[What dctx is](https://www.dctx.internet.technology/docs/start/), [four user paths](https://www.dctx.internet.technology/docs/start/#choose-your-path),
+[responsibilities](https://www.dctx.internet.technology/docs/start/#responsibilities), and
+[two scopes, one binary](https://www.dctx.internet.technology/docs/start/#two-scopes-one-binary) explain setup and
 ownership. The [documentation index](https://github.com/Eris-Margeta/dctx/blob/main/docs/README.md) groups modalities, scopes,
 engine behavior, reference material, trust and evaluator evidence.
 
@@ -274,7 +246,7 @@ printf 'def hello(name):\n    return f"Hello, {name}!"\n' > hello.py
 dctx map skeleton hello.py
 ```
 
-Use the [safe path](https://github.com/Eris-Margeta/dctx/blob/main/docs/START.md#safe-path-in-ten-minutes) or the
+Use the [safe path](https://www.dctx.internet.technology/docs/start/#safe-path-in-ten-minutes) or the
 [runnable pack and map example](https://github.com/Eris-Margeta/dctx/blob/main/examples/README.md). For repeated agent work,
 see [Map mode: context for agents](https://www.dctx.internet.technology/docs/map-mode/) and the
 [MCP client guide](https://github.com/Eris-Margeta/dctx/blob/main/docs/guides/MCP.md).
@@ -343,20 +315,20 @@ before embedding it. Python and Node project wrappers are planned.
 ## CLI Reference
 
 ```
-Usage: dctx [PATH] [OPTIONS]
+Usage: dctx <COMMAND> [OPTIONS]
        dctx pack [PATH] [--output PATH] [--clipboard] [--json] [--tree-stamps=on|off]
        dctx pack [PATH] --for <TEXT> [--budget TOKENS]
-       dctx map <map|find|neighbors|explain|read> <TARGET> [--json]
+       dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path|export> [--json]
+       dctx mcp [PATH]
        dctx cache status|gc|purge|config|auto
        dctx template build <PATH> | template list
-       dctx plugin search|install|list|info|enable|disable|remove|update|verify|run
+       dctx plugin search|install|list|info|enable|disable|remove|update|verify
        dctx git <status|protect>
 
-Snapshot options:
+Pack options:
   -c, --clipboard       Copy to clipboard
-  -d, --diff            Output the diff only (if available)
-  -t, --tree            Tree only (skips file content)
-  -r, --reset           Force V1 reset
+  -o, --output <path>   Write the page to one file
+  --json                Summary report instead of the source page
   --tree-stamps=on|off  MOD: and SIZE: on tree lines (default off; on = the 1.0.0 text)
 
 Filter options:

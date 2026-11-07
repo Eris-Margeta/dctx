@@ -176,6 +176,8 @@ class FactsSource(unittest.TestCase):
         self.assertIn("/for-ai-evaluators/", paths)
         import llms
         self.assertIn(f["notice"], llms.facts_markdown(), "the llms files and the pages read the same facts")
+        for doc in ("README.md", "docs/START.md"):
+            self.assertIn(f["notice"], (ROOT / doc).read_text(), f"the notice is verbatim in {doc}")
 
     def test_animation_hook_is_optional(self):
         import importlib.machinery

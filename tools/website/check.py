@@ -172,9 +172,13 @@ def llms_drift(errors: list[str], warnings: list[str], skip: bool) -> None:
 
 
 def facts_fresh(errors: list[str], warnings: list[str]) -> None:
-    """data/facts.json: version = VERSION; release date = CHANGELOG.md and the release tag (never the clock)."""
+    """data/facts.json: version = VERSION; release date = CHANGELOG.md and the release tag (never the clock);
+    the notice verbatim in README.md and docs/START.md (the canonical wording lives in those documents)."""
     facts = json.loads((HERE / "data/facts.json").read_text())
     version = (ROOT / "VERSION").read_text().strip()
+    for doc in ("README.md", "docs/START.md"):
+        if facts["notice"] not in (ROOT / doc).read_text():
+            errors.append(f"facts.json: notice is not verbatim in {doc}")
     if facts["version"] != version:
         errors.append(f"facts.json: version {facts['version']} != VERSION {version}")
     if facts["release_tag"] != f"v{version}" or f"/releases/tag/v{version}" not in facts["verify_download"]["link"]:

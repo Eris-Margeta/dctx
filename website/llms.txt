@@ -6,9 +6,9 @@
 
 - This is llms.txt: the facts, the route table and the start documents. The other entry points: https://www.dctx.internet.technology/llms-small.txt, https://www.dctx.internet.technology/llms-full.txt.
 - Engine: dctx 1.2.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
-- Docs commit: a67913b9c7c7fe55ed711b638990ec49bb707e90 (2026-11-07T17:57:06Z), the last commit that changed one of the documents.
-- Command: `dctx pack . --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md`
-- Budget: 18,126 of 20,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 3 documents.
+- Docs commit: 4e2d3fcf050feaf484507b54ea3cfb35b9c24e35 (2026-11-07T18:00:57Z), the last commit that changed one of the documents.
+- Command: `dctx pack . --include /docs/START.md --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md`
+- Budget: 17,364 of 20,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
 
 ## Facts
 
@@ -93,6 +93,7 @@ Documents link to their Markdown twin (index.md), the repository file with only 
 - [For AI evaluators](https://www.dctx.internet.technology/for-ai-evaluators/): What dctx is and is not, its version, modalities, benchmark status, removed commands and how to verify every claim.
 - [Why dctx](https://www.dctx.internet.technology/why/index.md): Why dctx exists, its philosophy, and why byte-identical output keeps the prompt cache hitting.
 - [README](https://www.dctx.internet.technology/docs/readme/index.md): Installation, quick start, map mode, language tiers and the CLI reference.
+- [What dctx is](https://www.dctx.internet.technology/docs/start/index.md): The claim and its limits, the advanced-user notice, choose your path, the safe path in ten minutes, responsibilities and the two scopes.
 - [Choosing how to use dctx](https://www.dctx.internet.technology/docs/modalities/index.md): Clipboard, grep plus reads, long sessions, huge trees, MCP startup cost and CI.
 - [Map mode guide](https://www.dctx.internet.technology/docs/map-mode/index.md): Every map verb with examples, budgets, ids and precision labels.
 - [Agent snippet](https://www.dctx.internet.technology/docs/agents/index.md): The AGENTS.md section that tells coding agents to ask dctx first.
@@ -103,6 +104,7 @@ Documents link to their Markdown twin (index.md), the repository file with only 
 - [Template contract (DTS v2)](https://www.dctx.internet.technology/docs/templates-contract/index.md): DTS source v2 and the compiled plan IR v1.
 - [Templating engine (ADR-003)](https://www.dctx.internet.technology/docs/templating/index.md): Markers, ahead-of-time compilation, the two rendering passes and the data variables.
 - [CLI exit codes](https://www.dctx.internet.technology/docs/exit-codes/index.md): The exit-code contract for map, pack, mcp and languages.
+- [How dctx works](https://www.dctx.internet.technology/how-it-works/): Five short animations: two scopes of one binary, calls times context, prefix stability, the giant folder and the safe path for new users.
 
 ### CLI
 
@@ -157,18 +159,16 @@ Documents link to their Markdown twin (index.md), the repository file with only 
   [F] README.md (ID:F001)
   [D] docs (ID:D002)
     [F] docs/MODALITIES.md (ID:F003)
-    [F] docs/WHY-DCTX.md (ID:F004)
+    [F] docs/START.md (ID:F004)
+    [F] docs/WHY-DCTX.md (ID:F005)
 </DIRECTORY_TREE>
-<FILE_CONTENT_START ID="F001" PATH="README.md" LINES="656">
+<FILE_CONTENT_START ID="F001" PATH="README.md" LINES="474">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
-<p align="center">
-  <img src="docs/assets/dctx-header.svg" alt="dctx - context, engineered" width="100%">
-</p>
+<h1 align="center">dctx</h1>
 
 <p align="center">
-  <strong>Turn a codebase into focused context for AI assistants.</strong><br>
-  Pack a project, find symbols and read exact source locally. Stable output helps prompt caches reuse context.
+  <img src="docs/assets/dctx-header.svg" alt="dctx - context, engineered" width="100%">
 </p>
 
 <p align="center">
@@ -190,7 +190,8 @@ Documents link to their Markdown twin (index.md), the repository file with only 
 </p>
 
 <p align="center">
-  <a href="#why-dctx">Why dctx</a> •
+  <a href="#start-and-choose-your-path">Choose your path</a> •
+  <a href="#which-mode">Which mode?</a> •
   <a href="#the-core-belief-prompt-processing-efficiency">Philosophy</a> •
   <a href="#installation">Installation</a> •
   <a href="#quick-start">Quick Start</a> •
@@ -202,82 +203,34 @@ Documents link to their Markdown twin (index.md), the repository file with only 
   <a href="https://www.dctx.internet.technology/">Website</a>
 </p>
 
+<p>
+  <strong>dctx turns any folder into the smallest correct context for a task, offline, with byte-stable output that prompt caches can reuse.</strong><br>
+  dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.
+</p>
+
 ---
 
 ## Installation
 
-Download the archive for your OS and architecture from
-[GitHub Releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0), verify
-its signature and signed `SHA256SUMS`, extract it, and put `dctx` (`dctx.exe` on
-Windows) on `PATH`. Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.
-CLI releases produced by the supply-chain workflow include cosign bundles,
-CycloneDX SBOMs, GitHub provenance and per-platform air-gap bundles. For an archive
-and its `.sigstore.json` downloaded from the same release, use cosign 3.1.4:
+**System binary — available now.** Download the archive for your OS and architecture
+from [GitHub Releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0),
+compare its SHA-256 with the matching entry in `SHA256SUMS`, extract it, and put
+`dctx` (`dctx.exe` on Windows) on `PATH`. Archives cover Linux x64/ARM64,
+macOS x64/ARM64 and Windows x64. Releases after 1.2.0 also ship cosign signatures,
+a CycloneDX SBOM, build provenance and offline bundles; see
+[verification, provenance and offline installation](docs/VERIFYING.md).
 
 ```sh
-TAG=v1.2.0 # select a release produced by the supply-chain workflow
-ASSET=dctx-x86_64-unknown-linux-musl.tar.gz
-cosign verify-blob --bundle "$ASSET.sigstore.json" \
-  --certificate-identity "https://github.com/Eris-Margeta/dctx/.github/workflows/release.yml@refs/tags/$TAG" \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com "$ASSET"
+dctx --version
 ```
 
-See [verification, provenance and offline installation](docs/VERIFYING.md) for
-signed-checksum commands, `gh attestation verify`, trust preparation and build
-reproducibility limits. Earlier releases do not retroactively gain this evidence.
-CI covers Linux, macOS and Windows; see [the matrix and desktop exclusions](docs/TESTING.md).
+**Project libraries — publishing soon.** The pip/npm libraries with their own
+pinned binary are planned. The [Rust facade](docs/MODALITIES.md#rust-library-embed-the-facade)
+is available from tagged Git today; crates.io, `cargo install dctx-cli` and the
+npm CLI (`npx dctx`) are publishing soon. Use release archives now.
 
-**Coming soon:** `cargo install dctx-cli` and `npx dctx`. Registry packages are
-not live yet; use the release archives now.
-
-### From source
-
-Requires Rust 1.91 or newer.
-
-```sh
-git clone https://github.com/Eris-Margeta/dctx
-cd dctx
-cargo build --locked --release -p dctx-cli
-./target/release/dctx-cli --version
-alias dctx="$PWD/target/release/dctx-cli"
-```
-
-Cargo builds `dctx-cli` (`dctx-cli.exe` on Windows); release archives supply
-`dctx`. For a local source installation, use
-`cargo install --locked --path crates/dctx-cli` and `alias dctx=dctx-cli`.
-On Windows, invoke the executable directly or create a PowerShell alias.
-
-## Quick Start
-
-In 30 seconds, try a tiny project (POSIX shell; on Windows use Git Bash):
-
-```sh
-mkdir dctx-demo
-cd dctx-demo
-printf 'def hello(name):\n    return f"Hello, {name}!"\n' > hello.py
-dctx map skeleton hello.py
-```
-
-Output from dctx 1.2.0:
-
-```text
-# dctx-demo skeleton
-m:hello.py	module	L1-2	hello.py
-s:hello.py#hello	fn	L1-2	def hello(name):
-```
-
-For your own project:
-
-```sh
-dctx pack .                # structured context on stdout
-dctx pack . --clipboard    # copy it to the clipboard
-dctx map find "SnapshotConfig"
-dctx mcp                   # stdio tools for an MCP client
-```
-
-`pack` writes a file only with `--output`. Tree timestamps are off by default,
-so a bare `touch` does not change its output; `--tree-stamps=on` includes them.
-Run `dctx` without arguments for the interactive terminal menu.
+Follow [the safe path in ten minutes](docs/START.md#safe-path-in-ten-minutes)
+for one project, lean MCP setup and whole-session measurement.
 
 <!-- output:begin -->
 <!-- Generated by scripts/render_readme.py from tools/website/data/demo.json. -->
@@ -398,73 +351,111 @@ pub struct Order {
 ```
 <!-- output:end -->
 
----
-
 ## Which mode?
 
-| Modality | Install | Status | Best for |
-|---|---|---|---|
-| CLI / interactive terminal | [Prebuilt archives](https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0), or build from source above | Available now; `cargo install dctx-cli` publishing soon | One-off chat (`pack --clipboard`), shell agents, scripts and CI; run `dctx` for the terminal menu |
-| MCP server | Included in the CLI; configure `dctx mcp /absolute/project` | Available now, stdio | Claude Code, Cursor and Codex tool calls on a scoped project |
-| Rust library (`dctx` facade) | Tagged Git dependency below | Available from Git; crates.io publishing soon | Embedding pack, map, templates and cache in Rust tools and editors |
-| npm CLI (`npx dctx`) | `npx dctx` after publication; use archives today | Publishing soon | Running the native CLI from a Node toolchain |
-| Desktop app | [Build the Tauri app](apps/dctx-desktop/README.md#quick-start) | Tauri 0.11 preview today; GPUI rebuild planned | Selecting projects and generating snapshots in a GUI |
-| Python / Node bindings | No supported package install yet | Planned | Future in-process Python and JavaScript integrations |
+- [CLI and one-off chat](docs/MODALITIES.md#human-one-off-pack-to-clipboard): pack selected source for a prompt or use the interactive terminal.
+- [Agents, short tasks](docs/MODALITIES.md#short-agent-task-grep-can-be-enough): compare with grep plus narrow file reads first.
+- [Agents, long sessions and huge trees](docs/MODALITIES.md#huge-trees-scope-before-indexing): scope the root, find symbols and read exact source.
+- [MCP](docs/guides/MCP.md): use the lean profile to start; ACP is planned.
+- [Libraries](docs/MODALITIES.md#rust-library-embed-the-facade): embed the Rust facade today; pip/npm project libraries are publishing soon.
+- [CI and prompt caching](docs/MODALITIES.md#ci--prompt-cache-prefix-stability): pin inputs and measure byte stability and provider cache behavior.
+- [Desktop](docs/MODALITIES.md#desktop-app-tauri-preview-today): build the Tauri 0.11 preview; the GPUI rebuild is planned.
 
-Use `dctx pack . --clipboard` for a one-off chat, plain grep plus file reads for a
-small agent task, and `find` + `read --json` + `skeleton` for repeated work in big
-files. Scope huge trees before indexing. MCP adds tool definitions to the agent's
-starting context; smaller answers alone do not prove lower session cost.
-The npm package wraps the CLI; it is separate from the planned Node library binding.
-See [Choosing how to use dctx](docs/MODALITIES.md) for commands, library boundaries,
-MCP configuration and overhead, cache limits and CI guidance.
+## Measured, in the open
 
-### Connect an MCP client
+<!-- bench:begin -->
+<!-- Generated by scripts/render_readme.py. Baseline observations: docs/BENCHMARK-20261030.md; historical timing: docs/research/bench-3way-20261030/results/run7-53f8b6b/aggregate.json. -->
 
-Install the CLI archive first. Replace both absolute paths below with your
-executable and the project to index (on Windows, use `dctx.exe` and JSON-escaped
-paths). An explicit project path avoids relying on the client's working directory.
-For a source build, point `command` at `target/release/dctx-cli`.
+The baseline is **grep plus reading files**.
 
-[Claude Code](https://code.claude.com/docs/en/mcp) (`.mcp.json` at the project root)
-and [Cursor](https://cursor.com/docs/mcp) (`.cursor/mcp.json`) use this JSON:
+A controlled grep-plus-read benchmark that counts whole agent sessions (start-up context, every call, provider cache hits and accuracy) is being prepared; until it is published, dctx makes no whole-session savings claim.
 
-```json
-{
-  "mcpServers": {
-    "dctx": {
-      "type": "stdio",
-      "command": "/absolute/path/to/dctx",
-      "args": ["mcp", "/absolute/path/to/project"]
-    }
-  }
-}
+Historical cold indexing of six benchmark corpora took dctx 0.13–1.20 s on one Linux x86_64 runner. This measures CLI wall time, not agent completion time or session cost.
+
+[Choosing how to use dctx](docs/MODALITIES.md) covers scoping and MCP startup overhead. [Measurement evidence](docs/BENCHMARK-20261030.md) describes what was measured (tool-output bytes and estimated tokens); other-tool protocols are retained only as secondary historical notes.
+<!-- bench:end -->
+
+## Start and choose your path
+
+[What dctx is](docs/START.md), [four user paths](docs/START.md#choose-your-path),
+[responsibilities](docs/START.md#responsibilities), and
+[two scopes, one binary](docs/START.md#two-scopes-one-binary) explain setup and
+ownership. The [documentation index](docs/README.md) groups modalities, scopes,
+engine behavior, reference material, trust and evaluator evidence.
+
+“Smallest correct context” is the goal: selection is lexical and bounded, not a
+proof of task completeness or a mathematical minimum. Large folders need scoped
+roots; budgets bound answers, not scans. Provider cache hits and whole-session
+savings must be measured. See [current limits](docs/MODALITIES.md) and the
+[specification and roadmap](docs/SPEC.md).
+
+## The core belief: prompt-processing efficiency
+
+Send fewer relevant bytes, keep their order stable, and verify exact source.
+dctx does not use embeddings; it selects lexical symbols and document sections.
+
+- **Bounded**: map answers use estimated token budgets and whole records.
+- **Deterministic**: identical source snapshots and requests give identical bytes.
+
+Read the [philosophy](docs/WHY-DCTX.md) and its
+[testable constraints](docs/SPEC.md#2-the-core-belief-prompt-processing-efficiency).
+
+## Quick Start
+
+Try a tiny project (POSIX shell; on Windows use Git Bash):
+
+```sh
+mkdir dctx-demo
+cd dctx-demo
+printf 'def hello(name):\n    return f"Hello, {name}!"\n' > hello.py
+dctx map skeleton hello.py
 ```
 
-[Codex](https://developers.openai.com/codex/mcp/) uses `~/.codex/config.toml`
-(or `.codex/config.toml` in a trusted project):
+Use the [safe path](docs/START.md#safe-path-in-ten-minutes) or the
+[runnable pack and map example](examples/README.md). For repeated agent work,
+see [Map mode: context for agents](docs/guides/MAP-MODE.md) and the
+[MCP client guide](docs/guides/MCP.md).
 
-```toml
-[mcp_servers.dctx]
-command = "/absolute/path/to/dctx"
-args = ["mcp", "/absolute/path/to/project"]
+## Map mode: context for agents
+
+From this repository's root:
+
+```zsh
+dctx map find "SnapshotConfig"
 ```
+
+Read exact IDs from the result with `dctx map read 'ID' --json`.
+See the [map guide](docs/guides/MAP-MODE.md) for commands, budgets and limits.
+
+## From source
+
+Requires Rust 1.91 or newer.
+
+```sh
+git clone https://github.com/Eris-Margeta/dctx
+cd dctx
+cargo build --locked --release -p dctx-cli
+./target/release/dctx-cli --version
+alias dctx="$PWD/target/release/dctx-cli"
+```
+
+Cargo builds `dctx-cli` (`dctx-cli.exe` on Windows); release archives supply
+`dctx`. For a local source installation, use
+`cargo install --locked --path crates/dctx-cli` and `alias dctx=dctx-cli`.
+On Windows, invoke the executable directly or create a PowerShell alias.
+See [CI coverage and desktop exclusions](docs/TESTING.md).
 
 ## Use as a library
 
-The public Rust API is the [`dctx` facade](crates/dctx), rather than the internal
-`dctx-core` crate. It exposes sessions for pack, map, templates and cache, with
-explicit source, clock, cancellation, selection policy and storage ports.
-**crates.io: publishing soon.** Use the current tagged Git dependency:
+The public Rust entry point is the [`dctx` facade](crates/dctx), available from
+Git now; **crates.io publishing soon**.
 
 ```toml
 [dependencies]
 dctx = { git = "https://github.com/Eris-Margeta/dctx", tag = "v1.2.0" }
 ```
 
-This ten-line example packs an in-memory source with an explicit 8 MiB ephemeral
-storage ceiling. It runs as a [Rust doctest](examples/library/README.md) in workspace
-CI; rustdoc supplies the enclosing `main` and error return type.
+This example is generated from the [workspace doctest](examples/library/README.md):
 
 <!-- library:begin -->
 ```rust
@@ -481,104 +472,50 @@ println!("{}", std::str::from_utf8(output.as_bytes())?);
 ```
 <!-- library:end -->
 
-The facade discovers no home directory, global config or Git executable and
-starts no plugin host by default. A filesystem integration must provide its own
-clock and ignore-rule policy; `FsSource` does not automatically apply `.gitignore`.
-See the [library integration notes](docs/MODALITIES.md#rust-library-embed-the-facade)
-for the boundary between library and CLI behavior. Python and Node bindings are
-planned; there is no supported in-process package for either yet.
+The host supplies selection rules and storage policy; `FsSource` does not
+load `.gitignore` automatically. Read the
+[library integration boundary](docs/MODALITIES.md#rust-library-embed-the-facade)
+before embedding it. Python and Node project wrappers are planned.
 
-## Why dctx
+## CLI Reference
 
-<table>
-<tr><td><b>Deterministic</b></td><td>Same source snapshot and request give identical bytes (every text verb checked over 5 runs on Linux; the cross-OS gate is still open). <code>dctx pack</code> tree lines carry no timestamps, so a <code>touch</code> changes nothing.</td></tr>
-<tr><td><b>Prefix-stable</b></td><td>In a <code>dctx pack</code> page, an edit keeps every byte before the edited file as a shared prefix, which is what a provider's prompt cache reuses. Map and find answers were byte-identical after unrelated edits in 33/33 text and 33/33 JSON cases (<a href="docs/research/stability-20261105/REPORT.md">measured 6 Nov 2026</a>); layered prompt tiers are still a target (<a href="docs/SPEC.md">spec</a> PPE-3).</td></tr>
-<tr><td><b>Private and offline</b></td><td>No telemetry, no model calls, no network. The release check counts socket calls under <code>strace -f</code> and fails on any. Secrets files are listed by name, never read.</td></tr>
-<tr><td><b>Fast</b></td><td>Cold index of six historical benchmark corpora in 0.13-1.20 s, on one Linux x86_64 runner. This does not measure agent session cost.</td></tr>
-<tr><td><b>Agent-ready</b></td><td><code>dctx mcp</code> is a stdio MCP server exposing the map verbs; answers are bounded and never split a record.</td></tr>
-<tr><td><b>Broad</b></td><td>50 language families: 36 with symbols and lexical call edges, 8 with symbol outlines, 6 document formats with headed sections; run <code>dctx languages</code>.</td></tr>
-<tr><td><b>Verified</b></td><td>TLA+ models of the cache lifecycle and the plugin system in <a href="docs/formal">docs/formal</a>, each with a mutation gate: every deliberately broken variant must be caught (plugins: 8 baselines, 59 mutants, 37 reachability witnesses). Plugin manifests and the plugin discovery index are verified with Ed25519 signatures.</td></tr>
-<tr><td><b>Measured</b></td><td>Compare focused answers with grep plus file reads, then count startup context and all agent turns. <a href="#measured-in-the-open">Evidence and limits below.</a></td></tr>
-<tr><td><b>Your choice of surface</b></td><td>CLI, Rust library facade, MCP server, and a <a href="apps/dctx-desktop">desktop app</a> (0.11 preview, free, Apache-2.0).</td></tr>
-</table>
+```
+Usage: dctx <COMMAND> [OPTIONS]
+       dctx pack [PATH] [--output PATH] [--clipboard] [--json] [--tree-stamps=on|off]
+       dctx pack [PATH] --for <TEXT> [--budget TOKENS]
+       dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path|export> [--json]
+       dctx mcp [PATH]
+       dctx cache status|gc|purge|config|auto
+       dctx template build <PATH> | template list
+       dctx plugin search|install|list|info|enable|disable|remove|update|verify
+       dctx git <status|protect>
 
-### At a glance
+Pack options:
+  -c, --clipboard       Copy to clipboard
+  -o, --output <path>   Write the page to one file
+  --json                Summary report instead of the source page
+  --tree-stamps=on|off  MOD: and SIZE: on tree lines (default off; on = the 1.0.0 text)
 
-| | |
-|---|---|
-| Version | 1.2.0 |
-| License | Apache-2.0 |
-| Written in | Rust (2021 and 2024 editions): 36 crates plus the desktop app |
-| CI coverage | Linux, macOS (ARM64 and x64), Windows x64; [matrix and exclusions](docs/TESTING.md) |
-| Modes | `pack` (whole project or diff), `map` (agents), `mcp` (stdio server) |
-
----
-
-## The core belief: prompt-processing efficiency
-
-Every token you put in front of a model is paid for three times:
-
-- **Prefill** — the model must process every input token before it answers. You pay per token, and you wait for it.
-- **Cache misses** — providers serve repeated prompt prefixes from a cache for a fraction of the price and latency. One changed byte early in a prompt throws the rest of the cache away.
-- **Attention** — answers get worse as irrelevant tokens pile up.
-
-dctx exists to send **the fewest, most relevant bytes, in an order that stays the same between turns**, so prompts are smaller, caches hit, and the model reasons over exact source instead of guesses. That is the whole philosophy, and every feature has to earn its place against it. The [specification](docs/SPEC.md#2-the-core-belief-prompt-processing-efficiency) turns it into five testable constraints — bounded, deterministic, prefix-stable, non-redundant, honest — and eight metrics.
-
-### One engine for every way software is built
-
-| You work by… | dctx gives you |
-|---|---|
-| **Hand-coding** in an unfamiliar codebase | `dctx map` outlines, symbol search and exact source reads |
-| **Copy-paste** into a chat assistant | `dctx pack` — the whole project or only what changed, in one structured block |
-| **Tab completion** and IDE assistants | A library facade with millisecond reads for the editor's own context budget |
-| **Agents** in a terminal | Bounded, copyable, deterministic answers: five verbs, one record per line |
-| **Fully automated software factories** | A specification for signed organization policy and receipts; the policy lattice is planned |
-
-### Zero RAG defects
-
-Chunk retrieval over embeddings fails in predictable ways: it cuts functions in half, returns different chunks for the same question, serves stale code, leaks ignored files, and hides how much it cost. dctx does not use embeddings. It answers from a lexical graph of syntax-owned spans with explicit confidence, verifies source bytes before emitting them, and reports precision and freshness. The [spec](docs/SPEC.md#3-zero-rag-defects) names ten defect classes and their intended defenses; its [roadmap](docs/SPEC.md#31-roadmap-and-acceptance-gates) distinguishes the measured baseline from planned work.
-
----
-
-## Where it comes from
-
-dctx started in **2025 as `dircontxt`, written in pure C** ([`legacy-c/`](legacy-c/)), to solve the context problem while we were still moving to an AI workflow: one command that gave a model the whole project — structured, versioned, with diffs and a strict ignore system — instead of pasting forty files. It was rewritten in Rust in 2026 and grew a privacy-first core, a template system, a plugin host, a desktop app and map mode for agents. The goal has not changed: **context, engineered.**
-
----
-
-## Map mode: context for agents
-
-```zsh
-# Run from this repository's root; map needs a file target.
-dctx map map crates/dctx-cli/src/lib.rs --depth 2
-dctx map find "SnapshotConfig"
-# Use a stable ID returned by map/find for neighbors, explain and read.
-dctx map neighbors 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --edge calls --dir in
-dctx map explain 's:crates/dctx-cli/src/lib.rs#SnapshotConfig'
-dctx map read 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --json
+Filter options:
+  --ext <list>          Only these extensions, e.g. rs,toml
+  --binary              Include binary files (excluded by default)
+  --empty | --non-empty Only empty / non-empty files
+  --large <MB> | --small <MB>
+  --hidden              Only hidden files and folders
+  --debug-ignored       Show ignored paths without reading them
 ```
 
-- **Source bytes**: `map read` prints metadata and verified source content; `--json` carries the content in `source_utf8` for tools.
-- **Bounded**: output uses an estimated token budget (up to 2,000; explain up to 1,000), not a model tokenizer guarantee, and never splits a record.
-- **Deterministic**: the same tree and question give the same bytes, so prompt caches hit.
-- **Precision and freshness**: use `--json` for the structured metadata. Structural declarations and conservative call edges do not imply exact semantic resolution.
-- **Languages**: every supported language is in one of three tiers (full, outline, docs); see [Language tiers](#language-tiers) below or run `dctx languages`.
-- **No Git, no network for map queries**: identity comes from dctx's own content digest; map does not need Git history or embeddings.
-- **Skeleton and grep**: `dctx map skeleton <file>` prints the declaration signatures of one file, with no bodies, in source order. `dctx map grep <literal>` is an exhaustive literal search of indexed files, with hits grouped by enclosing symbol; `-i` makes it ASCII case-insensitive.
-- **Hubs**: `dctx map hubs` lists the most-called symbols and the file and symbol counts per directory (`--limit` 1 to 60, default 20).
-- **Path**: `dctx map path <FROM> <TO>` prints the shortest edge path (calls, imports, contains) of at most 8 hops, or `no path`.
-- **Export**: `dctx map export --format json|mermaid` writes the whole graph as one deterministic document. The mermaid form is a flowchart of calls and imports. `--output PATH` writes a file.
-- **Neighbors**: `--edge calls|imports` selects the edge kind, and `--depth` goes up to 4. Inbound call records carry their call-site lines, at most three per record: `\tL6,L7` in text and a `sites` array in JSON.
-- **Find**: quote a multi-word concept as one argument; a name that spells the whole phrase ranks just under an exact name. For config keys with no symbol match, `find` falls back to literal hits, and a SCREAMING_CASE key (`HOME`, `DJANGO_SETTINGS_MODULE`) always lists the code that reads it after the best exact symbol.
-- **Outline of a file**: `map map <file>` lists exported top-level declarations first, then the rest in source order, with impl blocks, constants and tests last; without `--budget` its page is 1,000 tokens so `--limit 40` is not cut early. Map and find text lines are `<id>\t<kind>\tL<start>-<end>`, since the id already names the path.
-- **MCP**: `dctx mcp` runs a stdio MCP server that exposes the map verbs as tools, including skeleton, path and export.
-- **Byte-stable answers**: the text header is `# <place> <verb>`, and JSON leaves out the snapshot digest, generation and age. `--meta` restores them.
-- **Source limit**: `DCTX_MAX_SOURCE_BYTES` sets the total source bytes one scan may read (1 to 17179869184; default 1 GiB).
+Run `dctx --help` for the complete reference and `dctx --version --verbose` for feature and precision limits.
 
 
-Details: [Map mode guide](docs/guides/MAP-MODE.md). The [benchmark evidence](docs/BENCHMARK-20261030.md) leads with grep plus file reads; older other-tool results are retained as historical evidence. Planned next — agent hooks, blast radius for a diff, delta answers and prefix-stable context tiers — is specified in [docs/SPEC.md](docs/SPEC.md#31-roadmap-and-acceptance-gates).
+See [map commands and limits](docs/guides/MAP-MODE.md),
+[MCP profiles](docs/guides/MCP.md), [exit codes](docs/CLI-EXIT-CODES.md),
+[templates](docs/design/contracts/DTS-v2.md), and [plugins](docs/guides/PLUGINS.md).
+Native plugin launch is currently refused by the product host; consent alone
+does not enable it. Organization policy and `dctx policy explain` are planned.
 
 ### Language tiers
+
 
 `dctx languages` prints this table (`--json` for tools, `--markdown` for this block) from the one registry that also drives `dctx --version --verbose`; a test fails when the block below differs from it.
 
@@ -646,175 +583,59 @@ Details: [Map mode guide](docs/guides/MAP-MODE.md). The [benchmark evidence](doc
 
 </details>
 
----
-
-## Organization control
-
-The dctx Template System (DTS) defines output templates. The specification proposes extending it to selection, budgets, parsers, cache limits, plugins and privacy through a **seven-layer, signed policy lattice** — built-in → organization → tenant → machine → user → project → session — where each layer can only narrow the one above it. The lattice and `dctx policy explain` are planned, not current CLI commands. See [Part IV of the spec](docs/SPEC.md#part-iv--policy).
-
----
-
-## Plugins
-
-External effects are designed to run through out-of-process plugins with explicit capabilities and consent. The bundled Git plugin implements `.gitignore` protection and optional staging, but the current product host refuses native plugin launch, including the Git recipe; consent alone does not enable execution. See the [Plugins guide](docs/guides/PLUGINS.md).
-
-```zsh
-dctx plugin list
-dctx plugin info dctx/git
-```
-
----
 
 ## Security & Privacy
 
-**The filesystem selection boundary excludes ignored file contents, including in debug mode.**
+Pack, map and MCP run locally and have **no telemetry**, **call no model** and
+**make no network calls**. Selection happens before any byte is read, hashed,
+parsed or cached, and is checked again before output leaves the engine.
 
 | Rule file | Behaviour |
 |---|---|
-| `.gitignore`, `.dctxignore`, global ignore | Excluded from normal selection; `--debug-ignored` can show ignored path metadata without reading content |
+| `.gitignore`, `.dctxignore`, global ignore | Excluded from normal selection; `--debug-ignored` shows ignored path metadata without reading content |
 
-Selection happens before any byte is read, hashed, parsed or cached, and is checked again before output leaves the engine.
+`DCTX_INDEX_IGNORED=1` skips those ignore texts, so leave it unset when relying
+on them. Built-in sensitive-file and `.git` exclusions still apply.
 
-On top of the rule files there is a strict built-in deny with no override (no flag, no `!` negation, not even `DCTX_INDEX_IGNORED=1`):
+Sensitive files such as `.env`, private keys and credentials are omitted from
+content reads even with ignore negations; pack may list their names.
+`.git` at any depth is never listed or read by map, and is never read by pack.
+Symlinks are never followed; final-component file opens use `O_NOFOLLOW`.
+dctx decides by file name only: a secret pasted into an ordinary source file
+is not detected. Inspect context before sharing it.
+The [privacy contract and deny list](docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md)
+and [map privacy guide](docs/guides/MAP-MODE.md#index-cache-and-privacy) explain
+the boundary. Report vulnerabilities privately through [SECURITY.md](SECURITY.md).
 
-- **Sensitive files** are listed by name but never read: `.env`, `.env.*`, `*.env`, `.envrc`, `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.jks`, `*.keystore`, SSH private keys (`id_rsa`, `id_dsa`, `id_ecdsa`, `id_ed25519`), `credentials`, `credentials.json` and other data extensions, `*.credentials.json`, `secrets.yaml`/`.yml`/`.json`/`.toml`, `.npmrc`, `.netrc`, `.pypirc`, `.pgpass`, `.htpasswd`, `.git-credentials`. The full list is in [ADR-014](docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md).
-- **`.git`** at any depth is never listed or read by the map verbs, and never read by `pack`, even when a rule says `!.git/`.
-- **Symlinks** are never followed: the final component is opened with `O_NOFOLLOW`, and a symlinked directory is listed by name only, never entered or read through.
-
-dctx decides by file name only; a secret pasted into an ordinary source file is not detected. The shipped `pack`, `dctx map` and `dctx mcp` path is guarded by `crates/dctx/tests/map_sensitive_files.rs`, `crates/dctx/tests/git_and_symlink_privacy.rs`, `crates/dctx/tests/map_env_files.rs`, the unit tests in `crates/dctx/src/adapters/fs.rs`, `crates/dctx/src/domain/policy.rs` and `crates/dctx-pack/src/snapshot.rs`, and an end-to-end check that runs every command against a git-tracked canary fixture (`<repo>/scripts/checks/V1-1.zsh`).
-
-```zsh
-dctx pack . --debug-ignored  # see ignored paths in the tree without reading them
-```
-
-```gitignore
-# .dctxignore
-.env
-.env.*
-*.key
-*.pem
-.ssh/
-secrets/
-credentials/
-```
-
-The core pack/map workflows run locally, have **no telemetry**, **call no model** and **make no network calls**: the release check (`scripts/release-check.sh`) counts AF_INET/AF_INET6 connect/send calls under `strace -f` for every map verb, `pack`, `cache status` and `mcp`, and fails on any (it reports SKIP where strace cannot run). The current product CLI has no TLS network adapter for plugin discovery or downloads; network-capable distribution and plugin designs are documented separately. See the [Plugins guide](docs/guides/PLUGINS.md#what-is-not-yet-available) for current limits and [SECURITY.md](SECURITY.md) for private vulnerability reporting.
-
----
-
-## Measured, in the open
-
-<!-- bench:begin -->
-<!-- Generated by scripts/render_readme.py. Baseline observations: docs/BENCHMARK-20261030.md; historical timing: docs/research/bench-3way-20261030/results/run7-53f8b6b/aggregate.json. -->
-
-The baseline is **grep plus reading files**.
-
-A controlled grep-plus-read benchmark that counts whole agent sessions (start-up context, every call, provider cache hits and accuracy) is being prepared; until it is published, dctx makes no whole-session savings claim.
-
-Historical cold indexing of six benchmark corpora took dctx 0.13–1.20 s on one Linux x86_64 runner. This measures CLI wall time, not agent completion time or session cost.
-
-[Choosing how to use dctx](docs/MODALITIES.md) covers scoping and MCP startup overhead. [Measurement evidence](docs/BENCHMARK-20261030.md) describes what was measured (tool-output bytes and estimated tokens); other-tool protocols are retained only as secondary historical notes.
-<!-- bench:end -->
-
-Older protocols and raw results are linked from the [benchmark evidence](docs/BENCHMARK-20261030.md) as secondary historical material. See also the [changelog](CHANGELOG.md).
-
----
-
-## Out of scope for v1
-
-- Any network or cloud feature.
-- Watch or incremental mode beyond re-indexing.
-- Shell call edges (shell is outline tier: symbols only).
-- Embeddings or semantic search.
-- LSP-grade type resolution: call edges are lexical.
-- A stable plugin ABI or desktop API: neither is stable in v1.
-- Cross-repository queries.
-
----
+The [release check](scripts/release-check.sh) tests socket activity under
+`strace -f` and reports SKIP where tracing cannot run. Plugin network and
+organization policy designs in the spec include planned features;
+see [current plugin limits](docs/guides/PLUGINS.md#what-is-not-yet-available).
 
 ## Open source and maintenance
 
-dctx is open source under the [Apache-2.0](LICENSE) license, which makes it free for any use, including commercial use. The core (`pack`) and every modality stay open, and no feature is held back behind a paid edition. Individuals and teams can support the project through [GitHub Sponsors](https://github.com/sponsors/Eris-Margeta). Companies that depend on dctx can fund its upkeep through a [maintenance agreement](MAINTENANCE.md), which covers security response times, long-term support and a written commitment for procurement (see [maintenance](https://www.dctx.internet.technology/maintenance/)). Paying never changes the license and never closes a feature. The "dctx" name and logo are trademarks of Eris Margeta; see [TRADEMARK.md](TRADEMARK.md) for what forks may call themselves.
+dctx and its desktop app are [Apache-2.0](LICENSE), copyright Eris Margeta.
+Every modality stays open. [GitHub Sponsors](https://github.com/sponsors/Eris-Margeta)
+and [maintenance agreements](MAINTENANCE.md) fund upkeep without changing the
+license. See [trademark policy](TRADEMARK.md), [NOTICE](NOTICE),
+[Rust dependencies](THIRD_PARTY.md) and [npm dependencies](THIRD_PARTY_NPM.md).
 
-All first-party code and documentation, including the desktop app and planned GPUI rebuild, are Apache-2.0, copyright Eris Margeta. Dependencies and vendored materials retain their own licenses and notices; see [THIRD_PARTY.md](THIRD_PARTY.md), [THIRD_PARTY_NPM.md](THIRD_PARTY_NPM.md) and [NOTICE](NOTICE).
+## Where it comes from
 
-The dependency policy retains the **Ed25519 signature verifier** (`ed25519-dalek`) for plugin/index verification. Signed organization policy bundles are planned; their presence in the specification does not mean the CLI can enroll or verify them today. See the [dependency policy](docs/SPEC.md#27-dependencies-and-build-profiles).
-
----
-
-## CLI Reference
-
-```
-Usage: dctx <COMMAND> [OPTIONS]
-       dctx pack [PATH] [--output PATH] [--clipboard] [--json] [--tree-stamps=on|off]
-       dctx pack [PATH] --for <TEXT> [--budget TOKENS]
-       dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path|export> [--json]
-       dctx mcp [PATH]
-       dctx cache status|gc|purge|config|auto
-       dctx template build <PATH> | template list
-       dctx plugin search|install|list|info|enable|disable|remove|update|verify
-       dctx git <status|protect>
-
-Pack options:
-  -c, --clipboard       Copy to clipboard
-  -o, --output <path>   Write the page to one file
-  --json                Summary report instead of the source page
-  --tree-stamps=on|off  MOD: and SIZE: on tree lines (default off; on = the 1.0.0 text)
-
-Filter options:
-  --ext <list>          Only these extensions, e.g. rs,toml
-  --binary              Include binary files (excluded by default)
-  --empty | --non-empty Only empty / non-empty files
-  --large <MB> | --small <MB>
-  --hidden              Only hidden files and folders
-  --debug-ignored       Show ignored paths without reading them
-```
-
-Run `dctx --help` for the complete reference and `dctx --version --verbose` for feature and precision limits.
-
----
-
-## Use as a library
-
-```toml
-[dependencies]
-dctx = { path = "crates/dctx" }
-```
-
-This path dependency assumes your Cargo project is at this repository's root; adjust it for another location. [`crates/dctx`](crates/dctx/) is the facade used by the CLI; the desktop uses [`crates/dctx-desktop-api`](crates/dctx-desktop-api/) on top of it. Python, Node and C bindings are planned on the same facade.
-
----
-
-## Architecture
-
-```
-dctx/
-├── crates/        # Rust workspace: pure core, mode engines, adapters, lexers, plugin host, facade, CLI
-├── plugins/       # First-party plugins (dctx-plugin-git)
-├── apps/          # dctx-desktop
-├── legacy-c/      # The original C implementation (dircontxt)
-├── docs/          # Specification, design records, contracts, formal models, guides
-├── tools/         # Benchmarks, plugin tooling, test scripts
-└── website/       # project website
-```
-
-Start with [docs/SPEC.md](docs/SPEC.md), then [docs/CRATE-MAP.md](docs/CRATE-MAP.md).
-
----
-
-## License
-
-Apache License 2.0. Copyright Eris Margeta. The desktop app is included under the same license. Paid maintenance agreements fund the project; see [MAINTENANCE.md](MAINTENANCE.md). See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+dctx started in 2025 as `dircontxt` in C and was rewritten in Rust in 2026.
+The [changelog](CHANGELOG.md) and [`legacy-c/`](legacy-c/) preserve that history.
 
 ## Contributing
 
-Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) and the [specification](docs/SPEC.md) first.
+Read [CONTRIBUTING.md](CONTRIBUTING.md), the [specification](docs/SPEC.md) and
+[crate map](docs/CRATE-MAP.md).
 
----
-
-<p align="center">
-  <sub>Context, engineered. Built in Rust.</sub>
-</p>
+[Website](https://www.dctx.internet.technology/) ·
+[Documentation](docs/README.md) ·
+[For AI evaluators](docs/README.md#for-ai-evaluators) ·
+[llms-small.txt](https://www.dctx.internet.technology/llms-small.txt) ·
+[llms.txt](https://www.dctx.internet.technology/llms.txt) ·
+[llms-full.txt](https://www.dctx.internet.technology/llms-full.txt)
 
 </FILE_CONTENT_END ID="F001">
 <FILE_CONTENT_START ID="F003" PATH="docs/MODALITIES.md" LINES="338">
@@ -1157,7 +978,237 @@ the CLI as a subprocess and consume `--json` map answers. Use the Rust facade wh
 you need an in-process engine now.
 
 </FILE_CONTENT_END ID="F003">
-<FILE_CONTENT_START ID="F004" PATH="docs/WHY-DCTX.md" LINES="146">
+<FILE_CONTENT_START ID="F004" PATH="docs/START.md" LINES="228">
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
+# What dctx is
+
+dctx turns any folder into the smallest correct context for a task, offline, with byte-stable output that prompt caches can reuse.
+
+“Smallest correct context” describes the goal, not a proof that task selection
+is complete or minimal. The shipped engine selects lexical symbols and document
+sections, verifies source reads and bounds answers. A 200 GB folder needs a
+relevant sub-root and ignore rules; output budgets do not bound scanning.
+Byte stability enables reuse, while provider cache rules determine actual hits.
+dctx has no embeddings, network, telemetry or agent loop in its pack/map/MCP
+workflows. It does not call a model or execute the task for you.
+
+> dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.
+
+## Choose your path
+
+Choose one of these four paths. Each starts with a shipped workflow; the planned
+scope and distribution features are labeled explicitly.
+
+1. [One giant folder](#one-giant-folder)
+2. [Many small projects](#many-small-projects)
+3. [Agent builder embedding a library](#agent-builder-embedding-a-library)
+4. [Team / enterprise admin](#team--enterprise-admin)
+
+### One giant folder
+
+One giant folder (e.g. 200 GB): system binary; per-root ignore policy; name a sub-root/--place in tasks. Pitfall: pointing agents at the whole root.
+
+Install the [system binary](#safe-path-in-ten-minutes), choose a relevant package,
+and put exclusions in that root's `.dctxignore` before the first query:
+
+```sh
+dctx map find Config --place packages/service-a --budget 500 --limit 5
+```
+
+Expect bounded symbol IDs and line ranges, not a complete answer about the whole
+parent tree. Use an ID with `map read`. There is no general receipt yet;
+`--json` exposes freshness, precision and pagination. A daemon, catalog-first
+sharding and a unified policy file are planned. Read the
+[huge-tree limits and ignore example](MODALITIES.md#huge-trees-scope-before-indexing)
+before warming an index; `--in` only filters after indexing.
+
+### Many small projects
+
+Many small projects: system binary; lean MCP once in the agent config; nothing per project. Pitfall: stale caches of deleted projects -> cache gc/purge.
+
+Install one binary and configure the [lean MCP profile](guides/MCP.md) in your
+agent. The config can live at user scope; launch the server with the intended
+project root for each session. No project dependency is required. Start with a
+`find` call followed by `read` using its exact ID. Expect source plus freshness
+and precision in JSON, not a general receipt or session delta.
+
+```sh
+dctx cache status --json
+dctx cache gc --dry-run
+dctx cache purge --root /absolute/deleted-project --dry-run
+```
+
+Inspect the dry run before applying cleanup; `purge` requires `--yes`.
+See [cache controls](guides/MAP-MODE.md#index-cache-and-privacy). Per-engine-version
+cache directories are planned; the current layout uses a shared `v2` cache root.
+
+### Agent builder embedding a library
+
+Agent builder embedding a library: project library with its own pinned binary (pip/npm, publishing soon); never parse or slice pack text. Pitfall: re-implementing engine logic.
+
+The pip/npm vendored-binary wrappers and their rpc client are planned. Today,
+pin the [Rust facade](MODALITIES.md#rust-library-embed-the-facade) from tagged Git,
+or invoke the installed CLI as a subprocess. The first runnable Rust example is
+in the [library doctest](../examples/library/README.md). For subprocess use:
+
+```sh
+dctx map find Config --json --budget 500 --limit 5
+```
+
+Expect JSON records with IDs and precision/freshness metadata; pass a returned
+ID to `map read --json` for `source_utf8`. Keep engine selection and rendering in
+the engine. Pass opaque continuation cursors back unchanged rather than slicing
+pack text. Agent session IDs, deltas, chunk IDs and receipts are planned, not
+arguments to add to today's calls. A Rust facade `Session` is an in-process API
+object, not an MCP conversation ID. See the [scope contract](#two-scopes-one-binary).
+
+### Team / enterprise admin
+
+Team / enterprise admin: system binary via package manager, signature + SBOM verification, one pinned version fleet-wide. Pitfall: mixing project and system versions without checking (doctor, planned).
+
+This is the rollout target. Today, pin a release archive and check its matching
+`SHA256SUMS` entry; package-manager distribution, signed CLI binaries and a
+release SBOM verification workflow are planned. Deploy the verified archive and
+root ignore rules through your existing fleet tooling. Record the resolved
+binary path and start with:
+
+```sh
+dctx --version --verbose
+```
+
+Expect version and feature/precision limits. `dctx doctor` and signature-status
+output are planned. Check paths and versions explicitly during onboarding;
+use [release procedure](../RELEASING.md), [testing](TESTING.md) and
+[security reporting](../SECURITY.md) for the current controls. Signed
+organization policy bundles and audit journals are planned.
+
+## Safe path in ten minutes
+
+### 1. Install the system binary
+
+Download the archive for your OS and architecture and `SHA256SUMS` from
+[GitHub Releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0).
+Compare the archive's SHA-256 with its matching entry before extracting it.
+On Linux use `sha256sum ARCHIVE`, on macOS `shasum -a 256 ARCHIVE`, or on Windows
+PowerShell `Get-FileHash ARCHIVE -Algorithm SHA256`, replacing `ARCHIVE` with the
+downloaded filename. This checks integrity against the release checksums;
+signed binary verification is planned.
+
+Extract the archive and put `dctx` (`dctx.exe` on Windows) on your user `PATH`.
+Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.
+
+```sh
+dctx --version
+```
+
+Use the system binary for interactive agents. Project pip/npm libraries are
+publishing soon; no project dependency is needed for this path.
+
+### 2. Choose one project and inspect one answer
+
+Use a small project or a relevant sub-root. Check `.gitignore` and `.dctxignore`
+before scanning; leave `DCTX_INDEX_IGNORED` unset. From that directory:
+
+```sh
+dctx map find Config --json --budget 500 --limit 5
+```
+
+Replace `Config` with a symbol or heading in your project. Read a returned ID
+with `dctx map read 'ID' --json`. The JSON includes verified source bytes as
+`source_utf8` and reports precision, freshness and pagination. Keep the same
+root between calls, because root-relative IDs change when the root changes.
+
+### 3. Configure the lean MCP profile
+
+In a client accepting `mcpServers`, replace both absolute paths:
+
+```json
+{
+  "mcpServers": {
+    "dctx": {
+      "command": "/absolute/path/to/dctx",
+      "args": ["mcp", "--profile", "lean", "/absolute/path/to/project"]
+    }
+  }
+}
+```
+
+Restart the client and confirm that `find` and `read` are available. The lean
+profile has **two tools**, not the planned `context/read/find` profile. For a
+controlled comparison, turn off overlapping host file tools where the client
+allows it; keep instructions and task scope consistent. Use the
+[MCP guide](guides/MCP.md) for profile selection and measured startup overhead,
+and [client-specific configs](MODALITIES.md#client-configuration) for other formats.
+
+### 4. Measure before changing anything
+
+Run the same small task with grep plus narrow file reads and with lean MCP.
+Record task correctness, number of tool calls, startup instructions and schemas,
+all model input/output tokens, provider cache hits, latency and billed cost when
+available. Include the history carried into each model turn. Smaller tool
+answers alone do not establish whole-session savings.
+
+General receipts are planned. Today, retain JSON metadata and the agent's usage
+report. For task packs, the shipped footer is a useful output accounting line:
+
+```sh
+dctx pack . --for 'Config' --budget 800
+```
+
+It reports `body_tokens`, `budget` and `dropped`, using estimated tokens rather
+than a provider tokenizer. It is not a whole-session receipt. Save outputs
+outside the selected tree, and compare repeated runs with identical inputs.
+See [measurement evidence](BENCHMARK-20261030.md) and
+[CI/cache guidance](MODALITIES.md#ci--prompt-cache-prefix-stability).
+
+## Responsibilities
+
+This table uses the scope contract's wording, with unshipped provisions marked
+`(planned)`. Prebuilt archives with `SHA256SUMS` exist today; signed CLI binary
+releases do not. ACP setup is planned; the MCP lean profile and its startup
+measurement exist.
+
+| Level | dctx provides | You are responsible for |
+|---|---|---|
+| System binary | Signed binary (planned), cache caps, doctor (planned), journals (planned), receipts (planned) | Choosing roots, policy file, keeping one version on PATH |
+| Project library | Pinned vendored binary (planned), protocol client (planned), same bytes as CLI (planned) | Pinning the version, exclusions in the project policy, not re-implementing engine logic |
+| MCP and ACP agent setup | Lean profile, tested client configs, measured start-up cost | Turning off the host's own file tools, picking a profile, session ids, reading receipts |
+| CI and cache | Byte-stable pack, prefix tiers (planned), deterministic exit codes | Pinning the binary, caching the index between runs, treating pack drift as a signal not noise |
+
+For current CLI exclusions, use `.gitignore` and `.dctxignore`; the unified policy
+file is planned. Agent session ids and general receipts in the responsibility
+column describe planned integrations. The Rust facade exists today with explicit
+host-supplied selection and storage policy; the project-library row describes
+the future pip/npm binary wrappers. Existing pack prefix stability is distinct
+from the planned layered prefix tiers.
+
+## Two scopes, one binary
+
+The following is the distribution contract for the planned project-library
+wrappers and signed releases:
+
+> The system `dctx` on PATH belongs to you and your agents. A binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Same signed engine, different owner. Interactive agents and MCP call the system binary; application code and CI call the project binary; a library never silently falls back to PATH.
+
+Today, install the system binary from release archives; Python/Node applications
+and CI can invoke an explicitly pinned CLI path until project wrappers publish.
+The Rust facade is an in-process library, not a vendored executable. No shipped
+wrapper currently enforces the future no-fallback contract.
+
+The current shared cache uses platform-specific `dctx/v2` roots, with compatible
+generations checked before reuse. The proposed
+`<cache>/<engine-version>/<root-hash>/` layout, version/path in every pack and rpc
+`hello`, and `dctx doctor` coexistence report are planned. Do not assume two
+versions have independent caches today; check the executable path and version
+explicitly and use separate absolute `DCTX_CACHE_DIR` locations when isolation
+is needed. Both future scopes should read the project's exclusions; today the
+CLI loads ignore files while a Rust host supplies its own selection rules.
+
+Continue with the [documentation index](README.md), [modalities](MODALITIES.md)
+or [engine specification](SPEC.md).
+
+</FILE_CONTENT_END ID="F004">
+<FILE_CONTENT_START ID="F005" PATH="docs/WHY-DCTX.md" LINES="146">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Why dctx exists
@@ -1304,4 +1355,4 @@ If the context is byte-identical, turn one pays 200 units and the next nine pay 
 - [docs/BENCHMARK-20261030.md](BENCHMARK-20261030.md): `unresolved` call records.
 - Worked example and prefix figures: output of dctx 1.1.0 (`a4f6378`, built from [crates/dctx-cli](../crates/dctx-cli)) on a copy of [crates/dctx-lex-go](../crates/dctx-lex-go).
 
-</FILE_CONTENT_END ID="F004">
+</FILE_CONTENT_END ID="F005">

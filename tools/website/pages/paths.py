@@ -104,7 +104,7 @@ def evaluators() -> tuple[str, list]:
 <p>{md_inline(v["available"])} Verify a download with <code>{e(v["command"])}</code>. {md_inline(v["planned"])}</p></section>
 <section class="sec" aria-labelledby="mod-h"><h2 id="mod-h">Modalities</h2><ul class="facts-list">{mods}</ul>
 <h3>Two scopes, one binary</h3>{scopes()}</section>
-<section class="sec" aria-labelledby="notice-h"><h2 id="notice-h">The notice</h2><p>This is the canonical wording; the home page and <a href="/start/">Choose your path</a> carry it verbatim:</p>{notice()}</section>
+<section class="sec" aria-labelledby="notice-h"><h2 id="notice-h">The notice</h2><p>This is the canonical wording, from <a href="/docs/start/">What dctx is</a> (<code>docs/START.md</code>) and the README; the home page and <a href="/start/">Choose your path</a> carry it verbatim:</p>{notice()}</section>
 <section class="sec" aria-labelledby="resp-h"><h2 id="resp-h">Responsibilities</h2>{responsibilities()}</section>
 <section class="sec" aria-labelledby="bench-h"><h2 id="bench-h">Benchmark status</h2><p>Baseline: <b>{e(b["baseline"])}</b>.</p><ul class="facts-list">{claims}</ul>
 <p>Measured values, as the documents state them today:</p>{meas}</section>

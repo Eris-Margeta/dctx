@@ -54,8 +54,9 @@ LLMS_SECTION = {"benchmark": "Evidence", "stability": "Evidence", "benchmark-oct
 # docs/START.md (the safe path in ten minutes) and docs/WHY-DCTX.md are written on their own cards; each
 # page appears (START at /docs/start/, WHY first in the docs at /why/) as soon as its file is in the tree,
 # and nothing fails while it is not.
-START = ("start", "docs/START.md", "Safe path in ten minutes", "Start",
-         "One project, the system binary and the lean MCP profile: install, first command, what to measure.")
+START = ("start", "docs/START.md", "What dctx is", "Start",
+         "The claim and its limits, the advanced-user notice, choose your path, the safe path in ten minutes, "
+         "responsibilities and the two scopes.")
 if (ROOT / START[1]).is_file():
     DOCS.insert(1, START)
 WHY = ("why", "docs/WHY-DCTX.md", "Why dctx", "Start",
@@ -77,7 +78,7 @@ POLICIES = [
 # `capture.py --llms` into data/llms.json. Mode "outline": `dctx map map FILE --depth 2` per file;
 # "pack": one `dctx pack . --include /FILE ...`. Files are taken in this order while the dctx output
 # stays within the budget (estimated tokens, ceil(2 * UTF-8 bytes / 7)); the rest are listed as left out.
-LLMS_START = ["docs/WHY-DCTX.md", "README.md", "docs/MODALITIES.md"]
+LLMS_START = ["docs/START.md", "docs/WHY-DCTX.md", "README.md", "docs/MODALITIES.md"]
 LLMS_EXTRA = ["CHANGELOG.md", "crates/dctx-template/templates/default.dctx_template",
               "crates/dctx-template/templates/stamped.dctx_template"]
 
@@ -114,7 +115,8 @@ def doc_nav() -> list[tuple[str, list[tuple[str, str]]]]:
     def d(slug: str, label: str | None = None, frag: str = ""):
         return (label or docs[slug][0], docs[slug][1] + frag) if slug in docs else None
     groups = [
-        ("Start", [d("why", "What dctx is"), ("Choose your path", "/start/"), d("start"), d("readme", "README and quick start")]),
+        ("Start", [d("start"), ("Choose your path", "/start/"), d("start", "Safe path in ten minutes", "#safe-path-in-ten-minutes"),
+                   d("why"), d("readme", "README and quick start")]),
         ("Modalities", [d("modalities"), d("map-mode", "CLI and agents: map mode"), d("agents"),
                         d("modalities", "MCP", "#mcp-server-convenient-tools-with-startup-context"),
                         d("modalities", "Libraries", "#rust-library-embed-the-facade"),
