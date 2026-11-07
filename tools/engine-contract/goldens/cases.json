@@ -1,0 +1,16 @@
+[
+  {
+    "name": "read-lines-json",
+    "golden": "read-lines.json.golden",
+    "cli": ["map", "read", "m:src/lib.rs", "--lines", "1-2", "--json"],
+    "rpc": {"verb": "read", "args": ["m:src/lib.rs", "--lines", "1-2"]},
+    "mcp": {"name": "read", "arguments": {"id": "m:src/lib.rs", "lines": "1-2", "json": true}}
+  },
+  {
+    "name": "empty-find-json",
+    "golden": "empty-find.json.golden",
+    "cli": ["map", "find", "not_present_zz", "--json"],
+    "rpc": {"verb": "find", "args": ["not_present_zz"]},
+    "mcp": {"name": "find", "arguments": {"query": "not_present_zz", "json": true}}
+  }
+]
