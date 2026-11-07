@@ -37,3 +37,17 @@ These commands keep their earlier behaviour, exit 1 for every failure, with no h
 - `dctx cache …` and `dctx template …`;
 - the legacy snapshot `dctx PATH` once its arguments parse (a bad snapshot flag is exit 2);
 - `dctx plugin …` and `dctx git …`, which return the plugin host's own codes.
+
+## Engine RPC
+
+`dctx rpc` uses the same operation paths and numeric taxonomy over
+[versioned NDJSON](https://github.com/Eris-Margeta/dctx/blob/main/docs/protocol/README.md). Each reply carries `engine_version`
+and echoes its request id. An error contains the CLI code, diagnostic, hint and
+any stdout emitted before failure (including gone pages). Protocol/framing
+refusals use code 2 and leave the session usable. Cache status retains its
+legacy code-1 failures. An error reply does not change the server's process exit
+status: normal EOF exits 0, transport I/O errors exit 3, and broken stdout exits
+quietly with 0. The server performs no piggyback auto-clean.
+
+`pack --for TEXT --json` now emits the facade's context JSON page; its text
+member contains the same budgeted context page as plain `pack --for TEXT`.

@@ -6,9 +6,9 @@
 
 - This is llms-full.txt: the facts, the route table, every document the budget allows, the captured CLI help and examples. The other entry points: https://www.dctx.internet.technology/llms-small.txt, https://www.dctx.internet.technology/llms.txt.
 - Engine: dctx 1.2.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
-- Docs commit: 70f5f554bf3c0d05ab50079b965c20944a3d4f6e (2026-11-07T18:23:16Z), the last commit that changed one of the documents.
+- Docs commit: 929d17afec74f011b11bd767b949a90060528f1d (2026-11-07T20:27:40Z), the last commit that changed one of the documents.
 - Command: `dctx pack . --include /docs/START.md --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md --include /docs/guides/MAP-MODE.md --include /docs/guides/AGENTS-SNIPPET.md --include /docs/guides/PLUGINS.md --include /docs/SPEC.md --include /docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md --include /docs/ADR-018-Language-Coverage.md --include /docs/design/contracts/DTS-v2.md --include /docs/ADR-003-Templating-Engine.md --include /docs/CRATE-MAP.md --include /docs/CLI-EXIT-CODES.md --include /docs/BENCHMARK-20261030.md --include /docs/research/stability-20261105/REPORT.md --include /docs/research/trail-code-2026-10/REPORT.md --include /RELEASING.md --include /CONTRIBUTING.md --include /SECURITY.md --include /TRADEMARK.md --include /MAINTENANCE.md --include /CHANGELOG.md --include /crates/dctx-template/templates/default.dctx_template --include /crates/dctx-template/templates/stamped.dctx_template`
-- Budget: 91,713 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 25 documents.
+- Budget: 91,932 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 25 documents.
 
 ## Facts
 
@@ -2392,7 +2392,7 @@ then all 15 checks together on `ac8408c`, passed on the Linux benchmark host bef
 Seeded selection of 3 repos the tools never saw (zoxide, requests, gin), gold from language servers and repo history, published regardless of outcome. Tasks: dctx 22/28 points, 31/36 facts, 6.85 facts per 1k tokens (Trail-Code 19/28, graphify 14/28). Callers against LSP gold, first page: dctx P 0.730 / R 0.341, Trail-Code P 0.731 / R 0.313, graphify P 0.920 / R 0.264. Honest read: dctx leads on task answers and token efficiency; caller recall on unseen repos is far below the in-house corpus (0.851), so the caller floors above hold only for the curated corpora. Full table and raw JSON: `docs/research/bench-independent/results/20261031T191225Z/`.
 
 </FILE_CONTENT_END ID="F017">
-<FILE_CONTENT_START ID="F018" PATH="docs/CLI-EXIT-CODES.md" LINES="40">
+<FILE_CONTENT_START ID="F018" PATH="docs/CLI-EXIT-CODES.md" LINES="54">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # CLI exit codes
@@ -2432,6 +2432,20 @@ These commands keep their earlier behaviour, exit 1 for every failure, with no h
 - `dctx cache …` and `dctx template …`;
 - the legacy snapshot `dctx PATH` once its arguments parse (a bad snapshot flag is exit 2);
 - `dctx plugin …` and `dctx git …`, which return the plugin host's own codes.
+
+## Engine RPC
+
+`dctx rpc` uses the same operation paths and numeric taxonomy over
+[versioned NDJSON](protocol/README.md). Each reply carries `engine_version`
+and echoes its request id. An error contains the CLI code, diagnostic, hint and
+any stdout emitted before failure (including gone pages). Protocol/framing
+refusals use code 2 and leave the session usable. Cache status retains its
+legacy code-1 failures. An error reply does not change the server's process exit
+status: normal EOF exits 0, transport I/O errors exit 3, and broken stdout exits
+quietly with 0. The server performs no piggyback auto-clean.
+
+`pack --for TEXT --json` now emits the facade's context JSON page; its text
+member contains the same budgeted context page as plain `pack --for TEXT`.
 
 </FILE_CONTENT_END ID="F018">
 <FILE_CONTENT_START ID="F019" PATH="docs/CRATE-MAP.md" LINES="209">
@@ -5555,6 +5569,7 @@ Usage: dctx <COMMAND> [OPTIONS]
        dctx pack [PATH] [--output PATH] [--clipboard] [--json]
        dctx pack [PATH] --for <TEXT> [--budget TOKENS]
        dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path> [--json]
+       dctx rpc
        dctx mcp [PATH]
        dctx serve [--mcp] [PATH]
        dctx read <TARGET> [OPTIONS]
@@ -5571,6 +5586,7 @@ Usage: dctx <COMMAND> [OPTIONS]
        dctx git <status|protect>
 
 `dctx languages` lists every supported language with its tier: full (symbols and call edges), outline (symbols only) or docs (sections).
+`dctx rpc` serves the versioned engine protocol for language packages (send hello first; docs/protocol/README.md).
 `dctx mcp` serves the map verbs as MCP tools over stdio (JSON-RPC 2.0, one message per line) for Claude Code, Cursor and Codex.
 `dctx serve` and `dctx serve --mcp` use that same server; `dctx read` uses `dctx map read`.
 Explicit `dctx pack` writes stdout, the clipboard, or `--output`. It does not create a project text file.
