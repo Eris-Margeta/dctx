@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Repository-scale recall and timing evidence for map mode.
-//! Implements packet CM-6b acceptance on the real dctx workspace, not synthetic code.
+//! Implements packet CM-6b acceptance on a tracked copy of the real dctx workspace.
 //! Uses the checked-in thirty-question corpus and public source/index/query APIs.
+#[path = "../../../tests/support/source_files.rs"]
+mod source_files;
+
 use dctx_map_query::{FileSource, Index, Request, Verb};
 use std::{
     io::Write,
@@ -38,7 +41,14 @@ fn dctx_repository_recall_and_latency() {
         .parent()
         .unwrap();
     assert!(root.join("crates/dctx-core/src/lib.rs").is_file());
-    let source = FileSource::new(root).unwrap();
+    // Keep real working sources and their relative paths, while excluding live scratch.
+    let repository = tempfile::tempdir().unwrap();
+    for file in source_files::files(root) {
+        let target = repository.path().join(file.strip_prefix(root).unwrap());
+        std::fs::create_dir_all(target.parent().unwrap()).unwrap();
+        std::fs::copy(file, target).unwrap();
+    }
+    let source = FileSource::new(repository.path()).unwrap();
     let cache = tempfile::tempdir().unwrap();
     let database = cache.path().join("index.sqlite");
     let mut index = Index::open("dctx", &database).unwrap();

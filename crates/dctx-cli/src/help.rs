@@ -80,6 +80,7 @@ Usage: dctx <COMMAND> [OPTIONS]
        dctx pack [PATH] [--output PATH] [--clipboard] [--json]
        dctx pack [PATH] --for <TEXT> [--budget TOKENS]
        dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path> [--json]
+       dctx rpc
        dctx mcp [PATH]
        dctx serve [--mcp] [PATH]
        dctx read <TARGET> [OPTIONS]
@@ -97,6 +98,7 @@ Usage: dctx <COMMAND> [OPTIONS]
        dctx git <status|protect>
 
 `dctx languages` lists every supported language with its tier: full (symbols and call edges), outline (symbols only) or docs (sections).
+`dctx rpc` serves the versioned engine protocol for language packages (send hello first; docs/protocol/README.md).
 `dctx mcp` serves the map verbs as MCP tools over stdio (JSON-RPC 2.0, one message per line) for Claude Code, Cursor and Codex.
 `dctx serve` and `dctx serve --mcp` use that same server; `dctx read` uses `dctx map read`.
 Explicit `dctx pack` writes stdout, the clipboard, or `--output`. It does not create a project text file.

@@ -13,7 +13,8 @@
 //! Reads are bounded before allocation.
 //! Depends on std and the distribution store port; used by the CLI entry.
 //! The product binary has no TLS stack, so refresh and URL installs refuse with `Unreachable`.
-//! Windows refuses: native replacement, directory sync and ACL semantics are not qualified.
+//! Windows permits bounded read-only registry access; mutations refuse because replacement,
+//! directory sync and ACL semantics for the plugin installation store are not qualified.
 
 #![forbid(unsafe_code)]
 
@@ -606,6 +607,9 @@ impl Store for FsStore {
         let _ = self.unsupported::<()>();
     }
     fn load_registry(&self) -> Result<Option<Vec<u8>>, DistributionError> {
+        #[cfg(windows)]
+        return disk_readonly::load_registry(&self.root);
+        #[cfg(not(windows))]
         disk(self.unsupported())
     }
     fn save_registry(&self, _token: LockToken, _bytes: &[u8]) -> Result<(), DistributionError> {
@@ -651,6 +655,9 @@ impl Store for FsStore {
         disk(self.unsupported())
     }
 }
+
+#[cfg(windows)]
+mod disk_readonly;
 
 #[cfg(all(unix, not(target_os = "linux")))]
 #[path = "disk_portable.rs"]

@@ -2,42 +2,62 @@
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # dctx documentation
 
-Start with the [project README](../README.md) for installation and the
-[runnable quickstart](../examples/README.md) for a small pack and map workflow.
-The Cargo-built executable is `dctx-cli`; guides also use the alias `dctx`.
+Start with [What dctx is](START.md). Choose a workflow before adding tools;
+measure whole sessions against grep plus file reads. The current release is
+1.2.0. Pages marked **coming** describe future documentation or features and
+have no page link; specifications also include planned behavior.
 
-## Usage and contribution
+## Start
 
-| Document | Scope |
-| --- | --- |
-| [Choosing how to use dctx](MODALITIES.md) | Clipboard, short and long agent tasks, huge trees, MCP overhead and CI. |
-| [Map mode](guides/MAP-MODE.md) | Structural outlines, symbol search, source reads and current limitations. |
-| [Plugins](guides/PLUGINS.md) | Installation, consent, trust and platform behavior. |
-| [Contributing](../CONTRIBUTING.md) | Development setup and checks. |
-| [Support](../SUPPORT.md) | Usage questions and community help through issues. |
-| [Testing](TESTING.md) | Cross-platform CI and local checks. |
-| [Security policy](../SECURITY.md) | Reporting vulnerabilities privately. |
-| [Developer guide](guides/DEVELOPER-GUIDE.md) | Contributor background; verify older commands against the current CLI. |
-| [Development practices](guides/DEVELOPMENT-PRACTICES.md) | Implementation patterns and historical troubleshooting. |
-| [Rust style guides](guides/RUST-STYLE-GUIDES.md) | Style references. |
-| [Code guidelines](standards/CODE-GUIDELINES.md) and [Rust standards](standards/RUST-STANDARDS.md) | Coding conventions. |
-| [Apache-2.0 license](../LICENSE) | Repository license. |
+- [What dctx is](START.md): the claim, current limits and advanced-user notice.
+- [Choose your path](START.md#choose-your-path): giant folders, small projects, library builders and team admins.
+- [Safe path in ten minutes](START.md#safe-path-in-ten-minutes): release archive, one project, lean MCP and measurement.
+- [Responsibilities](START.md#responsibilities): what the engine supplies and what the caller owns.
+- [Runnable quickstart](../examples/README.md): a small pack and map workflow.
 
-## Specifications and architecture
+## Modalities
 
-| Document | Scope |
-| --- | --- |
-| [Specification](SPEC.md) | Product goals, constraints, roadmap and acceptance gates; planned features are identified there. |
-| [Crate map](CRATE-MAP.md) | Package inventory, boundaries and direct dependencies. |
-| [Architecture history](archive/design/ARCHITECTURE-DECISIONS.md) | Superseded planning record; use current product contracts. |
-| [Product contracts](design/PRODUCT-CONTRACTS.md) | Engine and surface contracts. |
-| [Map specification](SPEC-MAP-MODE.md) | Map design background; use the map guide and CLI help for current behavior. |
-| [API ports](design/contracts/API-PORTS-v1.md), [parsers](design/contracts/PARSERS-v1.md), [cache](design/contracts/CACHE-v1.md), [segments](design/contracts/SEGMENTS-v1.md) | Versioned boundary contracts. |
-| [Template contract](design/contracts/DTS-v2.md) | ContextPlan and rendering contract. |
-| [Plugin API](design/plugin-api/README.md) and [plugin design](design/PLUGINS.md) | Protocol, authority and distribution design. |
-| [Cache model](formal/dctx-cache/README.md) and [plugin models](formal/dctx-plugins/README.md) | Formal models and their validation procedures. |
+- [CLI](MODALITIES.md#human-one-off-pack-to-clipboard): terminal, clipboard and shell workflows.
+- [Agents](MODALITIES.md#choose-by-task): short tasks, repeated source reads and huge-tree scoping.
+- [MCP](guides/MCP.md): lean/default/custom profiles, client setup and startup cost.
+- ACP: **coming**.
+- [Libraries](MODALITIES.md#rust-library-embed-the-facade): Rust facade now; pip/npm project libraries publishing soon.
+- [CI and caching](MODALITIES.md#ci--prompt-cache-prefix-stability): fixed inputs, byte stability and measurement limits.
+- [Desktop](MODALITIES.md#desktop-app-tauri-preview-today): Tauri preview and planned GPUI rebuild.
 
-## Architecture decision records
+## Scopes
+
+- [System binary](START.md#two-scopes-one-binary): you and your interactive agents own the executable on PATH.
+- [Project binary](START.md#agent-builder-embedding-a-library): the planned pinned pip/npm wrapper contract and today's Rust alternative.
+- [Coexistence](START.md#two-scopes-one-binary): current shared cache and planned version isolation.
+- Coexistence and doctor command guide: **coming** (`doctor` is planned).
+- Dedicated scopes page (`SCOPES.md`): **coming**; use the start page's scope section today.
+
+## Engine
+
+- [Pack format and ids](../README.md#what-the-output-looks-like): generated output; [map ids and exact reads](guides/MAP-MODE.md).
+- [Catalog and index](MODALITIES.md#huge-trees-scope-before-indexing): shipped index limits and root selection; catalog-first sharding guide: **coming**.
+- [Cache and limits](guides/MAP-MODE.md#index-cache-and-privacy): layout, freshness, caps, cleanup and exclusions.
+- Sessions and deltas guide: **coming**; see the [roadmap](SPEC.md#31-roadmap-and-acceptance-gates) for planned agent sessions.
+- [Engine specification](SPEC.md), [product contracts](design/PRODUCT-CONTRACTS.md) and [crate map](CRATE-MAP.md): boundaries, acceptance gates and implementation inventory.
+- [API ports](design/contracts/API-PORTS-v1.md), [parsers](design/contracts/PARSERS-v1.md), [cache](design/contracts/CACHE-v1.md) and [segments](design/contracts/SEGMENTS-v1.md): versioned contracts, including planned behavior.
+
+## Reference
+
+- [Commands](../README.md#cli-reference) and [map command guide](guides/MAP-MODE.md): run `dctx --help` for the complete current CLI.
+- Engine rpc protocol: **coming**; MCP's shipped stdio protocol is documented in the [MCP guide](guides/MCP.md).
+- Policy file reference: **coming**; current [ignore semantics](ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md) and [planned policy lattice](SPEC.md#part-iv--policy) are separate contracts.
+- [Exit codes](CLI-EXIT-CODES.md): deterministic outcomes for scripts and clients.
+- [Templates](design/contracts/DTS-v2.md): ContextPlan and rendering contract.
+- [Plugins](guides/PLUGINS.md), [plugin API](design/plugin-api/README.md) and [plugin design](design/PLUGINS.md): current availability, trust, authority and protocol design.
+
+Contributor references: [contributing](../CONTRIBUTING.md), [developer guide](guides/DEVELOPER-GUIDE.md),
+[development practices](guides/DEVELOPMENT-PRACTICES.md), [Rust style guides](guides/RUST-STYLE-GUIDES.md),
+[code guidelines](standards/CODE-GUIDELINES.md) and [Rust standards](standards/RUST-STANDARDS.md).
+Older guides and design records preserve context; verify commands against current CLI help.
+
+<details>
+<summary>Architecture decision records</summary>
 
 These records preserve decisions and migration context. Each record carries its
 own status; inclusion here does not certify that its entire design is implemented.
@@ -64,7 +84,27 @@ own status; inclusion here does not certify that its entire design is implemente
 | [ADR-017](ADR-017-Plugin-System.md) | Plugin System |
 | [ADR-018](ADR-018-Language-Coverage.md) | Language Coverage |
 
-## Retained reference material
+</details>
+
+## Trust
+
+- [Benchmarks and method](BENCHMARK-20261030.md): grep plus file reads as the baseline, with historical protocols labeled.
+- [Byte-stability evidence](research/stability-20261105/REPORT.md): measured answer bytes, scope and reproduction.
+- [Security](../SECURITY.md) and [privacy guarantees](ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md): reporting and filesystem boundaries.
+- Reproducible builds and signature verification page (`VERIFYING.md`): **coming**; current [release procedure](../RELEASING.md) and [testing](TESTING.md) cover existing checks.
+- [Philosophy](WHY-DCTX.md) and [testable constraints](SPEC.md#2-the-core-belief-prompt-processing-efficiency); dedicated `PHILOSOPHY.md`: **coming**.
+- [Cache model](formal/dctx-cache/README.md) and [plugin models](formal/dctx-plugins/README.md): formal validation and mutation gates.
+- [Support](../SUPPORT.md), [license](../LICENSE), [maintenance](../MAINTENANCE.md) and [trademark](../TRADEMARK.md): project terms and help.
+
+## For AI evaluators
+
+- [Facts and current status](START.md): what ships, the interim notice, responsibilities and the planned two-scope contract.
+- [Verification](TESTING.md), [benchmark method](BENCHMARK-20261030.md) and [stability reproduction](research/stability-20261105/commands.md): check claims against their scripts and limits.
+- Dedicated facts and verification page: **coming**.
+- Website evaluator files: [llms-small.txt](https://www.dctx.internet.technology/llms-small.txt), [llms.txt](https://www.dctx.internet.technology/llms.txt) and [llms-full.txt](https://www.dctx.internet.technology/llms-full.txt). A new engine-generated facts pipeline is planned; these links point to the published site.
+
+<details>
+<summary>Retained historical and research material</summary>
 
 - [`legacy-c/`](../legacy-c/) preserves the original C implementation and project history.
 - [`dossiers/`](archive/dossiers) retains dependency, platform, binding and plugin evidence;
@@ -75,3 +115,5 @@ own status; inclusion here does not certify that its entire design is implemente
 These directories are retained because their contents have historical or evidence
 value. Current usage and contracts are listed above. Superseded process records are
 collected in the [archive index](archive/README.md), with a link to their replacement.
+
+</details>

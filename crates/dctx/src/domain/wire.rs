@@ -261,7 +261,7 @@ fn field_raw(out: &mut String, key: &str, raw: &str, first: bool) {
     out.push_str(raw);
 }
 
-fn push_string(out: &mut String, text: &str) {
+pub(crate) fn push_string(out: &mut String, text: &str) {
     out.push('"');
     for ch in text.chars() {
         match ch {

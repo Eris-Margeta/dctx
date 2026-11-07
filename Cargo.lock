@@ -828,7 +828,11 @@ dependencies = [
  "dctx-ports",
  "dctx-template",
  "proptest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
  "tempfile",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -861,6 +865,7 @@ dependencies = [
  "proptest",
  "tempfile",
  "thiserror 2.0.18",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -880,6 +885,7 @@ dependencies = [
  "dctx-template",
  "ed25519-dalek",
  "proptest",
+ "serde_json",
  "tempfile",
 ]
 
@@ -1053,6 +1059,13 @@ version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "dctx-map-model",
+]
+
+[[package]]
+name = "dctx-library-example"
+version = "0.0.0"
+dependencies = [
+ "dctx",
 ]
 
 [[package]]

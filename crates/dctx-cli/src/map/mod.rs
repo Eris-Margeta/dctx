@@ -23,23 +23,22 @@ use crate::host;
 
 /// Runs one map verb and prints its page. A `gone` page is printed, then the run fails with exit 1 (docs/CLI-EXIT-CODES.md).
 pub(crate) fn run(arguments: &[String]) -> Result<(), Failure> {
+    output(arguments)?.emit()
+}
+
+/// Shared CLI/RPC output, preserving the page and the no-result exit code.
+pub(crate) fn output(arguments: &[String]) -> Result<exit::CommandOutput, Failure> {
     let answered =
         answer_with(arguments, host::open_mapped).map_err(|failure| failure.within("map"))?;
-    print!("{}", answered.page);
-    match answered.missing {
-        Some(failure) => Err(failure.within("map")),
-        None => Ok(()),
-    }
+    Ok(exit::CommandOutput {
+        stdout: answered.page,
+        failure: answered.missing.map(|failure| failure.within("map")),
+    })
 }
 
 /// Same as [`run`], returning the page instead of printing it. A `gone` page is a page here, not an error.
 pub(crate) fn execute(arguments: &[String]) -> Result<String, String> {
     execute_with(arguments, host::open_mapped)
-}
-
-/// Same as [`execute`] for `dctx pack --for`: the page, or the failure with its exit code. A `gone` page is a page here.
-pub(crate) fn answer(arguments: &[String]) -> Result<String, Failure> {
-    answer_with(arguments, host::open_mapped).map(|answered| answered.page)
 }
 
 fn execute_with(
@@ -48,7 +47,13 @@ fn execute_with(
 ) -> Result<String, String> {
     answer_with(arguments, open)
         .map(|answered| answered.page)
-        .map_err(|failure| failure.message)
+        .map_err(|failure| {
+            if failure.hint.is_empty() {
+                failure.message
+            } else {
+                format!("{}\nhint: {}", failure.message, failure.hint)
+            }
+        })
 }
 
 /// One answered map verb: the page, and the exit-1 failure that follows a `gone` page.

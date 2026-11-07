@@ -13,6 +13,13 @@ use std::sync::{Mutex, MutexGuard, PoisonError};
 use crate::domain::{Boundary, StoreError, check_root};
 use crate::ports::{self, FsCapabilities, StoreFs, read_ceiling};
 
+#[cfg(windows)]
+#[allow(
+    unsafe_code,
+    reason = "MoveFileExW has no write-through equivalent in std; the private wrapper validates and owns both UTF-16 paths."
+)]
+mod windows;
+
 /// A real directory of immutable segments and generation pointers.
 pub struct StdFs {
     root: PathBuf,
@@ -65,10 +72,10 @@ impl StdFs {
 impl StoreFs for StdFs {
     fn capabilities(&self) -> FsCapabilities {
         FsCapabilities {
-            // Directory fsync and atomic pointer replacement are qualified on
-            // Unix only. Windows must refuse durable publication before writes.
-            sync: cfg!(unix),
-            atomic_replace: cfg!(unix),
+            // Windows pairs file flushes with synchronous write-through renames;
+            // it does not try to fsync a POSIX directory handle.
+            sync: cfg!(any(unix, windows)),
+            atomic_replace: cfg!(any(unix, windows)),
             os_lock: true,
         }
     }
@@ -153,6 +160,7 @@ impl StoreFs for StdFs {
 
     fn sync_file(&self, path: &str) -> Result<(), StoreError> {
         let file = self.open_file(path, true, false)?;
+        // std calls FlushFileBuffers on Windows, with a writable file handle.
         file.sync_all().map_err(ports::io_err)?;
         Ok(())
     }
@@ -163,7 +171,13 @@ impl StoreFs for StdFs {
             let dir = File::open(&self.root).map_err(ports::io_err)?;
             dir.sync_all().map_err(ports::io_err)
         }
-        #[cfg(not(unix))]
+        #[cfg(windows)]
+        {
+            // Every publication rename already used MOVEFILE_WRITE_THROUGH.
+            // There is no separate POSIX-style directory flush on Windows.
+            Ok(())
+        }
+        #[cfg(not(any(unix, windows)))]
         {
             Err(StoreError::UnsupportedDurability { capability: "sync" })
         }
@@ -176,6 +190,9 @@ impl StoreFs for StdFs {
         if fs::symlink_metadata(&to).is_ok() {
             return Err(StoreError::io("exists"));
         }
+        #[cfg(windows)]
+        return windows::rename(&from, &to, false).map_err(ports::io_err);
+        #[cfg(not(windows))]
         fs::rename(from, to).map_err(ports::io_err)
     }
 
@@ -184,11 +201,8 @@ impl StoreFs for StdFs {
         let to = self.confine(to)?;
         self.parent_of(&to)?;
         #[cfg(windows)]
-        if fs::symlink_metadata(&to).is_ok() {
-            return Err(StoreError::UnsupportedDurability {
-                capability: "atomic-replace",
-            });
-        }
+        return windows::rename(&from, &to, true).map_err(ports::io_err);
+        #[cfg(not(windows))]
         fs::rename(from, to).map_err(ports::io_err)
     }
 
@@ -241,5 +255,39 @@ impl StoreFs for StdFs {
 
     fn list_prefix(&self, prefix: &str) -> Result<Vec<String>, StoreError> {
         ports::list_under(&self.root, prefix)
+    }
+}
+
+#[cfg(all(test, any(unix, windows)))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn publication_renames_preserve_bytes_and_never_clobber_immutable_names() {
+        let dir = tempfile::tempdir().unwrap();
+        let fs = StdFs::open(dir.path()).unwrap();
+        for (path, body) in [("tmp/first", &b"first"[..]), ("tmp/second", &b"second"[..])] {
+            fs.create(path).unwrap();
+            fs.write(path, body).unwrap();
+            fs.flush(path).unwrap();
+            fs.sync_file(path).unwrap();
+        }
+        fs.rename_new("tmp/first", "objects/immutable").unwrap();
+        fs.sync_dir().unwrap();
+        assert_eq!(fs.read("objects/immutable").unwrap(), b"first");
+        assert!(!fs.exists("tmp/first").unwrap());
+        assert!(fs.rename_new("tmp/second", "objects/immutable").is_err());
+        assert_eq!(fs.read("objects/immutable").unwrap(), b"first");
+        assert_eq!(fs.read("tmp/second").unwrap(), b"second");
+        fs.rename_replace("tmp/second", "objects/immutable")
+            .unwrap();
+        fs.sync_dir().unwrap();
+        assert_eq!(fs.read("objects/immutable").unwrap(), b"second");
+        assert!(!fs.exists("tmp/second").unwrap());
+        assert!(
+            fs.rename_replace("tmp/missing", "objects/immutable")
+                .is_err()
+        );
+        assert_eq!(fs.read("objects/immutable").unwrap(), b"second");
     }
 }

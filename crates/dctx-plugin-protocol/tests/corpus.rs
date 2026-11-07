@@ -5,6 +5,9 @@
 
 mod common;
 
+#[path = "../../../tests/support/source_files.rs"]
+mod source_files;
+
 use common::*;
 use dctx_plugin_protocol::records::method::Method;
 use dctx_plugin_protocol::records::requests::Request;
@@ -189,9 +192,10 @@ fn wire_fixture_stems() -> Vec<String> {
         "command-result",
         "file-",
     ];
-    let mut stems: Vec<String> = std::fs::read_dir(dir)
-        .expect("valid dir")
-        .filter_map(|entry| entry.ok()?.file_name().into_string().ok())
+    let mut stems: Vec<String> = source_files::files(&dir)
+        .into_iter()
+        .filter(|path| path.parent() == Some(dir.as_path()))
+        .filter_map(|path| path.file_name()?.to_str().map(str::to_owned))
         .filter_map(|name| name.strip_suffix(".json").map(str::to_owned))
         .filter(|stem| prefixes.iter().any(|prefix| stem.starts_with(prefix)))
         .collect();

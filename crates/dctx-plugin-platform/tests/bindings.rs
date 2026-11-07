@@ -18,7 +18,7 @@ fn root(path: &std::path::Path) -> RootHandle {
 
 #[test]
 fn verified_copy_survives_executable_path_and_inode_replacement() {
-    let dir = tempfile::tempdir_in(env!("CARGO_MANIFEST_DIR")).unwrap();
+    let dir = tempfile::tempdir().unwrap();
     let executable = dir.path().join("worker");
     fs::write(&executable, b"verified image").unwrap();
     let root = root(dir.path());
@@ -47,7 +47,7 @@ fn verified_copy_survives_executable_path_and_inode_replacement() {
 
 #[test]
 fn hardlinks_symlinks_and_nonregular_objects_are_refused() {
-    let dir = tempfile::tempdir_in(env!("CARGO_MANIFEST_DIR")).unwrap();
+    let dir = tempfile::tempdir().unwrap();
     fs::write(dir.path().join("authorized"), b"allowed").unwrap();
     fs::create_dir(dir.path().join("directory")).unwrap();
     let root = root(dir.path());
@@ -74,8 +74,8 @@ fn hardlinks_symlinks_and_nonregular_objects_are_refused() {
 
 #[test]
 fn substitution_during_concurrent_resolution_never_delivers_outside_bytes() {
-    let dir = tempfile::tempdir_in(env!("CARGO_MANIFEST_DIR")).unwrap();
-    let outside = tempfile::tempdir_in(env!("CARGO_MANIFEST_DIR")).unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let outside = tempfile::tempdir().unwrap();
     fs::write(outside.path().join("secret"), b"forbidden").unwrap();
     fs::write(dir.path().join("selected"), b"authorized").unwrap();
     let root = root(dir.path());
@@ -118,7 +118,7 @@ fn substitution_during_concurrent_resolution_never_delivers_outside_bytes() {
 
 #[test]
 fn retained_root_survives_namespace_replacement_without_rebinding() {
-    let dir = tempfile::tempdir_in(env!("CARGO_MANIFEST_DIR")).unwrap();
+    let dir = tempfile::tempdir().unwrap();
     let old = dir.path().join("project");
     fs::create_dir(&old).unwrap();
     fs::write(old.join("file"), b"authorized").unwrap();
@@ -136,7 +136,7 @@ fn retained_root_survives_namespace_replacement_without_rebinding() {
 
 #[test]
 fn conditional_replacement_refuses_before_write_or_recreation() {
-    let dir = tempfile::tempdir_in(env!("CARGO_MANIFEST_DIR")).unwrap();
+    let dir = tempfile::tempdir().unwrap();
     let file = dir.path().join("file");
     fs::write(&file, b"original").unwrap();
     let root = root(dir.path());

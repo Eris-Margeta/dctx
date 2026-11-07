@@ -6,18 +6,22 @@
 //! A caller may inject a plugin host and a cache root. The library default starts none and spawns nothing.
 //! Disable `plugin-runtime` to exclude the host/platform/protocol dependencies and use typed refusal stubs.
 
-#![forbid(unsafe_code)]
+#![cfg_attr(not(windows), forbid(unsafe_code))]
+#![cfg_attr(windows, deny(unsafe_code))]
 #![deny(missing_docs)]
 #![cfg_attr(not(test), deny(clippy::unwrap_used))]
 #![cfg_attr(not(test), deny(clippy::expect_used))]
 #![cfg_attr(not(test), deny(clippy::panic))]
 
 mod adapters;
+pub mod context;
 mod domain;
 mod index;
 pub mod languages;
 mod plugins;
 mod ports;
+#[cfg(feature = "rpc")]
+pub mod rpc;
 mod session;
 
 /// Facade crate version: the package version, so it moves with the workspace release.
@@ -30,8 +34,8 @@ pub use domain::{
     DctxError, Direction, ENTRIES_ENV, ErrorCode, Freshness, FreshnessMode, GcRequest, HostGrants,
     IdentityOutcome, MapRequest, OperationLimits, PackReport, PackRequest, Precision, PurgeRequest,
     PurgeScope, RECORDS_ENV, REQUEST_VERSION, Resource, RuleSources, SOURCE_ENV, STRUCTURAL_PARSER,
-    SegmentInfo, SnapshotRequest, VecSink, Verb, encode_answer, encode_answer_with, object_key,
-    parse_source_ceiling, source_ceiling, validate_segment,
+    SegmentInfo, SnapshotRequest, VecSink, Verb, encode_answer, encode_answer_with,
+    entries_ceiling, object_key, parse_source_ceiling, source_ceiling, validate_segment,
 };
 pub use languages::{Confidence, LANGUAGES, Language, Tier};
 pub use plugins::{Boundary, HookEffect, HookWarning, PluginHost};
@@ -74,6 +78,9 @@ mod isolation_scan {
             ("index/syn_extract.rs", include_str!("index/syn_extract.rs")),
             ("index/walk.rs", include_str!("index/walk.rs")),
             ("languages.rs", include_str!("languages.rs")),
+            ("context/mod.rs", include_str!("context/mod.rs")),
+            ("context/page.rs", include_str!("context/page.rs")),
+            ("context/terms.rs", include_str!("context/terms.rs")),
             ("session/mod.rs", include_str!("session/mod.rs")),
             ("session/build.rs", include_str!("session/build.rs")),
             ("session/cache_op.rs", include_str!("session/cache_op.rs")),

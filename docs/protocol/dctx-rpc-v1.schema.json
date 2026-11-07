@@ -1,0 +1,308 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Message",
+  "description": "All messages in a v1 session, used as the schema generation root.",
+  "anyOf": [
+    {
+      "$ref": "#/definitions/Request"
+    },
+    {
+      "$ref": "#/definitions/Response"
+    }
+  ],
+  "definitions": {
+    "Error": {
+      "description": "Stable CLI error taxonomy, including output emitted before an exit-1 outcome.",
+      "type": "object",
+      "required": [
+        "code",
+        "hint",
+        "message",
+        "output"
+      ],
+      "properties": {
+        "code": {
+          "description": "1 = no result, 2 = usage/protocol refusal, 3 = index/I/O error.",
+          "type": "integer",
+          "format": "int32",
+          "maximum": 3.0,
+          "minimum": 1.0
+        },
+        "hint": {
+          "description": "Actionable CLI hint.",
+          "type": "string"
+        },
+        "message": {
+          "description": "Human-readable diagnostic; clients must branch on `code`, not this text.",
+          "type": "string"
+        },
+        "output": {
+          "description": "Exact stdout preceding the error, empty for failures before rendering.",
+          "type": "string"
+        }
+      }
+    },
+    "Hello": {
+      "description": "Handshake answer.",
+      "type": "object",
+      "required": [
+        "protocol_version",
+        "verbs"
+      ],
+      "properties": {
+        "protocol_version": {
+          "description": "Independent engine protocol semver.",
+          "type": "string"
+        },
+        "verbs": {
+          "description": "Supported operations.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Verb"
+          }
+        }
+      }
+    },
+    "Id": {
+      "description": "A caller-owned correlation token. Reuse is allowed; ordering disambiguates replies.",
+      "anyOf": [
+        {
+          "description": "UTF-8 string token.",
+          "type": "string"
+        },
+        {
+          "description": "Signed 64-bit integer token.",
+          "type": "integer",
+          "format": "int64"
+        }
+      ]
+    },
+    "Request": {
+      "description": "One LF-delimited request. Unknown object fields are ignored for forward compatibility.",
+      "type": "object",
+      "required": [
+        "id",
+        "verb"
+      ],
+      "properties": {
+        "args": {
+          "description": "CLI arguments after the operation, without the implicit `--json`. Positional values and flags are passed unchanged; `--json` may also be explicit.",
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "id": {
+          "description": "Required correlation token, echoed verbatim in the reply.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Id"
+            }
+          ]
+        },
+        "verb": {
+          "description": "Engine operation; the first accepted request must be `hello`.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Verb"
+            }
+          ]
+        }
+      }
+    },
+    "Response": {
+      "description": "One LF-delimited response, flushed before reading the next request.",
+      "type": "object",
+      "anyOf": [
+        {
+          "description": "A successful operation.",
+          "type": "object",
+          "required": [
+            "result"
+          ],
+          "properties": {
+            "result": {
+              "description": "Handshake metadata or opaque engine output.",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/ResultBody"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "description": "A failed operation, using the CLI taxonomy.",
+          "type": "object",
+          "required": [
+            "error"
+          ],
+          "properties": {
+            "error": {
+              "description": "Original failure and any already-emitted page.",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/Error"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "required": [
+        "engine_version",
+        "id"
+      ],
+      "properties": {
+        "engine_version": {
+          "description": "Engine release that produced this reply, including protocol errors.",
+          "type": "string"
+        },
+        "id": {
+          "description": "Echoed request token; null when the request token could not be decoded.",
+          "anyOf": [
+            {
+              "description": "UTF-8 string token.",
+              "type": "string"
+            },
+            {
+              "description": "Signed 64-bit integer token.",
+              "type": "integer",
+              "format": "int64"
+            }
+          ]
+        }
+      }
+    },
+    "ResultBody": {
+      "description": "Successful engine result. No page is decoded or re-encoded by this envelope.",
+      "anyOf": [
+        {
+          "description": "Handshake metadata.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Hello"
+            }
+          ]
+        },
+        {
+          "description": "Exact CLI stdout, including its trailing newline(s).",
+          "type": "object",
+          "required": [
+            "output"
+          ],
+          "properties": {
+            "output": {
+              "description": "Engine-produced UTF-8 bytes as a JSON string.",
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "Verb": {
+      "description": "Engine operations available over RPC. Arguments are the corresponding CLI words.",
+      "oneOf": [
+        {
+          "description": "Required handshake, with no arguments.",
+          "type": "string",
+          "enum": [
+            "hello"
+          ]
+        },
+        {
+          "description": "`dctx pack`, including `--for`.",
+          "type": "string",
+          "enum": [
+            "pack"
+          ]
+        },
+        {
+          "description": "Alias for `dctx pack --for`; arguments include `--for TEXT`.",
+          "type": "string",
+          "enum": [
+            "context"
+          ]
+        },
+        {
+          "description": "`dctx map map`.",
+          "type": "string",
+          "enum": [
+            "map"
+          ]
+        },
+        {
+          "description": "`dctx map find`.",
+          "type": "string",
+          "enum": [
+            "find"
+          ]
+        },
+        {
+          "description": "`dctx map read`.",
+          "type": "string",
+          "enum": [
+            "read"
+          ]
+        },
+        {
+          "description": "`dctx map skeleton`.",
+          "type": "string",
+          "enum": [
+            "skeleton"
+          ]
+        },
+        {
+          "description": "`dctx map explain`.",
+          "type": "string",
+          "enum": [
+            "explain"
+          ]
+        },
+        {
+          "description": "`dctx map neighbors`.",
+          "type": "string",
+          "enum": [
+            "neighbors"
+          ]
+        },
+        {
+          "description": "`dctx map grep`.",
+          "type": "string",
+          "enum": [
+            "grep"
+          ]
+        },
+        {
+          "description": "`dctx map hubs`.",
+          "type": "string",
+          "enum": [
+            "hubs"
+          ]
+        },
+        {
+          "description": "`dctx map path`.",
+          "type": "string",
+          "enum": [
+            "path"
+          ]
+        },
+        {
+          "description": "`dctx languages`.",
+          "type": "string",
+          "enum": [
+            "languages"
+          ]
+        },
+        {
+          "description": "`dctx cache status`.",
+          "type": "string",
+          "enum": [
+            "cache_status"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -14,6 +14,7 @@ pub mod help;
 pub mod host;
 pub mod languages;
 pub mod pack;
+pub use dctx::rpc;
 pub mod template;
 pub mod tui;
 

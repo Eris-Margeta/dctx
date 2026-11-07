@@ -5,7 +5,7 @@ import re
 
 import data
 from common import ORG_ID, ORIGIN, PERSON_ID, APP_ID, VERSION, e, read, rec, src
-from components import table
+from components import output_examples, table
 from routes import doc_path
 
 VERBS = ["map", "find", "neighbors", "explain", "read", "skeleton", "grep", "hubs", "path", "export"]
@@ -47,6 +47,9 @@ def cli() -> tuple[str, list]:
     langs = data.languages()
     body = f"""<div class="wrap"><div class="page-head">{{{{crumbs}}}}<span class="eyebrow">Reference</span><h1>CLI reference</h1>
 <p class="lede">Captured from <code>dctx {VERSION}</code> when this site was built; a check fails the build when the binary prints anything else. Help text is shown verbatim, so it is the CLI's own wording, including the legacy snapshot options it still lists.</p></div>
+{output_examples()}
+<p><a href="/docs/modalities/">Usage modes and MCP client configuration</a> &middot;
+<a href="/docs/readme/#use-as-a-library">Rust library and publication status</a></p>
 {nav_html}
 <h2 id="dctx-help">dctx --help</h2>
 {"".join(sec_html)}

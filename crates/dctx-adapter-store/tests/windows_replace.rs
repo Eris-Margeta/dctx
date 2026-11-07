@@ -53,3 +53,40 @@ fn windows_open_pointer_refuses_replace_and_posix_keeps_the_old_inode() {
     assert_ne!(fs.read("roots/main/current").unwrap(), old);
     assert_eq!(store.committed("main").unwrap(), Some(2));
 }
+
+#[cfg(windows)]
+#[test]
+fn native_windows_sharing_failures_preserve_names_until_the_handle_closes() {
+    use dctx_adapter_store::StdFs;
+    use std::fs::File;
+    use std::os::windows::fs::OpenOptionsExt;
+
+    let dir = tempfile::tempdir().unwrap();
+    let fs = StdFs::open(dir.path()).unwrap();
+    for (path, body) in [("pointer", &b"old"[..]), ("replacement", &b"new"[..])] {
+        fs.create(path).unwrap();
+        fs.write(path, body).unwrap();
+        fs.sync_file(path).unwrap();
+    }
+    // Allow reads/writes but withhold FILE_SHARE_DELETE, as an external Windows
+    // consumer can do. Neither publication nor GC may truncate its bytes.
+    let held = File::options()
+        .read(true)
+        .share_mode(3)
+        .open(dir.path().join("pointer"))
+        .unwrap();
+    // MoveFileExW may report ACCESS_DENIED for an open destination; DeleteFileW
+    // can report SHARING_VIOLATION. The contract is refusal with both bodies intact.
+    fs.rename_replace("replacement", "pointer")
+        .expect_err("an open destination without delete sharing must refuse replacement");
+    fs.unlink("pointer")
+        .expect_err("an open file without delete sharing must refuse deletion");
+    assert_eq!(fs.read("pointer").unwrap(), b"old");
+    assert_eq!(fs.read("replacement").unwrap(), b"new");
+    drop(held);
+    fs.rename_replace("replacement", "pointer").unwrap();
+    fs.sync_dir().unwrap();
+    assert_eq!(fs.read("pointer").unwrap(), b"new");
+    fs.unlink("pointer").unwrap();
+    assert!(!fs.exists("pointer").unwrap());
+}
