@@ -12,7 +12,9 @@ python3 tools/mcp-measure/measure.py target/release/dctx-cli --format json
 Use `target/release/dctx-cli.exe` on Windows, or supply an installed `dctx`
 binary's absolute path. No Python packages, model credentials or network
 access are required. The [guide](../../docs/guides/MCP.md) explains the results;
-[sample.json](sample.json) records the documented run, not a performance gate.
+[sample.json](sample.json) records the original default/lean run; the
+[three-tool measurement](../../docs/results/DCX-PROF3-01-mcp.json) records all
+three profiles. These are observations, not performance gates.
 
 The script creates a deterministic 26-file Rust fixture and private cache
 under a temporary directory in the current directory, and removes both on
@@ -20,8 +22,8 @@ exit. It strips inherited `DCTX_*` settings and disables automatic cleanup
 for its child processes. It does not query your project or ambient dctx cache.
 Use `--scratch-dir PATH` to choose another existing writable parent.
 
-It measures actual initialize/tools-list reply lines for full and lean
-profiles, compact tool definitions and input schemas, CLI/MCP read byte counts,
+It measures actual initialize/tools-list reply lines for default, lean and
+three-tool profiles, compact tool definitions and input schemas, CLI/MCP read byte counts,
 one first query with an empty dctx cache, warm queries and a pipelined burst
 on one stdio process. It checks exact decoded read equality in text and facade
 JSON formats, find/read cursor advancement, an absolute line window, `isError`

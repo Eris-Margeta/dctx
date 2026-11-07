@@ -15,7 +15,7 @@ use crate::exit::Failure;
 /// Protocol version answered when the client names none.
 const DEFAULT_PROTOCOL: &str = "2025-06-18";
 /// Usage text for `dctx mcp --help`.
-const HELP: &str = "Usage: dctx mcp [--profile default|lean | --tools NAME,...] [PATH]\n  Serve map verbs as MCP tools over stdio; one JSON-RPC 2.0 message per line.\n  Default: map, find, neighbors, explain, read, hubs, grep, skeleton, path, export.\n  --profile lean: find and read, with compact descriptions and all parameters.\n  --tools NAME,...: expose only the named tools, with compact descriptions.\n  Select either --profile or --tools, once. Tools run in PATH (default: current directory).\n  Use -- before a PATH starting with '-'. Restart the server to change tools.\nExample: dctx mcp ~/src/project\n          dctx mcp --profile lean ~/src/project\n          dctx mcp --tools find,read,grep ~/src/project\n";
+const HELP: &str = "Usage: dctx mcp [--profile default|lean|three | --tools NAME,...] [PATH]\n  Serve map verbs as MCP tools over stdio; one JSON-RPC 2.0 message per line.\n  Default: map, find, neighbors, explain, read, hubs, grep, skeleton, path, export.\n  --profile lean: find and read, with compact descriptions and all parameters.\n  --profile three: map, find and read, with compact descriptions and all parameters.\n  --tools NAME,...: expose only the named tools, with compact descriptions.\n  Select either --profile or --tools, once. Tools run in PATH (default: current directory).\n  Use -- before a PATH starting with '-'. Restart the server to change tools.\nExample: dctx mcp ~/src/project\n          dctx mcp --profile lean ~/src/project\n          dctx mcp --tools find,read,grep ~/src/project\n";
 
 /// Validate all arguments before changing directory or starting the protocol.
 fn options(args: &[String]) -> Result<(Option<String>, Surface), Failure> {
@@ -328,6 +328,16 @@ mod tests {
                 vec!["project", "--profile=lean"],
                 Some("project"),
                 vec!["find", "read"],
+            ),
+            (
+                vec!["--profile", "three", "project dir"],
+                Some("project dir"),
+                vec!["map", "find", "read"],
+            ),
+            (
+                vec!["project", "--profile=three"],
+                Some("project"),
+                vec!["map", "find", "read"],
             ),
             (vec!["--tools", "read,find"], None, vec!["find", "read"]),
             (
