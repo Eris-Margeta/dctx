@@ -197,6 +197,8 @@ mod tests {
             size: 3,
             modified: 7,
             stamp: None,
+            syntax: false,
+            partial: false,
         };
         let other = IndexedFile {
             path: "README.md".to_string(),
@@ -220,6 +222,8 @@ mod tests {
                 size: 4,
                 modified: 2,
                 stamp: None,
+                syntax: false,
+                partial: false,
             },
             IndexedFile {
                 path: "README.md".to_string(),
@@ -228,6 +232,8 @@ mod tests {
                 size: 8,
                 modified: 1,
                 stamp: None,
+                syntax: false,
+                partial: false,
             },
         ];
         let mut text = TextBlob::default();

@@ -143,7 +143,7 @@ mod tests {
             args.extend(strings(ends));
             args.extend(strings(&["--place", &place.display().to_string()]));
             args.extend(strings(extra));
-            super::super::execute_with(&args, |at| host::open_mapped_at(at, Some(&cache)))
+            super::super::execute_with(&args, |at, _| host::open_mapped_at(at, Some(&cache)))
         };
         let text = run(&["s:a.py#a1", "s:a.py#a3"], &[]).expect("path");
         let lines: Vec<&str> = text.lines().collect();

@@ -96,6 +96,19 @@ pub fn open_mapped_at(path: &Path, root: Option<&Path>) -> Result<(Session, Stri
     }
 }
 
+/// Opens a map request with only the rule files that can affect its explicit scope.
+/// Scoped requests use an ephemeral session and do not open the persisted cache ledger.
+/// # Errors
+/// Returns source-root, applicable rule-file or session setup failures.
+pub fn open_mapped_query(path: &Path, scope: Option<&str>) -> Result<(Session, String), String> {
+    let Some(scope) = scope else {
+        return open_mapped(path);
+    };
+    let (source, place, key) = open_source(path)?;
+    let rules = rules::project_rules_scoped(path, Some(scope))?;
+    Ok((build(source, &place, "default", rules)?, key))
+}
+
 /// True when map should print whether the generation was reused. Set `DCTX_REUSE_REPORT=1`.
 #[allow(
     clippy::must_use_candidate,

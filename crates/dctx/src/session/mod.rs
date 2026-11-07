@@ -21,6 +21,7 @@ mod pack_op;
 mod path_op;
 mod query_op;
 mod reuse;
+mod scoped_op;
 mod sites_op;
 mod template_op;
 
@@ -79,6 +80,8 @@ pub struct SnapshotHandle {
     pin: Arc<Pin>,
     /// True when the generation was loaded after every stored content digest still matched.
     reused: bool,
+    /// A direct handle is usable only for requests over this source scope.
+    scope: Option<String>,
 }
 
 impl SnapshotHandle {
@@ -127,6 +130,7 @@ impl std::fmt::Debug for SnapshotHandle {
             .field("epoch", &self.epoch)
             .field("digest", &self.digest)
             .field("reused", &self.reused)
+            .field("scope", &self.scope)
             .field("lease", &std::sync::Arc::strong_count(&self.pin))
             .finish()
     }
@@ -310,6 +314,7 @@ impl Session {
             deadline_ms: scan_limits.deadline_ms,
             started_ms: started,
             now_ms: started,
+            elapsed: None,
         })?;
         self.content_reads += walked.reads;
         let (payload, digest) = {
@@ -444,6 +449,7 @@ impl Session {
             digest,
             pin,
             reused,
+            scope: None,
         }
     }
 
@@ -468,6 +474,18 @@ impl Session {
     }
 
     fn generation(&self, handle: &SnapshotHandle) -> Result<Arc<SharedGeneration>, DctxError> {
+        if handle.scope.is_some() {
+            return Err(DctxError::invalid(
+                "direct handles cannot serve whole-place graph operations",
+            ));
+        }
+        self.generation_for_query(handle)
+    }
+
+    fn generation_for_query(
+        &self,
+        handle: &SnapshotHandle,
+    ) -> Result<Arc<SharedGeneration>, DctxError> {
         let shared = self
             .generations
             .get(&handle.generation)

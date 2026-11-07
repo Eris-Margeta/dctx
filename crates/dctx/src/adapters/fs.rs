@@ -170,6 +170,16 @@ impl Source for FsSource {
         Ok(entries)
     }
 
+    fn kind(&self, path: &RelativePath) -> Result<NodeType, CoreError> {
+        self.reject_links(path, false)?;
+        let meta = std::fs::symlink_metadata(self.confined(path)?).map_err(map_io)?;
+        Ok(if meta.is_dir() {
+            NodeType::Directory
+        } else {
+            NodeType::File
+        })
+    }
+
     fn metadata(&self, path: &RelativePath) -> Result<EntryMeta, CoreError> {
         let full = self.confined(path)?;
         let meta = std::fs::symlink_metadata(&full).map_err(map_io)?;
