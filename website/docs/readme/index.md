@@ -25,7 +25,6 @@
     <img src="https://img.shields.io/badge/commercial-maintenance%20available-8b5cf6" alt="Commercial maintenance available">
   </a>
   <img src="https://img.shields.io/badge/telemetry-none-brightgreen" alt="No telemetry">
-  <img src="https://img.shields.io/badge/own%20benchmark-140%2F140-8b5cf6" alt="Own benchmark 140/140">
 </p>
 
 <p align="center">
@@ -103,17 +102,26 @@ Run `dctx` without arguments for the interactive terminal menu.
 
 ---
 
+## Which mode?
+
+Use `dctx pack . --clipboard` for a one-off chat, plain grep plus file reads for a
+small agent task, and `find` + `read --json` + `skeleton` for repeated work in big
+files. Scope huge trees before indexing. MCP adds tool definitions to the agent's
+starting context; smaller answers alone do not prove lower session cost.
+See [Choosing how to use dctx](https://www.dctx.internet.technology/docs/modalities/) for commands, cache limits,
+MCP overhead and CI guidance.
+
 ## Why dctx
 
 <table>
 <tr><td><b>Deterministic</b></td><td>Same source snapshot and request give identical bytes (every text verb checked over 5 runs on Linux; the cross-OS gate is still open). <code>dctx pack</code> tree lines carry no timestamps, so a <code>touch</code> changes nothing.</td></tr>
 <tr><td><b>Prefix-stable</b></td><td>In a <code>dctx pack</code> page, an edit keeps every byte before the edited file as a shared prefix, which is what a provider's prompt cache reuses. Map and find answers were byte-identical after unrelated edits in 33/33 text and 33/33 JSON cases (<a href="https://www.dctx.internet.technology/docs/stability/">measured 6 Nov 2026</a>); layered prompt tiers are still a target (<a href="https://www.dctx.internet.technology/docs/spec/">spec</a> PPE-3).</td></tr>
 <tr><td><b>Private and offline</b></td><td>No telemetry, no model calls, no network. The release check counts socket calls under <code>strace -f</code> and fails on any. Secrets files are listed by name, never read.</td></tr>
-<tr><td><b>Fast</b></td><td>Cold index of the benchmark corpora in 0.13-1.20 s (Trail-Code 1.04-52.83 s, graphify 4.59-59.56 s), on one Linux x86_64 runner.</td></tr>
+<tr><td><b>Fast</b></td><td>Cold index of six historical benchmark corpora in 0.13-1.20 s, on one Linux x86_64 runner. This does not measure agent session cost.</td></tr>
 <tr><td><b>Agent-ready</b></td><td><code>dctx mcp</code> is a stdio MCP server exposing the map verbs; answers are bounded and never split a record.</td></tr>
 <tr><td><b>Broad</b></td><td>50 language families: 36 with symbols and lexical call edges, 8 with symbol outlines, 6 document formats with headed sections; run <code>dctx languages</code>.</td></tr>
 <tr><td><b>Verified</b></td><td>TLA+ models of the cache lifecycle and the plugin system in <a href="https://github.com/Eris-Margeta/dctx/tree/main/docs/formal">docs/formal</a>, each with a mutation gate: every deliberately broken variant must be caught (plugins: 8 baselines, 59 mutants, 37 reachability witnesses). Plugin manifests and the plugin discovery index are verified with Ed25519 signatures.</td></tr>
-<tr><td><b>Measured</b></td><td>140/140 on our 70-question protocol using 29,340 tokens, against Trail-Code 122 (88,923) and graphify 96 (197,203). <a href="#measured-in-the-open">Details and caveats below.</a></td></tr>
+<tr><td><b>Measured</b></td><td>Compare focused answers with grep plus file reads, then count startup context and all agent turns. <a href="#measured-in-the-open">Evidence and limits below.</a></td></tr>
 <tr><td><b>Your choice of surface</b></td><td>CLI, Rust library facade, MCP server, and a <a href="https://github.com/Eris-Margeta/dctx/tree/main/apps/dctx-desktop">desktop app</a> (0.11 preview, free, Apache-2.0).</td></tr>
 </table>
 
@@ -191,7 +199,7 @@ dctx map read 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --json
 - **Source limit**: `DCTX_MAX_SOURCE_BYTES` sets the total source bytes one scan may read (1 to 17179869184; default 1 GiB).
 
 
-Details: [Map mode guide](https://www.dctx.internet.technology/docs/map-mode/). The three-way benchmark against graphify and Trail-Code is in [docs/BENCHMARK-20261030.md](https://www.dctx.internet.technology/docs/benchmark/). Planned next — agent hooks, blast radius for a diff, delta answers and prefix-stable context tiers — is specified in [docs/SPEC.md](https://www.dctx.internet.technology/docs/spec/#31-roadmap-and-acceptance-gates).
+Details: [Map mode guide](https://www.dctx.internet.technology/docs/map-mode/). The [benchmark evidence](https://www.dctx.internet.technology/docs/benchmark/) leads with grep plus file reads; older other-tool results are retained as historical evidence. Planned next — agent hooks, blast radius for a diff, delta answers and prefix-stable context tiers — is specified in [docs/SPEC.md](https://www.dctx.internet.technology/docs/spec/#31-roadmap-and-acceptance-gates).
 
 ### Language tiers
 
@@ -320,26 +328,18 @@ The core pack/map workflows run locally, have **no telemetry**, **call no model*
 ## Measured, in the open
 
 <!-- bench:begin -->
-<!-- Generated by scripts/render_readme.py from docs/research/bench-3way-20261030/results/run7-53f8b6b/aggregate.json and docs/research/bench-3way-20261030/tasks/results/run5-53f8b6b/tasks_aggregate.json. Edit the script, then run it; `just readme-check` fails on drift. -->
+<!-- Generated by scripts/render_readme.py. Baseline observations: docs/BENCHMARK-20261030.md; historical timing: docs/research/bench-3way-20261030/results/run7-53f8b6b/aggregate.json. -->
 
-On our 70-question protocol (designed by the dctx team; questions, gold facts and scorer are in [`docs/research/bench-3way-20261030/tasks/`](https://github.com/Eris-Margeta/dctx/tree/main/docs/research/bench-3way-20261030/tasks)), run 31 Oct 2026 against Trail-Code 0.28.0 and graphify 0.9.97 in code-only mode, dctx scored 140/140 using 29,340 tokens; Trail-Code 122 (88,923), graphify 96 (197,203). Tokens are estimated as stdout bytes / 3.5, rounded up, for every tool.
+The baseline is **grep plus reading files**.
 
-| Tool | Points /140 | Gold facts /354 | Tokens | Tool calls |
-|---|---|---|---|---|
-| dctx `53f8b6b` | 140 | 353 | 29,340 | 105 |
-| Trail-Code 0.28.0 | 122 | 312 | 88,923 | 70 |
-| graphify 0.9.97, code-only | 96 | 238 | 197,203 | 91 |
+A controlled grep-plus-read benchmark that counts whole agent sessions (start-up context, every call, provider cache hits and accuracy) is being prepared; until it is published, dctx makes no whole-session savings claim.
 
-That protocol is ours, so it can favour dctx. An independently selected protocol (repositories picked by seed, callers gold from language servers, questions written without seeing dctx output) is documented in [the independent protocol](https://github.com/Eris-Margeta/dctx/blob/main/docs/research/bench-independent/README.md); treat its results separately from this in-house benchmark.
+Historical cold indexing of six benchmark corpora took dctx 0.13–1.20 s on one Linux x86_64 runner. This measures CLI wall time, not agent completion time or session cost.
 
-Cold index of the 6 benchmark corpora (flask, ripgrep, pocketbase, trailcode, mixed, docs; median of 3 runs) took dctx 0.13–1.20 s, against Trail-Code 1.04–52.83 s and graphify 4.59–59.56 s (docs: no index), on one Linux x86_64 runner (Linux 6.12.113+deb13-cloud-amd64, Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz). These performance measurements cover Linux x86_64; cross-platform correctness checks are described in [TESTING.md](https://github.com/Eris-Margeta/dctx/blob/main/docs/TESTING.md).
-
-dctx makes no network calls: it made 0 socket calls in all 4 traced benchmark steps, and the release check (`scripts/release-check.sh`) asserts zero AF_INET/AF_INET6 connect/send calls under `strace -f` for every map verb, `pack`, `cache status` and `mcp`.
-
-Raw results, corpora pins and scripts: [`docs/research/bench-3way-20261030/`](https://github.com/Eris-Margeta/dctx/tree/main/docs/research/bench-3way-20261030); the write-up is [docs/BENCHMARK-20261030.md](https://www.dctx.internet.technology/docs/benchmark/) (Run 7).
+[Choosing how to use dctx](https://www.dctx.internet.technology/docs/modalities/) covers scoping and MCP startup overhead. [Measurement evidence](https://www.dctx.internet.technology/docs/benchmark/) describes what was measured (tool-output bytes and estimated tokens); other-tool protocols are retained only as secondary historical notes.
 <!-- bench:end -->
 
-An earlier two-way study against Trail-Code (October 2026, dctx `17dff0b`, before the call edges measured above) is in [docs/research/trail-code-2026-10](https://www.dctx.internet.technology/docs/benchmark-oct/). See also the [changelog](https://www.dctx.internet.technology/changelog/).
+Older protocols and raw results are linked from the [benchmark evidence](https://www.dctx.internet.technology/docs/benchmark/) as secondary historical material. See also the [changelog](https://www.dctx.internet.technology/changelog/).
 
 ---
 

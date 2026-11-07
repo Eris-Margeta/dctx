@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Three-way benchmark · dctx</title>
+<title>Measurement evidence · dctx</title>
 <script>/* Runs before first paint: theme and motion preference, so there is no flash. */
 (function () {
   var d = document.documentElement, t = null, m = null;
@@ -17,7 +17,7 @@
 <link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/jetbrains-mono-500.1cf4f3d2.woff2" as="font" type="font/woff2" crossorigin>
-<meta name="description" content="dctx, Trail-Code and graphify on the 70-question protocol, with caveats.">
+<meta name="description" content="Grep plus file reads first; whole-session scope and secondary historical protocols.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
 <meta name="color-scheme" content="light dark">
@@ -27,25 +27,25 @@
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="dctx">
 <meta property="og:locale" content="en_US">
-<meta property="og:title" content="Three-way benchmark · dctx">
-<meta property="og:description" content="dctx, Trail-Code and graphify on the 70-question protocol, with caveats.">
+<meta property="og:title" content="Measurement evidence · dctx">
+<meta property="og:description" content="Grep plus file reads first; whole-session scope and secondary historical protocols.">
 <meta property="og:url" content="https://www.dctx.internet.technology/docs/benchmark/">
 <meta property="og:image" content="https://www.dctx.internet.technology/assets/og/docs-benchmark.dark.png">
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="dctx: Three-way benchmark">
+<meta property="og:image:alt" content="dctx: Measurement evidence">
 <meta property="og:image" content="https://www.dctx.internet.technology/assets/og/docs-benchmark.light.png">
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="dctx: Three-way benchmark">
+<meta property="og:image:alt" content="dctx: Measurement evidence">
 <meta property="article:modified_time" content="2026-11-07T16:20:33Z">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Three-way benchmark · dctx">
-<meta name="twitter:description" content="dctx, Trail-Code and graphify on the 70-question protocol, with caveats.">
+<meta name="twitter:title" content="Measurement evidence · dctx">
+<meta name="twitter:description" content="Grep plus file reads first; whole-session scope and secondary historical protocols.">
 <meta name="twitter:image" content="https://www.dctx.internet.technology/assets/og/docs-benchmark.dark.png">
-<meta name="twitter:image:alt" content="dctx: Three-way benchmark">
+<meta name="twitter:image:alt" content="dctx: Measurement evidence">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="alternate icon" href="/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -56,7 +56,7 @@
 <link rel="search" type="application/opensearchdescription+xml" title="dctx" href="/opensearch.xml">
 <link rel="alternate" type="application/atom+xml" title="dctx news" href="/news/feed.xml">
 <link rel="alternate" type="application/atom+xml" title="dctx releases" href="/changelog/feed.xml">
-<link rel="alternate" type="text/markdown" href="/docs/benchmark/index.md" title="Three-way benchmark as Markdown">
+<link rel="alternate" type="text/markdown" href="/docs/benchmark/index.md" title="Measurement evidence as Markdown">
 <link rel="prev" href="/docs/language-coverage/">
 <link rel="next" href="/docs/stability/">
 <script src="/assets/page.9bdcd125.js" defer></script>
@@ -150,7 +150,7 @@
     {
      "@type": "ListItem",
      "position": 3,
-     "name": "Three-way benchmark",
+     "name": "Measurement evidence",
      "item": "https://www.dctx.internet.technology/docs/benchmark/"
     }
    ]
@@ -159,8 +159,8 @@
    "@type": "WebPage",
    "@id": "https://www.dctx.internet.technology/docs/benchmark/#webpage",
    "url": "https://www.dctx.internet.technology/docs/benchmark/",
-   "name": "Three-way benchmark",
-   "description": "dctx, Trail-Code and graphify on the 70-question protocol, with caveats.",
+   "name": "Measurement evidence",
+   "description": "Grep plus file reads first; whole-session scope and secondary historical protocols.",
    "inLanguage": "en",
    "isPartOf": {
     "@id": "https://www.dctx.internet.technology/#website"
@@ -172,8 +172,8 @@
   {
    "@type": "TechArticle",
    "@id": "https://www.dctx.internet.technology/docs/benchmark/#article",
-   "headline": "dctx vs Trail-Code vs graphify: three-way benchmark (30 October 2026)",
-   "description": "dctx, Trail-Code and graphify on the 70-question protocol, with caveats.",
+   "headline": "dctx measurement: grep plus file reads first",
+   "description": "Grep plus file reads first; whole-session scope and secondary historical protocols.",
    "url": "https://www.dctx.internet.technology/docs/benchmark/",
    "inLanguage": "en",
    "about": {
@@ -191,7 +191,7 @@
    "mainEntityOfPage": {
     "@id": "https://www.dctx.internet.technology/docs/benchmark/#webpage"
    },
-   "wordCount": 3969,
+   "wordCount": 4096,
    "encoding": {
     "@type": "MediaObject",
     "contentUrl": "https://www.dctx.internet.technology/docs/benchmark/index.md",
@@ -219,11 +219,20 @@
  </div>
 </header>
 <main id="main">
-<div class="wrap docs-grid"><aside class="sidebar" aria-label="Documentation"><p class="side-h"><a href="/docs/">All documents</a></p><p class="side-h">Start here</p><ul><li><a href="/why/">Why dctx</a></li><li><a href="/docs/readme/">README</a></li><li><a href="/docs/spec/">Specification</a></li><li><a href="/docs/map-mode/">Map mode guide</a></li></ul><p class="side-h">Using dctx</p><ul><li><a href="/docs/agents/">Agent snippet</a></li><li><a href="/docs/plugins/">Plugins guide</a></li><li><a href="/docs/exit-codes/">CLI exit codes</a></li><li><a href="/docs/privacy/">Privacy guarantees</a></li><li><a href="/docs/language-coverage/">Language coverage (ADR-018)</a></li></ul><p class="side-h">Templates</p><ul><li><a href="/docs/templates-contract/">Template contract (DTS v2)</a></li><li><a href="/docs/templating/">Templating engine (ADR-003)</a></li></ul><p class="side-h">Evidence</p><ul><li><a href="/docs/benchmark/" aria-current="page">Three-way benchmark</a></li><li><a href="/docs/stability/">Byte-stability report</a></li><li><a href="/docs/benchmark-oct/">Earlier two-way study</a></li></ul><p class="side-h">Project</p><ul><li><a href="/docs/crate-map/">Crate map</a></li><li><a href="/docs/contributing/">Contributing</a></li><li><a href="/docs/releasing/">Releasing</a></li></ul><p class="side-h">Policies</p><ul><li><a href="/security/">Security</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="/maintenance/">Maintenance</a></li></ul></aside><article class="prose"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/docs/benchmark/" aria-current="page">Three-way benchmark</a></li></ol></nav><h1 id="dctx-vs-trail-code-vs-graphify-three-way-benchmark-30-october-2026">dctx vs Trail-Code vs graphify: three-way benchmark (30 October 2026)</h1><p class="doc-meta"><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md">View source</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/edit/main/docs/BENCHMARK-20261030.md">Edit on GitHub</a> &middot; <a href="/docs/benchmark/index.md" type="text/markdown">Markdown</a> &middot; <code>docs/BENCHMARK-20261030.md</code> &middot; 3,969 words &middot; updated <time datetime="2026-11-07">7 November 2026</time></p><details class="toc-m"><summary>On this page</summary><ul><li><a href="#headline">Headline</a></li><li><a href="#run-7-140-of-140-main-53f8b6b-31-october-0620-utc">Run 7: 140 of 140 (main 53f8b6b, 31 October, 06:20 UTC)</a></li><li><a href="#run-6-main-82ec474-31-october-0204-utc">Run 6 (main 82ec474, 31 October, 02:04 UTC)</a></li><li><a href="#latest-run-5-and-task-level-re-run-3-main-a906884-30-october-1639-and-1705-utc">Latest: run 5 and task-level re-run 3 (main a906884, 30 October, 16:39 and 17:05 UTC)</a></li><li><a href="#task-level-questions-the-october-protocol-re-run-on-30-october">Task-level questions: the October protocol, re-run on 30 October</a></li><li><a href="#run-4-callers-recall-wave-main-de06a3d-30-october-0917-utc">Run 4: callers recall wave (main de06a3d, 30 October, 09:17 UTC)</a></li><li><a href="#run-3-all-outline-families-with-call-edges-env-leak-closed-main-9c578fa-30-october-0802-utc">Run 3: all outline families with call edges, .env leak closed (main 9c578fa, 30 October, 08:02 UTC)</a></li><li><a href="#run-2-call-edges-for-the-outline-tier-main-99da638-30-october-0724-utc">Run 2: call edges for the outline tier (main 99da638, 30 October, 07:24 UTC)</a></li><li><a href="#tables-run-1">Tables (run 1)</a></li><li><a href="#method">Method</a></li><li><a href="#not-claimed">Not claimed</a></li><li><a href="#changes-included-in-the-october-baseline">Changes included in the October baseline</a></li><li><a href="#next">Next</a></li><li><a href="#independent-benchmark-31102026-run-uncapped-on-the-linux-benchmark-host">Independent benchmark, 31.10.2026, run uncapped on the Linux benchmark host</a></li></ul></details>
-<blockquote>
-<p>Historical measurements and plans from October 2026. Limitations in older runs
-are retained as evidence; see the <a href="/docs/readme/">README</a> for current behavior.</p>
-</blockquote>
+<div class="wrap docs-grid"><aside class="sidebar" aria-label="Documentation"><p class="side-h"><a href="/docs/">All documents</a></p><p class="side-h">Start here</p><ul><li><a href="/why/">Why dctx</a></li><li><a href="/docs/readme/">README</a></li><li><a href="/docs/spec/">Specification</a></li><li><a href="/docs/modalities/">Choosing how to use dctx</a></li><li><a href="/docs/map-mode/">Map mode guide</a></li></ul><p class="side-h">Using dctx</p><ul><li><a href="/docs/agents/">Agent snippet</a></li><li><a href="/docs/plugins/">Plugins guide</a></li><li><a href="/docs/exit-codes/">CLI exit codes</a></li><li><a href="/docs/privacy/">Privacy guarantees</a></li><li><a href="/docs/language-coverage/">Language coverage (ADR-018)</a></li></ul><p class="side-h">Templates</p><ul><li><a href="/docs/templates-contract/">Template contract (DTS v2)</a></li><li><a href="/docs/templating/">Templating engine (ADR-003)</a></li></ul><p class="side-h">Evidence</p><ul><li><a href="/docs/benchmark/" aria-current="page">Measurement evidence</a></li><li><a href="/docs/stability/">Byte-stability report</a></li><li><a href="/docs/benchmark-oct/">Earlier two-way study</a></li></ul><p class="side-h">Project</p><ul><li><a href="/docs/crate-map/">Crate map</a></li><li><a href="/docs/contributing/">Contributing</a></li><li><a href="/docs/releasing/">Releasing</a></li></ul><p class="side-h">Policies</p><ul><li><a href="/security/">Security</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="/maintenance/">Maintenance</a></li></ul></aside><article class="prose"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/docs/benchmark/" aria-current="page">Measurement evidence</a></li></ol></nav><h1 id="dctx-measurement-grep-plus-file-reads-first">dctx measurement: grep plus file reads first</h1><p class="doc-meta"><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md">View source</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/edit/main/docs/BENCHMARK-20261030.md">Edit on GitHub</a> &middot; <a href="/docs/benchmark/index.md" type="text/markdown">Markdown</a> &middot; <code>docs/BENCHMARK-20261030.md</code> &middot; 4,096 words &middot; updated <time datetime="2026-11-07">7 November 2026</time></p><details class="toc-m"><summary>On this page</summary><ul><li><a href="#grep-plus-file-reads">Grep plus file reads</a></li><li><a href="#secondary-historical-evidence-other-tool-protocols">Secondary historical evidence: other-tool protocols</a></li><li><a href="#historical-three-way-summary">Historical three-way summary</a></li><li><a href="#run-7-140-of-140-main-53f8b6b-31-october-0620-utc">Run 7: 140 of 140 (main 53f8b6b, 31 October, 06:20 UTC)</a></li><li><a href="#run-6-main-82ec474-31-october-0204-utc">Run 6 (main 82ec474, 31 October, 02:04 UTC)</a></li><li><a href="#latest-run-5-and-task-level-re-run-3-main-a906884-30-october-1639-and-1705-utc">Latest: run 5 and task-level re-run 3 (main a906884, 30 October, 16:39 and 17:05 UTC)</a></li><li><a href="#task-level-questions-the-october-protocol-re-run-on-30-october">Task-level questions: the October protocol, re-run on 30 October</a></li><li><a href="#run-4-callers-recall-wave-main-de06a3d-30-october-0917-utc">Run 4: callers recall wave (main de06a3d, 30 October, 09:17 UTC)</a></li><li><a href="#run-3-all-outline-families-with-call-edges-env-leak-closed-main-9c578fa-30-october-0802-utc">Run 3: all outline families with call edges, .env leak closed (main 9c578fa, 30 October, 08:02 UTC)</a></li><li><a href="#run-2-call-edges-for-the-outline-tier-main-99da638-30-october-0724-utc">Run 2: call edges for the outline tier (main 99da638, 30 October, 07:24 UTC)</a></li><li><a href="#tables-run-1">Tables (run 1)</a></li><li><a href="#method">Method</a></li><li><a href="#not-claimed">Not claimed</a></li><li><a href="#changes-included-in-the-october-baseline">Changes included in the October baseline</a></li><li><a href="#next">Next</a></li><li><a href="#independent-benchmark-31102026-run-uncapped-on-the-linux-benchmark-host">Independent benchmark, 31.10.2026, run uncapped on the Linux benchmark host</a></li></ul></details>
+<p>The baseline for choosing dctx is <strong>grep plus reading files</strong>. Count the whole
+agent session before claiming a cost saving. Output bytes and estimated output
+tokens measure only the returned context; they exclude startup instructions,
+tool descriptions, conversation replay, model output and provider cache effects.</p>
+<h2 id="grep-plus-file-reads">Grep plus file reads<a class="hd" href="#grep-plus-file-reads" aria-label="Link to Grep plus file reads">#</a></h2>
+<p>The headline baseline is grep plus reading files. A controlled benchmark against it, counting whole agent sessions, is being prepared and will be published with raw data; no result is claimed here yet.</p>
+<h2 id="secondary-historical-evidence-other-tool-protocols">Secondary historical evidence: other-tool protocols<a class="hd" href="#secondary-historical-evidence-other-tool-protocols" aria-label="Link to Secondary historical evidence: other-tool protocols">#</a></h2>
+<p>Everything below retains the October/November research record, including its
+older limitations and plans. These other-tool comparisons are historical notes,
+not the product's headline baseline or a recommendation between tools. All
+"tokens" in these tables mean estimated <strong>tool stdout tokens</strong>, calculated as
+<code>ceil(stdout_bytes / 3.5)</code>, never whole-session tokens. Task scores are fact
+coverage in raw outputs without a model, not agent completion rates.</p>
 <p>One command, same host, same corpora, same CPU set, no network, pinned versions. Raw aggregate, headline tables
 and the harness are in <a href="https://github.com/Eris-Margeta/dctx/tree/main/docs/research/bench-3way-20261030"><code>research/bench-3way-20261030/</code></a>; the current goals are in the <a href="/docs/spec/">specification</a>. Where another tool wins, the tables say so.</p>
 <ul>
@@ -234,7 +243,7 @@ and the harness are in <a href="https://github.com/Eris-Margeta/dctx/tree/main/d
 <li><strong>graphify</strong> <code>graphifyy</code> 0.9.97 from PyPI, LLM-free code path only (<code>extract --code-only</code>,
   <code>GRAPHIFY_BACKEND=none</code>). Its LLM pass over docs, PDFs and images was <strong>not</strong> run, and nothing here measures it.</li>
 </ul>
-<h2 id="headline">Headline<a class="hd" href="#headline" aria-label="Link to Headline">#</a></h2>
+<h2 id="historical-three-way-summary">Historical three-way summary<a class="hd" href="#historical-three-way-summary" aria-label="Link to Historical three-way summary">#</a></h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -992,7 +1001,7 @@ and the harness are in <a href="https://github.com/Eris-Margeta/dctx/tree/main/d
 </ul>
 <h2 id="not-claimed">Not claimed<a class="hd" href="#not-claimed" aria-label="Link to Not claimed">#</a></h2>
 <ul>
-<li>Task-level answer quality with a frozen model. The fact-scoring protocol was re-run; Trail-Code leads it, 122 to 77.</li>
+<li>Whole-session cost or task-level answer quality with a frozen model. Historical fact scores describe raw tool outputs only.</li>
 <li>Anything about graphify's LLM semantic graph, or Trail-Code's learnings and LSP edges.</li>
 <li>SWE-bench or agent-run numbers.</li>
 <li>Equal language depth. dctx's 25 new formats are outline tier: symbols, not call edges.</li>
@@ -1012,7 +1021,7 @@ then all 15 checks together on <code>ac8408c</code>, passed on the Linux benchma
 <li>Re-run the 70-question task protocol with a frozen model.</li>
 </ol>
 <h2 id="independent-benchmark-31102026-run-uncapped-on-the-linux-benchmark-host">Independent benchmark, 31.10.2026, run uncapped on the Linux benchmark host<a class="hd" href="#independent-benchmark-31102026-run-uncapped-on-the-linux-benchmark-host" aria-label="Link to Independent benchmark, 31.10.2026, run uncapped on the Linux benchmark host">#</a></h2>
-<p>Seeded selection of 3 repos the tools never saw (zoxide, requests, gin), gold from language servers and repo history, published regardless of outcome. Tasks: dctx 22/28 points, 31/36 facts, 6.85 facts per 1k tokens (Trail-Code 19/28, graphify 14/28). Callers against LSP gold, first page: dctx P 0.730 / R 0.341, Trail-Code P 0.731 / R 0.313, graphify P 0.920 / R 0.264. Honest read: dctx leads on task answers and token efficiency; caller recall on unseen repos is far below the in-house corpus (0.851), so the caller floors above hold only for the curated corpora. Full table and raw JSON: <code>docs/research/bench-independent/results/20261031T191225Z/</code>.</p><nav class="pager" aria-label="Previous and next"><a class="prev" href="/docs/language-coverage/" rel="prev"><span>Previous</span>Language coverage (ADR-018)</a><a class="next" href="/docs/stability/" rel="next"><span>Next</span>Byte-stability report</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#headline">Headline</a></li><li class="l2"><a href="#run-7-140-of-140-main-53f8b6b-31-october-0620-utc">Run 7: 140 of 140 (main 53f8b6b, 31 October, 06:20 UTC)</a></li><li class="l2"><a href="#run-6-main-82ec474-31-october-0204-utc">Run 6 (main 82ec474, 31 October, 02:04 UTC)</a></li><li class="l2"><a href="#latest-run-5-and-task-level-re-run-3-main-a906884-30-october-1639-and-1705-utc">Latest: run 5 and task-level re-run 3 (main a906884, 30 October, 16:39 and 17:05 UTC)</a></li><li class="l2"><a href="#task-level-questions-the-october-protocol-re-run-on-30-october">Task-level questions: the October protocol, re-run on 30 October</a></li><li class="l3"><a href="#task-level-re-run-2-dctx-5e1b12b-30-october-1312-utc">Task-level re-run 2 (dctx 5e1b12b, 30 October, 13:12 UTC)</a></li><li class="l2"><a href="#run-4-callers-recall-wave-main-de06a3d-30-october-0917-utc">Run 4: callers recall wave (main de06a3d, 30 October, 09:17 UTC)</a></li><li class="l2"><a href="#run-3-all-outline-families-with-call-edges-env-leak-closed-main-9c578fa-30-october-0802-utc">Run 3: all outline families with call edges, .env leak closed (main 9c578fa, 30 October, 08:02 UTC)</a></li><li class="l2"><a href="#run-2-call-edges-for-the-outline-tier-main-99da638-30-october-0724-utc">Run 2: call edges for the outline tier (main 99da638, 30 October, 07:24 UTC)</a></li><li class="l2"><a href="#tables-run-1">Tables (run 1)</a></li><li class="l3"><a href="#cold-index-median-wall-s-peak-rss-of-the-largest-process-index-size">Cold index (median wall s, peak RSS of the largest process, index size)</a></li><li class="l3"><a href="#callers-accuracy-micro-precision--recall-depth-1">Callers accuracy (micro precision / recall, depth 1)</a></li><li class="l3"><a href="#warm-latency-and-answer-size-median-ms-estimated-tokens">Warm latency and answer size (median ms, estimated tokens)</a></li><li class="l2"><a href="#method">Method</a></li><li class="l2"><a href="#not-claimed">Not claimed</a></li><li class="l2"><a href="#changes-included-in-the-october-baseline">Changes included in the October baseline</a></li><li class="l2"><a href="#next">Next</a></li><li class="l2"><a href="#independent-benchmark-31102026-run-uncapped-on-the-linux-benchmark-host">Independent benchmark, 31.10.2026, run uncapped on the Linux benchmark host</a></li></ul></nav></div>
+<p>Seeded selection of 3 repos the tools never saw (zoxide, requests, gin), gold from language servers and repo history, published regardless of outcome. Tasks: dctx 22/28 points, 31/36 facts, 6.85 facts per 1k tokens (Trail-Code 19/28, graphify 14/28). Callers against LSP gold, first page: dctx P 0.730 / R 0.341, Trail-Code P 0.731 / R 0.313, graphify P 0.920 / R 0.264. Honest read: dctx leads on task answers and token efficiency; caller recall on unseen repos is far below the in-house corpus (0.851), so the caller floors above hold only for the curated corpora. Full table and raw JSON: <code>docs/research/bench-independent/results/20261031T191225Z/</code>.</p><nav class="pager" aria-label="Previous and next"><a class="prev" href="/docs/language-coverage/" rel="prev"><span>Previous</span>Language coverage (ADR-018)</a><a class="next" href="/docs/stability/" rel="next"><span>Next</span>Byte-stability report</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#grep-plus-file-reads">Grep plus file reads</a></li><li class="l2"><a href="#secondary-historical-evidence-other-tool-protocols">Secondary historical evidence: other-tool protocols</a></li><li class="l2"><a href="#historical-three-way-summary">Historical three-way summary</a></li><li class="l2"><a href="#run-7-140-of-140-main-53f8b6b-31-october-0620-utc">Run 7: 140 of 140 (main 53f8b6b, 31 October, 06:20 UTC)</a></li><li class="l2"><a href="#run-6-main-82ec474-31-october-0204-utc">Run 6 (main 82ec474, 31 October, 02:04 UTC)</a></li><li class="l2"><a href="#latest-run-5-and-task-level-re-run-3-main-a906884-30-october-1639-and-1705-utc">Latest: run 5 and task-level re-run 3 (main a906884, 30 October, 16:39 and 17:05 UTC)</a></li><li class="l2"><a href="#task-level-questions-the-october-protocol-re-run-on-30-october">Task-level questions: the October protocol, re-run on 30 October</a></li><li class="l3"><a href="#task-level-re-run-2-dctx-5e1b12b-30-october-1312-utc">Task-level re-run 2 (dctx 5e1b12b, 30 October, 13:12 UTC)</a></li><li class="l2"><a href="#run-4-callers-recall-wave-main-de06a3d-30-october-0917-utc">Run 4: callers recall wave (main de06a3d, 30 October, 09:17 UTC)</a></li><li class="l2"><a href="#run-3-all-outline-families-with-call-edges-env-leak-closed-main-9c578fa-30-october-0802-utc">Run 3: all outline families with call edges, .env leak closed (main 9c578fa, 30 October, 08:02 UTC)</a></li><li class="l2"><a href="#run-2-call-edges-for-the-outline-tier-main-99da638-30-october-0724-utc">Run 2: call edges for the outline tier (main 99da638, 30 October, 07:24 UTC)</a></li><li class="l2"><a href="#tables-run-1">Tables (run 1)</a></li><li class="l3"><a href="#cold-index-median-wall-s-peak-rss-of-the-largest-process-index-size">Cold index (median wall s, peak RSS of the largest process, index size)</a></li><li class="l3"><a href="#callers-accuracy-micro-precision--recall-depth-1">Callers accuracy (micro precision / recall, depth 1)</a></li><li class="l3"><a href="#warm-latency-and-answer-size-median-ms-estimated-tokens">Warm latency and answer size (median ms, estimated tokens)</a></li><li class="l2"><a href="#method">Method</a></li><li class="l2"><a href="#not-claimed">Not claimed</a></li><li class="l2"><a href="#changes-included-in-the-october-baseline">Changes included in the October baseline</a></li><li class="l2"><a href="#next">Next</a></li><li class="l2"><a href="#independent-benchmark-31102026-run-uncapped-on-the-linux-benchmark-host">Independent benchmark, 31.10.2026, run uncapped on the Linux benchmark host</a></li></ul></nav></div>
 </main>
 <footer class="ftr">
  <div class="wrap">

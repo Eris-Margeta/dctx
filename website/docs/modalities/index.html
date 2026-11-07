@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Choosing how to use dctx · dctx</title>
+<script>/* Runs before first paint: theme and motion preference, so there is no flash. */
+(function () {
+  var d = document.documentElement, t = null, m = null;
+  d.className = d.className.replace('no-js', 'js');
+  try { t = localStorage.getItem('dctx-theme'); m = localStorage.getItem('dctx-motion'); } catch (e) {}
+  if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+  if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
+})();</script>
+<link rel="stylesheet" href="/assets/site.b368f17c.css">
+<link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-500.1cf4f3d2.woff2" as="font" type="font/woff2" crossorigin>
+<meta name="description" content="Clipboard, grep plus reads, long sessions, huge trees, MCP startup cost and CI.">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="generator" content="dctx website builder">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://www.dctx.internet.technology/docs/modalities/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="dctx">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Choosing how to use dctx · dctx">
+<meta property="og:description" content="Clipboard, grep plus reads, long sessions, huge trees, MCP startup cost and CI.">
+<meta property="og:url" content="https://www.dctx.internet.technology/docs/modalities/">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/docs-modalities.dark.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: Choosing how to use dctx">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/docs-modalities.light.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: Choosing how to use dctx">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Choosing how to use dctx · dctx">
+<meta name="twitter:description" content="Clipboard, grep plus reads, long sessions, huge trees, MCP startup cost and CI.">
+<meta name="twitter:image" content="https://www.dctx.internet.technology/assets/og/docs-modalities.dark.png">
+<meta name="twitter:image:alt" content="dctx: Choosing how to use dctx">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="license" href="https://www.apache.org/licenses/LICENSE-2.0">
+<link rel="author" href="https://tejl.com/">
+<link rel="help" href="/docs/">
+<link rel="search" type="application/opensearchdescription+xml" title="dctx" href="/opensearch.xml">
+<link rel="alternate" type="application/atom+xml" title="dctx news" href="/news/feed.xml">
+<link rel="alternate" type="application/atom+xml" title="dctx releases" href="/changelog/feed.xml">
+<link rel="alternate" type="text/markdown" href="/docs/modalities/index.md" title="Choosing how to use dctx as Markdown">
+<link rel="prev" href="/docs/spec/">
+<link rel="next" href="/docs/map-mode/">
+<script src="/assets/page.9bdcd125.js" defer></script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "Organization",
+   "@id": "https://www.dctx.internet.technology/#organization",
+   "name": "TEJL",
+   "url": "https://tejl.com/",
+   "logo": "https://www.dctx.internet.technology/assets/tejl-logo-off-black.svg",
+   "email": "info@tejl.com",
+   "sameAs": [
+    "https://tejl.hr/"
+   ],
+   "founder": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   }
+  },
+  {
+   "@type": "Person",
+   "@id": "https://www.dctx.internet.technology/#author",
+   "name": "Eris Margeta",
+   "url": "https://tejl.com/",
+   "sameAs": [
+    "https://github.com/Eris-Margeta"
+   ],
+   "jobTitle": "Founder",
+   "worksFor": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   }
+  },
+  {
+   "@type": "WebSite",
+   "@id": "https://www.dctx.internet.technology/#website",
+   "url": "https://www.dctx.internet.technology/",
+   "name": "dctx",
+   "inLanguage": "en",
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   },
+   "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://www.dctx.internet.technology/search/?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+   }
+  },
+  {
+   "@type": "SoftwareApplication",
+   "@id": "https://www.dctx.internet.technology/#software",
+   "name": "dctx",
+   "softwareVersion": "1.2.0",
+   "applicationCategory": "DeveloperApplication",
+   "operatingSystem": "Linux (x86_64 tested)",
+   "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
+   "url": "https://www.dctx.internet.technology/",
+   "license": "https://www.apache.org/licenses/LICENSE-2.0",
+   "isAccessibleForFree": true,
+   "codeRepository": "https://github.com/Eris-Margeta/dctx",
+   "programmingLanguage": "Rust",
+   "releaseNotes": "https://www.dctx.internet.technology/changelog/#v1-2-0",
+   "softwareHelp": {
+    "@type": "CreativeWork",
+    "url": "https://www.dctx.internet.technology/docs/"
+   },
+   "author": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   },
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   }
+  },
+  {
+   "@type": "BreadcrumbList",
+   "@id": "https://www.dctx.internet.technology/docs/modalities/#breadcrumb",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "dctx",
+     "item": "https://www.dctx.internet.technology/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "Documentation",
+     "item": "https://www.dctx.internet.technology/docs/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 3,
+     "name": "Choosing how to use dctx",
+     "item": "https://www.dctx.internet.technology/docs/modalities/"
+    }
+   ]
+  },
+  {
+   "@type": "WebPage",
+   "@id": "https://www.dctx.internet.technology/docs/modalities/#webpage",
+   "url": "https://www.dctx.internet.technology/docs/modalities/",
+   "name": "Choosing how to use dctx",
+   "description": "Clipboard, grep plus reads, long sessions, huge trees, MCP startup cost and CI.",
+   "inLanguage": "en",
+   "isPartOf": {
+    "@id": "https://www.dctx.internet.technology/#website"
+   },
+   "breadcrumb": {
+    "@id": "https://www.dctx.internet.technology/docs/modalities/#breadcrumb"
+   }
+  },
+  {
+   "@type": "TechArticle",
+   "@id": "https://www.dctx.internet.technology/docs/modalities/#article",
+   "headline": "Choosing how to use dctx",
+   "description": "Clipboard, grep plus reads, long sessions, huge trees, MCP startup cost and CI.",
+   "url": "https://www.dctx.internet.technology/docs/modalities/",
+   "inLanguage": "en",
+   "about": {
+    "@id": "https://www.dctx.internet.technology/#software"
+   },
+   "author": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   },
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   },
+   "isPartOf": {
+    "@id": "https://www.dctx.internet.technology/#website"
+   },
+   "mainEntityOfPage": {
+    "@id": "https://www.dctx.internet.technology/docs/modalities/#webpage"
+   },
+   "wordCount": 1354,
+   "encoding": {
+    "@type": "MediaObject",
+    "contentUrl": "https://www.dctx.internet.technology/docs/modalities/index.md",
+    "encodingFormat": "text/markdown"
+   }
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="hdr">
+ <div class="wrap hdr-in">
+  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span><span class="ver">1.2.0</span></a>
+  <nav class="nav" aria-label="Primary"><ul><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
+  <div class="hdr-end">
+   <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
+   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
+   <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
+   <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
+    <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav></details>
+  </div>
+ </div>
+</header>
+<main id="main">
+<div class="wrap docs-grid"><aside class="sidebar" aria-label="Documentation"><p class="side-h"><a href="/docs/">All documents</a></p><p class="side-h">Start here</p><ul><li><a href="/why/">Why dctx</a></li><li><a href="/docs/readme/">README</a></li><li><a href="/docs/spec/">Specification</a></li><li><a href="/docs/modalities/" aria-current="page">Choosing how to use dctx</a></li><li><a href="/docs/map-mode/">Map mode guide</a></li></ul><p class="side-h">Using dctx</p><ul><li><a href="/docs/agents/">Agent snippet</a></li><li><a href="/docs/plugins/">Plugins guide</a></li><li><a href="/docs/exit-codes/">CLI exit codes</a></li><li><a href="/docs/privacy/">Privacy guarantees</a></li><li><a href="/docs/language-coverage/">Language coverage (ADR-018)</a></li></ul><p class="side-h">Templates</p><ul><li><a href="/docs/templates-contract/">Template contract (DTS v2)</a></li><li><a href="/docs/templating/">Templating engine (ADR-003)</a></li></ul><p class="side-h">Evidence</p><ul><li><a href="/docs/benchmark/">Measurement evidence</a></li><li><a href="/docs/stability/">Byte-stability report</a></li><li><a href="/docs/benchmark-oct/">Earlier two-way study</a></li></ul><p class="side-h">Project</p><ul><li><a href="/docs/crate-map/">Crate map</a></li><li><a href="/docs/contributing/">Contributing</a></li><li><a href="/docs/releasing/">Releasing</a></li></ul><p class="side-h">Policies</p><ul><li><a href="/security/">Security</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="/maintenance/">Maintenance</a></li></ul></aside><article class="prose"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/docs/modalities/" aria-current="page">Choosing how to use dctx</a></li></ol></nav><h1 id="choosing-how-to-use-dctx">Choosing how to use dctx</h1><p class="doc-meta"><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/MODALITIES.md">View source</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/edit/main/docs/MODALITIES.md">Edit on GitHub</a> &middot; <a href="/docs/modalities/index.md" type="text/markdown">Markdown</a> &middot; <code>docs/MODALITIES.md</code> &middot; 1,354 words</p><details class="toc-m"><summary>On this page</summary><ul><li><a href="#human-one-off-pack-to-clipboard">Human, one-off: pack to clipboard</a></li><li><a href="#short-agent-task-grep-can-be-enough">Short agent task: grep can be enough</a></li><li><a href="#huge-trees-scope-before-indexing">Huge trees: scope before indexing</a></li><li><a href="#mcp-server-convenient-tools-with-startup-context">MCP server: convenient tools with startup context</a></li><li><a href="#ci--prompt-cache-prefix-stability">CI / prompt-cache prefix stability</a></li></ul></details>
+<p>Compare dctx with <strong>grep plus reading files</strong>, and choose by the work you need to
+do. Smaller tool output is useful, but total agent cost also includes startup
+instructions, tool definitions, conversation history and the number of model
+turns. A tool call can require another model request carrying that context again;
+provider caching can change its billed cost. Count both calls and session tokens.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Your situation</th>
+<th>Start here</th>
+<th>Avoid it when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Human, one-off chat</td>
+<td><code>dctx pack . --clipboard</code></td>
+<td>The selected tree is too large to paste or contains irrelevant material</td>
+</tr>
+<tr>
+<td>Short agent task</td>
+<td>Grep, then read the matching file or lines</td>
+<td>Add dctx only if a focused query saves enough work to cover setup and extra turns</td>
+</tr>
+<tr>
+<td>Long agent session / big files</td>
+<td><code>find</code> → <code>read --json</code>, with <code>skeleton</code> for orientation</td>
+<td>The needed file is already small or a grep plus narrow read gives the same answer</td>
+</tr>
+<tr>
+<td>Huge tree, monorepo, data or Markdown corpus</td>
+<td>Run from a relevant subfolder; apply ignore rules before scanning</td>
+<td>You need an unscoped index of 100 GB+ or expect a budget flag to reduce the scan</td>
+</tr>
+<tr>
+<td>MCP client</td>
+<td><code>dctx mcp .</code> in a scoped root</td>
+<td>Tool definitions and extra model turns outweigh focused-read savings</td>
+</tr>
+<tr>
+<td>CI / repeated prompt prefix</td>
+<td>Deterministic <code>pack</code> or scoped map output saved as an artifact</td>
+<td>You expect dctx alone to guarantee provider cache hits</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="human-one-off-pack-to-clipboard">Human, one-off: pack to clipboard<a class="hd" href="#human-one-off-pack-to-clipboard" aria-label="Link to Human, one-off: pack to clipboard">#</a></h2>
+<p>From the project or relevant subfolder:</p>
+<div class="hl"><pre><code>dctx<span class="t-w"> </span>pack<span class="t-w"> </span>.<span class="t-w"> </span>--clipboard
+</code></pre></div>
+
+<p>Paste the resulting structured context into your chat. The local clipboard must
+be available. To inspect or save the same selection instead:</p>
+<div class="hl"><pre><code>dctx<span class="t-w"> </span>pack<span class="t-w"> </span>.<span class="t-w"> </span>--output<span class="t-w"> </span>context.txt
+</code></pre></div>
+
+<p>Do not use an unbounded whole-project pack for a large tree or when only one
+function matters. Narrow the root first, or use map reads. Pack's <code>--ext rs,toml</code>
+and <code>--small 1</code> filters can restrict extensions and file sizes (MB); they are
+pack filters, not map index limits. Inspect the content before sharing it.</p>
+<h2 id="short-agent-task-grep-can-be-enough">Short agent task: grep can be enough<a class="hd" href="#short-agent-task-grep-can-be-enough" aria-label="Link to Short agent task: grep can be enough">#</a></h2>
+<p>If you know a name and expect only a few file reads, use the existing shell:</p>
+<div class="hl"><pre><code>grep<span class="t-w"> </span>-R<span class="t-w"> </span>-n<span class="t-w"> </span>-F<span class="t-w"> </span>--include<span class="t-o">=</span><span class="t-s1">&#39;*.rs&#39;</span><span class="t-w"> </span><span class="t-s1">&#39;SnapshotConfig&#39;</span><span class="t-w"> </span>crates/dctx-cli/src
+sed<span class="t-w"> </span>-n<span class="t-w"> </span><span class="t-s1">&#39;1,120p&#39;</span><span class="t-w"> </span>crates/dctx-cli/src/lib.rs
+</code></pre></div>
+
+<p>Choose the line range from the search result; reading a narrow range is an
+honest baseline alongside whole-file reads. If a symbol read is useful, call
+<code>dctx map find SnapshotConfig</code> through the existing shell. Loading an MCP server
+adds tool descriptions to starting context; installing verbose agent
+instructions can add more. Do not add that setup for a tiny edit unless you
+measure a benefit.</p>
+<div class="hl"><pre><code><span class="t-nb">cd</span><span class="t-w"> </span>crates/dctx-lex-go
+dctx<span class="t-w"> </span>map<span class="t-w"> </span>find<span class="t-w"> </span>Add<span class="t-w"> </span>--budget<span class="t-w"> </span><span class="t-m">500</span><span class="t-w"> </span>--limit<span class="t-w"> </span><span class="t-m">5</span>
+dctx<span class="t-w"> </span>map<span class="t-w"> </span><span class="t-nb">read</span><span class="t-w"> </span><span class="t-s1">&#39;s:tests/fixtures/basic.go#Add&#39;</span><span class="t-w"> </span>--json
+dctx<span class="t-w"> </span>map<span class="t-w"> </span>skeleton<span class="t-w"> </span>tests/fixtures/basic.go<span class="t-w"> </span>--budget<span class="t-w"> </span><span class="t-m">1000</span>
+</code></pre></div>
+
+<p>For your project, use the exact ID returned by <code>find</code>. <code>read --json</code> includes
+source bytes; the current text renderer prints read metadata only. Skeletons
+show declaration signatures without bodies. If an answer has <code>more</code> and <code>next</code>,
+pass that opaque <code>next</code> value with <code>--cursor</code> on the same request, and count the
+extra call. Budgets are estimated output tokens, not a model tokenizer promise.</p>
+<h2 id="huge-trees-scope-before-indexing">Huge trees: scope before indexing<a class="hd" href="#huge-trees-scope-before-indexing" aria-label="Link to Huge trees: scope before indexing">#</a></h2>
+<p>A 100 GB+ folder, including a 200 GB working tree, is a container of possible
+scopes, not a promise that dctx can index it all at once. Source volume, visited
+entries, record count and cache size are separate limits. Markdown headings
+produce document nodes, so mostly text trees can still have large indexes.</p>
+<p>Map's shared cache stores a lifecycle ledger (<code>ledger.v1</code>), policy (<code>policy.v1</code>),
+serialized generations and their view manifests in managed object files. A map
+generation contains file inventory, digests and stat stamps, declarations,
+summaries, signatures, source spans and edges. It is not a copy of the whole
+source tree or an embedding store; exact source reads still verify live files.
+A compatible unchanged generation can be reused across CLI processes.</p>
+<p>The product hard cap is <strong>2 GiB (2,147,483,648 accounted bytes)</strong> across the shared
+cache. Defaults also include a 1.5 GiB soft watermark and a roughly 1.2 GiB
+cleanup target. Admission evicts reclaimable generations first, preserving live
+reader leases. If the new generation still cannot fit, the query fails with a
+cache-limit error; it does not quietly return a complete partial index. Repeating
+the same unscoped request will not fix this. The cap is not a RAM-usage or exact
+filesystem-size guarantee. <code>cache config --max-bytes</code> can only tighten it.</p>
+<p>Start at the relevant package, not the huge parent:</p>
+<div class="hl"><pre><code><span class="t-nb">cd</span><span class="t-w"> </span>packages/service-a
+dctx<span class="t-w"> </span>map<span class="t-w"> </span>find<span class="t-w"> </span>Config<span class="t-w"> </span>--budget<span class="t-w"> </span><span class="t-m">500</span><span class="t-w"> </span>--limit<span class="t-w"> </span><span class="t-m">5</span>
+<span class="t-c1"># Equivalent root selection from elsewhere:</span>
+dctx<span class="t-w"> </span>map<span class="t-w"> </span>find<span class="t-w"> </span>Config<span class="t-w"> </span>--place<span class="t-w"> </span>packages/service-a<span class="t-w"> </span>--budget<span class="t-w"> </span><span class="t-m">500</span><span class="t-w"> </span>--limit<span class="t-w"> </span><span class="t-m">5</span>
+</code></pre></div>
+
+<p><code>--place</code> selects the scan root. <code>--in src</code> narrows find/grep matches <strong>after</strong>
+indexing; <code>--budget</code>, <code>--limit</code> and <code>--cursor</code> bound answers, not the tree scan.
+Running from a subfolder changes relative paths and IDs; retain the needed ignore
+rules there instead of assuming parent project rules were inherited.</p>
+<p>Use existing <code>.gitignore</code> and a <code>.dctxignore</code> at the chosen root to exclude data,
+generated output and irrelevant documents before reads, parsing and caching.
+For example, merge these project-specific entries into <code>.dctxignore</code>:</p>
+<div class="hl"><pre><code>/data/
+/generated/
+/archive/
+</code></pre></div>
+
+<p>The host loads global ignore rules, root and nested <code>.gitignore</code> rules, then the
+root <code>.dctxignore</code>. Built-in sensitive-file and <code>.git</code> exclusions still apply.
+Do not set <code>DCTX_INDEX_IGNORED=1</code> when relying on these ignore rules.</p>
+<p>The built binary documents these <strong>environment variables</strong>, not scan-limit flags:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Accepted range / effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DCTX_MAX_SOURCE_BYTES</code></td>
+<td>1,073,741,824 (1 GiB)</td>
+<td>1–17,179,869,184 total source bytes per scan</td>
+</tr>
+<tr>
+<td><code>DCTX_MAX_RECORDS</code></td>
+<td>1,000,000</td>
+<td>1–100,000,000 files, symbols and edges</td>
+</tr>
+<tr>
+<td><code>DCTX_MAX_ENTRIES</code></td>
+<td>100,000</td>
+<td>1–100,000,000 visited files and directories</td>
+</tr>
+</tbody>
+</table></div>
+<p>For a deliberately smaller scope and fail-fast ceilings:</p>
+<div class="hl"><pre><code><span class="t-nv">DCTX_MAX_SOURCE_BYTES</span><span class="t-o">=</span><span class="t-m">268435456</span><span class="t-w"> </span><span class="t-nv">DCTX_MAX_RECORDS</span><span class="t-o">=</span><span class="t-m">250000</span><span class="t-w"> </span><span class="t-nv">DCTX_MAX_ENTRIES</span><span class="t-o">=</span><span class="t-m">25000</span><span class="t-w"> </span><span class="t-se">\</span>
+<span class="t-w">  </span>dctx<span class="t-w"> </span>map<span class="t-w"> </span>find<span class="t-w"> </span>Config<span class="t-w"> </span>--place<span class="t-w"> </span>packages/service-a<span class="t-w"> </span>--budget<span class="t-w"> </span><span class="t-m">500</span><span class="t-w"> </span>--limit<span class="t-w"> </span><span class="t-m">5</span>
+dctx<span class="t-w"> </span>cache<span class="t-w"> </span>status<span class="t-w"> </span>--json
+dctx<span class="t-w"> </span>cache<span class="t-w"> </span>gc<span class="t-w"> </span>--dry-run
+</code></pre></div>
+
+<p>Limits refuse an oversized scan; they do not produce an exhaustive answer from
+a truncated scan. Raising source or record ceilings does not raise the 2 GiB
+cache cap. A different absolute <code>DCTX_CACHE_DIR</code> selects a separate cache
+location, not a larger cap. Do not use dctx on the whole huge tree if narrowing
+would exclude facts your task requires; use grep and direct reads across the
+needed directories, or query several explicit scopes and account for extra calls.</p>
+<h2 id="mcp-server-convenient-tools-with-startup-context">MCP server: convenient tools with startup context<a class="hd" href="#mcp-server-convenient-tools-with-startup-context" aria-label="Link to MCP server: convenient tools with startup context">#</a></h2>
+<p>Configure your MCP client to launch this process in the selected project root:</p>
+<div class="hl"><pre><code>dctx<span class="t-w"> </span>mcp<span class="t-w"> </span>.
+</code></pre></div>
+
+<p>It exposes ten tools: <code>map</code>, <code>find</code>, <code>neighbors</code>, <code>explain</code>, <code>read</code>, <code>skeleton</code>,
+<code>grep</code>, <code>hubs</code>, <code>path</code>, <code>export</code>. These are query tools, not a pack or cache-admin
+interface. Export emits the whole graph without the normal answer-token cap.
+For source bytes, set the MCP <code>read</code> argument <code>"json": true</code>, just as CLI
+reads need <code>--json</code>. Without it, read output contains metadata only.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Payload</th>
+<th>Exact UTF-8 bytes</th>
+<th>Estimated tokens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Complete <code>tools/list</code> response, request ID <code>2</code>, without trailing LF</td>
+<td>6,135</td>
+<td>1,753</td>
+</tr>
+<tr>
+<td>Same response including one LF</td>
+<td>6,136</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Compact <code>result.tools</code> array alone (definitions and schemas)</td>
+<td>6,091</td>
+<td>1,741</td>
+</tr>
+</tbody>
+</table></div>
+<p>The <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/assets/mcp-tools-list-1.2.0.json">captured response</a> includes its trailing LF.
+Token estimates use <code>ceil(2 × bytes / 7)</code>, the CLI's byte heuristic, <strong>not an
+actual model tokenizer</strong>. Clients may transform schemas, add wrappers or defer
+loading tools, so this is the definition payload's estimated startup cost, not
+the client's exact input-token count.</p>
+<p>Reproduce from the project root (with <code>dctx</code> on PATH):</p>
+<div class="hl"><pre><code>python3<span class="t-w"> </span>-<span class="t-w"> </span><span class="t-s">&lt;&lt;&#39;PYCODE&#39;</span>
+<span class="t-s">import json</span>
+<span class="t-s">import subprocess</span>
+
+<span class="t-s">requests = [</span>
+<span class="t-s">    {&quot;jsonrpc&quot;: &quot;2.0&quot;, &quot;id&quot;: 1, &quot;method&quot;: &quot;initialize&quot;, &quot;params&quot;: {</span>
+<span class="t-s">        &quot;protocolVersion&quot;: &quot;2025-06-18&quot;, &quot;capabilities&quot;: {},</span>
+<span class="t-s">        &quot;clientInfo&quot;: {&quot;name&quot;: &quot;dctx-modality-measurement&quot;, &quot;version&quot;: &quot;1&quot;}}},</span>
+<span class="t-s">    {&quot;jsonrpc&quot;: &quot;2.0&quot;, &quot;method&quot;: &quot;notifications/initialized&quot;},</span>
+<span class="t-s">    {&quot;jsonrpc&quot;: &quot;2.0&quot;, &quot;id&quot;: 2, &quot;method&quot;: &quot;tools/list&quot;},</span>
+<span class="t-s">]</span>
+<span class="t-s">wire = &quot;&quot;.join(json.dumps(r, separators=(&quot;,&quot;, &quot;:&quot;)) + &quot;\n&quot; for r in requests)</span>
+<span class="t-s">reply = subprocess.run([&quot;dctx&quot;, &quot;mcp&quot;, &quot;.&quot;], input=wire.encode(),</span>
+<span class="t-s">                       stdout=subprocess.PIPE, check=True).stdout</span>
+<span class="t-s">line = next(x for x in reply.splitlines() if json.loads(x).get(&quot;id&quot;) == 2)</span>
+<span class="t-s">definitions = json.dumps(json.loads(line)[&quot;result&quot;][&quot;tools&quot;],</span>
+<span class="t-s">                         ensure_ascii=False, separators=(&quot;,&quot;, &quot;:&quot;)).encode()</span>
+<span class="t-s">for name, payload in [(&quot;response without LF&quot;, line), (&quot;tools array&quot;, definitions)]:</span>
+<span class="t-s">    print(name, len(payload), &quot;bytes;&quot;, (2 * len(payload) + 6) // 7, &quot;est. tokens&quot;)</span>
+<span class="t-s">PYCODE</span>
+</code></pre></div>
+
+<p>Do not enable MCP solely to save output tokens on a short task. Prefer existing
+shell access when it avoids adding definitions; use MCP when the client's tool
+workflow makes repeated focused queries useful. Compare total session usage
+under the same client and model, including definition loading and extra turns.</p>
+<h2 id="ci--prompt-cache-prefix-stability">CI / prompt-cache prefix stability<a class="hd" href="#ci--prompt-cache-prefix-stability" aria-label="Link to CI / prompt-cache prefix stability">#</a></h2>
+<p>Save deterministic output from a fixed selection as a build artifact:</p>
+<div class="hl"><pre><code>dctx<span class="t-w"> </span>pack<span class="t-w"> </span>.<span class="t-w"> </span>--output<span class="t-w"> </span>context.txt
+dctx<span class="t-w"> </span>map<span class="t-w"> </span>find<span class="t-w"> </span>SnapshotConfig<span class="t-w"> </span>--json<span class="t-w"> </span>&gt;<span class="t-w"> </span>symbol-context.json
+</code></pre></div>
+
+<p>Keep generated artifacts outside the next scan or ignore them. Keep the default
+<code>--tree-stamps=off</code> for stable prefixes. For map,
+leave <code>--meta</code> off to exclude changing snapshot, generation and age metadata.
+Keep stable instructions and context early in the assembled prompt, followed by
+changing task text. Use the same template, root, request and binary version.</p>
+<p>The <a href="/docs/stability/">stability report</a> measured 33/33 text
+and 33/33 JSON answers unchanged after unrelated edits on three Linux corpora,
+and identical output over five runs. It measured answer bytes, not provider
+cache hits, billed tokens or whole-session latency. A bare <code>touch</code> leaves default
+pack output unchanged; a real edit can preserve the bytes before the edited
+file. Do not assume every edit preserves the entire prompt, or that provider
+cache retention and minimum-prefix requirements are controlled by dctx.</p><nav class="pager" aria-label="Previous and next"><a class="prev" href="/docs/spec/" rel="prev"><span>Previous</span>Specification</a><a class="next" href="/docs/map-mode/" rel="next"><span>Next</span>Map mode guide</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#human-one-off-pack-to-clipboard">Human, one-off: pack to clipboard</a></li><li class="l2"><a href="#short-agent-task-grep-can-be-enough">Short agent task: grep can be enough</a></li><li class="l2"><a href="#huge-trees-scope-before-indexing">Huge trees: scope before indexing</a></li><li class="l2"><a href="#mcp-server-convenient-tools-with-startup-context">MCP server: convenient tools with startup context</a></li><li class="l2"><a href="#ci--prompt-cache-prefix-stability">CI / prompt-cache prefix stability</a></li></ul></nav></div>
+</main>
+<footer class="ftr">
+ <div class="wrap">
+  <div class="ftr-grid">
+   <div class="ftr-brand">
+    <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
+    <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
+    <p class="mono small">dctx 1.2.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
+   </div>
+   <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
+   <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>
+   <nav aria-labelledby="f-proj"><h2 id="f-proj">Project</h2><ul><li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li><li><a href="https://github.com/Eris-Margeta/dctx/issues">Issues</a></li><li><a href="/security/">Security policy</a></li><li><a href="/.well-known/security.txt">security.txt</a></li><li><a href="https://github.com/sponsors/Eris-Margeta">Sponsor</a></li><li><a href="/maintenance/">Maintenance</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">License (Apache-2.0)</a></li><li><a href="mailto:info@tejl.com?subject=dctx">Contact</a></li></ul></nav>
+  </div>
+  <div class="ftr-bottom">
+   <div>
+    <p>&copy; 2025&ndash;2026 <a href="https://tejl.com/">Eris Margeta</a>. dctx is open source under Apache-2.0.</p>
+    <p>&ldquo;dctx&rdquo; and its logo are trademarks of Eris Margeta (<a href="/trademark/">trademark policy</a>). This site uses no cookies, analytics or third-party requests.</p>
+   </div>
+   <div class="credit">
+    <p>Published by TEJL<br><a href="https://tejl.com/">tejl.com</a> &middot; <a href="https://tejl.hr/">tejl.hr</a></p>
+    <a class="credit-logo" href="https://tejl.com/" aria-label="TEJL, publisher of dctx"><img src="/assets/tejl-logo-off-black.svg" width="818" height="422" alt="" loading="lazy" decoding="async"></a>
+   </div>
+  </div>
+ </div>
+</footer>
+</body>
+</html>
