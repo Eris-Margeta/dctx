@@ -6,9 +6,9 @@
 
 - This is llms-full.txt: the facts, the route table, every document the budget allows, the captured CLI help and examples. The other entry points: https://www.dctx.internet.technology/llms-small.txt, https://www.dctx.internet.technology/llms.txt.
 - Engine: dctx 1.2.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
-- Docs commit: eb310501bf4a163e6129105d523e342266c82c37 (2026-11-07T21:08:05Z), the last commit that changed one of the documents.
+- Docs commit: f778b45129acc7ba652b11d5199a65ef2f528970 (2026-11-07T23:17:38Z), the last commit that changed one of the documents.
 - Command: `dctx pack . --include /docs/START.md --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md --include /docs/guides/MAP-MODE.md --include /docs/guides/AGENTS-SNIPPET.md --include /docs/guides/PLUGINS.md --include /docs/SPEC.md --include /docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md --include /docs/ADR-018-Language-Coverage.md --include /docs/design/contracts/DTS-v2.md --include /docs/ADR-003-Templating-Engine.md --include /docs/CRATE-MAP.md --include /docs/CLI-EXIT-CODES.md --include /docs/BENCHMARK-20261030.md --include /docs/research/stability-20261105/REPORT.md --include /docs/research/trail-code-2026-10/REPORT.md --include /RELEASING.md --include /CONTRIBUTING.md --include /SECURITY.md --include /TRADEMARK.md --include /MAINTENANCE.md --include /CHANGELOG.md --include /crates/dctx-template/templates/default.dctx_template --include /crates/dctx-template/templates/stamped.dctx_template`
-- Budget: 91,975 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 25 documents.
+- Budget: 91,993 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 25 documents.
 
 ## Facts
 
@@ -2424,7 +2424,7 @@ Every failure prints two lines on stderr: `❌ Error: <what went wrong>` (prefix
 - `dctx pack` exits 1 only when no view filter is set (`--ext`, `--include`, `--exclude`, `--binary`, `--empty`, `--non-empty`, `--large`, `--small`, `--hidden`, `--debug-ignored`). A filter that matches nothing still prints an empty page and exits 0. The page and the `pack bytes=…` line are printed before the exit-1 message. `pack` exit 3 covers source, scan, render and output failures.
 - A reader that closes stdout early (`dctx pack . | head -1`) ends the run with exit 0 and no message, as `cat` does; every other failure keeps its code.
 - `dctx pack --for <TEXT>` exits 1 when no name in TEXT matched the index (the page is printed first), 2 for a bad flag or a `--budget` outside 100..100000 (or `--budget` without `--for`), and 3 when PATH is not a directory or the index fails.
-- `dctx mcp [--profile default|lean | --tools NAME,...] [PATH]` exits 3 when PATH cannot be entered and 2 for invalid arguments (including unknown tool names/profiles). See the [MCP guide](guides/MCP.md). Once serving, a failed tool call goes back to the client as a result with `isError: true`; unknown or unselected tools return JSON-RPC `-32602`. The server exits 0 at end of input.
+- `dctx mcp [--profile default|lean|three | --tools NAME,...] [PATH]` exits 3 when PATH cannot be entered and 2 for invalid arguments (including unknown tool names/profiles). See the [MCP guide](guides/MCP.md). Once serving, a failed tool call goes back to the client as a result with `isError: true`; unknown or unselected tools return JSON-RPC `-32602`. The server exits 0 at end of input.
 - A facade refusal of the query (`InvalidRequest`, `BudgetTooSmall`, `StaleContinuation`, `Stale`, `UnsupportedCapability`, `UnsupportedVersion`) is 2; `PolicyDenied` and `PolicyUnavailable` are 1; every other facade error, and every error of the snapshot build, is 3. The mapping is `dctx_cli::exit::from_facade`.
 - `map hubs`, `map path` and `map export` report their facade errors as text: an `unknown id` end of `map path` is 1, anything else 3.
 
@@ -3002,7 +3002,7 @@ the CLI as a subprocess and consume `--json` map answers. Use the Rust facade wh
 you need an in-process engine now.
 
 </FILE_CONTENT_END ID="F020">
-<FILE_CONTENT_START ID="F021" PATH="docs/SPEC.md" LINES="986">
+<FILE_CONTENT_START ID="F021" PATH="docs/SPEC.md" LINES="987">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # The dctx Context Management Specification
@@ -3726,8 +3726,9 @@ Bindings for Python, Node and a C ABI wrap the facade; none re-implements an eng
 `dctx mcp [PATH]` (also `dctx serve --mcp`) speaks JSON-RPC over stdio, one message
 per line. The default tools are `map`, `find`, `neighbors`, `explain`, `read`, `hubs`,
 `grep`, `skeleton`, `path` and `export`; each runs the corresponding `dctx map` verb.
-`--profile lean` exposes only `find` and `read`; `--tools NAME,...` selects a custom
-subset. Selected tools have shorter descriptions and retain complete input schemas.
+`--profile lean` exposes only `find` and `read`; `--profile three` exposes only
+`map`, `find` and `read`; `--tools NAME,...` selects a custom subset. Selected tools
+have shorter descriptions and retain complete input schemas.
 Unselected tools cannot be called. The default surface is unchanged.
 
 See the [MCP guide](guides/MCP.md) for configuration, validation and startup response
@@ -5635,7 +5636,7 @@ wire_version: 2
 segment_version: 1
 storage: buffered-segments
 features: pack,map,templates,fs,segments,cache,syntax-rust
-parsers: dctx-structural/2,dctx-lex-js:1,dctx-lex-md:1,dctx-lex-rust/syn-3.0.9
+parsers: dctx-structural/3,dctx-lex-js:1,dctx-lex-md:1,dctx-lex-rust/syn-3.0.9
 languages: rust,javascript,typescript,python,go,java,c,csharp,kotlin,ruby,php,swift,web,scala,dart,zig,solidity,gleam,fortran,perl,groovy,powershell,elixir,lua,ocaml,r,julia,haskell,erlang,verilog,hcl,sql,clojure,lisp,scheme,elisp,config,shell,make,docker,proto,pascal,graphql,nix,markdown,text,rst,asciidoc,org,tex
 unsafe_boundary: syn-dependency
 native_code: false
@@ -6598,7 +6599,7 @@ calls:out	s:src/store.rs#save	fn	src/store.rs
 exit 0, 745 bytes, ~213 est. tokens
 
 ```text
-{"v":2,"place":"kiosk","verb":"find","freshness":{"mode":"strict","state":"verified"},"precision":{"coverage":"structural","completion":"complete","parser":"dctx-structural/2"},"records":[{"id":"s:src/util.rs#greet","kind":"fn","path":"src/util.rs","lines":[2,4],"summary":"The greeting shown on the kiosk screen.","summary_source":"doc","signature":null,"span":null,"source_utf8":null,"edge":null,"direction":null,"target":null,"confidence":null},{"id":"s:web/app.ts#renderGreeting","kind":"fn","path":"web/app.ts","lines":[10,12],"summary":"The greeting banner of the kiosk web screen.","summary_source":"doc","signature":null,"span":null,"source_utf8":null,"edge":null,"direction":null,"target":null,"confidence":null}],"more":0,"next":null}
+{"v":2,"place":"kiosk","verb":"find","freshness":{"mode":"strict","state":"verified"},"precision":{"coverage":"structural","completion":"complete","parser":"dctx-structural/3"},"records":[{"id":"s:src/util.rs#greet","kind":"fn","path":"src/util.rs","lines":[2,4],"summary":"The greeting shown on the kiosk screen.","summary_source":"doc","signature":null,"span":null,"source_utf8":null,"edge":null,"direction":null,"target":null,"confidence":null},{"id":"s:web/app.ts#renderGreeting","kind":"fn","path":"web/app.ts","lines":[10,12],"summary":"The greeting banner of the kiosk web screen.","summary_source":"doc","signature":null,"span":null,"source_utf8":null,"edge":null,"direction":null,"target":null,"confidence":null}],"more":0,"next":null}
 ```
 
 ### dctx map neighbors 's:src/util.rs#greet' --edge calls --dir in --json
@@ -6606,7 +6607,7 @@ exit 0, 745 bytes, ~213 est. tokens
 exit 0, 365 bytes, ~105 est. tokens
 
 ```text
-{"v":2,"place":"kiosk","verb":"neighbors","freshness":{"mode":"strict","state":"verified"},"precision":{"coverage":"structural","completion":"complete","parser":"dctx-structural/2"},"records":[{"id":"calls:in:s:src/main.rs#main","kind":"fn","path":"src/main.rs","lines":[5,10],"edge":"calls","direction":"in","confidence":"name","sites":[7]}],"more":0,"next":null}
+{"v":2,"place":"kiosk","verb":"neighbors","freshness":{"mode":"strict","state":"verified"},"precision":{"coverage":"structural","completion":"complete","parser":"dctx-structural/3"},"records":[{"id":"calls:in:s:src/main.rs#main","kind":"fn","path":"src/main.rs","lines":[5,10],"edge":"calls","direction":"in","confidence":"name","sites":[7]}],"more":0,"next":null}
 ```
 
 ### dctx map read 's:src/util.rs#greet' --json
@@ -6622,7 +6623,7 @@ exit 0, 561 bytes, ~161 est. tokens
 exit 0, 865 bytes, ~248 est. tokens
 
 ```text
-{"v":2,"place":"kiosk","snapshot":"v1:sha256:d364938221a79158afe3d94fecc9571c1699840a0f1e04c49737c1d5be4c99b4:6838","generation":1,"verb":"find","freshness":{"mode":"strict","state":"verified","age_s":…},"precision":{"coverage":"structural","completion":"complete","parser":"dctx-structural/2"},"records":[{"id":"s:src/util.rs#greet","kind":"fn","path":"src/util.rs","lines":[2,4],"summary":"The greeting shown on the kiosk screen.","summary_source":"doc","signature":null,"span":null,"source_utf8":null,"edge":null,"direction":null,"target":null,"confidence":null},{"id":"s:web/app.ts#renderGreeting","kind":"fn","path":"web/app.ts","lines":[10,12],"summary":"The greeting banner of the kiosk web screen.","summary_source":"doc","signature":null,"span":null,"source_utf8":null,"edge":null,"direction":null,"target":null,"confidence":null}],"more":0,"next":null}
+{"v":2,"place":"kiosk","snapshot":"v1:sha256:1de480dbf3f559eb25ca11d9bad2556f8239ae97916d084ce17abafb02916da3:6840","generation":1,"verb":"find","freshness":{"mode":"strict","state":"verified","age_s":…},"precision":{"coverage":"structural","completion":"complete","parser":"dctx-structural/3"},"records":[{"id":"s:src/util.rs#greet","kind":"fn","path":"src/util.rs","lines":[2,4],"summary":"The greeting shown on the kiosk screen.","summary_source":"doc","signature":null,"span":null,"source_utf8":null,"edge":null,"direction":null,"target":null,"confidence":null},{"id":"s:web/app.ts#renderGreeting","kind":"fn","path":"web/app.ts","lines":[10,12],"summary":"The greeting banner of the kiosk web screen.","summary_source":"doc","signature":null,"span":null,"source_utf8":null,"edge":null,"direction":null,"target":null,"confidence":null}],"more":0,"next":null}
 ```
 
 ### dctx map export --format mermaid
