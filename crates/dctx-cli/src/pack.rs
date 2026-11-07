@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Explicit pack. Output is stdout, the clipboard, or `--output`.
 //! Implements ADR-011 filters and ADR-009 binary omission on the source page.
-//! Depends on the facade host, the `dctx-pack` scan, and [`FilterConfig`].
+//! Depends on the facade host, the `dctx-pack` scan, and [`dctx_core::filter::FilterConfig`].
 //! Used by `dctx pack`. `--json` stays the facade summary and refuses view filters.
 //! Binaries are omitted unless `--binary`. Include and exclude globs are selection rules.
 //! View filters ride on [`PackRequest`] and hide non-matching files before a read.

@@ -63,15 +63,18 @@ mod tests {
 
     #[test]
     fn parent_segments_and_absolute_targets_leave_the_root() {
-        let root = Path::new("/proj");
-        let escaped = join_lexical(root, Path::new("../secret"));
-        assert_eq!(escaped, Path::new("/secret"));
-        assert!(!is_inside(root, &escaped));
-        let outside = join_lexical(root, Path::new("/outside/secret"));
-        assert!(!is_inside(root, &outside));
-        let inside = join_lexical(root, Path::new("ok.txt"));
-        assert_eq!(inside, Path::new("/proj/ok.txt"));
-        assert!(is_inside(root, &inside));
-        assert!(!is_inside(root, Path::new("/proj-evil/ok.txt")));
+        let parent = std::env::temp_dir();
+        let root = parent.join("proj");
+        let escaped = join_lexical(&root, Path::new("../secret"));
+        assert_eq!(escaped, normalize(&parent.join("secret")));
+        assert!(!is_inside(&root, &escaped));
+        let target = parent.join("outside/secret");
+        assert!(target.is_absolute());
+        let outside = join_lexical(&root, &target);
+        assert!(!is_inside(&root, &outside));
+        let inside = join_lexical(&root, Path::new("ok.txt"));
+        assert_eq!(inside, parent.join("proj/ok.txt"));
+        assert!(is_inside(&root, &inside));
+        assert!(!is_inside(&root, &parent.join("proj-evil/ok.txt")));
     }
 }

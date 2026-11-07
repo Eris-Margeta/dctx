@@ -39,8 +39,10 @@ pub(crate) use rules::project_rules;
 
 use cache::{CLI_ROOT_ID, MAP_AUTO_CLEAN};
 
+#[cfg(all(test, unix))]
+use rules::local_ignore_text;
 #[cfg(test)]
-use rules::{append_nested, append_text, local_ignore_text, rewrite_nested_line};
+use rules::{append_nested, append_text, rewrite_nested_line};
 
 /// Ephemeral session with no source files. Template compile uses it.
 /// # Errors
