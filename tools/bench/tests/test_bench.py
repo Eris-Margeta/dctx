@@ -51,8 +51,9 @@ class PairTests(unittest.TestCase):
         self.assertEqual(pair["dctx"]["estimated_tokens"], pair["plain"]["estimated_tokens"])
         self.assertIn(b'<FILE_CONTENT_START ID="F003"', a)
         self.assertIn(b"[DIRECTORY:benchmark]\n<INSTRUCTIONS>\n", a)
-        # These bytes were cross-checked against the shipped CLI's v1 renderer.
-        self.assertIn(br'<FILE_CONTENT_START ID=\"UNIQUE_ID\">', a)
+        # Header instructions quote the id cleanly (df622da); no backslash escapes.
+        self.assertIn(b'<FILE_CONTENT_START ID="UNIQUE_ID">', a)
+        self.assertNotIn(b'ID=\\"UNIQUE_ID', a)
         self.assertNotIn(b"<INSTRUCTIONS>", b)
         self.assertEqual(pair["evidence"][1]["start_line"], 2)
         self.assertTrue(result["offline_only"])
