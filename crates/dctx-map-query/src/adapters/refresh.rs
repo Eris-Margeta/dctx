@@ -72,7 +72,7 @@ impl Index {
             return true;
         };
         old.files.len() != snapshot.files.len()
-            || old.directories != snapshot.directories
+            || !super::inventory::same_directories(&old.directories, &snapshot.directories)
             || snapshot.rules.iter().any(|(path, rule)| {
                 old.rules
                     .get(path)

@@ -41,6 +41,27 @@ fn directory_stamp(meta: EntryMeta, now_ns: u128) -> FileStamp {
     stamp
 }
 
+/// Whether two directory stamp maps describe the same directories. A stamp that only moved from
+/// unsettled to settled (or back) is not a change: content changes are caught by file stamps and
+/// hashes, structure by the key set. Without this, a directory merely leaving the racy window
+/// would force a full rebuild and a second generation.
+pub(super) fn same_directories(
+    old: &BTreeMap<String, FileStamp>,
+    new: &BTreeMap<String, FileStamp>,
+) -> bool {
+    old.len() == new.len()
+        && old
+            .iter()
+            .zip(new)
+            .all(|((old_path, old), (new_path, new))| {
+                old_path == new_path
+                    && (old == new
+                        || ((old.modified == i64::MIN || new.modified == i64::MIN)
+                            && old.size == new.size
+                            && old.identity == new.identity))
+            })
+}
+
 fn now_ns() -> u128 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -311,8 +332,9 @@ fn walk(
 
 #[cfg(test)]
 mod tests {
-    use super::{RACY_WINDOW_NS, directory_stamp, stamp_of};
+    use super::{RACY_WINDOW_NS, directory_stamp, same_directories, stamp_of};
     use dctx_adapter_fs::ports::{EntryMeta, FsKind};
+    use std::collections::BTreeMap;
 
     fn directory(modified_ns: u128) -> EntryMeta {
         EntryMeta {
@@ -336,5 +358,24 @@ mod tests {
             directory_stamp(directory(0), u128::MAX),
             stamp_of(directory(0))
         );
+    }
+
+    #[test]
+    fn settling_is_not_a_directory_change_but_structure_and_identity_are() {
+        let mtime = 1_700_000_000_000_000_000;
+        let racy = directory_stamp(directory(mtime), mtime);
+        let settled = directory_stamp(directory(mtime), mtime + RACY_WINDOW_NS);
+        let map = |stamp| BTreeMap::from([(String::new(), stamp)]);
+        assert!(same_directories(&map(racy.clone()), &map(settled.clone())));
+        assert!(same_directories(&map(settled.clone()), &map(racy.clone())));
+        let mut moved = settled.clone();
+        moved.modified += 1;
+        assert!(!same_directories(&map(settled.clone()), &map(moved)));
+        let mut replaced = racy.clone();
+        replaced.identity += 1;
+        assert!(!same_directories(&map(settled.clone()), &map(replaced)));
+        let mut more = map(settled.clone());
+        more.insert("sub".into(), settled);
+        assert!(!same_directories(&map(racy), &more));
     }
 }
