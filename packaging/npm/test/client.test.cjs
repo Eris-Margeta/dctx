@@ -136,7 +136,9 @@ test('optional package precedes cache; missing binaries give exact offline instr
   const native = path.join(packageDir, 'node_modules/@dctx', `cli-${process.platform}-${process.arch}`, 'bin', process.platform === 'win32' ? 'dctx.exe' : 'dctx');
   fs.mkdirSync(path.dirname(native), { recursive: true });
   fs.writeFileSync(native, 'fixture', { mode: 0o755 });
-  assert.equal(isolated.resolveBinary({ env }), native);
+  // The optional package resolves through require.resolve, which returns the real path
+  // (macOS temp dirs live under the /var -> /private/var symlink).
+  assert.equal(fs.realpathSync(isolated.resolveBinary({ env })), fs.realpathSync(native));
 });
 
 test('cache path honors absolute XDG base and is version/platform specific', () => {
