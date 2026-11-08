@@ -19,7 +19,10 @@ test('build/pack contains exactly the runtime, declarations, licenses and docs; 
   const expected = ['LICENSE', 'NOTICE', 'README.md', 'bin/dctx.js', 'package.json',
     'src/index.js', 'src/index.d.ts', 'src/resolve.js', 'src/protocol.d.ts'];
   assert.deepEqual(metadata.files.map((file) => file.path).sort(), expected.sort());
-  assert.ok(metadata.files.find((file) => file.path === 'bin/dctx.js').mode & 0o111);
+  // Windows has no POSIX execute bits (npm reports mode 0 there); npm sets bin modes at install.
+  if (process.platform !== 'win32') {
+    assert.ok(metadata.files.find((file) => file.path === 'bin/dctx.js').mode & 0o111);
+  }
   const unpacked = spawnSync('tar', ['-xzf', path.join(cwd, metadata.filename), '-C', cwd], { encoding: 'utf8' });
   assert.ifError(unpacked.error);
   assert.equal(unpacked.status, 0, unpacked.stderr);
