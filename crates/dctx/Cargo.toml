@@ -60,6 +60,9 @@ serde = { version = "1", features = ["derive"], optional = true }
 serde_json = { version = "=1.0.149", optional = true }
 schemars = { version = "=0.8.22", optional = true }
 
+[target.'cfg(unix)'.dependencies]
+rustix = { version = "=1.1.5", features = ["fs"] }
+
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "=0.61.2", features = ["Win32_Storage_FileSystem"] }
 

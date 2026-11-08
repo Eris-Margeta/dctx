@@ -60,6 +60,66 @@ impl FsObjectStore {
         publish_immutable(&path, bytes)
     }
 
+    /// Opens an existing regular object for a bounded read by the caller.
+    /// # Errors
+    /// Refuses linked storage, non-regular objects, unsafe Unix ownership/write permissions, or I/O failures.
+    pub fn open_object(&self, raw: u64) -> Result<Option<std::fs::File>, CacheError> {
+        let directory = self.root.join("objects");
+        match std::fs::symlink_metadata(&directory) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+            Err(_) => {
+                return Err(CacheError::LedgerIo {
+                    reason: "object directory metadata",
+                });
+            }
+            Ok(_) => {
+                real_root(&directory)?;
+            }
+        }
+        let mut options = std::fs::File::options();
+        options.read(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.custom_flags(super::no_follow() | rustix::fs::OFlags::NONBLOCK.bits() as i32);
+        }
+        #[cfg(windows)]
+        {
+            use std::os::windows::fs::OpenOptionsExt;
+            options.custom_flags(0x0020_0000); // FILE_FLAG_OPEN_REPARSE_POINT
+        }
+        let file = match options.open(directory.join(raw.to_string())) {
+            Ok(file) => file,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+            Err(_) => {
+                return Err(CacheError::LedgerIo {
+                    reason: "object open",
+                });
+            }
+        };
+        let meta = file.metadata().map_err(|_| CacheError::LedgerIo {
+            reason: "object metadata",
+        })?;
+        if !meta.is_file() {
+            return Err(CacheError::OutsideCacheRoot);
+        }
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::MetadataExt;
+            if meta.uid() != rustix::process::geteuid().as_raw() || meta.mode() & 0o022 != 0 {
+                return Err(CacheError::OutsideCacheRoot);
+            }
+        }
+        #[cfg(windows)]
+        {
+            use std::os::windows::fs::MetadataExt;
+            if meta.file_attributes() & 0x400 != 0 {
+                return Err(CacheError::OutsideCacheRoot);
+            }
+        }
+        Ok(Some(file))
+    }
+
     /// Unlinks `relative` only when every ancestor inside the root is a real directory.
     /// # Errors
     /// Refuses escaping/symlink/non-file paths or metadata/unlink failures; missing files are accepted.

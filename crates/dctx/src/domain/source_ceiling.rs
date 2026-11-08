@@ -117,7 +117,17 @@ mod tests {
             parse_count_ceiling(ENTRIES_ENV, Some("1"), SAFETY_ENTRIES).expect("min"),
             1
         );
-        for bad in ["", "abc", "0", "-1", "100000001", "1.5"] {
+        for bad in [
+            "",
+            "abc",
+            "0",
+            "-1",
+            "100000001",
+            "1.5",
+            "1;exit 0",
+            "$(exit 0)",
+            "1\n2",
+        ] {
             let error = parse_count_ceiling(RECORDS_ENV, Some(bad), SAFETY_RECORDS).expect_err(bad);
             assert_eq!(error.code().as_str(), "InvalidRequest", "{bad}");
             assert!(error.to_string().contains(RECORDS_ENV), "{bad}: {error}");
@@ -149,6 +159,9 @@ mod tests {
             "0",
             "17179869185",
             "99999999999999999999999",
+            "1;exit 0",
+            "$(exit 0)",
+            "1\n2",
         ] {
             let error = parse_source_ceiling(Some(bad)).expect_err(bad);
             assert_eq!(error.code().as_str(), "InvalidRequest", "{bad}");

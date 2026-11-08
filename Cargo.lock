@@ -828,6 +828,7 @@ dependencies = [
  "dctx-ports",
  "dctx-template",
  "proptest",
+ "rustix",
  "schemars 0.8.22",
  "serde",
  "serde_json",
@@ -843,6 +844,7 @@ dependencies = [
  "dctx-hash",
  "dctx-ports",
  "proptest",
+ "rustix",
  "tempfile",
  "thiserror 2.0.18",
 ]
@@ -852,6 +854,7 @@ name = "dctx-adapter-fs"
 version = "1.2.0"
 dependencies = [
  "dctx-hash",
+ "rustix",
  "tempfile",
  "thiserror 2.0.18",
 ]
@@ -904,6 +907,7 @@ name = "dctx-daemon-transport"
 version = "1.2.0"
 dependencies = [
  "libc",
+ "tempfile",
  "windows-sys 0.61.2",
 ]
 

@@ -411,7 +411,43 @@ pub(super) fn real_root(root: &Path) -> Result<PathBuf, CacheError> {
             reason: "cache root is not a directory",
         });
     }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        if meta.uid() != rustix::process::geteuid().as_raw() || meta.mode() & 0o022 != 0 {
+            return Err(CacheError::InvalidRequest {
+                reason: "cache root must be user-owned and not writable by other users",
+            });
+        }
+        // An untrusted writable ancestor could replace the entire cache directory.
+        // Root-owned sticky directories (for example the system temporary directory) protect owned children.
+        for ancestor in root.ancestors().skip(1) {
+            let meta = fs::symlink_metadata(ancestor).map_err(|_| CacheError::LedgerIo {
+                reason: "cache ancestor metadata",
+            })?;
+            if meta.file_type().is_symlink() || !meta.is_dir() {
+                return Err(CacheError::OutsideCacheRoot);
+            }
+            if !trusted_ancestor(meta.uid(), meta.mode(), rustix::process::geteuid().as_raw()) {
+                let read_only = rustix::fs::statvfs(ancestor)
+                    .map(|status| {
+                        status
+                            .f_flag
+                            .contains(rustix::fs::StatVfsMountFlags::RDONLY)
+                    })
+                    .unwrap_or(false);
+                if !read_only {
+                    return Err(CacheError::OutsideCacheRoot);
+                }
+            }
+        }
+    }
     Ok(root.to_path_buf())
+}
+
+#[cfg(unix)]
+fn trusted_ancestor(owner: u32, mode: u32, current: u32) -> bool {
+    (owner == 0 || owner == current) && (mode & 0o022 == 0 || (owner == 0 && mode & 0o1000 != 0))
 }
 
 pub(super) fn locate(root: &Path, relative: &Path) -> Result<Option<PathBuf>, CacheError> {
@@ -424,6 +460,13 @@ pub(super) fn locate(root: &Path, relative: &Path) -> Result<Option<PathBuf>, Ca
         match component {
             Component::CurDir => {}
             Component::Normal(name) => {
+                // Apply the engine's portable name rules before the OS can normalize a component.
+                if name
+                    .to_str()
+                    .is_none_or(|text| dctx_core::ids::RelativePath::parse(text).is_err())
+                {
+                    return Err(CacheError::OutsideCacheRoot);
+                }
                 match fs::symlink_metadata(&cursor) {
                     Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
                     Err(_) => return Err(CacheError::LedgerIo { reason: "metadata" }),
@@ -452,7 +495,10 @@ pub(super) fn locate(root: &Path, relative: &Path) -> Result<Option<PathBuf>, Ca
 pub(super) fn ensure_dir(path: &Path) -> Result<(), CacheError> {
     match fs::symlink_metadata(path) {
         Ok(meta) if meta.file_type().is_symlink() => return Err(CacheError::OutsideCacheRoot),
-        Ok(meta) if meta.is_dir() => return Ok(()),
+        Ok(meta) if meta.is_dir() => {
+            real_root(path)?;
+            return Ok(());
+        }
         Ok(_) => {
             return Err(CacheError::InvalidRequest {
                 reason: "cache object path is not a directory",
@@ -572,6 +618,21 @@ fn read_committed(path: &Path) -> Result<LedgerRead, CacheError> {
     let file = options
         .open(path)
         .map_err(|_| CacheError::LedgerIo { reason: "read" })?;
+    let metadata = file.metadata().map_err(|_| CacheError::LedgerIo {
+        reason: "ledger metadata",
+    })?;
+    if !metadata.is_file() {
+        return Err(CacheError::OutsideCacheRoot);
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        if metadata.uid() != rustix::process::geteuid().as_raw() || metadata.mode() & 0o022 != 0 {
+            return Ok(LedgerRead::Rejected(CacheError::CorruptLedger {
+                reason: "unsafe ledger permissions",
+            }));
+        }
+    }
     let mut limited = file.take(limit.saturating_add(1));
     let mut bytes = Vec::new();
     limited
@@ -592,18 +653,7 @@ fn read_committed(path: &Path) -> Result<LedgerRead, CacheError> {
 
 #[cfg(unix)]
 pub(super) const fn no_follow() -> i32 {
-    #[cfg(target_os = "linux")]
-    {
-        0x20000
-    }
-    #[cfg(target_os = "macos")]
-    {
-        0x0100
-    }
-    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
-    {
-        0
-    }
+    rustix::fs::OFlags::NOFOLLOW.bits() as i32
 }
 
 #[cfg(test)]

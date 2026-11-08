@@ -57,3 +57,20 @@ fn a_name_with_a_backslash_is_skipped_not_fatal() {
     assert!(ids.iter().any(|id| id == "s:ok.rs#okfn"), "{ids:?}");
     assert!(ids.iter().all(|id| !id.contains("slash")), "{ids:?}");
 }
+
+#[cfg(unix)]
+#[test]
+fn control_characters_and_invalid_utf8_names_do_not_enter_the_index() {
+    use std::os::unix::ffi::OsStringExt;
+    let dir = fixture();
+    for name in [
+        std::ffi::OsString::from("line\nbreak.rs"),
+        std::ffi::OsString::from("escape\u{1b}.rs"),
+        std::ffi::OsString::from_vec(b"bad\xff.rs".to_vec()),
+    ] {
+        std::fs::write(dir.path().join(name), b"pub fn okfn_hidden() {}\n").unwrap();
+    }
+    let ids = found(dir.path());
+    assert!(ids.iter().any(|id| id == "s:ok.rs#okfn"), "{ids:?}");
+    assert!(!ids.iter().any(|id| id.contains("hidden")), "{ids:?}");
+}

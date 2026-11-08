@@ -5,11 +5,21 @@
 //! Inode is recorded only where `std` exposes a file index.
 
 use crate::ports::{DirEntry, EntryMeta, FsKind, SourceFs};
+use std::io::Read;
 use std::{fs, io, path::Path, time::UNIX_EPOCH};
 
 /// Process filesystem. Metadata and reads use `symlink_metadata` first.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct StdFs;
+
+impl StdFs {
+    /// Reads a regular file with no-follow guards and a caller-supplied byte cap.
+    /// # Errors
+    /// Refuses unsafe/non-regular paths, changed or oversized files, and I/O failures.
+    pub fn read_file_limited(&self, path: &Path, max_bytes: u64) -> io::Result<Vec<u8>> {
+        read_bounded(path, max_bytes)
+    }
+}
 
 impl SourceFs for StdFs {
     fn metadata(&self, path: &Path) -> io::Result<EntryMeta> {
@@ -49,40 +59,142 @@ impl SourceFs for StdFs {
     }
 
     fn read_file(&self, path: &Path) -> io::Result<Vec<u8>> {
-        let meta = fs::symlink_metadata(path)?;
-        if !meta.file_type().is_file() {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "not a regular file",
-            ));
-        }
-        fs::read(path)
+        read_bounded(path, 8 * 1024 * 1024)
     }
 
     fn read_policy(&self, path: &Path) -> io::Result<Option<String>> {
-        match fs::symlink_metadata(path) {
+        let bytes = match read_bounded(path, 1024 * 1024) {
+            Ok(bytes) => bytes,
             Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
             Err(error) => return Err(error),
-            Ok(meta) if meta.file_type().is_symlink() => {
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    "symlink rule file",
-                ));
+        };
+        String::from_utf8(bytes)
+            .map(Some)
+            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))
+    }
+}
+
+fn read_bounded(path: &Path, cap: u64) -> io::Result<Vec<u8>> {
+    #[cfg(unix)]
+    let file = {
+        use rustix::fs::{CWD, Mode, OFlags, openat};
+        use std::path::Component;
+        let flags = OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
+        let mut directory = openat(
+            CWD,
+            if path.is_absolute() { "/" } else { "." },
+            flags | OFlags::DIRECTORY,
+            Mode::empty(),
+        )?;
+        let mut components = path.components().peekable();
+        let mut opened = None;
+        while let Some(component) = components.next() {
+            match component {
+                Component::RootDir | Component::CurDir => continue,
+                Component::Normal(name) => {
+                    let last = components.peek().is_none();
+                    let next = openat(
+                        &directory,
+                        name,
+                        flags
+                            | if last {
+                                OFlags::NONBLOCK
+                            } else {
+                                OFlags::DIRECTORY
+                            },
+                        Mode::empty(),
+                    )?;
+                    if last {
+                        opened = Some(fs::File::from(next));
+                    } else {
+                        directory = next;
+                    }
+                }
+                _ => {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        "unsafe file path",
+                    ));
+                }
             }
-            Ok(_) => {}
         }
-        let bytes = fs::read(path)?;
-        let text = String::from_utf8(bytes)
-            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
-        let after = fs::symlink_metadata(path)?;
-        if after.file_type().is_symlink() {
+        opened.ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "not a file"))?
+    };
+    #[cfg(windows)]
+    let (_guards, file) = {
+        use std::os::windows::fs::{MetadataExt, OpenOptionsExt};
+        let mut guards = Vec::new();
+        if let Some(parent) = path.parent() {
+            for directory in parent
+                .ancestors()
+                .collect::<Vec<_>>()
+                .into_iter()
+                .rev()
+                .filter(|p| !p.as_os_str().is_empty())
+            {
+                let guard = fs::File::options()
+                    .access_mode(0x80)
+                    .share_mode(1)
+                    .custom_flags(0x0220_0000)
+                    .open(directory)?;
+                let meta = guard.metadata()?;
+                if !meta.is_dir() || meta.file_attributes() & 0x400 != 0 {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        "unsafe rule directory",
+                    ));
+                }
+                guards.push(guard);
+            }
+        }
+        let file = fs::File::options()
+            .read(true)
+            .custom_flags(0x0020_0000)
+            .open(path)?;
+        if file.metadata()?.file_attributes() & 0x400 != 0 {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
-                "rule file changed",
+                "reparse point file",
             ));
         }
-        Ok(Some(text))
+        (guards, file)
+    };
+    #[cfg(not(any(unix, windows)))]
+    let file = fs::File::open(path)?;
+    let before = file.metadata()?;
+    if !before.is_file() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "not a regular file",
+        ));
     }
+    if before.len() > cap {
+        return Err(io::Error::new(
+            io::ErrorKind::FileTooLarge,
+            "file exceeds byte limit",
+        ));
+    }
+    let mut bytes = Vec::new();
+    (&file)
+        .take(cap.saturating_add(1))
+        .read_to_end(&mut bytes)?;
+    let after = file.metadata()?;
+    if bytes.len() as u64 > cap {
+        return Err(io::Error::new(
+            io::ErrorKind::FileTooLarge,
+            "file exceeds byte limit",
+        ));
+    }
+    if before.len() != after.len()
+        || before.modified()? != after.modified()?
+        || bytes.len() as u64 != after.len()
+    {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "file changed during read",
+        ));
+    }
+    Ok(bytes)
 }
 
 fn kind_of(meta: &fs::Metadata) -> FsKind {
@@ -152,5 +264,35 @@ mod tests {
         assert!(fs.read_file(&link).is_err());
         assert!(fs.read_policy(&link).is_err());
         assert_eq!(fs.metadata(&link).unwrap().kind, FsKind::Symlink);
+    }
+}
+
+#[cfg(test)]
+mod security_tests {
+    use super::*;
+
+    #[test]
+    fn sparse_source_and_policy_files_are_refused_before_buffering() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("sparse");
+        let size = if cfg!(target_os = "linux") {
+            1 << 40
+        } else {
+            9 * 1024 * 1024
+        };
+        fs::File::create(&path).unwrap().set_len(size).unwrap();
+        assert!(StdFs.read_file(&path).is_err());
+        assert!(StdFs.read_policy(&path).is_err());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn content_and_policy_reads_refuse_a_linked_ancestor() {
+        let temp = tempfile::tempdir().unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        fs::write(outside.path().join("rules"), b"secret").unwrap();
+        std::os::unix::fs::symlink(outside.path(), temp.path().join("link")).unwrap();
+        assert!(StdFs.read_file(&temp.path().join("link/rules")).is_err());
+        assert!(StdFs.read_policy(&temp.path().join("link/rules")).is_err());
     }
 }

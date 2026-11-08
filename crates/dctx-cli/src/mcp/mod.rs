@@ -13,6 +13,8 @@ use tools::Surface;
 use crate::exit::Failure;
 
 /// Protocol version answered when the client names none.
+const MAX_LINE_BYTES: u64 = 1024 * 1024;
+
 const DEFAULT_PROTOCOL: &str = "2025-06-18";
 /// Usage text for `dctx mcp --help`.
 const HELP: &str = "Usage: dctx mcp [--profile default|lean | --tools NAME,...] [PATH]\n  Serve map verbs as MCP tools over stdio; one JSON-RPC 2.0 message per line.\n  Default: map, find, neighbors, explain, read, hubs, grep, skeleton, path, export.\n  --profile lean: find and read, with compact descriptions and all parameters.\n  --tools NAME,...: expose only the named tools, with compact descriptions.\n  Select either --profile or --tools, once. Tools run in PATH (default: current directory).\n  Use -- before a PATH starting with '-'. Restart the server to change tools.\nExample: dctx mcp ~/src/project\n          dctx mcp --profile lean ~/src/project\n          dctx mcp --tools find,read,grep ~/src/project\n";
@@ -90,10 +92,31 @@ fn serve(
     let mut raw = Vec::new();
     loop {
         raw.clear();
-        if input.read_until(b'\n', &mut raw)? == 0 {
+        if std::io::Read::take(&mut input, MAX_LINE_BYTES + 1).read_until(b'\n', &mut raw)? == 0 {
             return Ok(());
         }
-        let line = String::from_utf8_lossy(&raw);
+        if raw.len() as u64 > MAX_LINE_BYTES {
+            // End the session: an attacker cannot force an unlimited drain of a line without LF.
+            writeln!(
+                output,
+                "{}",
+                error(Json::Null, -32700, "message exceeds 1048576 bytes").to_line()
+            )?;
+            output.flush()?;
+            return Ok(());
+        }
+        let line = match std::str::from_utf8(&raw) {
+            Ok(line) => line,
+            Err(_) => {
+                writeln!(
+                    output,
+                    "{}",
+                    error(Json::Null, -32700, "message is not UTF-8").to_line()
+                )?;
+                output.flush()?;
+                continue;
+            }
+        };
         if line.trim().is_empty() {
             continue;
         }
@@ -230,6 +253,36 @@ mod tests {
             .lines()
             .map(|l| json::parse(l).expect("reply is JSON"))
             .collect()
+    }
+
+    #[test]
+    fn oversized_frames_stop_after_a_bounded_read_without_dispatching() {
+        let mut input = std::io::Cursor::new(vec![b'x'; MAX_LINE_BYTES as usize + 10]);
+        let mut output = Vec::new();
+        serve(&mut input, &mut output, &Surface::default(), &|_| {
+            panic!("must not dispatch")
+        })
+        .unwrap();
+        assert_eq!(input.position(), MAX_LINE_BYTES + 1);
+        assert!(String::from_utf8(output)
+            .unwrap()
+            .contains("message exceeds"));
+    }
+
+    #[test]
+    fn invalid_utf8_is_rejected_and_the_next_frame_is_processed() {
+        let mut output = Vec::new();
+        serve(
+            &b"\xff\n{\"id\":1,\"method\":\"ping\"}\n"[..],
+            &mut output,
+            &Surface::default(),
+            &|_| panic!("must not dispatch"),
+        )
+        .unwrap();
+        let text = String::from_utf8(output).unwrap();
+        assert_eq!(text.lines().count(), 2);
+        assert!(text.contains("message is not UTF-8"));
+        assert!(text.contains("\"result\""));
     }
 
     #[test]

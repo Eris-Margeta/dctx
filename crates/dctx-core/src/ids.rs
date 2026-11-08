@@ -17,8 +17,8 @@ pub const MAX_PATH_BYTES: usize = 4096;
 /// A root-relative path with `/` separators. The empty path is the root.
 ///
 /// Invariants: no leading or trailing `/`, no empty, `.` or `..` segments,
-/// no `\` and no NUL, at most [`MAX_PATH_BYTES`]. A value of this type can
-/// never name anything outside the source root.
+/// no `\`, colon, control characters or trailing dots/spaces, at most [`MAX_PATH_BYTES`].
+/// These are lexical invariants; filesystem adapters must also confine link resolution.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct RelativePath(String);
 
@@ -122,10 +122,15 @@ fn check_segment(segment: &str) -> Result<(), DctxError> {
         "empty path segment"
     } else if segment == "." || segment == ".." {
         "dot path segment"
+    } else if segment.ends_with(['.', ' ']) {
+        "trailing dot or space in path segment"
     } else if segment.contains('/') {
         "separator inside a name"
-    } else if segment.contains('\\') || segment.contains('\0') {
-        "backslash or NUL in path"
+    } else if segment.contains('\\')
+        || segment.contains(':')
+        || segment.chars().any(char::is_control)
+    {
+        "backslash, colon or control character in path"
     } else {
         return Ok(());
     };
@@ -206,7 +211,24 @@ mod tests {
 
     #[test]
     fn escaping_and_malformed_paths_are_refused() {
-        for bad in ["/etc", "a//b", "a/", "../x", "a/./b", "a\\b", "a\0b"] {
+        for bad in [
+            "/etc",
+            "a//b",
+            "a/",
+            "../x",
+            "a/./b",
+            "a\\b",
+            "a\0b",
+            "C:/outside",
+            "C:relative",
+            "a:stream",
+            "a\nb",
+            "a\u{1b}b",
+            ".. /outside",
+            ".../outside",
+            "trailing./name",
+            "trailing /name",
+        ] {
             assert_eq!(
                 RelativePath::parse(bad).unwrap_err().code(),
                 crate::error::ErrorCode::InvalidRequest,

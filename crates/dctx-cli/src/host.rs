@@ -7,7 +7,7 @@
 //! Project ignore and omit texts are loaded here; `DCTX_INDEX_IGNORED=1` skips ignore texts.
 
 use std::fs::{self, OpenOptions};
-use std::io::{Read, Write};
+use std::io::Write;
 use std::path::{Component, Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -124,6 +124,39 @@ pub fn open_mapped_query(path: &Path, scope: Option<&str>) -> Result<(Session, S
 )]
 pub fn reuse_report_enabled() -> bool {
     std::env::var("DCTX_REUSE_REPORT").ok().as_deref() == Some("1")
+}
+
+/// Reads an included file through the engine source for CLI preflight checks.
+/// No bytes are returned for a path excluded by its own or an ancestor's policy.
+/// # Errors
+/// Returns invalid paths, source/rule failures, or a read above the 8 MiB source ceiling.
+pub fn read_included_file(place: &Path, relative: &str) -> Result<Option<Vec<u8>>, String> {
+    use dctx_core::facts::ReadGrant;
+    use dctx_core::ids::RelativePath;
+    let path = RelativePath::parse(relative).map_err(|error| error.to_string())?;
+    let source = FsSource::open(place).map_err(|error| error.to_string())?;
+    let policy = project_rules(place)?.policy();
+    let mut cursor = RelativePath::root();
+    for name in path.as_str().split('/') {
+        let child = cursor.child(name).map_err(|error| error.to_string())?;
+        let decision = policy.decide(&ItemContext {
+            relative_path: child.as_str(),
+            name,
+            is_directory: child != path,
+            debug_mode: false,
+        });
+        if decision != FileHandlingDecision::Include {
+            return Ok(None);
+        }
+        cursor = child;
+    }
+    let Some(grant) = ReadGrant::authorize(&path, FileHandlingDecision::Include, true) else {
+        return Ok(None);
+    };
+    source
+        .read(&grant, 8 * 1024 * 1024)
+        .map(Some)
+        .map_err(|error| error.to_string())
 }
 
 fn open_source(path: &Path) -> Result<(FsSource, String, PathBuf), String> {

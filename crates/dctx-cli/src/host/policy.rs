@@ -33,10 +33,24 @@ pub struct AutoReport {
 /// # Errors
 /// Returns unreadable or malformed cache policy errors; a missing policy uses defaults.
 pub fn load_policy(root: &Path) -> Result<CachePolicy, String> {
+    if root.exists() {
+        FsLedgerStore::open(root).map_err(|error| error.to_string())?;
+    }
     let path = root.join(POLICY_FILE);
-    match fs::read_to_string(&path) {
-        Ok(text) => parse_policy(&text),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(CachePolicy::default()),
+    #[cfg(unix)]
+    if let Ok(meta) = fs::symlink_metadata(&path) {
+        use std::os::unix::fs::MetadataExt;
+        let owner = fs::symlink_metadata(root)
+            .map_err(|_| "cache root metadata failed")?
+            .uid();
+        if meta.uid() != owner || meta.mode() & 0o022 != 0 {
+            return Err("unsafe cache policy ownership or write permissions".into());
+        }
+    }
+    use dctx_adapter_fs::{SourceFs, StdFs};
+    match StdFs.read_policy(&path) {
+        Ok(Some(text)) => parse_policy(&text),
+        Ok(None) => Ok(CachePolicy::default()),
         Err(_) => Err("corrupt cache policy: unreadable".to_string()),
     }
 }
@@ -106,6 +120,7 @@ fn apply_cap(root: &Path, policy: &mut CachePolicy, cap: u64) -> Result<(), Stri
 }
 
 pub(super) fn store_policy(root: &Path, policy: &CachePolicy) -> Result<(), String> {
+    ensure_cache_dir(root)?;
     let body = format!(
         "enabled={}\nmin_interval_ms={}\noverlay_ttl_ms={}\npreview_ttl_ms={}\nroot_ttl_ms={}\nstaging_ttl_ms={}\nsystem_cap_bytes={}\nlast_reclaimed_bytes={}\n",
         u8::from(policy.auto.enabled),
@@ -189,7 +204,7 @@ fn assign_policy(policy: &mut CachePolicy, index: usize, value: &str) -> Result<
 
 fn write_private(path: &Path, bytes: &[u8]) -> Result<(), String> {
     let mut options = OpenOptions::new();
-    options.write(true).create(true).truncate(true);
+    options.write(true).create_new(true);
     #[cfg(unix)]
     {
         use std::os::unix::fs::OpenOptionsExt;
@@ -201,4 +216,36 @@ fn write_private(path: &Path, bytes: &[u8]) -> Result<(), String> {
     file.write_all(bytes)
         .map_err(|_| "failed to write the cache policy".to_string())?;
     Ok(())
+}
+
+#[cfg(all(test, unix))]
+mod security_tests {
+    use super::*;
+
+    #[test]
+    fn a_world_writable_policy_is_refused() {
+        use std::os::unix::fs::PermissionsExt;
+        let temp = tempfile::tempdir().unwrap();
+        store_policy(temp.path(), &CachePolicy::default()).unwrap();
+        let path = temp.path().join(POLICY_FILE);
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o666)).unwrap();
+        assert!(load_policy(temp.path()).is_err());
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
+        assert_eq!(load_policy(temp.path()).unwrap(), CachePolicy::default());
+    }
+
+    #[test]
+    fn linked_policy_or_staging_file_cannot_read_or_overwrite_outside_bytes() {
+        let temp = tempfile::tempdir().unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        let secret = outside.path().join("secret");
+        fs::write(&secret, b"keep").unwrap();
+        let policy = temp.path().join(POLICY_FILE);
+        std::os::unix::fs::symlink(&secret, &policy).unwrap();
+        assert!(load_policy(temp.path()).is_err());
+        fs::remove_file(&policy).unwrap();
+        std::os::unix::fs::symlink(&secret, temp.path().join("policy.v1.tmp")).unwrap();
+        assert!(store_policy(temp.path(), &CachePolicy::default()).is_err());
+        assert_eq!(fs::read(secret).unwrap(), b"keep");
+    }
 }

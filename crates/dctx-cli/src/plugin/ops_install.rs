@@ -3,7 +3,6 @@
 //! Depends on distribution installs, the cached index and consent enablement.
 //! Used by the plugin operations dispatcher.
 
-use std::fs;
 use std::path::Path;
 
 use dctx_plugin_distribution::{DistributionError, HttpsUrl, PluginId, Version};
@@ -68,8 +67,20 @@ pub(super) fn install_cmd(env: &mut Env<'_>, install: &Install, json: bool) -> O
             enable,
             approve,
         } => {
-            let Ok(bytes) = fs::read(Path::new(path)) else {
-                return fail("install", &DistributionError::NotFound, json);
+            let bytes = match dctx_adapter_fs::StdFs
+                .read_file_limited(Path::new(path), env.policy.max_bundle_bytes)
+            {
+                Ok(bytes) => bytes,
+                Err(error) if error.kind() == std::io::ErrorKind::FileTooLarge => {
+                    return fail(
+                        "install",
+                        &DistributionError::LimitExceeded {
+                            limit: env.policy.max_bundle_bytes,
+                        },
+                        json,
+                    );
+                }
+                Err(_) => return fail("install", &DistributionError::NotFound, json),
             };
             let parsed_id = match PluginId::parse(id) {
                 Ok(id) => id,
