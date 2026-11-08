@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //! `dctx mcp`: a stdio MCP server (JSON-RPC 2.0, one message per line) exposing the map verbs as tools.
-//! Each call uses its existing CLI path: map verbs use `map::execute`, and read with context enabled uses named context.
+//! Each call uses its existing CLI path: map verbs use `map::write_page`, and read with context enabled uses named context.
 //! Only JSON-RPC lines go to stdout; diagnostics stay on stderr. The server exits 0 at end of input.
 
 mod json;
@@ -73,14 +73,22 @@ pub(crate) fn run(args: &[String]) -> Result<(), Failure> {
     let stdin = std::io::stdin();
     let stdout = std::io::stdout();
     let runtime = crate::context_cmd::Runtime::default();
-    serve(stdin.lock(), stdout.lock(), &surface, &|args| {
-        runtime.map(args)
-    })
-    .map_err(|error| {
-        Failure::index(
+    serve(
+        stdin.lock(),
+        std::io::BufWriter::with_capacity(64 * 1024, stdout.lock()),
+        &surface,
+        &|args, out| runtime.write_map(args, out),
+    )
+    .or_else(|error| {
+        if error.kind() == std::io::ErrorKind::BrokenPipe
+            || cfg!(windows) && matches!(error.raw_os_error(), Some(109 | 232))
+        {
+            return Ok(());
+        }
+        Err(Failure::index(
             error.to_string(),
             "stdin or stdout failed; restart the server from the MCP client",
-        )
+        ))
     })
 }
 
@@ -89,7 +97,7 @@ fn serve(
     mut input: impl BufRead,
     mut output: impl Write,
     surface: &Surface,
-    exec: &dyn Fn(&[String]) -> Result<String, String>,
+    exec: &dyn Fn(&[String], &mut dyn Write) -> Result<(), String>,
 ) -> std::io::Result<()> {
     let mut raw = Vec::new();
     loop {
@@ -101,8 +109,11 @@ fn serve(
         if line.trim().is_empty() {
             continue;
         }
-        if let Some(reply) = handle(line.trim(), surface, exec) {
-            writeln!(output, "{}", reply.to_line())?;
+        if let Some(reply) = handle(line.trim(), surface) {
+            match reply {
+                Reply::Control(reply) => writeln!(output, "{}", reply.to_line())?,
+                Reply::Tool { id, args } => write_tool(&mut output, &id, &args, exec)?,
+            }
             output.flush()?;
         }
     }
@@ -129,21 +140,23 @@ fn success(id: Json, result: Json) -> Json {
 }
 
 /// Handles one message line; `None` means no reply (notifications and stray responses).
-fn handle(
-    line: &str,
-    surface: &Surface,
-    exec: &dyn Fn(&[String]) -> Result<String, String>,
-) -> Option<Json> {
+fn handle(line: &str, surface: &Surface) -> Option<Reply> {
     let message = match json::parse(line) {
         Ok(message) => message,
-        Err(why) => return Some(error(Json::Null, -32700, &format!("parse error: {why}"))),
+        Err(why) => {
+            return Some(Reply::Control(error(
+                Json::Null,
+                -32700,
+                &format!("parse error: {why}"),
+            )))
+        }
     };
     if !matches!(message, Json::Obj(_)) {
-        return Some(error(
+        return Some(Reply::Control(error(
             Json::Null,
             -32600,
             "invalid request: expected a JSON object",
-        ));
+        )));
     }
     let id = message.get("id").cloned();
     let Some(method) = message.get("method").and_then(Json::as_str) else {
@@ -151,15 +164,18 @@ fn handle(
         if message.get("result").is_some() || message.get("error").is_some() {
             return None;
         }
-        return Some(error(
+        return Some(Reply::Control(error(
             id.unwrap_or(Json::Null),
             -32600,
             "invalid request: missing method",
-        ));
+        )));
     };
     let id = id?;
     let params = message.get("params");
-    Some(match method {
+    if method == "tools/call" {
+        return Some(call(id, params, surface));
+    }
+    Some(Reply::Control(match method {
         "initialize" => {
             let version = params
                 .and_then(|p| p.get("protocolVersion"))
@@ -181,38 +197,74 @@ fn handle(
         }
         "ping" => success(id, Json::obj(Vec::new())),
         "tools/list" => success(id, tools::list(surface)),
-        "tools/call" => call(id, params, surface, exec),
         other => error(id, -32601, &format!("method not found: {other}")),
-    })
+    }))
 }
 
-fn call(
-    id: Json,
-    params: Option<&Json>,
-    surface: &Surface,
-    exec: &dyn Fn(&[String]) -> Result<String, String>,
-) -> Json {
+enum Reply {
+    Control(Json),
+    Tool { id: Json, args: Vec<String> },
+}
+
+fn call(id: Json, params: Option<&Json>, surface: &Surface) -> Reply {
     let Some(name) = params.and_then(|p| p.get("name")).and_then(Json::as_str) else {
-        return error(id, -32602, "invalid params: tool name is required");
+        return Reply::Control(error(id, -32602, "invalid params: tool name is required"));
     };
     if !surface.contains(name) {
-        return error(id, -32602, &format!("unknown tool: {name}"));
+        return Reply::Control(error(id, -32602, &format!("unknown tool: {name}")));
     }
-    let outcome =
-        tools::to_args(name, params.and_then(|p| p.get("arguments"))).and_then(|args| exec(&args));
-    let (text, failed) = match outcome {
-        Ok(text) => (text, false),
-        Err(message) => (message, true),
+    match tools::to_args(name, params.and_then(|p| p.get("arguments"))) {
+        Ok(args) => Reply::Tool { id, args },
+        Err(message) => Reply::Control(success(
+            id,
+            Json::obj(vec![
+                (
+                    "content",
+                    Json::Arr(vec![Json::obj(vec![
+                        ("type", Json::str("text")),
+                        ("text", Json::str(&message)),
+                    ])]),
+                ),
+                ("isError", Json::Bool(true)),
+            ]),
+        )),
+    }
+}
+
+type Executor<'a> = dyn Fn(&[String], &mut dyn Write) -> Result<(), String> + 'a;
+
+fn write_tool(
+    output: &mut dyn Write,
+    id: &Json,
+    args: &[String],
+    exec: &Executor<'_>,
+) -> std::io::Result<()> {
+    write!(
+        output,
+        "{{\"jsonrpc\":\"2.0\",\"id\":{},\"result\":{{\"content\":[{{\"type\":\"text\",\"text\":\"",
+        id.to_line()
+    )?;
+    let mut text = json::TextWriter::new(output);
+    let outcome = exec(args, &mut text);
+    if let Some(error) = text.failure.take() {
+        return Err(error);
+    }
+    let failed = if let Err(message) = outcome {
+        if text.written {
+            // An incomplete engine export must never be acknowledged as a complete page.
+            return Err(std::io::Error::other(message));
+        }
+        text.write_all(message.as_bytes())?;
+        true
+    } else {
+        false
     };
-    let content = Json::Arr(vec![Json::obj(vec![
-        ("type", Json::str("text")),
-        ("text", Json::Str(text)),
-    ])]);
-    let mut members = vec![("content", content)];
-    if failed {
-        members.push(("isError", Json::Bool(true)));
-    }
-    success(id, Json::obj(members))
+    text.finish()?;
+    output.write_all(if failed {
+        b"\"}],\"isError\":true}}\n"
+    } else {
+        b"\"}]}}\n"
+    })
 }
 
 #[cfg(test)]
@@ -220,11 +272,11 @@ mod tests {
     use super::*;
 
     fn session(lines: &str) -> Vec<Json> {
-        let exec = |args: &[String]| -> Result<String, String> {
+        let exec = |args: &[String], output: &mut dyn Write| -> Result<(), String> {
             if args[0] == "find" && args[1] == "boom" {
                 Err("bad target".into())
             } else {
-                Ok(format!("ran {}", args.join(" ")))
+                write!(output, "ran {}", args.join(" ")).map_err(|error| error.to_string())
             }
         };
         let mut out = Vec::new();
@@ -234,6 +286,48 @@ mod tests {
             .lines()
             .map(|l| json::parse(l).expect("reply is JSON"))
             .collect()
+    }
+
+    #[test]
+    fn large_tools_stream_before_completion_and_closed_clients_stop_execution() {
+        use std::cell::Cell;
+        let writes = Cell::new(0);
+        let completed = Cell::new(false);
+        struct Client<'a> {
+            writes: &'a Cell<usize>,
+        }
+        impl Write for Client<'_> {
+            fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+                assert!(bytes.len() <= 64 * 1024);
+                self.writes.set(self.writes.get() + 1);
+                if self.writes.get() > 30 {
+                    return Err(std::io::ErrorKind::BrokenPipe.into());
+                }
+                Ok(bytes.len())
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Ok(())
+            }
+        }
+        let exec = |_: &[String], output: &mut dyn Write| {
+            let chunk = [b'x'; 64 * 1024];
+            for _ in 0..1000 {
+                output
+                    .write_all(&chunk)
+                    .map_err(|error| error.to_string())?;
+            }
+            completed.set(true);
+            Ok(())
+        };
+        let error = write_tool(
+            &mut Client { writes: &writes },
+            &Json::Num("1".into()),
+            &[],
+            &exec,
+        )
+        .unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::BrokenPipe);
+        assert!(!completed.get());
     }
 
     #[test]
@@ -409,9 +503,9 @@ mod tests {
             Surface::profile("lean").unwrap(),
             Surface::from_names("read,find").unwrap(),
         ] {
-            let exec = |args: &[String]| {
+            let exec = |args: &[String], output: &mut dyn Write| {
                 assert!(matches!(args[0].as_str(), "find" | "read"));
-                Ok(args.join(" "))
+                write!(output, "{}", args.join(" ")).map_err(|error| error.to_string())
             };
             let mut out = Vec::new();
             serve(lines.as_bytes(), &mut out, &surface, &exec).unwrap();

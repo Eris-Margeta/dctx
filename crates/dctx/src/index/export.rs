@@ -4,9 +4,6 @@
 //! Nodes are sorted by stable id and edges by (src, edge, dst, confidence), so equal generations give equal bytes.
 //! The document is not an [`crate::domain::Answer`]: it has no page header, no cursor and no token cap.
 
-use std::fmt::Write as _;
-
-use super::hubs::quote;
 use super::{Generation, write_node_id};
 
 /// Output format of an export.
@@ -33,139 +30,133 @@ impl ExportFormat {
     }
 }
 
-/// One node of the export.
-struct ExportNode {
-    /// Stable id.
-    id: String,
-    /// Wire kind.
-    kind: String,
-    /// Root-relative path of the file.
-    path: String,
-    /// Inclusive 1-based lines.
-    lines: [u32; 2],
+/// The whole graph of `generation` in `format`, ending in a newline.
+#[cfg(test)]
+pub(crate) fn export_graph(generation: &Generation, format: ExportFormat) -> String {
+    let mut output = Vec::new();
+    write_graph(generation, format, &mut output).expect("Vec writer");
+    String::from_utf8(output).expect("UTF-8 graph")
 }
 
-/// One edge of the export, by stable ids.
-struct ExportEdge {
-    /// Stable id of the source.
-    src: String,
-    /// Edge name (`contains`, `calls`, `imports`).
-    edge: String,
-    /// Stable id of the destination.
-    dst: String,
-    /// Confidence label.
-    confidence: String,
-}
-
-/// Stable id of node `index`, or `None` when it is out of range.
-fn id_of(generation: &Generation, index: u32) -> Option<String> {
-    let node = generation.nodes.get(usize::try_from(index).ok()?)?;
-    let mut id = String::new();
-    write_node_id(&mut id, &generation.text, node);
-    Some(id)
-}
-
-/// Every node sorted by id and every edge sorted by (src, edge, dst, confidence).
-fn collect(generation: &Generation) -> (Vec<ExportNode>, Vec<ExportEdge>) {
-    let text = &generation.text;
-    let mut nodes: Vec<ExportNode> = generation
+/// Writes sorted graph records without retaining an encoded document. The ordering
+/// tables contain ids and row references only; paths and edge attributes stay borrowed.
+pub(crate) fn write_graph(
+    generation: &Generation,
+    format: ExportFormat,
+    output: &mut dyn std::io::Write,
+) -> std::io::Result<()> {
+    let ids: Vec<String> = generation
         .nodes
         .iter()
         .map(|node| {
             let mut id = String::new();
-            write_node_id(&mut id, text, node);
-            ExportNode {
-                id,
-                kind: node.kind.clone(),
-                path: text.get(node.path).to_string(),
-                lines: node.lines,
-            }
+            write_node_id(&mut id, &generation.text, node);
+            id
         })
         .collect();
-    nodes.sort_by(|left, right| left.id.cmp(&right.id));
-    let mut edges: Vec<ExportEdge> = generation
+    let mut nodes: Vec<usize> = (0..ids.len()).collect();
+    nodes.sort_by(|a, b| ids[*a].cmp(&ids[*b]));
+    let edge_key = |edge: &super::IndexedEdge| {
+        let src = ids.get(edge.src as usize).map(String::as_str);
+        let dst = ids.get(edge.dst as usize).map(String::as_str);
+        (
+            src,
+            generation.text.get(edge.edge),
+            dst,
+            generation.text.get(edge.confidence),
+        )
+    };
+    let mut edges: Vec<_> = generation
         .edges
         .iter()
-        .filter_map(|edge| {
-            let (src, dst) = (id_of(generation, edge.src)?, id_of(generation, edge.dst)?);
-            Some(ExportEdge {
-                src,
-                edge: text.get(edge.edge).to_string(),
-                dst,
-                confidence: text.get(edge.confidence).to_string(),
-            })
-        })
+        .filter(|edge| edge_key(edge).0.is_some() && edge_key(edge).2.is_some())
         .collect();
-    edges.sort_by(|a, b| {
-        (&a.src, &a.edge, &a.dst, &a.confidence).cmp(&(&b.src, &b.edge, &b.dst, &b.confidence))
-    });
-    edges.dedup_by(|a, b| {
-        (&a.src, &a.edge, &a.dst, &a.confidence) == (&b.src, &b.edge, &b.dst, &b.confidence)
-    });
-    (nodes, edges)
-}
-
-/// The whole graph of `generation` in `format`, ending in a newline.
-pub(crate) fn export_graph(generation: &Generation, format: ExportFormat) -> String {
-    let (nodes, edges) = collect(generation);
+    edges.sort_by_key(|edge| edge_key(edge));
+    edges.dedup_by_key(|edge| edge_key(edge));
     match format {
-        ExportFormat::Json => encode_json(&nodes, &edges),
-        ExportFormat::Mermaid => encode_mermaid(&nodes, &edges),
-    }
-}
-
-/// `{"nodes":[{"id","kind","path","lines"}...],"edges":[{"src","edge","dst","confidence"}...]}`.
-fn encode_json(nodes: &[ExportNode], edges: &[ExportEdge]) -> String {
-    let mut out = String::from("{\"nodes\":[");
-    for (index, node) in nodes.iter().enumerate() {
-        out.push_str(if index > 0 {
-            ",\n{\"id\":"
-        } else {
-            "\n{\"id\":"
-        });
-        quote(&mut out, &node.id);
-        out.push_str(",\"kind\":");
-        quote(&mut out, &node.kind);
-        out.push_str(",\"path\":");
-        quote(&mut out, &node.path);
-        let _ = write!(out, ",\"lines\":[{},{}]}}", node.lines[0], node.lines[1]);
-    }
-    out.push_str("],\"edges\":[");
-    for (index, edge) in edges.iter().enumerate() {
-        out.push_str(if index > 0 {
-            ",\n{\"src\":"
-        } else {
-            "\n{\"src\":"
-        });
-        quote(&mut out, &edge.src);
-        out.push_str(",\"edge\":");
-        quote(&mut out, &edge.edge);
-        out.push_str(",\"dst\":");
-        quote(&mut out, &edge.dst);
-        out.push_str(",\"confidence\":");
-        quote(&mut out, &edge.confidence);
-        out.push('}');
-    }
-    out.push_str("]}\n");
-    out
-}
-
-/// `flowchart LR`, one `n<index>["<id>"]` line per node and one `n<a> -->|calls| n<b>` line per calls or imports edge.
-fn encode_mermaid(nodes: &[ExportNode], edges: &[ExportEdge]) -> String {
-    let mut out = String::from("flowchart LR\n");
-    for (index, node) in nodes.iter().enumerate() {
-        let _ = writeln!(out, "  n{index}[\"{}\"]", node.id.replace('"', "#quot;"));
-    }
-    let index_of = |id: &str| nodes.binary_search_by(|node| node.id.as_str().cmp(id)).ok();
-    for edge in edges
-        .iter()
-        .filter(|edge| edge.edge == "calls" || edge.edge == "imports")
-    {
-        if let (Some(a), Some(b)) = (index_of(&edge.src), index_of(&edge.dst)) {
-            let _ = writeln!(out, "  n{a} -->|{}| n{b}", edge.edge);
+        ExportFormat::Json => {
+            output.write_all(b"{\"nodes\":[")?;
+            for (ordinal, index) in nodes.iter().enumerate() {
+                let node = &generation.nodes[*index];
+                output.write_all(if ordinal == 0 {
+                    b"\n{\"id\":"
+                } else {
+                    b",\n{\"id\":"
+                })?;
+                write_quote(output, &ids[*index])?;
+                output.write_all(b",\"kind\":")?;
+                write_quote(output, &node.kind)?;
+                output.write_all(b",\"path\":")?;
+                write_quote(output, generation.text.get(node.path))?;
+                write!(output, ",\"lines\":[{},{}]}}", node.lines[0], node.lines[1])?;
+            }
+            output.write_all(b"],\"edges\":[")?;
+            for (ordinal, edge) in edges.iter().enumerate() {
+                output.write_all(if ordinal == 0 {
+                    b"\n{\"src\":"
+                } else {
+                    b",\n{\"src\":"
+                })?;
+                write_quote(output, &ids[edge.src as usize])?;
+                output.write_all(b",\"edge\":")?;
+                write_quote(output, generation.text.get(edge.edge))?;
+                output.write_all(b",\"dst\":")?;
+                write_quote(output, &ids[edge.dst as usize])?;
+                output.write_all(b",\"confidence\":")?;
+                write_quote(output, generation.text.get(edge.confidence))?;
+                output.write_all(b"}")?;
+            }
+            output.write_all(b"]}\n")
+        }
+        ExportFormat::Mermaid => {
+            output.write_all(b"flowchart LR\n")?;
+            for (ordinal, index) in nodes.iter().enumerate() {
+                writeln!(
+                    output,
+                    "  n{ordinal}[\"{}\"]",
+                    ids[*index].replace('"', "#quot;")
+                )?;
+            }
+            let index_of = |id: &str| {
+                nodes
+                    .binary_search_by(|index| ids[*index].as_str().cmp(id))
+                    .ok()
+            };
+            for edge in edges {
+                let kind = generation.text.get(edge.edge);
+                if (kind == "calls" || kind == "imports")
+                    && let (Some(a), Some(b)) = (
+                        index_of(&ids[edge.src as usize]),
+                        index_of(&ids[edge.dst as usize]),
+                    )
+                {
+                    writeln!(output, "  n{a} -->|{kind}| n{b}")?;
+                }
+            }
+            Ok(())
         }
     }
-    out
+}
+
+fn write_quote(output: &mut dyn std::io::Write, text: &str) -> std::io::Result<()> {
+    output.write_all(b"\"")?;
+    let mut start = 0;
+    for (index, ch) in text.char_indices() {
+        if ch == '"' || ch == '\\' || ch < '\u{20}' {
+            output.write_all(&text.as_bytes()[start..index])?;
+            match ch {
+                '"' => output.write_all(b"\\\"")?,
+                '\\' => output.write_all(b"\\\\")?,
+                '\n' => output.write_all(b"\\n")?,
+                '\r' => output.write_all(b"\\r")?,
+                '\t' => output.write_all(b"\\t")?,
+                control => write!(output, "\\u{:04x}", u32::from(control))?,
+            }
+            start = index + ch.len_utf8();
+        }
+    }
+    output.write_all(&text.as_bytes()[start..])?;
+    output.write_all(b"\"")
 }
 
 #[cfg(test)]
@@ -238,6 +229,16 @@ mod tests {
             parser: "dctx-structural/3".to_string(),
             ids: crate::index::IdIndex::default(),
         }
+    }
+
+    #[test]
+    fn writer_json_string_bytes_match_the_existing_encoder() {
+        let text = "\"\\\n\r\t\0\u{8}\u{c} α\u{2028}\u{2029}";
+        let mut expected = String::new();
+        super::super::hubs::quote(&mut expected, text);
+        let mut bytes = Vec::new();
+        write_quote(&mut bytes, text).expect("quote");
+        assert_eq!(bytes, expected.as_bytes());
     }
 
     #[test]

@@ -11,17 +11,16 @@ use super::base_name;
 use super::filter::Filters;
 
 /// Keeps the root. Drops files the ADR filters reject and prunes empty directories.
-pub(super) fn narrow(node: &DirContextTreeNode, filters: &Filters) -> DirContextTreeNode {
-    let mut root = shell(node);
-    for child in &node.children {
-        if let Some(kept) = narrow_child(child, filters) {
-            root.children.push(kept);
-        }
-    }
-    root
+pub(super) fn narrow(mut node: DirContextTreeNode, filters: &Filters) -> DirContextTreeNode {
+    node.children = node
+        .children
+        .into_iter()
+        .filter_map(|child| narrow_child(child, filters))
+        .collect();
+    node
 }
 
-fn narrow_child(node: &DirContextTreeNode, filters: &Filters) -> Option<DirContextTreeNode> {
+fn narrow_child(mut node: DirContextTreeNode, filters: &Filters) -> Option<DirContextTreeNode> {
     let name = base_name(&node.relative_path);
     if node.node_type == NodeType::Directory {
         if !filters.config.should_include_directory(name)
@@ -29,15 +28,14 @@ fn narrow_child(node: &DirContextTreeNode, filters: &Filters) -> Option<DirConte
         {
             return None;
         }
-        let mut kept = shell(node);
-        for child in &node.children {
-            if let Some(next) = narrow_child(child, filters) {
-                kept.children.push(next);
-            }
-        }
-        return (!kept.children.is_empty()).then_some(kept);
+        node.children = node
+            .children
+            .into_iter()
+            .filter_map(|child| narrow_child(child, filters))
+            .collect();
+        return (!node.children.is_empty()).then_some(node);
     }
-    let binary = treated_as_binary(node);
+    let binary = treated_as_binary(&node);
     if !filters.config.should_include_file(
         name,
         node.content_size,
@@ -54,25 +52,7 @@ fn narrow_child(node: &DirContextTreeNode, filters: &Filters) -> Option<DirConte
     if pattern_hit(&filters.exclude, &node.relative_path, name, false) {
         return None;
     }
-    Some(shell(node))
-}
-
-fn shell(node: &DirContextTreeNode) -> DirContextTreeNode {
-    DirContextTreeNode {
-        node_type: node.node_type,
-        relative_path: node.relative_path.clone(),
-        last_modified_timestamp: node.last_modified_timestamp,
-        content_offset_in_data_section: node.content_offset_in_data_section,
-        content_size: node.content_size,
-        disk_path: node.disk_path.clone(),
-        children: Vec::new(),
-        generated_id_for_llm: node.generated_id_for_llm.clone(),
-        file_content: node.file_content.clone(),
-        is_binary_file: node.is_binary_file,
-        binary_file_type: node.binary_file_type.clone(),
-        is_ignored: node.is_ignored,
-        handling_decision: node.handling_decision,
-    }
+    Some(node)
 }
 
 /// Extension binaries stay omitted when the scan withheld their bytes.

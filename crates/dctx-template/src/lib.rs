@@ -40,7 +40,10 @@ pub use plugin::{
     NetworkPolicy, PluginBinding, PluginGroup, PluginOrigin, PluginPlan, PluginState,
     RESERVED_ALIASES, Resolution, ResourceLimits, UnavailableReason, bundled_git_plugin,
 };
-pub use v1::{CompiledTemplate, MarkerNode, Template, render_markers, replace_vars};
+pub use v1::{
+    CompiledTemplate, MarkerNode, Template, render_markers, replace_vars, write_legacy_diff,
+    write_legacy_snapshot, write_legacy_snapshot_with,
+};
 
 /// Loads a plan and checks plugin locks, order and ceilings against `host`.
 /// [`from_bytes`] checks structure only. A blob the current policy would refuse does not load.

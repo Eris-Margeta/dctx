@@ -390,3 +390,44 @@ fn malformed_compiled_bytes_are_refused() {
     bad_utf8.push(0xFF);
     assert!(CompiledTemplate::deserialize(&mut Cursor::new(&bad_utf8)).is_err());
 }
+
+#[test]
+fn streaming_snapshot_matches_all_pinned_snapshot_and_tree_bytes() {
+    for (template, full, tree) in [
+        (template(), SNAPSHOT, TREE),
+        (stamped_template(), SNAPSHOT_STAMPED, TREE_STAMPED),
+    ] {
+        for (tree_only, expected) in [(false, full), (true, tree)] {
+            let mut bytes = Vec::new();
+            dctx_template::write_legacy_snapshot(
+                &mut bytes,
+                &template,
+                &snapshot_tree(),
+                &Version::new_v1(),
+                tree_only,
+                true,
+            )
+            .expect("stream");
+            assert_eq!(bytes, expected.as_bytes());
+        }
+    }
+}
+
+#[test]
+fn streaming_diff_matches_both_pinned_diff_envelopes() {
+    let (root, diff) = diff_tree();
+    for (template, expected) in [(template(), DIFF), (stamped_template(), DIFF_STAMPED)] {
+        let mut bytes = Vec::new();
+        dctx_template::write_legacy_diff(
+            &mut bytes,
+            &template,
+            &root,
+            &diff,
+            &Version::new_v1(),
+            &Version { major: 1, minor: 1 },
+            true,
+        )
+        .expect("stream");
+        assert_eq!(bytes, expected.as_bytes());
+    }
+}

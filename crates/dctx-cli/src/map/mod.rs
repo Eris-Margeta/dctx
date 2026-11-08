@@ -23,30 +23,81 @@ use crate::host;
 
 /// Runs one map verb and prints its page. A `gone` page is printed, then the run fails with exit 1 (docs/CLI-EXIT-CODES.md).
 pub(crate) fn run(arguments: &[String]) -> Result<(), Failure> {
-    output(arguments)?.emit()
+    let stdout = std::io::stdout();
+    let mut output = std::io::BufWriter::with_capacity(64 * 1024, stdout.lock());
+    match write_output(arguments, &mut output) {
+        Err(failure) if failure.code == 0 => Ok(()),
+        result => result,
+    }
 }
 
 /// Shared CLI/RPC output, preserving the page and the no-result exit code.
 pub(crate) fn output(arguments: &[String]) -> Result<exit::CommandOutput, Failure> {
-    let answered =
-        answer_with(arguments, host::open_mapped_query).map_err(|failure| failure.within("map"))?;
+    let mut bytes = Vec::new();
+    let answered = answer_with(arguments, host::open_mapped_query, &mut bytes)
+        .map_err(|failure| failure.within("map"))?;
+    bytes.extend_from_slice(answered.page.as_bytes());
     Ok(exit::CommandOutput {
-        stdout: answered.page,
+        stdout: String::from_utf8_lossy(&bytes).into_owned(),
         failure: answered.missing.map(|failure| failure.within("map")),
     })
 }
 
+/// Streams unbounded exports; bounded answer pages retain their normal admission checks.
+pub(crate) fn write_output(
+    arguments: &[String],
+    output: &mut dyn std::io::Write,
+) -> Result<(), Failure> {
+    let mut tracked = exit::TrackedWriter::new(output);
+    let answered = answer_with(arguments, host::open_mapped_query, &mut tracked);
+    if let Some(error) = tracked.take_error() {
+        return Err(exit::write_failure(error));
+    }
+    let answered = answered.map_err(|failure| failure.within("map"))?;
+    output
+        .write_all(answered.page.as_bytes())
+        .map_err(dctx_cli::exit::write_failure)?;
+    output.flush().map_err(dctx_cli::exit::write_failure)?;
+    answered
+        .missing
+        .map(|failure| failure.within("map"))
+        .map_or(Ok(()), Err)
+}
+
+/// MCP transports the page, including a gone page, without a CLI status envelope.
+pub(crate) fn write_page(
+    arguments: &[String],
+    output: &mut dyn std::io::Write,
+) -> Result<(), String> {
+    let answered = answer_with(arguments, host::open_mapped_query, output).map_err(|failure| {
+        if failure.hint.is_empty() {
+            failure.message
+        } else {
+            format!("{}\nhint: {}", failure.message, failure.hint)
+        }
+    })?;
+    output
+        .write_all(answered.page.as_bytes())
+        .map_err(|error| error.to_string())
+}
+
 /// Same as [`run`], returning the page instead of printing it. A `gone` page is a page here, not an error.
+#[cfg(test)]
 pub(crate) fn execute(arguments: &[String]) -> Result<String, String> {
     execute_with(arguments, host::open_mapped_query)
 }
 
+#[cfg(test)]
 fn execute_with(
     arguments: &[String],
     open: impl FnOnce(&std::path::Path, Option<&str>) -> Result<(dctx::Session, String), String>,
 ) -> Result<String, String> {
-    answer_with(arguments, open)
-        .map(|answered| answered.page)
+    let mut bytes = Vec::new();
+    answer_with(arguments, open, &mut bytes)
+        .map(|answered| {
+            bytes.extend_from_slice(answered.page.as_bytes());
+            String::from_utf8_lossy(&bytes).into_owned()
+        })
         .map_err(|failure| {
             if failure.hint.is_empty() {
                 failure.message
@@ -81,6 +132,7 @@ impl Answered {
 fn answer_with(
     arguments: &[String],
     open: impl FnOnce(&std::path::Path, Option<&str>) -> Result<(dctx::Session, String), String>,
+    output: &mut dyn std::io::Write,
 ) -> Result<Answered, Failure> {
     if arguments.is_empty() || arguments == ["--help"] || arguments == ["-h"] {
         return Ok(Answered::page(args::HELP.to_string()));
@@ -189,9 +241,8 @@ fn answer_with(
             .map_err(failure::answer);
     }
     if options.export.is_some() {
-        return export_verb::answer(&mut session, &handle, &options)
-            .map(Answered::page)
-            .map_err(failure::answer);
+        export_verb::write(&mut session, &handle, &options, output).map_err(failure::answer)?;
+        return Ok(Answered::page(String::new()));
     }
     if options.to.is_some() {
         return path_verb::answer(&mut session, &handle, &options)

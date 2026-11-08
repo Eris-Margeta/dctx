@@ -68,27 +68,31 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
     })
 }
 
-/// Runs the export on `handle`. Returns the document, or an empty string after writing it to `--output`.
-pub(super) fn answer(
+/// Writes an export to stdout or the explicitly requested file.
+pub(super) fn write(
     session: &mut Session,
     handle: &SnapshotHandle,
     options: &Options,
-) -> Result<String, String> {
+    output: &mut dyn std::io::Write,
+) -> Result<(), String> {
     let export = options
         .export
         .as_ref()
         .ok_or("export requires its options")?;
     let request = MapRequest::new(Verb::Neighbors);
-    let document = session
-        .export_graph(handle, &export.format, &request)
-        .map_err(|e| e.to_string())?;
     match &export.output {
         Some(path) => {
-            std::fs::write(path, document)
-                .map_err(|e| format!("cannot write {}: {e}", path.display()))?;
-            Ok(String::new())
+            let file = std::fs::File::create(path)
+                .map_err(|error| format!("cannot write {}: {error}", path.display()))?;
+            let mut writer = std::io::BufWriter::with_capacity(64 * 1024, file);
+            session
+                .export_graph_to(handle, &export.format, &request, &mut writer)
+                .map_err(|error| error.to_string())?;
+            std::io::Write::flush(&mut writer).map_err(|error| error.to_string())
         }
-        None => Ok(document),
+        None => session
+            .export_graph_to(handle, &export.format, &request, output)
+            .map_err(|error| error.to_string()),
     }
 }
 

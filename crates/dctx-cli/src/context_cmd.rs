@@ -50,13 +50,19 @@ impl Runtime {
         })
     }
 
-    pub(crate) fn map(&self, args: &[String]) -> Result<String, String> {
+    pub(crate) fn write_map(
+        &self,
+        args: &[String],
+        out: &mut dyn std::io::Write,
+    ) -> Result<(), String> {
         if args.first().is_some_and(|arg| arg == "context") {
-            self.output(&args[1..])
-                .map(|output| output.stdout)
-                .map_err(|failure| failure.render())
+            let output = self
+                .output(&args[1..])
+                .map_err(|failure| failure.render())?;
+            out.write_all(output.stdout.as_bytes())
+                .map_err(|error| error.to_string())
         } else {
-            crate::map::execute(args)
+            crate::map::write_page(args, out)
         }
     }
 }

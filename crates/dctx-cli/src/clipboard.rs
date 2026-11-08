@@ -12,6 +12,12 @@ use std::{
 /// # Errors
 /// Returns unsupported-platform/tool-not-found errors, spawn/stdin/wait failures, or a nonzero clipboard-tool exit.
 pub fn copy_to_clipboard(bytes: &[u8]) -> Result<(), String> {
+    copy_with(|writer| writer.write_all(bytes).map_err(|error| error.to_string()))
+}
+
+pub(crate) fn copy_with<T>(
+    write: impl FnOnce(&mut dyn Write) -> Result<T, String>,
+) -> Result<T, String> {
     let candidates: &[&str] = if cfg!(target_os = "macos") {
         &["pbcopy"]
     } else if cfg!(windows) {
@@ -39,13 +45,13 @@ pub fn copy_to_clipboard(bytes: &[u8]) -> Result<(), String> {
         .spawn()
         .map_err(|error| format!("Failed to spawn clipboard command: {error}"))?;
     let write = match child.stdin.take() {
-        Some(mut stdin) => stdin.write_all(bytes),
-        None => Err(io::Error::other("clipboard stdin missing")),
+        Some(mut stdin) => write(&mut stdin),
+        None => Err(io::Error::other("clipboard stdin missing").to_string()),
     };
     let status = child.wait().map_err(|error| error.to_string())?;
-    write.map_err(|error| error.to_string())?;
+    let value = write?;
     if status.success() {
-        Ok(())
+        Ok(value)
     } else {
         Err("Clipboard command returned non-zero exit code.".into())
     }

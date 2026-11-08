@@ -24,8 +24,9 @@ use narrow::{file_count, narrow};
 mod narrowed;
 use narrowed::NarrowedSource;
 mod markers;
+mod spool;
 pub use markers::legacy_markers;
-use markers::source_document;
+use markers::{into_legacy_markers, source_document};
 
 /// Where the encoded pack page goes.
 #[derive(Debug, PartialEq, Eq)]
@@ -97,7 +98,148 @@ Exit codes: 0 ok, 1 nothing to pack (no view filter), 2 usage, 3 source or outpu
 /// # Errors
 /// Argument refusals (exit 2), source, scan, render or output failures (exit 3), and a pack of no file (exit 1).
 pub fn run(args: &[String]) -> Result<(), Failure> {
-    output(args)?.emit()
+    let stdout = std::io::stdout();
+    let mut output = std::io::BufWriter::with_capacity(64 * 1024, stdout.lock());
+    match write_output(args, &mut output) {
+        Err(failure) if failure.code == 0 => Ok(()),
+        result => result,
+    }
+}
+
+/// Writes CLI output incrementally. Capture callers can supply a `Vec<u8>` explicitly.
+/// # Errors
+/// Returns the same argument, source and no-result failures as [`output`], or a writer failure.
+pub fn write_output(args: &[String], stdout: &mut dyn std::io::Write) -> Result<(), Failure> {
+    if args.iter().any(|arg| arg == "--help" || arg == "-h") {
+        return output(args)?.write_to(stdout);
+    }
+    let plan = parse(args).map_err(|message| {
+        Failure::usage(
+            message,
+            "run `dctx pack --help` for the flags and an example",
+        )
+        .within("pack")
+    })?;
+    if let Some(message) = summary_refusal(&plan) {
+        return Err(Failure::usage(
+            message,
+            "run `dctx pack --help` for the flags and an example",
+        )
+        .within("pack"));
+    }
+    // Summary pages contain only bounded counters and version metadata.
+    if plan.report_format.is_some() {
+        return output(args)?.write_to(stdout);
+    }
+    let mut spool = spool::Spool::new(&plan.path).map_err(crate::exit::write_failure)?;
+    let (markers, files, document) =
+        source_markers(&plan, Some(&mut spool)).map_err(|error| error.within("pack"))?;
+    let bodies = spool.finish().map_err(crate::exit::write_failure)?;
+    let version = Version::new_v1();
+    let render = |writer: &mut dyn std::io::Write| {
+        dctx_template::write_legacy_snapshot_with(
+            writer,
+            &document.template,
+            &markers,
+            &version,
+            false,
+            document.omit_svg_content,
+            &|node| bodies.load(node),
+        )
+    };
+    let bytes = match &plan.destination {
+        Destination::Stdout => {
+            let mut counted = CountingWriter {
+                inner: stdout,
+                bytes: 0,
+            };
+            render(&mut counted).map_err(crate::exit::write_failure)?;
+            counted.bytes
+        }
+        Destination::File(path) | Destination::FileAndClipboard(path) => {
+            if path.as_os_str().is_empty() {
+                return Err(pack_io_failure("--output path is empty".to_string()).within("pack"));
+            }
+            let failed = |error: std::io::Error| {
+                pack_io_failure(format!("failed to write {}: {error}", path.display()))
+                    .within("pack")
+            };
+            let file = std::fs::File::create(path).map_err(failed)?;
+            let mut buffered = std::io::BufWriter::with_capacity(64 * 1024, file);
+            let mut counted = CountingWriter {
+                inner: &mut buffered,
+                bytes: 0,
+            };
+            render(&mut counted).map_err(failed)?;
+            std::io::Write::flush(&mut counted).map_err(failed)?;
+            let bytes = counted.bytes;
+            if matches!(plan.destination, Destination::FileAndClipboard(_)) {
+                crate::clipboard::copy_with(|writer| {
+                    render(writer).map_err(|error| error.to_string())
+                })
+                .map_err(|error| {
+                    pack_io_failure(format!(
+                        "{error}; explicit file already written at {}",
+                        path.display()
+                    ))
+                    .within("pack")
+                })?;
+            }
+            bytes
+        }
+        Destination::Clipboard => crate::clipboard::copy_with(|writer| {
+            let mut counted = CountingWriter {
+                inner: writer,
+                bytes: 0,
+            };
+            render(&mut counted).map_err(|error| error.to_string())?;
+            Ok(counted.bytes)
+        })
+        .map_err(|error| pack_io_failure(error).within("pack"))?,
+    };
+    let retention = match &plan.destination {
+        Destination::File(path) | Destination::FileAndClipboard(path) => {
+            format!("explicit path={}", path.display())
+        }
+        Destination::Clipboard => "clipboard".to_string(),
+        Destination::Stdout => "stdout".to_string(),
+    };
+    writeln!(
+        stdout,
+        "pack bytes={bytes} files={files} retention={retention} version={version}"
+    )
+    .map_err(crate::exit::write_failure)?;
+    stdout.flush().map_err(crate::exit::write_failure)?;
+    no_result(&plan, files).map_or(Ok(()), Err)
+}
+
+struct CountingWriter<'a> {
+    inner: &'a mut dyn std::io::Write,
+    bytes: u64,
+}
+
+impl std::io::Write for CountingWriter<'_> {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        let count = self.inner.write(bytes)?;
+        self.bytes += count as u64;
+        Ok(count)
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.inner.flush()
+    }
+}
+
+fn no_result(plan: &Plan, files: u64) -> Option<Failure> {
+    (files == 0 && !plan.filters.affects_view() && !plan.filters.debug_ignored).then(|| {
+        Failure::no_result(
+            format!(
+                "nothing to pack in {}: no file passed the ignore and sensitive-file rules",
+                plan.path.display()
+            ),
+            "add files to the directory, or check its .gitignore and .dctxignore rules",
+        )
+        .within("pack")
+    })
 }
 
 /// Captures the same pack output and status as the CLI without printing.
@@ -128,22 +270,7 @@ pub fn output(args: &[String]) -> Result<crate::exit::CommandOutput, Failure> {
     }
     stdout.push_str(&outcome.report_line);
     stdout.push('\n');
-    let failure =
-        if outcome.files == 0 && !plan.filters.affects_view() && !plan.filters.debug_ignored {
-            let message = format!(
-                "nothing to pack in {}: no file passed the ignore and sensitive-file rules",
-                plan.path.display()
-            );
-            Some(
-                Failure::no_result(
-                    message,
-                    "add files to the directory, or check its .gitignore and .dctxignore rules",
-                )
-                .within("pack"),
-            )
-        } else {
-            None
-        };
+    let failure = no_result(&plan, outcome.files);
     Ok(crate::exit::CommandOutput { stdout, failure })
 }
 
@@ -213,40 +340,63 @@ fn facade_summary(plan: &Plan) -> Result<PackOutcome, Failure> {
 
 /// Source page. Selection comes from the repository rules. View filters hide files first.
 fn source_page(plan: &Plan) -> Result<(Vec<u8>, u64, String), Failure> {
-    let rules = host::project_rules(&plan.path).map_err(pack_io_failure)?;
-    let policy = rules.policy();
-    let request = view_request(&plan.filters);
-    let inner = dctx::FsSource::open(&plan.path).map_err(pack_facade_failure)?;
-    let report_reads = std::env::var("DCTX_READ_REPORT").ok().as_deref() == Some("1");
-    let source = NarrowedSource {
-        inner,
-        request: &request,
-        report_reads,
-    };
-    let cancel = dctx::memory::CancelFlag::new();
-    let scanned = dctx_pack::scan(
-        &source,
-        &cancel,
-        dctx_pack::ScanOptions {
-            policy: &policy,
-            debug_ignored: plan.filters.debug_ignored,
-            limits: facade_scan_limits()?,
-        },
-    )
-    .map_err(|error| pack_facade_failure(DctxError::from_core(error)))?;
-    let tree = narrow(&scanned.tree, &plan.filters);
-    let files = file_count(&tree);
-    let markers = legacy_markers(&tree, &policy);
-    let output = source_document(&plan.path, plan.tree_stamps).map_err(pack_io_failure)?;
+    let (markers, files, output) = source_markers(plan, None)?;
     let version = Version::new_v1();
-    let text = dctx_template::render_legacy_snapshot(
+    let mut body = Vec::new();
+    dctx_template::write_legacy_snapshot(
+        &mut body,
         &output.template,
         &markers,
         &version,
         false,
         output.omit_svg_content,
-    );
-    Ok((text.into_bytes(), files, version.to_string()))
+    )
+    .map_err(crate::exit::write_failure)?;
+    Ok((body, files, version.to_string()))
+}
+
+fn source_markers(
+    plan: &Plan,
+    spool: Option<&mut spool::Spool>,
+) -> Result<(dctx_template::MarkerNode, u64, dctx_template::LegacyOutput), Failure> {
+    let rules = host::project_rules(&plan.path).map_err(pack_io_failure)?;
+    let policy = rules.policy();
+    let request = view_request(&plan.filters);
+    let inner = dctx::FsSource::open(&plan.path).map_err(pack_facade_failure)?;
+    let report_reads = std::env::var("DCTX_READ_REPORT").ok().as_deref() == Some("1");
+    let hidden = spool.as_deref().and_then(spool::Spool::hidden).cloned();
+    let frozen_parent = spool
+        .as_deref()
+        .and_then(spool::Spool::frozen_parent)
+        .cloned();
+    let source = NarrowedSource {
+        inner,
+        request: &request,
+        report_reads,
+        hidden: hidden.as_ref(),
+        frozen_parent: frozen_parent.as_ref(),
+    };
+    let cancel = dctx::memory::CancelFlag::new();
+    let options = dctx_pack::ScanOptions {
+        policy: &policy,
+        debug_ignored: plan.filters.debug_ignored,
+        limits: facade_scan_limits()?,
+    };
+    let scanned = if let Some(spool) = spool {
+        dctx_pack::scan_spooled(&source, &cancel, options, &mut |path, bytes| {
+            spool
+                .push(path, bytes)
+                .map_err(|error| dctx_core::error::DctxError::io(error.to_string()))
+        })
+    } else {
+        dctx_pack::scan(&source, &cancel, options)
+    }
+    .map_err(|error| pack_facade_failure(DctxError::from_core(error)))?;
+    let tree = narrow(scanned.tree, &plan.filters);
+    let files = file_count(&tree);
+    let markers = into_legacy_markers(tree, &policy);
+    let output = source_document(&plan.path, plan.tree_stamps).map_err(pack_io_failure)?;
+    Ok((markers, files, output))
 }
 
 fn view_request(filters: &Filters) -> PackRequest {

@@ -13,6 +13,8 @@ pub(super) struct NarrowedSource<'a, S> {
     pub(super) inner: S,
     pub(super) request: &'a PackRequest,
     pub(super) report_reads: bool,
+    pub(super) hidden: Option<&'a RelativePath>,
+    pub(super) frozen_parent: Option<&'a (RelativePath, EntryMeta)>,
 }
 
 impl<S: Source> Source for NarrowedSource<'_, S> {
@@ -22,7 +24,7 @@ impl<S: Source> Source for NarrowedSource<'_, S> {
 
     fn entries(&self, dir: &RelativePath) -> Result<Vec<SourceEntry>, CoreError> {
         let entries = self.inner.entries(dir)?;
-        if !self.request.apply_filters {
+        if !self.request.apply_filters && self.hidden.is_none() {
             return Ok(entries);
         }
         let mut kept = Vec::with_capacity(entries.len());
@@ -31,6 +33,13 @@ impl<S: Source> Source for NarrowedSource<'_, S> {
                 kept.push(entry);
                 continue;
             };
+            if self.hidden == Some(&path) {
+                continue;
+            }
+            if !self.request.apply_filters {
+                kept.push(entry);
+                continue;
+            }
             if entry.is_dir() {
                 if self.request.admits_directory(path.as_str(), &entry.name) {
                     kept.push(entry);
@@ -57,6 +66,11 @@ impl<S: Source> Source for NarrowedSource<'_, S> {
     }
 
     fn metadata(&self, path: &RelativePath) -> Result<EntryMeta, CoreError> {
+        if let Some((parent, metadata)) = self.frozen_parent {
+            if parent == path {
+                return Ok(*metadata);
+            }
+        }
         self.inner.metadata(path)
     }
 
