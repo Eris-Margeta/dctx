@@ -1,0 +1,68 @@
+name: Performance regression guard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: performance-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  synthetic:
+    name: Synthetic CLI and catalog benchmarks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: '0'
+      RUSTUP_TOOLCHAIN: '1.97.1'
+      RUSTFLAGS: '-C target-cpu=x86-64'
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+
+      # Compiler/codegen changes require an intentional baseline refresh.
+      - name: Install benchmark toolchain and instruction counter
+        run: |
+          rustup toolchain install "$RUSTUP_TOOLCHAIN" --profile minimal
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends valgrind
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          key: performance-ubuntu-24.04-${{ env.RUSTUP_TOOLCHAIN }}
+          workspaces: |
+            . -> target
+            tools/catalog-bench -> target
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build measured binaries
+        run: |
+          cargo build --release --locked -p dctx-cli
+          cargo build --release --locked --manifest-path tools/catalog-bench/Cargo.toml
+
+      - name: Offline harness and regression comparator tests
+        run: python3 -m unittest discover -s tools/bench/tests -v
+
+      - name: Check committed baseline
+        run: python3 tools/bench/perf_ci.py check
+
+      - name: Preserve raw samples and provenance
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: synthetic-performance
+          path: target/perfci/report.json
+          if-no-files-found: warn
+          retention-days: 14

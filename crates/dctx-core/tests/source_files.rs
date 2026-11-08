@@ -62,14 +62,19 @@ fn tracked_working_sources_survive_untracked_directory_churn() {
 fn archive_fallback_keeps_nested_sources_and_ignores_nonregular_entries() {
     let dir = tempfile::tempdir().unwrap();
     let root = dir.path();
+    // A workspace-local TMPDIR can have an ancestor Git repository. Force the archive
+    // branch per invocation instead of depending on the host's temp location or PATH.
+    let archive_files = |path: &Path| {
+        source_files::files_with_git(path, Command::new(root.join("absent-git-executable")))
+    };
     fs::create_dir(root.join("nested")).unwrap();
     let source = root.join("nested/source.rs");
     fs::write(&source, "std::fs::read()").unwrap();
     #[cfg(unix)]
     std::os::unix::fs::symlink(root, root.join("loop")).unwrap();
-    assert_eq!(source_files::files(root), [source]);
+    assert_eq!(archive_files(root), [source]);
     let vanished = root.join("removed");
     fs::create_dir(&vanished).unwrap();
     fs::remove_dir(&vanished).unwrap();
-    assert!(source_files::files(&vanished).is_empty());
+    assert!(archive_files(&vanished).is_empty());
 }

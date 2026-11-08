@@ -299,10 +299,12 @@ fn stamp_equiv_two_hundred_random_edits_answer_every_verb_like_a_cold_rebuild() 
                     std::fs::rename(&temp, &path).expect("rename");
                     must_reuse = true;
                 }
-                // A racy file edited twice with the same size and the very same mtime, the second edit after a
-                // snapshot saw the first. Only the 2 s racy window keeps that second edit from being trusted.
+                // An unsettled file edited twice with the same size and mtime, with a snapshot between.
+                // A future mtime stays unsettled throughout the test, even if durable publication or
+                // scheduling takes longer than the 2 s racy window. A recent mtime can settle between
+                // these edits and accidentally exercise the documented same-stamp blind spot instead.
                 9 => {
-                    let pinned = SystemTime::now() - Duration::from_millis(300);
+                    let pinned = SystemTime::now() + Duration::from_secs(86_400);
                     world.version[pick] = (world.version[pick] + 1) % 10;
                     world.write(pick);
                     set_mtime(&world.path(pick), pinned);

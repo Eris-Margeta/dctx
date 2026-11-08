@@ -8,6 +8,10 @@ package is required. CLI tests launch local child processes. See the public
 [benchmark protocol](../../docs/BENCHMARK-PROTOCOL.md) for the experiment design.
 These examples are synthetic fixtures, not measured performance claims.
 
+The separate [synthetic CI guard](PERF-CI.md) measures the actual dctx and catalog
+binaries against a committed performance baseline, with an intentional refresh
+command. It does not invoke models or estimate whole-session savings.
+
 From the repo root (on Windows, use `python` if that is your interpreter name):
 
 ```sh
