@@ -71,8 +71,7 @@ fn build(args: &[String]) -> Result<String, String> {
     }
     let source_path =
         source_path.ok_or_else(|| "template build requires a template path".to_string())?;
-    let bytes = StdFs
-        .read_file_limited(&source_path, MAX_TEMPLATE_BYTES)
+    let bytes = host::read_explicit_file(&source_path, MAX_TEMPLATE_BYTES)
         .map_err(|error| format!("failed to read template: {error}"))?;
     let source =
         String::from_utf8(bytes).map_err(|error| format!("failed to read template: {error}"))?;
@@ -123,6 +122,8 @@ fn list(args: &[String]) -> Result<String, String> {
                 .to_string(),
         );
     };
+    let dir = std::fs::canonicalize(&dir)
+        .map_err(|error| format!("failed to read {}: {error}", dir.display()))?;
     let session = compiler()?;
     let entries = std::fs::read_dir(&dir)
         .map_err(|error| format!("failed to read {}: {error}", dir.display()))?;

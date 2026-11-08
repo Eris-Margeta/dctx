@@ -33,14 +33,29 @@ pub struct AutoReport {
 /// # Errors
 /// Returns unreadable or malformed cache policy errors; a missing policy uses defaults.
 pub fn load_policy(root: &Path) -> Result<CachePolicy, String> {
-    if root.exists() {
-        FsLedgerStore::open(root).map_err(|error| error.to_string())?;
+    match fs::symlink_metadata(root) {
+        Ok(_) => {
+            // Keep the cache adapter's ownership, permissions and ancestor checks
+            // on the original path before resolving its trusted ancestors.
+            FsLedgerStore::open(root).map_err(|error| error.to_string())?;
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            return Ok(CachePolicy::default());
+        }
+        Err(error) => return Err(error.to_string()),
     }
+    // Resolve ancestors only: the cache root itself must remain a no-follow
+    // component even if it is replaced after the cache adapter's validation.
+    let root = match (root.parent(), root.file_name()) {
+        (Some(parent), Some(name)) => fs::canonicalize(parent).map(|parent| parent.join(name)),
+        _ => fs::canonicalize(root),
+    }
+    .map_err(|error| error.to_string())?;
     let path = root.join(POLICY_FILE);
     #[cfg(unix)]
     if let Ok(meta) = fs::symlink_metadata(&path) {
         use std::os::unix::fs::MetadataExt;
-        let owner = fs::symlink_metadata(root)
+        let owner = fs::symlink_metadata(&root)
             .map_err(|_| "cache root metadata failed")?
             .uid();
         if meta.uid() != owner || meta.mode() & 0o022 != 0 {
@@ -221,6 +236,31 @@ fn write_private(path: &Path, bytes: &[u8]) -> Result<(), String> {
 #[cfg(all(test, unix))]
 mod security_tests {
     use super::*;
+
+    #[test]
+    fn trusted_linked_cache_ancestors_work_but_linked_roots_and_policies_do_not() {
+        let temp = tempfile::tempdir().unwrap();
+        let real = temp.path().join("real");
+        fs::create_dir(&real).unwrap();
+        let linked = temp.path().join("linked");
+        std::os::unix::fs::symlink(&real, &linked).unwrap();
+        let root = linked.join("cache");
+        let policy = CachePolicy {
+            last_reclaimed_bytes: 42,
+            ..CachePolicy::default()
+        };
+        store_policy(&root, &policy).unwrap();
+        assert_eq!(load_policy(&root).unwrap(), policy);
+        let linked_root = temp.path().join("linked-root");
+        std::os::unix::fs::symlink(real.join("cache"), &linked_root).unwrap();
+        assert!(load_policy(&linked_root).is_err());
+        let outside = temp.path().join("outside");
+        fs::write(&outside, b"enabled=0\n").unwrap();
+        fs::remove_file(root.join(POLICY_FILE)).unwrap();
+        std::os::unix::fs::symlink(&outside, root.join(POLICY_FILE)).unwrap();
+        assert!(load_policy(&root).is_err());
+        assert_eq!(fs::read(&outside).unwrap(), b"enabled=0\n");
+    }
 
     #[test]
     fn a_world_writable_policy_is_refused() {

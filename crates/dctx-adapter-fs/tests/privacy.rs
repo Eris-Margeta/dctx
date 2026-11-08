@@ -25,8 +25,8 @@ fn write(path: &Path, bytes: &[u8]) {
 
 #[test]
 fn ignored_and_omitted_paths_are_never_opened() {
-    let root_dir = tempfile::tempdir().unwrap();
-    let global_dir = tempfile::tempdir().unwrap();
+    let root_dir = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
+    let global_dir = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
     let root = root_dir.path();
     write(&global_dir.path().join("ignore"), b"from-global.txt\n");
     write(root.join(".gitignore").as_path(), b"*.rs\nfrom-git.txt\n");
@@ -98,8 +98,8 @@ fn ignored_and_omitted_paths_are_never_opened() {
 
 #[test]
 fn plain_folder_and_git_folder_match() {
-    let plain = tempfile::tempdir().unwrap();
-    let repo = tempfile::tempdir().unwrap();
+    let plain = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
+    let repo = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
     populate(plain.path(), false);
     populate(repo.path(), true);
     let plain_source =

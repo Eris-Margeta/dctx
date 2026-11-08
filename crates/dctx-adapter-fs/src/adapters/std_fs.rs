@@ -8,7 +8,9 @@ use crate::ports::{DirEntry, EntryMeta, FsKind, SourceFs};
 use std::io::Read;
 use std::{fs, io, path::Path, time::UNIX_EPOCH};
 
-/// Process filesystem. Metadata and reads use `symlink_metadata` first.
+/// Process filesystem. Reads refuse symlinks in every path component.
+/// Callers must resolve trusted directory boundaries before appending child paths;
+/// this adapter never canonicalizes a file or an in-tree directory.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct StdFs;
 
@@ -239,7 +241,7 @@ mod tests {
 
     #[test]
     fn reads_a_regular_file_and_treats_a_missing_rule_as_absent() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
         let path = dir.path().join("note.txt");
         fs::write(&path, b"abc").unwrap();
         let fs = StdFs;
@@ -255,7 +257,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn symlink_content_and_rule_reads_fail_closed() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
         let outside = dir.path().join("outside.txt");
         fs::write(&outside, b"secret").unwrap();
         let link = dir.path().join("leak");
@@ -273,7 +275,7 @@ mod security_tests {
 
     #[test]
     fn sparse_source_and_policy_files_are_refused_before_buffering() {
-        let temp = tempfile::tempdir().unwrap();
+        let temp = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
         let path = temp.path().join("sparse");
         let size = if cfg!(target_os = "linux") {
             1 << 40
@@ -288,8 +290,9 @@ mod security_tests {
     #[cfg(unix)]
     #[test]
     fn content_and_policy_reads_refuse_a_linked_ancestor() {
-        let temp = tempfile::tempdir().unwrap();
-        let outside = tempfile::tempdir().unwrap();
+        let temp = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
+        let outside =
+            tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
         fs::write(outside.path().join("rules"), b"secret").unwrap();
         std::os::unix::fs::symlink(outside.path(), temp.path().join("link")).unwrap();
         assert!(StdFs.read_file(&temp.path().join("link/rules")).is_err());

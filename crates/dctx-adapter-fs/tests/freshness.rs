@@ -157,7 +157,7 @@ fn race_during_read_is_stale() {
 
 #[test]
 fn strict_digest_catches_same_size_same_mtime_edit() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
     let path = dir.path().join("note.txt");
     fs::write(&path, b"aaaa").unwrap();
     let source = FsSource::load(
@@ -218,7 +218,7 @@ fn strict_digest_catches_same_size_same_mtime_edit() {
 #[cfg(unix)]
 #[test]
 fn real_symlink_escape_is_refused_and_a_plain_file_is_read() {
-    let temp = tempfile::tempdir().unwrap();
+    let temp = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
     let root = temp.path().join("proj");
     fs::create_dir(&root).unwrap();
     fs::write(root.join("ok.txt"), b"ok").unwrap();

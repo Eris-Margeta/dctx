@@ -67,9 +67,10 @@ pub(super) fn install_cmd(env: &mut Env<'_>, install: &Install, json: bool) -> O
             enable,
             approve,
         } => {
-            let bytes = match dctx_adapter_fs::StdFs
-                .read_file_limited(Path::new(path), env.policy.max_bundle_bytes)
-            {
+            let bytes = match dctx_cli::host::read_explicit_file(
+                Path::new(path),
+                env.policy.max_bundle_bytes,
+            ) {
                 Ok(bytes) => bytes,
                 Err(error) if error.kind() == std::io::ErrorKind::FileTooLarge => {
                     return fail(

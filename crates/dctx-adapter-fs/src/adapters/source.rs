@@ -51,14 +51,25 @@ impl FsSource<StdFs> {
     ///
     /// # Errors
     /// Returns a source error when the root cannot be canonicalized or when loading its metadata or selection rules fails.
-    pub fn open(root: &std::path::Path, options: SourceOptions) -> Result<Self, SourceError> {
+    pub fn open(root: &std::path::Path, mut options: SourceOptions) -> Result<Self, SourceError> {
         let root = fs::canonicalize(root).map_err(|source| SourceError::io(root, source))?;
+        // Global configuration is a separate trust boundary. Resolve its ancestors
+        // once; rule files and all paths inside the project remain no-follow.
+        if let Some(dir) = &options.global_dir {
+            options.global_dir = match fs::canonicalize(dir) {
+                Ok(dir) => Some(dir),
+                Err(error) if error.kind() == io::ErrorKind::NotFound => None,
+                Err(error) => return Err(SourceError::io(dir, error)),
+            };
+        }
         Self::load(root, options, StdFs)
     }
 }
 
 impl<F: SourceFs> FsSource<F> {
     /// Loads rules through `fs`. `root` must already be absolute.
+    /// With `StdFs`, both `root` and `options.global_dir` must be canonical paths;
+    /// use [`FsSource::open`] to resolve filesystem trust boundaries.
     ///
     /// # Errors
     /// Refuses a non-absolute or non-directory root; propagates metadata, rule-read and invalid-rule failures.

@@ -165,7 +165,7 @@ fn scratch(name: &str) -> PathBuf {
     let path = std::env::temp_dir().join(format!("dctx-cli-host-{name}-{}", std::process::id()));
     let _ = fs::remove_dir_all(&path);
     fs::create_dir_all(&path).expect("dir");
-    path
+    fs::canonicalize(path).expect("canonical fixture for low-level rule reads")
 }
 
 fn args(parts: &[&str]) -> Vec<String> {
@@ -194,4 +194,27 @@ fn included_file_preflight_honours_ancestor_rules_without_reading_unrelated_ones
         read_included_file(root, "src/deep/secret.rs").expect("secret"),
         None
     );
+}
+
+#[cfg(unix)]
+#[test]
+fn explicit_file_boundary_resolves_ancestors_and_keeps_leaf_and_size_guards() {
+    let temp = tempfile::tempdir().unwrap();
+    let real = temp.path().join("real");
+    fs::create_dir(&real).unwrap();
+    fs::write(real.join("input"), b"body").unwrap();
+    let linked = temp.path().join("linked");
+    std::os::unix::fs::symlink(&real, &linked).unwrap();
+    assert_eq!(
+        read_explicit_file(&linked.join("input"), 4).unwrap(),
+        b"body"
+    );
+    assert_eq!(
+        read_explicit_file(&linked.join("input"), 3)
+            .unwrap_err()
+            .kind(),
+        std::io::ErrorKind::FileTooLarge
+    );
+    std::os::unix::fs::symlink(real.join("input"), real.join("leaf")).unwrap();
+    assert!(read_explicit_file(&linked.join("leaf"), 4).is_err());
 }
