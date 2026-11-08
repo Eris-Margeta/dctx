@@ -6,6 +6,8 @@
 
 mod doc;
 mod measure;
+mod stream;
+pub use stream::{write_legacy_diff, write_legacy_snapshot, write_legacy_snapshot_with};
 
 use super::parse::{Template, replace_vars};
 use crate::legacy_output::FileMode;

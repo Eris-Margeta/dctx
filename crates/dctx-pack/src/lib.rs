@@ -22,4 +22,4 @@ pub use legacy_codec::{
 };
 pub use legacy_decode::decode_legacy;
 pub use legacy_encode::{encode_legacy, encode_legacy_to};
-pub use snapshot::{scan, Scan, ScanOptions};
+pub use snapshot::{scan, scan_spooled, Scan, ScanOptions};

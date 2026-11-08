@@ -11,4 +11,7 @@ mod render;
 pub use compiled::CompiledTemplate;
 pub(crate) use parse::finish;
 pub use parse::{Template, replace_vars};
-pub use render::{MarkerNode, render_markers};
+pub use render::{
+    MarkerNode, render_markers, write_legacy_diff, write_legacy_snapshot,
+    write_legacy_snapshot_with,
+};

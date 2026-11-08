@@ -37,6 +37,13 @@ pub fn legacy_markers(
     node: &dctx_core::datatypes::DirContextTreeNode,
     policy: &dctx_core::selection::SelectionPolicy,
 ) -> dctx_template::MarkerNode {
+    into_legacy_markers(node.clone(), policy)
+}
+
+pub(super) fn into_legacy_markers(
+    node: dctx_core::datatypes::DirContextTreeNode,
+    policy: &dctx_core::selection::SelectionPolicy,
+) -> dctx_template::MarkerNode {
     let name = base_name(&node.relative_path);
     let is_dir = node.node_type == dctx_core::datatypes::NodeType::Directory;
     let omit_content = if node.is_binary_file || node.binary_file_type.is_some() {
@@ -51,7 +58,7 @@ pub fn legacy_markers(
             )
     };
     dctx_template::MarkerNode {
-        relative_path: node.relative_path.clone(),
+        relative_path: node.relative_path,
         is_dir,
         is_ignored: node.is_ignored,
         omit_content,
@@ -69,14 +76,14 @@ pub fn legacy_markers(
         content: if node.is_ignored || omit_content || node.is_binary_file {
             None
         } else {
-            node.file_content.clone()
+            node.file_content
         },
         content_size: node.content_size,
         modified: node.last_modified_timestamp,
         children: node
             .children
-            .iter()
-            .map(|child| legacy_markers(child, policy))
+            .into_iter()
+            .map(|child| into_legacy_markers(child, policy))
             .collect(),
     }
 }

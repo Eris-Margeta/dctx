@@ -18,6 +18,7 @@ pub const INDEX: i32 = 3;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Failure {
     /// [`NO_RESULT`], [`USAGE`], [`INDEX`], or 1 for a cache or template command.
+    /// Zero marks a disconnected output consumer for a quiet CLI return.
     pub code: i32,
     /// What went wrong, one line, no trailing newline.
     pub message: String,
@@ -247,7 +248,110 @@ impl CommandOutput {
     /// # Errors
     /// Returns the failure attached to the emitted output.
     pub fn emit(self) -> Result<(), Failure> {
-        print!("{}", self.stdout);
+        self.write_to(&mut std::io::stdout().lock())
+            .or_else(|failure| {
+                if failure.code == 0 {
+                    Ok(())
+                } else {
+                    Err(failure)
+                }
+            })
+    }
+}
+
+/// Maps output failures uniformly, including Windows closed-pipe errors.
+/// A closed transport has code zero so CLI entry points can finish quietly.
+pub fn write_failure(error: std::io::Error) -> Failure {
+    if error.kind() == std::io::ErrorKind::BrokenPipe
+        || cfg!(windows) && matches!(error.raw_os_error(), Some(109 | 232))
+    {
+        Failure::new(0, "stream closed", "")
+    } else {
+        Failure::index(error.to_string(), "check the output destination")
+    }
+}
+
+impl CommandOutput {
+    /// Transports captured bytes to a writer and preserves the original status.
+    /// # Errors
+    /// Returns an output failure or the command failure after flushing its page.
+    pub fn write_to(self, output: &mut dyn std::io::Write) -> Result<(), Failure> {
+        output
+            .write_all(self.stdout.as_bytes())
+            .map_err(write_failure)?;
+        output.flush().map_err(write_failure)?;
         self.failure.map_or(Ok(()), Err)
+    }
+}
+
+/// Remembers the original I/O error while engine error types cross the transport boundary.
+pub struct TrackedWriter<'a> {
+    inner: &'a mut dyn std::io::Write,
+    error: Option<std::io::Error>,
+}
+
+impl<'a> TrackedWriter<'a> {
+    /// Wraps a writer without buffering its output.
+    pub fn new(inner: &'a mut dyn std::io::Write) -> Self {
+        Self { inner, error: None }
+    }
+    /// Takes the first underlying writer failure, retaining its platform error code.
+    pub fn take_error(&mut self) -> Option<std::io::Error> {
+        self.error.take()
+    }
+    fn record<T>(&mut self, result: std::io::Result<T>) -> std::io::Result<T> {
+        result.map_err(|error| {
+            let returned = std::io::Error::new(error.kind(), error.to_string());
+            if error.kind() != std::io::ErrorKind::Interrupted && self.error.is_none() {
+                self.error = Some(error);
+            }
+            returned
+        })
+    }
+}
+
+impl std::io::Write for TrackedWriter<'_> {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        let result = self.inner.write(bytes);
+        self.record(result)
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        let result = self.inner.flush();
+        self.record(result)
+    }
+}
+
+#[cfg(test)]
+mod writer_tests {
+    use super::*;
+    use std::io::{self, Write};
+
+    #[test]
+    fn interrupted_writes_retry_without_leaving_a_transport_failure() {
+        struct InterruptOnce {
+            interrupted: bool,
+            bytes: Vec<u8>,
+        }
+        impl Write for InterruptOnce {
+            fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+                if !self.interrupted {
+                    self.interrupted = true;
+                    return Err(io::ErrorKind::Interrupted.into());
+                }
+                self.bytes.extend_from_slice(bytes);
+                Ok(bytes.len())
+            }
+            fn flush(&mut self) -> io::Result<()> {
+                Ok(())
+            }
+        }
+        let mut output = InterruptOnce {
+            interrupted: false,
+            bytes: Vec::new(),
+        };
+        let mut tracked = TrackedWriter::new(&mut output);
+        tracked.write_all(b"complete").expect("retry");
+        assert!(tracked.take_error().is_none());
+        assert_eq!(output.bytes, b"complete");
     }
 }

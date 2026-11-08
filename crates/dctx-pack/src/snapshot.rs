@@ -54,12 +54,38 @@ pub fn scan(
     cancel: &dyn Cancellation,
     options: ScanOptions<'_>,
 ) -> Result<Scan, DctxError> {
+    scan_inner(source, cancel, options, None)
+}
+
+/// Scans the same facts as [`scan`], transferring each classified text body to `consume`.
+/// The returned tree retains metadata and digests, with no resident file bodies.
+/// A body is delivered once, after policy, classification and byte-limit checks.
+/// # Errors
+/// Returns scan/cancellation errors or the first consumer error; no snapshot is published.
+pub fn scan_spooled(
+    source: &dyn Source,
+    cancel: &dyn Cancellation,
+    options: ScanOptions<'_>,
+    consume: &mut dyn FnMut(&str, &[u8]) -> Result<(), DctxError>,
+) -> Result<Scan, DctxError> {
+    scan_inner(source, cancel, options, Some(consume))
+}
+
+type BodyConsumer<'a> = dyn FnMut(&str, &[u8]) -> Result<(), DctxError> + 'a;
+
+fn scan_inner<'a>(
+    source: &'a dyn Source,
+    cancel: &'a dyn Cancellation,
+    options: ScanOptions<'a>,
+    consume: Option<&'a mut BodyConsumer<'a>>,
+) -> Result<Scan, DctxError> {
     cancel.checkpoint()?;
     let root_kind = source.root_kind()?;
     let mut walk = Walk {
         source,
         cancel,
         options,
+        consume,
         out: Scan::empty(),
     };
     let root = RelativePath::root();
@@ -85,6 +111,7 @@ struct Walk<'a> {
     source: &'a dyn Source,
     cancel: &'a dyn Cancellation,
     options: ScanOptions<'a>,
+    consume: Option<&'a mut BodyConsumer<'a>>,
     out: Scan,
 }
 
@@ -235,6 +262,11 @@ impl Walk<'_> {
         })?;
         self.out.digests.insert(path, digest);
         apply_content(node, &bytes);
+        if let Some(consume) = &mut self.consume {
+            if let Some(content) = node.file_content.take() {
+                consume(&node.relative_path, &content)?;
+            }
+        }
         Ok(())
     }
 }
@@ -502,5 +534,68 @@ mod tests {
             source.reads(),
             [] as [std::string::String; 0] as [std::string::String; 0]
         );
+    }
+    #[test]
+    fn spooled_scan_preserves_every_fact_and_delivers_only_classified_bodies() {
+        let source = source();
+        let expected = run(&source, true, PackLimits::unbounded()).unwrap();
+        let mut bodies = std::collections::BTreeMap::new();
+        let policy = policy();
+        let actual = scan_spooled(
+            &source,
+            &CancelFlag::new(),
+            ScanOptions {
+                policy: &policy,
+                debug_ignored: true,
+                limits: PackLimits::unbounded(),
+            },
+            &mut |path, bytes| {
+                assert!(bodies.insert(path.to_string(), bytes.to_vec()).is_none());
+                Ok(())
+            },
+        )
+        .unwrap();
+        fn without_bodies(mut tree: DirContextTreeNode) -> String {
+            fn clear(node: &mut DirContextTreeNode) {
+                node.file_content = None;
+                for child in &mut node.children {
+                    clear(child);
+                }
+            }
+            clear(&mut tree);
+            format!("{tree:?}")
+        }
+        assert_eq!(format!("{:?}", actual.tree), without_bodies(expected.tree));
+        assert_eq!(actual.digests, expected.digests);
+        assert_eq!(actual.entries, expected.entries);
+        assert_eq!(actual.content_bytes, expected.content_bytes);
+        assert_eq!(
+            bodies,
+            std::collections::BTreeMap::from([(
+                "src/main.rs".to_string(),
+                b"fn main() {}\n".to_vec()
+            )])
+        );
+    }
+
+    #[test]
+    fn failed_spool_stops_before_reading_the_next_file() {
+        let mut source = MemorySource::new();
+        source.insert_file("a.txt", b"first", 0).unwrap();
+        source.insert_file("b.txt", b"second", 0).unwrap();
+        let policy = policy();
+        let error = scan_spooled(
+            &source,
+            &CancelFlag::new(),
+            ScanOptions {
+                policy: &policy,
+                debug_ignored: false,
+                limits: PackLimits::unbounded(),
+            },
+            &mut |_, _| Err(DctxError::Cancelled),
+        )
+        .unwrap_err();
+        assert_eq!(error, DctxError::Cancelled);
+        assert_eq!(source.reads(), ["a.txt"]);
     }
 }

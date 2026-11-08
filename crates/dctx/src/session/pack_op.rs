@@ -100,6 +100,28 @@ impl Session {
         request: &PackRequest,
         sink: &mut dyn BoundedSink,
     ) -> Result<PackReport, DctxError> {
+        self.pack_output(request, PackDestination::Page(sink))
+    }
+
+    /// Writes pack output incrementally with no complete encoded-page allocation.
+    /// Source facts remain subject to the scan limits; legacy output retains its marker tree.
+    /// Budgets are checked before the first byte, and every write checks cancellation.
+    /// A failed transport may have received a prefix; any published snapshot remains complete.
+    /// # Errors
+    /// Returns the same engine refusals as [`Self::pack`], or the first writer failure.
+    pub fn pack_to(
+        &mut self,
+        request: &PackRequest,
+        output: &mut dyn std::io::Write,
+    ) -> Result<PackReport, DctxError> {
+        self.pack_output(request, PackDestination::Stream(output))
+    }
+
+    fn pack_output(
+        &mut self,
+        request: &PackRequest,
+        destination: PackDestination<'_>,
+    ) -> Result<PackReport, DctxError> {
         if !cfg!(feature = "pack") {
             return Err(DctxError::unsupported("pack"));
         }
@@ -175,19 +197,41 @@ impl Session {
             diagnostics: u64::try_from(engine.diagnostics.len()).unwrap_or(u64::MAX),
             legacy_layout: None,
         };
-        let encoded = encode_output(
-            request,
-            &engine,
-            &mut public,
-            effective_limits.encoded_bytes,
-        )?;
-        if let Some(limit) = effective_limits.encoded_bytes {
-            let len = u64::try_from(encoded.len()).unwrap_or(u64::MAX);
-            if len > limit {
-                return Err(DctxError::BudgetTooSmall { minimum_bytes: len });
+        match destination {
+            PackDestination::Page(sink) => {
+                let encoded = encode_output(
+                    request,
+                    &engine,
+                    &mut public,
+                    effective_limits.encoded_bytes,
+                )?;
+                if let Some(limit) = effective_limits.encoded_bytes
+                    && encoded.len() as u64 > limit
+                {
+                    return Err(DctxError::BudgetTooSmall {
+                        minimum_bytes: encoded.len() as u64,
+                    });
+                }
+                sink.write_page(&encoded)?;
+            }
+            PackDestination::Stream(output) => {
+                let mut writer = super::export_op::CheckedWriter::new(output, self.cancel.as_ref());
+                stream_output(
+                    request,
+                    &engine,
+                    &mut public,
+                    effective_limits.encoded_bytes,
+                    &mut writer,
+                )
+                .map_err(|error| {
+                    self.cancel
+                        .checkpoint()
+                        .map_err(DctxError::from_core)
+                        .err()
+                        .unwrap_or(error)
+                })?;
             }
         }
-        sink.write_page(&encoded)?;
         self.hooks_after_pack()?;
         Ok(public)
     }
@@ -235,6 +279,92 @@ impl Session {
         {
             return Err(DctxError::invalid("version exhausted"));
         }
+        Ok(())
+    }
+}
+
+enum PackDestination<'a> {
+    Page(&'a mut dyn BoundedSink),
+    Stream(&'a mut dyn std::io::Write),
+}
+
+fn stream_output(
+    request: &PackRequest,
+    engine: &dctx_pack::PackReport,
+    report: &mut PackReport,
+    limit: Option<u64>,
+    output: &mut dyn std::io::Write,
+) -> Result<(), DctxError> {
+    let Some(legacy) = &request.legacy_output else {
+        let encoded = encode_pack(request.output_format, report);
+        if let Some(limit) = limit
+            && encoded.len() as u64 > limit
+        {
+            return Err(DctxError::BudgetTooSmall {
+                minimum_bytes: encoded.len() as u64,
+            });
+        }
+        return output
+            .write_all(&encoded)
+            .map_err(|error| DctxError::io(error.to_string()));
+    };
+    let tree = marker_tree(engine.snapshot.tree());
+    let previous = engine
+        .previous_version
+        .as_ref()
+        .filter(|_| legacy.layout == LegacyLayout::Diff && !engine.major_reset);
+    let tree_only = legacy.layout == LegacyLayout::TreeOnly;
+    report.legacy_layout = Some(if previous.is_some() {
+        LegacyLayout::Diff
+    } else if tree_only {
+        LegacyLayout::TreeOnly
+    } else {
+        LegacyLayout::Snapshot
+    });
+    let render = |writer: &mut dyn std::io::Write| {
+        if let Some(previous) = previous {
+            dctx_template::write_legacy_diff(
+                writer,
+                &legacy.template,
+                &tree,
+                &engine.diff,
+                previous,
+                engine.snapshot.version(),
+                legacy.omit_svg_content,
+            )
+        } else {
+            dctx_template::write_legacy_snapshot(
+                writer,
+                &legacy.template,
+                &tree,
+                engine.snapshot.version(),
+                tree_only,
+                legacy.omit_svg_content,
+            )
+        }
+    };
+    if let Some(limit) = limit {
+        let mut measure = ByteCount(0);
+        render(&mut measure).map_err(|error| DctxError::io(error.to_string()))?;
+        if measure.0 > limit {
+            return Err(DctxError::BudgetTooSmall {
+                minimum_bytes: measure.0,
+            });
+        }
+    }
+    render(output).map_err(|error| DctxError::io(error.to_string()))
+}
+
+struct ByteCount(u64);
+impl std::io::Write for ByteCount {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        self.0 = self
+            .0
+            .checked_add(bytes.len() as u64)
+            .ok_or_else(|| std::io::Error::other("render size overflow"))?;
+        Ok(bytes.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
         Ok(())
     }
 }
@@ -485,5 +615,71 @@ mod tests {
                 "nested/yes.rs".to_string(),
             ]
         );
+    }
+    #[test]
+    fn streaming_pack_matches_capture_for_snapshot_tree_diff_and_summary() {
+        use dctx_template::{LegacyOutput, TreeStamps};
+        for layout in [
+            None,
+            Some(LegacyLayout::Snapshot),
+            Some(LegacyLayout::TreeOnly),
+            Some(LegacyLayout::Diff),
+        ] {
+            let reads = Arc::new(Mutex::new(Vec::new()));
+            let mut captured = open_session(sample(&reads));
+            let mut streamed = open_session(sample(&reads));
+            let mut request = PackRequest::new();
+            request.legacy_output =
+                layout.map(|layout| LegacyOutput::new(TreeStamps::Off.template(), layout));
+            for _ in 0..2 {
+                let mut expected = VecSink::new();
+                let report = captured.pack(&request, &mut expected).expect("capture");
+                let mut bytes = Vec::new();
+                let actual = streamed.pack_to(&request, &mut bytes).expect("stream");
+                assert_eq!(bytes, expected.as_bytes());
+                assert_eq!(actual, report);
+            }
+        }
+    }
+
+    #[test]
+    fn streaming_budget_refuses_before_output_and_sink_errors_leave_a_complete_snapshot() {
+        use dctx_template::{LegacyOutput, TreeStamps};
+        use std::io::{self, Write};
+        let reads = Arc::new(Mutex::new(Vec::new()));
+        let mut session = open_session(sample(&reads));
+        let mut request = PackRequest::new();
+        request.legacy_output = Some(LegacyOutput::new(
+            TreeStamps::Off.template(),
+            LegacyLayout::Snapshot,
+        ));
+        request.limits.encoded_bytes = Some(64);
+        let mut bytes = Vec::new();
+        assert!(matches!(
+            session.pack_to(&request, &mut bytes),
+            Err(DctxError::BudgetTooSmall { .. })
+        ));
+        assert!(bytes.is_empty());
+        request.limits.encoded_bytes = None;
+        struct Closed;
+        impl Write for Closed {
+            fn write(&mut self, _: &[u8]) -> io::Result<usize> {
+                Err(io::ErrorKind::BrokenPipe.into())
+            }
+            fn flush(&mut self) -> io::Result<()> {
+                Ok(())
+            }
+        }
+        assert!(session.pack_to(&request, &mut Closed).is_err());
+        let snapshot = session
+            .store
+            .load(&ViewKey::parse("default").expect("view"))
+            .expect("store")
+            .expect("complete snapshot");
+        assert_eq!(file_count(snapshot.tree()), 5);
+        let mut retry = VecSink::new();
+        let report = session.pack(&request, &mut retry).expect("retry");
+        assert!(!report.published);
+        assert_eq!(report.files, 5);
     }
 }
