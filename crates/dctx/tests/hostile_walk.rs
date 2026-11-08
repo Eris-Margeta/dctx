@@ -68,9 +68,21 @@ fn control_characters_and_invalid_utf8_names_do_not_enter_the_index() {
         std::ffi::OsString::from("escape\u{1b}.rs"),
         std::ffi::OsString::from_vec(b"bad\xff.rs".to_vec()),
     ] {
-        std::fs::write(dir.path().join(name), b"pub fn okfn_hidden() {}\n").unwrap();
+        match std::fs::write(dir.path().join(&name), b"pub fn okfn_hidden() {}\n") {
+            Ok(()) => {}
+            // APFS and other Unicode-enforcing filesystems refuse non-UTF-8 names (EILSEQ):
+            // such a file cannot exist there, so there is nothing to keep out of the index.
+            Err(error)
+                if error.raw_os_error() == Some(libc_eilseq()) && name.to_str().is_none() => {}
+            Err(error) => panic!("{name:?}: {error}"),
+        }
     }
     let ids = found(dir.path());
     assert!(ids.iter().any(|id| id == "s:ok.rs#okfn"), "{ids:?}");
     assert!(!ids.iter().any(|id| id.contains("hidden")), "{ids:?}");
+}
+
+#[cfg(unix)]
+fn libc_eilseq() -> i32 {
+    rustix::io::Errno::ILSEQ.raw_os_error()
 }
