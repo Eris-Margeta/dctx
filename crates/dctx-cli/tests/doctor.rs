@@ -26,7 +26,9 @@ impl Fixture {
             .env("PATH", self.root.path().join("system"))
             .env("DCTX_CACHE_DIR", self.root.path().join("cache"))
             .env("HOME", self.root.path().join("home"))
-            .env("LOCALAPPDATA", self.root.path().join("local"));
+            .env("LOCALAPPDATA", self.root.path().join("local"))
+            // Windows resolves user config from APPDATA and refuses to run without it.
+            .env("APPDATA", self.root.path().join("config"));
         // Keep Windows process startup independent of any developer environment.
         for key in ["SystemRoot", "WINDIR"] {
             if let Some(value) = std::env::var_os(key) {

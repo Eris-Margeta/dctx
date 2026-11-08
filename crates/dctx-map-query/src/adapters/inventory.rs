@@ -24,6 +24,29 @@ pub(super) fn stamp_of(meta: EntryMeta) -> FileStamp {
     }
 }
 
+/// git's racy-entry rule, as in the engine's stamp path: a directory whose mtime is this close
+/// to the clock of its stat can still gain or lose entries without its stamp moving (coarse
+/// filesystem clocks: Windows file times advance in timer ticks).
+const RACY_WINDOW_NS: u128 = 2_000_000_000;
+
+/// A directory stamp that the next capture may trust, or one that can never match when the
+/// directory's mtime is unsettled (missing, or inside the racy window), forcing a walk.
+fn directory_stamp(meta: EntryMeta, now_ns: u128) -> FileStamp {
+    let settled =
+        meta.modified_ns != 0 && meta.modified_ns.saturating_add(RACY_WINDOW_NS) <= now_ns;
+    let mut stamp = stamp_of(meta);
+    if !settled {
+        stamp.modified = i64::MIN;
+    }
+    stamp
+}
+
+fn now_ns() -> u128 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |duration| duration.as_nanos())
+}
+
 pub(super) fn optional_stamp(source: &FileSource, path: &Path) -> Result<Option<FileStamp>> {
     match source.metadata(path) {
         Ok(meta) if meta.kind == FsKind::Symlink => Err(Error::Denied(path.display().to_string())),
@@ -93,26 +116,47 @@ pub(super) fn capture(source: &FileSource, previous: Option<&Snapshot>) -> Resul
         same_directories &= !previous.directories.is_empty();
     }
     let mut files = BTreeMap::new();
-    let directories = if let Some(previous) = previous.filter(|_| same_directories) {
-        for (path, old) in &previous.files {
-            let meta = source.metadata(&source.root.join(path))?;
-            if meta.kind != FsKind::File {
-                return Err(Error::Denied(path.clone()));
-            }
-            files.insert(
-                path.clone(),
-                capture_file(source, path, old.allowed, meta, Some(old))?,
-            );
+    let reused = match previous.filter(|_| same_directories) {
+        Some(previous) => reuse_files(source, previous, &mut files)?,
+        None => None,
+    };
+    let directories = match reused {
+        Some(directories) => directories,
+        None => {
+            // No trusted directory stamps, or a listed file vanished although no stamp moved
+            // (a concurrent delete): only the walk is authoritative.
+            files.clear();
+            let engine = engine(&source.root, &rules)?;
+            walk(source, &engine, previous, &mut files)?
         }
-        previous.directories.clone()
-    } else {
-        let engine = engine(&source.root, &rules)?;
-        walk(source, &engine, previous, &mut files)?
     };
     let mut snapshot = super::revision::snapshot(files)?;
     snapshot.directories = directories;
     snapshot.rules = rules;
     Ok(snapshot)
+}
+
+/// Re-stats the previous snapshot's files under unchanged directories. `None` when one is gone.
+fn reuse_files(
+    source: &FileSource,
+    previous: &Snapshot,
+    files: &mut BTreeMap<String, SourceFile>,
+) -> Result<Option<BTreeMap<String, FileStamp>>> {
+    for (path, old) in &previous.files {
+        let meta = match source.metadata(&source.root.join(path)) {
+            Ok(meta) => meta,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+            Err(error) => return Err(error.into()),
+        };
+        if meta.kind != FsKind::File {
+            return Err(Error::Denied(path.clone()));
+        }
+        files.insert(
+            path.clone(),
+            capture_file(source, path, old.allowed, meta, Some(old))?,
+        );
+    }
+    Ok(Some(previous.directories.clone()))
 }
 
 fn capture_file(
@@ -215,7 +259,7 @@ fn walk(
         if meta.kind != FsKind::Directory {
             return Err(Error::Denied(relative));
         }
-        directories.insert(relative.clone(), stamp_of(meta));
+        directories.insert(relative.clone(), directory_stamp(meta, now_ns()));
         let mut entries = source.list(&disk)?;
         entries.sort_by(|left, right| left.name.cmp(&right.name));
         for entry in entries {
@@ -263,4 +307,34 @@ fn walk(
         }
     }
     Ok(directories)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{RACY_WINDOW_NS, directory_stamp, stamp_of};
+    use dctx_adapter_fs::ports::{EntryMeta, FsKind};
+
+    fn directory(modified_ns: u128) -> EntryMeta {
+        EntryMeta {
+            kind: FsKind::Directory,
+            size: 0,
+            modified_ns,
+            inode: Some(7),
+        }
+    }
+
+    #[test]
+    fn directory_stamps_inside_the_racy_window_can_never_match_again() {
+        let mtime = 1_700_000_000_000_000_000;
+        let settled = directory_stamp(directory(mtime), mtime + RACY_WINDOW_NS);
+        assert_eq!(settled, stamp_of(directory(mtime)));
+        for now in [mtime, mtime + RACY_WINDOW_NS - 1] {
+            let racy = directory_stamp(directory(mtime), now);
+            assert_ne!(racy, stamp_of(directory(mtime)), "now={now}");
+        }
+        assert_ne!(
+            directory_stamp(directory(0), u128::MAX),
+            stamp_of(directory(0))
+        );
+    }
 }
