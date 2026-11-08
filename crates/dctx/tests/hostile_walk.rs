@@ -70,10 +70,13 @@ fn control_characters_and_invalid_utf8_names_do_not_enter_the_index() {
     ] {
         match std::fs::write(dir.path().join(&name), b"pub fn okfn_hidden() {}\n") {
             Ok(()) => {}
-            // APFS and other Unicode-enforcing filesystems refuse non-UTF-8 names (EILSEQ):
-            // such a file cannot exist there, so there is nothing to keep out of the index.
+            // APFS and other Unicode-enforcing filesystems refuse non-UTF-8 names (EILSEQ; EPERM
+            // under macOS sandboxing): such a file cannot exist there, so there is nothing to
+            // keep out of the index. Only the non-UTF-8 name may be refused.
             Err(error)
-                if error.raw_os_error() == Some(libc_eilseq()) && name.to_str().is_none() => {}
+                if name.to_str().is_none()
+                    && matches!(error.raw_os_error(),
+                        Some(code) if code == libc_eilseq() || code == libc_eperm()) => {}
             Err(error) => panic!("{name:?}: {error}"),
         }
     }
@@ -85,4 +88,9 @@ fn control_characters_and_invalid_utf8_names_do_not_enter_the_index() {
 #[cfg(unix)]
 fn libc_eilseq() -> i32 {
     rustix::io::Errno::ILSEQ.raw_os_error()
+}
+
+#[cfg(unix)]
+fn libc_eperm() -> i32 {
+    rustix::io::Errno::PERM.raw_os_error()
 }
