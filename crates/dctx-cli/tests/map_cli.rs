@@ -12,7 +12,12 @@ use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+/// Per-process counter: `SystemTime` has microsecond granularity on macOS, so two tests of this
+/// binary can read the same clock value and would otherwise share (and delete) one fixture root.
+static NEXT: AtomicU64 = AtomicU64::new(1);
 
 const SOURCES: &[(&str, &str, &str)] = &[
     (
@@ -61,8 +66,11 @@ impl Repository {
             .duration_since(UNIX_EPOCH)
             .expect("clock")
             .as_nanos();
-        let root =
-            std::env::temp_dir().join(format!("dctx-map-cli-{}-{nonce}", std::process::id()));
+        let serial = NEXT.fetch_add(1, Ordering::Relaxed);
+        let root = std::env::temp_dir().join(format!(
+            "dctx-map-cli-{}-{nonce}-{serial}",
+            std::process::id()
+        ));
         fs::create_dir(&root).expect("unique temporary directory");
         let repo = Self { root };
         for folder in [

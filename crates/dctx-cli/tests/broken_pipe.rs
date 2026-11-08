@@ -12,7 +12,12 @@ mod common;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+/// Per-process counter: `SystemTime` has microsecond granularity on macOS, so two tests of this
+/// binary can read the same clock value and would otherwise share (and delete) one fixture root.
+static NEXT: AtomicU64 = AtomicU64::new(1);
 
 struct Fixture {
     root: PathBuf,
@@ -24,8 +29,11 @@ impl Fixture {
             .duration_since(UNIX_EPOCH)
             .expect("clock")
             .as_nanos();
-        let root =
-            std::env::temp_dir().join(format!("dctx-broken-pipe-{}-{nonce}", std::process::id()));
+        let serial = NEXT.fetch_add(1, Ordering::Relaxed);
+        let root = std::env::temp_dir().join(format!(
+            "dctx-broken-pipe-{}-{nonce}-{serial}",
+            std::process::id()
+        ));
         for folder in ["home", "config", "cache", "data", "tmp", "repo"] {
             fs::create_dir_all(root.join(folder)).expect("isolated directory");
         }
