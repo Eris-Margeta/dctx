@@ -55,11 +55,16 @@ mod tests {
 /// Write and delete sharing are denied to prevent reparse changes and replacement.
 pub(super) fn pin_directories(path: &Path) -> io::Result<Vec<File>> {
     use std::os::windows::fs::MetadataExt;
-    use windows_sys::Win32::Storage::FileSystem::{FILE_ATTRIBUTE_REPARSE_POINT, FILE_SHARE_READ};
+    use windows_sys::Win32::Storage::FileSystem::{
+        FILE_ATTRIBUTE_REPARSE_POINT, FILE_LIST_DIRECTORY, FILE_SHARE_READ,
+    };
     let mut guards = Vec::new();
     for directory in path.ancestors().collect::<Vec<_>>().into_iter().rev() {
+        // Windows does not apply share-mode checks to attribute-only opens, so a guard with
+        // FILE_READ_ATTRIBUTES alone would pin nothing. FILE_LIST_DIRECTORY reads names only,
+        // never file content, and makes the denied write/delete sharing enforceable.
         let file = File::options()
-            .access_mode(FILE_READ_ATTRIBUTES)
+            .access_mode(FILE_LIST_DIRECTORY | FILE_READ_ATTRIBUTES)
             .share_mode(FILE_SHARE_READ)
             .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT)
             .open(directory)?;

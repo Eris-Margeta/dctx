@@ -421,28 +421,56 @@ pub(super) fn real_root(root: &Path) -> Result<PathBuf, CacheError> {
         }
         // An untrusted writable ancestor could replace the entire cache directory.
         // Root-owned sticky directories (for example the system temporary directory) protect owned children.
-        for ancestor in root.ancestors().skip(1) {
-            let meta = fs::symlink_metadata(ancestor).map_err(|_| CacheError::LedgerIo {
+        // A symlinked ancestor (macOS: /var -> private/var, /tmp -> private/tmp) is accepted only when it is
+        // owned by root or the current user, its own parent passes these checks, and every real directory
+        // it resolves to passes them as well.
+        let current = rustix::process::geteuid().as_raw();
+        let Some(parent) = root.parent() else {
+            return Ok(root.to_path_buf());
+        };
+        if check_ancestors(parent, current, true)? {
+            let resolved = fs::canonicalize(parent).map_err(|_| CacheError::LedgerIo {
                 reason: "cache ancestor metadata",
             })?;
-            if meta.file_type().is_symlink() || !meta.is_dir() {
-                return Err(CacheError::OutsideCacheRoot);
-            }
-            if !trusted_ancestor(meta.uid(), meta.mode(), rustix::process::geteuid().as_raw()) {
-                let read_only = rustix::fs::statvfs(ancestor)
-                    .map(|status| {
-                        status
-                            .f_flag
-                            .contains(rustix::fs::StatVfsMountFlags::RDONLY)
-                    })
-                    .unwrap_or(false);
-                if !read_only {
-                    return Err(CacheError::OutsideCacheRoot);
-                }
-            }
+            check_ancestors(&resolved, current, false)?;
         }
     }
     Ok(root.to_path_buf())
+}
+
+/// Checks `path` and its ancestors. Returns whether a (trusted-owner) symlink was seen.
+#[cfg(unix)]
+fn check_ancestors(path: &Path, current: u32, allow_links: bool) -> Result<bool, CacheError> {
+    use std::os::unix::fs::MetadataExt;
+    let mut linked = false;
+    for ancestor in path.ancestors() {
+        let meta = fs::symlink_metadata(ancestor).map_err(|_| CacheError::LedgerIo {
+            reason: "cache ancestor metadata",
+        })?;
+        if meta.file_type().is_symlink() {
+            if !allow_links || (meta.uid() != 0 && meta.uid() != current) {
+                return Err(CacheError::OutsideCacheRoot);
+            }
+            linked = true;
+            continue;
+        }
+        if !meta.is_dir() {
+            return Err(CacheError::OutsideCacheRoot);
+        }
+        if !trusted_ancestor(meta.uid(), meta.mode(), current) {
+            let read_only = rustix::fs::statvfs(ancestor)
+                .map(|status| {
+                    status
+                        .f_flag
+                        .contains(rustix::fs::StatVfsMountFlags::RDONLY)
+                })
+                .unwrap_or(false);
+            if !read_only {
+                return Err(CacheError::OutsideCacheRoot);
+            }
+        }
+    }
+    Ok(linked)
 }
 
 #[cfg(unix)]

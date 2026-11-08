@@ -191,7 +191,8 @@ fn unreadable_global_and_project_ignore_and_omit_files_refuse_with_path() {
         );
         let error = result.err().unwrap();
         assert!(error.to_string().contains("rule file unreadable"));
-        assert!(error.to_string().contains(&path.display().to_string()));
+        // Errors quote paths in Debug form (backslashes are escaped on Windows).
+        assert!(error.to_string().contains(&format!("{path:?}")));
         assert!(matches!(error, SourceError::Rule { path: failed, source }
             if failed == path && source.kind() == io::ErrorKind::PermissionDenied));
         let source = FsSource::open(root.path(), options(global.path())).unwrap();

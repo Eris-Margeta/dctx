@@ -186,3 +186,38 @@ fn cache_relative_paths_refuse_stream_and_normalization_aliases() {
     }
     assert_eq!(fs::read(outside).unwrap(), b"keep");
 }
+
+#[cfg(unix)]
+#[test]
+fn symlinked_ancestors_are_accepted_only_when_nobody_else_can_replace_them() {
+    use std::os::unix::fs::{PermissionsExt, symlink};
+    let temp = tempfile::tempdir().unwrap();
+    let base = temp.path();
+    let mode = |path: &Path, bits: u32| {
+        fs::set_permissions(path, fs::Permissions::from_mode(bits)).unwrap()
+    };
+    // macOS layout: a trusted link to a trusted directory (/var -> private/var).
+    fs::create_dir(base.join("real")).unwrap();
+    fs::create_dir(base.join("real/cache")).unwrap();
+    symlink(base.join("real"), base.join("link")).unwrap();
+    assert!(FsObjectStore::open(&base.join("link/cache")).is_ok());
+    // A link inside a directory others can write can be swapped: refused.
+    fs::create_dir(base.join("open")).unwrap();
+    symlink(base.join("real"), base.join("open/link")).unwrap();
+    mode(&base.join("open"), 0o777);
+    assert!(matches!(
+        FsObjectStore::open(&base.join("open/link/cache")),
+        Err(CacheError::OutsideCacheRoot)
+    ));
+    // A trusted link that resolves into a directory others can write: refused.
+    fs::create_dir(base.join("loose")).unwrap();
+    fs::create_dir(base.join("loose/cache")).unwrap();
+    mode(&base.join("loose"), 0o777);
+    symlink(base.join("loose"), base.join("to-loose")).unwrap();
+    assert!(matches!(
+        FsObjectStore::open(&base.join("to-loose/cache")),
+        Err(CacheError::OutsideCacheRoot)
+    ));
+    mode(&base.join("open"), 0o755);
+    mode(&base.join("loose"), 0o755);
+}
