@@ -104,15 +104,39 @@ func TestRelativeOverrideUsesCallerDirectory(t *testing.T) {
 	root := isolateDiscovery(t)
 	binary := filepath.Join(root, executableName())
 	fakeExecutable(t, binary)
-	cwd, err := os.Getwd()
+	// Work from a sibling directory on the same volume as the fixture: on
+	// Windows runners the temp dir (C:) and the checkout (D:) are different
+	// drives, so a relative path between them does not exist.
+	work := filepath.Join(root, "caller")
+	if err := os.MkdirAll(work, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	previous, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
 	}
-	relative, err := filepath.Rel(cwd, binary)
-	if err != nil {
+	if err := os.Chdir(work); err != nil {
 		t.Fatal(err)
 	}
-	if got, err := ResolveBinary(relative); err != nil || got != binary {
+	t.Cleanup(func() {
+		if err := os.Chdir(previous); err != nil {
+			t.Fatal(err)
+		}
+	})
+	relative := filepath.Join("..", executableName())
+	got, err := ResolveBinary(relative)
+	if err != nil {
 		t.Fatalf("relative resolution: %q %v", got, err)
+	}
+	if !filepath.IsAbs(got) {
+		t.Fatalf("relative resolution not absolute: %q", got)
+	}
+	want, err := os.Stat(binary)
+	if err != nil {
+		t.Fatal(err)
+	}
+	have, err := os.Stat(got)
+	if err != nil || !os.SameFile(want, have) {
+		t.Fatalf("relative resolution %q is not %q (%v)", got, binary, err)
 	}
 }
