@@ -176,6 +176,23 @@ fn open_source(path: &Path) -> Result<(FsSource, String, PathBuf), String> {
     Ok((source, place, canonical))
 }
 
+/// An explicitly selected file trusts its containing directory, but not its leaf.
+/// Resolve that directory once before using the strict, bounded filesystem reader.
+/// # Errors
+/// Refuses missing directories, symlink/non-regular leaves, changed or oversized files,
+/// and filesystem I/O failures.
+pub fn read_explicit_file(path: &Path, cap: u64) -> std::io::Result<Vec<u8>> {
+    let name = path
+        .file_name()
+        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidInput, "not a file path"))?;
+    let parent = path
+        .parent()
+        .filter(|path| !path.as_os_str().is_empty())
+        .unwrap_or(Path::new("."));
+    let directory = fs::canonicalize(parent)?;
+    dctx_adapter_fs::StdFs.read_file_limited(&directory.join(name), cap)
+}
+
 fn facade_error(error: DctxError) -> String {
     match error {
         DctxError::CorruptIndex { reason } => format!("corrupt ledger: {reason}"),

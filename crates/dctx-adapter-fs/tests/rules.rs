@@ -57,8 +57,8 @@ fn omitted<F: SourceFs>(source: &FsSource<F>, name: &str) {
 
 #[test]
 fn missing_global_and_project_files_keep_builtins_and_normal_content() {
-    let root = tempfile::tempdir().unwrap();
-    let global = tempfile::tempdir().unwrap();
+    let root = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
+    let global = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
     write(root.path(), "keep.txt", "public");
     write(root.path(), "Cargo.lock", "lock");
     fs::create_dir(root.path().join("node_modules")).unwrap();
@@ -76,8 +76,8 @@ fn missing_global_and_project_files_keep_builtins_and_normal_content() {
 
 #[test]
 fn global_ignore_file_loads_only_when_explicitly_selected() {
-    let root = tempfile::tempdir().unwrap();
-    let global = tempfile::tempdir().unwrap();
+    let root = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
+    let global = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
     write(root.path(), "keep.txt", "public");
     write(root.path(), "private.txt", "public");
     write(global.path(), "ignore", "# comment\n\nprivate.txt\n");
@@ -89,8 +89,8 @@ fn global_ignore_file_loads_only_when_explicitly_selected() {
 
 #[test]
 fn project_ignore_files_load_in_order() {
-    let root = tempfile::tempdir().unwrap();
-    let global = tempfile::tempdir().unwrap();
+    let root = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
+    let global = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
     for name in ["keep.txt", "global.txt", "git.txt", "local.txt"] {
         write(root.path(), name, "public");
     }
@@ -110,7 +110,7 @@ fn project_ignore_files_load_in_order() {
 
 #[test]
 fn project_ignore_patterns_and_negations_load_without_global_files() {
-    let root = tempfile::tempdir().unwrap();
+    let root = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
     write(root.path(), "keep.txt", "public");
     write(root.path(), "test_private.txt", "secret");
     fs::create_dir(root.path().join("custom_pattern")).unwrap();
@@ -127,8 +127,8 @@ fn project_ignore_patterns_and_negations_load_without_global_files() {
 
 #[test]
 fn global_omit_file_loads_and_can_negate_a_builtin() {
-    let root = tempfile::tempdir().unwrap();
-    let global = tempfile::tempdir().unwrap();
+    let root = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
+    let global = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
     write(root.path(), "keep.txt", "public");
     write(root.path(), "private.data", "secret");
     write(root.path(), "Cargo.lock", "public");
@@ -168,8 +168,8 @@ impl SourceFs for RuleErrorFs {
 
 #[test]
 fn unreadable_global_and_project_ignore_and_omit_files_refuse_with_path() {
-    let root = tempfile::tempdir().unwrap();
-    let global = tempfile::tempdir().unwrap();
+    let root = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
+    let global = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
     write(root.path(), "keep.txt", "public");
     let paths = [
         global.path().join("ignore"),
@@ -202,8 +202,8 @@ fn unreadable_global_and_project_ignore_and_omit_files_refuse_with_path() {
 
 #[test]
 fn not_found_from_the_port_is_absence_for_every_rule_file() {
-    let root = tempfile::tempdir().unwrap();
-    let global = tempfile::tempdir().unwrap();
+    let root = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
+    let global = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
     write(root.path(), "keep.txt", "public");
     for path in [
         global.path().join("ignore"),
@@ -226,8 +226,8 @@ fn not_found_from_the_port_is_absence_for_every_rule_file() {
 
 #[test]
 fn invalid_utf8_rule_files_refuse_instead_of_silently_using_defaults() {
-    let root = tempfile::tempdir().unwrap();
-    let global = tempfile::tempdir().unwrap();
+    let root = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
+    let global = tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).unwrap();
     // open() canonicalizes the project root (/var -> /private/var on macOS,
     // verbatim paths on Windows). Compare the reported project path in that form.
     let project = fs::canonicalize(root.path()).unwrap();
@@ -251,4 +251,34 @@ fn invalid_utf8_rule_files_refuse_instead_of_silently_using_defaults() {
         let source = FsSource::open(root.path(), options(global.path())).unwrap();
         included(&source, "keep.txt");
     }
+}
+
+#[cfg(unix)]
+#[test]
+fn open_resolves_project_and_global_boundaries_but_not_child_links() {
+    use std::os::unix::fs::symlink;
+    let temp = tempfile::tempdir().unwrap();
+    let real = temp.path().join("real");
+    fs::create_dir_all(real.join("project")).unwrap();
+    fs::create_dir_all(real.join("config")).unwrap();
+    write(&real.join("project"), "keep.txt", "public");
+    write(&real.join("project"), "private.txt", "secret");
+    write(&real.join("config"), "ignore", "private.txt\n");
+    let linked = temp.path().join("linked");
+    symlink(&real, &linked).unwrap();
+    let config = temp.path().join("config");
+    symlink(real.join("config"), &config).unwrap();
+    let source = FsSource::open(&linked.join("project"), options(&config)).unwrap();
+    included(&source, "keep.txt");
+    excluded(&source, "private.txt", "private.txt");
+    symlink(real.join("config/ignore"), real.join("project/leak.txt")).unwrap();
+    symlink(real.join("config"), real.join("project/leak-dir")).unwrap();
+    assert!(source.read("leak.txt").is_err());
+    assert!(source.read("leak-dir/ignore").is_err());
+    fs::remove_file(real.join("config/ignore")).unwrap();
+    symlink(real.join("project/keep.txt"), real.join("config/ignore")).unwrap();
+    assert!(matches!(
+        FsSource::open(&linked.join("project"), options(&config)),
+        Err(SourceError::Rule { .. })
+    ));
 }

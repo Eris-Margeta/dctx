@@ -121,7 +121,18 @@ impl Index {
         let Some(path) = self.database.clone() else {
             return Ok(());
         };
-        let legacy = path.with_extension("query.json");
+        // The database directory is the cache boundary. Resolve it for this
+        // strict read without changing the path identity required by save().
+        let parent = path
+            .parent()
+            .filter(|path| !path.as_os_str().is_empty())
+            .unwrap_or(Path::new("."));
+        let name = path
+            .file_name()
+            .ok_or_else(|| Error::Request("database has no name".into()))?;
+        let legacy = std::fs::canonicalize(parent)?
+            .join(name)
+            .with_extension("query.json");
         match StdFs.read_file(&legacy) {
             Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
             Err(error) => Err(error.into()),

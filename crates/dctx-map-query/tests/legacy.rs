@@ -40,3 +40,30 @@ fn legacy_retry_facts_and_moves_survive_cache_upgrade() {
     assert_eq!(answer.records[0].id.as_str(), "s:new.rs#work");
     assert_eq!(source.content_reads(), reads);
 }
+
+#[cfg(unix)]
+#[test]
+fn linked_cache_ancestors_preserve_save_identity_and_refuse_legacy_file_links() {
+    let temp = tempfile::tempdir().unwrap();
+    let real = fs::canonicalize(temp.path()).unwrap().join("real");
+    fs::create_dir(&real).unwrap();
+    let linked = temp.path().join("linked");
+    std::os::unix::fs::symlink(&real, &linked).unwrap();
+    let database = linked.join("index.sqlite");
+    let legacy = database.with_extension("query.json");
+    let bytes = serde_json::to_vec(&serde_json::json!({
+        "version": 1, "place": "fixture", "files": {}, "moves": {}
+    }))
+    .unwrap();
+    fs::write(&legacy, &bytes).unwrap();
+    let index = Index::open("fixture", &database).unwrap();
+    index.save(&database).unwrap();
+    assert!(index.save(real.join("index.sqlite")).is_err());
+    drop(index);
+    let outside = temp.path().join("outside.json");
+    fs::write(&outside, &bytes).unwrap();
+    fs::remove_file(&legacy).unwrap();
+    std::os::unix::fs::symlink(&outside, &legacy).unwrap();
+    assert!(Index::open("fixture", &database).is_err());
+    assert_eq!(fs::read(outside).unwrap(), bytes);
+}

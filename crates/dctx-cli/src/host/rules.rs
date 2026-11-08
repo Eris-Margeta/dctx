@@ -23,7 +23,8 @@ pub(crate) fn project_rules_scoped(
     scope: Option<&str>,
 ) -> Result<RuleSources, String> {
     let root = fs::canonicalize(root).map_err(|error| error.to_string())?;
-    let global_omit = optional_omit(config_file("omitcontent")?);
+    let config = canonical_config_dir()?;
+    let global_omit = optional_omit(config.as_ref().map(|dir| dir.join("omitcontent")));
     let local_omit = None;
     if index_ignored() {
         return Ok(RuleSources {
@@ -33,7 +34,7 @@ pub(crate) fn project_rules_scoped(
             local_omit,
         });
     }
-    let global_ignore = required_ignore(config_file("ignore")?)?;
+    let global_ignore = required_ignore(config.map(|dir| dir.join("ignore")))?;
     let local_ignore = match scope {
         Some(scope) => scoped_ignore_text(&root, scope, global_ignore.as_deref())?,
         None => local_ignore_text(&root, global_ignore.as_deref())?,
@@ -122,12 +123,16 @@ fn index_ignored() -> bool {
     std::env::var("DCTX_INDEX_IGNORED").ok().as_deref() == Some("1")
 }
 
-fn config_file(name: &str) -> Result<Option<PathBuf>, String> {
-    config_dir().map(|dir| dir.map(|dir| dir.join(name)))
-}
-
-fn config_dir() -> Result<Option<PathBuf>, String> {
-    config_dir_from_env(cfg!(windows), |key| std::env::var_os(key))
+fn canonical_config_dir() -> Result<Option<PathBuf>, String> {
+    let Some(dir) = config_dir_from_env(cfg!(windows), |key| std::env::var_os(key))? else {
+        return Ok(None);
+    };
+    // Resolve the global configuration boundary, never the rule file itself.
+    match fs::canonicalize(&dir) {
+        Ok(dir) => Ok(Some(dir)),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(format!("{}: {error}", dir.display())),
+    }
 }
 
 /// Pure resolver so Windows mappings can be checked on every test platform.
@@ -411,7 +416,8 @@ mod tests {
     }
     #[test]
     fn scoped_rules_inherit_ancestors_and_match_full_policy() {
-        let temp = tempfile::tempdir().expect("fixture");
+        let temp =
+            tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).expect("fixture");
         let root = temp.path();
         fs::create_dir_all(root.join("src/nested/deeper")).expect("dirs");
         fs::create_dir_all(root.join("sibling")).expect("sibling");
@@ -469,7 +475,8 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn scoped_rules_never_follow_symlinked_ancestors() {
-        let temp = tempfile::tempdir().expect("fixture");
+        let temp =
+            tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).expect("fixture");
         let root = temp.path().join("place");
         let outside = temp.path().join("outside");
         fs::create_dir_all(&root).expect("place");
