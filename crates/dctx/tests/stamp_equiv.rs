@@ -11,7 +11,7 @@
 #![cfg(all(unix, feature = "fs"))]
 
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime};
 
 use dctx::memory::{CancelFlag, FixedClock};
@@ -80,11 +80,15 @@ fn aged(step: u32, salt: u64) -> SystemTime {
 }
 
 fn open(root: &Path, cache: &Path) -> Session {
+    open_source(FsSource::open(root).expect("source"), cache)
+}
+
+fn open_source(source: impl dctx::Source + Send + 'static, cache: &Path) -> Session {
     let auto = AutoCleanConfig {
         enabled: false,
         ..AutoCleanConfig::default()
     };
-    Session::builder(FsSource::open(root).expect("source"))
+    Session::builder(source)
         .clock(FixedClock(Timestamp(0)))
         .cancellation(Arc::new(CancelFlag::new()))
         .selection(SelectionPolicy::from_texts(&RuleTexts::default()))
@@ -265,7 +269,10 @@ fn stamp_equiv_two_hundred_random_edits_answer_every_verb_like_a_cold_rebuild() 
                     }
                 }
                 // Touch: same bytes, new mtime.
-                2 => set_mtime(&world.path(pick), aged(step, rng.next())),
+                2 => {
+                    set_mtime(&world.path(pick), aged(step, rng.next()));
+                    must_reuse = true;
+                }
                 // Nothing changes.
                 3 => must_reuse = true,
                 // Delete a file, keeping at least six.
@@ -403,4 +410,195 @@ fn stamp_equiv_two_hundred_random_edits_answer_every_verb_like_a_cold_rebuild() 
         skipped_total >= 100,
         "only {skipped_total} files were trusted by their stamp"
     );
+}
+
+/// Records actual source reads, independently of the session's reuse counters.
+struct CountingSource {
+    inner: FsSource,
+    reads: Arc<Mutex<Vec<String>>>,
+}
+
+impl dctx::Source for CountingSource {
+    fn root_kind(&self) -> Result<dctx_core::datatypes::NodeType, dctx_core::DctxError> {
+        self.inner.root_kind()
+    }
+
+    fn entries(
+        &self,
+        path: &dctx_core::ids::RelativePath,
+    ) -> Result<Vec<dctx_core::facts::SourceEntry>, dctx_core::DctxError> {
+        self.inner.entries(path)
+    }
+
+    fn metadata(
+        &self,
+        path: &dctx_core::ids::RelativePath,
+    ) -> Result<dctx_core::facts::EntryMeta, dctx_core::DctxError> {
+        self.inner.metadata(path)
+    }
+
+    fn stat(
+        &self,
+        path: &dctx_core::ids::RelativePath,
+    ) -> Result<
+        (
+            dctx_core::facts::EntryMeta,
+            Option<dctx_core::facts::EntryStamp>,
+        ),
+        dctx_core::DctxError,
+    > {
+        self.inner.stat(path)
+    }
+
+    fn read(
+        &self,
+        grant: &dctx_core::facts::ReadGrant,
+        max_bytes: u64,
+    ) -> Result<Vec<u8>, dctx_core::DctxError> {
+        self.reads
+            .lock()
+            .expect("reads")
+            .push(grant.path().as_str().to_owned());
+        self.inner.read(grant, max_bytes)
+    }
+}
+
+#[test]
+fn touch_only_refreshes_metadata_and_persists_stamps_without_rebuilding() {
+    let root = tempfile::tempdir().expect("root");
+    let cache = tempfile::tempdir().expect("cache");
+    for index in 0..FILES {
+        let path = root.path().join(name_of(index));
+        std::fs::create_dir_all(path.parent().expect("parent")).expect("dir");
+        std::fs::write(&path, body(index, 0)).expect("write");
+        set_mtime(&path, aged(0, 0));
+    }
+    let mut initial = open(root.path(), cache.path());
+    let handle = initial
+        .snapshot_reusable(&SnapshotRequest::strict(), "fixture")
+        .expect("initial");
+    let generation = handle.generation();
+    drop(handle);
+    drop(initial);
+
+    // Past and future mtimes cover touch -d and the racy window. A future mtime cannot
+    // settle during slow CI, so repeated racy checks are deterministic.
+    for (step, touched, racy) in [
+        (1, vec![0], false),
+        (2, vec![1, 2, 4], false),
+        (3, vec![0], true),
+    ] {
+        let when = if racy {
+            SystemTime::now() + Duration::from_secs(86_400)
+        } else {
+            aged(step, 0)
+        };
+        let mut expected: Vec<_> = touched.iter().map(|index| name_of(*index)).collect();
+        expected.sort();
+        for path in &expected {
+            set_mtime(&root.path().join(path), when);
+        }
+        let reads = Arc::new(Mutex::new(Vec::new()));
+        let mut warm = open_source(
+            CountingSource {
+                inner: FsSource::open(root.path()).expect("source"),
+                reads: Arc::clone(&reads),
+            },
+            cache.path(),
+        );
+        let handle = warm
+            .snapshot_reusable(&SnapshotRequest::strict(), "fixture")
+            .expect("touched");
+        assert!(handle.reused(), "touch-only step {step} must reuse");
+        assert_eq!(handle.generation(), generation);
+        assert_eq!(warm.content_reads(), 0, "no rebuild reads");
+        assert_eq!(warm.cached_content_reads(), touched.len() as u64);
+        assert_eq!(warm.stamp_skipped_reads(), (FILES - touched.len()) as u64);
+        let mut actual = reads.lock().expect("reads").clone();
+        actual.sort();
+        assert_eq!(actual, expected, "only the touched files are digested");
+
+        let cold_cache = tempfile::tempdir().expect("cold cache");
+        let mut strict = open(root.path(), cold_cache.path());
+        let strict_handle = strict
+            .snapshot(&SnapshotRequest::strict())
+            .expect("fresh strict build");
+        assert_eq!(handle.digest(), strict_handle.digest());
+        let warm_outputs = outputs(&mut warm, &handle);
+        assert!(warm_outputs.len() > 30);
+        assert_eq!(
+            warm_outputs,
+            outputs(&mut strict, &strict_handle),
+            "all verb bytes at step {step}"
+        );
+        drop(handle);
+        drop(warm);
+
+        for _ in 0..2 {
+            let mut next = open(root.path(), cache.path());
+            let next_handle = next
+                .snapshot_reusable(&SnapshotRequest::strict(), "fixture")
+                .expect("next invocation");
+            assert!(next_handle.reused());
+            assert_eq!(next.content_reads(), 0);
+            assert_eq!(
+                next.cached_content_reads(),
+                if racy { touched.len() as u64 } else { 0 }
+            );
+            assert_eq!(
+                next.stamp_skipped_reads(),
+                if racy { FILES - touched.len() } else { FILES } as u64
+            );
+            assert_eq!(next_handle.digest(), strict_handle.digest());
+        }
+    }
+}
+
+#[test]
+fn refreshing_omitted_metadata_preserves_existing_handles() {
+    let root = tempfile::tempdir().expect("root");
+    let cache = tempfile::tempdir().expect("cache");
+    let path = root.path().join("Cargo.lock");
+    std::fs::write(&path, "omitted content").expect("file");
+    set_mtime(&path, aged(0, 0));
+    let mut session = open(root.path(), cache.path());
+    let original = session
+        .snapshot_reusable(&SnapshotRequest::strict(), "fixture")
+        .expect("initial");
+    let original_rows = outputs(&mut session, &original);
+    set_mtime(&path, aged(1, 0));
+    let refreshed = session
+        .snapshot_reusable(&SnapshotRequest::strict(), "fixture")
+        .expect("refresh");
+    assert!(refreshed.reused());
+    assert_eq!(session.content_reads(), 0);
+    assert_eq!(
+        session.cached_content_reads(),
+        0,
+        "omitted content must stay closed"
+    );
+    assert_ne!(
+        original.digest(),
+        refreshed.digest(),
+        "mtime is canonical metadata"
+    );
+    assert_ne!(original.generation(), refreshed.generation());
+    assert_eq!(
+        original_rows,
+        outputs(&mut session, &original),
+        "the old handle keeps its own rows"
+    );
+    let cold_cache = tempfile::tempdir().expect("cold cache");
+    let mut cold = open(root.path(), cold_cache.path());
+    let strict = cold.snapshot(&SnapshotRequest::strict()).expect("strict");
+    assert_eq!(refreshed.digest(), strict.digest());
+    drop(refreshed);
+    drop(original);
+    drop(session);
+    let mut next = open(root.path(), cache.path());
+    let next_handle = next
+        .snapshot_reusable(&SnapshotRequest::strict(), "fixture")
+        .expect("persisted");
+    assert!(next_handle.reused());
+    assert_eq!(next_handle.digest(), strict.digest());
 }

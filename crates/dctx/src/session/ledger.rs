@@ -279,7 +279,31 @@ impl Session {
             return Ok(None);
         };
         let (capacity, pack_committed, pack_reserved) = self.cache.admission_budget();
-        cache.admit_snapshot(now, bytes, capacity, pack_committed, pack_reserved)
+        cache.admit_snapshot(now, bytes, capacity, pack_committed, pack_reserved, None)
+    }
+
+    /// Publishes refreshed stamps only if the view whose bytes we checked is still current.
+    pub(super) fn store_refreshed_segment(
+        &mut self,
+        bytes: &[u8],
+    ) -> Result<Option<SnapshotLease>, DctxError> {
+        let now = self.clock.now().millis();
+        let Some(cache) = self.managed.as_mut() else {
+            return Ok(None);
+        };
+        let expected = cache
+            .life
+            .current_generation(cache.root_id)
+            .ok_or(DctxError::Busy)?;
+        let (capacity, pack_committed, pack_reserved) = self.cache.admission_budget();
+        cache.admit_snapshot(
+            now,
+            bytes,
+            capacity,
+            pack_committed,
+            pack_reserved,
+            Some(expected),
+        )
     }
 }
 

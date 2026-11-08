@@ -46,7 +46,7 @@ use crate::plugins::{HookWarning, PluginHost};
 
 /// The stored generation. A query clones this `Arc` and borrows the rows.
 struct SharedGeneration {
-    generation: Generation,
+    generation: Arc<Generation>,
     /// `Arc` owners while the latest query held its clone. `0` before the first query.
     borrowed_shares: AtomicUsize,
 }
@@ -426,10 +426,11 @@ impl Session {
 
     fn pin_generation(
         &mut self,
-        generation: Generation,
+        generation: impl Into<Arc<Generation>>,
         ticket: Option<SnapshotLease>,
         reused: bool,
     ) -> SnapshotHandle {
+        let generation = generation.into();
         let id = generation.id;
         let epoch = generation.epoch;
         let digest = generation.digest.clone();

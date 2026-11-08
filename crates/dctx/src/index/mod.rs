@@ -43,7 +43,7 @@ pub(crate) use id_index::IdIndex;
 pub(crate) use key_rank::{key_shaped, rank as rank_key};
 pub(crate) use query::{Collected, collect};
 pub(crate) use segment::canonical_bytes;
-pub(crate) use walk::{WalkArgs, walk_source};
+pub(crate) use walk::{WalkArgs, Walked, walk_inventory, walk_source};
 
 use dctx_core::FileHandlingDecision;
 use dctx_hash::ContentDigest;

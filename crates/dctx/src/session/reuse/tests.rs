@@ -700,3 +700,41 @@ fn an_old_generation_rebuilds_once_and_then_reuses() {
     assert!(handle.reused());
     assert_eq!(find_ids(&mut warm, &handle, "kept"), ids);
 }
+
+#[test]
+fn a_previously_failed_read_is_rebuilt_instead_of_refreshing_unverified_metadata() {
+    use dctx_core::error::DctxError as CoreError;
+    use dctx_core::facts::{EntryMeta, ReadGrant, SourceEntry};
+    use dctx_core::ids::RelativePath;
+    use dctx_ports::Source;
+
+    struct Unreadable(MemorySource);
+    impl Source for Unreadable {
+        fn root_kind(&self) -> Result<dctx_core::datatypes::NodeType, CoreError> {
+            self.0.root_kind()
+        }
+        fn entries(&self, path: &RelativePath) -> Result<Vec<SourceEntry>, CoreError> {
+            self.0.entries(path)
+        }
+        fn metadata(&self, path: &RelativePath) -> Result<EntryMeta, CoreError> {
+            self.0.metadata(path)
+        }
+        fn read(&self, _: &ReadGrant, _: u64) -> Result<Vec<u8>, CoreError> {
+            Err(CoreError::SourceUnavailable)
+        }
+    }
+    let cache = tempfile::tempdir().expect("cache");
+    let mut cold = open(Unreadable(source(b"fn kept() {}\n")), cache.path());
+    let original = cold
+        .snapshot_reusable(&SnapshotRequest::strict(), "fixture")
+        .expect("partial");
+    assert!(find_ids(&mut cold, &original, "kept").is_empty());
+    drop(original);
+    drop(cold);
+    let mut warm = open(source(b"fn kept() {}\n"), cache.path());
+    let rebuilt = warm
+        .snapshot_reusable(&SnapshotRequest::strict(), "fixture")
+        .expect("recovered");
+    assert!(!rebuilt.reused());
+    assert_eq!(find_ids(&mut warm, &rebuilt, "kept"), ["s:item.rs#kept"]);
+}

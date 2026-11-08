@@ -9,8 +9,8 @@ impl Session {
     /// Takes a snapshot, reusing a persisted generation when every stored content digest still matches.
     ///
     /// The check is `digest_text` equality on the source bytes, the same comparison `read_verified`
-    /// uses before it returns `SourceChanged`. Size and modification time only skip that read when
-    /// the inventory already differs. An empty `source_key`, or a session with no cache root, walks
+    /// uses before it returns `SourceChanged`. Path, decision and size changes rebuild; a changed
+    /// stat stamp is digested and, when content matches, refreshed without parsing. An empty `source_key`, or a session with no cache root, walks
     /// the source the same way as [`Self::snapshot`].
     /// # Errors
     /// Propagates request/capability validation, source/store/cache failures, cancellation, deadlines, and snapshot resource-limit errors.

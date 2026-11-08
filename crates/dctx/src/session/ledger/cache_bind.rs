@@ -55,6 +55,7 @@ impl PersistedCache {
         capacity: u64,
         pack_committed: u64,
         pack_reserved: u64,
+        expected: Option<GenerationId>,
     ) -> Result<Option<SnapshotLease>, DctxError> {
         if bytes.is_empty() {
             return Ok(None);
@@ -69,6 +70,11 @@ impl PersistedCache {
         let outcome =
             self.ledger
                 .update_reclaiming(Quota::product_default(), &self.objects, |working| {
+                    // A metadata refresh must never replace a view published since its
+                    // inventory was loaded. Retry verification against that new view instead.
+                    if expected.is_some() && working.current_generation(root_id) != expected {
+                        return Err(DctxError::Busy);
+                    }
                     ensure_root(working, root_id)?;
                     let budget = capacity
                         .saturating_sub(pack_committed)
@@ -245,11 +251,15 @@ impl PersistedCache {
         now_ms: u64,
     ) -> Result<Option<SnapshotLease>, DctxError> {
         let (root_id, session) = (self.root_id, self.session);
+        let expected = self.life.current_generation(root_id);
         let (lease, life) = self
             .ledger
             .update_reclaiming(Quota::product_default(), &self.objects, |working| {
+                if working.current_generation(root_id) != expected {
+                    return Ok((None, false));
+                }
                 ensure_root(working, root_id)?;
-                let Some(generation) = working.current_generation(root_id) else {
+                let Some(generation) = expected else {
                     return Ok((None, false));
                 };
                 working.observe(clock_sample(now_ms));

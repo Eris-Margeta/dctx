@@ -77,6 +77,7 @@ struct State {
     syntax_files: u32,
     other_files: u32,
     partial: bool,
+    inventory: bool,
 }
 
 /// Walks `args.source` from the root. The root is listed even when a plan root would skip `""`.
@@ -88,6 +89,19 @@ pub(crate) fn walk_source(args: &WalkArgs<'_>) -> Result<Walked, DctxError> {
 pub(crate) fn walk_scope(
     args: &WalkArgs<'_>,
     scope: Option<(&str, bool)>,
+) -> Result<Walked, DctxError> {
+    walk(args, scope, false)
+}
+
+/// The same confined walk and resource checks, retaining only file metadata for reuse.
+pub(crate) fn walk_inventory(args: &WalkArgs<'_>) -> Result<Walked, DctxError> {
+    walk(args, None, true)
+}
+
+fn walk(
+    args: &WalkArgs<'_>,
+    scope: Option<(&str, bool)>,
+    inventory: bool,
 ) -> Result<Walked, DctxError> {
     // File watches inside this span close per file. Seal and query are not part of it.
     let _walk = WalkSpan::begin();
@@ -106,6 +120,7 @@ pub(crate) fn walk_scope(
         syntax_files: 0,
         other_files: 0,
         partial: false,
+        inventory,
     };
     if state.entries > args.limits.entries {
         return Err(limit(Resource::Entries, args.limits.entries));
@@ -262,7 +277,7 @@ fn visit_file(
             path.as_str(),
         )?;
     if !readable {
-        if args.freshness == FreshnessMode::Metadata {
+        if args.freshness == FreshnessMode::Metadata && !state.inventory {
             push_module(&mut state.nodes, &mut state.text, path.as_str(), 0, [1, 1]);
         }
         state.files.push(file_row(

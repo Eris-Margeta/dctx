@@ -30,9 +30,17 @@ pub(crate) enum Stage {
     PersistReuse = 7,
     /// Query against the pinned generation. It starts after the last file watch closed.
     Query = 8,
+    /// Retained object read under the shared cache lock.
+    ReuseLoad = 9,
+    /// Verified generation decoding.
+    ReuseDecode = 10,
+    /// Inventory equality and duplicate-path checks.
+    ReuseCheck = 11,
+    /// Metadata refresh, persisted lease and in-memory generation pin.
+    ReusePin = 12,
 }
 
-const STAGES: [&str; 9] = [
+const STAGES: [&str; 13] = [
     "walk",
     "read",
     "hash",
@@ -42,6 +50,10 @@ const STAGES: [&str; 9] = [
     "canonicalize/seal",
     "persist/reuse",
     "query",
+    "reuse load",
+    "reuse decode",
+    "reuse check",
+    "reuse pin",
 ];
 
 struct FileSample {
@@ -52,7 +64,7 @@ struct FileSample {
 }
 
 struct Profile {
-    stages: [u128; 9],
+    stages: [u128; 13],
     files: Vec<FileSample>,
     file_work_ns: u128,
     snapshot_accounted: bool,
@@ -61,7 +73,7 @@ struct Profile {
 impl Profile {
     fn new() -> Self {
         Self {
-            stages: [0; 9],
+            stages: [0; 13],
             files: Vec::new(),
             file_work_ns: 0,
             snapshot_accounted: false,

@@ -92,8 +92,14 @@ mod tests {
         let original = decode_generation(&bytes).expect("uncached");
         let mut first = decode(&bytes).expect("first");
         assert_eq!(first.generation, original.generation);
+        CACHE.with(|slot| {
+            assert!(std::sync::Arc::ptr_eq(
+                &slot.borrow().as_ref().expect("retained").decoded.generation,
+                &first.generation,
+            ));
+        });
         CACHE.with(|slot| assert_eq!(slot.borrow().as_ref().expect("retained").bytes, bytes));
-        first.generation.digest = "caller mutation".into();
+        std::sync::Arc::make_mut(&mut first.generation).digest = "caller mutation".into();
         assert_eq!(
             decode(&bytes).expect("warm").generation,
             original.generation

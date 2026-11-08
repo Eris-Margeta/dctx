@@ -3,31 +3,34 @@
 //! Implements DCTX-SERIOUS-GAPS G6 (CLI-WARM-REUSE) on the session cache lease.
 //! Depends on Session, the index walk and `digest_text` (the `read_verified` check).
 //! The CLI calls `Session::snapshot_reusable`. Isolation without a cache root does not.
-//! Size and mtime are a prefilter. A same-stamp byte change still rebuilds, except where the stat
+//! Path, decision and size are the inventory prefilter. A same-stamp byte change still rebuilds, except where the stat
 //! stamp (size, mtime ns, inode) of a settled file is equal: that file is trusted without a read.
 //! `DCTX_FRESHNESS=strict_live` turns that trust off and hashes every file.
 
-use std::collections::HashMap;
+use std::sync::Arc;
 
 use dctx_core::facts::EntryStamp;
 use dctx_hash::ContentDigest;
 
 use super::Session;
 use crate::domain::{DctxError, FreshnessMode, SnapshotRequest};
+use crate::index::profile::{Elapsed, Stage};
 use crate::index::{
-    Generation, IndexedEdge, IndexedFile, IndexedNode, TextBlob, WalkArgs, walk_source,
+    Generation, IndexedEdge, IndexedFile, IndexedNode, TextBlob, WalkArgs, walk_inventory,
 };
 
 mod bytes;
 mod encode;
 mod entry;
+mod install;
 mod keys;
 mod reader;
+mod verify;
 #[cfg(feature = "warm-index-cache")]
 mod warm;
 
 use bytes::{decision_of, freshness_of};
-use keys::{file_inventory, limits_match, parser_compatible};
+use keys::{limits_match, parser_compatible};
 use reader::Reader;
 
 pub(super) use encode::encode_generation;
@@ -80,13 +83,17 @@ impl Session {
         source_key: &str,
     ) -> Result<Option<super::SnapshotHandle>, DctxError> {
         let (limits, parser, scan_limits) = self.reject_snapshot(request)?;
+        let load = Elapsed::begin(Stage::ReuseLoad);
         let Some(bytes) = self.load_retained()? else {
             return Ok(None);
         };
+        drop(load);
+        let decode = Elapsed::begin(Stage::ReuseDecode);
         #[cfg(feature = "warm-index-cache")]
         let decoded = warm::decode(&bytes);
         #[cfg(not(feature = "warm-index-cache"))]
         let decoded = decode_generation(&bytes);
+        drop(decode);
         let Ok(decoded) = decoded else {
             return Ok(None);
         };
@@ -101,7 +108,7 @@ impl Session {
         }
         let started = self.clock.now().millis();
         crate::domain::check_deadline(started, started, scan_limits.deadline_ms)?;
-        let walked = walk_source(&WalkArgs {
+        let walked = walk_inventory(&WalkArgs {
             source: self.source.as_ref(),
             cancel: self.cancel.as_ref(),
             policy: self.policy_view(),
@@ -113,85 +120,16 @@ impl Session {
             now_ms: started,
             elapsed: None,
         })?;
-        let Some(stored_files) = file_inventory(&decoded.generation.files) else {
+        let Some(verified) = self.verify_files(&decoded.generation, &walked, &limits)? else {
             return Ok(None);
         };
-        let Some(live_files) = file_inventory(&walked.files) else {
-            return Ok(None);
-        };
-        if stored_files != live_files {
-            return Ok(None);
-        }
-        let trust_stamps = stamp_pass_enabled()?;
-        let live_stamps: HashMap<&str, EntryStamp> = if trust_stamps {
-            walked
-                .files
-                .iter()
-                .filter_map(|file| file.stamp.map(|stamp| (file.path.as_str(), stamp)))
-                .collect()
-        } else {
-            HashMap::new()
-        };
-        let mut confirmed = 0u64;
-        let mut skipped = 0u64;
-        let mut verified = 0u64;
-        for file in &decoded.generation.files {
-            let Some(digest) = file.digest else {
-                continue;
-            };
-            // Equal stat stamp of a settled file: the bytes are not read. Any difference, a missing live
-            // stamp (racy window, new inode source) or `strict_live` falls through to the digest.
-            if let (Some(stored), Some(live)) = (file.stamp, live_stamps.get(file.path.as_str()))
-                && stored == *live
-            {
-                skipped += 1;
-                continue;
-            }
-            verified += 1;
-            match self.digest_matches_source(&file.path, digest, limits.file_bytes) {
-                Ok(true) => confirmed += 1,
-                Err(
-                    error @ (DctxError::Cancelled
-                    | DctxError::ResourceLimit { .. }
-                    | DctxError::PolicyDenied),
-                ) => {
-                    return Err(error);
-                }
-                Ok(false) | Err(_) => {
-                    self.content_reads += verified;
-                    return Ok(None);
-                }
-            }
-        }
-        self.stamp_skipped_reads += skipped;
-        self.cached_content_reads += confirmed;
-        let encoded_len = if cfg!(feature = "segments") {
-            u64::try_from(bytes.len()).unwrap_or(u64::MAX)
-        } else {
-            0
-        };
-        let mut generation = decoded.generation;
-        generation.encoded_len = encoded_len;
-        if cfg!(feature = "segments") {
-            self.cache.segment_admit(encoded_len)?;
-        }
-        let now = self.clock.now().millis();
-        let ticket = match self.pin_retained(now) {
-            Ok(Some(ticket)) => Some(ticket),
-            Ok(None) => {
-                if cfg!(feature = "segments") {
-                    self.cache.segment_release(encoded_len);
-                }
-                return Ok(None);
-            }
-            Err(error) => {
-                if cfg!(feature = "segments") {
-                    self.cache.segment_release(encoded_len);
-                }
-                return Err(error);
-            }
-        };
-        Ok(Some(self.pin_generation(generation, ticket, true)))
+        self.install_reused(
+            source_key,
+            &limits,
+            bytes.len(),
+            decoded.generation,
+            verified,
+        )
     }
 }
 
@@ -200,7 +138,7 @@ struct PersistedGeneration {
     source_key: String,
     view: String,
     limits: [u64; 4],
-    generation: Generation,
+    generation: Arc<Generation>,
 }
 
 #[allow(
@@ -290,6 +228,7 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
     }
     let mut text = TextBlob::default();
     text.partial_dirs = partial_dirs;
+    let mut spans = vec![None; reader.strings.len()];
     let node_count = reader.count(53)?;
     let mut nodes = Vec::with_capacity(node_count);
     for _ in 0..node_count {
@@ -302,13 +241,13 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
         let ordinal = reader.u32()?;
         let kind = reader.string()?;
         let name = reader.string()?;
-        let path = reader.string()?;
+        let path = reader.span(&mut text, &mut spans)?;
         nodes.push(IndexedNode {
             letter,
             ordinal,
             kind,
             name,
-            path: text.push(&path),
+            path,
             summary: reader.string()?,
             summary_source: reader.string()?,
             signature: reader.string()?,
@@ -321,8 +260,8 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
     for _ in 0..edge_count {
         let src = reader.u32()?;
         let dst = reader.u32()?;
-        let edge = reader.string()?;
-        let confidence = reader.string()?;
+        let edge = reader.span(&mut text, &mut spans)?;
+        let confidence = reader.span(&mut text, &mut spans)?;
         if src as usize >= nodes.len() || dst as usize >= nodes.len() {
             return Err(DctxError::CorruptIndex {
                 reason: "generation edge",
@@ -331,8 +270,8 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
         edges.push(IndexedEdge {
             src,
             dst,
-            edge: text.push(&edge),
-            confidence: text.push(&confidence),
+            edge,
+            confidence,
         });
     }
     if !reader.rest.is_empty() {
@@ -344,10 +283,14 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
         source_key,
         view,
         limits,
-        generation: Generation {
+        generation: Arc::new(Generation {
             id,
             digest,
-            encoded_len: 0,
+            encoded_len: if cfg!(feature = "segments") {
+                u64::try_from(bytes.len()).unwrap_or(u64::MAX)
+            } else {
+                0
+            },
             files,
             nodes,
             edges,
@@ -359,7 +302,7 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
             completion,
             parser,
             ids: crate::index::IdIndex::default(),
-        },
+        }),
     })
 }
 

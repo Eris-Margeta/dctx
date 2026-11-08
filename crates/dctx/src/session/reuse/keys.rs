@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-use std::collections::BTreeMap;
-
-use dctx_core::FileHandlingDecision;
+use std::collections::HashMap;
 
 use super::SYNTAX_PARSER;
 use crate::domain::{DctxError, ParserChoice, RuleSources, STRUCTURAL_PARSER, ScanLimits};
@@ -61,18 +59,10 @@ pub(super) fn limits_match(stored: &[u64; 4], live: &ScanLimits) -> bool {
         && stored[3] == live.source_bytes
 }
 
-pub(super) fn file_inventory(
-    files: &[IndexedFile],
-) -> Option<BTreeMap<&str, (FileHandlingDecision, u64, u64)>> {
-    let mut map = BTreeMap::new();
+pub(super) fn file_inventory(files: &[IndexedFile]) -> Option<HashMap<&str, &IndexedFile>> {
+    let mut map = HashMap::with_capacity(files.len());
     for file in files {
-        if map
-            .insert(
-                file.path.as_str(),
-                (file.decision, file.size, file.modified),
-            )
-            .is_some()
-        {
+        if map.insert(file.path.as_str(), file).is_some() {
             return None;
         }
     }

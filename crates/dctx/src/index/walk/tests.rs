@@ -138,6 +138,10 @@ fn profiled_files_report_bytes_symbols_and_leave_finalization_out() {
             "canonicalize/seal",
             "persist/reuse",
             "query",
+            "reuse load",
+            "reuse decode",
+            "reuse check",
+            "reuse pin",
         ]
     );
     assert!(
@@ -272,5 +276,56 @@ fn caps_early_entry_cap_refuses_before_the_walk_ends_and_a_raised_cap_passes() {
             .files
             .len(),
         50
+    );
+}
+
+#[test]
+fn reuse_inventory_matches_metadata_walk_and_preserves_its_record_limit() {
+    let source = fifty_files();
+    let selection = SelectionPolicy::from_texts(&RuleTexts::default());
+    let ceiling = HostCeiling::base();
+    let mut limits = crate::domain::resolve_scan(&OperationLimits::default()).expect("limits");
+    let cancel = CancelFlag::new();
+    let run = |limits: &crate::domain::ScanLimits, inventory| {
+        let args = WalkArgs {
+            source: &source,
+            cancel: &cancel,
+            policy: PolicyView {
+                selection: &selection,
+                ceiling: &ceiling,
+                grants: HostGrants::PermitAll,
+                plan: None,
+                view: "map",
+            },
+            limits,
+            freshness: FreshnessMode::Metadata,
+            parser: ParserChoice::Structural,
+            deadline_ms: None,
+            started_ms: 0,
+            now_ms: 0,
+            elapsed: None,
+        };
+        if inventory {
+            walk_inventory(&args)
+        } else {
+            walk_source(&args)
+        }
+    };
+    let metadata = run(&limits, false).expect("metadata");
+    let inventory = run(&limits, true).expect("inventory");
+    assert_eq!(inventory.files, metadata.files);
+    assert!(inventory.nodes.is_empty());
+    assert_eq!(metadata.nodes.len(), 50);
+    assert!(source.reads().is_empty());
+    limits.records = 20;
+    let metadata_error = run(&limits, false).expect_err("metadata cap");
+    let inventory_error = run(&limits, true).expect_err("inventory cap");
+    assert_eq!(metadata_error, inventory_error);
+    assert_eq!(
+        inventory_error,
+        DctxError::ResourceLimit {
+            resource: Resource::Records,
+            limit: 20
+        }
     );
 }

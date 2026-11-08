@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 use super::{MAX_STRING, records_cap};
 use crate::domain::DctxError;
+use crate::index::{TextBlob, TextSpan};
 
 pub(super) struct Reader<'a> {
     pub(super) rest: &'a [u8],
@@ -83,6 +84,23 @@ impl<'a> Reader<'a> {
             .ok_or(DctxError::CorruptIndex {
                 reason: "generation string reference",
             })
+    }
+
+    /// Intern paths and labels directly into the generation blob. Repeated references
+    /// share a span; no temporary owned string is allocated per node or edge.
+    pub(super) fn span(
+        &mut self,
+        text: &mut TextBlob,
+        spans: &mut [Option<TextSpan>],
+    ) -> Result<TextSpan, DctxError> {
+        let id = self.u32()? as usize;
+        let value = self.strings.get(id).ok_or(DctxError::CorruptIndex {
+            reason: "generation string reference",
+        })?;
+        let slot = spans.get_mut(id).ok_or(DctxError::CorruptIndex {
+            reason: "generation string reference",
+        })?;
+        Ok(*slot.get_or_insert_with(|| text.push(value)))
     }
 
     fn raw_string(&mut self) -> Result<&'a str, DctxError> {
