@@ -3,8 +3,8 @@
 //! Plugin and map commands retain their explicit routes and facade sessions.
 #![forbid(unsafe_code)]
 
-mod daemon;
 mod context_cmd;
+mod daemon;
 mod map;
 mod mcp;
 mod pack_for;
