@@ -291,6 +291,12 @@ fn execute_plan(plan: &Plan) -> Result<PackOutcome, Failure> {
 }
 
 fn pack_io_failure(message: String) -> Failure {
+    if message.contains("DCTX_MAX_ENTRIES") {
+        return Failure::index(
+            message,
+            "raise DCTX_MAX_ENTRIES (1..100000000) or use `dctx pack <a smaller directory>`",
+        );
+    }
     Failure::index(message, "check that PATH is an existing, readable directory and that --output names a writable file")
 }
 

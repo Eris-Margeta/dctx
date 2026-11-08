@@ -160,8 +160,15 @@ pub fn ensure_cache_dir(root: &Path) -> Result<(), String> {
         Ok(meta) if meta.file_type().is_symlink() || !meta.is_dir() => {
             Err("cache root is not a directory".to_string())
         }
-        Ok(_) => Ok(()),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => create_private_dir(root),
+        Ok(_) => FsLedgerStore::open(root)
+            .map(|_| ())
+            .map_err(|error| error.to_string()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            create_private_dir(root)?;
+            FsLedgerStore::open(root)
+                .map(|_| ())
+                .map_err(|error| error.to_string())
+        }
         Err(_) => Err("cache root metadata failed".to_string()),
     }
 }

@@ -115,3 +115,74 @@ fn update_commits_one_observed_revision_and_a_rival_store_stays_stale() {
     assert!(reloaded.fault.is_none());
     rival.store(&reloaded.lifecycle).expect("current");
 }
+
+#[cfg(unix)]
+#[test]
+fn other_user_writable_cache_roots_and_ancestors_are_refused() {
+    use std::os::unix::fs::PermissionsExt;
+    let (temp, root) = root();
+    fs::set_permissions(&root, fs::Permissions::from_mode(0o777)).unwrap();
+    assert!(FsLedgerStore::open(&root).is_err());
+    assert!(FsObjectStore::open(&root).is_err());
+    fs::set_permissions(&root, fs::Permissions::from_mode(0o700)).unwrap();
+    FsLedgerStore::open(&root).unwrap();
+    fs::set_permissions(temp.path(), fs::Permissions::from_mode(0o777)).unwrap();
+    assert!(FsLedgerStore::open(&root).is_err());
+    fs::set_permissions(temp.path(), fs::Permissions::from_mode(0o700)).unwrap();
+}
+
+#[cfg(unix)]
+#[test]
+fn a_world_writable_ledger_and_symlinked_lock_are_refused() {
+    use std::os::unix::fs::{PermissionsExt, symlink};
+    let (temp, root) = root();
+    let store = FsLedgerStore::open(&root).unwrap();
+    let life = Lifecycle::product_default();
+    store.store(&life).unwrap();
+    fs::set_permissions(root.join(LEDGER_FILE), fs::Permissions::from_mode(0o666)).unwrap();
+    assert!(
+        store
+            .load(Quota::product_default())
+            .unwrap()
+            .fault
+            .is_some()
+    );
+    fs::remove_file(root.join(lock::ENTRY_FILE)).unwrap();
+    let outside = temp.path().join("outside");
+    fs::write(&outside, b"keep").unwrap();
+    symlink(&outside, root.join(lock::ENTRY_FILE)).unwrap();
+    assert!(store.load(Quota::product_default()).is_err());
+    assert_eq!(fs::read(&outside).unwrap(), b"keep");
+}
+
+#[cfg(unix)]
+#[test]
+fn cache_ancestors_require_trusted_ownership_even_without_group_write() {
+    assert!(trusted_ancestor(1000, 0o755, 1000));
+    assert!(trusted_ancestor(0, 0o755, 1000));
+    assert!(trusted_ancestor(0, 0o1777, 1000));
+    assert!(!trusted_ancestor(1001, 0o755, 1000));
+    assert!(!trusted_ancestor(1000, 0o777, 1000));
+    assert!(!trusted_ancestor(1001, 0o1777, 1000));
+}
+
+#[test]
+fn cache_relative_paths_refuse_stream_and_normalization_aliases() {
+    let (temp, root) = root();
+    let outside = temp.path().join("outside");
+    fs::write(&outside, b"keep").unwrap();
+    let objects = FsObjectStore::open(&root).unwrap();
+    for path in [
+        "../outside",
+        ".. /outside",
+        ".../outside",
+        "objects/a:stream",
+        "objects/control\n",
+    ] {
+        assert!(
+            objects.unlink_relative(Path::new(path)).is_err(),
+            "{path:?}"
+        );
+    }
+    assert_eq!(fs::read(outside).unwrap(), b"keep");
+}

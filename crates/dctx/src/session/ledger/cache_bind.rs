@@ -351,26 +351,15 @@ fn check_object_size(bytes: u64, limit: u64) -> Result<(), DctxError> {
 }
 
 fn read_object(root: &Path, raw: u64, limit: u64) -> Result<Option<Vec<u8>>, DctxError> {
-    let path = root.join("objects").join(raw.to_string());
-    if !path.starts_with(root) {
-        return Err(DctxError::invalid("cache object is outside the root"));
-    }
-    let meta = match std::fs::symlink_metadata(&path) {
-        Ok(meta) => meta,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
-        Err(_) => return Err(DctxError::io("object metadata")),
+    let objects = FsObjectStore::open(root).map_err(map_cache)?;
+    let Some(file) = objects.open_object(raw).map_err(map_cache)? else {
+        return Ok(None);
     };
-    if meta.file_type().is_symlink() || !meta.is_file() {
-        return Err(DctxError::invalid("cache object is not a file"));
-    }
+    let meta = file
+        .metadata()
+        .map_err(|_| DctxError::io("object metadata"))?;
     check_object_size(meta.len(), limit)?;
-    // Bound the read itself as well: metadata alone does not bound a file that grows.
     use std::io::Read;
-    let file = match std::fs::File::open(&path) {
-        Ok(file) => file,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
-        Err(_) => return Err(DctxError::io("object read")),
-    };
     let mut bytes = Vec::new();
     bytes
         .try_reserve_exact(usize::try_from(meta.len()).map_err(|_| DctxError::io("object length"))?)

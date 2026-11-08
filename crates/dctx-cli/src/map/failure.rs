@@ -3,7 +3,6 @@
 //! Covers argument refusals, ids that climb out of the place, binary file targets, places that cannot be opened and ids the index does not hold.
 //! Used by the parent module before the scan (arguments, targets) and after the facade query (outcomes, answer errors).
 
-use std::io::Read as _;
 use std::path::Path;
 
 use dctx_map_query::Verb as QueryVerb;
@@ -117,11 +116,14 @@ fn inside_place(target: &str) -> Result<(), Failure> {
 
 /// Refuses a file whose first [`SNIFF_BYTES`] hold a NUL byte. A missing or unreadable file is left to the facade.
 fn text_file(place: &Path, relative: &str) -> Result<(), Failure> {
-    let Ok(file) = std::fs::File::open(place.join(relative)) else {
+    let Ok(Some(bytes)) = crate::host::read_included_file(place, relative) else {
         return Ok(());
     };
-    let mut head = Vec::new();
-    if file.take(SNIFF_BYTES).read_to_end(&mut head).is_ok() && head.contains(&0) {
+    if bytes
+        .iter()
+        .take(SNIFF_BYTES as usize)
+        .any(|byte| *byte == 0)
+    {
         return Err(Failure::no_result(
             format!("{relative} is a binary file; dctx maps and reads text files only"),
             "pass a source or text file; `dctx map find <name>` lists indexed ids",
@@ -208,6 +210,26 @@ mod tests {
         );
         assert!(text_file(place.path(), "a.py").is_ok());
         assert!(text_file(place.path(), "missing.py").is_ok());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn binary_prechecks_do_not_follow_links_or_sniff_ignored_content() {
+        let root = tempfile::tempdir().unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        std::fs::write(outside.path().join("binary"), b"\0OUTSIDE_SENTINEL").unwrap();
+        std::os::unix::fs::symlink(outside.path().join("binary"), root.path().join("linked.rs"))
+            .unwrap();
+        assert!(
+            text_file(root.path(), "linked.rs").is_ok(),
+            "the outside binary marker must not be observed"
+        );
+        std::fs::write(root.path().join("ignored.rs"), b"\0PRIVATE_SENTINEL").unwrap();
+        std::fs::write(root.path().join(".gitignore"), b"ignored.rs\n").unwrap();
+        assert!(
+            text_file(root.path(), "ignored.rs").is_ok(),
+            "excluded content must not be sniffed"
+        );
     }
 
     #[test]

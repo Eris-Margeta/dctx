@@ -4,10 +4,10 @@
 
 use super::*;
 
-/// One rule file. A larger file is refused, matching the desktop loader.
-const MAX_RULE_FILE_BYTES: u64 = 1_048_576;
 /// Nested `.gitignore` walk stops after this many directory levels.
 const MAX_RULE_DEPTH: u32 = 256;
+const MAX_RULE_BYTES: usize = 8 * 1024 * 1024;
+const MAX_RULE_ENTRIES: u64 = 100_000;
 
 /// Ignore and omit texts for `root`. `DCTX_INDEX_IGNORED=1` loads omit texts only.
 ///
@@ -54,11 +54,11 @@ pub(crate) fn local_ignore_text(
 ) -> Result<Option<String>, String> {
     let mut local = String::new();
     if let Some(text) = read_rule_file(&root.join(".gitignore"))? {
-        append_text(&mut local, &text);
+        append_text(&mut local, &text)?;
     }
-    collect_nested(root, "", &mut local, global_ignore, 0)?;
+    collect_nested(root, "", &mut local, global_ignore, 0, &mut 0)?;
     if let Some(text) = read_rule_file(&root.join(".dctxignore"))? {
-        append_text(&mut local, &text);
+        append_text(&mut local, &text)?;
     }
     if local.is_empty() {
         Ok(None)
@@ -75,7 +75,7 @@ fn scoped_ignore_text(
     let scope = dctx_core::ids::RelativePath::parse(scope).map_err(|error| error.to_string())?;
     let mut local = String::new();
     if let Some(text) = read_rule_file(&root.join(".gitignore"))? {
-        append_text(&mut local, &text);
+        append_text(&mut local, &text)?;
     }
     let mut relative = String::new();
     for (depth, name) in scope.as_str().split('/').enumerate() {
@@ -99,7 +99,7 @@ fn scoped_ignore_text(
             break;
         }
         if let Some(text) = read_rule_file(&path.join(".gitignore"))? {
-            append_nested(&mut local, &relative, &text);
+            append_nested(&mut local, &relative, &text)?;
         }
         if relative == scope.as_str() {
             collect_nested(
@@ -108,11 +108,12 @@ fn scoped_ignore_text(
                 &mut local,
                 global_ignore,
                 u32::try_from(depth + 1).unwrap_or(u32::MAX),
+                &mut 0,
             )?;
         }
     }
     if let Some(text) = read_rule_file(&root.join(".dctxignore"))? {
-        append_text(&mut local, &text);
+        append_text(&mut local, &text)?;
     }
     Ok((!local.is_empty()).then_some(local))
 }
@@ -159,37 +160,10 @@ fn optional_omit(path: Option<PathBuf>) -> Option<String> {
 }
 
 fn read_rule_file(path: &Path) -> Result<Option<String>, String> {
-    let meta = match fs::symlink_metadata(path) {
-        Ok(meta) => meta,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
-        Err(error) => return Err(format!("{}: {error}", path.display())),
-    };
-    if meta.file_type().is_symlink() {
-        return Err(format!("{}: is a symlink", path.display()));
-    }
-    if !meta.is_file() {
-        return Err(format!("{}: is not a file", path.display()));
-    }
-    if meta.len() > MAX_RULE_FILE_BYTES {
-        return Err(format!(
-            "{}: exceeds {MAX_RULE_FILE_BYTES} bytes",
-            path.display()
-        ));
-    }
-    let file = fs::File::open(path).map_err(|error| format!("{}: {error}", path.display()))?;
-    let mut buf = Vec::new();
-    file.take(MAX_RULE_FILE_BYTES + 1)
-        .read_to_end(&mut buf)
-        .map_err(|error| format!("{}: {error}", path.display()))?;
-    if buf.len() as u64 > MAX_RULE_FILE_BYTES {
-        return Err(format!(
-            "{}: exceeds {MAX_RULE_FILE_BYTES} bytes",
-            path.display()
-        ));
-    }
-    let text =
-        std::str::from_utf8(&buf).map_err(|_| format!("{}: invalid UTF-8", path.display()))?;
-    Ok(Some(text.to_string()))
+    use dctx_adapter_fs::{SourceFs, StdFs};
+    StdFs
+        .read_policy(path)
+        .map_err(|error| format!("{}: {error}", path.display()))
 }
 
 fn collect_nested(
@@ -198,6 +172,7 @@ fn collect_nested(
     rules: &mut String,
     global_ignore: Option<&str>,
     depth: u32,
+    visited: &mut u64,
 ) -> Result<(), String> {
     if depth > MAX_RULE_DEPTH {
         return Ok(());
@@ -208,23 +183,26 @@ fn collect_nested(
         root.join(prefix)
     };
     let mut names = Vec::new();
-    let entries =
-        fs::read_dir(&dir).map_err(|error| format!("rule walk {}: {error}", dir.display()))?;
+    let source = FsSource::open(root).map_err(|error| error.to_string())?;
+    let relative =
+        dctx_core::ids::RelativePath::parse(prefix).map_err(|error| error.to_string())?;
+    let entries = source
+        .entries(&relative)
+        .map_err(|error| {
+            let entries = matches!(&error, dctx_core::error::DctxError::ResourceLimit { resource: dctx_core::error::Resource::Entries, .. });
+            let error = DctxError::from_core(error);
+            if entries {
+                format!("rule walk {}: {error}; raise DCTX_MAX_ENTRIES (1..100000000) or choose a smaller place", dir.display())
+            } else { format!("rule walk {}: {error}", dir.display()) }
+        })?;
     for entry in entries {
-        let entry = entry.map_err(|error| format!("rule walk {}: {error}", dir.display()))?;
-        let Ok(name) = entry.file_name().into_string() else {
-            continue;
-        };
-        if name.is_empty() || name == "." || name == ".." {
-            continue;
+        *visited += 1;
+        if *visited > MAX_RULE_ENTRIES {
+            return Err("rule walk exceeds 100000 entries".into());
         }
-        let kind = entry
-            .file_type()
-            .map_err(|error| format!("rule walk {}: {error}", dir.display()))?;
-        if kind.is_symlink() || !kind.is_dir() {
-            continue;
+        if entry.is_dir() && relative.child(&entry.name).is_ok() {
+            names.push(entry.name);
         }
-        names.push(name);
     }
     names.sort();
     for name in names {
@@ -237,9 +215,9 @@ fn collect_nested(
             continue;
         }
         if let Some(text) = read_rule_file(&root.join(&relative).join(".gitignore"))? {
-            append_nested(rules, &relative, &text);
+            append_nested(rules, &relative, &text)?;
         }
-        collect_nested(root, &relative, rules, global_ignore, depth + 1)?;
+        collect_nested(root, &relative, rules, global_ignore, depth + 1, visited)?;
     }
     Ok(())
 }
@@ -269,27 +247,35 @@ fn directory_excluded(
     policy.decide(&context) == FileHandlingDecision::Exclude
 }
 
-pub(super) fn append_text(rules: &mut String, text: &str) {
+pub(super) fn append_text(rules: &mut String, text: &str) -> Result<(), String> {
     if text.is_empty() {
-        return;
+        return Ok(());
     }
-    if !rules.is_empty() && !rules.ends_with('\n') {
+    let separator = usize::from(!rules.is_empty() && !rules.ends_with('\n'));
+    let newline = usize::from(!text.ends_with('\n'));
+    if rules
+        .len()
+        .saturating_add(text.len())
+        .saturating_add(separator + newline)
+        > MAX_RULE_BYTES
+    {
+        return Err("selection rules exceed 8388608 bytes".into());
+    }
+    if separator != 0 {
         rules.push('\n');
     }
     rules.push_str(text);
-    if !rules.ends_with('\n') {
+    if newline != 0 {
         rules.push('\n');
     }
+    Ok(())
 }
 
-pub(super) fn append_nested(rules: &mut String, prefix: &str, text: &str) {
+pub(super) fn append_nested(rules: &mut String, prefix: &str, text: &str) -> Result<(), String> {
     for line in text.lines() {
-        if !rules.is_empty() && !rules.ends_with('\n') {
-            rules.push('\n');
-        }
-        rules.push_str(&rewrite_nested_line(prefix, line));
-        rules.push('\n');
+        append_text(rules, &rewrite_nested_line(prefix, line))?;
     }
+    Ok(())
 }
 
 /// Rewrites one line of a nested `.gitignore` so it matches from the repository root.
@@ -353,6 +339,16 @@ mod tests {
             .map(|(key, value)| (*key, OsString::from(value)))
             .collect();
         config_dir_from_env(windows, |key| env.get(key).cloned())
+    }
+
+    #[test]
+    fn nested_rule_expansion_is_bounded_before_appending() {
+        let mut rules = "x".repeat(MAX_RULE_BYTES - 8);
+        let previous = rules.clone();
+        assert!(append_nested(&mut rules, &"p".repeat(255), "x").is_err());
+        assert_eq!(rules, previous);
+        assert!(append_text(&mut rules, "1234567").is_err());
+        assert_eq!(rules, previous);
     }
 
     #[test]

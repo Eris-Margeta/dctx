@@ -87,8 +87,8 @@ fn nested_gitignore_lines_become_root_relative() {
 #[test]
 fn nested_rules_anchor_at_their_directory_and_a_leading_slash_is_root_only() {
     let mut local = String::new();
-    append_text(&mut local, "/corpus/\n*.secret\n!keep.secret\n");
-    append_nested(&mut local, "src", "generated.rs\n");
+    append_text(&mut local, "/corpus/\n*.secret\n!keep.secret\n").unwrap();
+    append_nested(&mut local, "src", "generated.rs\n").unwrap();
     let policy = SelectionPolicy::from_texts(&RuleTexts {
         local_ignore: Some(&local),
         ..RuleTexts::default()

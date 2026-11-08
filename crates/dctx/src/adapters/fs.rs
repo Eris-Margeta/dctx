@@ -3,16 +3,25 @@
 //! Implements contracts/API-PORTS-v1.md `Source`: confined paths, metadata before content.
 //! Depends on [`crate::ports::Source`] and the standard library. The session does not open a path itself.
 //! Symlinks are not followed. A symlink read is [`dctx_core::DctxError::PolicyDenied`].
-//! The final component is opened with `O_NOFOLLOW`, so a symlink swapped in after the stat is refused by the kernel.
-//! A symlinked intermediate directory is refused too, for listings and reads.
+//! Unix operations resolve one component at a time relative to an open directory handle,
+//! with kernel no-follow guards. Other platforms use path checks; see SECURITY-MODEL.md.
 
+#[cfg(not(unix))]
 use std::io::Read;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+#[cfg(not(unix))]
+use std::path::PathBuf;
 
+#[cfg(any(not(unix), test))]
 use dctx_core::datatypes::NodeType;
 use dctx_core::error::DctxError as CoreError;
-use dctx_core::facts::{EntryMeta, EntryStamp, ReadGrant, SourceEntry};
+#[cfg(any(not(unix), test))]
+use dctx_core::facts::EntryStamp;
+#[cfg(not(unix))]
+use dctx_core::facts::{EntryMeta, ReadGrant, SourceEntry};
+#[cfg(not(unix))]
 use dctx_core::ids::{RelativePath, Timestamp};
+#[cfg(any(not(unix), test))]
 use dctx_ports::Source;
 
 use crate::domain::DctxError;
@@ -24,38 +33,18 @@ use crate::domain::DctxError;
 )]
 mod windows;
 
-/// `O_NOFOLLOW` from the platform headers. crates/dctx has no `libc` dependency, so the raw values are kept here:
-/// Linux and Android use `0o100000` on aarch64, arm and powerpc and `0o400000` elsewhere; macOS, iOS and the BSDs use `0x0100`.
-/// Another Unix gets `0` (no kernel guard); the pre-open and post-open checks below still apply there.
 #[cfg(unix)]
-const O_NOFOLLOW: i32 = if cfg!(any(target_os = "linux", target_os = "android")) {
-    if cfg!(any(
-        target_arch = "aarch64",
-        target_arch = "arm",
-        target_arch = "powerpc",
-        target_arch = "powerpc64"
-    )) {
-        0o100_000
-    } else {
-        0o400_000
-    }
-} else if cfg!(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "freebsd",
-    target_os = "openbsd",
-    target_os = "netbsd",
-    target_os = "dragonfly"
-)) {
-    0x0100
-} else {
-    0
-};
+mod unix;
 
-/// A directory tree the caller opened by path. Nothing outside `root` is reachable.
+/// A read-only directory source. Link and race defenses depend on the platform (see `docs/SECURITY-MODEL.md`).
 #[derive(Debug, Clone)]
 pub struct FsSource {
+    #[cfg(not(unix))]
     root: PathBuf,
+    #[cfg(windows)]
+    _root_guards: std::sync::Arc<Vec<std::fs::File>>,
+    #[cfg(unix)]
+    directory: std::sync::Arc<std::fs::File>,
 }
 
 impl FsSource {
@@ -72,9 +61,27 @@ impl FsSource {
         if !meta.is_dir() {
             return Err(DctxError::invalid("source root must be a directory"));
         }
+        #[cfg(unix)]
+        {
+            let directory = unix::open_root(&root).map_err(DctxError::from_core)?;
+            Ok(Self {
+                directory: std::sync::Arc::new(directory),
+            })
+        }
+        #[cfg(windows)]
+        {
+            let guards = windows::pin_directories(&root)
+                .map_err(|error| DctxError::from_core(map_io(error)))?;
+            Ok(Self {
+                root,
+                _root_guards: std::sync::Arc::new(guards),
+            })
+        }
+        #[cfg(not(any(unix, windows)))]
         Ok(Self { root })
     }
 
+    #[cfg(not(unix))]
     fn confined(&self, path: &RelativePath) -> Result<PathBuf, CoreError> {
         let mut full = self.root.clone();
         if !path.is_root() {
@@ -91,43 +98,63 @@ impl FsSource {
     }
 
     /// Refuses `path` when an intermediate directory (and, with `last`, the final component) is a symlink.
-    fn reject_links(&self, path: &RelativePath, last: bool) -> Result<(), CoreError> {
-        if path.is_root() {
-            return Ok(());
+    #[cfg(not(unix))]
+    fn reject_links(
+        &self,
+        path: &RelativePath,
+        last: bool,
+    ) -> Result<Vec<std::fs::File>, CoreError> {
+        #[cfg(windows)]
+        {
+            let full = self.confined(path)?;
+            let directory = if last {
+                full.as_path()
+            } else {
+                full.parent().unwrap_or(&self.root)
+            };
+            windows::pin_directories(directory).map_err(map_io)
         }
-        let segments: Vec<&str> = path.as_str().split('/').collect();
-        let checked = if last {
-            segments.len()
-        } else {
-            segments.len().saturating_sub(1)
-        };
-        let mut full = self.root.clone();
-        for segment in segments.iter().take(checked) {
-            full.push(segment);
-            if std::fs::symlink_metadata(&full)
-                .map_err(map_io)?
-                .file_type()
-                .is_symlink()
-            {
-                return Err(CoreError::PolicyDenied);
+        #[cfg(not(windows))]
+        {
+            if path.is_root() {
+                return Ok(Vec::new());
             }
+            let segments: Vec<&str> = path.as_str().split('/').collect();
+            let checked = if last {
+                segments.len()
+            } else {
+                segments.len().saturating_sub(1)
+            };
+            let mut full = self.root.clone();
+            for segment in segments.iter().take(checked) {
+                full.push(segment);
+                if std::fs::symlink_metadata(&full)
+                    .map_err(map_io)?
+                    .file_type()
+                    .is_symlink()
+                {
+                    return Err(CoreError::PolicyDenied);
+                }
+            }
+            Ok(Vec::new())
         }
-        Ok(())
     }
 }
 
 /// Opens `path` for reading without following a final symlink. A symlink there is [`CoreError::PolicyDenied`].
+#[cfg(not(unix))]
 fn open_no_follow(path: &Path) -> Result<std::fs::File, CoreError> {
-    #[cfg(unix)]
-    let opened = {
-        use std::os::unix::fs::*;
-        std::fs::File::options()
-            .read(true)
-            .custom_flags(O_NOFOLLOW)
-            .open(path)
-    };
     #[cfg(not(unix))]
-    let opened = std::fs::File::open(path);
+    let opened = {
+        #[cfg(windows)]
+        {
+            windows::open_content(path)
+        }
+        #[cfg(not(windows))]
+        {
+            std::fs::File::open(path)
+        }
+    };
     let file = match opened {
         Ok(file) => file,
         Err(error) => {
@@ -144,6 +171,7 @@ fn open_no_follow(path: &Path) -> Result<std::fs::File, CoreError> {
     Ok(file)
 }
 
+#[cfg(not(unix))]
 impl Source for FsSource {
     fn root_kind(&self) -> Result<NodeType, CoreError> {
         let meta = std::fs::symlink_metadata(&self.root).map_err(map_io)?;
@@ -156,10 +184,19 @@ impl Source for FsSource {
 
     fn entries(&self, dir: &RelativePath) -> Result<Vec<SourceEntry>, CoreError> {
         let full = self.confined(dir)?;
-        self.reject_links(dir, true)?;
+        let _guards = self.reject_links(dir, true)?;
         let read = std::fs::read_dir(&full).map_err(map_io)?;
         let mut entries = Vec::new();
-        for item in read {
+        let cap = crate::domain::entries_ceiling().map_err(|_| CoreError::InvalidRequest {
+            reason: "invalid DCTX_MAX_ENTRIES ceiling",
+        })?;
+        for (visited, item) in read.enumerate() {
+            if visited as u64 >= cap {
+                return Err(CoreError::ResourceLimit {
+                    resource: dctx_core::error::Resource::Entries,
+                    limit: cap,
+                });
+            }
             let item = item.map_err(map_io)?;
             let Some(name) = item.file_name().to_str().map(str::to_string) else {
                 continue;
@@ -178,7 +215,7 @@ impl Source for FsSource {
     }
 
     fn kind(&self, path: &RelativePath) -> Result<NodeType, CoreError> {
-        self.reject_links(path, false)?;
+        let _guards = self.reject_links(path, false)?;
         let meta = std::fs::symlink_metadata(self.confined(path)?).map_err(map_io)?;
         Ok(if meta.is_dir() {
             NodeType::Directory
@@ -189,6 +226,7 @@ impl Source for FsSource {
 
     fn metadata(&self, path: &RelativePath) -> Result<EntryMeta, CoreError> {
         let full = self.confined(path)?;
+        let _guards = self.reject_links(path, false)?;
         let meta = std::fs::symlink_metadata(&full).map_err(map_io)?;
         Ok(EntryMeta {
             size: meta.len(),
@@ -198,6 +236,7 @@ impl Source for FsSource {
 
     fn stat(&self, path: &RelativePath) -> Result<(EntryMeta, Option<EntryStamp>), CoreError> {
         let full = self.confined(path)?;
+        let _guards = self.reject_links(path, false)?;
         // The clock is read before the stat: an edit after this stat gets a time no earlier than `now`,
         // so a stamp older than `now - RACY_WINDOW_NS` can never be matched by a later edit.
         let now = now_ns();
@@ -216,7 +255,7 @@ impl Source for FsSource {
 
     fn read(&self, grant: &ReadGrant, max_bytes: u64) -> Result<Vec<u8>, CoreError> {
         let full = self.confined(grant.path())?;
-        self.reject_links(grant.path(), false)?;
+        let _guards = self.reject_links(grant.path(), false)?;
         let meta = std::fs::symlink_metadata(&full).map_err(map_io)?;
         if meta.file_type().is_symlink() {
             return Err(CoreError::PolicyDenied);
@@ -243,6 +282,7 @@ impl Source for FsSource {
     }
 }
 
+#[cfg(not(unix))]
 fn modified_millis(meta: &std::fs::Metadata) -> u64 {
     meta.modified()
         .ok()
@@ -263,6 +303,7 @@ fn now_ns() -> u128 {
 
 /// The stat identity of a regular file whose mtime is settled: at least [`RACY_WINDOW_NS`] before `now_ns`.
 /// `None` for anything else (a symlink, a recent or future mtime, no inode on this platform), and the caller hashes.
+#[cfg(any(not(unix), test))]
 fn settled_stamp(meta: &std::fs::Metadata, now_ns: u128, inode: Option<u64>) -> Option<EntryStamp> {
     if !meta.file_type().is_file() {
         return None;
@@ -283,11 +324,6 @@ fn settled_stamp(meta: &std::fs::Metadata, now_ns: u128, inode: Option<u64>) -> 
     })
 }
 
-#[cfg(unix)]
-fn inode_of(meta: &std::fs::Metadata) -> Option<u64> {
-    Some(std::os::unix::fs::MetadataExt::ino(meta))
-}
-
 #[cfg(not(any(unix, windows)))]
 fn inode_of(_meta: &std::fs::Metadata) -> Option<u64> {
     None
@@ -305,6 +341,8 @@ fn map_io(error: std::io::Error) -> CoreError {
 mod tests {
     use super::*;
     use dctx_core::FileHandlingDecision;
+    use dctx_core::facts::ReadGrant;
+    use dctx_core::ids::RelativePath;
     use std::fs;
 
     #[test]
@@ -482,26 +520,5 @@ mod tests {
         let grant =
             ReadGrant::authorize(&kept, FileHandlingDecision::Include, true).expect("grant");
         assert_eq!(source.read(&grant, 64).expect("kept"), b"kept");
-    }
-
-    /// The no-follow open itself refuses a symlink, which covers a swap between the stat and the open.
-    #[cfg(unix)]
-    #[test]
-    fn the_no_follow_open_refuses_a_symlink() {
-        let outside = tempfile::tempdir().expect("outside");
-        fs::write(outside.path().join("secret.txt"), b"OUTSIDE_SENTINEL").expect("secret");
-        let dir = tempfile::tempdir().expect("temp");
-        let link = dir.path().join("swapped.txt");
-        std::os::unix::fs::symlink(outside.path().join("secret.txt"), &link).expect("link");
-        assert_eq!(
-            open_no_follow(&link).expect_err("symlink"),
-            CoreError::PolicyDenied
-        );
-        fs::write(dir.path().join("plain.txt"), b"plain").expect("plain");
-        assert!(open_no_follow(&dir.path().join("plain.txt")).is_ok());
-        assert_eq!(
-            open_no_follow(dir.path()).expect_err("directory"),
-            CoreError::PolicyDenied
-        );
     }
 }

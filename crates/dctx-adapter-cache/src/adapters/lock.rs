@@ -65,11 +65,25 @@ impl LockGuard {
         #[cfg(unix)]
         {
             use std::os::unix::fs::OpenOptionsExt;
-            options.mode(0o600);
+            options.mode(0o600).custom_flags(super::no_follow());
         }
         let file = options
             .open(path)
             .map_err(|_| CacheError::LedgerIo { reason: "lock" })?;
+        let metadata = file.metadata().map_err(|_| CacheError::LedgerIo {
+            reason: "lock metadata",
+        })?;
+        if !metadata.is_file() {
+            return Err(CacheError::OutsideCacheRoot);
+        }
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::MetadataExt;
+            if metadata.uid() != rustix::process::geteuid().as_raw() || metadata.mode() & 0o022 != 0
+            {
+                return Err(CacheError::OutsideCacheRoot);
+            }
+        }
         let mut pause = Duration::from_millis(1);
         loop {
             let tried = if shared {

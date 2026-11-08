@@ -86,3 +86,27 @@ fn conflict_reasons_retry_and_a_cap_refusal_does_not() {
     assert!(is_conflict(&published));
     assert!(!is_conflict(&cap));
 }
+
+#[cfg(unix)]
+#[test]
+fn objects_with_other_user_write_access_or_linked_storage_are_refused() {
+    use std::fs;
+    use std::os::unix::fs::{PermissionsExt, symlink};
+    let temp = tempfile::tempdir().unwrap();
+    let objects = temp.path().join("objects");
+    fs::create_dir(&objects).unwrap();
+    fs::write(objects.join("7"), b"object").unwrap();
+    fs::set_permissions(objects.join("7"), fs::Permissions::from_mode(0o666)).unwrap();
+    assert!(super::read_object(temp.path(), 7, 64).is_err());
+    fs::set_permissions(objects.join("7"), fs::Permissions::from_mode(0o600)).unwrap();
+    assert_eq!(
+        super::read_object(temp.path(), 7, 64).unwrap().unwrap(),
+        b"object"
+    );
+    fs::set_permissions(&objects, fs::Permissions::from_mode(0o777)).unwrap();
+    assert!(super::read_object(temp.path(), 7, 64).is_err());
+    fs::set_permissions(&objects, fs::Permissions::from_mode(0o700)).unwrap();
+    fs::rename(&objects, temp.path().join("outside")).unwrap();
+    symlink(temp.path().join("outside"), &objects).unwrap();
+    assert!(super::read_object(temp.path(), 7, 64).is_err());
+}
