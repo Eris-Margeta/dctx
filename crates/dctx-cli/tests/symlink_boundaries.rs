@@ -64,8 +64,7 @@ impl Fixture {
         common::isolated_dirs(&mut command, &self.linked);
         command
             .env("DCTX_CACHE_DIR", self.linked.join("cache/dctx"))
-            .env("DCTX_AUTO_CLEAN", "0")
-            .env("DCTX_DAEMON", "0");
+            .env("DCTX_AUTO_CLEAN", "0");
         if home_config {
             command.env_remove("XDG_CONFIG_HOME");
         }

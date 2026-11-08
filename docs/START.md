@@ -37,8 +37,9 @@ dctx map find Config --place packages/service-a --budget 500 --limit 5
 
 Expect bounded symbol IDs and line ranges, not a complete answer about the whole
 parent tree. Use an ID with `map read`. There is no general receipt yet;
-`--json` exposes freshness, precision and pagination. A daemon, catalog-first
-sharding and a unified policy file are planned. Read the
+`--json` exposes freshness, precision and pagination. Each invocation checks
+source stamps; no daemon or file watcher is used. Catalog-first sharding and a
+unified policy file are planned. Read the
 [huge-tree limits and ignore example](MODALITIES.md#huge-trees-scope-before-indexing)
 before warming an index; `--in` only filters after indexing.
 

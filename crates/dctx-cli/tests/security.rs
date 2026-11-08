@@ -9,20 +9,19 @@ use std::process::{Command, Output, Stdio};
 
 struct Fixture(tempfile::TempDir);
 impl Fixture {
-    fn command(&self, daemon: bool) -> Command {
+    fn command(&self) -> Command {
         let mut command = Command::new(env!("CARGO_BIN_EXE_dctx-cli"));
         command.env_clear().current_dir(self.0.path().join("place"));
         common::isolated_dirs(&mut command, self.0.path());
         command
             .env("DCTX_CACHE_DIR", self.0.path().join("c"))
-            .env("DCTX_AUTO_CLEAN", "0")
-            .env("DCTX_DAEMON", if daemon { "1" } else { "0" });
+            .env("DCTX_AUTO_CLEAN", "0");
         command
     }
 
     fn server(&self, verb: &str, requests: &[Value]) -> Output {
         let mut child = self
-            .command(false)
+            .command()
             .arg(verb)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
@@ -37,11 +36,6 @@ impl Fixture {
         child.wait_with_output().unwrap()
     }
 }
-impl Drop for Fixture {
-    fn drop(&mut self) {
-        let _ = self.command(false).args(["daemon", "stop"]).output();
-    }
-}
 
 fn check(output: &Output) {
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -51,7 +45,7 @@ fn check(output: &Output) {
 }
 
 #[test]
-fn cli_mcp_rpc_and_daemon_do_not_return_symlink_or_traversal_targets() {
+fn cli_mcp_and_rpc_do_not_return_symlink_or_traversal_targets() {
     let fixture = Fixture(tempfile::tempdir().unwrap());
     let root = fixture.0.path().join("place");
     let outside = fixture.0.path().join("outside");
@@ -67,34 +61,20 @@ fn cli_mcp_rpc_and_daemon_do_not_return_symlink_or_traversal_targets() {
         "m:linked/secret.rs",
         "m:../outside/secret.rs",
     ];
-    for daemon in [false, true] {
-        for target in targets {
-            let output = fixture
-                .command(daemon)
-                .args(["map", "read", target, "--json"])
-                .output()
-                .unwrap();
-            check(&output);
-            if target == "m:kept.rs" {
-                assert!(
-                    output.status.success(),
-                    "{}",
-                    String::from_utf8_lossy(&output.stderr)
-                );
-                assert!(String::from_utf8_lossy(&output.stdout).contains("pub fn kept"));
-            }
-        }
-        if daemon {
-            let output = fixture
-                .command(false)
-                .args(["daemon", "status"])
-                .output()
-                .unwrap();
-            let status: Value = serde_json::from_slice(&output.stdout).unwrap();
-            assert_eq!(
-                status["running"], true,
-                "the daemon path must actually be exercised"
+    for target in targets {
+        let output = fixture
+            .command()
+            .args(["map", "read", target, "--json"])
+            .output()
+            .unwrap();
+        check(&output);
+        if target == "m:kept.rs" {
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
             );
+            assert!(String::from_utf8_lossy(&output.stdout).contains("pub fn kept"));
         }
     }
     let mut rpc = vec![json!({"id":0,"verb":"hello"})];
@@ -127,7 +107,7 @@ fn sparse_template_and_offline_bundle_inputs_are_refused() {
         .set_len(1 << 40)
         .unwrap();
     let output = fixture
-        .command(false)
+        .command()
         .args(["template", "build"])
         .arg(&input)
         .output()
@@ -135,7 +115,7 @@ fn sparse_template_and_offline_bundle_inputs_are_refused() {
     assert!(!output.status.success());
     assert!(String::from_utf8_lossy(&output.stderr).contains("byte limit"));
     let output = fixture
-        .command(false)
+        .command()
         .args(["template", "list", "--dir"])
         .arg(fixture.0.path())
         .output()
@@ -143,7 +123,7 @@ fn sparse_template_and_offline_bundle_inputs_are_refused() {
     assert!(!output.status.success());
     assert!(String::from_utf8_lossy(&output.stderr).contains("byte limit"));
     let output = fixture
-        .command(false)
+        .command()
         .args(["plugin", "install", "--id", "example.test", "--file"])
         .arg(&input)
         .output()

@@ -8,7 +8,7 @@
 - Engine: dctx 1.2.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
 - Docs commit: 022554f29a0a0877b8bf327e2d832b4e5c9cbfeb (2026-11-07T23:39:25Z), the last commit that changed one of the documents.
 - Command: `dctx pack . --include /docs/START.md --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md`
-- Budget: 17,407 of 20,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
+- Budget: 17,425 of 20,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
 
 ## Facts
 
@@ -978,7 +978,7 @@ the CLI as a subprocess and consume `--json` map answers. Use the Rust facade wh
 you need an in-process engine now.
 
 </FILE_CONTENT_END ID="F003">
-<FILE_CONTENT_START ID="F004" PATH="docs/START.md" LINES="230">
+<FILE_CONTENT_START ID="F004" PATH="docs/START.md" LINES="231">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # What dctx is
@@ -1018,8 +1018,9 @@ dctx map find Config --place packages/service-a --budget 500 --limit 5
 
 Expect bounded symbol IDs and line ranges, not a complete answer about the whole
 parent tree. Use an ID with `map read`. There is no general receipt yet;
-`--json` exposes freshness, precision and pagination. A daemon, catalog-first
-sharding and a unified policy file are planned. Read the
+`--json` exposes freshness, precision and pagination. Each invocation checks
+source stamps; no daemon or file watcher is used. Catalog-first sharding and a
+unified policy file are planned. Read the
 [huge-tree limits and ignore example](MODALITIES.md#huge-trees-scope-before-indexing)
 before warming an index; `--in` only filters after indexing.
 

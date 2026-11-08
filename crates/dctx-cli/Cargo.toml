@@ -21,7 +21,6 @@ git-worker = ["dep:dctx-plugin-git"]
 strict = ["dctx/pack", "dctx/map", "dctx/templates", "dctx/fs", "dctx/segments", "dctx/cache", "dctx/syntax-rust"]
 
 [dependencies]
-dctx-daemon-transport = { version = "=1.2.0", path = "../dctx-daemon-transport" }
 # syntax-rust is explicit: this crate disables dctx defaults, and without it every .rs file is refused.
 dctx = { version = "=1.2.0", path = "../dctx", default-features = false, features = ["pack", "map", "templates", "fs", "segments", "cache", "syntax-rust", "rpc", "warm-index-cache"] }
 dctx-adapter-cache = { version = "=1.2.0", path = "../dctx-adapter-cache" }

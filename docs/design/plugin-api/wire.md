@@ -54,7 +54,7 @@ and liveness policy. Handles supplied here are inert until ready and an admitted
 invocation; negotiation/initialization can never serve content or effects.
 Then at most one invoke is active. Completed invocation returns the worker to
 ready; shutdown revokes handles and ends/reaps the session. A worker response
-alone does not establish reaping. Never keep a daemon beyond its host session.
+alone does not establish reaping. Never keep a worker beyond its host session.
 
 | Method | Sender / permitted state | Successful result definition |
 |---|---|---|

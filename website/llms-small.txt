@@ -147,19 +147,19 @@ Documents link to their Markdown twin (index.md), the repository file with only 
 
 ```text
 # dctx map
-d:docs/START.md#What dctx is	heading	L3-229
-d:docs/START.md#Choose your path	heading	L17-106
-d:docs/START.md#One giant folder	heading	L27-44
-d:docs/START.md#Many small projects	heading	L45-64
-d:docs/START.md#Agent builder embedding a library	heading	L65-86
-d:docs/START.md#Team / enterprise admin	heading	L87-106
-d:docs/START.md#Safe path in ten minutes	heading	L107-185
-d:docs/START.md#1. Install the system binary	heading	L109-128
-d:docs/START.md#2. Choose one project and inspect one answer	heading	L129-142
-d:docs/START.md#3. Configure the lean MCP profile	heading	L143-164
-d:docs/START.md#4. Measure before changing anything	heading	L165-185
-d:docs/START.md#Responsibilities	heading	L186-206
-d:docs/START.md#Two scopes, one binary	heading	L207-229
+d:docs/START.md#What dctx is	heading	L3-230
+d:docs/START.md#Choose your path	heading	L17-107
+d:docs/START.md#One giant folder	heading	L27-45
+d:docs/START.md#Many small projects	heading	L46-65
+d:docs/START.md#Agent builder embedding a library	heading	L66-87
+d:docs/START.md#Team / enterprise admin	heading	L88-107
+d:docs/START.md#Safe path in ten minutes	heading	L108-186
+d:docs/START.md#1. Install the system binary	heading	L110-129
+d:docs/START.md#2. Choose one project and inspect one answer	heading	L130-143
+d:docs/START.md#3. Configure the lean MCP profile	heading	L144-165
+d:docs/START.md#4. Measure before changing anything	heading	L166-186
+d:docs/START.md#Responsibilities	heading	L187-207
+d:docs/START.md#Two scopes, one binary	heading	L208-230
 # dctx map
 d:docs/WHY-DCTX.md#Why dctx exists	heading	L3-145
 d:docs/WHY-DCTX.md#The problem	heading	L7-14

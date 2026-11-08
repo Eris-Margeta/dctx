@@ -2,8 +2,8 @@
 # Security model
 
 This document describes implementation boundaries and regression evidence for the
-current engine and its CLI, stdio MCP, stdio RPC, and optional local daemon. It is
-not a security certification. See [SECURITY.md](../SECURITY.md) for reporting.
+current engine and its CLI, stdio MCP, and stdio RPC. It is not a security
+certification. See [SECURITY.md](../SECURITY.md) for reporting.
 The execution results and platform coverage for this review are recorded in
 [DCX-SEC-01](results/DCX-SEC-01.md).
 
@@ -11,9 +11,9 @@ The execution results and platform coverage for this review are recorded in
 
 The caller chooses a place root and authorizes operations on it. Source bytes,
 filenames, file sizes, directory contents, and protocol input can be hostile.
-Other local users must not be able to substitute cache state or become a daemon
-peer. Assets include files outside the chosen root, excluded content, output
-integrity, cache integrity, and availability within the documented work bounds.
+Other local users must not be able to substitute cache state. Assets include files
+outside the chosen root, excluded content, output integrity, cache integrity, and
+availability within the documented work bounds.
 
 The executable, its dependencies, the account running it, its inherited
 environment, and host-selected configuration/plugins are trusted. The process is
@@ -25,8 +25,8 @@ policy; `Source` implementations supplied by a caller are responsible for their
 own filesystem confinement.
 
 Transport surfaces dispatch engine operations. They do not grant access to a
-root the engine has not opened. MCP exposes its existing tool set; RPC and daemon
-framing do not constitute remote authentication or an Internet service.
+root the engine has not opened. MCP exposes its existing tool set; RPC framing
+does not constitute remote authentication or an Internet service.
 
 ## Paths, links, and races
 
@@ -75,9 +75,9 @@ Evidence:
   and listings through links, sparse files, and FIFOs.
 - `crates/dctx/tests/hostile_walk.rs` covers invalid UTF-8 names and source, control
   characters, and backslash names while retaining a readable positive control.
-- `crates/dctx-cli/tests/security.rs` exercises CLI, MCP, RPC, and an actually running
-  daemon with outside file/directory symlinks and parent traversal, alongside an
-  authorized read. Windows-only tests cover directory pinning and junction refusal.
+- `crates/dctx-cli/tests/security.rs` exercises CLI, MCP, and RPC with outside
+  file/directory symlinks and parent traversal, alongside an authorized read.
+  Windows-only tests cover directory pinning and junction refusal.
 - `dctx-adapter-fs` freshness tests inject a stat/read race and same-stamp byte edit;
   the former returns stale without content, and strict digest validation detects
   the latter. No filesystem-wide consistency guarantee follows from these tests.
@@ -106,8 +106,6 @@ above the active engine ceiling.
 | MCP input | 1 MiB per line including LF; an oversized line emits a parse error and closes the session after reading at most cap + 1 bytes |
 | MCP JSON nesting | 64 parser levels |
 | CLI RPC input | 1 MiB per line excluding LF; oversized frames are discarded and refused |
-| Daemon request / reply | 1 MiB / 128 MiB; frame lengths checked before allocating the body, reply buffer bounded while writing |
-| Daemon I/O | 2-second handshake and 60-second command I/O timeouts; these are transport timeouts, not forced engine preemption |
 
 The environment ceiling overrides are trusted deployment settings. Raising them
 raises potential work and memory use. Invalid numeric values are refused; the
@@ -126,10 +124,10 @@ or extracting paths onto disk.
 Evidence includes the sparse-file and bounded-listing filesystem tests, operation
 limit tests, `source_ceiling` tests (including shell-like invalid strings), MCP
 oversized/invalid-UTF-8 frame tests and JSON-depth tests, RPC oversized-frame tests,
-daemon frame-limit tests, and `crates/dctx-pack/tests/legacy_import.rs` tests for
-malicious lengths/counts/offsets and a 10,000-level depth bomb.
+and `crates/dctx-pack/tests/legacy_import.rs` tests for malicious
+lengths/counts/offsets and a 10,000-level depth bomb.
 
-## Cache and daemon isolation
+## Cache isolation
 
 On Unix an existing cache root must be a real directory owned by the effective
 user and not writable by group or others. Symlinked or writable ancestors are
@@ -157,19 +155,7 @@ creation, so an existing staging symlink cannot truncate another file. An existi
 staging name causes a refusal. Tests cover outside sentinels, world-writable cache
 roots/ancestors/object directories/object files/ledgers, and symlinked storage/locks.
 
-Unix daemon directories, sockets, and lock files must be user-owned with no
-group/other permissions. New directories use mode 0700 and sockets/locks use 0600. Bind validates the directory and
-lock; connect validates the socket. Both accept and connect verify kernel peer
-UIDs (`SO_PEERCRED` on Linux/Android, `getpeereid` on the listed BSD/macOS targets).
-Unsupported Unix credential APIs fail closed. Tests on Linux cover real socket-pair
-credentials, rejection of a differing UID, endpoint/lock/directory permissions,
-and the executable daemon path. They do not constitute a cross-account OS test.
-
-Windows transport uses a protected current-user SID DACL, refuses remote pipe
-clients, and checks the connected pipe's owner SID. Its existing descriptor tests
-are platform-specific; they were not run in this Linux review. Daemon identity
-checks are compatibility checks, not protection against another process of the
-same user. Stdio MCP/RPC inherit the launching process's authorization and have no
+Stdio MCP/RPC inherit the launching process's authorization and have no
 separate authentication layer.
 
 ## Non-goals and operational limits
@@ -181,7 +167,7 @@ separate authentication layer.
 - Concurrent writers can change source bytes or restore metadata. Freshness checks
   and digests do not create an atomic filesystem snapshot or prove author identity.
 - There is no global request-rate limiter, tenant quota, hard RSS/CPU sandbox, or
-  guarantee that an infinite stream of valid requests terminates. The stdio and local
+  guarantee that an infinite stream of valid requests terminates. The stdio
   transports are intended for a trusted local account. Use OS process/resource
   isolation when serving untrusted callers.
 - An attacker who controls the launch environment can select configuration/cache
