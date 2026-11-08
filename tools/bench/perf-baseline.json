@@ -1,0 +1,105 @@
+{
+  "binary_sha256": {
+    "catalog": "20fdef7ae59e04bcf099d59978012f709297c2f327ba98cbee799c68d9153742",
+    "dctx": "f69c96a340356648e5a75b275ef1ff9eebafdc0c672c3866142860ecdbf51341"
+  },
+  "cases": {
+    "catalog_build": {
+      "instructions": [
+        744724253,
+        746485105,
+        746480309
+      ],
+      "instructions_median": 746480309,
+      "wall_seconds": [
+        0.2586089310061652,
+        0.1692039460176602,
+        0.1762992969888728,
+        0.27167826701770537,
+        0.31880743298097514
+      ],
+      "wall_seconds_median": 0.2586089310061652
+    },
+    "cold_build": {
+      "instructions": [
+        1145379860,
+        1145416061,
+        1145440720
+      ],
+      "instructions_median": 1145416061,
+      "wall_seconds": [
+        6.3529851070197765,
+        1.5151394919957966,
+        1.0512987159891054,
+        1.041605842008721,
+        1.6770951079961378
+      ],
+      "wall_seconds_median": 1.5151394919957966
+    },
+    "pack": {
+      "instructions": [
+        202842641,
+        203538557,
+        202719628
+      ],
+      "instructions_median": 202842641,
+      "wall_seconds": [
+        0.046996291988762096,
+        0.049921430996619165,
+        0.07991481499630027,
+        0.06287658799556084,
+        0.06114087702007964
+      ],
+      "wall_seconds_median": 0.06114087702007964
+    },
+    "warm_find": {
+      "instructions": [
+        64929506,
+        64961738,
+        64990576
+      ],
+      "instructions_median": 64961738,
+      "wall_seconds": [
+        0.19282578601269051,
+        0.07659990197862498,
+        0.23915951402159408,
+        0.27267931698588654,
+        0.03710318001685664
+      ],
+      "wall_seconds_median": 0.19282578601269051
+    },
+    "warm_read": {
+      "instructions": [
+        84392697,
+        84392695,
+        84391036
+      ],
+      "instructions_median": 84392695,
+      "wall_seconds": [
+        0.022091010003350675,
+        0.021139756980119273,
+        0.01437917398288846,
+        0.021027273003710434,
+        0.02133739399141632
+      ],
+      "wall_seconds_median": 0.021139756980119273
+    }
+  },
+  "corpus_sha256": "9946ba8b9f72b105eb66f8a359cd3a069523533137998bfcffad0c6649618203",
+  "libc": [
+    "glibc",
+    "2.41"
+  ],
+  "platform": "Linux-x86_64",
+  "policy": {
+    "instructions_ratio": 1.25,
+    "wall_ratio": 3.0,
+    "wall_slack_seconds": 0.15
+  },
+  "revision": "bb923103f85e7a3d9ac97db696fe23182b78f55c",
+  "runner_sha256": "77e859f26f51d663a5ad571c0adacace63e4dcca9fb52a2d0bcaac99dc344894",
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "rustflags": "-C target-cpu=x86-64",
+  "schema_version": 1,
+  "valgrind": "valgrind-3.22.0"
+}

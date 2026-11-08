@@ -8,7 +8,12 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 pub fn files(dir: &Path) -> Vec<PathBuf> {
-    let mut files = match Command::new("git")
+    files_with_git(dir, Command::new("git"))
+}
+
+/// Select the Git executable per call so archive tests need no process-wide environment edits.
+pub fn files_with_git(dir: &Path, mut git: Command) -> Vec<PathBuf> {
+    let mut files = match git
         .current_dir(dir)
         .args(["ls-files", "--cached", "-z", "--", "."])
         .output()
