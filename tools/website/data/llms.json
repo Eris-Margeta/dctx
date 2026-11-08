@@ -1,8 +1,8 @@
 {
  "schema": 1,
  "version": "1.2.0",
- "docs_commit": "022554f29a0a0877b8bf327e2d832b4e5c9cbfeb",
- "docs_date": "2026-11-07T23:39:25Z",
+ "docs_commit": "bc530285b54d537a4c6df47f1c2df16716748c60",
+ "docs_date": "2026-11-08T10:15:12Z",
  "sources": {
   "CHANGELOG.md": "098e3e06591a385e6a0c972c3008bde00a1f331b59f616f811a09cb7cbb4ef6e",
   "CONTRIBUTING.md": "39e70b393f661022c90126f0f98e7c6f8509e82c5d177f9fb9b8cd371283dd6e",

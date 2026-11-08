@@ -6,7 +6,7 @@
 
 - This is llms.txt: the facts, the route table and the start documents. The other entry points: https://www.dctx.internet.technology/llms-small.txt, https://www.dctx.internet.technology/llms-full.txt.
 - Engine: dctx 1.2.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
-- Docs commit: 022554f29a0a0877b8bf327e2d832b4e5c9cbfeb (2026-11-07T23:39:25Z), the last commit that changed one of the documents.
+- Docs commit: bc530285b54d537a4c6df47f1c2df16716748c60 (2026-11-08T10:15:12Z), the last commit that changed one of the documents.
 - Command: `dctx pack . --include /docs/START.md --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md`
 - Budget: 17,425 of 20,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
 
