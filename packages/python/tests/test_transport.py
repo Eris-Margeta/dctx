@@ -55,7 +55,10 @@ class ResolutionTests(unittest.TestCase):
         self.executable = self.root / "engine with spaces"
         self.executable.write_bytes(b"engine")
         self.executable.chmod(0o755)
-        self.env = mock.patch.dict(os.environ, {}, clear=True)
+        # Cleared, but with a home directory: Windows Path.home() raises
+        # RuntimeError without USERPROFILE, and the error message formats the cache path.
+        home = {"HOME": str(self.root), "USERPROFILE": str(self.root)}
+        self.env = mock.patch.dict(os.environ, home, clear=True)
         self.env.start()
         self.addCleanup(self.env.stop)
 
