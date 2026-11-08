@@ -1,0 +1,102 @@
+# SPDX-License-Identifier: Apache-2.0
+# One platform stage of the CI chain (called by ci.yml). Every OS/toolchain pair of a stage runs
+# in parallel; the first failure cancels the rest of the stage and every later stage.
+name: Tests
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        description: JSON list of runner images for this stage
+        required: true
+        type: string
+      filter:
+        description: Optional cargo test name filter (targeted reruns)
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: ${{ matrix.os }}, ${{ matrix.toolchain }}
+    runs-on: ${{ matrix.os }}
+    # Allow headroom for cold builds and repository-scale tests on every host.
+    timeout-minutes: 90
+    strategy:
+      fail-fast: true
+      matrix:
+        # Requested OS versions; see docs/TESTING.md for GitHub's macOS retirements.
+        os: ${{ fromJSON(inputs.os) }}
+        toolchain: [stable, msrv]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1 (GitHub API resolved)
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0 (GitHub API resolved)
+        with:
+          python-version: '3.12'
+
+      - name: Resolve toolchain from Cargo.toml
+        id: toolchain
+        env:
+          CHANNEL: ${{ matrix.toolchain }}
+        run: |
+          python - <<'PYTHON'
+          import os
+          import tomllib
+          from pathlib import Path
+
+          manifest = tomllib.loads(Path("Cargo.toml").read_text())
+          msrv = (manifest.get("workspace", {}).get("package", {}).get("rust-version")
+                  or manifest.get("package", {}).get("rust-version"))
+          if not msrv:
+              # Proposed floor: existing tests use Duration::from_mins (stable in 1.91).
+              msrv = "1.91.0"
+              print("::notice::No rust-version in Cargo.toml; testing proposed MSRV 1.91.0")
+          version = msrv if os.environ["CHANNEL"] == "msrv" else "stable"
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              print(f"version={version}", file=output)
+          PYTHON
+
+      - name: Install toolchain
+        env:
+          TOOLCHAIN: ${{ steps.toolchain.outputs.version }}
+        run: |
+          rustup toolchain install "$TOOLCHAIN" --profile minimal
+          rustup override set "$TOOLCHAIN"
+          rustc --version --verbose
+          cargo --version
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3 (GitHub API resolved)
+        with:
+          key: test-${{ matrix.os }}-${{ matrix.toolchain }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Workspace tests (including doctests)
+        env:
+          FILTER: ${{ inputs.filter }}
+        # Native confinement rejects inherited descriptors beyond the protocol pipes.
+        # The shared CLI tests/common helper owns environment isolation on every OS.
+        run: |
+          python - <<'PYTHON'
+          import os
+          import subprocess
+          import sys
+
+          sys.exit(subprocess.call(
+              ["cargo", "test", "--workspace", "--locked", "--no-fail-fast",
+               "--exclude", "dctx-desktop", "--exclude", "dctx-desktop-api",
+               *(["--", os.environ["FILTER"]] if os.environ["FILTER"] else [])],
+              close_fds=True,
+          ))
+          PYTHON

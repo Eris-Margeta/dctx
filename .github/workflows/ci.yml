@@ -1,97 +1,43 @@
 name: CI
 
+# One chain, cheapest first: Linux quality gates -> Linux tests -> macOS -> Windows -> packages.
+# A stage starts only when every earlier stage passed, and a failing step stops its job, so a red
+# commit never pays for the expensive hosts. workflow_dispatch can start at one stage and pass a
+# test-name filter to iterate on a single platform failure without rerunning the whole chain.
 on:
   push:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      start:
+        description: First stage to run (later stages follow when it passes)
+        type: choice
+        options: [quality, linux, macos, windows, packages]
+        default: quality
+      until:
+        description: Last stage to run
+        type: choice
+        options: [quality, linux, macos, windows, packages]
+        default: packages
+      filter:
+        description: Optional cargo test name filter for the test stages
+        type: string
+        default: ''
 
 permissions:
   contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  test:
-    name: Tests (${{ matrix.os }}, ${{ matrix.toolchain }})
-    runs-on: ${{ matrix.os }}
-    # Allow headroom for cold builds and repository-scale tests on every host.
-    timeout-minutes: 90
-    strategy:
-      fail-fast: false
-      matrix:
-        # Requested OS versions; see docs/TESTING.md for GitHub's macOS retirements.
-        os: [ubuntu-24.04, macos-15, macos-15-intel, windows-2022]
-        toolchain: [stable, msrv]
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1 (GitHub API resolved)
-        with:
-          persist-credentials: false
-
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0 (GitHub API resolved)
-        with:
-          python-version: '3.12'
-
-      - name: Resolve toolchain from Cargo.toml
-        id: toolchain
-        env:
-          CHANNEL: ${{ matrix.toolchain }}
-        run: |
-          python - <<'PYTHON'
-          import os
-          import tomllib
-          from pathlib import Path
-
-          manifest = tomllib.loads(Path("Cargo.toml").read_text())
-          msrv = (manifest.get("workspace", {}).get("package", {}).get("rust-version")
-                  or manifest.get("package", {}).get("rust-version"))
-          if not msrv:
-              # Proposed floor: existing tests use Duration::from_mins (stable in 1.91).
-              msrv = "1.91.0"
-              print("::notice::No rust-version in Cargo.toml; testing proposed MSRV 1.91.0")
-          version = msrv if os.environ["CHANNEL"] == "msrv" else "stable"
-          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
-              print(f"version={version}", file=output)
-          PYTHON
-
-      - name: Install toolchain
-        env:
-          TOOLCHAIN: ${{ steps.toolchain.outputs.version }}
-        run: |
-          rustup toolchain install "$TOOLCHAIN" --profile minimal
-          rustup override set "$TOOLCHAIN"
-          rustc --version --verbose
-          cargo --version
-
-      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3 (GitHub API resolved)
-        with:
-          key: test-${{ matrix.os }}-${{ matrix.toolchain }}
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-
-      - name: Workspace tests (including doctests)
-        # Native confinement rejects inherited descriptors beyond the protocol pipes.
-        # The shared CLI tests/common helper owns environment isolation on every OS.
-        run: |
-          python - <<'PYTHON'
-          import subprocess
-          import sys
-
-          sys.exit(subprocess.call(
-              ["cargo", "test", "--workspace", "--locked", "--no-fail-fast",
-               "--exclude", "dctx-desktop", "--exclude", "dctx-desktop-api"],
-              close_fds=True,
-          ))
-          PYTHON
-
   quality:
+    if: ${{ (inputs.start || 'quality') == 'quality' }}
     name: Format, lint, docs and release gates
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -128,96 +74,136 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Wrapper engine API boundary
-        if: ${{ !cancelled() }}
         run: |
           python3 tools/engine-contract/check_imports.py
           python3 -m unittest discover -s tools/engine-contract -p 'test_*.py' -v
 
       - name: Clippy
-        # Report independent gates even when formatting or another gate fails.
-        if: ${{ !cancelled() }}
         run: cargo clippy --workspace --locked --exclude dctx-desktop --exclude dctx-desktop-api --all-targets -- -D warnings
 
       - name: Rust documentation
-        if: ${{ !cancelled() }}
         env:
           RUSTDOCFLAGS: -D warnings
         run: cargo doc --workspace --locked --exclude dctx-desktop --exclude dctx-desktop-api --no-deps
 
       - name: Licence headers and manifests
-        if: ${{ !cancelled() }}
         run: bash scripts/spdx_check.sh
 
       - name: Third-party licences
-        if: ${{ !cancelled() }}
         run: |
           python scripts/third_party.py --out "$RUNNER_TEMP/THIRD_PARTY.md"
           diff -u THIRD_PARTY.md "$RUNNER_TEMP/THIRD_PARTY.md"
 
       - name: Install cargo-deny (existing policy only)
         id: deny_install
-        if: ${{ !cancelled() && hashFiles('deny.toml') != '' }}
+        if: ${{ hashFiles('deny.toml') != '' }}
         run: cargo install cargo-deny --version 0.20.2 --locked
 
       - name: Check configured dependency licences
-        if: ${{ !cancelled() && hashFiles('deny.toml') != '' && steps.deny_install.outcome == 'success' }}
+        if: ${{ hashFiles('deny.toml') != '' }}
         # deny.toml configures licences; do not introduce new advisory/ban policies.
         run: cargo deny --locked check licenses
 
       - name: Install cargo-audit
         id: audit_install
-        if: ${{ !cancelled() }}
         run: cargo install cargo-audit --version 0.22.2 --locked
 
       - name: Audit dependencies (reviewed exceptions in .cargo/audit.toml)
-        if: ${{ !cancelled() && steps.audit_install.outcome == 'success' }}
         run: cargo audit --file Cargo.lock
 
       - name: Release supply-chain script tests
-        if: ${{ !cancelled() }}
         run: python3 -m unittest discover -s tools/release -p 'test_supply_chain.py' -v
 
       - name: Workflow validation
-        if: ${{ !cancelled() }}
         run: bash tools/release/lint-workflows.sh
 
       - name: Release build
         id: release_build
-        if: ${{ !cancelled() }}
         run: cargo build --release --locked -p dctx-cli
 
       - name: CLI, MCP and RPC golden byte parity
-        if: ${{ !cancelled() && steps.release_build.outcome == 'success' }}
         run: python3 tools/engine-contract/parity.py target/release/dctx-cli
 
       - name: Website dependencies (isolated venv)
         id: website_deps
-        if: ${{ !cancelled() }}
         run: |
           python -m venv "$RUNNER_TEMP/dctx-website-venv"
           "$RUNNER_TEMP/dctx-website-venv/bin/python" -m pip install -r tools/website/requirements.txt
 
       - name: Website check
-        if: ${{ !cancelled() && steps.release_build.outcome == 'success' && steps.website_deps.outcome == 'success' }}
         env:
           DCTX_BIN: ${{ github.workspace }}/target/release/dctx-cli
         run: '"$RUNNER_TEMP/dctx-website-venv/bin/python" tools/website/check.py'
 
       - name: Playground tests
-        if: ${{ !cancelled() }}
         run: cargo test --locked --manifest-path tools/playground/Cargo.toml
 
       - name: Install network trace tool
         id: network_tool
-        if: ${{ !cancelled() }}
         run: |
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends strace
 
       - name: Release gates
-        if: ${{ !cancelled() && steps.release_build.outcome == 'success' && steps.network_tool.outcome == 'success' }}
         run: scripts/release-check.sh --quick "$GITHUB_WORKSPACE/target/release/dctx-cli"
 
       - name: Warm targeted-read syscall contract (Linux)
-        if: ${{ !cancelled() && steps.release_build.outcome == 'success' }}
         run: python3 tools/engine-contract/warm_read.py target/release/dctx-cli
+
+  linux:
+    name: Linux tests
+    needs: quality
+    if: ${{ !failure() && !cancelled() && contains(fromJSON('["quality","linux"]'), inputs.start || 'quality') && contains(fromJSON('["linux","macos","windows","packages"]'), inputs.until || 'packages') }}
+    uses: ./.github/workflows/tests.yml
+    with:
+      os: '["ubuntu-24.04"]'
+      filter: ${{ inputs.filter }}
+
+  macos:
+    name: macOS tests
+    needs: linux
+    if: ${{ !failure() && !cancelled() && contains(fromJSON('["quality","linux","macos"]'), inputs.start || 'quality') && contains(fromJSON('["macos","windows","packages"]'), inputs.until || 'packages') }}
+    uses: ./.github/workflows/tests.yml
+    with:
+      os: '["macos-15", "macos-15-intel"]'
+      filter: ${{ inputs.filter }}
+
+  windows:
+    name: Windows tests
+    needs: macos
+    if: ${{ !failure() && !cancelled() && contains(fromJSON('["quality","linux","macos","windows"]'), inputs.start || 'quality') && contains(fromJSON('["windows","packages"]'), inputs.until || 'packages') }}
+    uses: ./.github/workflows/tests.yml
+    with:
+      os: '["windows-2022"]'
+      filter: ${{ inputs.filter }}
+
+  npm:
+    needs: windows
+    if: ${{ !failure() && !cancelled() && contains(fromJSON('["packages"]'), inputs.until || 'packages') }}
+    uses: ./.github/workflows/npm.yml
+
+  go:
+    needs: windows
+    if: ${{ !failure() && !cancelled() && contains(fromJSON('["packages"]'), inputs.until || 'packages') }}
+    uses: ./.github/workflows/go.yml
+
+  python:
+    needs: windows
+    if: ${{ !failure() && !cancelled() && contains(fromJSON('["packages"]'), inputs.until || 'packages') }}
+    uses: ./.github/workflows/python-packages.yml
+
+  performance:
+    needs: windows
+    if: ${{ !failure() && !cancelled() && contains(fromJSON('["packages"]'), inputs.until || 'packages') }}
+    uses: ./.github/workflows/performance.yml
+
+  fuzz:
+    needs: windows
+    if: ${{ !failure() && !cancelled() && contains(fromJSON('["packages"]'), inputs.until || 'packages') }}
+    uses: ./.github/workflows/fuzz-smoke.yml
+
+  deploy-site:
+    needs: [npm, go, python, performance, fuzz]
+    if: ${{ !failure() && !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    uses: ./.github/workflows/deploy-site.yml
+    secrets: inherit

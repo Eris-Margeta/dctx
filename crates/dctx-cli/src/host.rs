@@ -135,7 +135,9 @@ pub fn read_included_file(place: &Path, relative: &str) -> Result<Option<Vec<u8>
     use dctx_core::ids::RelativePath;
     let path = RelativePath::parse(relative).map_err(|error| error.to_string())?;
     let source = FsSource::open(place).map_err(|error| error.to_string())?;
-    let policy = project_rules(place)?.policy();
+    // Only rule files that can affect this path: its ancestors' and its own. Loading the whole
+    // project's nested rules here walked every directory on each targeted read.
+    let policy = rules::project_rules_scoped(place, Some(path.as_str()))?.policy();
     let mut cursor = RelativePath::root();
     for name in path.as_str().split('/') {
         let child = cursor.child(name).map_err(|error| error.to_string())?;

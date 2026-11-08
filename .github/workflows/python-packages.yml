@@ -2,37 +2,12 @@
 name: Python packages
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'packages/python/**'
-      - 'crates/**'
-      - 'plugins/**'
-      - 'docs/protocol/**'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
-      - 'VERSION'
-      - 'tools/release/**'
-      - '.github/workflows/python-packages.yml'
-  pull_request:
-    paths:
-      - 'packages/python/**'
-      - 'crates/**'
-      - 'plugins/**'
-      - 'docs/protocol/**'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
-      - 'VERSION'
-      - 'tools/release/**'
-      - '.github/workflows/python-packages.yml'
+  # Called by ci.yml after the test stages pass; manual runs stay available.
+  workflow_call:
   workflow_dispatch:
 
 permissions:
   contents: read
-
-concurrency:
-  group: python-packages-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 
 jobs:
   wrapper:
@@ -56,7 +31,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
           - os: ubuntu-24.04
@@ -101,15 +76,17 @@ jobs:
       - name: Build engine with the release recipe
         run: bash tools/release/build.sh '${{ matrix.target }}' target/python-native
       - name: Build wheels and run parity plus offline install
+        env:
+          TARGET: ${{ matrix.target }}
         run: |
-          binary="$PWD/target/${{ matrix.target }}/release/dctx-cli"
-          if [[ '${{ matrix.target }}' == *-windows-* ]]; then
+          binary="$PWD/target/$TARGET/release/dctx-cli"
+          if [[ "$TARGET" == *-windows-* ]]; then
             binary=$(cygpath -am "${binary}.exe")
           fi
           export DCTX_TEST_BIN="$binary"
           python packages/python/tools/generate_api.py --check
           python packages/python/tools/build_wheels.py --output wheelhouse \
-            --binary "$binary" --target '${{ matrix.target }}'
+            --binary "$binary" --target "$TARGET"
           python -W error::ResourceWarning -m unittest discover -s packages/python/tests -v
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

@@ -641,7 +641,10 @@ fn main() {
     }
     eprintln!(
         "dctx-play: listening on {} with {} samples, dctx at {}",
-        app.cfg.listen,
+        // The bound address, so `--listen HOST:0` reports the port the kernel chose.
+        listener
+            .local_addr()
+            .map_or_else(|_| app.cfg.listen.clone(), |addr| addr.to_string()),
         app.samples.len(),
         app.cfg.dctx.display()
     );

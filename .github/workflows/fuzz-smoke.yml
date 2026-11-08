@@ -1,17 +1,12 @@
 name: Parser fuzz smoke
 
 on:
-  push:
-    branches: [main]
-  pull_request:
+  # Called by ci.yml after the test stages pass; manual runs stay available.
+  workflow_call:
   workflow_dispatch:
 
 permissions:
   contents: read
-
-concurrency:
-  group: fuzz-smoke-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 
 jobs:
   fuzz-smoke:

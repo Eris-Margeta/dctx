@@ -171,3 +171,27 @@ fn scratch(name: &str) -> PathBuf {
 fn args(parts: &[&str]) -> Vec<String> {
     parts.iter().map(|part| (*part).to_string()).collect()
 }
+
+#[test]
+fn included_file_preflight_honours_ancestor_rules_without_reading_unrelated_ones() {
+    let place = tempfile::tempdir().expect("place");
+    let root = place.path();
+    std::fs::create_dir_all(root.join("src/deep")).expect("src");
+    std::fs::create_dir_all(root.join("unrelated")).expect("unrelated");
+    std::fs::write(root.join("src/deep/kept.rs"), b"pub fn kept() {}\n").expect("kept");
+    std::fs::write(root.join("src/deep/secret.rs"), b"pub fn secret() {}\n").expect("secret");
+    std::fs::write(root.join("src/.gitignore"), b"deep/secret.rs\n").expect("ancestor rule");
+    // A rule file outside the target's ancestry cannot change its decision; it must not be needed.
+    std::fs::write(root.join("unrelated/.gitignore"), b"/src/deep/kept.rs\n")
+        .expect("unrelated rule");
+    assert_eq!(
+        read_included_file(root, "src/deep/kept.rs")
+            .expect("kept")
+            .as_deref(),
+        Some(&b"pub fn kept() {}\n"[..])
+    );
+    assert_eq!(
+        read_included_file(root, "src/deep/secret.rs").expect("secret"),
+        None
+    );
+}

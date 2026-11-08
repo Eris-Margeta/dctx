@@ -9,7 +9,10 @@ version = 1
 name = "MCP transport"
 paths = ["crates/dctx-cli/src/mcp"]
 required = true
-rust_api = ["crate::exit::Failure", "crate::exit::USAGE", "crate::map::execute", "crate::mcp"]
+rust_api = [
+  "crate::exit::Failure", "crate::exit::USAGE", "crate::map::execute", "crate::mcp",
+  "crate::context_cmd::Runtime",
+]
 
 [[surface]]
 name = "RPC transport"
@@ -20,6 +23,7 @@ rust_api = [
   "dctx_cli::pack::output", "dctx_cli::languages::output",
   "dctx_cli::cache::status_output", "crate::pack_for::requested",
   "crate::pack_for::output", "crate::map::output",
+  "crate::context_cmd::Runtime", "crate::context_cmd::has_flag",
 ]
 
 [[surface]]

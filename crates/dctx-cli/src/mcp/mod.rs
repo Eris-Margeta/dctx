@@ -4,6 +4,8 @@
 //! Only JSON-RPC lines go to stdout; diagnostics stay on stderr. The server exits 0 at end of input.
 
 mod json;
+#[cfg(test)]
+mod json_robustness;
 mod tools;
 
 use json::Json;

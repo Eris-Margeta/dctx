@@ -1,17 +1,12 @@
 name: npm transport
 
 on:
-  push:
-    branches: [main]
-  pull_request:
+  # Called by ci.yml after the test stages pass; manual runs stay available.
+  workflow_call:
   workflow_dispatch:
 
 permissions:
   contents: read
-
-concurrency:
-  group: npm-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   npm:
@@ -19,7 +14,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         os: [ubuntu-24.04, macos-15, windows-2022]
         node: ['18', '24']

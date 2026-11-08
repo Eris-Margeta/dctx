@@ -322,12 +322,13 @@ mod tests {
                 limit: 64
             })
         ));
-        rustix::fs::mkfifoat(
-            rustix::fs::CWD,
-            root.path().join("pipe"),
-            Mode::RUSR | Mode::WUSR,
-        )
-        .unwrap();
+        // rustix has no mkfifoat on Apple targets; the POSIX mkfifo utility exists on every Unix CI host.
+        let made = std::process::Command::new("mkfifo")
+            .args(["-m", "600"])
+            .arg(root.path().join("pipe"))
+            .status()
+            .unwrap();
+        assert!(made.success());
         let (send, receive) = std::sync::mpsc::channel();
         std::thread::spawn(move || send.send(source.read(&grant("pipe"), 64)).unwrap());
         assert_eq!(

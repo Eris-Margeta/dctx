@@ -2,17 +2,12 @@
 name: Go package
 
 on:
-  push:
-    branches: [main]
-  pull_request:
+  # Called by ci.yml after the test stages pass; manual runs stay available.
+  workflow_call:
   workflow_dispatch:
 
 permissions:
   contents: read
-
-concurrency:
-  group: go-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   transport:
@@ -20,7 +15,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
           - os: ubuntu-24.04

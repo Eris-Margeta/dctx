@@ -524,17 +524,3 @@ mod stream_tests {
         }
     }
 }
-
-#[cfg(test)]
-mod robustness {
-    use super::*;
-    use proptest::prelude::*;
-
-    proptest! {
-        #[test]
-        fn robustness_json_decoder(text in ".{0,2048}") {
-            let first = parse(&text);
-            prop_assert_eq!(format!("{first:?}"), format!("{:?}", parse(&text)));
-        }
-    }
-}

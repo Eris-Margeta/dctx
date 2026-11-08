@@ -2,8 +2,8 @@
 //! End-to-end tests of the HTTP API: the real dctx-play binary, a stand-in `dctx` script.
 //! The real binary is exercised by tools/playground/smoke.sh.
 
-use std::io::{Read, Write};
-use std::net::{TcpListener, TcpStream};
+use std::io::{BufRead, Read, Write};
+use std::net::TcpStream;
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
@@ -34,21 +34,35 @@ impl Drop for Server {
     }
 }
 
+/// The stand-in binary is written once, before any test spawns a process: writing an executable
+/// while other threads fork can make its exec fail with ETXTBSY ("Text file busy").
+fn fake_dctx() -> &'static PathBuf {
+    static FAKE: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+    FAKE.get_or_init(|| {
+        let dir = std::env::temp_dir().join(format!("dctx-play-api-fake-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let fake = dir.join("dctx");
+        std::fs::write(&fake, FAKE_DCTX).unwrap();
+        std::fs::set_permissions(&fake, std::fs::Permissions::from_mode(0o755)).unwrap();
+        fake
+    })
+}
+
 fn start(extra: &[&str]) -> Server {
-    let port = TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port();
-    let root = std::env::temp_dir().join(format!("dctx-play-api-{}-{port}", std::process::id()));
+    static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let n = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let root = std::env::temp_dir().join(format!("dctx-play-api-{}-{n}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
     std::fs::create_dir_all(root.join("samples/kiosk/src")).unwrap();
     std::fs::write(root.join("samples/kiosk/src/main.rs"), "fn main() {}\n").unwrap();
     std::fs::create_dir_all(root.join("samples/other")).unwrap();
     std::fs::write(root.join("samples/other/a.md"), "# a\n").unwrap();
     std::fs::write(root.join("samples/index.tsv"), "kiosk\tThe kiosk sample\nother\tOther\n").unwrap();
-    let fake = root.join("dctx");
-    std::fs::write(&fake, FAKE_DCTX).unwrap();
-    std::fs::set_permissions(&fake, std::fs::Permissions::from_mode(0o755)).unwrap();
-    let addr = format!("127.0.0.1:{port}");
+    let fake = fake_dctx();
+    // The server binds port 0 itself and reports the bound address. Reserving a port here and
+    // releasing it raced with parallel tests, which then talked to each other's servers.
     let mut args = vec![
-        "--listen".to_string(), addr.clone(),
+        "--listen".to_string(), "127.0.0.1:0".into(),
         "--samples".into(), root.join("samples").display().to_string(),
         "--dctx".into(), fake.display().to_string(),
         "--work".into(), root.join("work").display().to_string(),
@@ -56,12 +70,18 @@ fn start(extra: &[&str]) -> Server {
         "--timeout-ms".into(), "500".into(),
     ];
     args.extend(extra.iter().map(|s| s.to_string()));
-    let child = Command::new(env!("CARGO_BIN_EXE_dctx-play")).args(&args).stderr(Stdio::null()).spawn().unwrap();
-    let deadline = Instant::now() + Duration::from_secs(10);
-    while TcpStream::connect(&addr).is_err() {
-        assert!(Instant::now() < deadline, "server did not start");
-        std::thread::sleep(Duration::from_millis(20));
-    }
+    let mut child = Command::new(env!("CARGO_BIN_EXE_dctx-play")).args(&args).stderr(Stdio::piped()).spawn().unwrap();
+    let mut stderr = std::io::BufReader::new(child.stderr.take().unwrap());
+    let mut line = String::new();
+    let addr = loop {
+        line.clear();
+        assert!(stderr.read_line(&mut line).unwrap() > 0, "server exited before listening");
+        if let Some(rest) = line.strip_prefix("dctx-play: listening on ") {
+            break rest.split(' ').next().unwrap().to_string();
+        }
+    };
+    // Keep draining so the server never blocks on a full stderr pipe.
+    std::thread::spawn(move || std::io::copy(&mut stderr, &mut std::io::sink()));
     Server { child, addr, root }
 }
 
