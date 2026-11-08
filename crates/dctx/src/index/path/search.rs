@@ -68,7 +68,7 @@ pub(crate) fn shortest_path(
             edge: name,
             direction,
             id,
-            kind: stored.kind.clone(),
+            kind: stored.kind.to_string(),
             path: text.get(stored.path).to_string(),
         }
     };

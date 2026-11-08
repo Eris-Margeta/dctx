@@ -230,6 +230,7 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
     text.partial_dirs = partial_dirs;
     let mut spans = vec![None; reader.strings.len()];
     let node_count = reader.count(53)?;
+    let node_texts = reader.node_texts();
     let mut nodes = Vec::with_capacity(node_count);
     for _ in 0..node_count {
         let letter = reader.u8()?;
@@ -239,8 +240,8 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
             });
         }
         let ordinal = reader.u32()?;
-        let kind = reader.string()?;
-        let name = reader.string()?;
+        let kind = reader.node_text(&node_texts)?;
+        let name = reader.node_text(&node_texts)?;
         let path = reader.span(&mut text, &mut spans)?;
         nodes.push(IndexedNode {
             letter,
@@ -248,9 +249,9 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
             kind,
             name,
             path,
-            summary: reader.string()?,
-            summary_source: reader.string()?,
-            signature: reader.string()?,
+            summary: reader.node_text(&node_texts)?,
+            summary_source: reader.node_text(&node_texts)?,
+            signature: reader.node_text(&node_texts)?,
             lines: [reader.u32()?, reader.u32()?],
             span: [reader.u64()?, reader.u64()?],
         });

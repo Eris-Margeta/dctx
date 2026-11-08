@@ -5,8 +5,9 @@
 //! Depends on [`super::rule`], [`super::defaults`] and [`crate::domain`]; pure, no IO.
 //! Used by filesystem adapters and by the dctx-pack snapshot engine.
 
+use super::compiled::CompiledRules;
 use super::defaults::{HARDCODED_IGNORE_RULES, HARDCODED_OMIT_CONTENT_RULES};
-use super::rule::{last_match, parse_rule_lines, parse_rules, rule_matches};
+use super::rule::{parse_rule_lines, parse_rules, rule_matches};
 use crate::datatypes::IgnoreRule;
 use crate::domain::{FileHandlingDecision, ItemContext};
 use std::fmt::Write as _;
@@ -91,6 +92,8 @@ pub struct RuleTexts<'a> {
 /// Ordered ignore and omit rule sets with their layer bookkeeping.
 #[derive(Debug, Clone, Default)]
 pub struct SelectionPolicy {
+    compiled_ignore: CompiledRules,
+    compiled_omit: CompiledRules,
     ignore: Vec<IgnoreRule>,
     omit: Vec<IgnoreRule>,
     ignore_layers: LayerCounts,
@@ -115,6 +118,8 @@ impl SelectionPolicy {
             texts.local_omit,
         );
         Self {
+            compiled_ignore: CompiledRules::new(&ignore),
+            compiled_omit: CompiledRules::new(&omit),
             ignore,
             omit,
             ignore_layers,
@@ -137,6 +142,8 @@ impl SelectionPolicy {
             ..LayerCounts::default()
         };
         Self {
+            compiled_ignore: CompiledRules::new(&ignore),
+            compiled_omit: CompiledRules::new(&omit),
             ignore,
             omit,
             ignore_layers,
@@ -196,14 +203,17 @@ impl SelectionPolicy {
         reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
     )]
     pub fn decide(&self, context: &ItemContext<'_>) -> FileHandlingDecision {
-        self.decide_with(context, |rules| {
-            last_match(
-                rules,
-                context.relative_path,
-                context.name,
-                context.is_directory,
-            )
-        })
+        if self.compiled_ignore.matches(&self.ignore, context) {
+            if context.debug_mode {
+                FileHandlingDecision::DebugVisible
+            } else {
+                FileHandlingDecision::Exclude
+            }
+        } else if self.compiled_omit.matches(&self.omit, context) {
+            FileHandlingDecision::OmitContent
+        } else {
+            FileHandlingDecision::Include
+        }
     }
 
     /// Same decision as [`Self::decide`] with a caller-supplied rule-set matcher,

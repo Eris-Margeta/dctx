@@ -203,8 +203,10 @@ fn answer_with(
         request.source_scope()
     };
     let profiling = profile_requested(options.profile);
+    let host_start = profiling.then(std::time::Instant::now);
     let (mut session, key) =
         open(&options.place, scope).map_err(|message| failure::place(&options.place, &message))?;
+    let host_elapsed = host_start.map(|start| start.elapsed());
     if profiling {
         session.enable_profile();
     }
@@ -267,6 +269,9 @@ fn answer_with(
     if profiling {
         if let Some(report) = session.profile_report() {
             eprint!("{report}");
+            if let Some(elapsed) = host_elapsed {
+                eprintln!("stage host open {}", elapsed.as_nanos());
+            }
         }
     }
     let missing = match &answer.outcome {

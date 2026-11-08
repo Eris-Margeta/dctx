@@ -6,6 +6,7 @@ use dctx_core::error::Resource;
 use dctx_core::facts::{EntryMeta, EntryStamp, ReadGrant, SourceEntry};
 use dctx_core::ids::{RelativePath, Timestamp};
 use dctx_ports::Source;
+use dctx_ports::source::{Inventory, InventoryEntry};
 use rustix::fs::{AtFlags, Dir, FileType, Mode, OFlags, openat, statat};
 use std::fs::File;
 use std::io::Read;
@@ -102,36 +103,101 @@ impl FsSource {
         cap: u64,
     ) -> Result<Vec<SourceEntry>, CoreError> {
         let directory = self.directory(path)?;
-        let reader = Dir::read_from(&directory).map_err(error)?;
-        let mut entries = Vec::new();
-        let mut visited = 0u64;
-        for entry in reader {
-            let entry = entry.map_err(error)?;
-            let name = entry.file_name().to_bytes();
-            if matches!(name, b"." | b"..") {
-                continue;
-            }
-            // Count even unrepresentable names before allocating the inventory.
-            visited += 1;
-            if visited > cap {
-                return Err(CoreError::ResourceLimit {
-                    resource: Resource::Entries,
-                    limit: cap,
-                });
-            }
-            let Ok(name) = std::str::from_utf8(name) else {
-                continue;
-            };
-            let kind = statat(&directory, name, AtFlags::SYMLINK_NOFOLLOW).map_err(error)?;
-            entries.push(
-                if FileType::from_raw_mode(kind.st_mode) == FileType::Directory {
-                    SourceEntry::directory(name)
-                } else {
-                    SourceEntry::file(name)
-                },
-            );
+        let mut reader = Dir::read_from(&directory).map_err(error)?;
+        Ok(list_directory(&mut reader, cap)?
+            .into_iter()
+            .map(|item| item.entry)
+            .collect())
+    }
+}
+
+fn list_directory(reader: &mut Dir, cap: u64) -> Result<Vec<InventoryEntry>, CoreError> {
+    let mut entries = Vec::new();
+    let mut visited = 0u64;
+    while let Some(entry) = reader.read() {
+        let entry = entry.map_err(error)?;
+        let name = entry.file_name().to_bytes();
+        if matches!(name, b"." | b"..") {
+            continue;
         }
-        Ok(entries)
+        // Count even unrepresentable names before allocating the inventory.
+        visited += 1;
+        if visited > cap {
+            return Err(CoreError::ResourceLimit {
+                resource: Resource::Entries,
+                limit: cap,
+            });
+        }
+        let Ok(name) = std::str::from_utf8(name) else {
+            continue;
+        };
+        let now = now_ns();
+        let kind =
+            statat(reader.fd().map_err(error)?, name, AtFlags::SYMLINK_NOFOLLOW).map_err(error)?;
+        entries.push(InventoryEntry {
+            stat: Some(stamped_meta(&kind, now)),
+            entry: if FileType::from_raw_mode(kind.st_mode) == FileType::Directory {
+                SourceEntry::directory(name)
+            } else {
+                SourceEntry::file(name)
+            },
+        });
+    }
+    Ok(entries)
+}
+
+/// A DFS stack pins each ancestor once. Moving to a sibling drops only the
+/// finished subtree; opening a child always uses its pinned parent and NOFOLLOW.
+struct FsWalk {
+    root: std::sync::Arc<File>,
+    stack: Vec<(RelativePath, Dir)>,
+}
+
+impl Inventory for FsWalk {
+    fn entries(&mut self, path: &RelativePath) -> Result<Vec<InventoryEntry>, CoreError> {
+        if self.stack.is_empty() {
+            self.stack.push((
+                RelativePath::root(),
+                Dir::read_from(&*self.root).map_err(error)?,
+            ));
+        }
+        while self.stack.last().is_some_and(|(parent, _)| {
+            !parent.is_root()
+                && !path
+                    .as_str()
+                    .strip_prefix(parent.as_str())
+                    .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
+        }) {
+            self.stack.pop();
+        }
+        let mut prefix = self
+            .stack
+            .last()
+            .map_or_else(RelativePath::root, |(path, _)| path.clone());
+        let remaining = path
+            .as_str()
+            .strip_prefix(prefix.as_str())
+            .unwrap_or(path.as_str())
+            .trim_start_matches('/');
+        for name in remaining.split('/').filter(|name| !name.is_empty()) {
+            let parent = self.stack.last().ok_or(CoreError::SourceUnavailable)?;
+            let child = openat(
+                parent.1.fd().map_err(error)?,
+                name,
+                DIRECTORY,
+                Mode::empty(),
+            )
+            .map_err(error)?;
+            prefix = prefix.child(name)?;
+            self.stack
+                .push((prefix.clone(), Dir::new(child).map_err(error)?));
+        }
+        let (_, reader) = self.stack.last_mut().ok_or(CoreError::SourceUnavailable)?;
+        reader.rewind();
+        let cap = crate::domain::entries_ceiling().map_err(|_| CoreError::InvalidRequest {
+            reason: "invalid DCTX_MAX_ENTRIES ceiling",
+        })?;
+        list_directory(reader, cap)
     }
 }
 
@@ -152,6 +218,13 @@ fn entry_meta(meta: &rustix::fs::Stat) -> EntryMeta {
 }
 
 impl Source for FsSource {
+    fn inventory(&self) -> Option<Box<dyn Inventory + '_>> {
+        Some(Box::new(FsWalk {
+            root: self.directory.clone(),
+            stack: Vec::new(),
+        }))
+    }
+
     fn root_kind(&self) -> Result<NodeType, CoreError> {
         Ok(NodeType::Directory)
     }
@@ -177,27 +250,9 @@ impl Source for FsSource {
         Ok(entry_meta(&self.source_stat(path)?))
     }
 
-    #[allow(
-        clippy::useless_conversion,
-        clippy::unnecessary_fallible_conversions,
-        reason = "Unix stat fields have different signedness and widths across targets."
-    )]
     fn stat(&self, path: &RelativePath) -> Result<(EntryMeta, Option<EntryStamp>), CoreError> {
         let now = now_ns();
-        let meta = self.source_stat(path)?;
-        let entry = entry_meta(&meta);
-        let modified_ns = u128::try_from(meta.st_mtime).ok().and_then(|seconds| {
-            Some(seconds * 1_000_000_000 + u128::try_from(meta.st_mtime_nsec).ok()?)
-        });
-        let stamp = modified_ns
-            .filter(|mtime| *mtime != 0 && mtime.saturating_add(super::RACY_WINDOW_NS) <= now)
-            .filter(|_| FileType::from_raw_mode(meta.st_mode) == FileType::RegularFile)
-            .map(|modified_ns| EntryStamp {
-                size: entry.size,
-                modified_ns,
-                inode: u64::try_from(meta.st_ino).unwrap_or(0),
-            });
-        Ok((entry, stamp))
+        Ok(stamped_meta(&self.source_stat(path)?, now))
     }
 
     fn read(&self, grant: &ReadGrant, max_bytes: u64) -> Result<Vec<u8>, CoreError> {
@@ -220,6 +275,27 @@ impl Source for FsSource {
     }
 }
 
+#[allow(
+    clippy::useless_conversion,
+    clippy::unnecessary_fallible_conversions,
+    reason = "Unix stat fields have different signedness and widths across targets."
+)]
+fn stamped_meta(meta: &rustix::fs::Stat, now: u128) -> (EntryMeta, Option<EntryStamp>) {
+    let entry = entry_meta(meta);
+    let modified_ns = u128::try_from(meta.st_mtime).ok().and_then(|seconds| {
+        Some(seconds * 1_000_000_000 + u128::try_from(meta.st_mtime_nsec).ok()?)
+    });
+    let stamp = modified_ns
+        .filter(|mtime| *mtime != 0 && mtime.saturating_add(super::RACY_WINDOW_NS) <= now)
+        .filter(|_| FileType::from_raw_mode(meta.st_mode) == FileType::RegularFile)
+        .map(|modified_ns| EntryStamp {
+            size: entry.size,
+            modified_ns,
+            inode: u64::try_from(meta.st_ino).unwrap_or(0),
+        });
+    (entry, stamp)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -234,6 +310,66 @@ mod tests {
             true,
         )
         .unwrap()
+    }
+
+    #[test]
+    fn inventory_pins_ancestors_and_refuses_unopened_replacement_links() {
+        let root = tempfile::tempdir().unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        fs::create_dir_all(root.path().join("sub/deeper")).unwrap();
+        fs::write(root.path().join("sub/deeper/inside.rs"), b"inside").unwrap();
+        fs::write(outside.path().join("OUTSIDE_SENTINEL.rs"), b"outside").unwrap();
+        let source = FsSource::open(root.path()).unwrap();
+        let mut cursor = source.inventory().unwrap();
+        cursor
+            .entries(&RelativePath::parse("sub").unwrap())
+            .unwrap();
+        fs::rename(root.path().join("sub"), root.path().join("old")).unwrap();
+        symlink(outside.path(), root.path().join("sub")).unwrap();
+        let entries = cursor
+            .entries(&RelativePath::parse("sub/deeper").unwrap())
+            .unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].entry.name, "inside.rs");
+        assert_eq!(entries[0].stat.unwrap().0.size, 6);
+        assert!(
+            source
+                .stat(&RelativePath::parse("sub/deeper/inside.rs").unwrap())
+                .is_err()
+        );
+        // A new traversal cannot enter the replacement link, even though an
+        // earlier traversal pinned the original ancestor.
+        assert!(
+            source
+                .inventory()
+                .unwrap()
+                .entries(&RelativePath::parse("sub").unwrap())
+                .is_err()
+        );
+        cursor.entries(&RelativePath::root()).unwrap();
+        assert!(
+            cursor
+                .entries(&RelativePath::parse("sub").unwrap())
+                .is_err()
+        );
+        fs::remove_file(root.path().join("sub")).unwrap();
+        fs::rename(root.path().join("old"), root.path().join("sub")).unwrap();
+        fs::remove_file(root.path().join("sub/deeper/inside.rs")).unwrap();
+        symlink(
+            outside.path().join("OUTSIDE_SENTINEL.rs"),
+            root.path().join("sub/deeper/inside.rs"),
+        )
+        .unwrap();
+        let entries = cursor
+            .entries(&RelativePath::parse("sub/deeper").unwrap())
+            .unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(
+            entries[0].stat.unwrap().1,
+            None,
+            "a link never certifies a stamp"
+        );
+        assert!(source.read(&grant("sub/deeper/inside.rs"), 64).is_err());
     }
 
     #[test]

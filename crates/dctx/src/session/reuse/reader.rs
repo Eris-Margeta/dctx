@@ -86,6 +86,29 @@ impl<'a> Reader<'a> {
             })
     }
 
+    /// Materializes the validated table in one owned buffer. Each node field
+    /// shares this buffer and a range; no field borrows the retained byte slice.
+    pub(super) fn node_texts(&self) -> Vec<crate::index::NodeText> {
+        let mut buffer = String::with_capacity(self.strings.iter().map(|s| s.len()).sum());
+        let mut ranges = Vec::with_capacity(self.strings.len());
+        for value in &self.strings {
+            let start = buffer.len();
+            buffer.push_str(value);
+            ranges.push(start..buffer.len());
+        }
+        crate::index::NodeText::table(buffer, ranges)
+    }
+
+    pub(super) fn node_text(
+        &mut self,
+        texts: &[crate::index::NodeText],
+    ) -> Result<crate::index::NodeText, DctxError> {
+        let id = self.u32()? as usize;
+        texts.get(id).cloned().ok_or(DctxError::CorruptIndex {
+            reason: "generation string reference",
+        })
+    }
+
     /// Intern paths and labels directly into the generation blob. Repeated references
     /// share a span; no temporary owned string is allocated per node or edge.
     pub(super) fn span(

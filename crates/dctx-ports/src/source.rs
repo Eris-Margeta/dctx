@@ -9,8 +9,37 @@ use dctx_core::error::DctxError;
 use dctx_core::facts::{EntryMeta, EntryStamp, ReadGrant, SourceEntry};
 use dctx_core::ids::RelativePath;
 
+/// A directory entry and metadata captured by the same confined inventory traversal.
+/// `None` asks the caller to use a fresh [`Source::stat`] after selection.
+#[derive(Debug, Clone)]
+pub struct InventoryEntry {
+    /// Name and kind, without following links.
+    pub entry: SourceEntry,
+    /// Metadata and optional settled stamp, taken before content reads.
+    pub stat: Option<(EntryMeta, Option<EntryStamp>)>,
+}
+
+/// One invocation's confined traversal. Implementations may pin directory handles
+/// while descending, but must never follow an in-tree symlink.
+pub trait Inventory {
+    /// Lists a directory with optional metadata, respecting the source's entry cap.
+    /// # Errors
+    /// Returns the same confinement, resource and I/O failures as [`Source::entries`].
+    fn entries(&mut self, dir: &RelativePath) -> Result<Vec<InventoryEntry>, DctxError>;
+}
+
 /// Read access to one source root. Paths are root-relative and can never escape the root.
 pub trait Source {
+    /// Starts a fresh traversal, when the adapter can combine listing and stat.
+    /// Metadata is scoped to this traversal; ordinary stats and reads stay live.
+    fn inventory(&self) -> Option<Box<dyn Inventory + '_>> {
+        None
+    }
+
+    /// Discards any prepared traversal after a host hook may have changed the source.
+    /// Ordinary sources have no prepared state.
+    fn invalidate_inventory(&self) {}
+
     /// Kind of the root itself; `SourceUnavailable` if it does not exist.
     ///
     /// # Errors
@@ -73,6 +102,14 @@ pub trait Source {
 }
 
 impl<S: Source + ?Sized> Source for &S {
+    fn inventory(&self) -> Option<Box<dyn Inventory + '_>> {
+        (**self).inventory()
+    }
+
+    fn invalidate_inventory(&self) {
+        (**self).invalidate_inventory();
+    }
+
     fn root_kind(&self) -> Result<NodeType, DctxError> {
         (**self).root_kind()
     }

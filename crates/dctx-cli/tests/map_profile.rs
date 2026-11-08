@@ -17,7 +17,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 static NEXT: AtomicU64 = AtomicU64::new(1);
 
-const STAGES: [&str; 13] = [
+const STAGES: [&str; 14] = [
     "walk",
     "read",
     "hash",
@@ -31,6 +31,7 @@ const STAGES: [&str; 13] = [
     "reuse decode",
     "reuse check",
     "reuse pin",
+    "host open",
 ];
 
 struct Repository {

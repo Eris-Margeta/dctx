@@ -74,14 +74,14 @@ mod tests {
         IndexedNode {
             letter: b's',
             ordinal: 0,
-            kind: kind.to_string(),
-            name: name.to_string(),
+            kind: kind.to_string().into(),
+            name: name.to_string().into(),
             path: TextSpan::EMPTY,
             lines: [1, 1],
             span: [0, 0],
-            summary: String::new(),
-            summary_source: "sig".to_string(),
-            signature: signature.to_string(),
+            summary: String::new().into(),
+            summary_source: "sig".to_string().into(),
+            signature: signature.to_string().into(),
         }
     }
 

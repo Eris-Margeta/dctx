@@ -432,14 +432,14 @@ fn node_of(
     crate::index::IndexedNode {
         letter,
         ordinal,
-        kind: "fn".to_string(),
-        name: name.to_string(),
+        kind: "fn".to_string().into(),
+        name: name.to_string().into(),
         path,
         lines: [1, 1],
         span: [0, 0],
-        summary: String::new(),
-        summary_source: String::new(),
-        signature: String::new(),
+        summary: String::new().into(),
+        summary_source: String::new().into(),
+        signature: String::new().into(),
     }
 }
 

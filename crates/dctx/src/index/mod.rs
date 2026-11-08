@@ -5,6 +5,8 @@
 //! Callers see an [`crate::domain::Answer`], never this module.
 
 mod concept;
+mod node_text;
+pub(crate) use node_text::NodeText;
 mod decl_pair;
 pub(crate) mod dotted_key;
 pub(crate) mod export;
@@ -229,9 +231,9 @@ pub(crate) struct IndexedNode {
     /// Duplicate suffix. `0` means the id has no `~` ordinal.
     pub ordinal: u32,
     /// Wire kind (`module`, `fn`, `heading`, …).
-    pub kind: String,
+    pub kind: NodeText,
     /// Unqualified or qualified name. Empty for a module.
-    pub name: String,
+    pub name: NodeText,
     /// Root-relative path in the generation blob.
     pub path: TextSpan,
     /// Inclusive 1-based lines.
@@ -239,11 +241,11 @@ pub(crate) struct IndexedNode {
     /// Byte span `[start, end)`.
     pub span: [u64; 2],
     /// Summary text.
-    pub summary: String,
+    pub summary: NodeText,
     /// `doc`, `heading`, `sig` or empty.
-    pub summary_source: String,
+    pub summary_source: NodeText,
     /// Signature without the body. On a module node: the file's explicit export list, space-separated, never emitted.
-    pub signature: String,
+    pub signature: NodeText,
 }
 
 /// One edge: `contains` from the walk, `calls` and `imports` from [`refs::link`]. Calls are never `exact`.

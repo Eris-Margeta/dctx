@@ -5,9 +5,10 @@
 //! The session turns a [`Walked`] tree into one generation. Cancellation leaves no generation.
 
 use dctx_core::FileHandlingDecision;
-use dctx_core::facts::ReadGrant;
+use dctx_core::facts::{EntryMeta, EntryStamp, ReadGrant};
 use dctx_core::ids::RelativePath;
 use dctx_map_model::{NodeKind, StableId};
+use dctx_ports::source::{Inventory, InventoryEntry};
 use dctx_ports::{Cancellation, Source};
 
 use super::extract::{Prepared, Symbol, index_prepared, language_of, prepare_structural};
@@ -108,6 +109,7 @@ fn walk(
     checkpoint(args)?;
     args.source.root_kind().map_err(DctxError::from_core)?;
     let languages = args.policy.languages()?;
+    let mut cursor = args.source.inventory();
     let mut state = State {
         files: Vec::new(),
         nodes: Vec::new(),
@@ -127,13 +129,21 @@ fn walk(
     }
     if let Some((scope, file)) = scope {
         let path = RelativePath::parse(scope).map_err(DctxError::from_core)?;
-        visit_scope(args, languages.as_deref(), &path, file, &mut state)?;
+        visit_scope(
+            args,
+            languages.as_deref(),
+            &path,
+            file,
+            &mut state,
+            &mut cursor,
+        )?;
     } else {
         visit_dir(
             args,
             languages.as_deref(),
             &RelativePath::root(),
             &mut state,
+            &mut cursor,
         )?;
     }
     checkpoint(args)?;
@@ -154,6 +164,7 @@ fn visit_scope(
     path: &RelativePath,
     file: bool,
     state: &mut State,
+    cursor: &mut Option<Box<dyn Inventory + '_>>,
 ) -> Result<(), DctxError> {
     let mut ancestor = RelativePath::root();
     let parts: Vec<_> = path.as_str().split('/').collect();
@@ -183,7 +194,7 @@ fn visit_scope(
         return Ok(());
     }
     if directory {
-        visit_dir(args, languages, path, state)
+        visit_dir(args, languages, path, state, cursor)
     } else {
         if decision == FileHandlingDecision::Include && !language_ok(languages, path.as_str()) {
             decision = FileHandlingDecision::OmitContent;
@@ -192,7 +203,7 @@ fn visit_scope(
         if state.entries > args.limits.entries {
             return Err(limit(Resource::Entries, args.limits.entries));
         }
-        visit_file(args, path, decision, state)
+        visit_file(args, path, decision, state, None)
     }
 }
 
@@ -201,11 +212,22 @@ fn visit_dir(
     languages: Option<&[String]>,
     dir: &RelativePath,
     state: &mut State,
+    cursor: &mut Option<Box<dyn Inventory + '_>>,
 ) -> Result<(), DctxError> {
     checkpoint(args)?;
-    let mut entries = args.source.entries(dir).map_err(DctxError::from_core)?;
-    entries.sort_by(|left, right| left.name.cmp(&right.name));
-    for entry in entries {
+    let mut entries = if let Some(cursor) = cursor.as_mut() {
+        cursor.entries(dir).map_err(DctxError::from_core)?
+    } else {
+        args.source
+            .entries(dir)
+            .map_err(DctxError::from_core)?
+            .into_iter()
+            .map(|entry| InventoryEntry { entry, stat: None })
+            .collect()
+    };
+    entries.sort_by(|left, right| left.entry.name.cmp(&right.entry.name));
+    for item in entries {
+        let entry = item.entry;
         checkpoint(args)?;
         // A name the confined path cannot carry (a backslash, or a path over the byte cap) is skipped, as the pack
         // scan does, and marks the snapshot partial. One such file never fails the whole walk.
@@ -241,9 +263,9 @@ fn visit_dir(
             return Err(limit(Resource::Entries, args.limits.entries));
         }
         if entry.is_dir() && decision.should_recurse() {
-            visit_dir(args, languages, &path, state)?;
+            visit_dir(args, languages, &path, state, cursor)?;
         } else if !entry.is_dir() {
-            visit_file(args, &path, decision, state)?;
+            visit_file(args, &path, decision, state, item.stat)?;
         }
     }
     Ok(())
@@ -254,9 +276,13 @@ fn visit_file(
     path: &RelativePath,
     decision: FileHandlingDecision,
     state: &mut State,
+    stat: Option<(EntryMeta, Option<EntryStamp>)>,
 ) -> Result<(), DctxError> {
     // The stamp is taken with the stat, before any byte is read: an edit after the stat changes it.
-    let (meta, stamp) = match args.source.stat(path).map_err(DctxError::from_core) {
+    let (meta, stamp) = match stat
+        .map_or_else(|| args.source.stat(path), Ok)
+        .map_err(DctxError::from_core)
+    {
         Ok(pair) => pair,
         Err(error @ (DctxError::Cancelled | DctxError::ResourceLimit { .. })) => return Err(error),
         Err(_) => {
@@ -359,7 +385,7 @@ fn visit_file(
     if let Some((module_id, path_span)) = module {
         // The export list rides on the module node, so `map` orders an outline without a second read (DCX-55c).
         state.nodes[module_id as usize].signature =
-            super::outline_order::export_signature(path.as_str(), &bytes);
+            super::outline_order::export_signature(path.as_str(), &bytes).into();
         let parse_mark = profile::start();
         let parsed = prepare_file(args, path.as_str(), &bytes);
         watch.charge(Stage::ParseLex, parse_mark);
@@ -481,14 +507,14 @@ fn push_module(
     nodes.push(IndexedNode {
         letter: b'm',
         ordinal: 0,
-        kind: "module".to_string(),
-        name: String::new(),
+        kind: "module".to_string().into(),
+        name: String::new().into(),
         path: path_span,
         lines,
         span: [0, len],
-        summary: String::new(),
-        summary_source: String::new(),
-        signature: String::new(),
+        summary: String::new().into(),
+        summary_source: String::new().into(),
+        signature: String::new().into(),
     });
     Some((module_index, path_span))
 }

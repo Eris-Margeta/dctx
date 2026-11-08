@@ -148,14 +148,14 @@ mod tests {
             nodes.push(IndexedNode {
                 letter: b's',
                 ordinal: 0,
-                kind: kind.to_string(),
-                name: node_name.to_string(),
+                kind: kind.to_string().into(),
+                name: node_name.to_string().into(),
                 path,
                 lines: [1, 1],
                 span: [0, 0],
-                summary: String::new(),
-                summary_source: "sig".to_string(),
-                signature: String::new(),
+                summary: String::new().into(),
+                summary_source: "sig".to_string().into(),
+                signature: String::new().into(),
             });
             let index = u32::try_from(nodes.len() - 1).unwrap_or(0);
             edges.push(IndexedEdge {

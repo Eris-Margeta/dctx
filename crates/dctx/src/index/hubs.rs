@@ -97,7 +97,7 @@ pub(crate) fn collect_hubs(generation: &Generation) -> (Vec<Hub>, Vec<DirCount>)
             write_node_id(&mut id, text, node);
             Some(Hub {
                 id,
-                kind: node.kind.clone(),
+                kind: node.kind.to_string(),
                 path: text.get(node.path).to_string(),
                 in_degree,
             })
@@ -252,14 +252,14 @@ mod tests {
         IndexedNode {
             letter,
             ordinal: 0,
-            kind: kind.to_string(),
-            name: name.to_string(),
+            kind: kind.to_string().into(),
+            name: name.to_string().into(),
             path: text.push(path),
             lines: [1, 1],
             span: [0, 0],
-            summary: String::new(),
-            summary_source: String::new(),
-            signature: String::new(),
+            summary: String::new().into(),
+            summary_source: String::new().into(),
+            signature: String::new().into(),
         }
     }
 

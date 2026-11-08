@@ -94,6 +94,7 @@ impl Session {
         if let Some(error) = self.missing_host(&plan, boundary, false) {
             return error;
         }
+        self.source.invalidate_inventory();
         let included = self.gitignore_included()?;
         let epoch = self.epoch;
         let now = self.clock.now().millis();

@@ -2,6 +2,7 @@
 //! Project ignore and omit rule loading for the facade selection policy.
 //! The session entry points that use these helpers stay in the host module.
 
+use super::inventory::{PreparedSource, RuleWalk};
 use super::*;
 
 /// Nested `.gitignore` walk stops after this many directory levels.
@@ -15,6 +16,42 @@ const MAX_RULE_ENTRIES: u64 = 100_000;
 /// to root-relative lines, then `.dctxignore`. An excluded directory is not listed.
 pub(crate) fn project_rules(root: &Path) -> Result<RuleSources, String> {
     project_rules_scoped(root, None)
+}
+
+/// Prepares the single listing/stat traversal consumed by the first snapshot.
+pub(super) fn project_rules_inventory(
+    root: &Path,
+    source: FsSource,
+    scope: Option<&str>,
+) -> Result<(PreparedSource, RuleSources), String> {
+    let root = fs::canonicalize(root).map_err(|error| error.to_string())?;
+    let config = canonical_config_dir()?;
+    let global_omit = optional_omit(config.as_ref().map(|dir| dir.join("omitcontent")));
+    let global_ignore = if index_ignored() {
+        None
+    } else {
+        required_ignore(config.map(|dir| dir.join("ignore")))?
+    };
+    let mut walk = RuleWalk::new(&source);
+    let local_ignore = if index_ignored() {
+        None
+    } else {
+        match scope {
+            Some(scope) => scoped_ignore_walk(&root, scope, global_ignore.as_deref(), &mut walk)?,
+            None => local_ignore_walk(&root, global_ignore.as_deref(), &mut walk)?,
+        }
+    };
+    let directories = std::mem::take(&mut walk.directories);
+    drop(walk);
+    Ok((
+        PreparedSource::new(source, directories),
+        RuleSources {
+            global_ignore,
+            global_omit,
+            local_ignore,
+            local_omit: None,
+        },
+    ))
 }
 
 /// Loads only ancestor rule files and the selected subtree's nested rules.
@@ -53,11 +90,21 @@ pub(crate) fn local_ignore_text(
     root: &Path,
     global_ignore: Option<&str>,
 ) -> Result<Option<String>, String> {
+    let source = FsSource::open(root).map_err(|error| error.to_string())?;
+    let mut walk = RuleWalk::new(&source);
+    local_ignore_walk(root, global_ignore, &mut walk)
+}
+
+fn local_ignore_walk(
+    root: &Path,
+    global_ignore: Option<&str>,
+    walk: &mut RuleWalk<'_>,
+) -> Result<Option<String>, String> {
     let mut local = String::new();
     if let Some(text) = read_rule_file(&root.join(".gitignore"))? {
         append_text(&mut local, &text)?;
     }
-    collect_nested(root, "", &mut local, global_ignore, 0, &mut 0)?;
+    collect_nested(root, "", &mut local, global_ignore, 0, &mut 0, walk)?;
     if let Some(text) = read_rule_file(&root.join(".dctxignore"))? {
         append_text(&mut local, &text)?;
     }
@@ -72,6 +119,17 @@ fn scoped_ignore_text(
     root: &Path,
     scope: &str,
     global_ignore: Option<&str>,
+) -> Result<Option<String>, String> {
+    let source = FsSource::open(root).map_err(|error| error.to_string())?;
+    let mut walk = RuleWalk::new(&source);
+    scoped_ignore_walk(root, scope, global_ignore, &mut walk)
+}
+
+fn scoped_ignore_walk(
+    root: &Path,
+    scope: &str,
+    global_ignore: Option<&str>,
+    walk: &mut RuleWalk<'_>,
 ) -> Result<Option<String>, String> {
     let scope = dctx_core::ids::RelativePath::parse(scope).map_err(|error| error.to_string())?;
     let mut local = String::new();
@@ -99,9 +157,6 @@ fn scoped_ignore_text(
         {
             break;
         }
-        if let Some(text) = read_rule_file(&path.join(".gitignore"))? {
-            append_nested(&mut local, &relative, &text)?;
-        }
         if relative == scope.as_str() {
             collect_nested(
                 root,
@@ -110,7 +165,10 @@ fn scoped_ignore_text(
                 global_ignore,
                 u32::try_from(depth + 1).unwrap_or(u32::MAX),
                 &mut 0,
+                walk,
             )?;
+        } else if let Some(text) = read_rule_file(&path.join(".gitignore"))? {
+            append_nested(&mut local, &relative, &text)?;
         }
     }
     if let Some(text) = read_rule_file(&root.join(".dctxignore"))? {
@@ -178,8 +236,14 @@ fn collect_nested(
     global_ignore: Option<&str>,
     depth: u32,
     visited: &mut u64,
+    walk: &mut RuleWalk<'_>,
 ) -> Result<(), String> {
     if depth > MAX_RULE_DEPTH {
+        // The last directory's rule was historically loaded before stopping
+        // descent. Preserve that boundary without listing below the rule cap.
+        if let Some(text) = read_rule_file(&root.join(prefix).join(".gitignore"))? {
+            append_nested(rules, prefix, &text)?;
+        }
         return Ok(());
     }
     let dir = if prefix.is_empty() {
@@ -188,10 +252,9 @@ fn collect_nested(
         root.join(prefix)
     };
     let mut names = Vec::new();
-    let source = FsSource::open(root).map_err(|error| error.to_string())?;
     let relative =
         dctx_core::ids::RelativePath::parse(prefix).map_err(|error| error.to_string())?;
-    let entries = source
+    let entries = walk
         .entries(&relative)
         .map_err(|error| {
             let entries = matches!(&error, dctx_core::error::DctxError::ResourceLimit { resource: dctx_core::error::Resource::Entries, .. });
@@ -200,6 +263,13 @@ fn collect_nested(
                 format!("rule walk {}: {error}; raise DCTX_MAX_ENTRIES (1..100000000) or choose a smaller place", dir.display())
             } else { format!("rule walk {}: {error}", dir.display()) }
         })?;
+    // The inventory also discovers rule leaves. Missing rules need no separate
+    // root-to-leaf open, and links remain visible here and refused by the reader.
+    if !prefix.is_empty() && entries.iter().any(|entry| entry.name == ".gitignore") {
+        if let Some(text) = read_rule_file(&dir.join(".gitignore"))? {
+            append_nested(rules, prefix, &text)?;
+        }
+    }
     for entry in entries {
         *visited += 1;
         if *visited > MAX_RULE_ENTRIES {
@@ -216,13 +286,18 @@ fn collect_nested(
         } else {
             format!("{prefix}/{name}")
         };
-        if directory_excluded(global_ignore, rules, &relative, &name) {
+        if walk.excluded(global_ignore, rules, &relative, &name) {
             continue;
         }
-        if let Some(text) = read_rule_file(&root.join(&relative).join(".gitignore"))? {
-            append_nested(rules, &relative, &text)?;
-        }
-        collect_nested(root, &relative, rules, global_ignore, depth + 1, visited)?;
+        collect_nested(
+            root,
+            &relative,
+            rules,
+            global_ignore,
+            depth + 1,
+            visited,
+            walk,
+        )?;
     }
     Ok(())
 }
@@ -344,6 +419,37 @@ mod tests {
             .map(|(key, value)| (*key, OsString::from(value)))
             .collect();
         config_dir_from_env(windows, |key| env.get(key).cloned())
+    }
+
+    #[test]
+    fn shared_inventory_preserves_rule_bytes_and_sequential_pruning() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(temp.path()).unwrap();
+        for dir in ["a/blocked", "b", "excluded"] {
+            fs::create_dir_all(root.join(dir)).unwrap();
+        }
+        for (path, text) in [
+            (".gitignore", "excluded/\n*.tmp\n"),
+            ("a/.gitignore", "!keep.tmp\nblocked/\n"),
+            ("b/.gitignore", "/local.rs\n"),
+            (".dctxignore", "b/final.rs\n"),
+        ] {
+            fs::write(root.join(path), text).unwrap();
+        }
+        for path in ["excluded/.gitignore", "a/blocked/.gitignore"] {
+            fs::write(root.join(path), [0xff]).unwrap();
+        }
+        let source = FsSource::open(&root).unwrap();
+        let mut walk = RuleWalk::new(&source);
+        let text = local_ignore_walk(&root, None, &mut walk).unwrap().unwrap();
+        assert_eq!(
+            text,
+            "excluded/\n*.tmp\n!a/**/keep.tmp\na/**/blocked/\nb/local.rs\nb/final.rs\n"
+        );
+        assert!(walk.directories.contains_key("a"));
+        assert!(walk.directories.contains_key("b"));
+        assert!(!walk.directories.contains_key("excluded"));
+        assert!(!walk.directories.contains_key("a/blocked"));
     }
 
     #[test]

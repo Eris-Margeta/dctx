@@ -19,14 +19,14 @@ fn linked(files: &[(&str, &str)]) -> Vec<String> {
         nodes.push(IndexedNode {
             letter: b'm',
             ordinal: 0,
-            kind: "module".to_string(),
-            name: String::new(),
+            kind: "module".to_string().into(),
+            name: String::new().into(),
             path: path_span,
             lines: [1, 1],
             span: [0, 0],
-            summary: String::new(),
-            summary_source: String::new(),
-            signature: String::new(),
+            summary: String::new().into(),
+            summary_source: String::new().into(),
+            signature: String::new().into(),
         });
         let (prepared, raw) = prepare_structural(path, source.as_bytes());
         index_prepared(

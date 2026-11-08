@@ -252,7 +252,7 @@ fn explain(generation: &Generation, request: &MapRequest) -> Result<Collected, D
     };
     let mut record = record_of(text, node);
     if node.letter != b'm' && !node.signature.is_empty() {
-        record.signature = Some(node.signature.clone());
+        record.signature = Some(node.signature.to_string());
     }
     Ok(Collected::Records(vec![record]))
 }
@@ -298,7 +298,7 @@ fn admit(text: &TextBlob, node: &IndexedNode, request: &MapRequest) -> bool {
         && !request
             .kinds
             .iter()
-            .any(|kind| kind == &node.kind || (kind == "doc" && node.letter == b'd'))
+            .any(|kind| node.kind == *kind || (kind == "doc" && node.letter == b'd'))
     {
         return false;
     }
@@ -330,11 +330,11 @@ pub(super) fn record_of(text: &TextBlob, node: &IndexedNode) -> AnswerRecord {
         generic::handles(language_of(text.get(node.path))).then(|| generic::GUESS.to_string());
     AnswerRecord {
         id,
-        kind: node.kind.clone(),
+        kind: node.kind.to_string(),
         path: text.get(node.path).to_string(),
         lines: node.lines,
-        summary: node.summary.clone(),
-        summary_source: node.summary_source.clone(),
+        summary: node.summary.to_string(),
+        summary_source: node.summary_source.to_string(),
         signature: None,
         span: None,
         source_utf8: None,
@@ -385,26 +385,26 @@ mod tests {
         let node = IndexedNode {
             letter: b's',
             ordinal: 0,
-            kind: "fn".to_string(),
-            name: "ping".to_string(),
+            kind: "fn".to_string().into(),
+            name: "ping".to_string().into(),
             path,
             lines: [2, 2],
             span: [13, 29],
-            summary: "Respond.".to_string(),
-            summary_source: "doc".to_string(),
-            signature: "pub fn ping()".to_string(),
+            summary: "Respond.".to_string().into(),
+            summary_source: "doc".to_string().into(),
+            signature: "pub fn ping()".to_string().into(),
         };
         assert_eq!(score_of(&text, &node, "ping"), 3000);
         assert_eq!(score_of(&text, &node, "src/lib"), 100);
         assert_eq!(score_of(&text, &node, "Respond"), 10);
         assert_eq!(score_of(&text, &node, "missing"), 0);
         let qualified = IndexedNode {
-            name: "tests::ping".to_string(),
+            name: "tests::ping".to_string().into(),
             ..node
         };
         assert_eq!(score_of(&text, &qualified, "ping"), 2500);
         let key = IndexedNode {
-            name: "server.max_upload_size".to_string(),
+            name: "server.max_upload_size".to_string().into(),
             ..qualified
         };
         assert_eq!(score_of(&text, &key, "max_upload_size"), 2500);
@@ -420,14 +420,14 @@ mod tests {
         let node = |path| IndexedNode {
             letter: b's',
             ordinal: 0,
-            kind: "fn".to_string(),
-            name: "run".to_string(),
+            kind: "fn".to_string().into(),
+            name: "run".to_string().into(),
             path,
             lines: [1, 1],
             span: [0, 0],
-            summary: String::new(),
-            summary_source: "sig".to_string(),
-            signature: String::new(),
+            summary: String::new().into(),
+            summary_source: "sig".to_string().into(),
+            signature: String::new().into(),
         };
         assert_eq!(
             record_of(&text, &node(scala)).confidence.as_deref(),

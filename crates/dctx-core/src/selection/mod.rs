@@ -13,3 +13,5 @@ pub use defaults::{HARDCODED_IGNORE_RULES, HARDCODED_OMIT_CONTENT_RULES};
 pub use glob::glob_match;
 pub use policy::{LayerCounts, RuleSource, RuleTexts, SelectionPolicy};
 pub use rule::{last_match, parse_ignore_pattern_line, parse_rules, rule_matches};
+
+mod compiled;

@@ -13,14 +13,14 @@ fn chain() -> Generation {
         .map(|n| IndexedNode {
             letter: b's',
             ordinal: 0,
-            kind: "fn".to_string(),
-            name: format!("f{n}"),
+            kind: "fn".to_string().into(),
+            name: format!("f{n}").into(),
             path,
             lines: [n, n],
             span: [0, 0],
-            summary: String::new(),
-            summary_source: "sig".to_string(),
-            signature: String::new(),
+            summary: String::new().into(),
+            summary_source: "sig".to_string().into(),
+            signature: String::new().into(),
         })
         .collect();
     let calls = text.push("calls");
@@ -125,14 +125,14 @@ fn decl_pair_fixture() -> Generation {
     let node = |path, name: &str| IndexedNode {
         letter: b's',
         ordinal: 0,
-        kind: "fn".to_string(),
-        name: name.to_string(),
+        kind: "fn".to_string().into(),
+        name: name.to_string().into(),
         path,
         lines: [1, 1],
         span: [0, 0],
-        summary: String::new(),
-        summary_source: "sig".to_string(),
-        signature: String::new(),
+        summary: String::new().into(),
+        summary_source: "sig".to_string().into(),
+        signature: String::new().into(),
     };
     let nodes = vec![
         node(header, "add"),
@@ -220,14 +220,14 @@ fn big_callers(count: u32) -> Generation {
         generation.nodes.push(IndexedNode {
             letter: b's',
             ordinal: 0,
-            kind: "fn".to_string(),
-            name: label,
+            kind: "fn".to_string().into(),
+            name: label.into(),
             path,
             lines: [n + 1, n + 1],
             span: [0, 0],
-            summary: sig,
-            summary_source: "sig".to_string(),
-            signature: String::new(),
+            summary: sig.into(),
+            summary_source: "sig".to_string().into(),
+            signature: String::new().into(),
         });
         if n > 0 {
             generation.edges.push(IndexedEdge {

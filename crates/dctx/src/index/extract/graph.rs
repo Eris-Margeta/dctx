@@ -86,14 +86,14 @@ fn append_cfg(
         nodes.push(IndexedNode {
             letter: letter_byte(graph),
             ordinal: 0,
-            kind: reuse_label(node.fingerprint, kind_label),
-            name: node.name,
+            kind: reuse_label(node.fingerprint, kind_label).into(),
+            name: node.name.into(),
             path: path_span,
             lines,
             span: spans.line_span(lines),
-            summary: node.summary.text,
-            summary_source: reuse_label(node.path, source_label),
-            signature: node.signature,
+            summary: node.summary.text.into(),
+            summary_source: reuse_label(node.path, source_label).into(),
+            signature: node.signature.into(),
         });
         edges.push(super::IndexedEdge {
             src: module_index,
@@ -143,14 +143,14 @@ pub(crate) fn index_symbols(
         nodes.push(IndexedNode {
             letter: letter_byte(symbol.graph),
             ordinal,
-            kind: symbol.kind,
-            name: symbol.name,
+            kind: symbol.kind.into(),
+            name: symbol.name.into(),
             path: path_span,
             lines: symbol.lines,
             span: symbol.span,
-            summary: symbol.summary,
-            summary_source: symbol.summary_source,
-            signature: symbol.signature,
+            summary: symbol.summary.into(),
+            summary_source: symbol.summary_source.into(),
+            signature: symbol.signature.into(),
         });
         edges.push(super::IndexedEdge {
             src: module_index,

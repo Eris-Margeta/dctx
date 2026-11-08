@@ -30,7 +30,7 @@ pub(super) fn skeleton(
         }
         let mut record = record_of(text, node);
         if !node.signature.is_empty() {
-            record.signature = Some(node.signature.clone());
+            record.signature = Some(node.signature.to_string());
         }
         rows.push(record);
     }

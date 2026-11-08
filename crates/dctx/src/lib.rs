@@ -29,6 +29,7 @@ pub const FACADE_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// JSON protocol emitted by query and pack.
 pub const WIRE_VERSION: u32 = 2;
 
+pub use dctx_ports::source::{Inventory, InventoryEntry};
 pub use domain::{
     Answer, AnswerRecord, AutoCleanConfig, BoundedSink, CacheLedger, CacheReport, Capabilities,
     DctxError, Direction, ENTRIES_ENV, ErrorCode, Freshness, FreshnessMode, GcRequest, HostGrants,

@@ -13,14 +13,14 @@ fn build(nodes: &[(u8, &str, &str, &str)], edges: &[(u32, u32, &str)]) -> Genera
         .map(|&(letter, kind, name, path)| IndexedNode {
             letter,
             ordinal: 0,
-            kind: kind.to_string(),
-            name: name.to_string(),
+            kind: kind.to_string().into(),
+            name: name.to_string().into(),
             path: text.push(path),
             lines: [1, 1],
             span: [0, 0],
-            summary: String::new(),
-            summary_source: String::new(),
-            signature: String::new(),
+            summary: String::new().into(),
+            summary_source: String::new().into(),
+            signature: String::new().into(),
         })
         .collect();
     let exact = text.push("exact");

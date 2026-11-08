@@ -26,6 +26,7 @@ use dctx_core::settings::APP_NAME;
 use dctx_core::ItemContext;
 
 mod cache;
+mod inventory;
 mod policy;
 mod rules;
 
@@ -61,7 +62,7 @@ pub fn open_memory() -> Result<Session, String> {
 /// Returns source-root, project-rule, session builder, or storage/cache setup failures.
 pub fn open_dir(path: &Path) -> Result<Session, String> {
     let (source, place, _) = open_source(path)?;
-    let rules = project_rules(path)?;
+    let (source, rules) = rules::project_rules_inventory(path, source, None)?;
     build(source, &place, "default", rules)
 }
 
@@ -82,7 +83,7 @@ pub fn open_mapped(path: &Path) -> Result<(Session, String), String> {
 pub fn open_mapped_at(path: &Path, root: Option<&Path>) -> Result<(Session, String), String> {
     let (source, place, canonical) = open_source(path)?;
     let key = canonical.to_string_lossy().into_owned();
-    let rules = project_rules(path)?;
+    let (source, rules) = rules::project_rules_inventory(path, source, None)?;
     let Some(root) = root else {
         return Ok((build(source, &place, "default", rules)?, key));
     };
@@ -110,7 +111,7 @@ pub fn open_mapped_query(path: &Path, scope: Option<&str>) -> Result<(Session, S
         return open_mapped(path);
     };
     let (source, place, canonical) = open_source(path)?;
-    let rules = rules::project_rules_scoped(path, Some(scope))?;
+    let (source, rules) = rules::project_rules_inventory(path, source, Some(scope))?;
     Ok((
         build(source, &place, "default", rules)?,
         canonical.to_string_lossy().into_owned(),
