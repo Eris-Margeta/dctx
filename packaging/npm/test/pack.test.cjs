@@ -23,7 +23,8 @@ test('build/pack contains exactly the runtime, declarations, licenses and docs; 
   if (process.platform !== 'win32') {
     assert.ok(metadata.files.find((file) => file.path === 'bin/dctx.js').mode & 0o111);
   }
-  const unpacked = spawnSync('tar', ['-xzf', path.join(cwd, metadata.filename), '-C', cwd], { encoding: 'utf8' });
+  // Relative paths from cwd: GNU tar on Windows reads 'C:\\...' as a remote host.
+  const unpacked = spawnSync('tar', ['-xzf', metadata.filename], { cwd, encoding: 'utf8' });
   assert.ifError(unpacked.error);
   assert.equal(unpacked.status, 0, unpacked.stderr);
   const installed = path.join(cwd, 'node_modules/dctx');
