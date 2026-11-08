@@ -1,0 +1,1 @@
+{"v":2,"verb":"context","target":"s:src/lib.rs#ping","chunks":[{"id":"chunk:v1:sha256:f55df6775e2160d81eb21541ff42733e1782f20fb6f2e020b7c04a32eb684d65:31","role":"source","target":"s:src/lib.rs#ping","ref":false,"content":"src/lib.rs:2-2\npub fn ping() {}"}],"more":0,"next":null}

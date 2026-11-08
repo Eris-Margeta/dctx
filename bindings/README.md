@@ -12,5 +12,7 @@ operations or parse pack text. The former PyO3/NAPI/FFI binding sketches in the
 [archived dossiers](../docs/archive/dossiers/dctx-bindings/README.md) are
 historical; they do not define the maintained package architecture.
 
-No language package implementation is shipped in this directory yet.
+The maintained Python RPC transport lives in [`packages/python`](../packages/python/README.md),
+including typed API generation, local binary discovery, platform wheel builds,
+CLI byte parity and offline installation tests.
 For direct Rust use, call the `dctx` facade in `crates/dctx`.

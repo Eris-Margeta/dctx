@@ -8,6 +8,29 @@ use crate::lexer::Kind;
 use dctx_map_model::{EdgeKind, SymbolKind};
 
 impl Walker<'_> {
+    pub(super) fn local_function(
+        &mut self,
+        first: usize,
+        end: usize,
+        owner: usize,
+        next_candidate: &mut usize,
+    ) -> Result<Option<usize>, crate::LexError> {
+        let (at, _) = self.prefix(first, end);
+        *next_candidate = at.max(first + 1);
+        if self.text(at) != "func" {
+            return Ok(None);
+        }
+        if self.local_depth >= 64 {
+            self.problem(at, DiagnosticReason::Unrecognized);
+            return Ok(Some(end));
+        }
+        let (last, _, _) = self.boundary(at + 1, end);
+        self.local_depth += 1;
+        self.walk(first, last + 1, owner, false)?;
+        self.local_depth -= 1;
+        Ok(Some(last + 1))
+    }
+
     #[allow(
         clippy::too_many_lines,
         reason = "Keep the ordered Swift declaration dispatch together so scope, token advancement and recovery remain auditable in one walk."
@@ -76,11 +99,18 @@ impl Walker<'_> {
                 "protocol" => Some(SymbolKind::Interface),
                 "extension" => Some(SymbolKind::Impl),
                 "typealias" | "associatedtype" => Some(SymbolKind::Type),
-                "func" => Some(if owner == 0 {
-                    SymbolKind::Function
-                } else {
-                    SymbolKind::Method
-                }),
+                "func" => Some(
+                    if owner == 0
+                        || matches!(
+                            parent.symbol_kind,
+                            Some(SymbolKind::Function | SymbolKind::Method)
+                        )
+                    {
+                        SymbolKind::Function
+                    } else {
+                        SymbolKind::Method
+                    },
+                ),
                 "init" | "deinit" | "subscript" => Some(SymbolKind::Method),
                 "let" => Some(SymbolKind::Const),
                 "var" => None,

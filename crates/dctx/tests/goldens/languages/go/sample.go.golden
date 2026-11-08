@@ -1,0 +1,7 @@
+skeleton "m:sample.go" "module" [1, 8] signature=None summary="" source="" confidence=None
+skeleton "s:sample.go#Boxed" "struct" [3, 3] signature=Some("type Boxed[T any] struct") summary="type Boxed[T any] struct" source="sig" confidence=None
+read Some([16, 52]) Some("type Boxed[T any] struct { Value T }")
+skeleton "s:sample.go#Boxed::Copy" "method" [4, 7] signature=Some("func (box Boxed[T]) Copy() T") summary="func (box Boxed[T]) Copy() T" source="sig" confidence=None
+read Some([53, 161]) Some("func (box Boxed[T]) Copy() T {\n    nested := func(value T) T { return value }\n    return nested(box.Value)\n}")
+skeleton "s:sample.go#café" "fn" [8, 8] signature=Some("func café() int") summary="func café() int" source="sig" confidence=None
+read Some([162, 191]) Some("func café() int { return 1 }")

@@ -1,0 +1,7 @@
+skeleton "m:sample.nix" "module" [1, 8] signature=None summary="" source="" confidence=Some("guess")
+skeleton "s:sample.nix#copy" "fn" [5, 5] signature=Some("copy = value: nested value;") summary="copy = value: nested value;" source="sig" confidence=Some("guess")
+read Some([37, 66]) Some("  copy = value: nested value;")
+skeleton "s:sample.nix#café" "var" [6, 6] signature=Some("café = 1;") summary="café = 1;" source="sig" confidence=Some("guess")
+read Some([67, 79]) Some("  café = 1;")
+skeleton "s:sample.nix#boxed" "var" [7, 7] signature=Some("boxed = { value = 1; };") summary="boxed = { value = 1; };" source="sig" confidence=Some("guess")
+read Some([80, 105]) Some("  boxed = { value = 1; };")

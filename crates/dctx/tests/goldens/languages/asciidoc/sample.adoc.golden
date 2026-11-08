@@ -1,0 +1,5 @@
+skeleton "m:sample.adoc" "module" [1, 7] signature=None summary="" source="" confidence=None
+skeleton "d:sample.adoc#Fixture" "heading" [1, 7] signature=None summary="An original fixture with café." source="heading" confidence=None
+read Some([0, 61]) Some("= Fixture\n\nAn original fixture with café.\n\n== Nested\n\nText.\n")
+skeleton "d:sample.adoc#Nested" "heading" [5, 7] signature=None summary="Text." source="heading" confidence=None
+read Some([44, 61]) Some("== Nested\n\nText.\n")

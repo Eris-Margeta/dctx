@@ -1,0 +1,62 @@
+name: npm transport
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  npm:
+    name: RPC parity and pack (${{ matrix.os }}, Node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15, windows-2022]
+        node: ['18', '24']
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Install Rust
+        run: rustup toolchain install stable --profile minimal
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          key: npm-${{ matrix.os }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Build engine
+        run: cargo +stable build --locked -p dctx-cli
+      - name: Schema, transport, CLI parity and tarball contents
+        run: |
+          node packaging/npm/scripts/generate-types.mjs --check
+          export DCTX_TEST_BIN="$GITHUB_WORKSPACE/target/debug/dctx-cli"
+          if [[ "$RUNNER_OS" == Windows ]]; then export DCTX_TEST_BIN="$DCTX_TEST_BIN.exe"; fi
+          # npm supplies its JS entry point so pack works without a shell on Windows.
+          npm exec -- node --test packaging/npm/test/client.test.cjs packaging/npm/test/parity.test.cjs packaging/npm/test/pack.test.cjs
+      - name: TypeScript consumer contract
+        run: |
+          npm install --prefix "$RUNNER_TEMP/dctx-types" --no-save --ignore-scripts --no-audit --no-fund typescript@5.9.3
+          node "$RUNNER_TEMP/dctx-types/node_modules/typescript/bin/tsc" --strict --noEmit --module NodeNext --moduleResolution NodeNext --target ES2022 packaging/npm/test/types.ts
+      - name: Pack client (no publishing)
+        run: npm exec -- node packaging/npm/scripts/build-pack.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dctx-npm-${{ matrix.os }}-node-${{ matrix.node }}
+          path: packaging/npm/artifacts/*.tgz
+          if-no-files-found: error
+          retention-days: 7

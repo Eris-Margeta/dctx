@@ -1,0 +1,9 @@
+syntax = "proto3";
+package sample;
+message Boxed {
+  message Nested { string value = 1; }
+  Nested value = 1;
+}
+service Copies {
+  rpc Copy (Boxed) returns (Boxed);
+}

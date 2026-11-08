@@ -15,8 +15,7 @@ use dctx_hash::ContentDigest;
 use super::Session;
 use crate::domain::{DctxError, FreshnessMode, SnapshotRequest};
 use crate::index::{
-    Generation, IndexedEdge, IndexedFile, IndexedNode, TextBlob, WalkArgs, ordinal_suffix,
-    walk_source,
+    Generation, IndexedEdge, IndexedFile, IndexedNode, TextBlob, WalkArgs, walk_source,
 };
 
 mod bytes;
@@ -24,6 +23,8 @@ mod encode;
 mod entry;
 mod keys;
 mod reader;
+#[cfg(feature = "warm-index-cache")]
+mod warm;
 
 use bytes::{decision_of, freshness_of};
 use keys::{file_inventory, limits_match, parser_compatible};
@@ -36,7 +37,8 @@ const MAGIC: &[u8] = b"dctxgen1";
 // 2: module nodes carry the export list in `signature` (DCX-55c); a version-1 cache lacks it and is rebuilt.
 // 3: each file row ends with its stat stamp (DCX-P-C5); a version-2 cache lacks it and is rebuilt.
 // 4: scoped queries retain per-file parser and completion provenance.
-const VERSION: u32 = 4;
+// 5: interned strings, structural node ids and numeric edge endpoints; older caches rebuild.
+const VERSION: u32 = 5;
 const MAX_STRING: usize = 1_048_576;
 const MAX_COUNT: usize = 1_000_000;
 const SYNTAX_PARSER: &str = "dctx-lex-rust/syn-3.0.9";
@@ -81,7 +83,11 @@ impl Session {
         let Some(bytes) = self.load_retained()? else {
             return Ok(None);
         };
-        let Ok(decoded) = decode_generation(&bytes) else {
+        #[cfg(feature = "warm-index-cache")]
+        let decoded = warm::decode(&bytes);
+        #[cfg(not(feature = "warm-index-cache"))]
+        let decoded = decode_generation(&bytes);
+        let Ok(decoded) = decoded else {
             return Ok(None);
         };
         if decoded.source_key != source_key
@@ -189,6 +195,7 @@ impl Session {
     }
 }
 
+#[derive(Clone)]
 struct PersistedGeneration {
     source_key: String,
     view: String,
@@ -201,7 +208,10 @@ struct PersistedGeneration {
     reason = "Keep the reusable-generation acceptance fixture and its sequential pointer/lease assertions together."
 )]
 fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
-    let mut reader = Reader { rest: bytes };
+    let mut reader = Reader {
+        rest: bytes,
+        strings: Vec::new(),
+    };
     let magic = reader.take(MAGIC.len())?;
     if magic != MAGIC {
         return Err(DctxError::CorruptIndex {
@@ -212,6 +222,7 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
     if version != VERSION {
         return Err(DctxError::UnsupportedVersion { found: version });
     }
+    reader.load_strings()?;
     let source_key = reader.string()?;
     let view = reader.string()?;
     let freshness = freshness_of(reader.u8()?)?;
@@ -223,12 +234,12 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
     let taken_at = reader.u64()?;
     let id = reader.u64()?;
     let limits = [reader.u64()?, reader.u64()?, reader.u64()?, reader.u64()?];
-    let partial_count = reader.count()?;
+    let partial_count = reader.count(4)?;
     let mut partial_dirs = Vec::with_capacity(partial_count);
     for _ in 0..partial_count {
         partial_dirs.push(reader.string()?);
     }
-    let file_count = reader.count()?;
+    let file_count = reader.count(23)?;
     let mut files = Vec::with_capacity(file_count);
     for _ in 0..file_count {
         let path = reader.string()?;
@@ -279,39 +290,19 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
     }
     let mut text = TextBlob::default();
     text.partial_dirs = partial_dirs;
-    let node_count = reader.count()?;
+    let node_count = reader.count(53)?;
     let mut nodes = Vec::with_capacity(node_count);
-    let mut by_id: HashMap<String, u32> = HashMap::with_capacity(node_count);
     for _ in 0..node_count {
-        let id = reader.string()?;
+        let letter = reader.u8()?;
+        if !matches!(letter, b'p' | b'k' | b'm' | b's' | b'd' | b't') {
+            return Err(DctxError::CorruptIndex {
+                reason: "generation node id",
+            });
+        }
+        let ordinal = reader.u32()?;
         let kind = reader.string()?;
         let name = reader.string()?;
         let path = reader.string()?;
-        // A cache is untrusted even when its framing is intact. In particular,
-        // id matching assumes the prefix is one ASCII byte.
-        id.parse::<dctx_map_model::StableId>()
-            .map_err(|_| DctxError::CorruptIndex {
-                reason: "generation node id",
-            })?;
-        let letter = id.as_bytes()[0];
-        let ordinal = ordinal_suffix(&id, &name);
-        let mut canonical = String::new();
-        crate::index::write_stable_id(&mut canonical, letter, &path, &name, ordinal);
-        if canonical != id {
-            return Err(DctxError::CorruptIndex {
-                reason: "generation node id",
-            });
-        }
-        let Some(index) = u32::try_from(nodes.len()).ok() else {
-            return Err(DctxError::CorruptIndex {
-                reason: "generation count",
-            });
-        };
-        if by_id.insert(id, index).is_some() {
-            return Err(DctxError::CorruptIndex {
-                reason: "generation duplicate id",
-            });
-        }
         nodes.push(IndexedNode {
             letter,
             ordinal,
@@ -325,23 +316,18 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
             span: [reader.u64()?, reader.u64()?],
         });
     }
-    let edge_count = reader.count()?;
+    let edge_count = reader.count(16)?;
     let mut edges = Vec::with_capacity(edge_count);
     for _ in 0..edge_count {
-        let src = reader.string()?;
-        let dst = reader.string()?;
+        let src = reader.u32()?;
+        let dst = reader.u32()?;
         let edge = reader.string()?;
         let confidence = reader.string()?;
-        let Some(&src) = by_id.get(&src) else {
+        if src as usize >= nodes.len() || dst as usize >= nodes.len() {
             return Err(DctxError::CorruptIndex {
                 reason: "generation edge",
             });
-        };
-        let Some(&dst) = by_id.get(&dst) else {
-            return Err(DctxError::CorruptIndex {
-                reason: "generation edge",
-            });
-        };
+        }
         edges.push(IndexedEdge {
             src,
             dst,

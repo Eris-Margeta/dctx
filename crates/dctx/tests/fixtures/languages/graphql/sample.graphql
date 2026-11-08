@@ -1,0 +1,8 @@
+directive @fixture on FIELD_DEFINITION
+type Boxed {
+  value: String @fixture
+  nested: Nested
+}
+type Nested { value: Int }
+input CopyInput { value: String }
+query Copy { box { value } }

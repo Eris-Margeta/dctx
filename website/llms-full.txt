@@ -6,9 +6,9 @@
 
 - This is llms-full.txt: the facts, the route table, every document the budget allows, the captured CLI help and examples. The other entry points: https://www.dctx.internet.technology/llms-small.txt, https://www.dctx.internet.technology/llms.txt.
 - Engine: dctx 1.2.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
-- Docs commit: eb310501bf4a163e6129105d523e342266c82c37 (2026-11-07T21:08:05Z), the last commit that changed one of the documents.
+- Docs commit: 022554f29a0a0877b8bf327e2d832b4e5c9cbfeb (2026-11-07T23:39:25Z), the last commit that changed one of the documents.
 - Command: `dctx pack . --include /docs/START.md --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md --include /docs/guides/MAP-MODE.md --include /docs/guides/AGENTS-SNIPPET.md --include /docs/guides/PLUGINS.md --include /docs/SPEC.md --include /docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md --include /docs/ADR-018-Language-Coverage.md --include /docs/design/contracts/DTS-v2.md --include /docs/ADR-003-Templating-Engine.md --include /docs/CRATE-MAP.md --include /docs/CLI-EXIT-CODES.md --include /docs/BENCHMARK-20261030.md --include /docs/research/stability-20261105/REPORT.md --include /docs/research/trail-code-2026-10/REPORT.md --include /RELEASING.md --include /CONTRIBUTING.md --include /SECURITY.md --include /TRADEMARK.md --include /MAINTENANCE.md --include /CHANGELOG.md --include /crates/dctx-template/templates/default.dctx_template --include /crates/dctx-template/templates/stamped.dctx_template`
-- Budget: 91,932 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 25 documents.
+- Budget: 92,038 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 25 documents.
 
 ## Facts
 
@@ -151,8 +151,8 @@ Documents link to their Markdown twin (index.md), the repository file with only 
    - TYPE is [D] for directory, [F] for file.
 2. Content Access: To read a specific file:
    - Find its UNIQUE_ID from the directory tree.
-   - Search for the marker: <FILE_CONTENT_START ID=\"UNIQUE_ID\">
-   - The content is between this marker and </FILE_CONTENT_END ID=\"UNIQUE_ID\">
+   - Search for the marker: <FILE_CONTENT_START ID="UNIQUE_ID">
+   - The content is between this marker and </FILE_CONTENT_END ID="UNIQUE_ID">
 </INSTRUCTIONS>
 <DIRECTORY_TREE>
 [D]  (ID:ROOT)
@@ -192,7 +192,7 @@ Documents link to their Markdown twin (index.md), the repository file with only 
       [D] docs/research/trail-code-2026-10 (ID:D034)
         [F] docs/research/trail-code-2026-10/REPORT.md (ID:F035)
 </DIRECTORY_TREE>
-<FILE_CONTENT_START ID="F001" PATH="CHANGELOG.md" LINES="292">
+<FILE_CONTENT_START ID="F001" PATH="CHANGELOG.md" LINES="295">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Changelog
@@ -210,6 +210,9 @@ and distribution plans below do not describe the current release.
 ## [Unreleased]
 
 ### Fixed
+
+- Pack headers now show `ID="UNIQUE_ID"` with clean quotes in the file-access
+  instructions, including stamped and tree-only output. This changes pack output bytes.
 
 - Pack rendering preserves literal template syntax in file bodies and paths, including
   backslashes, for default, stamped and compiled templates. Variable substitution now
@@ -719,8 +722,8 @@ $ dctx pack .
    - TYPE is [D] for directory, [F] for file.
 2. Content Access: To read a specific file:
    - Find its UNIQUE_ID from the directory tree.
-   - Search for the marker: <FILE_CONTENT_START ID=\"UNIQUE_ID\">
-   - The content is between this marker and </FILE_CONTENT_END ID=\"UNIQUE_ID\">
+   - Search for the marker: <FILE_CONTENT_START ID="UNIQUE_ID">
+   - The content is between this marker and </FILE_CONTENT_END ID="UNIQUE_ID">
 </INSTRUCTIONS>
 <DIRECTORY_TREE>
 [D]  (ID:ROOT)
@@ -1282,7 +1285,7 @@ folder_denotation_marker = "DIRECTORY"
 # This text explains the format to the LLM. It references the variables above
 # to ensure the instructions always match the actual format used.
 # Use '\n' for new lines.
-instructions_text = "1. Manifest: The {{start_marker_open}}{{tree_start_marker}}{{start_marker_close}} section lists all files.\n   - Each entry: [TYPE] RELATIVE_PATH ({{attr_id}}:UNIQUE_ID)\n   - TYPE is [D] for directory, [F] for file.\n2. Content Access: To read a specific file:\n   - Find its UNIQUE_ID from the directory tree.\n   - Search for the marker: {{start_marker_open}}{{file_start_marker}} {{attr_id}}=\"UNIQUE_ID\"{{start_marker_close}}\n   - The content is between this marker and {{end_marker_open}}{{file_end_marker}} {{attr_id}}=\"UNIQUE_ID\"{{end_marker_close}}"
+instructions_text = "1. Manifest: The {{start_marker_open}}{{tree_start_marker}}{{start_marker_close}} section lists all files.\n   - Each entry: [TYPE] RELATIVE_PATH ({{attr_id}}:UNIQUE_ID)\n   - TYPE is [D] for directory, [F] for file.\n2. Content Access: To read a specific file:\n   - Find its UNIQUE_ID from the directory tree.\n   - Search for the marker: {{start_marker_open}}{{file_start_marker}} {{attr_id}}="UNIQUE_ID"{{start_marker_close}}\n   - The content is between this marker and {{end_marker_open}}{{file_end_marker}} {{attr_id}}="UNIQUE_ID"{{end_marker_close}}"
 
 # ==============================================================================
 # [PARTIALS]
@@ -1371,7 +1374,7 @@ folder_denotation_marker = "DIRECTORY"
 # This text explains the format to the LLM. It references the variables above
 # to ensure the instructions always match the actual format used.
 # Use '\n' for new lines.
-instructions_text = "1. Manifest: The {{start_marker_open}}{{tree_start_marker}}{{start_marker_close}} section lists all files.\n   - Each entry: [TYPE] RELATIVE_PATH ({{attr_id}}:UNIQUE_ID, {{attr_mod}}:TIMESTAMP)\n   - TYPE is [D] for directory, [F] for file.\n2. Content Access: To read a specific file:\n   - Find its UNIQUE_ID from the directory tree.\n   - Search for the marker: {{start_marker_open}}{{file_start_marker}} {{attr_id}}=\"UNIQUE_ID\"{{start_marker_close}}\n   - The content is between this marker and {{end_marker_open}}{{file_end_marker}} {{attr_id}}=\"UNIQUE_ID\"{{end_marker_close}}"
+instructions_text = "1. Manifest: The {{start_marker_open}}{{tree_start_marker}}{{start_marker_close}} section lists all files.\n   - Each entry: [TYPE] RELATIVE_PATH ({{attr_id}}:UNIQUE_ID, {{attr_mod}}:TIMESTAMP)\n   - TYPE is [D] for directory, [F] for file.\n2. Content Access: To read a specific file:\n   - Find its UNIQUE_ID from the directory tree.\n   - Search for the marker: {{start_marker_open}}{{file_start_marker}} {{attr_id}}="UNIQUE_ID"{{start_marker_close}}\n   - The content is between this marker and {{end_marker_open}}{{file_end_marker}} {{attr_id}}="UNIQUE_ID"{{end_marker_close}}"
 
 # ==============================================================================
 # [PARTIALS]
@@ -2421,7 +2424,7 @@ Every failure prints two lines on stderr: `❌ Error: <what went wrong>` (prefix
 - `dctx pack` exits 1 only when no view filter is set (`--ext`, `--include`, `--exclude`, `--binary`, `--empty`, `--non-empty`, `--large`, `--small`, `--hidden`, `--debug-ignored`). A filter that matches nothing still prints an empty page and exits 0. The page and the `pack bytes=…` line are printed before the exit-1 message. `pack` exit 3 covers source, scan, render and output failures.
 - A reader that closes stdout early (`dctx pack . | head -1`) ends the run with exit 0 and no message, as `cat` does; every other failure keeps its code.
 - `dctx pack --for <TEXT>` exits 1 when no name in TEXT matched the index (the page is printed first), 2 for a bad flag or a `--budget` outside 100..100000 (or `--budget` without `--for`), and 3 when PATH is not a directory or the index fails.
-- `dctx mcp [--profile default|lean | --tools NAME,...] [PATH]` exits 3 when PATH cannot be entered and 2 for invalid arguments (including unknown tool names/profiles). See the [MCP guide](guides/MCP.md). Once serving, a failed tool call goes back to the client as a result with `isError: true`; unknown or unselected tools return JSON-RPC `-32602`. The server exits 0 at end of input.
+- `dctx mcp [--profile default|lean|three | --tools NAME,...] [PATH]` exits 3 when PATH cannot be entered and 2 for invalid arguments (including unknown tool names/profiles). See the [MCP guide](guides/MCP.md). Once serving, a failed tool call goes back to the client as a result with `isError: true`; unknown or unselected tools return JSON-RPC `-32602`. The server exits 0 at end of input.
 - A facade refusal of the query (`InvalidRequest`, `BudgetTooSmall`, `StaleContinuation`, `Stale`, `UnsupportedCapability`, `UnsupportedVersion`) is 2; `PolicyDenied` and `PolicyUnavailable` are 1; every other facade error, and every error of the snapshot build, is 3. The mapping is `dctx_cli::exit::from_facade`.
 - `map hubs`, `map path` and `map export` report their facade errors as text: an `unknown id` end of `map path` is 1, anything else 3.
 
@@ -2999,7 +3002,7 @@ the CLI as a subprocess and consume `--json` map answers. Use the Rust facade wh
 you need an in-process engine now.
 
 </FILE_CONTENT_END ID="F020">
-<FILE_CONTENT_START ID="F021" PATH="docs/SPEC.md" LINES="986">
+<FILE_CONTENT_START ID="F021" PATH="docs/SPEC.md" LINES="987">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # The dctx Context Management Specification
@@ -3723,8 +3726,9 @@ Bindings for Python, Node and a C ABI wrap the facade; none re-implements an eng
 `dctx mcp [PATH]` (also `dctx serve --mcp`) speaks JSON-RPC over stdio, one message
 per line. The default tools are `map`, `find`, `neighbors`, `explain`, `read`, `hubs`,
 `grep`, `skeleton`, `path` and `export`; each runs the corresponding `dctx map` verb.
-`--profile lean` exposes only `find` and `read`; `--tools NAME,...` selects a custom
-subset. Selected tools have shorter descriptions and retain complete input schemas.
+`--profile lean` exposes only `find` and `read`; `--profile three` exposes only
+`map`, `find` and `read`; `--tools NAME,...` selects a custom subset. Selected tools
+have shorter descriptions and retain complete input schemas.
 Unselected tools cannot be called. The default surface is unchanged.
 
 See the [MCP guide](guides/MCP.md) for configuration, validation and startup response
@@ -3987,7 +3991,7 @@ namespace `dctx/`; file names `.dctx/`, `.dctxignore`,
 | Original map-mode design (historical) | `docs/SPEC-MAP-MODE.md` |
 
 </FILE_CONTENT_END ID="F021">
-<FILE_CONTENT_START ID="F022" PATH="docs/START.md" LINES="228">
+<FILE_CONTENT_START ID="F022" PATH="docs/START.md" LINES="230">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # What dctx is
@@ -4068,9 +4072,11 @@ dctx map find Config --json --budget 500 --limit 5
 Expect JSON records with IDs and precision/freshness metadata; pass a returned
 ID to `map read --json` for `source_utf8`. Keep engine selection and rendering in
 the engine. Pass opaque continuation cursors back unchanged rather than slicing
-pack text. Agent session IDs, deltas, chunk IDs and receipts are planned, not
-arguments to add to today's calls. A Rust facade `Session` is an in-process API
-object, not an MCP conversation ID. See the [scope contract](#two-scopes-one-binary).
+pack text. [Named context](CONTEXT.md) adds stable chunk IDs and opt-in delivery
+sessions: use `dctx context TARGET --session ID --dedupe`, or the existing MCP
+`read` tool with `context: true`. Delivery history lasts for the CLI invocation
+or MCP/RPC connection; general receipts remain planned. A Rust facade `Session`
+is an in-process API object. See the [scope contract](#two-scopes-one-binary).
 
 ### Team / enterprise admin
 
@@ -5569,7 +5575,9 @@ Usage: dctx <COMMAND> [OPTIONS]
        dctx pack [PATH] [--output PATH] [--clipboard] [--json]
        dctx pack [PATH] --for <TEXT> [--budget TOKENS]
        dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path> [--json]
+       dctx context TARGET [--place PATH] [--budget N] [--json] [--session ID --dedupe]
        dctx rpc
+       dctx daemon status|stop|config on|off
        dctx mcp [PATH]
        dctx serve [--mcp] [PATH]
        dctx read <TARGET> [OPTIONS]
@@ -5586,6 +5594,7 @@ Usage: dctx <COMMAND> [OPTIONS]
        dctx plugin search|install|list|info|enable|disable|remove|update|verify
        dctx git <status|protect>
 
+`dctx daemon` manages the optional local daemon; DCTX_DAEMON=1 enables auto-start (docs/DAEMON.md).
 `dctx languages` lists every supported language with its tier: full (symbols and call edges), outline (symbols only) or docs (sections).
 `dctx rpc` serves the versioned engine protocol for language packages (send hello first; docs/protocol/README.md).
 `dctx mcp` serves the map verbs as MCP tools over stdio (JSON-RPC 2.0, one message per line) for Claude Code, Cursor and Codex.
@@ -5630,7 +5639,7 @@ wire_version: 2
 segment_version: 1
 storage: buffered-segments
 features: pack,map,templates,fs,segments,cache,syntax-rust
-parsers: dctx-structural/2,dctx-lex-js:1,dctx-lex-md:1,dctx-lex-rust/syn-3.0.9
+parsers: dctx-structural/3,dctx-lex-js:1,dctx-lex-md:1,dctx-lex-rust/syn-3.0.9
 languages: rust,javascript,typescript,python,go,java,c,csharp,kotlin,ruby,php,swift,web,scala,dart,zig,solidity,gleam,fortran,perl,groovy,powershell,elixir,lua,ocaml,r,julia,haskell,erlang,verilog,hcl,sql,clojure,lisp,scheme,elisp,config,shell,make,docker,proto,pascal,graphql,nix,markdown,text,rst,asciidoc,org,tex
 unsafe_boundary: syn-dependency
 native_code: false
@@ -5780,7 +5789,7 @@ dctx 1.2.0 (<git sha>)
 
 ### dctx pack .
 
-exit 0, 5601 bytes, ~1601 est. tokens
+exit 0, 5597 bytes, ~1600 est. tokens
 
 ```text
 [DCTX_LLM_CONTEXT_SNAPSHOT_V1]
@@ -5791,8 +5800,8 @@ exit 0, 5601 bytes, ~1601 est. tokens
    - TYPE is [D] for directory, [F] for file.
 2. Content Access: To read a specific file:
    - Find its UNIQUE_ID from the directory tree.
-   - Search for the marker: <FILE_CONTENT_START ID=\"UNIQUE_ID\">
-   - The content is between this marker and </FILE_CONTENT_END ID=\"UNIQUE_ID\">
+   - Search for the marker: <FILE_CONTENT_START ID="UNIQUE_ID">
+   - The content is between this marker and </FILE_CONTENT_END ID="UNIQUE_ID">
 </INSTRUCTIONS>
 <DIRECTORY_TREE>
 [D]  (ID:ROOT)
@@ -5969,12 +5978,12 @@ export function formatName(name: string): string {
   return name.trim() === "" ? "guest" : name.trim();
 }
 
-</FILE_CONTENT_END ID="F014">pack bytes=5548 files=11 retention=stdout version=V1
+</FILE_CONTENT_END ID="F014">pack bytes=5544 files=11 retention=stdout version=V1
 ```
 
 ### dctx pack . --tree-stamps=on
 
-exit 0, 5857 bytes, ~1674 est. tokens
+exit 0, 5853 bytes, ~1673 est. tokens
 
 ```text
 [DCTX_LLM_CONTEXT_SNAPSHOT_V1]
@@ -5985,8 +5994,8 @@ exit 0, 5857 bytes, ~1674 est. tokens
    - TYPE is [D] for directory, [F] for file.
 2. Content Access: To read a specific file:
    - Find its UNIQUE_ID from the directory tree.
-   - Search for the marker: <FILE_CONTENT_START ID=\"UNIQUE_ID\">
-   - The content is between this marker and </FILE_CONTENT_END ID=\"UNIQUE_ID\">
+   - Search for the marker: <FILE_CONTENT_START ID="UNIQUE_ID">
+   - The content is between this marker and </FILE_CONTENT_END ID="UNIQUE_ID">
 </INSTRUCTIONS>
 <DIRECTORY_TREE>
 [D]  (ID:ROOT, MOD:…)
@@ -6163,12 +6172,12 @@ export function formatName(name: string): string {
   return name.trim() === "" ? "guest" : name.trim();
 }
 
-</FILE_CONTENT_END ID="F014">pack bytes=5954 files=11 retention=stdout version=V1
+</FILE_CONTENT_END ID="F014">pack bytes=5950 files=11 retention=stdout version=V1
 ```
 
 ### dctx pack . --ext rs
 
-exit 0, 2400 bytes, ~686 est. tokens
+exit 0, 2396 bytes, ~685 est. tokens
 
 ```text
 [DCTX_LLM_CONTEXT_SNAPSHOT_V1]
@@ -6179,8 +6188,8 @@ exit 0, 2400 bytes, ~686 est. tokens
    - TYPE is [D] for directory, [F] for file.
 2. Content Access: To read a specific file:
    - Find its UNIQUE_ID from the directory tree.
-   - Search for the marker: <FILE_CONTENT_START ID=\"UNIQUE_ID\">
-   - The content is between this marker and </FILE_CONTENT_END ID=\"UNIQUE_ID\">
+   - Search for the marker: <FILE_CONTENT_START ID="UNIQUE_ID">
+   - The content is between this marker and </FILE_CONTENT_END ID="UNIQUE_ID">
 </INSTRUCTIONS>
 <DIRECTORY_TREE>
 [D]  (ID:ROOT)
@@ -6244,12 +6253,12 @@ pub fn title_case(name: &str) -> String {
     }
 }
 
-</FILE_CONTENT_END ID="F004">pack bytes=2348 files=3 retention=stdout version=V1
+</FILE_CONTENT_END ID="F004">pack bytes=2344 files=3 retention=stdout version=V1
 ```
 
 ### dctx pack . --debug-ignored
 
-exit 0, 5726 bytes, ~1636 est. tokens
+exit 0, 5722 bytes, ~1635 est. tokens
 
 ```text
 [DCTX_LLM_CONTEXT_SNAPSHOT_V1]
@@ -6260,8 +6269,8 @@ exit 0, 5726 bytes, ~1636 est. tokens
    - TYPE is [D] for directory, [F] for file.
 2. Content Access: To read a specific file:
    - Find its UNIQUE_ID from the directory tree.
-   - Search for the marker: <FILE_CONTENT_START ID=\"UNIQUE_ID\">
-   - The content is between this marker and </FILE_CONTENT_END ID=\"UNIQUE_ID\">
+   - Search for the marker: <FILE_CONTENT_START ID="UNIQUE_ID">
+   - The content is between this marker and </FILE_CONTENT_END ID="UNIQUE_ID">
 </INSTRUCTIONS>
 <DIRECTORY_TREE>
 [D]  (ID:ROOT)
@@ -6441,7 +6450,7 @@ export function formatName(name: string): string {
   return name.trim() === "" ? "guest" : name.trim();
 }
 
-</FILE_CONTENT_END ID="F017">pack bytes=5673 files=12 retention=stdout version=V1
+</FILE_CONTENT_END ID="F017">pack bytes=5669 files=12 retention=stdout version=V1
 ```
 
 ### dctx pack . --for 'greet store' --budget 800
@@ -6593,7 +6602,7 @@ calls:out	s:src/store.rs#save	fn	src/store.rs
 exit 0, 745 bytes, ~213 est. tokens
 
 ```text
-{"v":2,"place":"kiosk","verb":"find","freshness":{"mode":"strict","state":"verified"},"precision":{"coverage":"structural","completion":"complete","parser":"dctx-structural/2"},"records":[{"id":"s:src/util.rs#greet","kind":"fn","path":"src/util.rs","lines":[2,4],"summary":"The greeting shown on the kiosk screen.","summary_source":"doc","signature":null,"span":null,"source_utf8":null,"edge":null,"direction":null,"target":null,"confidence":null},{"id":"s:web/app.ts#renderGreeting","kind":"fn","path":"web/app.ts","lines":[10,12],"summary":"The greeting banner of the kiosk web screen.","summary_source":"doc","signature":null,"span":null,"source_utf8":null,"edge":null,"direction":null,"target":null,"confidence":null}],"more":0,"next":null}
+{"v":2,"place":"kiosk","verb":"find","freshness":{"mode":"strict","state":"verified"},"precision":{"coverage":"structural","completion":"complete","parser":"dctx-structural/3"},"records":[{"id":"s:src/util.rs#greet","kind":"fn","path":"src/util.rs","lines":[2,4],"summary":"The greeting shown on the kiosk screen.","summary_source":"doc","signature":null,"span":null,"source_utf8":null,"edge":null,"direction":null,"target":null,"confidence":null},{"id":"s:web/app.ts#renderGreeting","kind":"fn","path":"web/app.ts","lines":[10,12],"summary":"The greeting banner of the kiosk web screen.","summary_source":"doc","signature":null,"span":null,"source_utf8":null,"edge":null,"direction":null,"target":null,"confidence":null}],"more":0,"next":null}
 ```
 
 ### dctx map neighbors 's:src/util.rs#greet' --edge calls --dir in --json
@@ -6601,7 +6610,7 @@ exit 0, 745 bytes, ~213 est. tokens
 exit 0, 365 bytes, ~105 est. tokens
 
 ```text
-{"v":2,"place":"kiosk","verb":"neighbors","freshness":{"mode":"strict","state":"verified"},"precision":{"coverage":"structural","completion":"complete","parser":"dctx-structural/2"},"records":[{"id":"calls:in:s:src/main.rs#main","kind":"fn","path":"src/main.rs","lines":[5,10],"edge":"calls","direction":"in","confidence":"name","sites":[7]}],"more":0,"next":null}
+{"v":2,"place":"kiosk","verb":"neighbors","freshness":{"mode":"strict","state":"verified"},"precision":{"coverage":"structural","completion":"complete","parser":"dctx-structural/3"},"records":[{"id":"calls:in:s:src/main.rs#main","kind":"fn","path":"src/main.rs","lines":[5,10],"edge":"calls","direction":"in","confidence":"name","sites":[7]}],"more":0,"next":null}
 ```
 
 ### dctx map read 's:src/util.rs#greet' --json
@@ -6617,7 +6626,7 @@ exit 0, 561 bytes, ~161 est. tokens
 exit 0, 865 bytes, ~248 est. tokens
 
 ```text
-{"v":2,"place":"kiosk","snapshot":"v1:sha256:d364938221a79158afe3d94fecc9571c1699840a0f1e04c49737c1d5be4c99b4:6838","generation":1,"verb":"find","freshness":{"mode":"strict","state":"verified","age_s":…},"precision":{"coverage":"structural","completion":"complete","parser":"dctx-structural/2"},"records":[{"id":"s:src/util.rs#greet","kind":"fn","path":"src/util.rs","lines":[2,4],"summary":"The greeting shown on the kiosk screen.","summary_source":"doc","signature":null,"span":null,"source_utf8":null,"edge":null,"direction":null,"target":null,"confidence":null},{"id":"s:web/app.ts#renderGreeting","kind":"fn","path":"web/app.ts","lines":[10,12],"summary":"The greeting banner of the kiosk web screen.","summary_source":"doc","signature":null,"span":null,"source_utf8":null,"edge":null,"direction":null,"target":null,"confidence":null}],"more":0,"next":null}
+{"v":2,"place":"kiosk","snapshot":"v1:sha256:1de480dbf3f559eb25ca11d9bad2556f8239ae97916d084ce17abafb02916da3:6840","generation":1,"verb":"find","freshness":{"mode":"strict","state":"verified","age_s":…},"precision":{"coverage":"structural","completion":"complete","parser":"dctx-structural/3"},"records":[{"id":"s:src/util.rs#greet","kind":"fn","path":"src/util.rs","lines":[2,4],"summary":"The greeting shown on the kiosk screen.","summary_source":"doc","signature":null,"span":null,"source_utf8":null,"edge":null,"direction":null,"target":null,"confidence":null},{"id":"s:web/app.ts#renderGreeting","kind":"fn","path":"web/app.ts","lines":[10,12],"summary":"The greeting banner of the kiosk web screen.","summary_source":"doc","signature":null,"span":null,"source_utf8":null,"edge":null,"direction":null,"target":null,"confidence":null}],"more":0,"next":null}
 ```
 
 ### dctx map export --format mermaid
@@ -6776,11 +6785,11 @@ exit 0, 7527 bytes, ~2151 est. tokens
 
 ### dctx mcp .
 
-exit 0, 6438 bytes, ~1840 est. tokens
+exit 0, 6894 bytes, ~1970 est. tokens
 
 ```text
 {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-06-18","capabilities":{"tools":{}},"serverInfo":{"name":"dctx","version":"1.2.0"}}}
-{"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"map","description":"Structural map of a file, directory or node: its symbols and their relations.","inputSchema":{"type":"object","properties":{"target":{"type":"string","description":"Stable id (m:, s:, ...) or a place-relative file path"},"depth":{"type":"integer","description":"Levels to expand, 1..3"},"limit":{"type":"integer","description":"Page size"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"cursor":{"type":"string","description":"The next token of an earlier page, to continue it"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["target"],"additionalProperties":false}},{"name":"find","description":"Find symbols, modules and docs by name or words.","inputSchema":{"type":"object","properties":{"query":{"type":"string","description":"Words or a name to look for"},"kind":{"type":"array","items":{"type":"string"},"description":"Kinds: fn, method, struct, enum, trait, impl, const, type, macro, class, interface, symbol, module, package, place, doc, test"},"in":{"type":"string","description":"Only within this place-relative path"},"limit":{"type":"integer","description":"Page size"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"cursor":{"type":"string","description":"The next token of an earlier page, to continue it"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["query"],"additionalProperties":false}},{"name":"neighbors","description":"Nodes connected to a node by calls or imports, up to 4 hops.","inputSchema":{"type":"object","properties":{"id":{"type":"string","description":"Stable node id from a find or map answer"},"edge":{"type":"array","items":{"type":"string"},"description":"Edge kinds, for example calls, imports"},"dir":{"type":"string","description":"Direction: in, out or both"},"depth":{"type":"integer","description":"Hops, 1..4"},"limit":{"type":"integer","description":"Page size"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"cursor":{"type":"string","description":"The next token of an earlier page, to continue it"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["id"],"additionalProperties":false}},{"name":"explain","description":"Describe one node: its kind, place, signature and relations.","inputSchema":{"type":"object","properties":{"id":{"type":"string","description":"Stable node id"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"cursor":{"type":"string","description":"The next token of an earlier page, to continue it"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["id"],"additionalProperties":false}},{"name":"read","description":"Read the source of one node, or of absolute lines inside it.","inputSchema":{"type":"object","properties":{"id":{"type":"string","description":"Stable node id"},"lines":{"type":"string","description":"Absolute source lines inside the node, as A-B"},"full":{"type":"boolean","description":"Permit up to 400 lines"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"cursor":{"type":"string","description":"The next token of an earlier page, to continue it"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["id"],"additionalProperties":false}},{"name":"hubs","description":"Most-called symbols and per-directory file and symbol counts of the place.","inputSchema":{"type":"object","properties":{"limit":{"type":"integer","description":"Hub lines, 1..60 (default 20)"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":[],"additionalProperties":false}},{"name":"grep","description":"Exhaustive literal search of indexed files, hits grouped by enclosing symbol.","inputSchema":{"type":"object","properties":{"query":{"type":"string","description":"The literal text to search for"},"ignore_case":{"type":"boolean","description":"ASCII case-insensitive match"},"in":{"type":"string","description":"Only within this place-relative path"},"limit":{"type":"integer","description":"Page size"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"cursor":{"type":"string","description":"The next token of an earlier page, to continue it"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["query"],"additionalProperties":false}},{"name":"skeleton","description":"Skeleton of a file or directory: its symbols and their relations, without depth expansion.","inputSchema":{"type":"object","properties":{"target":{"type":"string","description":"Stable id (m:, s:, ...) or a place-relative file path"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["target"],"additionalProperties":false}},{"name":"path","description":"Shortest edge path between two nodes (calls, imports, contains), at most 8 hops.","inputSchema":{"type":"object","properties":{"from":{"type":"string","description":"Start node id (s:...) or place-relative file"},"to":{"type":"string","description":"End node id (s:...) or place-relative file"},"meta":{"type":"boolean","description":"Include hop metadata"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"cursor":{"type":"string","description":"The next token of an earlier page, to continue it"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["from","to"],"additionalProperties":false}},{"name":"export","description":"Whole graph as one deterministic document: graph JSON or a Mermaid flowchart.","inputSchema":{"type":"object","properties":{"format":{"type":"string","description":"Output format: json or mermaid"},"budget":{"type":"integer","description":"Output token budget, 1..2000"}},"required":["format"],"additionalProperties":false}}]}}
+{"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"map","description":"Structural map of a file, directory or node: its symbols and their relations.","inputSchema":{"type":"object","properties":{"target":{"type":"string","description":"Stable id (m:, s:, ...) or a place-relative file path"},"depth":{"type":"integer","description":"Levels to expand, 1..3"},"limit":{"type":"integer","description":"Page size"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"cursor":{"type":"string","description":"The next token of an earlier page, to continue it"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["target"],"additionalProperties":false}},{"name":"find","description":"Find symbols, modules and docs by name or words.","inputSchema":{"type":"object","properties":{"query":{"type":"string","description":"Words or a name to look for"},"kind":{"type":"array","items":{"type":"string"},"description":"Kinds: fn, method, struct, enum, trait, impl, const, type, macro, class, interface, symbol, module, package, place, doc, test"},"in":{"type":"string","description":"Only within this place-relative path"},"limit":{"type":"integer","description":"Page size"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"cursor":{"type":"string","description":"The next token of an earlier page, to continue it"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["query"],"additionalProperties":false}},{"name":"neighbors","description":"Nodes connected to a node by calls or imports, up to 4 hops.","inputSchema":{"type":"object","properties":{"id":{"type":"string","description":"Stable node id from a find or map answer"},"edge":{"type":"array","items":{"type":"string"},"description":"Edge kinds, for example calls, imports"},"dir":{"type":"string","description":"Direction: in, out or both"},"depth":{"type":"integer","description":"Hops, 1..4"},"limit":{"type":"integer","description":"Page size"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"cursor":{"type":"string","description":"The next token of an earlier page, to continue it"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["id"],"additionalProperties":false}},{"name":"explain","description":"Describe one node: its kind, place, signature and relations.","inputSchema":{"type":"object","properties":{"id":{"type":"string","description":"Stable node id"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"cursor":{"type":"string","description":"The next token of an earlier page, to continue it"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["id"],"additionalProperties":false}},{"name":"read","description":"Read node source or absolute lines; set context=true for minimal ranked context of a file/symbol.","inputSchema":{"type":"object","properties":{"id":{"type":"string","description":"Stable node id; with context=true, also a file path or symbol name"},"lines":{"type":"string","description":"Absolute source lines inside the node, as A-B"},"full":{"type":"boolean","description":"Permit up to 400 lines"},"context":{"type":"boolean","description":"Return minimal ranked context for this file/symbol instead of a source read"},"session":{"type":"string","description":"Context delivery session id, scoped to this connection"},"dedupe":{"type":"boolean","description":"Context only: reference chunks already delivered in this session"},"budget":{"type":"integer","description":"Source budget 1..2000; context budget 100..100000 estimated tokens"},"cursor":{"type":"string","description":"The next token of an earlier page, to continue it"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["id"],"additionalProperties":false}},{"name":"hubs","description":"Most-called symbols and per-directory file and symbol counts of the place.","inputSchema":{"type":"object","properties":{"limit":{"type":"integer","description":"Hub lines, 1..60 (default 20)"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":[],"additionalProperties":false}},{"name":"grep","description":"Exhaustive literal search of indexed files, hits grouped by enclosing symbol.","inputSchema":{"type":"object","properties":{"query":{"type":"string","description":"The literal text to search for"},"ignore_case":{"type":"boolean","description":"ASCII case-insensitive match"},"in":{"type":"string","description":"Only within this place-relative path"},"limit":{"type":"integer","description":"Page size"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"cursor":{"type":"string","description":"The next token of an earlier page, to continue it"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["query"],"additionalProperties":false}},{"name":"skeleton","description":"Skeleton of a file or directory: its symbols and their relations, without depth expansion.","inputSchema":{"type":"object","properties":{"target":{"type":"string","description":"Stable id (m:, s:, ...) or a place-relative file path"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["target"],"additionalProperties":false}},{"name":"path","description":"Shortest edge path between two nodes (calls, imports, contains), at most 8 hops.","inputSchema":{"type":"object","properties":{"from":{"type":"string","description":"Start node id (s:...) or place-relative file"},"to":{"type":"string","description":"End node id (s:...) or place-relative file"},"meta":{"type":"boolean","description":"Include hop metadata"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"cursor":{"type":"string","description":"The next token of an earlier page, to continue it"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["from","to"],"additionalProperties":false}},{"name":"export","description":"Whole graph as one deterministic document: graph JSON or a Mermaid flowchart.","inputSchema":{"type":"object","properties":{"format":{"type":"string","description":"Output format: json or mermaid"},"budget":{"type":"integer","description":"Output token budget, 1..2000"}},"required":["format"],"additionalProperties":false}}]}}
 {"jsonrpc":"2.0","id":3,"result":{"content":[{"type":"text","text":"# kiosk find\ns:src/util.rs#greet\tfn\tL2-4\ns:web/app.ts#renderGreeting\tfn\tL10-12\n"}]}}
 ```
 
@@ -6835,7 +6844,7 @@ hint: pass a non-empty name or phrase, for example: dctx map find alpha
 exit 0, 139 bytes, ~40 est. tokens
 
 ```text
-template source_version=1 plan_bytes=2199 digest=226e23e2b6c615dbf0f018624c87c4d2af6db7625b020750856313db1dfa51d7 views=1 retention=stdout
+template source_version=1 plan_bytes=2191 digest=5fdd4d1fd3ef127241bc661a6057dad7cf812b0081eec51e58b2bf09f3b802fb views=1 retention=stdout
 ```
 
 ### dctx template build stamped.dctx_template
@@ -6843,6 +6852,6 @@ template source_version=1 plan_bytes=2199 digest=226e23e2b6c615dbf0f018624c87c4d
 exit 0, 139 bytes, ~40 est. tokens
 
 ```text
-template source_version=1 plan_bytes=2251 digest=e592337f7e2efac5242e5a6ccc10b7a2687c49d7b73acc30734f83157d930da5 views=1 retention=stdout
+template source_version=1 plan_bytes=2243 digest=e55e481eef9bec67a82232802068e28037389d0bdd1efbce5e3dcda73a327364 views=1 retention=stdout
 ```
 

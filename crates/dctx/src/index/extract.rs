@@ -88,14 +88,23 @@ pub(crate) fn extract_structural_refs(path: &str, bytes: &[u8]) -> (Vec<Symbol>,
     let Ok(text) = std::str::from_utf8(bytes) else {
         return (Vec::new(), Vec::new());
     };
-    match language_of(path) {
-        "rust" => (rust_symbols(text), Vec::new()),
-        "markdown" => (markdown_symbols(bytes), Vec::new()),
+    // A leading UTF-8 BOM is encoding metadata, not a declaration token.
+    // Keep spans relative to the authorized physical bytes for symbol reads.
+    let source = text.strip_prefix('\u{feff}').unwrap_or(text);
+    let prefix = u64::try_from(text.len() - source.len()).unwrap_or(0);
+    let (mut symbols, refs) = match language_of(path) {
+        "rust" => (rust_symbols(source), Vec::new()),
+        "markdown" => (markdown_symbols(source.as_bytes()), Vec::new()),
         document if super::text_docs::handles(document) => {
-            (super::text_docs::symbols(document, text), Vec::new())
+            (super::text_docs::symbols(document, source), Vec::new())
         }
-        language => super::lex_dispatch::lexed(language, path, text),
+        language => super::lex_dispatch::lexed(language, path, source),
+    };
+    for symbol in &mut symbols {
+        symbol.span[0] += prefix;
+        symbol.span[1] += prefix;
     }
+    (symbols, refs)
 }
 
 #[cfg(test)]

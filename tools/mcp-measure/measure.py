@@ -152,7 +152,7 @@ def measure(binary, work, samples, burst, timeout):
     report = {"binary": version.decode().strip(), "platform": platform.platform(),
               "python": platform.python_version(), "samples": samples, "burst": burst,
               "fixture": info, "profiles": [], "wrapping": [], "timings": {}}
-    for profile in ("default", "lean"):
+    for profile in ("default", "lean", "three"):
         with Server(binary, root, env, profile, timeout) as server:
             _, initialize_wire, _ = server.initialize()
             result, list_wire, _ = server.request("tools/list")

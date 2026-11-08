@@ -1,0 +1,7 @@
+skeleton "m:sample.scm" "module" [1, 6] signature=None summary="" source="" confidence=Some("guess")
+skeleton "s:sample.scm#identity-value" "fn" [1, 2] signature=Some("(define-syntax identity-value") summary="(define-syntax identity-value" source="sig" confidence=Some("guess")
+read Some([0, 68]) Some("(define-syntax identity-value\n  (syntax-rules () ((_ value) value)))")
+skeleton "s:sample.scm#copy-value" "fn" [3, 5] signature=Some("(define (copy-value value)") summary="(define (copy-value value)" source="sig" confidence=Some("guess")
+read Some([69, 143]) Some("(define (copy-value value)\n  (define (nested item) item)\n  (nested value))")
+skeleton "s:sample.scm#café" "fn" [6, 6] signature=Some("(define (café) 1)") summary="(define (café) 1)" source="sig" confidence=Some("guess")
+read Some([144, 162]) Some("(define (café) 1)")

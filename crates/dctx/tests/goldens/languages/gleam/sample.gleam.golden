@@ -1,0 +1,5 @@
+skeleton "m:sample.gleam" "module" [1, 7] signature=None summary="" source="" confidence=Some("guess")
+skeleton "s:sample.gleam#Boxed" "type" [1, 3] signature=Some("pub type Boxed(a)") summary="pub type Boxed(a)" source="sig" confidence=Some("guess")
+read Some([0, 39]) Some("pub type Boxed(a) {\n  Boxed(value: a)\n}")
+skeleton "s:sample.gleam#copy" "fn" [4, 7] signature=Some("pub fn copy(value: a) -> a") summary="pub fn copy(value: a) -> a" source="sig" confidence=Some("guess")
+read Some([40, 119]) Some("pub fn copy(value: a) -> a {\n  let nested = fn(item) { item }\n  nested(value)\n}")

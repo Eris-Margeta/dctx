@@ -267,7 +267,14 @@ impl<'a> Walker<'a> {
 
     pub(crate) fn scan_calls(&mut self, start: usize, end: usize, scope: &Scope) {
         let mut index = start;
+        let mut next_local = start;
         while index < end {
+            if index >= next_local
+                && let Some(next) = self.local_function(index, end, scope, &mut next_local)
+            {
+                index = next.max(index + 1);
+                continue;
+            }
             if self.is(index, "new") {
                 index = self.scan_new(index, end, scope);
                 continue;

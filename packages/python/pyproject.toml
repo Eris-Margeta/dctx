@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: Apache-2.0
+[build-system]
+requires = []
+build-backend = "build_backend"
+backend-path = ["."]
+
+[project]
+name = "dctx"
+version = "1.2.0"
+description = "Typed, project-scoped transport for the dctx engine RPC"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+readme = "README.md"
+
+[project.urls]
+Repository = "https://github.com/Eris-Margeta/dctx"
+
+[project.optional-dependencies]
+binary = [
+  "dctx-binary-linux-x86-64==1.2.0; sys_platform == 'linux' and platform_machine == 'x86_64'",
+  "dctx-binary-linux-aarch64==1.2.0; sys_platform == 'linux' and platform_machine == 'aarch64'",
+  "dctx-binary-darwin-x86-64==1.2.0; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+  "dctx-binary-darwin-aarch64==1.2.0; sys_platform == 'darwin' and platform_machine == 'arm64'",
+  "dctx-binary-windows-x86-64==1.2.0; sys_platform == 'win32' and platform_machine == 'AMD64'",
+]

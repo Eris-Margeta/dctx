@@ -1,0 +1,5 @@
+skeleton "m:sample.pas" "module" [1, 11] signature=None summary="" source="" confidence=Some("guess")
+skeleton "s:sample.pas#CopyValue" "fn" [2, 2] signature=Some("procedure CopyValue;") summary="procedure CopyValue;" source="sig" confidence=Some("guess")
+read Some([16, 36]) Some("procedure CopyValue;")
+skeleton "s:sample.pas#Nested" "fn" [3, 3] signature=Some("function Nested(value: integer): integer;") summary="function Nested(value: integer): integer;" source="sig" confidence=Some("guess")
+read Some([37, 80]) Some("  function Nested(value: integer): integer;")

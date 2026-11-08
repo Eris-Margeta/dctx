@@ -1,0 +1,5 @@
+[Boxed]
+value = 1
+"café" = "fixture"
+[Boxed.nested]
+enabled = true

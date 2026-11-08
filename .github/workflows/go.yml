@@ -1,0 +1,69 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Go package
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: go-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  transport:
+    name: Go transport (${{ matrix.os }}, ${{ matrix.go }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            go: '1.23.x'
+            exe: ''
+          - os: ubuntu-24.04
+            go: stable
+            exe: ''
+          - os: macos-15
+            go: stable
+            exe: ''
+          - os: windows-2022
+            go: stable
+            exe: .exe
+    defaults:
+      run:
+        shell: bash
+    env:
+      CARGO_TERM_COLOR: always
+      DCTX_TEST_BIN: ${{ github.workspace }}/target/debug/dctx-cli${{ matrix.exe }}
+      DCTX_REQUIRE_ENGINE_TESTS: '1'
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+        with:
+          go-version: ${{ matrix.go }}
+          cache: false
+      - name: Install Rust toolchain
+        run: rustup toolchain install stable --profile minimal --no-self-update
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          key: go-${{ matrix.os }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Build matching engine
+        run: cargo +stable build --locked -p dctx-cli
+      - name: Check generated API and formatting
+        working-directory: packages/go
+        run: |
+          go run ./internal/generate -check
+          test -z "$(gofmt -l .)"
+          go vet ./...
+      - name: Transport, race and every-verb CLI parity tests (no skips)
+        working-directory: packages/go
+        run: go test -race -count=1 -timeout 3m -v ./...

@@ -1,0 +1,3 @@
+skeleton "m:sample.tsx" "module" [1, 3] signature=None summary="" source="" confidence=None
+skeleton "s:sample.tsx#View" "fn" [1, 3] signature=Some("function View<T>(props: { value: T })") summary="function View<T>(props: { value: T })" source="sig" confidence=None
+read Some([0, 99]) Some("export function View<T>(props: { value: T }) {\n    return <section title=\"café\">Hello</section>;\n}")

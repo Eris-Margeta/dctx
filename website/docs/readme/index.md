@@ -88,8 +88,8 @@ $ dctx pack .
    - TYPE is [D] for directory, [F] for file.
 2. Content Access: To read a specific file:
    - Find its UNIQUE_ID from the directory tree.
-   - Search for the marker: <FILE_CONTENT_START ID=\"UNIQUE_ID\">
-   - The content is between this marker and </FILE_CONTENT_END ID=\"UNIQUE_ID\">
+   - Search for the marker: <FILE_CONTENT_START ID="UNIQUE_ID">
+   - The content is between this marker and </FILE_CONTENT_END ID="UNIQUE_ID">
 </INSTRUCTIONS>
 <DIRECTORY_TREE>
 [D]  (ID:ROOT)

@@ -351,7 +351,7 @@ fn basic_fixture_matches_the_golden_shape() {
             .any(|name| *name == "item.length" || *name == "length")
     );
     assert_eq!(PARSER_ID, "dctx-lex-kt");
-    assert_eq!(PARSER_REVISION, 1);
+    assert_eq!(PARSER_REVISION, 2);
 }
 
 #[test]

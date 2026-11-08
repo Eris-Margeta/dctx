@@ -6,9 +6,9 @@
 
 - This is llms.txt: the facts, the route table and the start documents. The other entry points: https://www.dctx.internet.technology/llms-small.txt, https://www.dctx.internet.technology/llms-full.txt.
 - Engine: dctx 1.2.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
-- Docs commit: eb310501bf4a163e6129105d523e342266c82c37 (2026-11-07T21:08:05Z), the last commit that changed one of the documents.
+- Docs commit: 022554f29a0a0877b8bf327e2d832b4e5c9cbfeb (2026-11-07T23:39:25Z), the last commit that changed one of the documents.
 - Command: `dctx pack . --include /docs/START.md --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md`
-- Budget: 17,365 of 20,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
+- Budget: 17,407 of 20,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
 
 ## Facts
 
@@ -151,8 +151,8 @@ Documents link to their Markdown twin (index.md), the repository file with only 
    - TYPE is [D] for directory, [F] for file.
 2. Content Access: To read a specific file:
    - Find its UNIQUE_ID from the directory tree.
-   - Search for the marker: <FILE_CONTENT_START ID=\"UNIQUE_ID\">
-   - The content is between this marker and </FILE_CONTENT_END ID=\"UNIQUE_ID\">
+   - Search for the marker: <FILE_CONTENT_START ID="UNIQUE_ID">
+   - The content is between this marker and </FILE_CONTENT_END ID="UNIQUE_ID">
 </INSTRUCTIONS>
 <DIRECTORY_TREE>
 [D]  (ID:ROOT)
@@ -253,8 +253,8 @@ $ dctx pack .
    - TYPE is [D] for directory, [F] for file.
 2. Content Access: To read a specific file:
    - Find its UNIQUE_ID from the directory tree.
-   - Search for the marker: <FILE_CONTENT_START ID=\"UNIQUE_ID\">
-   - The content is between this marker and </FILE_CONTENT_END ID=\"UNIQUE_ID\">
+   - Search for the marker: <FILE_CONTENT_START ID="UNIQUE_ID">
+   - The content is between this marker and </FILE_CONTENT_END ID="UNIQUE_ID">
 </INSTRUCTIONS>
 <DIRECTORY_TREE>
 [D]  (ID:ROOT)
@@ -978,7 +978,7 @@ the CLI as a subprocess and consume `--json` map answers. Use the Rust facade wh
 you need an in-process engine now.
 
 </FILE_CONTENT_END ID="F003">
-<FILE_CONTENT_START ID="F004" PATH="docs/START.md" LINES="228">
+<FILE_CONTENT_START ID="F004" PATH="docs/START.md" LINES="230">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # What dctx is
@@ -1059,9 +1059,11 @@ dctx map find Config --json --budget 500 --limit 5
 Expect JSON records with IDs and precision/freshness metadata; pass a returned
 ID to `map read --json` for `source_utf8`. Keep engine selection and rendering in
 the engine. Pass opaque continuation cursors back unchanged rather than slicing
-pack text. Agent session IDs, deltas, chunk IDs and receipts are planned, not
-arguments to add to today's calls. A Rust facade `Session` is an in-process API
-object, not an MCP conversation ID. See the [scope contract](#two-scopes-one-binary).
+pack text. [Named context](CONTEXT.md) adds stable chunk IDs and opt-in delivery
+sessions: use `dctx context TARGET --session ID --dedupe`, or the existing MCP
+`read` tool with `context: true`. Delivery history lasts for the CLI invocation
+or MCP/RPC connection; general receipts remain planned. A Rust facade `Session`
+is an in-process API object. See the [scope contract](#two-scopes-one-binary).
 
 ### Team / enterprise admin
 

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //! `dctx mcp`: a stdio MCP server (JSON-RPC 2.0, one message per line) exposing the map verbs as tools.
-//! Every `tools/call` builds the argument vector of `dctx map <verb> ...` and runs `map::execute`, the CLI's own code path.
+//! Each call uses its existing CLI path: map verbs use `map::execute`, and read with context enabled uses named context.
 //! Only JSON-RPC lines go to stdout; diagnostics stay on stderr. The server exits 0 at end of input.
 
 mod json;
@@ -15,7 +15,7 @@ use crate::exit::Failure;
 /// Protocol version answered when the client names none.
 const DEFAULT_PROTOCOL: &str = "2025-06-18";
 /// Usage text for `dctx mcp --help`.
-const HELP: &str = "Usage: dctx mcp [--profile default|lean | --tools NAME,...] [PATH]\n  Serve map verbs as MCP tools over stdio; one JSON-RPC 2.0 message per line.\n  Default: map, find, neighbors, explain, read, hubs, grep, skeleton, path, export.\n  --profile lean: find and read, with compact descriptions and all parameters.\n  --tools NAME,...: expose only the named tools, with compact descriptions.\n  Select either --profile or --tools, once. Tools run in PATH (default: current directory).\n  Use -- before a PATH starting with '-'. Restart the server to change tools.\nExample: dctx mcp ~/src/project\n          dctx mcp --profile lean ~/src/project\n          dctx mcp --tools find,read,grep ~/src/project\n";
+const HELP: &str = "Usage: dctx mcp [--profile default|lean|three | --tools NAME,...] [PATH]\n  Serve map verbs as MCP tools over stdio; one JSON-RPC 2.0 message per line.\n  Default: map, find, neighbors, explain, read, hubs, grep, skeleton, path, export.\n  --profile lean: find and read, with compact descriptions and all parameters.\n  --profile three: map, find and read, with compact descriptions and all parameters.\n  --tools NAME,...: expose only the named tools, with compact descriptions.\n  Select either --profile or --tools, once. Tools run in PATH (default: current directory).\n  Use -- before a PATH starting with '-'. Restart the server to change tools.\nExample: dctx mcp ~/src/project\n          dctx mcp --profile lean ~/src/project\n          dctx mcp --tools find,read,grep ~/src/project\n";
 
 /// Validate all arguments before changing directory or starting the protocol.
 fn options(args: &[String]) -> Result<(Option<String>, Surface), Failure> {
@@ -72,7 +72,11 @@ pub(crate) fn run(args: &[String]) -> Result<(), Failure> {
     }
     let stdin = std::io::stdin();
     let stdout = std::io::stdout();
-    serve(stdin.lock(), stdout.lock(), &surface, &crate::map::execute).map_err(|error| {
+    let runtime = crate::context_cmd::Runtime::default();
+    serve(stdin.lock(), stdout.lock(), &surface, &|args| {
+        runtime.map(args)
+    })
+    .map_err(|error| {
         Failure::index(
             error.to_string(),
             "stdin or stdout failed; restart the server from the MCP client",
@@ -328,6 +332,16 @@ mod tests {
                 vec!["project", "--profile=lean"],
                 Some("project"),
                 vec!["find", "read"],
+            ),
+            (
+                vec!["--profile", "three", "project dir"],
+                Some("project dir"),
+                vec!["map", "find", "read"],
+            ),
+            (
+                vec!["project", "--profile=three"],
+                Some("project"),
+                vec!["map", "find", "read"],
             ),
             (vec!["--tools", "read,find"], None, vec!["find", "read"]),
             (

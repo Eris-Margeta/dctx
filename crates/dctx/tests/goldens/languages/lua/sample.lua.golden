@@ -1,0 +1,7 @@
+skeleton "m:sample.lua" "module" [1, 8] signature=None summary="" source="" confidence=Some("guess")
+skeleton "s:sample.lua#Boxed" "var" [1, 1] signature=Some("local Boxed = {}") summary="local Boxed = {}" source="sig" confidence=Some("guess")
+read Some([0, 16]) Some("local Boxed = {}")
+skeleton "s:sample.lua#Boxed::copy" "fn" [2, 7] signature=Some("function Boxed.copy(value)") summary="function Boxed.copy(value)" source="sig" confidence=Some("guess")
+read Some([17, 122]) Some("function Boxed.copy(value)\n  local function nested(item)\n    return item\n  end\n  return nested(value)\nend")
+skeleton "s:sample.lua#Boxed::copy::nested" "fn" [3, 5] signature=Some("local function nested(item)") summary="local function nested(item)" source="sig" confidence=Some("guess")
+read Some([44, 95]) Some("  local function nested(item)\n    return item\n  end")

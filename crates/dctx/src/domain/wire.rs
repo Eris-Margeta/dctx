@@ -454,7 +454,7 @@ mod tests {
             precision: Precision {
                 coverage: "structural".to_string(),
                 completion: "complete".to_string(),
-                parser: "dctx-structural/2".to_string(),
+                parser: "dctx-structural/3".to_string(),
             },
             outcome: Some(IdentityOutcome::Gone {
                 id: "s:src/lib.rs#removed".to_string(),

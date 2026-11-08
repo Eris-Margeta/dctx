@@ -13,7 +13,9 @@ pub mod engine;
 pub mod legacy_codec;
 pub mod legacy_decode;
 pub mod legacy_encode;
+pub mod read;
 pub mod snapshot;
+pub use read::read_snapshot_file;
 
 pub use diff::{diff_against, VersionedDiff};
 pub use engine::{pack, PackPorts, PackReport, PackRequest};

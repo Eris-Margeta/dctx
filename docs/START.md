@@ -78,9 +78,11 @@ dctx map find Config --json --budget 500 --limit 5
 Expect JSON records with IDs and precision/freshness metadata; pass a returned
 ID to `map read --json` for `source_utf8`. Keep engine selection and rendering in
 the engine. Pass opaque continuation cursors back unchanged rather than slicing
-pack text. Agent session IDs, deltas, chunk IDs and receipts are planned, not
-arguments to add to today's calls. A Rust facade `Session` is an in-process API
-object, not an MCP conversation ID. See the [scope contract](#two-scopes-one-binary).
+pack text. [Named context](CONTEXT.md) adds stable chunk IDs and opt-in delivery
+sessions: use `dctx context TARGET --session ID --dedupe`, or the existing MCP
+`read` tool with `context: true`. Delivery history lasts for the CLI invocation
+or MCP/RPC connection; general receipts remain planned. A Rust facade `Session`
+is an in-process API object. See the [scope contract](#two-scopes-one-binary).
 
 ### Team / enterprise admin
 

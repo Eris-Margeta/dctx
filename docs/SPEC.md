@@ -721,8 +721,9 @@ Bindings for Python, Node and a C ABI wrap the facade; none re-implements an eng
 `dctx mcp [PATH]` (also `dctx serve --mcp`) speaks JSON-RPC over stdio, one message
 per line. The default tools are `map`, `find`, `neighbors`, `explain`, `read`, `hubs`,
 `grep`, `skeleton`, `path` and `export`; each runs the corresponding `dctx map` verb.
-`--profile lean` exposes only `find` and `read`; `--tools NAME,...` selects a custom
-subset. Selected tools have shorter descriptions and retain complete input schemas.
+`--profile lean` exposes only `find` and `read`; `--profile three` exposes only
+`map`, `find` and `read`; `--tools NAME,...` selects a custom subset. Selected tools
+have shorter descriptions and retain complete input schemas.
 Unselected tools cannot be called. The default surface is unchanged.
 
 See the [MCP guide](guides/MCP.md) for configuration, validation and startup response

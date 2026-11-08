@@ -1,0 +1,104 @@
+{
+  "binary": "dctx 1.2.0 (e251de8)",
+  "platform": "Linux-6.12.115+deb13.1-cloud-amd64-x86_64-with-glibc2.41",
+  "python": "3.13.5",
+  "samples": 7,
+  "burst": 8,
+  "fixture": {
+    "files": 26,
+    "bytes": 24629,
+    "sha256": "e9acdbc2d7b8fb5491f1c37149b64e027543f2095f151959c656cb5d4270bc7a"
+  },
+  "profiles": [
+    {
+      "profile": "default",
+      "tools": 10,
+      "definitions_bytes": 6091,
+      "input_schemas_bytes": 4894,
+      "tools_list_wire_bytes": 6136,
+      "startup_wire_bytes": 6278
+    },
+    {
+      "profile": "lean",
+      "tools": 2,
+      "definitions_bytes": 1450,
+      "input_schemas_bytes": 1251,
+      "tools_list_wire_bytes": 1495,
+      "startup_wire_bytes": 1637
+    },
+    {
+      "profile": "three",
+      "tools": 3,
+      "definitions_bytes": 2097,
+      "input_schemas_bytes": 1796,
+      "tools_list_wire_bytes": 2142,
+      "startup_wire_bytes": 2284
+    }
+  ],
+  "wrapping": [
+    {
+      "output": "text",
+      "cli_stdout_bytes": 106,
+      "mcp_result_bytes": 160,
+      "mcp_wire_bytes": 196,
+      "wire_ratio": 1.849056603773585,
+      "decoded_text_equals_cli": true
+    },
+    {
+      "output": "facade JSON",
+      "cli_stdout_bytes": 500,
+      "mcp_result_bytes": 637,
+      "mcp_wire_bytes": 673,
+      "wire_ratio": 1.346,
+      "decoded_text_equals_cli": true
+    }
+  ],
+  "timings": {
+    "spawn_handshake_ms": 3.0172189872246236,
+    "first_empty_cache_call_ms": 218.528197001433,
+    "spawn_through_first_call_ms": 221.54541598865762,
+    "warm_call_ms": [
+      406.93131199805066,
+      337.2036880173255,
+      398.0902779730968,
+      95.23049599374644,
+      97.11000800598413,
+      85.36018701852299,
+      225.26487900177017
+    ],
+    "warm_median_ms": 225.26487900177017,
+    "burst_completion_ms": [
+      174.3352860212326,
+      209.00693000294268,
+      255.38407202111557,
+      693.5590330103878,
+      780.9084530163091,
+      1270.300150004914,
+      1394.1374480200466,
+      2146.022148022894
+    ],
+    "queued_ping_ms": 2146.0787650139537
+  },
+  "pagination": {
+    "find": {
+      "first_records": 2,
+      "second_records": 2,
+      "cursor_advanced": true
+    },
+    "read": {
+      "first_records": 1,
+      "second_records": 1,
+      "cursor_advanced": true
+    },
+    "absolute_read_window_verified": true
+  },
+  "tool_error": {
+    "content": [
+      {
+        "type": "text",
+        "text": "id is required and must be a non-empty string"
+      }
+    ],
+    "isError": true
+  }
+}

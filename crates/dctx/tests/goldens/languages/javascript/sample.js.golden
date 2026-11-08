@@ -1,0 +1,11 @@
+skeleton "m:sample.js" "module" [1, 9] signature=None summary="" source="" confidence=None
+skeleton "s:sample.js#Boxed" "class" [2, 7] signature=Some("class Boxed") summary="A container." source="doc" confidence=None
+read Some([20, 143]) Some("export class Boxed {\n    copy(value) {\n        function nested(item) { return item; }\n        return nested(value);\n    }\n}")
+skeleton "s:sample.js#Boxed::copy" "method" [3, 6] signature=Some("copy(value)") summary="copy(value)" source="sig" confidence=None
+read Some([41, 141]) Some("    copy(value) {\n        function nested(item) { return item; }\n        return nested(value);\n    }")
+skeleton "s:sample.js#Boxed::copy::nested" "fn" [4, 4] signature=Some("function nested(item)") summary="function nested(item)" source="sig" confidence=None
+read Some([59, 105]) Some("        function nested(item) { return item; }")
+skeleton "s:sample.js#café" "fn" [8, 8] signature=Some("function café(value)") summary="function café(value)" source="sig" confidence=None
+read Some([144, 190]) Some("export function café(value) { return value; }")
+skeleton "s:sample.js#arrow" "fn" [9, 9] signature=Some("arrow = (value) =>") summary="arrow = (value) =>" source="sig" confidence=None
+read Some([191, 222]) Some("const arrow = (value) => value;")

@@ -1,0 +1,3 @@
+skeleton "m:sample.jsx" "module" [1, 3] signature=None summary="" source="" confidence=None
+skeleton "s:sample.jsx#View" "fn" [1, 3] signature=Some("function View()") summary="function View()" source="sig" confidence=None
+read Some([0, 77]) Some("export function View() {\n    return <section title=\"café\">Hello</section>;\n}")
