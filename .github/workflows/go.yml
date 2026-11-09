@@ -19,7 +19,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-24.04
-            go: '1.23.x'
+            go: '1.26.10'
             exe: ''
           - os: ubuntu-24.04
             go: stable

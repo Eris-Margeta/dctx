@@ -14,7 +14,7 @@ resolver = "2"
 
 [dependencies]
 ignore = "=0.4.24"
-memmap2 = "=0.9.9"
+memmap2 = "=0.9.11"
 
 [profile.release]
 debug = false

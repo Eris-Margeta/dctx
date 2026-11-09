@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   guard:
+    permissions: {}
     runs-on: ubuntu-latest
     steps:
       - name: Require a desktop-v tag
