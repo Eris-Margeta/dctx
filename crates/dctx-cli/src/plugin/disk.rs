@@ -109,22 +109,47 @@ pub(crate) fn target_for(
 }
 
 /// `DCTX_PLUGIN_ROOT`, or the platform config directory. Does not create it.
-pub fn default_root() -> PathBuf {
-    if let Some(root) = std::env::var_os("DCTX_PLUGIN_ROOT") {
-        return PathBuf::from(root);
-    }
-    let home = std::env::var_os("HOME").map_or_else(|| PathBuf::from("."), PathBuf::from);
-    match std::env::consts::OS {
-        "macos" => home.join("Library/Application Support/dctx/plugin-config"),
-        "windows" => std::env::var_os("APPDATA")
+///
+/// Refuses when no absolute home or config directory is known, instead of falling back to a
+/// root relative to the current directory (which may be an untrusted checkout).
+pub fn default_root() -> Result<PathBuf, String> {
+    root_from(|name| std::env::var_os(name), std::env::consts::OS)
+}
+
+/// [`default_root`] over an injected environment, for tests.
+pub(crate) fn root_from(
+    var: impl Fn(&str) -> Option<std::ffi::OsString>,
+    os: &str,
+) -> Result<PathBuf, String> {
+    let non_empty = |name: &str| var(name).filter(|value| !value.is_empty());
+    let absolute = |name: &str| {
+        non_empty(name)
             .map(PathBuf::from)
-            .unwrap_or(home)
+            .filter(|path| path.is_absolute())
+    };
+    if let Some(root) = non_empty("DCTX_PLUGIN_ROOT") {
+        return Ok(PathBuf::from(root));
+    }
+    let home = absolute("HOME");
+    let missing = || {
+        "no plugin root: HOME (APPDATA on Windows) is unset or not absolute, and DCTX_PLUGIN_ROOT is not set"
+            .to_owned()
+    };
+    match os {
+        "macos" => Ok(home
+            .ok_or_else(missing)?
+            .join("Library/Application Support/dctx/plugin-config")),
+        "windows" => Ok(absolute("APPDATA")
+            .or(home)
+            .ok_or_else(missing)?
             .join("dctx")
-            .join("Plugins"),
+            .join("Plugins")),
         _ => {
-            let config = std::env::var_os("XDG_CONFIG_HOME")
-                .map_or_else(|| home.join(".config"), PathBuf::from);
-            config.join("dctx").join("plugins")
+            let config = match absolute("XDG_CONFIG_HOME") {
+                Some(config) => config,
+                None => home.ok_or_else(missing)?.join(".config"),
+            };
+            Ok(config.join("dctx").join("plugins"))
         }
     }
 }
@@ -670,4 +695,61 @@ mod store_tests;
 #[cfg(all(test, unix, not(target_os = "linux")))]
 fn crash_cut(phase: &str) {
     store_tests::crash_cut(phase);
+}
+
+#[cfg(test)]
+mod root_tests {
+    use super::root_from;
+    use std::ffi::OsString;
+    use std::path::PathBuf;
+
+    fn env(pairs: &[(&str, &str)]) -> impl Fn(&str) -> Option<OsString> {
+        let pairs: Vec<(String, OsString)> = pairs
+            .iter()
+            .map(|(name, value)| ((*name).to_owned(), OsString::from(value)))
+            .collect();
+        move |name| {
+            pairs
+                .iter()
+                .find(|(key, _)| key == name)
+                .map(|(_, value)| value.clone())
+        }
+    }
+
+    #[test]
+    fn missing_or_relative_home_refuses_instead_of_using_the_working_directory() {
+        for os in ["linux", "macos", "windows"] {
+            for vars in [&[][..], &[("HOME", "")], &[("HOME", "relative/home")]] {
+                let error = root_from(env(vars), os).unwrap_err();
+                assert!(error.contains("HOME"), "{os}: {error}");
+            }
+        }
+        let error = root_from(env(&[("XDG_CONFIG_HOME", "rel")]), "linux").unwrap_err();
+        assert!(error.contains("HOME"), "{error}");
+    }
+
+    #[test]
+    fn absolute_locations_and_the_explicit_override_resolve() {
+        let home = if cfg!(windows) {
+            "C:\\home\\u"
+        } else {
+            "/home/u"
+        };
+        let root = root_from(env(&[("HOME", home)]), "linux").unwrap();
+        assert_eq!(
+            root,
+            PathBuf::from(home)
+                .join(".config")
+                .join("dctx")
+                .join("plugins")
+        );
+        let root = root_from(env(&[("HOME", home), ("XDG_CONFIG_HOME", "rel")]), "linux").unwrap();
+        assert!(root.starts_with(home));
+        let root = root_from(env(&[("HOME", home)]), "macos").unwrap();
+        assert!(root.starts_with(home));
+        let root = root_from(env(&[("APPDATA", home)]), "windows").unwrap();
+        assert_eq!(root, PathBuf::from(home).join("dctx").join("Plugins"));
+        let root = root_from(env(&[("DCTX_PLUGIN_ROOT", "chosen")]), "linux").unwrap();
+        assert_eq!(root, PathBuf::from("chosen"));
+    }
 }

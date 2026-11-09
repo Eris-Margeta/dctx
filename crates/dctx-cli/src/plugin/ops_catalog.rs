@@ -9,7 +9,7 @@ use dctx_plugin_distribution::{
     VerifiedIndex,
 };
 
-use super::ops_output::{dist, done, facade_note, fail, Outcome};
+use super::ops_output::{dist, done, fail, fail_for, Outcome};
 use super::{bundled, fetch, render, Env};
 
 pub(super) fn search(env: &mut Env<'_>, query: &str, refresh: bool, json: bool) -> Outcome {
@@ -21,9 +21,15 @@ pub(super) fn search(env: &mut Env<'_>, query: &str, refresh: bool, json: bool) 
     let index = match cached_index(env) {
         Ok(index) => index,
         Err(_) if !refresh && env.index.bytes.is_none() => {
-            return done("search", json, env, |fields| {
-                format!("{fields},\"cache_age_secs\":null,\"trust\":\"absent\",\"hits\":[]")
-            });
+            return done(
+                "search",
+                json,
+                env,
+                |fields| {
+                    format!("{fields},\"cache_age_secs\":null,\"trust\":\"absent\",\"hits\":[]")
+                },
+                || "no plugin index is cached, so there are no results\n".to_owned(),
+            );
         }
         Err(error) => return fail("search", &error, json),
     };
@@ -31,15 +37,42 @@ pub(super) fn search(env: &mut Env<'_>, query: &str, refresh: bool, json: bool) 
         .index
         .fetched_at
         .map(|at| env.clock.now().saturating_sub(at));
-    let hits: Vec<String> = index.search(query).iter().map(|entry| hit(entry)).collect();
+    let entries = index.search(query);
+    let hits: Vec<String> = entries.iter().map(|entry| hit(entry)).collect();
     let age_json = age.map_or_else(|| "null".to_owned(), |age| age.to_string());
-    done("search", json, env, |fields| {
-        format!(
-            "{fields},\"cache_age_secs\":{age_json},\"trust\":\"verified\",\"query\":{},\"hits\":[{}]",
-            render::json_string(query),
-            hits.join(",")
-        )
-    })
+    done(
+        "search",
+        json,
+        env,
+        |fields| {
+            format!(
+                "{fields},\"cache_age_secs\":{age_json},\"trust\":\"verified\",\"query\":{},\"hits\":[{}]",
+                render::json_string(query),
+                hits.join(",")
+            )
+        },
+        || {
+            if entries.is_empty() {
+                return format!("no plugins match \"{}\"\n", render::safe_summary(query));
+            }
+            entries.iter().map(|entry| hit_line(entry)).collect()
+        },
+    )
+}
+
+/// One text search row: id, newest version, repository, summary.
+pub(super) fn hit_line(entry: &dctx_plugin_distribution::IndexEntry) -> String {
+    let version = entry
+        .releases
+        .first()
+        .map_or("-", |release| release.version.as_str());
+    format!(
+        "{}\t{}\t{}\t{}\n",
+        entry.id.as_str(),
+        version,
+        render::safe_summary(&entry.repository),
+        render::safe_summary(&entry.summary)
+    )
 }
 
 pub(super) fn hit(entry: &dctx_plugin_distribution::IndexEntry) -> String {
@@ -103,21 +136,19 @@ pub(super) fn list(env: &Env<'_>, json: bool) -> Outcome {
         }
     }
     let rendered: Vec<String> = rows.iter().map(|row| render_status(row, json)).collect();
-    if json {
-        done("list", true, env, |fields| {
-            format!("{fields},\"plugins\":[{}]", rendered.join(","))
-        })
-    } else {
-        let mut text = rendered.join("\n");
-        if !text.is_empty() {
-            text.push('\n');
-        }
-        let _ = facade_note(env);
-        Outcome {
-            code: 0,
-            body: text,
-        }
-    }
+    done(
+        "list",
+        json,
+        env,
+        |fields| format!("{fields},\"plugins\":[{}]", rendered.join(",")),
+        || {
+            let mut text = rendered.join("\n");
+            if !text.is_empty() {
+                text.push('\n');
+            }
+            text
+        },
+    )
 }
 
 pub(super) fn info(env: &Env<'_>, raw_id: &str, json: bool) -> Outcome {
@@ -133,7 +164,14 @@ pub(super) fn info(env: &Env<'_>, raw_id: &str, json: bool) -> Outcome {
         Some(status) => status,
         None => match synthetic(env).filter(|row| row.id == id) {
             Some(status) => status,
-            None => return fail("info", &DistributionError::NotInstalled, json),
+            None => {
+                return fail_for(
+                    "info",
+                    Some(id.as_str()),
+                    &DistributionError::NotInstalled,
+                    json,
+                )
+            }
         },
     };
     let labels = if status.id.as_str() == "dctx/git" {
@@ -146,19 +184,49 @@ pub(super) fn info(env: &Env<'_>, raw_id: &str, json: bool) -> Outcome {
         .map(|label| render::json_string(label))
         .collect::<Vec<_>>()
         .join(",");
-    let hooks = if status.id.as_str() == "dctx/git" {
-        bundled::catalog()
-            .hooks
-            .into_iter()
-            .map(|hook| render::json_string(&hook))
-            .collect::<Vec<_>>()
-            .join(",")
+    let hook_names = if status.id.as_str() == "dctx/git" {
+        bundled::catalog().hooks
     } else {
-        String::new()
+        Vec::new()
     };
-    done("info", json, env, |fields| {
-        format!("{fields},\"plugin\":{},\"capabilities\":[{grants}],\"hooks\":[{hooks}],\"receipts\":[]", render_status(&status, true))
-    })
+    let hooks = hook_names
+        .iter()
+        .map(|hook| render::json_string(hook))
+        .collect::<Vec<_>>()
+        .join(",");
+    done(
+        "info",
+        json,
+        env,
+        |fields| {
+            format!("{fields},\"plugin\":{},\"capabilities\":[{grants}],\"hooks\":[{hooks}],\"receipts\":[]", render_status(&status, true))
+        },
+        || info_text(&status, &labels, &hook_names),
+    )
+}
+
+fn info_text(status: &PluginStatus, labels: &[String], hooks: &[String]) -> String {
+    let mut text = format!("{}\n", render_status(status, false));
+    let list = |items: &[String]| {
+        if items.is_empty() {
+            "none".to_owned()
+        } else {
+            items
+                .iter()
+                .map(|item| render::safe_summary(item))
+                .collect::<Vec<_>>()
+                .join(", ")
+        }
+    };
+    text.push_str(&format!("capabilities: {}\n", list(labels)));
+    text.push_str(&format!("hooks: {}\n", list(hooks)));
+    if status.needs_consent && status.enablement != dctx_plugin_distribution::Enablement::Disabled {
+        text.push_str(&format!(
+            "consent: approve these capabilities with `dctx plugin enable {} --approve`\n",
+            status.id.as_str()
+        ));
+    }
+    text
 }
 
 pub(super) fn synthetic(env: &Env<'_>) -> Option<PluginStatus> {

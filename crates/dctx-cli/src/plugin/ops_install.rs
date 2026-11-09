@@ -9,7 +9,7 @@ use dctx_plugin_distribution::{DistributionError, HttpsUrl, PluginId, Version};
 
 use super::ops_catalog::cached_index;
 use super::ops_enablement::{activate_and_enable, is_bundled_selection};
-use super::ops_output::{dist, done, fail, Outcome};
+use super::ops_output::{dist, done, fail, fail_for, Outcome};
 use super::parse::Install;
 use super::{render, Env};
 
@@ -96,19 +96,41 @@ pub(super) fn install_cmd(env: &mut Env<'_>, install: &Install, json: bool) -> O
     let (report, enable, approve, id) = report;
     if enable {
         if let Err(error) = activate_and_enable(env, &id, approve, None) {
-            return fail("install", &error, json);
+            return fail_for("install", Some(id.as_str()), &error, json);
         }
     }
-    done("install", json, env, |fields| {
-        format!(
-            "{fields},\"id\":{},\"version\":{},\"origin\":{},\"activated\":{},\"capabilities\":{}",
-            render::json_string(report.key.id.as_str()),
-            render::json_string(report.key.version.as_str()),
-            render::json_string(render::origin_name(report.origin)),
-            if enable { "true" } else { "false" },
-            report.capabilities.len()
-        )
-    })
+    done(
+        "install",
+        json,
+        env,
+        |fields| {
+            format!(
+                "{fields},\"id\":{},\"version\":{},\"origin\":{},\"activated\":{},\"capabilities\":{}",
+                render::json_string(report.key.id.as_str()),
+                render::json_string(report.key.version.as_str()),
+                render::json_string(render::origin_name(report.origin)),
+                if enable { "true" } else { "false" },
+                report.capabilities.len()
+            )
+        },
+        || {
+            let id = report.key.id.as_str();
+            let mut text = format!(
+                "installed {id} {} ({}, {} capabilities)\n",
+                report.key.version.as_str(),
+                render::origin_name(report.origin),
+                report.capabilities.len()
+            );
+            if enable {
+                text.push_str(&format!("enabled {id}\n"));
+            } else {
+                text.push_str(&format!(
+                    "inactive until enabled: review `dctx plugin info {id}`, then run `dctx plugin enable {id} --approve`\n"
+                ));
+            }
+            text
+        },
+    )
 }
 
 pub(super) fn update(
@@ -124,13 +146,24 @@ pub(super) fn update(
         Err(error) => return fail("update", &error, json),
     };
     if is_bundled_selection(env, &id) {
-        return done("update", json, env, |fields| {
-            format!(
-                "{fields},\"id\":{},\"check\":{},\"path\":\"containing-release\",\"downloaded\":false",
-                render::json_string(id.as_str()),
-                if check { "true" } else { "false" }
-            )
-        });
+        return done(
+            "update",
+            json,
+            env,
+            |fields| {
+                format!(
+                    "{fields},\"id\":{},\"check\":{},\"path\":\"containing-release\",\"downloaded\":false",
+                    render::json_string(id.as_str()),
+                    if check { "true" } else { "false" }
+                )
+            },
+            || {
+                format!(
+                    "{} is bundled with dctx; it updates with the dctx release, nothing was downloaded\n",
+                    id.as_str()
+                )
+            },
+        );
     }
     let index = match cached_index(env) {
         Ok(index) => index,
@@ -149,13 +182,25 @@ pub(super) fn update(
         Err(error) => return fail("update", &error, json),
     };
     if check {
-        return done("update", json, env, |fields| {
-            format!(
-                "{fields},\"id\":{},\"check\":true,\"version\":{},\"downloaded\":false",
-                render::json_string(id.as_str()),
-                render::json_string(release.version.as_str())
-            )
-        });
+        return done(
+            "update",
+            json,
+            env,
+            |fields| {
+                format!(
+                    "{fields},\"id\":{},\"check\":true,\"version\":{},\"downloaded\":false",
+                    render::json_string(id.as_str()),
+                    render::json_string(release.version.as_str())
+                )
+            },
+            || {
+                format!(
+                    "{} {} is available (not downloaded)\n",
+                    id.as_str(),
+                    release.version.as_str()
+                )
+            },
+        );
     }
     let report = match dist(env).install_from_index(&index, &id, Some(&release.version)) {
         Ok(report) => report,
@@ -166,12 +211,28 @@ pub(super) fn update(
         Err(DistributionError::ConsentRequired) => false,
         Err(error) => return fail("update", &error, json),
     };
-    done("update", json, env, |fields| {
-        format!(
-            "{fields},\"id\":{},\"version\":{},\"activated\":{}",
-            render::json_string(id.as_str()),
-            render::json_string(release.version.as_str()),
-            if activated { "true" } else { "false" }
-        )
-    })
+    done(
+        "update",
+        json,
+        env,
+        |fields| {
+            format!(
+                "{fields},\"id\":{},\"version\":{},\"activated\":{}",
+                render::json_string(id.as_str()),
+                render::json_string(release.version.as_str()),
+                if activated { "true" } else { "false" }
+            )
+        },
+        || {
+            let id = id.as_str();
+            let version = release.version.as_str();
+            if activated {
+                format!("updated {id} to {version}\n")
+            } else {
+                format!(
+                    "installed {id} {version}; it needs consent: run `dctx plugin enable {id} --approve`\n"
+                )
+            }
+        },
+    )
 }

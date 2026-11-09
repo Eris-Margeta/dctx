@@ -179,6 +179,12 @@ fn list_and_help_have_no_effects_and_show_the_bundled_plugin() {
     let search = run(&world, &mut index, &["plugin", "search", "git", "--json"]);
     assert_eq!(search.code, 0);
     assert!(search.body.contains("\"trust\":\"absent\""));
+    let text = run(&world, &mut index, &["plugin", "search", "git"]);
+    assert_eq!(text.code, 0);
+    assert_eq!(
+        text.body,
+        "no plugin index is cached, so there are no results\n"
+    );
     assert_eq!(world.net.requests(), [] as [std::string::String; 0]);
 }
 
@@ -329,7 +335,12 @@ fn bundled_enable_routes_git_and_canonical_run_then_disable_sticks() {
     assert_eq!(git.code, 0, "{}", git.body);
     assert_eq!(run_cmd.code, 0, "{}", run_cmd.body);
     assert!(git.body.contains("\"verb\":\"status\""));
-    assert!(run_cmd.body.contains("\"verb\":\"status\""));
+    assert!(
+        run_cmd.body.starts_with("dctx/git status: admitted"),
+        "{}",
+        run_cmd.body
+    );
+    assert!(!run_cmd.body.contains("facade_git"), "{}", run_cmd.body);
     assert!(git.body.contains("\"spawned\":false"));
     assert!(git.body.contains("same-binary"));
     let unknown = run(&world, &mut index, &["git", "add", "--json"]);
@@ -501,6 +512,13 @@ fn hostile_search_text_is_escaped_and_unsigned_refresh_refuses() {
     );
     assert_eq!(found.code, 0, "{}", found.body);
     assert!(!found.body.contains('\u{202e}'));
+    let rows = run(&world, &mut index, &["plugin", "search", "git"]);
+    assert_eq!(rows.code, 0, "{}", rows.body);
+    assert!(rows.body.starts_with("dctx/git\t1.0.0\t"), "{}", rows.body);
+    assert!(!rows.body.contains('\u{202e}'));
+    assert!(!rows.body.contains("facade_git") && !rows.body.contains("\"hits\""));
+    let none = run(&world, &mut index, &["plugin", "search", "zzz-none"]);
+    assert_eq!(none.body, "no plugins match \"zzz-none\"\n");
     assert!(found.body.contains("\\\\u{202e}") || found.body.contains("\\u{202e}"));
     world.net.unroute(INDEX);
     world.net.serve(INDEX, b"not-an-index");

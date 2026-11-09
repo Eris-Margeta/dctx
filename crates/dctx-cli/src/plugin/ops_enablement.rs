@@ -7,7 +7,7 @@ use dctx_plugin_distribution::{
     Confinement, ConsentApproval, ConsentScope, DistributionError, Origin, PluginId,
 };
 
-use super::ops_output::{dist, done, fail, Outcome};
+use super::ops_output::{dist, done, fail, fail_for, Outcome};
 use super::{bundled, render, Env};
 
 pub(super) fn enable(
@@ -26,20 +26,31 @@ pub(super) fn enable(
         Err(error) => return fail("enable", &error, json),
     };
     if !present && !approve {
-        return fail("enable", &DistributionError::ConsentRequired, json);
+        return fail_for(
+            "enable",
+            Some(id.as_str()),
+            &DistributionError::ConsentRequired,
+            json,
+        );
     }
     if let Err(error) = prepare_bundled(env, &id) {
-        return fail("enable", &error, json);
+        return fail_for("enable", Some(id.as_str()), &error, json);
     }
     if let Err(error) = activate_and_enable(env, &id, approve, project) {
-        return fail("enable", &error, json);
+        return fail_for("enable", Some(id.as_str()), &error, json);
     }
-    done("enable", json, env, |fields| {
-        format!(
-            "{fields},\"id\":{},\"enablement\":\"enabled\"",
-            render::json_string(id.as_str())
-        )
-    })
+    done(
+        "enable",
+        json,
+        env,
+        |fields| {
+            format!(
+                "{fields},\"id\":{},\"enablement\":\"enabled\"",
+                render::json_string(id.as_str())
+            )
+        },
+        || format!("enabled {}\n", id.as_str()),
+    )
 }
 
 pub(super) fn disable(
@@ -53,20 +64,26 @@ pub(super) fn disable(
         Err(error) => return fail("disable", &error, json),
     };
     if let Err(error) = prepare_bundled(env, &id) {
-        return fail("disable", &error, json);
+        return fail_for("disable", Some(id.as_str()), &error, json);
     }
     let leases = match dist(env).disable(&id) {
         Ok(leases) => leases,
-        Err(error) => return fail("disable", &error, json),
+        Err(error) => return fail_for("disable", Some(id.as_str()), &error, json),
     };
     let project = project.unwrap_or("");
-    done("disable", json, env, |fields| {
-        format!(
-            "{fields},\"id\":{},\"enablement\":\"disabled\",\"leases\":{leases},\"project\":{}",
-            render::json_string(id.as_str()),
-            render::json_string(project)
-        )
-    })
+    done(
+        "disable",
+        json,
+        env,
+        |fields| {
+            format!(
+                "{fields},\"id\":{},\"enablement\":\"disabled\",\"leases\":{leases},\"project\":{}",
+                render::json_string(id.as_str()),
+                render::json_string(project)
+            )
+        },
+        || format!("disabled {} (user-wide)\n", id.as_str()),
+    )
 }
 
 pub(super) fn remove(env: &mut Env<'_>, raw_id: &str, json: bool) -> Outcome {
@@ -75,17 +92,23 @@ pub(super) fn remove(env: &mut Env<'_>, raw_id: &str, json: bool) -> Outcome {
         Err(error) => return fail("remove", &error, json),
     };
     if let Err(error) = prepare_bundled(env, &id) {
-        return fail("remove", &error, json);
+        return fail_for("remove", Some(id.as_str()), &error, json);
     }
     if let Err(error) = dist(env).remove(&id) {
-        return fail("remove", &error, json);
+        return fail_for("remove", Some(id.as_str()), &error, json);
     }
-    done("remove", json, env, |fields| {
-        format!(
-            "{fields},\"id\":{},\"masked\":true",
-            render::json_string(id.as_str())
-        )
-    })
+    done(
+        "remove",
+        json,
+        env,
+        |fields| {
+            format!(
+                "{fields},\"id\":{},\"masked\":true",
+                render::json_string(id.as_str())
+            )
+        },
+        || format!("removed {}\n", id.as_str()),
+    )
 }
 
 pub(super) fn activate_and_enable(

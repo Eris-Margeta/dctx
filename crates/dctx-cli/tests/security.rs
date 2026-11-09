@@ -129,5 +129,5 @@ fn sparse_template_and_offline_bundle_inputs_are_refused() {
         .output()
         .unwrap();
     assert!(!output.status.success());
-    assert!(String::from_utf8_lossy(&output.stdout).contains("limit of"));
+    assert!(String::from_utf8_lossy(&output.stderr).contains("limit of"));
 }

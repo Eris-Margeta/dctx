@@ -21,23 +21,14 @@ pub(super) fn dist<'a>(env: &'a Env<'_>) -> Distribution<'a> {
     Distribution::new(env.network, env.store, env.clock, env.trust, env.policy)
 }
 
-pub(super) fn facade_note(env: &Env<'_>) -> String {
-    let caps = Capabilities::current();
-    format!(
-        "facade_git={} spawns={} git_children={}",
-        caps.git,
-        env.host.spawns(),
-        env.host.git_children()
-    )
-}
-
+/// Success. JSON keeps the facade counters; text is `text()` only, without diagnostics.
 pub(super) fn done(
     command: &str,
     json: bool,
     env: &Env<'_>,
     fill: impl FnOnce(String) -> String,
+    text: impl FnOnce() -> String,
 ) -> Outcome {
-    let note = facade_note(env);
     if json {
         let fields = format!(
             "\"ok\":true,\"command\":{},\"facade_git\":{},\"facade_spawns\":{},\"facade_git_children\":{}",
@@ -51,29 +42,40 @@ pub(super) fn done(
             body: format!("{{{}}}", fill(fields)),
         }
     } else {
-        let extra = fill(String::new());
         Outcome {
             code: 0,
-            body: format!("{command} {note} {extra}"),
+            body: text(),
         }
     }
 }
 
 pub(super) fn ok(command: &str, text: &str, json: bool, env: &Env<'_>) -> Outcome {
-    if json {
-        done(command, true, env, |fields| {
-            format!("{fields},\"text\":{}", render::json_string(text))
-        })
-    } else {
-        let _ = facade_note(env);
-        Outcome {
-            code: 0,
-            body: text.to_owned(),
-        }
-    }
+    done(
+        command,
+        json,
+        env,
+        |fields| format!("{fields},\"text\":{}", render::json_string(text)),
+        || text.to_owned(),
+    )
 }
 
+/// Two-line text failure, as in docs/CLI-EXIT-CODES.md. Printed on stderr.
+pub(super) fn failure_text(command: &str, message: &str, hint: &str) -> String {
+    format!("❌ Error: {command}: {message}\nhint: {hint}")
+}
+
+/// Refusal without a known plugin id.
 pub(super) fn fail(command: &str, error: &DistributionError, json: bool) -> Outcome {
+    fail_for(command, None, error, json)
+}
+
+/// Refusal. `id` names the plugin in the text message and hint when known.
+pub(super) fn fail_for(
+    command: &str,
+    id: Option<&str>,
+    error: &DistributionError,
+    json: bool,
+) -> Outcome {
     let name = code_name(error);
     if json {
         Outcome {
@@ -88,7 +90,11 @@ pub(super) fn fail(command: &str, error: &DistributionError, json: bool) -> Outc
     } else {
         Outcome {
             code: 1,
-            body: format!("{command}: {error}"),
+            body: failure_text(
+                command,
+                &format!("{} ({name})", message(id, error)),
+                &hint(command, id, error),
+            ),
         }
     }
 }
@@ -104,10 +110,107 @@ pub(super) fn usage(command: &str, reason: &str, json: bool) -> Outcome {
             ),
         }
     } else {
+        let hint = if command == "git" {
+            "dctx git takes one verb: status or protect"
+        } else {
+            "run `dctx plugin help` for the command shapes"
+        };
         Outcome {
             code: 2,
-            body: format!("{command}: {reason}"),
+            body: failure_text(command, reason, hint),
         }
+    }
+}
+
+/// Human text for a refusal. Variants whose `Display` is only the code name get words.
+fn message(id: Option<&str>, error: &DistributionError) -> String {
+    let subject = id.map_or_else(|| "the plugin".to_owned(), render::safe_summary);
+    match error {
+        DistributionError::ConsentRequired => {
+            format!("{subject} needs your consent for its capabilities before it can run")
+        }
+        DistributionError::Disabled => format!("{subject} is disabled"),
+        DistributionError::NotInstalled => format!("{subject} is not installed"),
+        DistributionError::NotActive => format!("{subject} has no active version"),
+        DistributionError::Quarantined => {
+            format!("{subject} failed reverification and is quarantined")
+        }
+        DistributionError::ConfinementRequired => format!(
+            "{subject} is a third-party plugin, and enabling one needs OS confinement this host does not provide"
+        ),
+        DistributionError::Leased => format!("a running worker still uses {subject}"),
+        DistributionError::Busy => "another plugin operation holds the registry lock".to_owned(),
+        DistributionError::Interrupted => {
+            "the plugin store failed or was interrupted mid-operation".to_owned()
+        }
+        DistributionError::NotFound => "no matching plugin, release or file was found".to_owned(),
+        DistributionError::UnknownKey => "no trusted signing key is configured".to_owned(),
+        DistributionError::FingerprintMismatch => {
+            "the key fingerprint does not match the key".to_owned()
+        }
+        DistributionError::KeyRevoked => "the signing key has been revoked".to_owned(),
+        DistributionError::UnknownPublisher => {
+            format!("no publisher is pinned for {subject}")
+        }
+        DistributionError::SignerChanged => {
+            format!("{subject} is signed by a different key than its pinned publisher")
+        }
+        DistributionError::IdentityMismatch => {
+            "the manifest names a different plugin id".to_owned()
+        }
+        DistributionError::ArtifactRevoked => "this release artifact has been revoked".to_owned(),
+        DistributionError::UnsupportedTarget => {
+            "the release has no artifact for this platform".to_owned()
+        }
+        DistributionError::TargetMismatch => {
+            "the payload does not match the selected platform".to_owned()
+        }
+        DistributionError::IntegrityFailure => {
+            "the payload does not match its signed SHA-256".to_owned()
+        }
+        DistributionError::SumsMismatch => {
+            "SHA256SUMS disagrees with the signed manifest".to_owned()
+        }
+        DistributionError::ManifestDigestMismatch => {
+            "the manifest differs from the digest named by the index".to_owned()
+        }
+        other => other.to_string(),
+    }
+}
+
+/// Next step for a refusal.
+fn hint(command: &str, id: Option<&str>, error: &DistributionError) -> String {
+    let id = id.map_or_else(|| "<id>".to_owned(), render::safe_summary);
+    match error {
+        DistributionError::ConsentRequired | DistributionError::NotActive => format!(
+            "review its capabilities with `dctx plugin info {id}`, then approve them with `dctx plugin enable {id} --approve`"
+        ),
+        DistributionError::Disabled => {
+            format!("turn it back on with `dctx plugin enable {id} --approve`")
+        }
+        DistributionError::NotInstalled => {
+            "`dctx plugin list` shows the installed and bundled plugins".to_owned()
+        }
+        DistributionError::ConfinementRequired => {
+            "only the bundled dctx/git plugin can be enabled on this host".to_owned()
+        }
+        DistributionError::Busy | DistributionError::Leased => {
+            "retry when the other plugin command or worker has finished".to_owned()
+        }
+        DistributionError::UnknownKey | DistributionError::Network(_)
+            if matches!(command, "search" | "install" | "update") =>
+        {
+            "this build has no online plugin discovery; install an offline bundle with `dctx plugin install --file <bundle> --id <publisher/name>`".to_owned()
+        }
+        DistributionError::StaleRevocation { .. } => {
+            "the revocation state must be refreshed before this check can pass".to_owned()
+        }
+        DistributionError::Quarantined
+        | DistributionError::IntegrityFailure
+        | DistributionError::SizeMismatch { .. } => {
+            format!("remove it with `dctx plugin remove {id}` and install a fresh copy")
+        }
+        _ => "run `dctx plugin help` for the command shapes".to_owned(),
     }
 }
 

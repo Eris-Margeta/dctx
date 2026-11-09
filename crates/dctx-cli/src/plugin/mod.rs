@@ -111,9 +111,60 @@ pub fn is_early(arg: &str) -> bool {
 }
 
 /// Runs a plugin or `git` alias command. Help and list do not create `root`.
+/// Without a resolvable plugin root (no `DCTX_PLUGIN_ROOT` and no usable home), only help runs.
 pub fn enter(args: &[String]) -> u8 {
-    let root = disk::default_root();
-    enter_at(args, &root)
+    match disk::default_root() {
+        Ok(root) => enter_at(args, &root),
+        Err(reason) => {
+            let outcome = match parse::parse_argv(args) {
+                Ok(request) => (request.json, no_root(args, &request, &reason)),
+                Err(error) => return parse_failure(&error),
+            };
+            print_body(outcome.0, &outcome.1);
+            outcome.1.code
+        }
+    }
+}
+
+fn no_root(args: &[String], request: &parse::Request, reason: &str) -> Outcome {
+    if matches!(request.action, Action::Help) {
+        return help_outcome(&render::help_text(), request.json);
+    }
+    let command = command_name(args);
+    let body = if request.json {
+        format!(
+            "{{\"ok\":false,\"command\":{},\"error\":\"NoPluginRoot\",\"detail\":{}}}",
+            render::json_string(command),
+            render::json_string(reason)
+        )
+    } else {
+        ops_output::failure_text(
+            command,
+            reason,
+            "set HOME (or DCTX_PLUGIN_ROOT) to an absolute directory",
+        )
+    };
+    Outcome { code: 1, body }
+}
+
+fn command_name(args: &[String]) -> &str {
+    if args.get(1).is_some_and(|arg| arg == "plugin") {
+        args.get(2).map_or("plugin", String::as_str)
+    } else {
+        "git"
+    }
+}
+
+fn parse_failure(error: &str) -> u8 {
+    eprintln!(
+        "{}",
+        ops_output::failure_text(
+            "plugin",
+            error,
+            "run `dctx plugin help` for the command shapes"
+        )
+    );
+    2
 }
 
 /// Same as [`enter`] with an explicit plugin root. A missing root is left missing for read-only commands.
@@ -123,10 +174,7 @@ pub fn enter_at(args: &[String], root: &std::path::Path) -> u8 {
             print_body(json, &outcome);
             outcome.code
         }
-        Err(error) => {
-            eprintln!("plugin: {error}");
-            2
-        }
+        Err(error) => parse_failure(&error),
     }
 }
 
@@ -149,11 +197,7 @@ pub(crate) fn outcome_at(
     let target = match target() {
         Ok(target) => target,
         Err(error) => {
-            let command = if args.get(1).is_some_and(|arg| arg == "plugin") {
-                args.get(2).map_or("plugin", String::as_str)
-            } else {
-                "git"
-            };
+            let command = command_name(args);
             let body = if request.json {
                 format!(
                     "{{\"ok\":false,\"command\":{},\"error\":\"UnsupportedTarget\",\"detail\":{}}}",
@@ -161,7 +205,11 @@ pub(crate) fn outcome_at(
                     render::json_string(&error.to_string())
                 )
             } else {
-                format!("{command}: {error}")
+                ops_output::failure_text(
+                    command,
+                    &format!("{error} (UnsupportedTarget)"),
+                    "plugins can be installed on macOS (arm64, x86_64), Linux glibc (arm64, x86_64) and Windows x86_64",
+                )
             };
             return Ok((request.json, Outcome { code: 1, body }));
         }
@@ -228,7 +276,11 @@ fn list_at(root: &std::path::Path, json: bool) -> Outcome {
                     render::json_string(&error.to_string())
                 )
             } else {
-                format!("list: {error}")
+                ops_output::failure_text(
+                    "list",
+                    &format!("{error} ({name})"),
+                    "the plugin registry could not be read; check the plugin root directory",
+                )
             };
             return Outcome { code: 1, body };
         }
@@ -284,14 +336,16 @@ fn help_outcome(text: &str, json: bool) -> Outcome {
     }
 }
 
+/// JSON and successful text go to stdout. Text refusals go to stderr.
 fn print_body(json: bool, outcome: &Outcome) {
     if outcome.body.is_empty() {
         return;
     }
-    if json || outcome.body.ends_with('\n') {
-        println!("{}", outcome.body.trim_end_matches('\n'));
+    let body = outcome.body.trim_end_matches('\n');
+    if json || outcome.code == 0 {
+        println!("{body}");
     } else {
-        println!("{}", outcome.body);
+        eprintln!("{body}");
     }
 }
 
