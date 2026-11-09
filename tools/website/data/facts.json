@@ -45,14 +45,8 @@
   {
    "name": "Rust library",
    "status": "available from Git",
-   "line": "The `dctx` facade crate as a tagged Git dependency; crates.io publishing soon.",
+   "line": "The `dctx` facade crate as a tagged Git dependency; crates.io publication pending.",
    "link": "/docs/modalities/#rust-library-embed-the-facade"
-  },
-  {
-   "name": "npm CLI",
-   "status": "publishing soon",
-   "line": "`npx dctx` runs the native CLI from a Node toolchain once published; use the release archives today.",
-   "link": "/docs/modalities/#npm-cli-publishing-soon"
   },
   {
    "name": "Desktop app",
@@ -61,10 +55,10 @@
    "link": "/docs/modalities/#desktop-app-tauri-preview-today"
   },
   {
-   "name": "Python and Node libraries",
-   "status": "planned",
-   "line": "Project-scoped packages with their own pinned binary; not available yet.",
-   "link": "/docs/modalities/#python-and-node-bindings-planned"
+   "name": "Python, Node and Go wrappers",
+   "status": "registry publication pending",
+   "line": "Thin `dctx rpc` wrappers, built and tested in CI; not on PyPI, npm or a Go module proxy yet. Use the release archives today.",
+   "link": "/docs/modalities/#python-node-and-go-wrappers-registry-publication-pending"
   }
  ],
  "scopes": [

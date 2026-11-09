@@ -65,10 +65,13 @@ cache directories are planned; the current layout uses a shared `v2` cache root.
 
 ### Agent builder embedding a library
 
-Agent builder embedding a library: project library with its own pinned binary (pip/npm, publishing soon); never parse or slice pack text. Pitfall: re-implementing engine logic.
+Agent builder embedding a library: project library with its own pinned binary (Python, Node or Go wrapper over `dctx rpc`; registry publication pending); never parse or slice pack text. Pitfall: re-implementing engine logic.
 
-The pip/npm vendored-binary wrappers and their rpc client are planned. Today,
-pin the [Rust facade](MODALITIES.md#rust-library-embed-the-facade) from tagged Git,
+The [Python](../packages/python/README.md), [Node](../packaging/npm/dctx/README.md)
+and [Go](../packages/go/README.md) wrappers over `dctx rpc` are built and tested in
+CI, but not yet published to PyPI, npm or a Go module proxy; install them from CI
+artifacts or a checkout as their READMEs describe. Alternatively, pin the
+[Rust facade](MODALITIES.md#rust-library-embed-the-facade) from tagged Git,
 or invoke the installed CLI as a subprocess. The first runnable Rust example is
 in the [library doctest](../examples/library/README.md). For subprocess use:
 
@@ -87,7 +90,7 @@ is an in-process API object. See the [scope contract](#two-scopes-one-binary).
 
 ### Team / enterprise admin
 
-Team / enterprise admin: system binary via package manager, signature + SBOM verification, one pinned version fleet-wide. Pitfall: mixing project and system versions without checking (doctor, planned).
+Team / enterprise admin: system binary via package manager, signature + SBOM verification, one pinned version fleet-wide. Pitfall: mixing project and system versions without checking (`dctx doctor`).
 
 This is the rollout target. Today, pin a release archive and check its matching
 `SHA256SUMS` entry; package-manager distribution, signed CLI binaries and a
@@ -99,8 +102,9 @@ binary path and start with:
 dctx --version --verbose
 ```
 
-Expect version and feature/precision limits. `dctx doctor` and signature-status
-output are planned. Check paths and versions explicitly during onboarding;
+Expect version and feature/precision limits. `dctx doctor` lists the dctx
+binaries visible from a directory with their scopes and SHA-256 checksums;
+signature-status output is planned. Check paths and versions explicitly during onboarding;
 use [release procedure](../RELEASING.md), [testing](TESTING.md) and
 [security reporting](../SECURITY.md) for the current controls. Signed
 organization policy bundles and audit journals are planned.
@@ -124,8 +128,9 @@ Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.
 dctx --version
 ```
 
-Use the system binary for interactive agents. Project pip/npm libraries are
-publishing soon; no project dependency is needed for this path.
+Use the system binary for interactive agents. The project wrappers (Python, Node,
+Go) are built and tested in CI, with registry publication pending; no project
+dependency is needed for this path.
 
 ### 2. Choose one project and inspect one answer
 
@@ -193,8 +198,8 @@ measurement exist.
 
 | Level | dctx provides | You are responsible for |
 |---|---|---|
-| System binary | Signed binary (planned), cache caps, doctor (planned), journals (planned), receipts (planned) | Choosing roots, policy file, keeping one version on PATH |
-| Project library | Pinned vendored binary (planned), protocol client (planned), same bytes as CLI (planned) | Pinning the version, exclusions in the project policy, not re-implementing engine logic |
+| System binary | Signed binary (planned), cache caps, `dctx doctor`, journals (planned), receipts (planned) | Choosing roots, policy file, keeping one version on PATH |
+| Project library | Pinned vendored binary and protocol client (Python, Node, Go wrappers; registry publication pending), same bytes as CLI (checked in CI) | Pinning the version, exclusions in the project policy, not re-implementing engine logic |
 | MCP and ACP agent setup | Lean profile, tested client configs, measured start-up cost | Turning off the host's own file tools, picking a profile, session ids, reading receipts |
 | CI and cache | Byte-stable pack, prefix tiers (planned), deterministic exit codes | Pinning the binary, caching the index between runs, treating pack drift as a signal not noise |
 
@@ -202,25 +207,28 @@ For current CLI exclusions, use `.gitignore` and `.dctxignore`; the unified poli
 file is planned. Agent session ids and general receipts in the responsibility
 column describe planned integrations. The Rust facade exists today with explicit
 host-supplied selection and storage policy; the project-library row describes
-the future pip/npm binary wrappers. Existing pack prefix stability is distinct
+the Python, Node and Go wrappers, which are not yet on a public registry. Existing pack prefix stability is distinct
 from the planned layered prefix tiers.
 
 ## Two scopes, one binary
 
-The following is the distribution contract for the planned project-library
-wrappers and signed releases:
+The following is the distribution contract for the project-library wrappers
+(registry publication pending) and signed releases:
 
 > The system `dctx` on PATH belongs to you and your agents. A binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Same signed engine, different owner. Interactive agents and MCP call the system binary; application code and CI call the project binary; a library never silently falls back to PATH.
 
-Today, install the system binary from release archives; Python/Node applications
-and CI can invoke an explicitly pinned CLI path until project wrappers publish.
-The Rust facade is an in-process library, not a vendored executable. No shipped
-wrapper currently enforces the future no-fallback contract.
+Today, install the system binary from release archives. The Python, Node and Go
+wrappers already follow the no-fallback contract: they resolve an explicit path,
+`DCTX_BIN`, their own platform package (Python, Node) or a versioned user cache,
+and never search `PATH`. Until they are published, install them from CI
+artifacts or a checkout, or invoke an explicitly pinned CLI path. The Rust facade
+is an in-process library, not a vendored executable.
 
 The current shared cache uses platform-specific `dctx/v2` roots, with compatible
 generations checked before reuse. The proposed
-`<cache>/<engine-version>/<root-hash>/` layout, version/path in every pack and rpc
-`hello`, and `dctx doctor` coexistence report are planned. Do not assume two
+`<cache>/<engine-version>/<root-hash>/` layout and a version/path line in every
+pack are planned. Today `dctx rpc` reports the engine version in `hello`, and
+`dctx doctor` lists the dctx binaries visible from a directory. Do not assume two
 versions have independent caches today; check the executable path and version
 explicitly and use separate absolute `DCTX_CACHE_DIR` locations when isolation
 is needed. Both future scopes should read the project's exclusions; today the

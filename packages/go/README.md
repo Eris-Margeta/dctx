@@ -7,6 +7,11 @@ byte. Operations accept CLI argument strings and return opaque `[]byte`, includi
 all trailing newlines. See the [RPC contract](../../docs/protocol/README.md) and
 [engine philosophy](../../docs/PHILOSOPHY.md).
 
+The module is built and tested in CI; **publication is pending**. Its module tag
+does not exist yet, so `go get` of this module path does not work today. Use it
+from a checkout with a `replace` directive (below), and get the engine from the
+[GitHub release archives](https://github.com/Eris-Margeta/dctx/releases).
+
 ```go
 package main
 
@@ -48,6 +53,13 @@ returns typed protocol metadata. Arguments pass individually without a shell;
 RPC supplies `--json`. Pass `"--for", "your task"` to `Context`. Budget flags,
 cursors, paths and output destinations retain engine semantics. Pack output can
 include a report line after JSON; it remains opaque bytes.
+
+**Arguments carry full CLI authority.** They are CLI argv for the engine: `--place`
+selects any readable directory, `pack --output` writes any path the process may
+write, and `--clipboard` reaches the clipboard. Never pass untrusted values (for
+example text from a model or a web request) as `--place`/`--output` values or as
+positionals that start with `-`; validate them first, and choose the project
+directory yourself.
 
 Each client owns a subprocess in the required project directory. Calls are
 serialized; independent clients are independent engine sessions. Queued calls
@@ -101,8 +113,8 @@ export DCTX_BIN="$HOME/.cargo/bin/dctx-cli"
 On Windows, set `$env:DCTX_BIN` to the installed `dctx-cli.exe` absolute path.
 There are no installation hooks, bundled executables or runtime downloads.
 
-For local development before a module tag exists, use a local replacement in
-the consuming module's `go.mod`:
+Until a module tag exists, use a local replacement in the consuming module's
+`go.mod`:
 
 ```text
 require github.com/Eris-Margeta/dctx/packages/go v1.2.0
@@ -132,7 +144,6 @@ that skip. Linux tests both Go 1.23 and stable; macOS and Windows test stable.
 
 Release preparation consists of updating the engine version, regenerating and
 checking the API, and passing the gates. The module's eventual Git tag must be
-`packages/go/v1.2.0`, matching Go's subdirectory-module convention. After that
-tag exists, consumers can use
-`go get github.com/Eris-Margeta/dctx/packages/go@v1.2.0`. This card creates no
-tags and configures no publishing or registry upload steps.
+`packages/go/v1.2.0`, matching Go's subdirectory-module convention. Only after
+that tag is pushed will `go get` of the module resolve; no such tag has been
+created yet, and no publishing or registry upload step is configured.

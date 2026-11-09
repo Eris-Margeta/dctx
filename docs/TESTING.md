@@ -2,11 +2,45 @@
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Testing
 
-CI runs on pushes to `main`, all pull requests (including forks), and manual dispatch.
-Each combination below runs `cargo test --workspace --locked --exclude dctx-desktop
---exclude dctx-desktop-api`, including doctests. Matrix failures do not cancel other
-combinations. Logs show the resolved compiler version and native host architecture.
-Test jobs allow 90 minutes; the Ubuntu quality job allows 60 minutes.
+CI (`.github/workflows/ci.yml`) runs on pushes to `main`, all pull requests
+(including forks), and manual dispatch. It is one fail-fast chain, cheapest stage
+first:
+
+1. **quality**: one Ubuntu/stable job with the format, lint, docs and release gates
+   described below.
+2. **linux**, then **macos**, then **windows**: each calls the reusable
+   [`tests.yml`](../.github/workflows/tests.yml) workflow for that stage's runners.
+3. **packages**: after Windows passes, five called workflows run in parallel:
+   [`npm.yml`](../.github/workflows/npm.yml) (Node transport, CLI parity and tarball
+   contents on Ubuntu, macOS and Windows with Node 18 and 24; packs the client
+   without publishing), [`go.yml`](../.github/workflows/go.yml) (generated API,
+   race and every-verb CLI parity tests; Go 1.23 and stable on Linux, stable on
+   macOS and Windows), [`python-packages.yml`](../.github/workflows/python-packages.yml)
+   (transport tests on Python 3.11 and 3.13, native platform wheels on their own
+   hosts, and an offline install from a local wheelhouse),
+   [`performance.yml`](../.github/workflows/performance.yml) (synthetic CLI and
+   catalog benchmarks under an instruction counter, checked against the committed
+   baseline) and [`fuzz-smoke.yml`](../.github/workflows/fuzz-smoke.yml) (bounded
+   parser property targets with a 180-second budget).
+4. **deploy-site**: only on pushes to `main`, after every package workflow passes,
+   [`deploy-site.yml`](../.github/workflows/deploy-site.yml) publishes the website
+   when the commit changed `website/`, `tools/website/`, `docs/` or `CHANGELOG.md`
+   and the deployment secrets are configured.
+
+A stage starts only when every earlier stage passed, and a failing step stops its
+job. Inside a stage, the first failing OS/toolchain combination cancels the rest
+of the stage (`fail-fast: true`) and every later stage, so a red commit never pays
+for the more expensive hosts. Manual dispatch can start at one stage, stop after
+another (`start`/`until`) and pass a test-name `filter`, to iterate on one
+platform failure without rerunning the whole chain. The package, performance and
+fuzz workflows can also be dispatched on their own. The release workflows
+(`release.yml` on `v*` tags, the manually dispatched `reproducible.yml`, and
+`release-desktop.yml` on `desktop-v*` tags) are separate from this chain.
+
+Each test-stage combination below runs `cargo test --workspace --locked --exclude
+dctx-desktop --exclude dctx-desktop-api`, including doctests. Logs show the
+resolved compiler version and native host architecture. Test jobs allow 90
+minutes; the Ubuntu quality job allows 60 minutes.
 
 | GitHub-hosted runner | Requested architecture | Toolchains |
 | --- | --- | --- |
@@ -26,8 +60,9 @@ Rust documentation with `-D warnings`, licence manifests and `THIRD_PARTY.md`, t
 existing `deny.toml` licence policy, the website (including release-binary capture
 drift), playground tests, and the release gates with `strace`. These checks require
 no exclusive self-hosted facility, so they replace the former self-hosted job.
-Independent quality checks continue after a failure, preserving the failed job
-status while exposing the other results; dependent checks require their setup.
+The quality job also runs cargo-audit, the release supply-chain script tests,
+workflow validation and CLI/MCP/RPC golden byte parity. Its steps run in order and
+the first failing step stops the job and the chain.
 All actions use full commit SHAs; caches are separated by OS/toolchain/job and
 saved only on `main`. Workflow permissions are `contents: read`; newer PR runs
 cancel older runs for the same PR.

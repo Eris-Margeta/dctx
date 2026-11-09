@@ -59,10 +59,13 @@ a CycloneDX SBOM, build provenance and offline bundles; see
 dctx --version
 ```
 
-**Project libraries — publishing soon.** The pip/npm libraries with their own
-pinned binary are planned. The [Rust facade](docs/MODALITIES.md#rust-library-embed-the-facade)
-is available from tagged Git today; crates.io, `cargo install dctx-cli` and the
-npm CLI (`npx dctx`) are publishing soon. Use release archives now.
+**Project wrappers — built and tested in CI, registry publication pending.** The
+[Python](packages/python/README.md), [Node](packaging/npm/dctx/README.md) and
+[Go](packages/go/README.md) wrappers over `dctx rpc` are built and tested in CI,
+but nothing is published to PyPI, npm, crates.io or a Go module proxy yet. Until
+then, a `dctx` package on those registries is not from this project. The
+[Rust facade](docs/MODALITIES.md#rust-library-embed-the-facade) is available from
+tagged Git. Use the release archives for the CLI.
 
 Follow [the safe path in ten minutes](docs/START.md#safe-path-in-ten-minutes)
 for one project, lean MCP setup and whole-session measurement.
@@ -192,7 +195,7 @@ pub struct Order {
 - [Agents, short tasks](docs/MODALITIES.md#short-agent-task-grep-can-be-enough): compare with grep plus narrow file reads first.
 - [Agents, long sessions and huge trees](docs/MODALITIES.md#huge-trees-scope-before-indexing): scope the root, find symbols and read exact source.
 - [MCP](docs/guides/MCP.md): use the lean profile to start; ACP is planned.
-- [Libraries](docs/MODALITIES.md#rust-library-embed-the-facade): embed the Rust facade today; pip/npm project libraries are publishing soon.
+- [Libraries](docs/MODALITIES.md#rust-library-embed-the-facade): embed the Rust facade today; the [Python, Node and Go wrappers](docs/MODALITIES.md#python-node-and-go-wrappers-registry-publication-pending) are built and tested in CI, with registry publication pending.
 - [CI and prompt caching](docs/MODALITIES.md#ci--prompt-cache-prefix-stability): pin inputs and measure byte stability and provider cache behavior.
 - [Desktop](docs/MODALITIES.md#desktop-app-tauri-preview-today): build the Tauri 0.11 preview; the GPUI rebuild is planned.
 
@@ -256,7 +259,7 @@ see [Map mode: context for agents](docs/guides/MAP-MODE.md) and the
 From this repository's root:
 
 ```zsh
-dctx map find "SnapshotConfig"
+dctx map find "Session"
 ```
 
 Read exact IDs from the result with `dctx map read 'ID' --json`.
@@ -283,7 +286,7 @@ See [CI coverage and desktop exclusions](docs/TESTING.md).
 ## Use as a library
 
 The public Rust entry point is the [`dctx` facade](crates/dctx), available from
-Git now; **crates.io publishing soon**.
+Git now; **crates.io publication is pending**.
 
 ```toml
 [dependencies]
@@ -310,37 +313,68 @@ println!("{}", std::str::from_utf8(output.as_bytes())?);
 The host supplies selection rules and storage policy; `FsSource` does not
 load `.gitignore` automatically. Read the
 [library integration boundary](docs/MODALITIES.md#rust-library-embed-the-facade)
-before embedding it. Python and Node project wrappers are planned.
+before embedding it. Python, Node and Go wrappers over `dctx rpc` live in
+[packages/python](packages/python/README.md), [packaging/npm](packaging/npm/dctx/README.md)
+and [packages/go](packages/go/README.md); they are built and tested in CI, and
+registry publication is pending.
 
 ## CLI Reference
 
 ```
 Usage: dctx <COMMAND> [OPTIONS]
-       dctx pack [PATH] [--output PATH] [--clipboard] [--json] [--tree-stamps=on|off]
+       dctx pack [PATH] [--output PATH] [--clipboard] [--json]
        dctx pack [PATH] --for <TEXT> [--budget TOKENS]
-       dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path|export> [--json]
+       dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path> [--json]
+       dctx context TARGET [--place PATH] [--budget N] [--json] [--session ID --dedupe]
+       dctx rpc
        dctx mcp [PATH]
-       dctx cache status|gc|purge|config|auto
-       dctx template build <PATH> | template list
+       dctx serve [--mcp] [PATH]
+       dctx read <TARGET> [OPTIONS]
+       dctx languages [--json|--markdown]
+       dctx doctor [--json]
+       dctx cache status [--json] [--root PATH]
+       dctx cache gc [--dry-run] [--root PATH] [--max-bytes N]
+       dctx cache purge --root PATH [--dry-run] [--yes]
+       dctx cache purge --all [--dry-run] [--yes]
+       dctx cache config [auto on|off] [--max-bytes N] [--ttl-days N]
+       dctx cache auto [--json]
+       dctx template build <PATH> [--output PATH]
+       dctx template list [--dir PATH]
        dctx plugin search|install|list|info|enable|disable|remove|update|verify
        dctx git <status|protect>
 
-Pack options:
-  -c, --clipboard       Copy to clipboard
-  -o, --output <path>   Write the page to one file
-  --json                Summary report instead of the source page
-  --tree-stamps=on|off  MOD: and SIZE: on tree lines (default off; on = the 1.0.0 text)
-
-Filter options:
-  --ext <list>          Only these extensions, e.g. rs,toml
-  --binary              Include binary files (excluded by default)
-  --empty | --non-empty Only empty / non-empty files
-  --large <MB> | --small <MB>
-  --hidden              Only hidden files and folders
-  --debug-ignored       Show ignored paths without reading them
+Pack filters:
+  --ext <extensions>    Only files with these extensions (comma-separated)
+  --binary              Include binary files (omitted by default)
+  --empty               Only 0-byte files
+  --non-empty           Only files with content
+  --large <MB>          Only files larger than this many megabytes
+  --small <MB>          Only files smaller than this many megabytes
+  --hidden              Only hidden files and directories
+  --debug-ignored       List ignored directories without reading them
+  --include <pattern>   Only files matching this ignore-rule glob (repeatable)
+  --exclude <pattern>   Drop files matching this ignore-rule glob (repeatable)
+  --output, -o <path>   Write the page to one file
+  --clipboard, -c       Copy the page to the clipboard
+  --json                Summary report; with --for, the facade JSON context page
+  --tree-stamps=on|off  MOD: timestamp on tree lines (default off; on = the 1.0.0 text)
+Task context (agent cards):
+  --for <text>          Map find on the names in <text>, then neighbors and read of the best hits
+  --budget <tokens>     With --for: estimated-token cap, 100..100000 (default 3000)
 ```
 
-Run `dctx --help` for the complete reference and `dctx --version --verbose` for feature and precision limits.
+- `dctx context` returns ranked context for a file, symbol name or stable node id;
+  repeated targets in one call share a delivery session.
+- `dctx rpc` serves the versioned engine protocol used by the language wrappers
+  ([protocol](docs/protocol/README.md)); send `hello` first.
+- `dctx mcp` and `dctx serve [--mcp]` serve the map verbs as MCP tools over stdio;
+  `dctx read` is `dctx map read`. `dctx map export` writes the whole graph as JSON or Mermaid.
+- `dctx languages` lists every supported language and its tier.
+- `dctx doctor` lists visible dctx binaries, their scopes, SHA-256 checksums and
+  cache sizes, without network access or cache changes.
+
+Run `dctx --help`, `dctx pack --help` and `dctx map --help` for the complete
+reference and `dctx --version --verbose` for feature and precision limits.
 
 
 See [map commands and limits](docs/guides/MAP-MODE.md),
@@ -427,7 +461,13 @@ parsed or cached, and is checked again before output leaves the engine.
 
 | Rule file | Behaviour |
 |---|---|
-| `.gitignore`, `.dctxignore`, global ignore | Excluded from normal selection; `--debug-ignored` shows ignored path metadata without reading content |
+| `.gitignore`, `.dctxignore`, global ignore file | Excluded from normal selection; `--debug-ignored` shows ignored path metadata without reading content |
+
+The global ignore file is `<config dir>/dctx/ignore`: `$XDG_CONFIG_HOME/dctx/ignore`
+or `~/.config/dctx/ignore` on Linux and macOS, `%APPDATA%\dctx\ignore` on Windows.
+dctx does not read Git metadata, so `.git/info/exclude` and Git's
+`core.excludesFile` are **not** applied: copy those patterns into `.dctxignore` or
+the global ignore file when they must keep files out of a pack.
 
 `DCTX_INDEX_IGNORED=1` skips those ignore texts, so leave it unset when relying
 on them. Built-in sensitive-file and `.git` exclusions still apply.

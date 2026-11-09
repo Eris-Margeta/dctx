@@ -8,11 +8,15 @@ strings and returns engine envelopes without parsing or rendering their output.
 It includes the `dctx` CLI command, which verifies the engine handshake and then
 forwards CLI arguments, standard streams, exit status and signals.
 
-Registry publication is pending. Prebuilt native archives are available from
-[GitHub Releases](https://github.com/Eris-Margeta/dctx/releases).
-After publication, install with `npm install --include=optional dctx` (Node 18+).
-There are no install hooks, binary downloads, network calls, fallback operations
-or retries. Native platform packages are ordinary pinned optional dependencies.
+The package and its native platform packages are built and tested in CI;
+**npm registry publication is pending**. Nothing is published to npm yet, so a
+`dctx` package or `@dctx/*` scope there is not from this project: do not install
+it, and do not rely on `npx dctx`. Use the prebuilt native archives from
+[GitHub Releases](https://github.com/Eris-Margeta/dctx/releases) for the CLI, or
+the packed tarballs from CI (Node 18+) with `DCTX_BIN` pointing at a verified
+engine. There are no install hooks, binary downloads, network calls, fallback
+operations or retries. Native platform packages are ordinary pinned optional
+dependencies.
 
 ```js
 import { connect } from 'dctx'; // In an ES module (.mjs)
@@ -44,6 +48,12 @@ including all trailing newlines; they need not contain a single JSON document.
 Engine errors resolve as their original envelopes, including unknown fields.
 Transport failures reject. The client never reconstructs CLI diagnostics.
 
+**`args` carry full CLI authority.** They are CLI argv for the engine: `--place`
+selects any readable directory, `pack --output` writes any path the process may
+write, and `--clipboard` reaches the clipboard. Never pass untrusted values (for
+example text from a model or a web request) as `--place`/`--output` values or as
+positionals that start with `-`; validate them first, and choose `cwd` yourself.
+
 `connect({ binaryPath?, cwd?, env?, onStderr?, handshakeTimeoutMs? })` requires
 `engine_version` to equal this package's version exactly and protocol major 1.
 The handshake deadline defaults to 10 seconds. Operations have no transport
@@ -71,8 +81,9 @@ available source:
    `.exe` on Windows. `<cache>` is absolute `XDG_CACHE_HOME` or `~/.cache` on
    Linux, `~/Library/Caches` on macOS, and `LOCALAPPDATA` or
    `~/AppData/Local` on Windows.
-4. An error with the exact optional dependency install command, release URL,
-   checksum verification instruction and cache destination. Nothing downloads.
+4. An error with the optional dependency install command (for a package
+   installed from a local tarball), release URL, checksum verification
+   instruction and cache destination. Nothing downloads.
 
 To use your own engine, obtain the matching release, verify `SHA256SUMS`, and
 set `DCTX_BIN` to its executable path (or use `binaryPath`). On Unix, give a

@@ -7,19 +7,22 @@ changes arguments, retries operations, walks sources, caches results or download
 an engine. See the [RPC contract](../../docs/protocol/README.md) and
 [engine philosophy](../../docs/PHILOSOPHY.md).
 
-Packages are prepared as CI artifacts; **registry publication is not enabled**.
-Download the matching wrapper and platform wheel artifacts into `./wheelhouse`,
-then explicitly install into your project's virtual environment:
+The wheels are built and tested in CI; **registry publication is pending**.
+Nothing is published to PyPI yet, so a `dctx` or `dctx-binary-*` project there is
+not from this project: do not install it. Download the matching wrapper and
+platform wheel artifacts from CI into `./wheelhouse` (or build them as shown
+below), then explicitly install into your project's virtual environment:
 
 ```sh
 python -m pip install --no-index --find-links ./wheelhouse 'dctx[binary]==1.2.0'
 ```
 
-After publication, the equivalent registry command is
-`python -m pip install 'dctx[binary]==1.2.0'`. The `binary` extra installs only the
-matching platform distribution, pinned to the wrapper's exact version. There are
-no installation hooks or runtime downloads. Installing `dctx==1.2.0` alone is
-supported when you already have the matching executable.
+The `binary` extra installs only the matching platform distribution, pinned to
+the wrapper's exact version. There are no installation hooks or runtime
+downloads. Installing the `dctx==1.2.0` wrapper wheel alone is supported when you
+already have the matching executable, for example the `dctx` engine from the
+[GitHub release archives](https://github.com/Eris-Margeta/dctx/releases) set as
+`DCTX_BIN`.
 
 ```python
 from dctx import Client, EngineError
@@ -46,6 +49,13 @@ summary line after JSON: output is opaque bytes, not a Python object. Budgets,
 continuation cursors and paths go straight to the engine. `hello()` returns typed
 protocol metadata. Unknown envelope fields and added verbs are tolerated.
 
+**Arguments carry full CLI authority.** Each operation's arguments are CLI argv
+for the engine: `--place` selects any readable directory, `pack --output` writes
+any path the process may write, and `--clipboard` reaches the clipboard. Never
+pass untrusted values (for example text from a model or a web request) as
+`--place`/`--output` values or as positionals that start with `-`; validate them
+first, and choose the project directory yourself.
+
 Each client owns one synchronous subprocess rooted in the required project
 argument. Calls on the same client are serialized; independent projects use
 independent clients. Relative operation paths resolve in that project's directory.
@@ -69,8 +79,11 @@ Binary resolution is entirely local, in this order:
    authoritative; a missing, non-executable or mismatched override fails. Relative
    override paths resolve in the caller's directory, before starting the engine.
 2. The installed `dctx_binary_<platform>` module's adjacent `dctx` (`dctx.exe` on
-   Windows), provided by the matching platform wheel. A broken wheel fails
-   visibly rather than falling through to another executable.
+   Windows), provided by the matching platform wheel. The module is accepted
+   only from the install directory that holds the imported `dctx` package (and
+   its purelib/platlib sibling); `sys.path`, including the working-directory
+   entry added by `python -c`, `-m` or the REPL, is not searched. A broken wheel
+   fails visibly rather than falling through to another executable.
 3. The user cache location returned by `dctx.cache_binary()`. The package never
    creates this directory or fills it. Place an explicitly obtained executable
    here yourself, retaining its executable permission.
@@ -79,6 +92,9 @@ Binary resolution is entirely local, in this order:
 Cache layout: `<cache-root>/dctx/bin/1.2.0/<platform>/dctx`, where cache root is
 `$XDG_CACHE_HOME` or `~/.cache` on Linux, `~/Library/Caches` on macOS, and
 `%LOCALAPPDATA%` or `~/AppData/Local` on Windows. Windows uses `dctx.exe`.
+When no home directory can be determined (for example Windows without
+`USERPROFILE` and `LOCALAPPDATA`), the cache step is skipped and the error names
+`DCTX_BIN` instead.
 Platforms are `linux_x86_64`, `linux_aarch64`, `darwin_x86_64`, `darwin_aarch64`
 and `windows_x86_64`. Unsupported hosts can supply a matching engine explicitly.
 
@@ -128,5 +144,5 @@ virtual-environment installation and a wrapper-only hard failure. Without
 When releasing, update the Python manifest version, every exact binary-extra
 pin, and `src/dctx/_version.py` together with the engine. Regenerate types with
 `python packages/python/tools/generate_api.py` after any RPC schema change. Build
-and test fail on stale types or release mismatches. Publication remains a future
-explicit release action.
+and test fail on stale types or release mismatches. Registry publication is a
+separate, explicit release action that has not happened yet.
