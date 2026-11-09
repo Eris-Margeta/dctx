@@ -27,3 +27,13 @@ confidence-threshold = 0.93
 [licenses.private]
 # Workspace crates are licensed Apache-2.0, checked by scripts/spdx_check.sh.
 ignore = true
+
+[advisories]
+# Exceptions name the advisory, the affected path, the reason and an expiry.
+# The shipped CLI (dctx-cli) must reach none of them.
+ignore = [
+  # proc-macro-error 1.0.4 (unmaintained): build-time proc macro reached only through
+  # dctx-desktop -> tauri -> gtk 0.18 -> glib-macros. No maintained gtk3 release drops it.
+  # Desktop is deferred; expires when the desktop work resumes or on 2027-03-01.
+  { id = "RUSTSEC-2024-0370", reason = "desktop-only build-time proc macro (tauri gtk 0.18); expires 2027-03-01" },
+]

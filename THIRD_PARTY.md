@@ -7,11 +7,10 @@ Each package keeps its own license and notices; this file is an index, not the l
 
 Allowed licenses (and OR/AND combinations of them): Apache-2.0, Apache-2.0 WITH LLVM-exception, BSL-1.0, MIT, BSD-2-Clause, BSD-3-Clause, ISC, Unicode-3.0, Unicode-DFS-2016, Zlib, MPL-2.0, CC0-1.0.
 
-127 packages.
+125 packages.
 
 | Crate | Version | License | Repository |
 |---|---|---|---|
-| ahash | 0.8.12 | MIT OR Apache-2.0 | https://github.com/tkaitchuck/ahash |
 | autocfg | 1.5.1 | Apache-2.0 OR MIT | https://github.com/cuviper/autocfg |
 | base64ct | 1.8.3 | Apache-2.0 OR MIT | https://github.com/RustCrypto/formats |
 | bitflags | 2.13.2 | MIT OR Apache-2.0 | https://github.com/bitflags/bitflags |
@@ -38,6 +37,7 @@ Allowed licenses (and OR/AND combinations of them): Apache-2.0, Apache-2.0 WITH 
 | fastrand | 2.5.0 | Apache-2.0 OR MIT | https://github.com/smol-rs/fastrand |
 | fiat-crypto | 0.2.9 | MIT OR Apache-2.0 OR BSD-1-Clause | https://github.com/mit-plv/fiat-crypto |
 | find-msvc-tools | 0.1.14 | MIT OR Apache-2.0 | https://github.com/rust-lang/cc-rs |
+| foldhash | 0.2.0 | Zlib | https://github.com/orlp/foldhash |
 | form_urlencoded | 1.2.2 | MIT OR Apache-2.0 | https://github.com/servo/rust-url |
 | futures-core | 0.3.34 | MIT OR Apache-2.0 | https://github.com/rust-lang/futures-rs |
 | futures-io | 0.3.34 | MIT OR Apache-2.0 | https://github.com/rust-lang/futures-rs |
@@ -50,8 +50,8 @@ Allowed licenses (and OR/AND combinations of them): Apache-2.0, Apache-2.0 WITH 
 | getrandom | 0.3.4 | MIT OR Apache-2.0 | https://github.com/rust-random/getrandom |
 | getrandom | 0.4.3 | MIT OR Apache-2.0 | https://github.com/rust-random/getrandom |
 | hashbrown | 0.12.3 | MIT OR Apache-2.0 | https://github.com/rust-lang/hashbrown |
-| hashbrown | 0.14.5 | MIT OR Apache-2.0 | https://github.com/rust-lang/hashbrown |
-| hashlink | 0.9.1 | MIT OR Apache-2.0 | https://github.com/kyren/hashlink |
+| hashbrown | 0.17.1 | MIT OR Apache-2.0 | https://github.com/rust-lang/hashbrown |
+| hashlink | 0.12.2 | MIT OR Apache-2.0 | https://github.com/djc/hashlink |
 | icu_collections | 2.3.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
 | icu_locale_core | 2.3.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
 | icu_normalizer | 2.3.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
@@ -66,7 +66,7 @@ Allowed licenses (and OR/AND combinations of them): Apache-2.0, Apache-2.0 WITH 
 | js-sys | 0.3.106 | MIT OR Apache-2.0 | https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/js-sys |
 | landlock | 0.4.7 | MIT OR Apache-2.0 | https://github.com/landlock-lsm/rust-landlock |
 | libc | 0.2.191 | MIT OR Apache-2.0 | https://github.com/rust-lang/libc |
-| libsqlite3-sys | 0.30.1 | MIT | https://github.com/rusqlite/rusqlite |
+| libsqlite3-sys | 0.39.1 | MIT | https://github.com/rusqlite/rusqlite |
 | linux-raw-sys | 0.12.1 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | https://github.com/sunfishcode/linux-raw-sys |
 | litemap | 0.8.3 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
 | memchr | 2.8.3 | Unlicense OR MIT | https://github.com/BurntSushi/memchr |
@@ -82,7 +82,7 @@ Allowed licenses (and OR/AND combinations of them): Apache-2.0, Apache-2.0 WITH 
 | r-efi | 6.0.0 | MIT OR Apache-2.0 OR LGPL-2.1-or-later | https://github.com/r-efi/r-efi |
 | rand_core | 0.10.1 | MIT OR Apache-2.0 | https://github.com/rust-random/rand_core |
 | rand_core | 0.6.4 | MIT OR Apache-2.0 | https://github.com/rust-random/rand |
-| rusqlite | 0.32.1 | MIT | https://github.com/rusqlite/rusqlite |
+| rusqlite | 0.41.1 | MIT | https://github.com/rusqlite/rusqlite |
 | rustc_version | 0.4.1 | MIT OR Apache-2.0 | https://github.com/djc/rustc-version-rs |
 | rustix | 1.1.5 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | https://github.com/bytecodealliance/rustix |
 | rustversion | 1.0.23 | MIT OR Apache-2.0 | https://github.com/dtolnay/rustversion |
@@ -129,8 +129,6 @@ Allowed licenses (and OR/AND combinations of them): Apache-2.0, Apache-2.0 WITH 
 | writeable | 0.6.4 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
 | yoke | 0.8.3 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
 | yoke-derive | 0.8.4 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| zerocopy | 0.8.63 | BSD-2-Clause OR Apache-2.0 OR MIT | https://github.com/google/zerocopy |
-| zerocopy-derive | 0.8.63 | BSD-2-Clause OR Apache-2.0 OR MIT | https://github.com/google/zerocopy |
 | zerofrom | 0.1.8 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
 | zerofrom-derive | 0.1.8 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
 | zeroize | 1.9.1 | Apache-2.0 OR MIT | https://github.com/RustCrypto/utils |

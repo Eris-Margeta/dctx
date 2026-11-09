@@ -291,3 +291,13 @@ fn five_verb_rows_stay_stable_beside_shared_facts() {
     assert_eq!(again[0].id.as_str(), hits[0].id.as_str());
     assert_eq!(store.file("src/job.rs").unwrap().unwrap().nodes.len(), 1);
 }
+
+#[test]
+fn bundled_sqlite_is_at_least_3_54() {
+    // SQLite before 3.54 has the WAL uninitialized-memory flaw behind RUSTSEC-2026-0459.
+    assert!(
+        rusqlite::version_number() >= 3_054_000,
+        "bundled SQLite {} is older than 3.54.0",
+        rusqlite::version()
+    );
+}
