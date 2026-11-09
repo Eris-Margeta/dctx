@@ -25,7 +25,7 @@ use narrow::{file_count, narrow};
 mod narrowed;
 use narrowed::NarrowedSource;
 mod markers;
-mod output_file;
+pub(crate) mod output_file;
 mod spool;
 pub use markers::legacy_markers;
 use markers::{into_legacy_markers, source_document};

@@ -207,12 +207,6 @@ pub(crate) fn outcome_at(
     if matches!(request.action, Action::List) {
         return Ok((request.json, list_at(root, request.json)));
     }
-    if !disk::STORE_WRITABLE && changes_store(&request.action) {
-        return Ok((
-            request.json,
-            ops_output::read_only_store(command_name(args), request.json),
-        ));
-    }
     let target = match target() {
         Ok(target) => target,
         Err(error) => {
@@ -233,6 +227,12 @@ pub(crate) fn outcome_at(
             return Ok((request.json, Outcome { code: 1, body }));
         }
     };
+    if !disk::STORE_WRITABLE && changes_store(&request.action) {
+        return Ok((
+            request.json,
+            ops_output::read_only_store(command_name(args), request.json),
+        ));
+    }
     let store = disk::FsStore::new(root);
     let clock = disk::SystemClock;
     let trust = TrustStore::new();

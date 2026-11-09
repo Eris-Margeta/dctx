@@ -4,7 +4,6 @@
 //! Depends on [`dctx::Session::compile_template`] and [`dctx::Session::load_template`].
 //! Build writes a plan only when `--output` is set. List does not scan the home directory.
 
-use std::io::Write as _;
 use std::path::{Path, PathBuf};
 
 use dctx_adapter_fs::StdFs;
@@ -163,22 +162,10 @@ fn write_output(path: &Path, bytes: &[u8]) -> Result<(), Failure> {
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
         Err(error) => return Err(io_failure("write", path, error)),
     }
-    let directory = path
-        .parent()
-        .filter(|parent| !parent.as_os_str().is_empty())
-        .unwrap_or(Path::new("."));
-    let mut staged = tempfile::Builder::new()
-        .prefix(".dctx-template-")
-        .tempfile_in(directory)
-        .map_err(|error| io_failure("write", path, error))?;
-    staged
-        .write_all(bytes)
-        .and_then(|()| staged.as_file().sync_all())
-        .map_err(|error| io_failure("write", path, error))?;
-    staged
-        .persist(path)
-        .map_err(|error| io_failure("write", path, error.error))?;
-    Ok(())
+    // Shared with `pack --output`: an exclusive sibling renamed into place, or on Windows copied
+    // in place through a no-follow handle when an open session pins the directory against renames.
+    crate::pack::output_file::write_with(path, |writer| writer.write_all(bytes))
+        .map_err(|error| io_failure("write", path, error))
 }
 
 fn list(args: &[String]) -> Result<String, Failure> {
@@ -435,12 +422,7 @@ layout = "SNAPSHOT"
         let leftovers = std::fs::read_dir(dir.path())
             .expect("list")
             .flatten()
-            .filter(|entry| {
-                entry
-                    .file_name()
-                    .to_string_lossy()
-                    .starts_with(".dctx-template-")
-            })
+            .filter(|entry| entry.file_name().to_string_lossy().starts_with(".dctx-"))
             .count();
         assert_eq!(leftovers, 0);
     }

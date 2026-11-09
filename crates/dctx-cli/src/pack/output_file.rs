@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! `pack --output` files. The page is written to a fresh sibling file, then renamed over the target.
+//! `pack --output` and `template build --output` files. The page is written to a fresh sibling file, then renamed over the target.
 //! A link, directory, FIFO or device at the target is refused: it is never followed or truncated.
 //! A failed write leaves the target as it was and removes the sibling.
 
@@ -11,7 +11,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 /// Writes `path` through `write`, replacing a regular file atomically and keeping its permissions.
 /// # Errors
 /// Refuses a non-regular target or a path without a file name; returns create, write or rename errors.
-pub(super) fn write_with<T>(
+pub(crate) fn write_with<T>(
     path: &Path,
     write: impl FnOnce(&mut dyn Write) -> io::Result<T>,
 ) -> io::Result<T> {
@@ -47,9 +47,40 @@ pub(super) fn write_with<T>(
     }
     drop(file);
     // rename replaces a link or file that appeared at `path` since the check; it never follows it.
-    fs::rename(&staged.path, path)?;
-    staged.committed = true;
+    match fs::rename(&staged.path, path) {
+        Ok(()) => staged.committed = true,
+        // ERROR_SHARING_VIOLATION: an open dctx session (here or in another process, such as an
+        // MCP server) pins its root and every ancestor against renames. Copy in place instead.
+        #[cfg(windows)]
+        Err(error) if error.raw_os_error() == Some(32) => copy_in_place(&staged.path, path)?,
+        Err(error) => return Err(error),
+    }
     Ok(value)
+}
+
+/// Overwrites `target` with the staged bytes through a handle that never follows a link, for a
+/// directory that refuses renames. A link or non-regular file at `target` is refused before it
+/// is truncated.
+#[cfg(windows)]
+fn copy_in_place(staged: &Path, target: &Path) -> io::Result<()> {
+    use std::os::windows::fs::{MetadataExt, OpenOptionsExt};
+    const FILE_FLAG_OPEN_REPARSE_POINT: u32 = 0x0020_0000;
+    const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x0000_0400;
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT)
+        .open(target)?;
+    let meta = file.metadata()?;
+    if !meta.is_file() || meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "refusing to replace a link or a non-regular file",
+        ));
+    }
+    file.set_len(0)?;
+    io::copy(&mut fs::File::open(staged)?, &mut file)?;
+    Ok(())
 }
 
 /// A sibling of the target, created exclusively (no existing entry or link is ever opened).
@@ -177,6 +208,29 @@ mod tests {
         if made.is_ok_and(|status| status.success()) {
             assert!(write_page(&fifo, b"page").is_err());
         }
+    }
+
+    /// Windows directory guards (an open session's root and ancestors) deny write sharing, so
+    /// the rename fails with a sharing violation; the page is still written, with no debris.
+    #[cfg(windows)]
+    #[test]
+    fn a_target_in_a_rename_pinned_directory_is_still_replaced() {
+        use std::os::windows::fs::OpenOptionsExt;
+        let temp = tempfile::tempdir().unwrap();
+        let target = temp.path().join("context.txt");
+        fs::write(&target, b"old page that is longer").unwrap();
+        let guard = fs::File::options()
+            .access_mode(0x0001 | 0x0080) // FILE_LIST_DIRECTORY | FILE_READ_ATTRIBUTES
+            .share_mode(0x0001) // FILE_SHARE_READ
+            .custom_flags(0x0200_0000) // FILE_FLAG_BACKUP_SEMANTICS
+            .open(temp.path())
+            .unwrap();
+        write_page(&target, b"new").unwrap();
+        assert_eq!(fs::read(&target).unwrap(), b"new");
+        write_page(&temp.path().join("fresh.txt"), b"fresh").unwrap();
+        drop(guard);
+        assert_eq!(fs::read(temp.path().join("fresh.txt")).unwrap(), b"fresh");
+        assert_eq!(fs::read_dir(temp.path()).unwrap().count(), 2);
     }
 
     #[cfg(unix)]
