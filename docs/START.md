@@ -60,8 +60,10 @@ dctx cache purge --root /absolute/deleted-project --dry-run
 ```
 
 Inspect the dry run before applying cleanup; `purge` requires `--yes`.
-See [cache controls](guides/MAP-MODE.md#index-cache-and-privacy). Per-engine-version
-cache directories are planned; the current layout uses a shared `v2` cache root.
+See [cache controls](guides/MAP-MODE.md#index-cache-and-privacy). Indexes live in an
+engine `major.minor` subdirectory (for example `1.3`) of the cache parent, which is
+`DCTX_CACHE_DIR` or the platform default `v2` cache root; patch releases share it, and
+data from other engine versions is ignored.
 
 ### Agent builder embedding a library
 
@@ -224,14 +226,14 @@ and never search `PATH`. Until they are published, install them from CI
 artifacts or a checkout, or invoke an explicitly pinned CLI path. The Rust facade
 is an in-process library, not a vendored executable.
 
-The current shared cache uses platform-specific `dctx/v2` roots, with compatible
-generations checked before reuse. The proposed
-`<cache>/<engine-version>/<root-hash>/` layout and a version/path line in every
-pack are planned. Today `dctx rpc` reports the engine version in `hello`, and
-`dctx doctor` lists the dctx binaries visible from a directory. Do not assume two
-versions have independent caches today; check the executable path and version
-explicitly and use separate absolute `DCTX_CACHE_DIR` locations when isolation
-is needed. Both future scopes should read the project's exclusions; today the
+The CLI cache lives in `<cache-parent>/<engine-major.minor>/` under the
+platform-specific `dctx/v2` parent (or `DCTX_CACHE_DIR`), so engines 1.2 and 1.3
+keep separate indexes while patch releases of one family share theirs (see
+[scopes](SCOPES.md)). A version/path line in every pack is planned. Today
+`dctx rpc` reports the engine version in `hello`, and `dctx doctor` lists the dctx
+binaries visible from a directory. Check the executable path and version
+explicitly, and use separate absolute `DCTX_CACHE_DIR` locations when two
+installations of the same engine family must not share an index. Both future scopes should read the project's exclusions; today the
 CLI loads ignore files while a Rust host supplies its own selection rules.
 
 Continue with the [documentation index](README.md), [modalities](MODALITIES.md)

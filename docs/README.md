@@ -29,7 +29,7 @@ have no page link; specifications also include planned behavior.
 
 - [System binary](START.md#two-scopes-one-binary): you and your interactive agents own the executable on PATH.
 - [Project binary](START.md#agent-builder-embedding-a-library): the planned pinned pip/npm wrapper contract and today's Rust alternative.
-- [Coexistence](START.md#two-scopes-one-binary): current shared cache and planned version isolation.
+- [Coexistence](START.md#two-scopes-one-binary): per-engine-version cache namespaces.
 - Coexistence and doctor command guide: **coming** (`doctor` is planned).
 - Dedicated scopes page (`SCOPES.md`): **coming**; use the start page's scope section today.
 

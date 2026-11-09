@@ -51,8 +51,9 @@ The generated methods are `Pack`, `Context`, `Map`, `Find`, `Read`, `Skeleton`,
 `Call(ctx, dctx.VerbFind, args...)` provides the same transport directly. `Hello`
 returns typed protocol metadata. Arguments pass individually without a shell;
 RPC supplies `--json`. Pass `"--for", "your task"` to `Context`. Budget flags,
-cursors, paths and output destinations retain engine semantics. Pack output can
-include a report line after JSON; it remains opaque bytes.
+cursors, paths and output destinations retain engine semantics. Pack output is
+exactly the JSON document; the CLI's `pack bytes=` status line goes to stderr and is
+not part of it. Treat the output as opaque bytes.
 
 **Arguments carry full CLI authority.** They are CLI argv for the engine: `--place`
 selects any readable directory, `pack --output` writes any path the process may
