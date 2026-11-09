@@ -6,9 +6,9 @@
 
 - This is llms-full.txt: the facts, the route table, every document the budget allows, the captured CLI help and examples. The other entry points: https://www.dctx.internet.technology/llms-small.txt, https://www.dctx.internet.technology/llms.txt.
 - Engine: dctx 1.3.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
-- Docs commit: 36ec1832e67168da7c87d92faeb8585050ff94f2 (2026-11-09T12:47:11+01:00), the last commit that changed one of the documents.
+- Docs commit: 8461deb1405fa38b58d75ca1427f828c0f0e3a43 (2026-11-09T12:50:17+01:00), the last commit that changed one of the documents.
 - Command: `dctx pack . --include /docs/START.md --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md --include /docs/guides/MAP-MODE.md --include /docs/guides/AGENTS-SNIPPET.md --include /docs/guides/PLUGINS.md --include /docs/SPEC.md --include /docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md --include /docs/ADR-018-Language-Coverage.md --include /docs/design/contracts/DTS-v2.md --include /docs/ADR-003-Templating-Engine.md --include /docs/CRATE-MAP.md --include /docs/CLI-EXIT-CODES.md --include /docs/BENCHMARK-20261030.md --include /docs/research/stability-20261105/REPORT.md --include /docs/research/trail-code-2026-10/REPORT.md --include /RELEASING.md --include /CONTRIBUTING.md --include /SECURITY.md --include /TRADEMARK.md --include /MAINTENANCE.md --include /CHANGELOG.md --include /crates/dctx-template/templates/default.dctx_template --include /crates/dctx-template/templates/stamped.dctx_template`
-- Budget: 97,999 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 25 documents.
+- Budget: 98,124 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 25 documents.
 
 ## Facts
 
@@ -191,7 +191,7 @@ Documents link to their Markdown twin (index.md), the repository file with only 
       [D] docs/research/trail-code-2026-10 (ID:D034)
         [F] docs/research/trail-code-2026-10/REPORT.md (ID:F035)
 </DIRECTORY_TREE>
-<FILE_CONTENT_START ID="F001" PATH="CHANGELOG.md" LINES="446">
+<FILE_CONTENT_START ID="F001" PATH="CHANGELOG.md" LINES="452">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Changelog
@@ -362,6 +362,12 @@ until it happens, the release archives are the install path.
   `sys.path` entries.
 - The Python, Node and Go package READMEs warn that operation arguments carry full CLI
   authority.
+- The no-follow open flag used by `map export --output`, the map store and the desktop
+  snapshot rules now comes from the platform instead of a hard-coded x86 value, so it
+  also holds on Linux ARM64.
+- The npm wrapper tarball built in CI no longer lists the unpublished `@dctx/cli-*`
+  platform packages, so installing it never resolves those names from the public
+  registry; error messages point to the release archive and `DCTX_BIN`.
 - The website playground rate limit can no longer be bypassed with a forged
   `X-Forwarded-For` header. The website deploy builds without secrets and deploys only
   from `main` through a protected environment; the desktop release workflow is
