@@ -4,7 +4,7 @@
 //! The resolver in dctx-map-resolve is not a dependency of this crate, so the same lookup order lives here.
 //! The walk records one [`FileRefs`] per file, then [`link`] appends `calls` and `imports` edges once.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use dctx_map_model::EdgeKind;
 
@@ -64,12 +64,35 @@ pub(crate) struct FileRefs {
 /// Languages where a call spelled as a bare name never reaches a method: a method needs a receiver (`self.`, `this.`, `x.`) or a type path (`Self::`).
 const RECEIVER_ONLY: &[&str] = &["rust", "python", "javascript", "typescript", "go"];
 
+/// Language family of a language tag: calls and imports resolve only between files of one family.
+///
+/// Languages that share a toolchain and call each other directly form one family (JS/TS and web components,
+/// the JVM languages, the BEAM languages); every other tag is its own family. A Rust `.all(..)` therefore never
+/// reaches a Makefile target named `all`, and a Python call never reaches a shell function or a config key.
+fn language_family(language: &str) -> &str {
+    match language {
+        "javascript" | "typescript" | "web" => "javascript",
+        "java" | "kotlin" | "scala" | "groovy" => "jvm",
+        "erlang" | "elixir" => "beam",
+        other => other,
+    }
+}
+
 /// Edge confidence in rank order: a lower rank wins when two references reach the same pair.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum Rank {
     Exact,
     Name,
     Guess,
+}
+
+/// The calling file as the resolver sees it.
+struct Caller<'b> {
+    file: &'b FileRefs,
+    /// Language family of the file, see [`language_family`].
+    family: &'b str,
+    /// Every name segment the file declares or imports (resolved or not): the types a receiver call can name.
+    visible: HashSet<&'b str>,
 }
 
 /// A local name an import introduced, and what it points to.
@@ -86,10 +109,10 @@ struct Tables<'a> {
     files: &'a [FileRefs],
     /// (file module index, full name) to symbols.
     names: HashMap<(u32, &'a str), Vec<u32>>,
-    /// Last name segment to symbols.
-    bare: HashMap<&'a str, Vec<u32>>,
-    /// Module key to (module index, key is the full path form).
-    modules: HashMap<String, Vec<(u32, bool)>>,
+    /// (language family, last name segment) to symbols.
+    bare: HashMap<(&'a str, &'a str), Vec<u32>>,
+    /// Module key to (module index, key is the full path form, language family).
+    modules: HashMap<String, Vec<(u32, bool, &'a str)>>,
 }
 
 /// Appends `calls` and `imports` edges for every resolvable reference in `files`.
@@ -132,14 +155,18 @@ impl<'a> Tables<'a> {
     /// Indexes symbols by file and name, and modules by path key.
     fn build(nodes: &'a [IndexedNode], text: &'a TextBlob, files: &'a [FileRefs]) -> Self {
         let mut names: HashMap<(u32, &str), Vec<u32>> = HashMap::new();
-        let mut bare: HashMap<&str, Vec<u32>> = HashMap::new();
-        let mut modules: HashMap<String, Vec<(u32, bool)>> = HashMap::new();
+        let mut bare: HashMap<(&str, &str), Vec<u32>> = HashMap::new();
+        let mut modules: HashMap<String, Vec<(u32, bool, &str)>> = HashMap::new();
         for file in files {
             let Some(module) = nodes.get(file.first as usize) else {
                 continue;
             };
+            let family = language_family(language_of(text.get(module.path)));
             for (key, full) in module_keys(text.get(module.path)) {
-                modules.entry(key).or_default().push((file.first, full));
+                modules
+                    .entry(key)
+                    .or_default()
+                    .push((file.first, full, family));
             }
             for index in file.first.saturating_add(1)..file.end {
                 let Some(node) = nodes.get(index as usize) else {
@@ -157,7 +184,7 @@ impl<'a> Tables<'a> {
                     .entry((file.first, node.name.as_str()))
                     .or_default()
                     .push(index);
-                bare.entry(last_segment(&node.name))
+                bare.entry((family, last_segment(&node.name)))
                     .or_default()
                     .push(index);
             }
@@ -187,6 +214,34 @@ impl<'a> Tables<'a> {
             }
             ids.insert(id, index);
         }
+        let module_node = self.nodes.get(file.first as usize);
+        let language = module_node.map(|module| language_of(self.text.get(module.path)));
+        let family = language_family(language.unwrap_or("opaque"));
+        let receiver_only = language.is_some_and(|language| RECEIVER_ONLY.contains(&language));
+        let mut visible: HashSet<&str> = HashSet::new();
+        for index in file.first.saturating_add(1)..file.end {
+            if let Some(node) = self.nodes.get(index as usize) {
+                visible.extend(node.name.split([':', '.']).filter(|part| !part.is_empty()));
+            }
+        }
+        for reference in file
+            .refs
+            .iter()
+            .filter(|reference| reference.kind == EdgeKind::Imports)
+        {
+            visible.extend(
+                reference
+                    .name
+                    .rsplit(|ch: char| !(ch.is_alphanumeric() || ch == '_' || ch == '$'))
+                    .find(|part| !part.is_empty()),
+            );
+            visible.extend(reference.alias.as_deref());
+        }
+        let caller = Caller {
+            file,
+            family,
+            visible,
+        };
         let mut bindings: Vec<Binding> = Vec::new();
         for reference in file
             .refs
@@ -197,7 +252,7 @@ impl<'a> Tables<'a> {
                 continue;
             };
             let segments = import_segments(&reference.name);
-            let Some((dst, module)) = self.import_target(&segments) else {
+            let Some((dst, module)) = self.import_target(&segments, family) else {
                 continue;
             };
             if dst == src {
@@ -225,10 +280,6 @@ impl<'a> Tables<'a> {
                 }
             }
         }
-        let module_node = self.nodes.get(file.first as usize);
-        let language = module_node.map(|module| language_of(self.text.get(module.path)));
-        let receiver_only = module_node
-            .is_some_and(|module| RECEIVER_ONLY.contains(&language_of(self.text.get(module.path))));
         for reference in file
             .refs
             .iter()
@@ -247,31 +298,42 @@ impl<'a> Tables<'a> {
                     .name
                     .chars()
                     .all(|ch| ch.is_alphanumeric() || ch == '_' || ch == '$');
-            let (targets, rank) =
-                self.call_targets(file, &reference.scope, qualifier, callee, &bindings, free);
+            let (targets, rank) = self.call_targets(
+                &caller,
+                &reference.scope,
+                qualifier,
+                callee,
+                &bindings,
+                free,
+            );
             for dst in targets {
                 note(found, src, true, dst, rank);
             }
         }
     }
 
-    /// Module or symbol an import path names. `true` marks a module.
-    fn import_target(&self, segments: &[String]) -> Option<(u32, bool)> {
-        if let Some(module) = self.module_named(segments) {
+    /// Module or symbol of `family` an import path names. `true` marks a module.
+    fn import_target(&self, segments: &[String], family: &str) -> Option<(u32, bool)> {
+        if let Some(module) = self.module_named(segments, family) {
             return Some((module, true));
         }
         let (symbol, path) = segments.split_last()?;
-        let module = self.module_named(path)?;
+        let module = self.module_named(path, family)?;
         let hit = self.names.get(&(module, symbol.as_str()))?;
         (hit.len() == 1).then(|| (hit[0], false))
     }
 
-    /// The one module a segment path names. A full path form beats a suffix form.
-    fn module_named(&self, segments: &[String]) -> Option<u32> {
+    /// The one module of `family` a segment path names. A full path form beats a suffix form.
+    fn module_named(&self, segments: &[String], family: &str) -> Option<u32> {
         if segments.is_empty() {
             return None;
         }
-        let hits = self.modules.get(&segments.join("::"))?;
+        let hits: Vec<&(u32, bool, &str)> = self
+            .modules
+            .get(&segments.join("::"))?
+            .iter()
+            .filter(|hit| hit.2 == family)
+            .collect();
         let full: Vec<u32> = hits.iter().filter(|hit| hit.1).map(|hit| hit.0).collect();
         let pool: Vec<u32> = if full.is_empty() {
             hits.iter().map(|hit| hit.0).collect()
@@ -284,15 +346,17 @@ impl<'a> Tables<'a> {
     /// Targets of one call: lexical scope, then imports, then module paths, then a project-wide guess.
     ///
     /// A `free` call (a bare name in a [`RECEIVER_ONLY`] language) skips every candidate of kind `method`.
+    /// Module paths and the guess only consider files of the caller's language family.
     fn call_targets(
         &self,
-        file: &FileRefs,
+        caller: &Caller<'_>,
         scope: &str,
         qualifier: &[String],
         callee: &str,
         bindings: &[Binding],
         free: bool,
     ) -> (Vec<u32>, Rank) {
+        let (file, family) = (caller.file, caller.family);
         let qualified = qualifier.join("::");
         let mut walk = scope;
         loop {
@@ -337,15 +401,12 @@ impl<'a> Tables<'a> {
             }
         }
         if !qualifier.is_empty()
-            && let Some(module) = self.module_named(qualifier)
+            && let Some(module) = self.module_named(qualifier, family)
             && let Some(hit) = self.names.get(&(module, callee))
         {
             return Self::pick(hit);
         }
-        (
-            self.guess(file, callee, !qualifier.is_empty(), free),
-            Rank::Guess,
-        )
+        (self.guess(caller, callee, qualifier, free), Rank::Guess)
     }
 
     /// The candidates a call can reach: all of `hits`, or for a `free` call those that are not methods.
@@ -370,11 +431,39 @@ impl<'a> Tables<'a> {
         }
     }
 
-    /// The one project-wide symbol with this last segment, preferring the caller's directory when several exist.
+    /// The one project-wide symbol of the caller's language family with this last segment, preferring the caller's directory when several exist.
     ///
     /// A call with a receiver (`recv.name()`) that still has several candidates resolves to the one candidate of kind `method`, so a lone method wins over same-named free functions, and a lone owned class method (`Owner::name`) wins over object-literal members. Two or more of the same standing stay ambiguous and emit nothing.
-    fn guess(&self, file: &FileRefs, callee: &str, receiver: bool, free: bool) -> Vec<u32> {
-        let Some(hits) = self.bare.get(callee) else {
+    ///
+    /// A call with a receiver or qualifier (`recv.name()`, `Type::name()`, `pkg.Name()`) then keeps its pick only if the
+    /// caller can see it: it is in the caller's own file, it is an owned member whose owner the caller declares, imports
+    /// or names as the qualifier, or it is a free symbol whose file or directory the qualifier names. Without types the
+    /// receiver is unknown, so `iter.map(..)` or `text.lines()` never guesses its way to a same-named project method.
+    fn guess(
+        &self,
+        caller: &Caller<'_>,
+        callee: &str,
+        qualifier: &[String],
+        free: bool,
+    ) -> Vec<u32> {
+        let mut picked = self.pick_guess(caller.file, caller.family, callee, qualifier, free);
+        if let Some(named) = qualifier.last() {
+            picked.retain(|&hit| self.visible_to(caller, named, hit));
+        }
+        picked
+    }
+
+    /// The guess before the visibility check: ambiguity is judged over every candidate of the family.
+    fn pick_guess(
+        &self,
+        file: &FileRefs,
+        family: &str,
+        callee: &str,
+        qualifier: &[String],
+        free: bool,
+    ) -> Vec<u32> {
+        let receiver = !qualifier.is_empty();
+        let Some(hits) = self.bare.get(&(family, callee)) else {
             return Vec::new();
         };
         let hits = self.reachable(hits, free);
@@ -425,6 +514,25 @@ impl<'a> Tables<'a> {
         }
     }
 
+    /// True when a call qualified by `named` (its last qualifier segment) can see candidate `hit`; see [`Self::guess`].
+    fn visible_to(&self, caller: &Caller<'_>, named: &str, hit: u32) -> bool {
+        if self.file_of(hit) == caller.file.first {
+            return true;
+        }
+        let Some(node) = self.nodes.get(hit as usize) else {
+            return false;
+        };
+        if let Some((owner, _)) = node.name.rsplit_once("::") {
+            let owner = last_segment(owner);
+            return owner == named || caller.visible.contains(owner);
+        }
+        let path = self.text.get(node.path);
+        let stem = path.rsplit('/').next().map_or("", |base| {
+            base.split_once('.').map_or(base, |(stem, _)| stem)
+        });
+        stem == named || last_segment_of_dir(path) == named
+    }
+
     /// Module index of the file holding node `index`.
     fn file_of(&self, index: u32) -> u32 {
         let at = self.files.partition_point(|file| file.first <= index);
@@ -438,6 +546,11 @@ impl<'a> Tables<'a> {
 fn note(found: &mut BTreeMap<(u32, bool, u32), Rank>, src: u32, call: bool, dst: u32, rank: Rank) {
     let slot = found.entry((src, call, dst)).or_insert(rank);
     *slot = (*slot).min(rank);
+}
+
+/// Last directory segment of a root-relative path (`a/b/c.go` is `b`).
+fn last_segment_of_dir(path: &str) -> &str {
+    dir_of(path).rsplit('/').next().unwrap_or("")
 }
 
 /// Directory part of a root-relative path.

@@ -1,11 +1,23 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Tests for call and import linking over lexed fixtures.
-//! Runs the lexers through `prepare_structural` and the graph assembly the walk uses, then [`link`].
+//! Runs the lexers through `prepare_structural` (Rust through syn, as the walk does, when `syntax-rust` is on) and the
+//! graph assembly the walk uses, then [`link`].
 //! Each fixture mirrors one language of the DCX-12 card check.
 
-use super::extract::{index_prepared, prepare_structural};
-use super::refs::{FileRefs, link};
+use super::extract::{Prepared, index_prepared, prepare_structural};
+use super::refs::{FileRefs, RawRef, link};
 use super::{IndexedEdge, IndexedNode, TextBlob, write_endpoint};
+
+/// Symbols and raw references of one file, the way the walk extracts them.
+fn prepare(path: &str, source: &str) -> (Prepared, Vec<RawRef>) {
+    #[cfg(feature = "syntax-rust")]
+    if path.ends_with(".rs") {
+        let (symbols, raw, _) =
+            super::syn_extract::extract(path, source.as_bytes(), 1 << 20).expect("syn parses");
+        return (Prepared::Symbols(symbols), raw);
+    }
+    prepare_structural(path, source.as_bytes())
+}
 
 /// Edges of `files` after linking, as `edge src>dst confidence` lines.
 fn linked(files: &[(&str, &str)]) -> Vec<String> {
@@ -28,7 +40,7 @@ fn linked(files: &[(&str, &str)]) -> Vec<String> {
             summary_source: String::new().into(),
             signature: String::new().into(),
         });
-        let (prepared, raw) = prepare_structural(path, source.as_bytes());
+        let (prepared, raw) = prepare(path, source);
         index_prepared(
             path,
             source.as_bytes(),
@@ -203,5 +215,113 @@ fn a_bare_call_inside_a_python_method_reaches_the_imported_function_not_a_method
             .iter()
             .any(|edge| edge.starts_with("calls s:m.py#A::run>s:m.py#A::save")),
         "{edges:?}"
+    );
+}
+
+/// A call resolves only to a symbol of the caller's language family: a Python call never reaches a shell function or a
+/// Makefile target, while TypeScript still reaches JavaScript.
+#[test]
+fn calls_never_cross_into_another_language_family() {
+    let edges = linked(&[
+        ("legacy-c/Makefile", "all: build\n\nbuild:\n\tcc -o x x.c\n"),
+        ("tools/run.sh", "deploy() {\n  echo hi\n}\n"),
+        ("app/job.py", "def run():\n    deploy()\n    return all()\n"),
+        ("web/util.js", "export function helper() { return 1; }\n"),
+        (
+            "web/main.ts",
+            "export function start(): number { return helper(); }\n",
+        ),
+    ]);
+    assert_stays_in_file(&edges, &["legacy-c/Makefile", "tools/run.sh"]);
+    assert!(
+        edges.contains(&"calls s:web/main.ts#start>s:web/util.js#helper guess".to_string()),
+        "{edges:?}"
+    );
+}
+
+/// Panics if an edge into one of `files` comes from another file.
+fn assert_stays_in_file(edges: &[String], files: &[&str]) {
+    let file_of = |id: &str| {
+        id.get(2..)
+            .unwrap_or("")
+            .split('#')
+            .next()
+            .unwrap_or("")
+            .to_string()
+    };
+    for edge in edges {
+        let pair = edge.split(' ').nth(1).unwrap_or("");
+        let (src, dst) = pair.split_once('>').unwrap_or(("", ""));
+        for file in files {
+            assert!(file_of(dst) != *file || file_of(src) == *file, "{edge}");
+        }
+    }
+}
+
+/// The dctx-public `legacy-c/Makefile#all` hub: Rust iterator `.all(..)` calls never reach a Makefile target, while a
+/// lone Rust `all` in the same family is still a guess.
+#[cfg(feature = "syntax-rust")]
+#[test]
+fn a_rust_iterator_call_never_reaches_a_makefile_target() {
+    let edges = linked(&[
+        ("legacy-c/Makefile", "all: build\n\nbuild:\n\tcc -o x x.c\n"),
+        (
+            "src/ledger.rs",
+            "pub fn check(v: &[u8]) -> bool {\n    v.iter().all(|b| *b > 0)\n}\npub fn ship() {\n    build();\n}\n",
+        ),
+    ]);
+    assert_stays_in_file(&edges, &["legacy-c/Makefile"]);
+    let same = linked(&[
+        ("src/a.rs", "pub fn all() -> bool {\n    true\n}\n"),
+        ("src/b.rs", "pub fn go() -> bool {\n    all()\n}\n"),
+    ]);
+    assert!(
+        same.contains(&"calls s:src/b.rs#go>s:src/a.rs#all guess".to_string()),
+        "{same:?}"
+    );
+}
+
+/// Without types a receiver call such as `v.iter().map(..)` must not guess its way to the one project method named
+/// `map`: the pick survives only when the caller can see the owner (declares or imports it, or names it as qualifier).
+#[cfg(feature = "syntax-rust")]
+#[test]
+fn a_receiver_call_reaches_a_project_method_only_when_its_owner_is_visible() {
+    let session = (
+        "src/session.rs",
+        "pub struct Session;\nimpl Session {\n    pub fn map(&self) -> u8 {\n        1\n    }\n}\n",
+    );
+    let blind = linked(&[
+        session,
+        (
+            "src/other.rs",
+            "pub fn twice(v: &[u8]) -> Vec<u8> {\n    v.iter().map(|b| b * 2).collect()\n}\n",
+        ),
+    ]);
+    assert!(
+        blind.iter().all(|edge| !edge.starts_with("calls ")),
+        "{blind:?}"
+    );
+    let want = "calls s:src/other.rs#twice>s:src/session.rs#Session::map";
+    let imported = linked(&[
+        session,
+        (
+            "src/other.rs",
+            "use crate::session::Session;\npub fn twice(s: &Session) -> u8 {\n    s.map()\n}\n",
+        ),
+    ]);
+    assert!(
+        imported.iter().any(|edge| edge.starts_with(want)),
+        "{imported:?}"
+    );
+    let qualified = linked(&[
+        session,
+        (
+            "src/other.rs",
+            "pub fn twice(s: &crate::session::Session) -> u8 {\n    Session::map(s)\n}\n",
+        ),
+    ]);
+    assert!(
+        qualified.iter().any(|edge| edge.starts_with(want)),
+        "{qualified:?}"
     );
 }
