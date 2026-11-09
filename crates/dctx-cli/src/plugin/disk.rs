@@ -166,6 +166,19 @@ fn next_token() -> u64 {
 }
 type Ownership = Option<(u64, String)>;
 
+/// Whether this build can change the plugin store. Windows stores are read-only (registry reads
+/// only) until replacement, directory sync and ACL semantics are qualified there.
+pub(crate) const STORE_WRITABLE: bool = cfg!(unix);
+
+/// The platform named in read-only store refusals.
+pub(crate) fn read_only_platform() -> &'static str {
+    if cfg!(windows) {
+        "Windows"
+    } else {
+        std::env::consts::OS
+    }
+}
+
 /// Managed private root. Parents must not be controlled by hostile same-user code.
 /// OFFLINE takeover: stop ALL CLI/app clients, preserve registry.json, remove registry.lock
 /// and registry.json.tmp, then restart. Never infer takeover safety from PID/age/liveness.

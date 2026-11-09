@@ -64,6 +64,41 @@ pub(super) fn failure_text(command: &str, message: &str, hint: &str) -> String {
     format!("❌ Error: {command}: {message}\nhint: {hint}")
 }
 
+/// Refusal for a store-changing command where the plugin store is read-only (Windows).
+pub(super) fn read_only_store(command: &str, json: bool) -> Outcome {
+    let platform = super::disk::read_only_platform();
+    let detail = format!(
+        "the plugin store is read-only on {platform}: plugins cannot be installed, enabled, disabled, removed or updated here yet"
+    );
+    let body = if json {
+        format!(
+            "{{\"ok\":false,\"command\":{},\"error\":\"ReadOnlyStore\",\"detail\":{}}}",
+            render::json_string(command),
+            render::json_string(&detail)
+        )
+    } else {
+        failure_text(
+            command,
+            &format!("{detail} (ReadOnlyStore)"),
+            &format!("`dctx plugin list`, `info`, `search` and `verify` work on {platform}; change plugins on Linux or macOS"),
+        )
+    };
+    Outcome { code: 1, body }
+}
+
+/// How to approve `what` for `id`, and on a read-only store why consent cannot be recorded here.
+pub(super) fn consent_step(id: &str, what: &str) -> String {
+    let command = format!("`dctx plugin enable {id} --approve`");
+    if super::disk::STORE_WRITABLE {
+        format!("approve {what} with {command}")
+    } else {
+        format!(
+            "consent is recorded with {command}, which needs Linux or macOS: the plugin store is read-only on {}",
+            super::disk::read_only_platform()
+        )
+    }
+}
+
 /// Refusal without a known plugin id.
 pub(super) fn fail(command: &str, error: &DistributionError, json: bool) -> Outcome {
     fail_for(command, None, error, json)
@@ -183,7 +218,8 @@ fn hint(command: &str, id: Option<&str>, error: &DistributionError) -> String {
     let id = id.map_or_else(|| "<id>".to_owned(), render::safe_summary);
     match error {
         DistributionError::ConsentRequired | DistributionError::NotActive => format!(
-            "review its capabilities with `dctx plugin info {id}`, then approve them with `dctx plugin enable {id} --approve`"
+            "review its capabilities with `dctx plugin info {id}`, then {}",
+            consent_step(&id, "them")
         ),
         DistributionError::Disabled => {
             format!("turn it back on with `dctx plugin enable {id} --approve`")

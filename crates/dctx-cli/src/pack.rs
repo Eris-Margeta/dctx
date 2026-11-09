@@ -358,13 +358,18 @@ fn facade_summary(plan: &Plan) -> Result<PackOutcome, Failure> {
     let format = plan
         .report_format
         .ok_or_else(|| pack_io_failure("pack summary requires --json".to_string()))?;
-    let mut session = host::open_dir(&plan.path).map_err(pack_io_failure)?;
     let mut request = PackRequest::new();
     request.output_format = format;
     let mut sink = VecSink::new();
-    let report = session
-        .pack(&request, &mut sink)
-        .map_err(pack_facade_failure)?;
+    // The session pins the project root and its ancestors against renames until it is dropped
+    // (Windows directory guards deny write sharing), so it must be gone before `--output` is
+    // renamed into place: the output may sit in the project or in any of its ancestors.
+    let report = {
+        let mut session = host::open_dir(&plan.path).map_err(pack_io_failure)?;
+        session
+            .pack(&request, &mut sink)
+            .map_err(pack_facade_failure)?
+    };
     emit(
         &plan.destination,
         sink.as_bytes().to_vec(),

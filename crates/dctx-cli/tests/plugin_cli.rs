@@ -86,6 +86,21 @@ fn git_without_consent_refuses_on_stderr_with_the_approve_hint() {
     assert!(json.stderr.is_empty());
 
     let enabled = dctx(root, &["plugin", "enable", "dctx/git", "--approve"]);
+    if cfg!(windows) {
+        // The Windows plugin store is read-only: the refusal says so instead of a store failure.
+        assert!(stderr.contains("read-only on Windows"), "{stderr}");
+        assert_eq!(enabled.status.code(), Some(1));
+        assert!(enabled.stdout.is_empty(), "{}", text(&enabled.stdout));
+        let refusal = text(&enabled.stderr);
+        assert!(
+            refusal.starts_with("❌ Error: enable: the plugin store is read-only on Windows"),
+            "{refusal}"
+        );
+        assert!(refusal.contains("(ReadOnlyStore)") && refusal.contains("hint:"));
+        let json = dctx(root, &["plugin", "disable", "dctx/git", "--json"]);
+        assert!(text(&json.stdout).contains("\"error\":\"ReadOnlyStore\""));
+        return;
+    }
     assert!(enabled.status.success(), "{}", text(&enabled.stderr));
     assert_eq!(text(&enabled.stdout), "enabled dctx/git\n");
     let admitted = dctx(root, &["git", "status"]);

@@ -67,6 +67,35 @@ fn output_flag_writes_only_the_requested_file() {
     let _ = std::fs::remove_dir_all(&path);
 }
 
+/// Windows pins an open session's root and its ancestors against renames, so `--output`
+/// (written by rename) must land after the session is gone, both in the project and beside it.
+#[test]
+fn json_and_page_output_replace_files_in_the_project_and_its_parent() {
+    let path = project("replace");
+    let parent = path.parent().expect("parent").to_path_buf();
+    let beside = parent.join(format!("dctx-cli-pack-beside-{}.json", std::process::id()));
+    for (output, json) in [
+        (path.join("summary.json"), true),
+        (path.join("page.txt"), false),
+        (beside.clone(), true),
+    ] {
+        std::fs::write(&output, b"stale").expect("stale");
+        let mut args = vec![
+            "pack".to_string(),
+            path.display().to_string(),
+            "--output".into(),
+            output.display().to_string(),
+        ];
+        if json {
+            args.push("--json".into());
+        }
+        let outcome = execute(&args).expect("pack");
+        assert_eq!(std::fs::read(&output).expect("saved"), outcome.body);
+    }
+    let _ = std::fs::remove_file(&beside);
+    let _ = std::fs::remove_dir_all(&path);
+}
+
 #[test]
 fn unknown_flag_is_refused_before_a_scan() {
     let error = execute(&["pack".into(), "--tree".into()]).expect_err("flag");

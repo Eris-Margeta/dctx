@@ -147,6 +147,19 @@ fn no_root(args: &[String], request: &parse::Request, reason: &str) -> Outcome {
     Outcome { code: 1, body }
 }
 
+/// Commands that write the plugin store: refused up front where the store is read-only, so they
+/// never surface as a store failure.
+fn changes_store(action: &Action) -> bool {
+    match action {
+        Action::Install(_)
+        | Action::Enable { .. }
+        | Action::Disable { .. }
+        | Action::Remove { .. } => true,
+        Action::Update { check, .. } => !check,
+        _ => false,
+    }
+}
+
 fn command_name(args: &[String]) -> &str {
     if args.get(1).is_some_and(|arg| arg == "plugin") {
         args.get(2).map_or("plugin", String::as_str)
@@ -194,6 +207,12 @@ pub(crate) fn outcome_at(
     if matches!(request.action, Action::List) {
         return Ok((request.json, list_at(root, request.json)));
     }
+    if !disk::STORE_WRITABLE && changes_store(&request.action) {
+        return Ok((
+            request.json,
+            ops_output::read_only_store(command_name(args), request.json),
+        ));
+    }
     let target = match target() {
         Ok(target) => target,
         Err(error) => {
@@ -208,7 +227,7 @@ pub(crate) fn outcome_at(
                 ops_output::failure_text(
                     command,
                     &format!("{error} (UnsupportedTarget)"),
-                    "plugins can be installed on macOS (arm64, x86_64), Linux glibc (arm64, x86_64) and Windows x86_64",
+                    "plugins can be installed on macOS (arm64, x86_64) and Linux glibc (arm64, x86_64)",
                 )
             };
             return Ok((request.json, Outcome { code: 1, body }));
@@ -362,5 +381,48 @@ mod tests {
         assert!(!is_early("--help"));
         assert!(!is_early("pack"));
         assert!(!is_early("map"));
+    }
+
+    #[test]
+    fn store_changes_are_classified_and_a_read_only_store_refuses_them_by_name() {
+        let action = |words: &[&str]| {
+            let args: Vec<String> = words.iter().map(|word| (*word).to_owned()).collect();
+            parse::parse_argv(&args).expect("parse").action
+        };
+        for words in [
+            &["dctx", "plugin", "enable", "dctx/git", "--approve"][..],
+            &["dctx", "plugin", "disable", "dctx/git"],
+            &["dctx", "plugin", "remove", "dctx/git"],
+            &["dctx", "plugin", "update"],
+        ] {
+            assert!(changes_store(&action(words)), "{words:?}");
+        }
+        for words in [
+            &["dctx", "plugin", "update", "--check"][..],
+            &["dctx", "plugin", "info", "dctx/git"],
+            &["dctx", "plugin", "verify"],
+            &["dctx", "plugin", "search", "git"],
+            &["dctx", "git", "status"],
+        ] {
+            assert!(!changes_store(&action(words)), "{words:?}");
+        }
+        let text = ops_output::read_only_store("enable", false);
+        assert_eq!(text.code, 1);
+        assert!(text
+            .body
+            .starts_with("❌ Error: enable: the plugin store is read-only on "));
+        assert!(
+            text.body.contains("(ReadOnlyStore)\nhint: "),
+            "{}",
+            text.body
+        );
+        let json = ops_output::read_only_store("enable", true);
+        assert!(
+            json.body.contains("\"error\":\"ReadOnlyStore\""),
+            "{}",
+            json.body
+        );
+        assert!(ops_output::consent_step("dctx/git", "them")
+            .contains("`dctx plugin enable dctx/git --approve`"));
     }
 }

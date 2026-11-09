@@ -222,8 +222,8 @@ fn info_text(status: &PluginStatus, labels: &[String], hooks: &[String]) -> Stri
     text.push_str(&format!("hooks: {}\n", list(hooks)));
     if status.needs_consent && status.enablement != dctx_plugin_distribution::Enablement::Disabled {
         text.push_str(&format!(
-            "consent: approve these capabilities with `dctx plugin enable {} --approve`\n",
-            status.id.as_str()
+            "consent: {}\n",
+            super::ops_output::consent_step(status.id.as_str(), "these capabilities")
         ));
     }
     text

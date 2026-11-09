@@ -119,6 +119,9 @@ until it happens, the release archives are the install path.
 - `dctx plugin` and `dctx git` work when the plugin root sits below a symlinked
   directory (macOS `/var` and `/tmp`, a linked home) instead of failing with
   `Interrupted`; a symlinked plugin root itself and symlinks inside it stay refused.
+- Windows: `dctx plugin enable`, `disable`, `install`, `remove` and `update` say that the
+  plugin store is read-only on Windows (`ReadOnlyStore`) instead of failing with
+  `Interrupted`, and consent hints there no longer offer only a command that cannot work.
 - `dctx doctor` shows each binary's build commit (`commit:` in text, `"commit"` in
   JSON) and names an invalid argument.
 - `dctx --help` lists `map export`; the `dctx map --help` examples map a file that has
