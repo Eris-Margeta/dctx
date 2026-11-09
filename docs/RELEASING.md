@@ -9,8 +9,16 @@ its commit/tag/push prompts. Publication starts when a maintainer pushes a `v*` 
 
 1. **Prepare:** set stable `X.Y.Z` in `VERSION`; run `tools/sync-version.sh --write`
    and `--check`. This updates crate versions and exact registry requirements,
-   Cargo.lock and project metadata; desktop versions remain separate. Move completed
-   changes into a dated `## [X.Y.Z]` section in root `CHANGELOG.md`.
+   Cargo.lock, project metadata and the README badge; the Python wrapper version
+   (`packages/python/pyproject.toml` version and `dctx-binary-*` pins,
+   `src/dctx/_version.py`); the Go `Version` const (it reruns `go generate ./...` in
+   `packages/go`, so install Go first; without Go only the const line is rewritten);
+   and the `vX.Y.Z` release links, tag pins and install commands in README.md,
+   `docs/{MODALITIES,START,VERIFYING,README}.md` and the Go and Python package
+   READMEs. npm package versions come from the tag (`tools/release/prepare-npm.py`).
+   Desktop versions remain separate. Then regenerate the website (`just site`) so
+   its copies of those docs follow. Move completed changes into a dated
+   `## [X.Y.Z]` section in root `CHANGELOG.md`.
 2. **Validate:** run normal CI/release gates, `cargo package --list -p dctx-cli`, and
    `tools/release/publish-crates.sh --dry-run --allow-dirty`. First-release dry runs
    of dependent crates need their dependencies already indexed on crates.io; use
