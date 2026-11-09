@@ -14,6 +14,8 @@ const MIN_BUDGET: u32 = 100;
 const MAX_BUDGET: u32 = 100_000;
 /// The usage hint of every argument refusal.
 const HELP_HINT: &str = "run `dctx pack --help` for the flags and an example";
+/// Printed on stderr, never on the page, when the text names nothing code-like and reads as prose.
+const PROSE_WARNING: &str = "warning: no identifiers in --for text; plain words match loosely. Pass function, type or file names, or put names in backticks (see `dctx pack --help`)";
 
 /// True when the words after `pack` ask for task context (`--for` or `--budget`) and not for help.
 pub(crate) fn requested(args: &[String]) -> bool {
@@ -25,11 +27,20 @@ pub(crate) fn requested(args: &[String]) -> bool {
 /// # Errors
 /// Usage refusals (exit 2), a place or index failure (exit 3), and a page on which no term found anything (exit 1).
 pub(crate) fn run(args: &[String]) -> Result<(), Failure> {
-    output(args)?.emit()
+    let (output, prose_only) = transaction(args)?;
+    if prose_only {
+        eprintln!("{PROSE_WARNING}");
+    }
+    output.emit()
 }
 
-/// Shared CLI/RPC context transaction.
+/// Shared CLI/RPC context transaction. RPC gets no warning text: stdout is its channel.
 pub(crate) fn output(args: &[String]) -> Result<crate::exit::CommandOutput, Failure> {
+    transaction(args).map(|(output, _)| output)
+}
+
+/// The page, its status, and whether the text read as prose without identifiers.
+fn transaction(args: &[String]) -> Result<(crate::exit::CommandOutput, bool), Failure> {
     let plan = parse(args).map_err(|message| Failure::usage(message, HELP_HINT).within("pack"))?;
     let (mut session, key) = crate::host::open_mapped(&plan.place).map_err(|message| {
         Failure::index(message, "pass an existing project directory as PATH").within("pack")
@@ -45,15 +56,27 @@ pub(crate) fn output(args: &[String]) -> Result<crate::exit::CommandOutput, Fail
     let built = session
         .context(&handle, &request)
         .map_err(|error| exit::from_facade(&error, "dctx pack --help"))?;
-    Ok(crate::exit::CommandOutput {
-        stdout: built.text,
-        failure: (built.hits == 0).then(|| {
-            Failure::no_result(
-                "pack --for: no name in the text matched the index",
-                "name a function, type or file in the text, or check `dctx map find <name>`",
-            )
-        }),
-    })
+    let failure = if built.terms == 0 {
+        Some(Failure::no_result(
+            "pack --for: the text has no search terms (common words and numbers are dropped, and so are words under 5 letters when the text has backticks or code-like names)",
+            "name a function, type or file, or put a name in backticks, e.g. --for '`main`'",
+        ))
+    } else if built.hits == 0 {
+        Some(Failure::no_result(
+            "pack --for: no name in the text matched the index",
+            "name a function, type or file in the text, or check `dctx map find <name>`",
+        ))
+    } else {
+        None
+    };
+    let prose_only = built.prose_only;
+    Ok((
+        crate::exit::CommandOutput {
+            stdout: built.text,
+            failure,
+        },
+        prose_only,
+    ))
 }
 
 /// Parsed `pack --for` arguments.
@@ -99,7 +122,7 @@ fn parse(args: &[String]) -> Result<Plan, String> {
             }
             other if other.starts_with('-') => {
                 return Err(format!(
-                    "pack --for takes PATH, --for and --budget only, not {other}"
+                    "pack --for takes PATH, --for, --budget and --json only, not {other}"
                 ))
             }
             other => {
@@ -179,6 +202,10 @@ mod tests {
             (vec!["pack", "--for", "x", "--for", "y"], "one --for"),
             (vec!["pack", "--for", " "], "non-empty"),
             (vec!["pack", "a", "b", "--for", "x"], "one source path"),
+            (
+                vec!["pack", "--for", "x", "--ext", "rs"],
+                "--for, --budget and --json only, not --ext",
+            ),
         ] {
             let error = parse(&words(&args)).expect_err("refused");
             assert!(error.contains(wanted), "{args:?}: {error}");

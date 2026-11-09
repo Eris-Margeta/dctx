@@ -227,6 +227,117 @@ fn bad_inputs_follow_the_exit_code_contract() {
     }
 }
 
+/// Adds a `main` entry point, a `Session` type and a `session` test fn to the place.
+fn add_entry_point_and_session(place: &Place) {
+    let repo = place.repo();
+    fs::write(
+        repo.join("src/main.rs"),
+        "fn main() {\n    run();\n}\n\nfn run() {}\n",
+    )
+    .expect("main");
+    fs::write(
+        repo.join("src/session.rs"),
+        "pub struct Session {\n    pub id: u32,\n}\n",
+    )
+    .expect("session");
+    fs::create_dir_all(repo.join("tests")).expect("tests");
+    fs::write(
+        repo.join("tests/session.rs"),
+        "#[test]\nfn session() {\n    assert_eq!(1, 1);\n}\n",
+    )
+    .expect("session test");
+}
+
+#[test]
+fn bare_short_names_are_searched() {
+    let place = Place::new("short");
+    add_entry_point_and_session(&place);
+    for text in ["main", "fn main", "run"] {
+        let page = place.page(&["pack", "--for", text]);
+        assert!(
+            page.starts_with("# dctx pack --for budget=3000 terms=1\n"),
+            "{text}: {page}"
+        );
+        assert!(page.contains("s:src/main.rs#"), "{text}: {page}");
+    }
+    let page = place.page(&["pack", "--for", "main"]);
+    assert!(page.contains("## read s:src/main.rs#main\n"), "{page}");
+}
+
+#[test]
+fn a_capitalized_name_finds_the_type_before_test_fns() {
+    let place = Place::new("case");
+    add_entry_point_and_session(&place);
+    let page = place.page(&["pack", "--for", "Session"]);
+    assert!(page.contains("## find Session\n"), "{page}");
+    let first = page
+        .split("## find Session\n")
+        .nth(1)
+        .and_then(|rest| rest.lines().next())
+        .unwrap_or_default();
+    assert!(
+        first.starts_with("s:src/session.rs#Session\t"),
+        "the type comes first: {page}"
+    );
+    assert!(
+        page.contains("## read s:src/session.rs#Session\n"),
+        "{page}"
+    );
+}
+
+#[test]
+fn prose_without_identifiers_warns_on_stderr_only() {
+    let place = Place::new("prose");
+    let text = "how does the helper work";
+    let first = place.output(&["pack", "--for", text]);
+    let second = place.output(&["pack", "--for", text]);
+    let stderr = String::from_utf8_lossy(&first.stderr);
+    let stdout = String::from_utf8_lossy(&first.stdout);
+    assert!(
+        stderr.contains("warning: no identifiers in --for text"),
+        "{stderr}"
+    );
+    assert!(stderr.contains("dctx pack --help"), "{stderr}");
+    assert!(
+        stdout.starts_with("# dctx pack --for budget=3000 terms=1\n"),
+        "{stdout}"
+    );
+    assert!(
+        !stdout.contains("warning"),
+        "the page stays clean: {stdout}"
+    );
+    assert_eq!(first.stdout, second.stdout, "the page is deterministic");
+    let json = place.output(&["pack", "--for", text, "--json"]);
+    let document: serde_json::Value =
+        serde_json::from_slice(&json.stdout).expect("one JSON document on stdout");
+    assert_eq!(document["verb"], "context");
+    assert!(String::from_utf8_lossy(&json.stderr).contains("warning: no identifiers"));
+    // Names, even plain ones, are not prose.
+    let named = place.output(&["pack", "--for", "BetaStore"]);
+    assert!(
+        named.stderr.is_empty(),
+        "{}",
+        String::from_utf8_lossy(&named.stderr)
+    );
+}
+
+#[test]
+fn a_text_without_terms_says_why_and_suggests_backticks() {
+    let place = Place::new("noterms");
+    let output = place.output(&["pack", "--for", "how does it work"]);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert_eq!(output.status.code(), Some(1), "{stderr}");
+    assert!(stderr.contains("no search terms"), "{stderr}");
+    assert!(stderr.contains("backticks"), "{stderr}");
+    assert!(!stderr.contains("matched the index"), "{stderr}");
+    let refused = place.output(&["pack", "--for", "alpha_body", "--ext", "rs"]);
+    assert!(
+        String::from_utf8_lossy(&refused.stderr).contains("--budget and --json only"),
+        "{}",
+        String::from_utf8_lossy(&refused.stderr)
+    );
+}
+
 #[test]
 fn pack_help_names_for_and_budget_with_an_example() {
     let place = Place::new("help");

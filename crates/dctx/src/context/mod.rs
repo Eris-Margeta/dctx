@@ -13,6 +13,10 @@ use crate::{DctxError, ErrorCode, MapRequest, Session, SnapshotHandle, VecSink, 
 
 const NEIGHBOR_HITS: usize = 4;
 const READ_HITS: usize = 3;
+/// Find records asked per term, so the ranking below can prefer exact names and non-test code.
+const FIND_FETCH: u64 = 8;
+/// Find records kept per term.
+const FIND_HITS: usize = 3;
 
 /// Task text and the budget of its source context page.
 pub struct ContextRequest {
@@ -30,6 +34,11 @@ pub struct ContextReport {
     pub text: String,
     /// Number of matching find records, before budget selection.
     pub hits: usize,
+    /// Number of search terms taken from the text.
+    pub terms: usize,
+    /// True when the text named nothing code-like (no backticked word, snake_case, camelCase or path)
+    /// and read as prose. Callers may warn; the page does not change.
+    pub prose_only: bool,
 }
 
 impl Session {
@@ -73,7 +82,8 @@ fn build(
     plan: &ContextRequest,
     mut query: impl FnMut(&MapRequest) -> Result<String, DctxError>,
 ) -> Result<ContextReport, DctxError> {
-    let terms = terms::extract(&plan.text);
+    let extracted = terms::extract(&plan.text);
+    let terms = &extracted.list;
     let mut page = page::Page::new(
         plan.budget,
         &format!(
@@ -84,14 +94,20 @@ fn build(
     );
     let mut best: Vec<String> = Vec::new();
     let mut hits = 0;
-    for term in &terms {
+    for term in terms {
         let Some(found) = ask(&mut query, Verb::Find, term)? else {
             continue;
         };
-        let records: Vec<&str> = body(&found)
+        let mut records: Vec<&str> = body(&found)
             .into_iter()
             .filter(|line| line.contains('\t'))
             .collect();
+        // Stable: the find order decides within each class.
+        records.sort_by_key(|line| {
+            let id = line.split('\t').next().unwrap_or_default();
+            (!names(id, term), is_test(id))
+        });
+        records.truncate(FIND_HITS);
         hits += records.len();
         if let Some(id) = best_hit(&records, term)
             && !best.contains(&id)
@@ -113,6 +129,8 @@ fn build(
     Ok(ContextReport {
         text: page.finish(),
         hits,
+        terms: terms.len(),
+        prose_only: extracted.prose_only(),
     })
 }
 
@@ -130,7 +148,7 @@ fn ask(
     }
     request.output_format = 1;
     request.limits.records = Some(match verb {
-        Verb::Find => 3,
+        Verb::Find => FIND_FETCH,
         Verb::Neighbors => 12,
         _ => 1,
     });
@@ -194,17 +212,48 @@ fn best_hit(records: &[&str], term: &str) -> Option<String> {
             return Some(format!("m:{path}"));
         }
     }
-    let named = |id: &str| {
-        let name = id.rsplit('#').next().unwrap_or(id);
-        name == term || name.ends_with(&format!("::{term}")) || name.ends_with(&format!(".{term}"))
-    };
     let chosen = ids
         .iter()
         .copied()
-        .find(|&id| id.contains('#') && named(id))
+        .find(|&id| names(id, term))
         .or_else(|| ids.iter().copied().find(|&id| id.starts_with("s:")))
         .or_else(|| ids.first().copied());
     chosen.map(str::to_string)
+}
+
+/// True when the symbol id names exactly `term`, in the same case: `#term`, `#a::term` or `#a.term`.
+fn names(id: &str, term: &str) -> bool {
+    id.split_once('#').is_some_and(|(_, name)| {
+        name == term || name.ends_with(&format!("::{term}")) || name.ends_with(&format!(".{term}"))
+    })
+}
+
+/// True for a record in test code: a `tests`/`test`/`__tests__`/`testdata`/`fixtures`/`spec` directory,
+/// a test file name (`tests.rs`, `*_test.go`, `test_*.py`, `*.test.ts`, `*.spec.js`, `conftest.py`),
+/// or a symbol inside a `tests` module.
+fn is_test(id: &str) -> bool {
+    let rest = id.split_once(':').map_or(id, |(_, rest)| rest);
+    let (path, name) = rest.split_once('#').unwrap_or((rest, ""));
+    let mut parts = path.split('/');
+    let file = parts.next_back().unwrap_or_default();
+    let dir = parts.any(|part| {
+        matches!(
+            part,
+            "tests" | "test" | "__tests__" | "testdata" | "fixtures" | "spec"
+        )
+    });
+    let stem = file.split('.').next().unwrap_or_default();
+    let test_file = matches!(stem, "tests" | "test" | "conftest")
+        || stem.starts_with("test_")
+        || stem.ends_with("_test")
+        || stem.ends_with("_tests")
+        || stem.ends_with("_spec")
+        || file.contains(".test.")
+        || file.contains(".spec.");
+    let test_module = name
+        .split("::")
+        .any(|segment| matches!(segment, "tests" | "test"));
+    dir || test_file || test_module
 }
 
 #[cfg(test)]
@@ -227,7 +276,7 @@ mod tests {
             assert_eq!(query.output_format, 1);
             match query.verb {
                 Verb::Find if query.query == "alpha_body" => {
-                    assert_eq!(query.limits.records, Some(3));
+                    assert_eq!(query.limits.records, Some(FIND_FETCH));
                     Ok("# p find\ns:a.rs#other\tfn\ns:a.rs#alpha_body\tfn\n".into())
                 }
                 Verb::Find => Ok("# p find\ns:b.rs#BetaStore\tstruct\n".into()),
@@ -269,6 +318,83 @@ mod tests {
         assert_eq!(empty.hits, 0);
         let error = build(&request(), |_| Err(DctxError::SourceUnavailable));
         assert!(matches!(error, Err(DctxError::SourceUnavailable)));
+    }
+
+    #[test]
+    fn find_records_prefer_exact_case_names_then_non_test_code() {
+        let text = |text: &str| ContextRequest {
+            text: text.into(),
+            budget: 3000,
+            output_format: 1,
+        };
+        let report = build(&text("Session"), |query| match query.verb {
+            Verb::Find => {
+                assert_eq!(query.query, "Session", "a capitalized word keeps its case");
+                Ok(concat!(
+                    "# p find\n",
+                    "s:src/rpc/tests.rs#session\tfn\n",
+                    "s:tests/fixtures/a.swift#Session\tclass\n",
+                    "s:src/mcp.rs#tests::Session\tstruct\n",
+                    "d:docs/SPEC.md#Session dedupe\theading\n",
+                    "s:src/session.rs#Session\tstruct\n",
+                )
+                .into())
+            }
+            _ => Ok("# p x\nline\n".into()),
+        })
+        .expect("context");
+        let find = report
+            .text
+            .split("## find Session\n")
+            .nth(1)
+            .expect("find section");
+        let lines: Vec<&str> = find.lines().take(3).collect();
+        assert_eq!(
+            lines,
+            [
+                "s:src/session.rs#Session\tstruct",
+                "s:tests/fixtures/a.swift#Session\tclass",
+                "s:src/mcp.rs#tests::Session\tstruct",
+            ]
+        );
+        assert!(report.text.contains("## read s:src/session.rs#Session\n"));
+        assert_eq!(
+            (report.hits, report.terms, report.prose_only),
+            (3, 1, false)
+        );
+
+        let prose =
+            build(&text("how does caching work"), |_| Ok("# p x\n".into())).expect("context");
+        assert_eq!((prose.terms, prose.prose_only), (1, true));
+        let none = build(&text("how does it work"), |_| unreachable!()).expect("context");
+        assert_eq!((none.terms, none.hits), (0, 0));
+        assert!(
+            none.text
+                .starts_with("# dctx pack --for budget=3000 terms=0\n")
+        );
+    }
+
+    #[test]
+    fn test_code_is_recognized_by_directory_file_and_module() {
+        for id in [
+            "s:crates/a/tests/x.rs#f",
+            "s:src/rpc/tests.rs#session",
+            "s:pkg/x_test.go#TestX",
+            "s:py/test_x.py#f",
+            "s:py/conftest.py#f",
+            "s:web/a.test.ts#f",
+            "s:web/__tests__/a.ts#f",
+            "s:src/mcp/mod.rs#tests::session",
+        ] {
+            assert!(is_test(id), "{id}");
+        }
+        for id in [
+            "s:src/session/mod.rs#Session",
+            "s:src/testing.rs#latest",
+            "m:src/contest.rs",
+        ] {
+            assert!(!is_test(id), "{id}");
+        }
     }
 
     #[test]
