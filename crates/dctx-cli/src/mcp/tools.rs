@@ -298,32 +298,19 @@ pub(super) fn to_args(name: &str, arguments: Option<&Json>) -> Result<Vec<String
             .find(|(key, _)| key == "context")
             .is_some_and(|(_, value)| matches!(value, Json::Bool(true)));
     let mut out = vec![if named_context { "context" } else { name }.to_string()];
-    if let Some(first) = tool.positional {
+    // Positionals are literal values: they go after a `--` terminator, never where a flag could be read.
+    let mut positionals = Vec::new();
+    for slot in [tool.positional, tool.second_positional]
+        .into_iter()
+        .flatten()
+    {
         let value = members
             .iter()
-            .find(|(key, _)| key == first)
+            .find(|(key, _)| key == slot)
             .map(|(_, value)| value);
         match value.and_then(Json::as_str) {
-            Some(text) if !text.is_empty() => out.push(text.to_string()),
-            _ => {
-                return Err(format!(
-                    "{first} is required and must be a non-empty string"
-                ))
-            }
-        }
-    }
-    if let Some(second) = tool.second_positional {
-        let value = members
-            .iter()
-            .find(|(key, _)| key == second)
-            .map(|(_, value)| value);
-        match value.and_then(Json::as_str) {
-            Some(text) if !text.is_empty() => out.push(text.to_string()),
-            _ => {
-                return Err(format!(
-                    "{second} is required and must be a non-empty string"
-                ))
-            }
+            Some(text) if !text.is_empty() => positionals.push(text.to_string()),
+            _ => return Err(format!("{slot} is required and must be a non-empty string")),
         }
     }
     if tool.name == "export" {
@@ -349,6 +336,10 @@ pub(super) fn to_args(name: &str, arguments: Option<&Json>) -> Result<Vec<String
         if matches!(value, Json::Null) || named_context && p.name == "context" {
             continue;
         }
+        // MCP stays pinned to the server's startup root and never writes files.
+        if matches!(p.name, "place" | "output") {
+            return Err(format!("{} is not accepted over MCP", p.name));
+        }
         let flag = format!("--{}", p.name.replace('_', "-"));
         match (p.ty, value) {
             ("boolean", Json::Bool(true)) => out.push(flag),
@@ -367,11 +358,11 @@ pub(super) fn to_args(name: &str, arguments: Option<&Json>) -> Result<Vec<String
             _ => return Err(format!("{} must be of type {}", p.name, p.ty)),
         }
     }
-    if named_context {
-        // The required id is a literal value, including when it starts with '-'.
-        // Keep all options before the terminator so no target or session value is reinterpreted.
-        let target = out.remove(1);
-        out.extend(["--".to_string(), target]);
+    if !positionals.is_empty() {
+        // Ids, queries and paths are literal values, including when they start with '-'.
+        // Keep all options before the terminator so no positional value is reinterpreted as a flag.
+        out.push("--".to_string());
+        out.extend(positionals);
     }
     Ok(out)
 }
@@ -393,20 +384,20 @@ mod tests {
                 r#"{"query":"beta","kind":["fn","type"],"in":"src","json":true}"#
             )
             .unwrap(),
-            ["find", "beta", "--kind", "fn,type", "--in", "src", "--json"]
+            ["find", "--kind", "fn,type", "--in", "src", "--json", "--", "beta"]
         );
         assert_eq!(
             args("neighbors", r#"{"id":"s:a#b","depth":3,"dir":"in"}"#).unwrap(),
-            ["neighbors", "s:a#b", "--dir", "in", "--depth", "3"]
+            ["neighbors", "--dir", "in", "--depth", "3", "--", "s:a#b"]
         );
         assert_eq!(
             args("grep", r#"{"query":"x","ignore_case":true}"#).unwrap(),
-            ["grep", "x", "--ignore-case"]
+            ["grep", "--ignore-case", "--", "x"]
         );
         assert_eq!(args("hubs", "{}").unwrap(), ["hubs"]);
         assert_eq!(
             args("read", r#"{"id":"s:a#b","lines":"3-9"}"#).unwrap(),
-            ["read", "s:a#b", "--lines", "3-9"]
+            ["read", "--lines", "3-9", "--", "s:a#b"]
         );
     }
 
@@ -431,6 +422,33 @@ mod tests {
     }
 
     #[test]
+    fn flag_shaped_positionals_follow_the_terminator() {
+        assert_eq!(
+            args("read", r#"{"id":"--place","lines":"s.py"}"#).unwrap(),
+            ["read", "--lines", "s.py", "--", "--place"]
+        );
+        assert_eq!(
+            args("grep", r#"{"query":"--place","in":"--lines"}"#).unwrap(),
+            ["grep", "--in", "--lines", "--", "--place"]
+        );
+        assert_eq!(
+            args("path", r#"{"from":"--place","to":"--output"}"#).unwrap(),
+            ["path", "--", "--place", "--output"]
+        );
+        for tool in TOOLS {
+            assert!(
+                accepted(tool)
+                    .iter()
+                    .all(|p| p.name != "place" && p.name != "output"),
+                "{}",
+                tool.name
+            );
+        }
+        assert!(args("find", r#"{"query":"a","place":"/"}"#).is_err());
+        assert!(args("export", r#"{"format":"json","output":"x"}"#).is_err());
+    }
+
+    #[test]
     fn bad_arguments_are_named() {
         assert!(args("find", "{}").unwrap_err().contains("query"));
         assert!(args("find", r#"{"query":"a","bogus":1}"#)
@@ -449,15 +467,15 @@ mod tests {
     fn new_tools_become_cli_arguments() {
         assert_eq!(
             args("skeleton", r#"{"target":"m:a.py"}"#).unwrap(),
-            ["skeleton", "m:a.py"]
+            ["skeleton", "--", "m:a.py"]
         );
         assert_eq!(
             args("skeleton", r#"{"target":"m:a.py","json":true}"#).unwrap(),
-            ["skeleton", "m:a.py", "--json"]
+            ["skeleton", "--json", "--", "m:a.py"]
         );
         assert_eq!(
             args("path", r#"{"from":"s:a.py#a","to":"s:a.py#b"}"#).unwrap(),
-            ["path", "s:a.py#a", "s:a.py#b"]
+            ["path", "--", "s:a.py#a", "s:a.py#b"]
         );
         assert_eq!(
             args(
@@ -465,7 +483,7 @@ mod tests {
                 r#"{"from":"s:a.py#a","to":"s:a.py#b","json":true,"meta":true}"#
             )
             .unwrap(),
-            ["path", "s:a.py#a", "s:a.py#b", "--meta", "--json"]
+            ["path", "--meta", "--json", "--", "s:a.py#a", "s:a.py#b"]
         );
         assert_eq!(
             args("export", r#"{"format":"json"}"#).unwrap(),

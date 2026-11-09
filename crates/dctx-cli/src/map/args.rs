@@ -121,9 +121,21 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
     let mut profile = false;
     let mut meta = false;
     let mut index = 1;
+    let mut literal = false;
     while index < args.len() {
         let flag = &args[index];
         index += 1;
+        // After `--` every word is the target, even when it starts with '-' (MCP always sends one).
+        if !literal && flag == "--" {
+            literal = true;
+            continue;
+        }
+        if literal || !flag.starts_with('-') {
+            if target.replace(flag.clone()).is_some() {
+                return Err("quote a multi-word target as one argument".into());
+            }
+            continue;
+        }
         if flag == "--json" {
             format = Format::Json;
             continue;
@@ -142,12 +154,6 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
         }
         if grep && (flag == "-i" || flag == "--ignore-case") {
             ignore_case = true;
-            continue;
-        }
-        if !flag.starts_with('-') {
-            if target.replace(flag.clone()).is_some() {
-                return Err("quote a multi-word target as one argument".into());
-            }
             continue;
         }
         // An unknown flag is named as unknown, not as one missing its value.
@@ -338,6 +344,22 @@ mod tests {
             .contains("skeleton requires a target"));
         assert!(options(&["skeleton", "a.py", "--depth", "2"]).is_err());
         assert!(HELP.contains("|skeleton|grep>"));
+        // `--` ends options: a flag-shaped word after it is the literal target, never a flag.
+        let literal = options(&["grep", "--json", "--", "--place"]).expect("literal");
+        assert_eq!(literal.request.target, "--place");
+        assert_eq!(literal.place, PathBuf::from("."));
+        assert_eq!(literal.format, Format::Json);
+        let literal = options(&["read", "--lines", "1-2", "--", "--in"]).expect("read");
+        assert_eq!(literal.request.target, "--in");
+        assert!(options(&["find", "--", "a", "b"]).is_err());
+        assert!(options(&["find", "--", "a", "--json"]).is_err());
+        assert_eq!(
+            options(&["find", "--", "--"])
+                .expect("dashes")
+                .request
+                .target,
+            "--"
+        );
         assert_eq!(
             options(&["read", "s:a.rs#a", "--lines", "35-36"])
                 .expect("lines")

@@ -17,10 +17,17 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
         (PathBuf::from("."), Format::Text, false, false);
     let mut ends: Vec<String> = Vec::new();
     let mut index = 1;
+    let mut literal = false;
     while index < args.len() {
         let flag = &args[index];
         index += 1;
+        if literal {
+            ends.push(flag.clone());
+            continue;
+        }
         match flag.as_str() {
+            // After `--` both ends are literal, even when they start with '-' (MCP always sends one).
+            "--" => literal = true,
             "--json" => format = Format::Json,
             "--meta" => meta = true,
             "--place" | "--budget" => {
@@ -130,6 +137,18 @@ mod tests {
             assert!(parse(&strings(&bad)).is_err(), "{bad:?}");
         }
         assert!(super::super::args::HELP.contains("path <FROM> <TO>"));
+        let literal =
+            parse(&strings(&["path", "--json", "--", "--place", "--meta"])).expect("literal");
+        assert_eq!(
+            (
+                literal.request.target.as_str(),
+                literal.to.as_deref(),
+                literal.meta,
+                literal.place.as_path()
+            ),
+            ("--place", Some("--meta"), false, std::path::Path::new("."))
+        );
+        assert!(parse(&strings(&["path", "--", "a", "b", "c"])).is_err());
     }
 
     #[test]

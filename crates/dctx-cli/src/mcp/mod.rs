@@ -298,7 +298,7 @@ mod tests {
 
     fn session(lines: &str) -> Vec<Json> {
         let exec = |args: &[String], output: &mut dyn Write| -> Result<(), String> {
-            if args[0] == "find" && args[1] == "boom" {
+            if args[0] == "find" && args.last().map(String::as_str) == Some("boom") {
                 Err("bad target".into())
             } else {
                 write!(output, "ran {}", args.join(" ")).map_err(|error| error.to_string())
@@ -422,7 +422,7 @@ mod tests {
                 .map(str::to_string),
             _ => None,
         };
-        assert_eq!(text(3).as_deref(), Some("ran find beta"));
+        assert_eq!(text(3).as_deref(), Some("ran find -- beta"));
         assert_eq!(text(4).as_deref(), Some("bad target"));
         assert_eq!(
             replies[4].get("result").and_then(|r| r.get("isError")),
@@ -572,7 +572,10 @@ mod tests {
                 session("{\"id\":1,\"method\":\"initialize\"}\n")[0]
             );
             assert_eq!(replies[1].get("result"), Some(&tools::list(&surface)));
-            for (reply, expected) in [(&replies[2], "find beta"), (&replies[3], "read s:a#b")] {
+            for (reply, expected) in [
+                (&replies[2], "find -- beta"),
+                (&replies[3], "read -- s:a#b"),
+            ] {
                 let Some(Json::Arr(content)) = reply.get("result").and_then(|r| r.get("content"))
                 else {
                     panic!("tool content");
