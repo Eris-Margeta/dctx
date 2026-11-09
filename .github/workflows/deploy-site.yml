@@ -55,7 +55,7 @@ jobs:
           retention-days: 1
 
   # Runs no repository code: it downloads the built site and rsyncs it.
-  # Deploys only from main; the secrets belong to the `dctx-site` environment.
+  # Deploys only from main, through the `dctx-site` environment (deployments limited to main).
   deploy:
     needs: build
     if: needs.build.outputs.changed == 'true' && github.ref == 'refs/heads/main'
