@@ -2,8 +2,9 @@
 // SPDX-FileCopyrightText: 2026 Eris Margeta
 // Build/check the dependency-free client and pack it locally. Never publishes.
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, readFileSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { cpSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, relative, resolve, dirname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -33,5 +34,19 @@ const command = npmCli ? process.execPath : process.platform === 'win32' ? 'npm.
 if (process.platform === 'win32' && !npmCli) {
   throw new Error('On Windows run: npm exec -- node packaging/npm/scripts/build-pack.mjs [output-directory]');
 }
-const args = [...(npmCli ? [npmCli] : []), 'pack', '--ignore-scripts', '--json', '--pack-destination', outDir];
-process.stdout.write(run(command, args, packageDir));
+// The @dctx/cli-* names are not registered yet, so a tarball that declares them as optional
+// dependencies makes `npm install <tarball>` resolve them from whatever registry is configured.
+// The local tarball therefore drops optionalDependencies; it uses DCTX_BIN, binaryPath or the cache
+// path. tools/release/prepare-npm.py restores them for registry publication.
+const staging = mkdtempSync(join(tmpdir(), 'dctx-npm-pack-'));
+try {
+  const stagedPackage = join(staging, 'dctx');
+  cpSync(packageDir, stagedPackage, { recursive: true, filter: (source) => !relative(packageDir, source).split(sep).includes('node_modules') });
+  const localManifest = { ...manifest };
+  delete localManifest.optionalDependencies;
+  writeFileSync(join(stagedPackage, 'package.json'), `${JSON.stringify(localManifest, null, 2)}\n`);
+  const args = [...(npmCli ? [npmCli] : []), 'pack', '--ignore-scripts', '--json', '--pack-destination', outDir];
+  process.stdout.write(run(command, args, stagedPackage));
+} finally {
+  rmSync(staging, { recursive: true, force: true });
+}

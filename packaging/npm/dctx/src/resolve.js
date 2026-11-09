@@ -5,7 +5,11 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { version, optionalDependencies } = require('../package.json');
+const manifest = require('../package.json');
+
+const { version } = manifest;
+// Tarballs built by packaging/npm/scripts/build-pack.mjs carry no optionalDependencies.
+const optionalDependencies = manifest.optionalDependencies ?? {};
 
 function cacheBinaryPath({ env = process.env } = {}) {
   const configuredHome = env[process.platform === 'win32' ? 'USERPROFILE' : 'HOME'];
@@ -52,7 +56,8 @@ function resolveBinary({ binaryPath, env = process.env, cwd = process.cwd() } = 
     }
     if (filename) {
       try { return executable(filename); } catch (error) {
-        throw new Error(`dctx: cannot execute ${filename}: ${error.message}. Reinstall with npm install --include=optional dctx@${version}.`, { cause: error });
+        throw new Error(`dctx: cannot execute ${filename}: ${error.message}. ` +
+          `Reinstall the ${packageName} ${version} tarball, or set DCTX_BIN to a dctx ${version} executable.`, { cause: error });
       }
     }
   }
@@ -64,10 +69,13 @@ function resolveBinary({ binaryPath, env = process.env, cwd = process.cwd() } = 
         `${process.platform === 'win32' ? '.' : ' or restore executable permission on the cache file (chmod 755).'}`, { cause: error });
     }
   }
+  // npm registry publication is pending: never point users at a registry install, where the
+  // dctx and @dctx/* names are not owned by this project.
   const install = Object.hasOwn(optionalDependencies, packageName)
-    ? `Run npm install --include=optional dctx@${version} to install ${packageName}@${version}. ` : '';
+    ? `Install the matching platform tarball in the same project: npm install --omit=optional --ignore-scripts ` +
+      `./${packageName.slice(1).replace('/', '-')}-${version}.tgz (not from a registry: npm publication is pending). ` : '';
   throw new Error(`dctx: no ${version} binary for ${platform}. ${install}` +
-    `Or obtain dctx ${version} from https://github.com/Eris-Margeta/dctx/releases/tag/v${version}, ` +
+    `${install ? 'Or obtain' : 'Obtain'} dctx ${version} from https://github.com/Eris-Margeta/dctx/releases/tag/v${version}, ` +
     `verify its SHA256SUMS, and set DCTX_BIN to the executable's absolute path or place it at ${cached}` +
     `${process.platform === 'win32' ? '.' : ' with executable permission (chmod 755).'} No binary is downloaded automatically.`);
 }

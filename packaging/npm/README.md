@@ -25,6 +25,10 @@ On Windows, use `dctx-cli.exe` and run pack/tests through `npm exec -- node ...`
 to supply npm's JavaScript entry point without invoking a command shell.
 The default pack destination is `packaging/npm/artifacts`; pass another directory
 as the first script argument. No build or test command publishes anything.
+The packed tarball omits `optionalDependencies`: the `@dctx/cli-*` names are not
+registered yet, and declaring them would make `npm install <tarball>` resolve
+them from the configured registry. Users of that tarball set `DCTX_BIN` (see
+[the package API](dctx/README.md)).
 CI checks Node 18 and 24 on Linux, macOS and Windows, every RPC verb against CLI
 stdout/status, transport lifecycle/refusals, TypeScript consumers and actual
 packed contents. The output string is opaque, including errors and trailing
@@ -39,8 +43,12 @@ python3 tools/release/test-packaging.py
 ```
 
 The preparation script verifies every archive before writing packages, sets
-versions from the tag, and copies LICENSE/NOTICE. Archive names use full Cargo
-target triples. The Linux x64 packaging test exercises all six tarballs,
+versions from the tag, declares the five platform packages as optional
+dependencies of `dctx`, and copies LICENSE/NOTICE. Until the names are
+registered, install those tarballs only with `--omit=optional` and the
+matching platform tarball named explicitly:
+`npm install --omit=optional --ignore-scripts ./dctx-<version>.tgz ./dctx-cli-<os>-<arch>-<version>.tgz`.
+Archive names use full Cargo target triples. The Linux x64 packaging test exercises all six tarballs,
 checksum rejection, CLI argument forwarding, exit status and signals without
 publishing. See [the maintainer runbook](../../docs/RELEASING.md) for the existing
 credential-gated release process. The npm transport CI job requires no tokens.

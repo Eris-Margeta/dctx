@@ -125,7 +125,9 @@ test('optional package precedes cache; missing binaries give exact offline instr
   assert.ok(cached.includes(version));
   assert.throws(() => isolated.resolveBinary({ env }), (error) => {
     assert.ok(error.message.includes(cached));
-    assert.ok(error.message.includes(`npm install --include=optional dctx@${version}`));
+    // Registry publication is pending: never suggest a registry install of dctx or @dctx/*.
+    assert.ok(!error.message.includes(`dctx@${version}`), error.message);
+    assert.ok(error.message.includes(`npm install --omit=optional --ignore-scripts ./dctx-cli-${process.platform}-${process.arch}-${version}.tgz`));
     assert.ok(error.message.includes('DCTX_BIN'));
     assert.ok(error.message.includes('SHA256SUMS'));
     return true;
@@ -139,6 +141,34 @@ test('optional package precedes cache; missing binaries give exact offline instr
   // The optional package resolves through require.resolve, which returns the real path
   // (macOS temp dirs live under the /var -> /private/var symlink).
   assert.equal(fs.realpathSync(isolated.resolveBinary({ env })), fs.realpathSync(native));
+});
+
+test('a tarball without optional dependencies (CI pack) resolves explicit and cached binaries only', (t) => {
+  const { cwd } = fixture(t);
+  const packageDir = path.join(cwd, 'package');
+  fs.cpSync(path.join(__dirname, '../dctx'), packageDir, { recursive: true, filter: (source) => !source.includes('node_modules') });
+  const manifestPath = path.join(packageDir, 'package.json');
+  const manifest = JSON.parse(fs.readFileSync(manifestPath));
+  delete manifest.optionalDependencies;
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest));
+  const isolated = createRequire(manifestPath)('./src/index.js');
+  const env = { HOME: cwd, USERPROFILE: cwd, LOCALAPPDATA: cwd, XDG_CACHE_HOME: cwd };
+  assert.equal(isolated.resolveBinary({ env: { ...env, DCTX_BIN: process.execPath } }), process.execPath);
+  // A planted platform package is ignored when the manifest does not declare it.
+  const native = path.join(packageDir, 'node_modules/@dctx', `cli-${process.platform}-${process.arch}`, 'bin', process.platform === 'win32' ? 'dctx.exe' : 'dctx');
+  fs.mkdirSync(path.dirname(native), { recursive: true });
+  fs.writeFileSync(native, 'fixture', { mode: 0o755 });
+  assert.throws(() => isolated.resolveBinary({ env }), (error) => {
+    assert.ok(!error.message.includes('npm install'), error.message);
+    assert.ok(error.message.includes('Obtain dctx'));
+    assert.ok(error.message.includes('DCTX_BIN'));
+    assert.ok(error.message.includes('SHA256SUMS'));
+    return true;
+  });
+  const cached = isolated.cacheBinaryPath({ env });
+  fs.mkdirSync(path.dirname(cached), { recursive: true });
+  fs.writeFileSync(cached, 'fixture', { mode: 0o755 });
+  assert.equal(isolated.resolveBinary({ env }), cached);
 });
 
 test('cache path honors absolute XDG base and is version/platform specific', () => {

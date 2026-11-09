@@ -32,7 +32,10 @@ test('build/pack contains exactly the runtime, declarations, licenses and docs; 
   fs.renameSync(path.join(cwd, 'package'), installed);
   const manifest = JSON.parse(fs.readFileSync(path.join(installed, 'package.json')));
   assert.equal(manifest.scripts, undefined, 'no install hooks or implicit downloads');
-  assert.deepEqual(Object.values(manifest.optionalDependencies), Array(5).fill(manifest.version));
+  // The @dctx/cli-* names are not registered: a local tarball must not make npm resolve them.
+  assert.equal(manifest.optionalDependencies, undefined, 'no registry-resolved optional dependencies');
+  const source = JSON.parse(fs.readFileSync(path.join(root, 'packaging/npm/dctx/package.json')));
+  assert.deepEqual({ ...manifest, optionalDependencies: source.optionalDependencies }, source);
   const script = `
     const assert = require('node:assert/strict');
     const cjs = require('dctx');

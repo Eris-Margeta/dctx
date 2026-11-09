@@ -77,7 +77,8 @@ class Packaging(unittest.TestCase):
             (modules / "cli-linux-x64").unlink()
             result = subprocess.run(command, capture_output=True, text=True, env=env)
             self.assertEqual(result.returncode, 1)
-            self.assertIn("--include=optional", result.stderr)
+            self.assertIn("npm install --omit=optional --ignore-scripts ./dctx-cli-linux-x64-1.2.3.tgz", result.stderr)
+            self.assertNotIn("dctx@", result.stderr)
             # A damaged archive must be rejected before any output package is written.
             archive.write_bytes(b"corrupted")
             with self.assertRaisesRegex(ValueError, "checksum mismatch"):
