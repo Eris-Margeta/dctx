@@ -14,7 +14,7 @@
   <a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="License">
   </a>
-  <img src="https://img.shields.io/badge/language-Rust-orange" alt="Rust">
+  <img src="https://img.shields.io/badge/language-C%2FRust-orange" alt="C/Rust">
   <a href="https://github.com/sponsors/Eris-Margeta">
     <img src="https://img.shields.io/badge/sponsor-%E2%99%A5-ea4aaa?logo=githubsponsors&logoColor=white" alt="Sponsor dctx">
   </a>
