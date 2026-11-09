@@ -7,6 +7,7 @@ two_scopes(), calls_times_context(), prefix_stability(), giant_folder() and safe
 HTML string that is placed in the matching slot below (see anim()); when it does not, the slots are empty."""
 from __future__ import annotations
 
+import datetime
 import importlib
 import importlib.util
 import json
@@ -20,6 +21,47 @@ from pages.paths import md_inline, notice, responsibilities, scopes, selector
 from routes import has_why
 
 HERO_RECORDS = ["pack-for", "find", "neighbors-in", "read-json"]
+
+# The first commit of the repository. The age shown on the home page is counted from here to the release
+# date in facts.json, never to the clock, so the build stays reproducible and the number moves with each release.
+FIRST_COMMIT = datetime.date(2026, 1, 8)
+
+
+def age_at_release(released: str) -> int:
+    """Whole months (rounded) from the first commit to the release date."""
+    days = (datetime.date.fromisoformat(released) - FIRST_COMMIT).days
+    return round(days / 30.4375)
+
+
+def status(f: dict) -> str:
+    """The honest project status: not yet stable, why, where it is going (2.0), the promise and the goal."""
+    months = age_at_release(f["released"])
+    started = FIRST_COMMIT.strftime("%B %Y")
+    first = f"{FIRST_COMMIT.day} {FIRST_COMMIT.strftime('%B %Y')}"
+    rows = [
+        ("Started", started, f"First commit {first}; {months} months in development at the {VERSION} release."),
+        ("Today", f"{VERSION}, not yet stable", "Not enterprise-ready. Breaking changes are expected often until 2.0."),
+        ("Stable", "2.0", "Stability is the goal of version 2.0, and the project is working toward it."),
+        ("Promise", "Zero dependencies", "The principle dctx was founded on. Today dctx still has dependencies."),
+        ("Goal", "The single best context management tool", "That is what dctx is being built to become."),
+    ]
+    kv = '<dl class="status-kv">' + "".join(
+        f"<div><dt>{a}</dt><dd><b>{e(b)}</b><span>{e(c)}</span></dd></div>" for a, b, c in rows) + "</dl>"
+    return f"""<section class="sec sec-status" id="status" aria-labelledby="status-h">
+ <div class="wrap">
+  <div class="status-panel">
+   <div class="status-copy">
+    <p class="eyebrow status-eyebrow">Project status &middot; in development since {started}</p>
+    <h2 id="status-h">Not yet stable. Working toward 2.0.</h2>
+    <p>dctx is <strong>not yet stable</strong> and <strong>not enterprise-ready</strong>. Until version 2.0, expect breaking changes often.</p>
+    <p>Why: AI providers keep changing how they optimize context on their side. dctx adapts to those changes quickly, but not in real time. Stability arrives with 2.0, and the project is working toward it.</p>
+    <p>Where it comes from: dctx began as an internal tool that was never meant to be open-sourced, so parts of it are still messy. It was opened up because colleagues who rely on it needed it in the open, and development continues in public.</p>
+    <p class="status-thesis">We see an ultimate solution to this problem, and we are denoising it.</p>
+   </div>
+   {kv}
+  </div>
+ </div>
+</section>"""
 
 
 def hero_terminal() -> str:
@@ -113,7 +155,7 @@ def body(scene: dict) -> str:
  <div class="wrap hero-grid">
   <div class="hero-copy">
    <ul class="chips" aria-label="Project facts">
-    <li><a href="/changelog/#v{VERSION.replace('.', '-')}">dctx <b>{VERSION}</b></a></li><li>Apache-2.0</li><li>Rust</li><li>Linux x86_64 tested</li><li><a href="/cli/#mcp"><b>{len(data.mcp_tools())}</b> MCP tools</a></li><li>no telemetry</li>
+    <li><a href="/changelog/#v{VERSION.replace('.', '-')}">dctx <b>{VERSION}</b></a></li><li>Apache-2.0</li><li>C/Rust</li><li>Linux x86_64 tested</li><li><a href="/cli/#mcp"><b>{len(data.mcp_tools())}</b> MCP tools</a></li><li>no telemetry</li><li class="chip-status"><a href="#status">not yet stable &middot; pre-2.0</a></li>
    </ul>
    <h1 id="hero-title">Context, <span class="accent">engineered.</span></h1>
    <p class="lede">dctx gives a model the fewest, most relevant bytes of your code, in an order that stays the same between turns. Deterministic, bounded and offline.</p>
@@ -134,6 +176,8 @@ def body(scene: dict) -> str:
  </div>
  <script type="application/json" id="scene-data">{scene_json}</script>
 </section>
+
+{status(f)}
 
 <section class="sec sec-paths" id="paths" aria-labelledby="notice-h">
  <div class="wrap">

@@ -73,7 +73,7 @@ first. The three files are built so they cannot fall behind the documentation: d
 `data/facts.json` is the one facts source. `llms.py` renders it first in all three files (`facts_markdown()`);
 the site pages read the same file through `facts.py` (`facts.load()` checks the required keys and the four personas and adds
 the measured numbers parsed by `data.py`; numbers are never typed into facts.json). Inline code uses backticks, rendered by
-`pages.paths.md_inline`. `check.py` rejects sales wording on these pages (the word "enterprise" is on that list). Schema 1, fields in render order:
+`pages.paths.md_inline`. `check.py` rejects sales wording on these pages (the word "enterprise" is on that list; only the disclaimer "not enterprise-ready" passes). Schema 1, fields in render order:
 
 | Field | Content |
 |---|---|

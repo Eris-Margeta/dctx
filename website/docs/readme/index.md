@@ -45,6 +45,14 @@
 
 ---
 
+## Project status
+
+**dctx is not yet stable and not enterprise-ready.** It has been in development since January 2026. Until version 2.0, expect breaking changes often. AI providers keep changing how they optimize context on their side; dctx adapts to those changes quickly, but not in real time. Stability is the goal of 2.0, and the project is working toward it: we see an ultimate solution to this problem, and we are denoising it.
+
+dctx began as an internal tool that was never meant to be open-sourced, so parts of it are still messy. It was opened up because colleagues who rely on it needed it in the open, and development continues in public.
+
+The founding promise is zero dependencies. Today dctx still has dependencies. The goal is to become the single best context management tool.
+
 ## Installation
 
 **System binary — available now.** Download the archive for your OS and architecture

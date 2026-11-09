@@ -53,7 +53,7 @@ BUDGET = {"/": {"requests": 8, "bytes": 370_000}, "*": {"requests": 9, "bytes": 
 LARGEST = 200_000
 HTML_LIMIT = {"docs/spec/index.html": 450_000, "cli/index.html": 300_000, "docs/benchmark-oct/index.html": 300_000,
               "changelog/index.html": 200_000, "examples/index.html": 200_000, "docs/benchmark/index.html": 200_000}
-SALES = re.compile(r"(?i)free forever|enterprise|pricing|trusted by|world[- ]class|revolutionary|best[- ]in[- ]class")
+SALES = re.compile(r"(?i)free forever|(?<!not )enterprise|pricing|trusted by|world[- ]class|revolutionary|best[- ]in[- ]class")
 LEGACY_RULES = re.compile(r"(?i)\.legacyignore|\.dctxomitcontent|config/dctx/omitcontent")
 LLMS_LIMIT = {"llms-small.txt": 20_480, "llms.txt": 102_400, "llms-full.txt": 1_048_576}
 LEGACY_CALL = re.compile(r"dctx \.(?:\s+-[a-zA-Z]|[ \t]*$)", re.M)
