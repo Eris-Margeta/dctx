@@ -9,6 +9,9 @@ mod measure;
 mod stream;
 pub use stream::{write_legacy_diff, write_legacy_snapshot, write_legacy_snapshot_with};
 
+use std::borrow::Cow;
+use std::fmt::Write as _;
+
 use super::parse::{Template, replace_vars};
 use crate::legacy_output::FileMode;
 
@@ -30,6 +33,34 @@ fn data_parts(mut text: &str) -> impl Iterator<Item = &str> {
         text = rest;
         Some(part)
     })
+}
+
+/// Encodes a root-relative path for marker output so a file name cannot forge a boundary marker.
+///
+/// `&`, `<`, `>` and `"` become XML entities; control characters and the Unicode line and
+/// paragraph separators become `&#xHEX;`. Every other path is returned unchanged and borrowed,
+/// so ordinary paths keep their exact bytes and the output stays deterministic.
+pub(crate) fn escape_path(path: &str) -> Cow<'_, str> {
+    fn special(c: char) -> bool {
+        matches!(c, '&' | '<' | '>' | '"' | '\u{2028}' | '\u{2029}') || c.is_control()
+    }
+    if !path.chars().any(special) {
+        return Cow::Borrowed(path);
+    }
+    let mut out = String::with_capacity(path.len() + 16);
+    for c in path.chars() {
+        match c {
+            '&' => out.push_str("&amp;"),
+            '<' => out.push_str("&lt;"),
+            '>' => out.push_str("&gt;"),
+            '"' => out.push_str("&quot;"),
+            c if special(c) => {
+                let _ = write!(out, "&#x{:X};", u32::from(c));
+            }
+            c => out.push(c),
+        }
+    }
+    Cow::Owned(out)
 }
 
 fn insert_data(text: &str, fields: &[(&str, &str)]) -> String {
@@ -176,10 +207,11 @@ fn render_node(
         format!(", {size_attr}:{}", node.content_size)
     };
     let indent = "  ".repeat(depth.min(4096));
+    let path = escape_path(&node.relative_path);
     let display_path = if node.is_ignored {
-        format!("{} [IGNORED]", node.relative_path)
+        format!("{path} [IGNORED]")
     } else {
-        node.relative_path.clone()
+        path.to_string()
     };
 
     let partial = replace_vars(&template.partial_tree_entry, &template.variables);
@@ -206,7 +238,7 @@ fn render_node(
             &partial,
             &[
                 ("{{{file.id}}}", &current_id),
-                ("{{{file.path}}}", &node.relative_path),
+                ("{{{file.path}}}", &path),
                 ("{{{file.size}}}", &node.content_size.to_string()),
                 ("{{{file.lines}}}", &line_count.to_string()),
                 ("{{{file.content}}}", &content),

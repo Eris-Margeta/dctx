@@ -6,6 +6,7 @@ use dctx_core::FileHandlingDecision;
 use crate::error::TemplateError;
 use crate::model::RenderProgram;
 use crate::opcode::execute;
+use crate::v1::escape_path;
 
 use super::json::{named, variable};
 use super::{Prepared, file_text, file_value, node_value};
@@ -40,10 +41,11 @@ pub(super) fn render_record(
     };
     let depth = usize::try_from(item.depth).unwrap_or(usize::MAX).min(4096);
     let indent = "  ".repeat(depth);
+    let path = escape_path(&item.path);
     let display = if item.decision == FileHandlingDecision::DebugVisible {
-        format!("{} [IGNORED]", item.path)
+        format!("{path} [IGNORED]")
     } else {
-        item.path.clone()
+        path.to_string()
     };
     let modified = item.modified.to_string();
     let mut tree = String::new();
@@ -73,7 +75,7 @@ pub(super) fn render_record(
         let body = execute(
             program,
             code,
-            &mut |field| Ok(file_value(field, &id, &item.path, &lines, &size, &text)),
+            &mut |field| Ok(file_value(field, &id, &path, &lines, &size, &text)),
             0,
         )?;
         file.push_str(&body);

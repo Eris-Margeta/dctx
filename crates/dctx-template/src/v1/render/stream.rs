@@ -4,7 +4,7 @@
 use std::borrow::Cow;
 use std::io::{self, Write};
 
-use super::{MarkerNode, Template, data_parts, replace_vars};
+use super::{MarkerNode, Template, data_parts, escape_path, replace_vars};
 use crate::legacy_output::FileMode;
 use dctx_core::version::Version;
 
@@ -146,7 +146,11 @@ pub fn write_legacy_diff(
         } else {
             ""
         };
-        writeln!(output, "[{change}] {}{suffix}", entry.relative_path)?;
+        writeln!(
+            output,
+            "[{change}] {}{suffix}",
+            escape_path(&entry.relative_path)
+        )?;
     }
     output.write_all(b"</CHANGES_SUMMARY>\n\n<UPDATED_DIRECTORY_TREE>\n")?;
     let changed = diff
@@ -291,10 +295,11 @@ fn walk(
         for _ in 0..depth.min(4096) {
             output.write_all(b"  ")?;
         }
+        let path = escape_path(&node.relative_path);
         let path = if node.is_ignored {
-            Cow::Owned(format!("{} [IGNORED]", node.relative_path))
+            Cow::Owned(format!("{path} [IGNORED]"))
         } else {
-            Cow::Borrowed(node.relative_path.as_str())
+            path
         };
         let size = if node.is_dir {
             String::new()
@@ -343,7 +348,7 @@ fn walk(
             &template.files,
             &[
                 ("{{{file.id}}}", &id),
-                ("{{{file.path}}}", &node.relative_path),
+                ("{{{file.path}}}", &escape_path(&node.relative_path)),
                 ("{{{file.size}}}", &node.content_size.to_string()),
                 ("{{{file.lines}}}", &lines.to_string()),
                 ("{{{file.content}}}", &content),

@@ -61,7 +61,10 @@ impl Template {
             &partial,
             &[
                 ("{{{node.type_char}}}", 3),
-                ("{{{node.path}}}", node.relative_path.len() as u64 + 10),
+                (
+                    "{{{node.path}}}",
+                    escape_path(&node.relative_path).len() as u64 + 10,
+                ),
                 ("{{{node.id}}}", 24),
                 ("{{{node.mod}}}", 20),
                 ("{{{node.size_part}}}", size_attr.saturating_add(23)),
@@ -85,7 +88,10 @@ impl Template {
                 &replace_vars(&self.partial_file_block, &self.variables),
                 &[
                     ("{{{file.id}}}", 16),
-                    ("{{{file.path}}}", node.relative_path.len() as u64 + 16),
+                    (
+                        "{{{file.path}}}",
+                        escape_path(&node.relative_path).len() as u64 + 16,
+                    ),
                     ("{{{file.size}}}", 20),
                     ("{{{file.lines}}}", 20),
                     ("{{{file.content}}}", content),
@@ -171,10 +177,11 @@ impl Template {
             part.push_str(&node.content_size.to_string());
             part
         };
+        let path = escape_path(&node.relative_path);
         let display_path = if node.is_ignored {
-            format!("{} [IGNORED]", node.relative_path)
+            format!("{path} [IGNORED]")
         } else {
-            node.relative_path.clone()
+            path.into_owned()
         };
         let mut entry = String::new();
         for _ in 0..depth.min(4096) {
@@ -212,7 +219,10 @@ impl Template {
             &partial,
             &[
                 ("{{{file.id}}}", &Doc::from_str(current_id)),
-                ("{{{file.path}}}", &Doc::from_str(&node.relative_path)),
+                (
+                    "{{{file.path}}}",
+                    &Doc::from_str(&escape_path(&node.relative_path)),
+                ),
                 (
                     "{{{file.size}}}",
                     &Doc::from_string(node.content_size.to_string()),

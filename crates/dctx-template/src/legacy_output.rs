@@ -309,7 +309,11 @@ fn diff_document_len(
         } else {
             ""
         };
-        let _ = writeln!(prefix, "[{change}] {}{suffix}", entry.relative_path);
+        let _ = writeln!(
+            prefix,
+            "[{change}] {}{suffix}",
+            crate::v1::escape_path(&entry.relative_path)
+        );
     }
     prefix.push_str("</CHANGES_SUMMARY>\n\n<UPDATED_DIRECTORY_TREE>\n");
     let glued = add_len(

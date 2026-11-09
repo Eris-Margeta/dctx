@@ -40,7 +40,11 @@ pub fn render_legacy_diff(
         } else {
             ""
         };
-        let _ = writeln!(output, "[{change}] {}{suffix}", entry.relative_path);
+        let _ = writeln!(
+            output,
+            "[{change}] {}{suffix}",
+            crate::v1::escape_path(&entry.relative_path)
+        );
     }
     output.push_str("</CHANGES_SUMMARY>\n\n<UPDATED_DIRECTORY_TREE>\n");
     let changed = diff

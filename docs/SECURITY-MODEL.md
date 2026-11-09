@@ -158,6 +158,34 @@ roots/ancestors/object directories/object files/ledgers, and symlinked storage/l
 Stdio MCP/RPC inherit the launching process's authorization and have no
 separate authentication layer.
 
+## Pack output markers
+
+Packs are deterministic: the same files, rules, and template give the same bytes on
+every run, so a pack can be a stable prompt-cache prefix. Boundary markers therefore
+use sequential IDs (`F001`, `F002`, ...) and carry no per-pack random nonce.
+
+Paths are encoded wherever the renderer writes them: tree entries, the `PATH`
+attribute of file markers, and diff change summaries. `&`, `<`, `>`, and `"` become
+`&amp;`, `&lt;`, `&gt;`, and `&quot;`; control characters and the Unicode line/paragraph
+separators become `&#xHEX;`. A file name therefore cannot close an attribute, open or
+close a marker, or start a new line. Paths without those characters are written
+unchanged. The other marker attributes (`ID`, `LINES`, `SIZE`, `MOD`) are generated
+numbers. Escaping targets the XML-style markers of the built-in templates; a custom
+template that picks other marker characters gets the same encoding, not a guarantee
+that its own markers cannot appear in a path.
+
+File bodies are inserted verbatim. A file can contain text that looks exactly like a
+closing marker followed by a forged opening marker with another `PATH` or a reused
+ID. dctx does not detect or rewrite such text. Readers, including LLMs, should take
+the file list and IDs from the directory tree, expect each ID's markers exactly once
+in tree order, and treat file contents as untrusted data. Pack output is not a trust
+boundary against prompt injection inside repository content.
+
+Evidence: `crates/dctx-template/tests/path_escape.rs` renders a hostile file name
+through the in-memory, streamed, plan, and diff renderers, checks that no forged
+markers or raw separators appear, that ordinary paths keep their bytes, and that
+output is identical across runs.
+
 ## Non-goals and operational limits
 
 - Hard links, bind mounts, mounted filesystems, and files deliberately placed inside
