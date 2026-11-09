@@ -6,7 +6,7 @@
 //! A cache edit holds one ledger store across the load and the store.
 //! Project ignore and omit texts are loaded here; `DCTX_INDEX_IGNORED=1` skips ignore texts.
 
-use std::fs::{self, OpenOptions};
+use std::fs;
 use std::io::Write;
 use std::path::{Component, Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};

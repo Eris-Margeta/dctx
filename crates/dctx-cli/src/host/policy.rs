@@ -147,10 +147,57 @@ pub(super) fn store_policy(root: &Path, policy: &CachePolicy) -> Result<(), Stri
         policy.auto.system_cap_bytes,
         policy.last_reclaimed_bytes
     );
-    let temp = root.join("policy.v1.tmp");
-    write_private(&temp, body.as_bytes())?;
-    fs::rename(&temp, root.join(POLICY_FILE))
+    clean_stale_temps(root);
+    // A unique, exclusively created 0600 staging file: concurrent writers never share it, a
+    // planted link at a fixed name cannot redirect it, and a failed write removes it on drop.
+    let mut temp = tempfile::Builder::new()
+        .prefix(TEMP_PREFIX)
+        .rand_bytes(12)
+        .tempfile_in(root)
+        .map_err(|_| "failed to write the cache policy".to_string())?;
+    temp.write_all(body.as_bytes())
+        .map_err(|_| "failed to write the cache policy".to_string())?;
+    temp.persist(root.join(POLICY_FILE))
+        .map(|_| ())
         .map_err(|_| "failed to commit the cache policy".to_string())
+}
+
+/// Staging files are `policy.v1.tmp.<random>`; 1.2.0 used the bare `policy.v1.tmp`.
+const TEMP_PREFIX: &str = "policy.v1.tmp.";
+/// A staging file this old belongs to a crashed writer, never to a live one.
+const STALE_TEMP: std::time::Duration = std::time::Duration::from_secs(3600);
+
+/// Removes staging files left by a crash: the fixed 1.2.0 name at once, unique names after an hour.
+/// Only regular files and links are unlinked (never followed); failures are ignored.
+fn clean_stale_temps(root: &Path) {
+    let Ok(entries) = fs::read_dir(root) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let Some(name) = name.to_str() else {
+            continue;
+        };
+        let legacy = name == "policy.v1.tmp";
+        if !legacy && !name.starts_with(TEMP_PREFIX) {
+            continue;
+        }
+        let Ok(meta) = fs::symlink_metadata(entry.path()) else {
+            continue;
+        };
+        if meta.is_dir() {
+            continue;
+        }
+        let stale = legacy
+            || meta
+                .modified()
+                .ok()
+                .and_then(|modified| modified.elapsed().ok())
+                .is_some_and(|age| age > STALE_TEMP);
+        if stale {
+            let _ = fs::remove_file(entry.path());
+        }
+    }
 }
 
 fn parse_policy(text: &str) -> Result<CachePolicy, String> {
@@ -217,22 +264,6 @@ fn assign_policy(policy: &mut CachePolicy, index: usize, value: &str) -> Result<
     Ok(())
 }
 
-fn write_private(path: &Path, bytes: &[u8]) -> Result<(), String> {
-    let mut options = OpenOptions::new();
-    options.write(true).create_new(true);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        options.mode(0o600);
-    }
-    let mut file = options
-        .open(path)
-        .map_err(|_| "failed to write the cache policy".to_string())?;
-    file.write_all(bytes)
-        .map_err(|_| "failed to write the cache policy".to_string())?;
-    Ok(())
-}
-
 #[cfg(all(test, unix))]
 mod security_tests {
     use super::*;
@@ -284,9 +315,48 @@ mod security_tests {
         std::os::unix::fs::symlink(&secret, &policy).unwrap();
         assert!(load_policy(temp.path()).is_err());
         fs::remove_file(&policy).unwrap();
-        std::os::unix::fs::symlink(&secret, temp.path().join("policy.v1.tmp")).unwrap();
-        assert!(store_policy(temp.path(), &CachePolicy::default()).is_err());
-        assert_eq!(fs::read(secret).unwrap(), b"keep");
+        // A link at the 1.2.0 staging name is stale debris: it is unlinked, never written through.
+        let legacy = temp.path().join("policy.v1.tmp");
+        std::os::unix::fs::symlink(&secret, &legacy).unwrap();
+        store_policy(temp.path(), &CachePolicy::default()).unwrap();
+        assert_eq!(fs::read(&secret).unwrap(), b"keep");
+        assert!(fs::symlink_metadata(&legacy).is_err());
+        assert_eq!(load_policy(temp.path()).unwrap(), CachePolicy::default());
+    }
+
+    #[test]
+    fn policy_saves_use_unique_staging_and_clean_crash_debris() {
+        let temp = tempfile::tempdir().unwrap();
+        store_policy(temp.path(), &CachePolicy::default()).unwrap();
+        // Debris from a crash: the fixed 1.2.0 name, an old unique name, and a fresh unique name
+        // that may still belong to a live writer.
+        fs::write(temp.path().join("policy.v1.tmp"), b"crash").unwrap();
+        let old = temp.path().join(format!("{TEMP_PREFIX}old"));
+        fs::write(&old, b"crash").unwrap();
+        let hours_ago = std::time::SystemTime::now() - 2 * STALE_TEMP;
+        fs::File::options()
+            .write(true)
+            .open(&old)
+            .unwrap()
+            .set_modified(hours_ago)
+            .unwrap();
+        let live = temp.path().join(format!("{TEMP_PREFIX}live"));
+        fs::write(&live, b"writing").unwrap();
+        let policy = CachePolicy {
+            last_reclaimed_bytes: 7,
+            ..CachePolicy::default()
+        };
+        store_policy(temp.path(), &policy).unwrap();
+        assert_eq!(load_policy(temp.path()).unwrap(), policy);
+        assert!(!temp.path().join("policy.v1.tmp").exists());
+        assert!(!old.exists());
+        assert!(live.exists());
+        let staged: Vec<_> = fs::read_dir(temp.path())
+            .unwrap()
+            .filter_map(|entry| entry.ok()?.file_name().into_string().ok())
+            .filter(|name| name.starts_with(TEMP_PREFIX) && name != &format!("{TEMP_PREFIX}live"))
+            .collect();
+        assert!(staged.is_empty(), "{staged:?}");
     }
 }
 
