@@ -58,9 +58,15 @@ regression tests are included, but were not executed by the Linux review run;
 Unix runtime results must not be interpreted as Windows verification. Other
 non-Unix/non-Windows targets have path checks, without the same handle guarantees.
 
-Rule-file reads through `StdFs` also use no-follow component resolution on Unix,
-regular-file checks, and bounded reads. CLI nested rule listings use the engine
-source adapter. The CLI binary precheck uses an authorized engine source read after selection,
+Rule-file reads through `StdFs` (`dctx-adapter-fs`) also use no-follow component
+resolution on Unix, regular-file checks, and bounded reads. Its metadata, directory
+listings, and link reads resolve every directory from its parent handle with
+`O_NOFOLLOW` too, so a directory swapped for a symlink fails the lookup instead of
+reporting names, sizes, or link targets from outside the root. On Windows these
+`StdFs` operations first pin each ancestor directory with list-directory access and
+without write or delete sharing, and refuse reparse points, as the engine walker does;
+this Windows code is compile-checked but was not executed by the Linux review run.
+CLI nested rule listings use the engine source adapter. The CLI binary precheck uses an authorized engine source read after selection,
 including ancestor selection, and refuses linked or excluded content. Rule loading
 can fail closed on unsafe paths; global configuration
 paths with symlinked ancestors may therefore be refused. Selection rules are
@@ -154,6 +160,13 @@ permissions. Policy staging uses exclusive
 creation, so an existing staging symlink cannot truncate another file. An existing
 staging name causes a refusal. Tests cover outside sentinels, world-writable cache
 roots/ancestors/object directories/object files/ledgers, and symlinked storage/locks.
+
+The segment store library (`dctx-adapter-store` `StdFs::open`) applies the same root
+rules on Unix: a symlinked or non-directory root is refused, a missing root is created
+with mode 0700, an existing root must be owned by the effective user and not writable
+by group or others, ancestors pass the checks above, and the root is tightened to 0700
+through a no-follow handle. Store subdirectories are created 0700. Windows store
+privacy depends on deployment ACLs.
 
 Stdio MCP/RPC inherit the launching process's authorization and have no
 separate authentication layer.

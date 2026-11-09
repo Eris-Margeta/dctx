@@ -29,16 +29,15 @@ pub struct StdFs {
 impl StdFs {
     /// Creates `root` if needed and confines later names under its canonical path.
     ///
+    /// A missing root is created with mode 0700 on Unix. A symlinked or non-directory root is
+    /// refused. On Unix an existing root must also be owned by the effective user and not
+    /// writable by group or others, and its ancestors must be trusted (see [`ports::prepare_root`]).
+    ///
     /// # Errors
-    /// Returns directory-creation or canonicalization IO failures.
+    /// Returns [`StoreError::InvalidRequest`] for an unsafe root, or directory-creation and
+    /// canonicalization IO failures.
     pub fn open(root: &Path) -> Result<Self, StoreError> {
-        fs::create_dir_all(root).map_err(ports::io_err)?;
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            let _ = fs::set_permissions(root, fs::Permissions::from_mode(0o700));
-        }
-        let root = fs::canonicalize(root).map_err(ports::io_err)?;
+        let root = ports::prepare_root(root)?;
         Ok(Self {
             root,
             locks: Mutex::new(BTreeMap::new()),
@@ -289,5 +288,71 @@ mod tests {
                 .is_err()
         );
         assert_eq!(fs.read("objects/immutable").unwrap(), b"second");
+    }
+}
+
+#[cfg(all(test, unix))]
+mod root_tests {
+    use super::*;
+    use std::os::unix::fs::PermissionsExt;
+
+    fn mode(path: &Path) -> u32 {
+        fs::symlink_metadata(path).unwrap().permissions().mode() & 0o777
+    }
+
+    #[test]
+    fn a_missing_root_and_its_directories_are_created_private() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().join("store");
+        let fs = StdFs::open(&root).unwrap();
+        assert_eq!(mode(&root), 0o700);
+        fs.create("objects/deep/name").unwrap();
+        assert_eq!(mode(&root.join("objects")), 0o700);
+        assert_eq!(mode(&root.join("objects/deep")), 0o700);
+    }
+
+    #[test]
+    fn a_symlinked_or_non_directory_root_is_refused_and_not_chmodded() {
+        let dir = tempfile::tempdir().unwrap();
+        let target = dir.path().join("target");
+        fs::create_dir(&target).unwrap();
+        fs::set_permissions(&target, fs::Permissions::from_mode(0o755)).unwrap();
+        let link = dir.path().join("link");
+        std::os::unix::fs::symlink(&target, &link).unwrap();
+        assert!(matches!(
+            StdFs::open(&link),
+            Err(StoreError::InvalidRequest { reason: "root" })
+        ));
+        assert_eq!(mode(&target), 0o755);
+        let file = dir.path().join("file");
+        fs::write(&file, b"x").unwrap();
+        assert!(StdFs::open(&file).is_err());
+        assert!(StdFs::open(&dir.path().join("a/../b")).is_err());
+    }
+
+    #[test]
+    fn a_writable_root_is_refused_and_a_readable_one_is_tightened() {
+        let dir = tempfile::tempdir().unwrap();
+        let open = dir.path().join("open");
+        fs::create_dir(&open).unwrap();
+        fs::set_permissions(&open, fs::Permissions::from_mode(0o777)).unwrap();
+        assert!(matches!(
+            StdFs::open(&open),
+            Err(StoreError::InvalidRequest { reason: "root" })
+        ));
+        let readable = dir.path().join("readable");
+        fs::create_dir(&readable).unwrap();
+        fs::set_permissions(&readable, fs::Permissions::from_mode(0o755)).unwrap();
+        StdFs::open(&readable).unwrap();
+        assert_eq!(mode(&readable), 0o700);
+    }
+
+    #[test]
+    fn a_root_under_a_world_writable_ancestor_is_refused() {
+        let dir = tempfile::tempdir().unwrap();
+        let shared = dir.path().join("shared");
+        fs::create_dir(&shared).unwrap();
+        fs::set_permissions(&shared, fs::Permissions::from_mode(0o777)).unwrap();
+        assert!(StdFs::open(&shared.join("store")).is_err());
     }
 }
