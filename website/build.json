@@ -1,9 +1,9 @@
 {
- "version": "1.2.0",
- "source_sha256": "f112b7934dde56bf28d47ab97bea49566c42e25226cf26fae0b3b3a2ed63ec9e",
+ "version": "1.3.0",
+ "source_sha256": "66ac31609c83922606035e0ca29f329a46e56cecfba9b6b1e4c060951dbe7586",
  "sources": 50,
- "sources_updated": "2026-11-08",
+ "sources_updated": "2026-11-09",
  "pages": 45,
  "files": 191,
- "bytes": 10697392
+ "bytes": 10776710
 }

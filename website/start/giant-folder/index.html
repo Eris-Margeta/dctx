@@ -106,7 +106,7 @@
    "@type": "SoftwareApplication",
    "@id": "https://www.dctx.internet.technology/#software",
    "name": "dctx",
-   "softwareVersion": "1.2.0",
+   "softwareVersion": "1.3.0",
    "applicationCategory": "DeveloperApplication",
    "operatingSystem": "Linux (x86_64 tested)",
    "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
@@ -115,7 +115,7 @@
    "isAccessibleForFree": true,
    "codeRepository": "https://github.com/Eris-Margeta/dctx",
    "programmingLanguage": "Rust",
-   "releaseNotes": "https://www.dctx.internet.technology/changelog/#v1-2-0",
+   "releaseNotes": "https://www.dctx.internet.technology/changelog/#v1-3-0",
    "softwareHelp": {
     "@type": "CreativeWork",
     "url": "https://www.dctx.internet.technology/docs/"
@@ -173,7 +173,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="hdr">
  <div class="wrap hdr-in">
-  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span><span class="ver">1.2.0</span></a>
+  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span><span class="ver">1.3.0</span></a>
   <nav class="nav" aria-label="Primary"><ul><li><a href="/start/" aria-current="page">Start</a></li><li><a href="/docs/">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
   <div class="hdr-end">
    <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
@@ -187,14 +187,14 @@
 <main id="main">
 <div class="wrap narrow" data-path-page="giant-folder"><div class="page-head"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/start/">Choose your path</a></li><li><a href="/start/giant-folder/" aria-current="page">One giant folder</a></li></ol></nav><span class="eyebrow">Choose your path</span><h1>One giant folder</h1>
 <p class="lede">You work inside one very large tree, for example a 200 GB monorepo, data or document folder.</p></div>
-<dl class="kv path-kv"><dt>modality</dt><dd>System binary, scoped roots, ignore rules at each root you query.</dd><dt>version</dt><dd>dctx 1.2.0</dd></dl>
+<dl class="kv path-kv"><dt>modality</dt><dd>System binary, scoped roots, ignore rules at each root you query.</dd><dt>version</dt><dd>dctx 1.3.0</dd></dl>
 <section class="sec" aria-labelledby="setup-h"><h2 id="setup-h">Setup</h2><ol class="safe"><li>Install the system binary from GitHub Releases and verify it against SHA256SUMS.</li><li>Write a <code>.dctxignore</code> at each root you will query: data, generated output and archives out (<code>.gitignore</code> is read too).</li><li>Decide which sub-roots a task can name: a package, a service, a document set.</li><li>Optional: set fail-fast ceilings with <code>DCTX_MAX_SOURCE_BYTES</code>, <code>DCTX_MAX_RECORDS</code> and <code>DCTX_MAX_ENTRIES</code>.</li></ol></section>
 <section class="sec" aria-labelledby="first-h"><h2 id="first-h">First command</h2><div class="code"><div class="code-head"><span>shell</span><button class="copy" type="button" hidden>Copy</button></div><pre><code><span class="p">$ </span>dctx map find Config --place packages/service-a --budget 500 --limit 5</code></pre></div></section>
 <section class="sec" aria-labelledby="expect-h"><h2 id="expect-h">What to expect</h2><p>A bounded page that starts with a <code># &lt;place&gt; find</code> header and lists one stable id per line. Only the named sub-root is scanned and indexed; <code>dctx cache status --json</code> shows what the cache holds, under a 2 GiB hard cap. A scan over a limit fails with an error instead of returning a partial index.</p>
-<p class="note">A real run on the <a href="/examples/">kiosk sample project</a>, recorded from the release binary by <code>capture.py</code>:</p><div class="term "><div class="term-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="title">~/kiosk  ·  dctx 1.2.0</span></div><div class="scroll"><pre><span class="ln cmd"><span class="p">$ </span>dctx map find greet</span><span class="ln out hdrl"># kiosk find</span><span class="ln out"><span class="cm"></span><span class="id">s:src/util.rs#greet</span>	fn	L2-4</span><span class="ln out"><span class="cm"></span><span class="id">s:web/app.ts#renderGreeting</span>	fn	L10-12</span><span class="ln meta"># <b>exit 0</b> &middot; 79 bytes &middot; ~23 est. tokens</span></pre></div></div></section>
+<p class="note">A real run on the <a href="/examples/">kiosk sample project</a>, recorded from the release binary by <code>capture.py</code>:</p><div class="term "><div class="term-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="title">~/kiosk  ·  dctx 1.3.0</span></div><div class="scroll"><pre><span class="ln cmd"><span class="p">$ </span>dctx map find greet</span><span class="ln out hdrl"># kiosk find</span><span class="ln out"><span class="cm"></span><span class="id">s:src/util.rs#greet</span>	fn	L2-4</span><span class="ln out"><span class="cm"></span><span class="id">s:web/app.ts#renderGreeting</span>	fn	L10-12</span><span class="ln meta"># <b>exit 0</b> &middot; 79 bytes &middot; ~23 est. tokens</span></pre></div></div></section>
 <section class="sec" aria-labelledby="pit-h"><h2 id="pit-h">The pitfall</h2><div class="callout callout-warn"><p class="callout-text">Pointing an agent at the whole root. Every call then has to scan or index far more than the task needs, and the cache cap can refuse it. Name the sub-root in the task, with <code>--place</code> or by starting in that folder.</p></div></section>
 <section class="sec" aria-labelledby="next-h"><h2 id="next-h">Read next</h2><p><a href="/docs/modalities/#huge-trees-scope-before-indexing">Huge trees: scope before indexing</a> &middot; <a href="/docs/map-mode/">Map mode guide</a> &middot; <a href="/start/#responsibilities">Who is responsible for what</a></p>
-<p>Other paths:</p><ul class="inline-list"><li><a href="/start/many-projects/">Many smaller projects</a></li><li><a href="/start/library/">Agent builder embedding a library</a></li><li><a href="/start/team/">Team or organisation admin</a></li></ul><div class="callout" role="note"><p class="callout-text">dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.</p><p class="callout-sub">Status: A three-tool profile and receipts are planned. Until they ship, the safe path uses the lean MCP profile, <code>dctx mcp --profile lean</code>.</p></div></section>
+<p>Other paths:</p><ul class="inline-list"><li><a href="/start/many-projects/">Many smaller projects</a></li><li><a href="/start/library/">Agent builder embedding a library</a></li><li><a href="/start/team/">Team or organisation admin</a></li></ul><div class="callout" role="note"><p class="callout-text">dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.</p><p class="callout-sub">Status: Receipts are planned. The safe path uses the lean MCP profile, <code>dctx mcp --profile lean</code>.</p></div></section>
 </div>
 </main>
 <footer class="ftr">
@@ -204,7 +204,7 @@
     <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
     <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
     <p>An advanced tool with several ways to use it: <a href="/start/">start with the safe path</a>.</p>
-    <p class="mono small">dctx 1.2.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
+    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
    </div>
    <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/start/">Choose your path</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
    <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/for-ai-evaluators/">For AI evaluators</a></li><li><a href="/llms-small.txt">llms-small.txt</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>

@@ -5,10 +5,10 @@
 ## About this file
 
 - This is llms-small.txt: the facts and the route table, with an outline of the start documents. The other entry points: https://www.dctx.internet.technology/llms.txt, https://www.dctx.internet.technology/llms-full.txt.
-- Engine: dctx 1.2.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
-- Docs commit: bc530285b54d537a4c6df47f1c2df16716748c60 (2026-11-08T10:15:12Z), the last commit that changed one of the documents.
+- Engine: dctx 1.3.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
+- Docs commit: 06aeba10729f91be40ed0509603749de69b5adeb (2026-11-09T11:46:16+01:00), the last commit that changed one of the documents.
 - Command: `dctx map map docs/START.md --depth 2`; `dctx map map docs/WHY-DCTX.md --depth 2`; `dctx map map README.md --depth 2`; `dctx map map docs/MODALITIES.md --depth 2`
-- Budget: 1,016 of 2,500 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
+- Budget: 1,005 of 2,500 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
 
 ## Facts
 
@@ -25,10 +25,10 @@ What it is not:
 
 ### Version and download
 
-- Current version: 1.2.0, released 2026-11-07 (tag `v1.2.0`): https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0
+- Current version: 1.3.0, released 2026-11-09 (tag `v1.3.0`): https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.0
 - Each release on GitHub ships prebuilt archives for Linux x64/ARM64, macOS x64/ARM64 and Windows x64 with a SHA256SUMS file.
 - Verify a download: `sha256sum --check --ignore-missing SHA256SUMS`
-- Signed release binaries and an SBOM are planned; there is no signature to verify yet.
+- Releases from 1.3.0 also ship keyless cosign signatures, CycloneDX SBOMs, build provenance and offline bundles; see [verification](https://github.com/Eris-Margeta/dctx/blob/main/docs/VERIFYING.md).
 
 ### Modalities
 
@@ -36,16 +36,15 @@ What it is not:
 - MCP server (available): `dctx mcp PATH` over stdio for Claude Code, Cursor and Codex; `--profile lean` exposes only find and read. https://www.dctx.internet.technology/docs/modalities/#mcp-server-convenient-tools-with-startup-context
 - Task context (available): `dctx pack --for TEXT --budget N`: find, neighbors and read of the names in TEXT, cut to an estimated-token budget. https://www.dctx.internet.technology/docs/map-mode/
 - CI and prompt cache (available): Deterministic pack and map output; tree lines carry no timestamps by default, so the prefix stays stable across a touch. https://www.dctx.internet.technology/docs/modalities/#ci--prompt-cache-prefix-stability
-- Rust library (available from Git): The `dctx` facade crate as a tagged Git dependency; crates.io publishing soon. https://www.dctx.internet.technology/docs/modalities/#rust-library-embed-the-facade
-- npm CLI (publishing soon): `npx dctx` runs the native CLI from a Node toolchain once published; use the release archives today. https://www.dctx.internet.technology/docs/modalities/#npm-cli-publishing-soon
+- Rust library (available from Git): The `dctx` facade crate as a tagged Git dependency; crates.io publication pending. https://www.dctx.internet.technology/docs/modalities/#rust-library-embed-the-facade
 - Desktop app (preview): A Tauri preview you build from source; a GPUI rebuild is planned. https://www.dctx.internet.technology/docs/modalities/#desktop-app-tauri-preview-today
-- Python and Node libraries (planned): Project-scoped packages with their own pinned binary; not available yet. https://www.dctx.internet.technology/docs/modalities/#python-and-node-bindings-planned
+- Python, Node and Go wrappers (registry publication pending): Thin `dctx rpc` wrappers, built and tested in CI; not on PyPI, npm or a Go module proxy yet. Use the release archives today. https://www.dctx.internet.technology/docs/modalities/#python-node-and-go-wrappers-registry-publication-pending
 
 Two scopes, one binary:
 
 - System binary: the `dctx` on PATH belongs to you and your agents, and you upgrade it. Interactive agents and MCP call this one.
-- Project binary (planned with the Python and Node libraries): a binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Application code and CI call this one; a library never silently falls back to PATH.
-- Same engine, different owner. Release signing is planned; today both are verified against SHA256SUMS.
+- Project binary (with the Python, Node and Go wrappers, registry publication pending): a binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Application code and CI call this one; a library never silently falls back to PATH.
+- Same engine, different owner. `dctx doctor` lists every binary in reach; verify each against SHA256SUMS and its cosign signature.
 
 ### Before you start
 
@@ -147,19 +146,19 @@ Documents link to their Markdown twin (index.md), the repository file with only 
 
 ```text
 # dctx map
-d:docs/START.md#What dctx is	heading	L3-230
-d:docs/START.md#Choose your path	heading	L17-107
+d:docs/START.md#What dctx is	heading	L3-240
+d:docs/START.md#Choose your path	heading	L17-113
 d:docs/START.md#One giant folder	heading	L27-45
-d:docs/START.md#Many small projects	heading	L46-65
-d:docs/START.md#Agent builder embedding a library	heading	L66-87
-d:docs/START.md#Team / enterprise admin	heading	L88-107
-d:docs/START.md#Safe path in ten minutes	heading	L108-186
-d:docs/START.md#1. Install the system binary	heading	L110-129
-d:docs/START.md#2. Choose one project and inspect one answer	heading	L130-143
-d:docs/START.md#3. Configure the lean MCP profile	heading	L144-165
-d:docs/START.md#4. Measure before changing anything	heading	L166-186
-d:docs/START.md#Responsibilities	heading	L187-207
-d:docs/START.md#Two scopes, one binary	heading	L208-230
+d:docs/START.md#Many small projects	heading	L46-67
+d:docs/START.md#Agent builder embedding a library	heading	L68-92
+d:docs/START.md#Team / enterprise admin	heading	L93-113
+d:docs/START.md#Safe path in ten minutes	heading	L114-193
+d:docs/START.md#1. Install the system binary	heading	L116-136
+d:docs/START.md#2. Choose one project and inspect one answer	heading	L137-150
+d:docs/START.md#3. Configure the lean MCP profile	heading	L151-172
+d:docs/START.md#4. Measure before changing anything	heading	L173-193
+d:docs/START.md#Responsibilities	heading	L194-214
+d:docs/START.md#Two scopes, one binary	heading	L215-240
 # dctx map
 d:docs/WHY-DCTX.md#Why dctx exists	heading	L3-145
 d:docs/WHY-DCTX.md#The problem	heading	L7-14
@@ -177,38 +176,37 @@ d:docs/WHY-DCTX.md#What dctx is not	heading	L122-129
 d:docs/WHY-DCTX.md#Where to go next	heading	L130-137
 d:docs/WHY-DCTX.md#Sources in this repository	heading	L138-145
 # dctx map
-d:README.md#Installation	heading	L48-72
-d:README.md#What the output looks like	heading	L73-188
-d:README.md#Pack a project	heading	L77-125
-d:README.md#Find a symbol, then read it	heading	L126-152
-d:README.md#Pack for a task	heading	L153-188
-d:README.md#Which mode?	heading	L189-198
-d:README.md#Measured, in the open	heading	L199-212
-d:README.md#Start and choose your path	heading	L213-226
-d:README.md#The core belief: prompt-processing efficiency	heading	L227-237
-d:README.md#Quick Start	heading	L238-253
-d:README.md#Map mode: context for agents	heading	L254-264
-d:README.md#From source	heading	L265-282
-d:README.md#Use as a library	heading	L283-314
-d:README.md#CLI Reference	heading	L315-421
-d:README.md#Language tiers	heading	L352-421
-d:README.md#Security & Privacy	heading	L422-449
-d:README.md#Open source and maintenance	heading	L450-457
-d:README.md#Where it comes from	heading	L458-462
-d:README.md#Contributing	heading	L463-473
+d:README.md#Installation	heading	L48-75
+d:README.md#What the output looks like	heading	L76-191
+d:README.md#Pack a project	heading	L80-128
+d:README.md#Find a symbol, then read it	heading	L129-155
+d:README.md#Pack for a task	heading	L156-191
+d:README.md#Which mode?	heading	L192-201
+d:README.md#Measured, in the open	heading	L202-215
+d:README.md#Start and choose your path	heading	L216-229
+d:README.md#The core belief: prompt-processing efficiency	heading	L230-240
+d:README.md#Quick Start	heading	L241-256
+d:README.md#Map mode: context for agents	heading	L257-267
+d:README.md#From source	heading	L268-285
+d:README.md#Use as a library	heading	L286-320
+d:README.md#CLI Reference	heading	L321-455
+d:README.md#Language tiers	heading	L386-455
+d:README.md#Security & Privacy	heading	L456-489
+d:README.md#Open source and maintenance	heading	L490-497
+d:README.md#Where it comes from	heading	L498-502
+d:README.md#Contributing	heading	L503-513
 # dctx map
-d:docs/MODALITIES.md#Choosing how to use dctx	heading	L3-337
+d:docs/MODALITIES.md#Choosing how to use dctx	heading	L3-339
 d:docs/MODALITIES.md#Available surfaces and publication status	heading	L11-25
 d:docs/MODALITIES.md#Choose by task	heading	L26-36
 d:docs/MODALITIES.md#Human, one-off: pack to clipboard	heading	L37-56
 d:docs/MODALITIES.md#Short agent task: grep can be enough	heading	L57-85
-d:docs/MODALITIES.md#Huge trees: scope before indexing	heading	L86-159
-d:docs/MODALITIES.md#MCP server: convenient tools with startup context	heading	L160-250
-d:docs/MODALITIES.md#Client configuration	heading	L168-199
-d:docs/MODALITIES.md#Tools and startup cost	heading	L200-250
-d:docs/MODALITIES.md#CI / prompt-cache prefix stability	heading	L251-274
-d:docs/MODALITIES.md#Rust library: embed the facade	heading	L275-309
-d:docs/MODALITIES.md#npm CLI: publishing soon	heading	L310-322
-d:docs/MODALITIES.md#Desktop app: Tauri preview today	heading	L323-330
-d:docs/MODALITIES.md#Python and Node bindings: planned	heading	L331-337
+d:docs/MODALITIES.md#Huge trees: scope before indexing	heading	L86-164
+d:docs/MODALITIES.md#MCP server: convenient tools with startup context	heading	L165-255
+d:docs/MODALITIES.md#Client configuration	heading	L173-204
+d:docs/MODALITIES.md#Tools and startup cost	heading	L205-255
+d:docs/MODALITIES.md#CI / prompt-cache prefix stability	heading	L256-279
+d:docs/MODALITIES.md#Rust library: embed the facade	heading	L280-314
+d:docs/MODALITIES.md#Desktop app: Tauri preview today	heading	L315-322
+d:docs/MODALITIES.md#Python, Node and Go wrappers: registry publication pending	heading	L323-339
 ```

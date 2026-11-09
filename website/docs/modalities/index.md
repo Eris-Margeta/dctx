@@ -12,16 +12,16 @@ provider caching can change its billed cost. Count both calls and session tokens
 
 | Modality | Install | Status | Best for |
 |---|---|---|---|
-| CLI / interactive terminal | [Prebuilt archives](https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0), or [build from source](https://www.dctx.internet.technology/docs/readme/#from-source) | Available now; `cargo install dctx-cli` publishing soon | One-off chat (`pack --clipboard`), shell agents, scripts and CI; run `dctx` for the terminal menu |
+| CLI / interactive terminal | [Prebuilt archives](https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.0), or [build from source](https://www.dctx.internet.technology/docs/readme/#from-source) | Available now; crates.io publication pending | One-off chat (`pack --clipboard`), shell agents, scripts and CI; run `dctx` for the terminal menu |
 | MCP server | Included in the CLI; configure `dctx mcp /absolute/project` | Available now, stdio | Claude Code, Cursor and Codex tool calls on a scoped project |
-| Rust library (`dctx` facade) | Tagged Git dependency in the [library section](#rust-library-embed-the-facade) | Available from Git; crates.io publishing soon | Embedding pack, map, templates and cache in Rust tools and editors |
-| npm CLI (`npx dctx`) | `npx dctx` after publication; use archives today | Publishing soon | Running the native CLI from a Node toolchain |
+| Rust library (`dctx` facade) | Tagged Git dependency in the [library section](#rust-library-embed-the-facade) | Available from Git; crates.io publication pending | Embedding pack, map, templates and cache in Rust tools and editors |
 | Desktop app | [Build the Tauri app](https://github.com/Eris-Margeta/dctx/blob/main/apps/dctx-desktop/README.md#quick-start) | Tauri 0.11 preview today; GPUI rebuild planned | Selecting projects and generating snapshots in a GUI |
-| Python / Node bindings | No supported package install yet | Planned | Future in-process Python and JavaScript integrations |
+| Python, Node and Go wrappers | Not on PyPI, npm or a Go module proxy yet; see [language wrappers](#python-node-and-go-wrappers-registry-publication-pending) | Built and tested in CI; registry publication pending | Calling the engine over `dctx rpc` from Python, Node or Go projects |
 
-The npm package runs the native CLI; it is separate from the planned Node library
-binding. Registry installs marked publishing soon are not available yet; use the
-release archives or the tagged Rust Git dependency today.
+Registry publication is pending for every package: nothing is published to
+crates.io, PyPI or npm, and the Go module has no tag yet. A `dctx` package on those
+registries is not from this project. Use the release archives or the tagged Rust
+Git dependency today.
 
 ## Choose by task
 
@@ -59,13 +59,13 @@ pack filters, not map index limits. Inspect the content before sharing it.
 If you know a name and expect only a few file reads, use the existing shell:
 
 ```sh
-grep -R -n -F --include='*.rs' 'SnapshotConfig' crates/dctx-cli/src
-sed -n '1,120p' crates/dctx-cli/src/lib.rs
+grep -R -n -F --include='*.rs' 'struct Session' crates/dctx/src
+sed -n '130,170p' crates/dctx/src/session/mod.rs
 ```
 
 Choose the line range from the search result; reading a narrow range is an
 honest baseline alongside whole-file reads. If a symbol read is useful, call
-`dctx map find SnapshotConfig` through the existing shell. Loading an MCP server
+`dctx map find Session` through the existing shell. Loading an MCP server
 adds tool descriptions to starting context; installing verbose agent
 instructions can add more. Do not add that setup for a tiny edit unless you
 measure a benefit.
@@ -129,8 +129,13 @@ For example, merge these project-specific entries into `.dctxignore`:
 /archive/
 ```
 
-The host loads global ignore rules, root and nested `.gitignore` rules, then the
-root `.dctxignore`. Built-in sensitive-file and `.git` exclusions still apply.
+The host loads the global ignore file, root and nested `.gitignore` rules, then
+the root `.dctxignore`. Built-in sensitive-file and `.git` exclusions still apply.
+The global ignore file is `<config dir>/dctx/ignore`: `$XDG_CONFIG_HOME/dctx/ignore`
+or `~/.config/dctx/ignore` on Linux and macOS, `%APPDATA%\dctx\ignore` on Windows.
+dctx does not read Git metadata, so `.git/info/exclude` and Git's
+`core.excludesFile` are not applied; put those patterns in `.dctxignore` or the
+global ignore file.
 Do not set `DCTX_INDEX_IGNORED=1` when relying on these ignore rules.
 
 The built binary documents these **environment variables**, not scan-limit flags:
@@ -254,7 +259,7 @@ Save deterministic output from a fixed selection as a build artifact:
 
 ```sh
 dctx pack . --output context.txt
-dctx map find SnapshotConfig --json > symbol-context.json
+dctx map find Session --json > symbol-context.json
 ```
 
 Keep generated artifacts outside the next scan or ignore them. Keep the default
@@ -277,12 +282,12 @@ cache retention and minimum-prefix requirements are controlled by dctx.
 The supported entry point for Rust integrations is the [`dctx` facade](https://github.com/Eris-Margeta/dctx/tree/main/crates/dctx),
 which exposes `Session`, `SnapshotRequest`, `MapRequest`, `PackRequest`, sinks,
 templates and cache operations. Internal engine crates are implementation details.
-The facade is available from Git now; **crates.io publishing soon**. In your
+The facade is available from Git now; **crates.io publication is pending**. In your
 application's `Cargo.toml`:
 
 ```toml
 [dependencies]
-dctx = { git = "https://github.com/Eris-Margeta/dctx", tag = "v1.2.0" }
+dctx = { git = "https://github.com/Eris-Margeta/dctx", tag = "v1.3.0" }
 ```
 
 The [ten-line pack example](https://www.dctx.internet.technology/docs/readme/#use-as-a-library) is compiled and run as a
@@ -307,19 +312,6 @@ and persistence explicitly. The CLI supplies its own config, rules and cache
 lifecycle, so copying a library call without that host policy is not equivalent
 to invoking the CLI.
 
-## npm CLI: publishing soon
-
-`npx dctx` is the planned npm entry point for the native command-line executable.
-The registry package is not live yet; use the prebuilt release archives today.
-After publication, the intended invocation is:
-
-```sh
-npx dctx pack .
-```
-
-This is a CLI distribution for Node-based workflows, not an in-process JavaScript
-API. Node bindings are a separate planned surface.
-
 ## Desktop app: Tauri preview today
 
 The [desktop app](https://github.com/Eris-Margeta/dctx/blob/main/apps/dctx-desktop/README.md) is a Tauri 2 app, currently the
@@ -328,10 +320,20 @@ source using the app's [quick start](https://github.com/Eris-Margeta/dctx/blob/m
 the CLI archives do not install a desktop application. A GPUI rebuild is planned,
 not the current downloadable or buildable desktop implementation.
 
-## Python and Node bindings: planned
+## Python, Node and Go wrappers: registry publication pending
 
-There is no supported Python or Node in-process binding package to install yet.
-The [binding plans](https://github.com/Eris-Margeta/dctx/blob/main/bindings/README.md) describe future work; their illustrative
-APIs are not available today. Until then, Python and JavaScript tools can invoke
-the CLI as a subprocess and consume `--json` map answers. Use the Rust facade when
-you need an in-process engine now.
+Thin wrappers over the versioned [`dctx rpc` protocol](https://github.com/Eris-Margeta/dctx/blob/main/docs/protocol/README.md) live in
+[packages/python](https://github.com/Eris-Margeta/dctx/blob/main/packages/python/README.md),
+[packaging/npm/dctx](https://github.com/Eris-Margeta/dctx/blob/main/packaging/npm/dctx/README.md) (which also forwards the
+`dctx` CLI command) and [packages/go](https://github.com/Eris-Margeta/dctx/blob/main/packages/go/README.md). Each starts the
+native engine, passes CLI argument strings and returns the engine's bytes
+unchanged; CI checks byte parity with the CLI. They are built and tested in CI,
+but **registry publication is pending**: nothing is on PyPI or npm, and the Go
+module has no tag. Install them from CI artifacts (a Python wheelhouse or npm
+tarballs) or a checkout, as each README describes, and point them at an engine
+from the [GitHub release archives](https://github.com/Eris-Margeta/dctx/releases)
+that has `dctx rpc`. Their arguments carry full CLI authority, so never pass
+untrusted values as `--place`, `--output` or dash-leading arguments.
+
+Without a wrapper, any language can invoke the CLI as a subprocess and consume
+`--json` map answers. Use the Rust facade when you need an in-process engine.

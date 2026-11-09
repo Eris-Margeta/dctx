@@ -5,10 +5,10 @@
 ## About this file
 
 - This is llms-full.txt: the facts, the route table, every document the budget allows, the captured CLI help and examples. The other entry points: https://www.dctx.internet.technology/llms-small.txt, https://www.dctx.internet.technology/llms.txt.
-- Engine: dctx 1.2.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
-- Docs commit: bc530285b54d537a4c6df47f1c2df16716748c60 (2026-11-08T10:15:12Z), the last commit that changed one of the documents.
+- Engine: dctx 1.3.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
+- Docs commit: 06aeba10729f91be40ed0509603749de69b5adeb (2026-11-09T11:46:16+01:00), the last commit that changed one of the documents.
 - Command: `dctx pack . --include /docs/START.md --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md --include /docs/guides/MAP-MODE.md --include /docs/guides/AGENTS-SNIPPET.md --include /docs/guides/PLUGINS.md --include /docs/SPEC.md --include /docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md --include /docs/ADR-018-Language-Coverage.md --include /docs/design/contracts/DTS-v2.md --include /docs/ADR-003-Templating-Engine.md --include /docs/CRATE-MAP.md --include /docs/CLI-EXIT-CODES.md --include /docs/BENCHMARK-20261030.md --include /docs/research/stability-20261105/REPORT.md --include /docs/research/trail-code-2026-10/REPORT.md --include /RELEASING.md --include /CONTRIBUTING.md --include /SECURITY.md --include /TRADEMARK.md --include /MAINTENANCE.md --include /CHANGELOG.md --include /crates/dctx-template/templates/default.dctx_template --include /crates/dctx-template/templates/stamped.dctx_template`
-- Budget: 92,056 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 25 documents.
+- Budget: 97,770 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 25 documents.
 
 ## Facts
 
@@ -25,10 +25,10 @@ What it is not:
 
 ### Version and download
 
-- Current version: 1.2.0, released 2026-11-07 (tag `v1.2.0`): https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0
+- Current version: 1.3.0, released 2026-11-09 (tag `v1.3.0`): https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.0
 - Each release on GitHub ships prebuilt archives for Linux x64/ARM64, macOS x64/ARM64 and Windows x64 with a SHA256SUMS file.
 - Verify a download: `sha256sum --check --ignore-missing SHA256SUMS`
-- Signed release binaries and an SBOM are planned; there is no signature to verify yet.
+- Releases from 1.3.0 also ship keyless cosign signatures, CycloneDX SBOMs, build provenance and offline bundles; see [verification](https://github.com/Eris-Margeta/dctx/blob/main/docs/VERIFYING.md).
 
 ### Modalities
 
@@ -36,16 +36,15 @@ What it is not:
 - MCP server (available): `dctx mcp PATH` over stdio for Claude Code, Cursor and Codex; `--profile lean` exposes only find and read. https://www.dctx.internet.technology/docs/modalities/#mcp-server-convenient-tools-with-startup-context
 - Task context (available): `dctx pack --for TEXT --budget N`: find, neighbors and read of the names in TEXT, cut to an estimated-token budget. https://www.dctx.internet.technology/docs/map-mode/
 - CI and prompt cache (available): Deterministic pack and map output; tree lines carry no timestamps by default, so the prefix stays stable across a touch. https://www.dctx.internet.technology/docs/modalities/#ci--prompt-cache-prefix-stability
-- Rust library (available from Git): The `dctx` facade crate as a tagged Git dependency; crates.io publishing soon. https://www.dctx.internet.technology/docs/modalities/#rust-library-embed-the-facade
-- npm CLI (publishing soon): `npx dctx` runs the native CLI from a Node toolchain once published; use the release archives today. https://www.dctx.internet.technology/docs/modalities/#npm-cli-publishing-soon
+- Rust library (available from Git): The `dctx` facade crate as a tagged Git dependency; crates.io publication pending. https://www.dctx.internet.technology/docs/modalities/#rust-library-embed-the-facade
 - Desktop app (preview): A Tauri preview you build from source; a GPUI rebuild is planned. https://www.dctx.internet.technology/docs/modalities/#desktop-app-tauri-preview-today
-- Python and Node libraries (planned): Project-scoped packages with their own pinned binary; not available yet. https://www.dctx.internet.technology/docs/modalities/#python-and-node-bindings-planned
+- Python, Node and Go wrappers (registry publication pending): Thin `dctx rpc` wrappers, built and tested in CI; not on PyPI, npm or a Go module proxy yet. Use the release archives today. https://www.dctx.internet.technology/docs/modalities/#python-node-and-go-wrappers-registry-publication-pending
 
 Two scopes, one binary:
 
 - System binary: the `dctx` on PATH belongs to you and your agents, and you upgrade it. Interactive agents and MCP call this one.
-- Project binary (planned with the Python and Node libraries): a binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Application code and CI call this one; a library never silently falls back to PATH.
-- Same engine, different owner. Release signing is planned; today both are verified against SHA256SUMS.
+- Project binary (with the Python, Node and Go wrappers, registry publication pending): a binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Application code and CI call this one; a library never silently falls back to PATH.
+- Same engine, different owner. `dctx doctor` lists every binary in reach; verify each against SHA256SUMS and its cosign signature.
 
 ### Before you start
 
@@ -192,7 +191,7 @@ Documents link to their Markdown twin (index.md), the repository file with only 
       [D] docs/research/trail-code-2026-10 (ID:D034)
         [F] docs/research/trail-code-2026-10/REPORT.md (ID:F035)
 </DIRECTORY_TREE>
-<FILE_CONTENT_START ID="F001" PATH="CHANGELOG.md" LINES="295">
+<FILE_CONTENT_START ID="F001" PATH="CHANGELOG.md" LINES="446">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Changelog
@@ -209,14 +208,165 @@ and distribution plans below do not describe the current release.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-09
+
+Install from the GitHub release archives. The npm, crates.io and PyPI packages and
+the Go module are built and tested in CI, but registry publication is still pending;
+until it happens, the release archives are the install path.
+
+### Added
+
+- `dctx rpc`: a versioned, newline-delimited JSON engine protocol over stdin/stdout
+  (protocol 1.0.0, schema in `docs/protocol/`). Every reply carries `engine_version`;
+  operation output is exactly the CLI stdout bytes.
+- `dctx context TARGET...`: minimal ranked context for a file, symbol name or stable
+  node id, with chunk ids, `--budget`, `--json` and `--session ID --dedupe`.
+  `pack --for TEXT --json` now returns the same JSON context page.
+- `dctx doctor [--json] [--probe-project]`: lists the dctx binaries visible from the
+  current folder with path, ownership scope, version, build commit, SHA-256 and cache
+  sizes. It changes nothing and uses no network.
+- MCP `--profile lean|three` and `--tools NAME,...` select a smaller tool set with
+  compact descriptions (lean start-up tool definitions: 6,278 -> 1,637 bytes). See
+  [docs/guides/MCP.md](docs/guides/MCP.md).
+- Python, Node (npm) and Go client packages over `dctx rpc`, each with CLI byte-parity
+  tests in CI. They are not published to a registry yet.
+- Release supply chain: keyless cosign signatures, CycloneDX SBOMs, GitHub build
+  provenance attestations, a reproducible Linux musl build check and offline
+  (air-gap) bundles. See [docs/VERIFYING.md](docs/VERIFYING.md). CI runs `cargo audit`.
+  SECURITY.md and SUPPORT.md describe the security and support policy.
+- Robustness tests and a fuzz smoke workflow in CI.
+- `dctx pack --for` prints a warning on stderr when the text names no identifiers;
+  the page is unchanged.
+- `dctx pack --clipboard` supports `xsel` on Linux.
+- Experimental `tools/catalog-bench` for huge-tree catalog measurements (not part of
+  the CLI).
+
+### Changed
+
+- `dctx pack` prints its `pack bytes=… files=… retention=… version=V1` status line on
+  stderr. stdout is exactly the page and ends in a newline; `pack --json` stdout is
+  exactly one JSON document. Scripts that read the status line from stdout must read
+  stderr instead.
+- Indexes live in an engine `major.minor` subdirectory of the cache parent
+  (`DCTX_CACHE_DIR` or the platform `dctx/v2` root). 1.3 builds its own index on first
+  use; patch releases share it, and older unscoped cache data is ignored, not deleted.
+- Faster warm path: one fused inventory walk with directory-relative stats, rule files
+  validated by stamps and cheaper decoding (measured checkout 288 -> 94 ms, 4k-file
+  tree 88 -> 32 ms). Timestamp-only changes reuse the index generation.
+- Each place keeps its own warm index; targeted queries no longer admit the whole
+  place first; capacity errors name the exact limit and the flag that changes it.
+- Pack output streams with bounded memory and spools large pages. Pack history uses
+  compact manifest caches.
+- Language extraction audit with new goldens; the default parser id is now
+  `dctx-structural/3`.
+- `dctx pack --for` keeps bare short names such as `main` and `run`, and keeps the
+  case of capitalized words. Exact-case names and non-test code rank first, so
+  `--for Session` finds the `Session` types before test functions.
+- `dctx cache`, `dctx template`, `dctx context` and a bare `dctx` follow the exit-code
+  contract in [docs/CLI-EXIT-CODES.md](docs/CLI-EXIT-CODES.md): 2 for usage errors,
+  3 for I/O errors (naming the path), each with a `hint:` line. RPC `cache_status`
+  returns the same codes. `dctx context` with no TARGET exits 2.
+- A bare `dctx` whose stdin or stdout is not a terminal prints short usage and exits 2
+  instead of starting the interactive menu.
+- `dctx pack --help` prints only the pack usage and flags.
+- `dctx plugin …` and `dctx git` text output is plain text. Refusals go to stderr as
+  `❌ Error:` with a `hint:` line; a missing consent names
+  `dctx plugin enable <id> --approve`. JSON output and exit codes are unchanged.
+- `dctx cache auto` text shows a UTC time next to `last_auto_clean_ms` and
+  `next_due_ms`; JSON is unchanged.
+- Docs and package READMEs no longer present `npx dctx`, `npm install`,
+  `cargo install dctx-cli`, `pip install dctx` or `go get` as working install paths.
+  The Python missing-engine message no longer suggests a PyPI install.
+- Bundled SQLite is 3.54.1 (rusqlite 0.41).
+
+### Removed
+
+- `dctx plugin run` and `dctx git` JSON replies no longer repeat the
+  `facade_spawns` and `facade_git_children` keys. The facade counters remain once in
+  `--json` output and are gone from text output.
+- The cwd-relative plugin root fallback used when HOME was unset (see Security).
+
 ### Fixed
 
-- Pack headers now show `ID="UNIQUE_ID"` with clean quotes in the file-access
+- Pack headers show `ID="UNIQUE_ID"` with clean quotes in the file-access
   instructions, including stamped and tree-only output. This changes pack output bytes.
-
 - Pack rendering preserves literal template syntax in file bodies and paths, including
-  backslashes, for default, stamped and compiled templates. Variable substitution now
+  backslashes, for default, stamped and compiled templates. Variable substitution
   applies only to template structure; `pack --for` also preserves source CRLF bytes.
+- The last `</FILE_CONTENT_END …>` marker of a pack page is no longer glued to the
+  status line.
+- `dctx pack --for` with no usable terms says so and suggests backticks, instead of
+  reporting that no name matched the index. Its flag refusal now lists `--json`.
+- `dctx map` call edges stay within the caller's language family: a Rust `.all(..)`
+  no longer resolves to a Makefile target. A guessed method call such as
+  `iter.map(..)` links to a project method only when the caller can see that method's
+  type. Hubs, neighbors, path and `pack --for` lose these false edges.
+- `dctx plugin search` and the other text-mode plugin commands no longer mix JSON
+  fields or internal counters (`facade_git= spawns= git_children=`) into the output;
+  `dctx git status` without consent no longer prints `git: ConsentRequired`.
+- `dctx pack --clipboard` with no clipboard tool names the tools it tried and suggests
+  `--output FILE`.
+- A symlinked or non-regular `.gitignore` or `.dctxignore` inside the project is
+  skipped with a warning instead of failing the command; rule-file errors no longer
+  print the absolute project path.
+- Cache policy saves no longer get stuck on a `policy.v1.tmp` left by a crash.
+- `dctx doctor` shows each binary's build commit (`commit:` in text, `"commit"` in
+  JSON) and names an invalid argument.
+- `dctx --help` lists `map export`; the `dctx map --help` examples map a file that has
+  symbols.
+- The Python wrapper raises `BinaryNotFoundError`, not `RuntimeError`, when no home
+  directory is available (Windows without `USERPROFILE`/`LOCALAPPDATA`).
+- Windows: durable file replacement, inode identity and racy-window directory stamps
+  in map refresh. macOS: symlinked ancestors of the project, config and cache roots
+  (such as `/var` and `/tmp`) are resolved at the boundary while in-tree symlinks stay
+  refused; file names that APFS refuses are handled. Other cross-platform test and
+  code fixes.
+- README CLI reference, map-mode guide, modalities, start, testing and exit-code docs
+  match the current binary and CI: all commands, 50 languages, neighbors depth 1..4,
+  exact `--lines`, the global ignore file path, and that `.git/info/exclude` and
+  `core.excludesFile` are not read.
+- `tools/sync-version.sh` also syncs the Python, Go and npm package versions and the
+  release links in the docs and package READMEs.
+
+### Security
+
+- Bundled SQLite upgraded to 3.54.1 (rusqlite 0.41, libsqlite3-sys 0.39.1) for
+  RUSTSEC-2026-0459.
+- Hardening across the engine and CLI, documented in
+  [docs/SECURITY-MODEL.md](docs/SECURITY-MODEL.md).
+- Pack and diff output entity-encode `&`, `<`, `>`, `"` and control or line-separator
+  characters in file paths, so a file name cannot forge file boundary markers.
+  Ordinary paths are unchanged and output stays byte-stable.
+- `dctx doctor` no longer executes dctx binaries found in `./node_modules/.bin`,
+  `$VIRTUAL_ENV` or relative PATH entries, which an untrusted checkout can plant; they
+  are listed with path and SHA-256. `--probe-project` opts in.
+- MCP tool arguments are passed after `--` and taken literally, so a flag-shaped id or
+  query (for example `--place`) cannot change the place outside the server root. MCP
+  never forwards `--place` or `--output`.
+- `pack --output`, `map export --output` and `template build --output` never follow a
+  symlink or write into a non-regular target; pack and template write a fresh sibling
+  file and rename it into place.
+- Clipboard tools are looked up only in absolute PATH entries, so `.` or empty entries
+  cannot run a repository's own `xclip` or `wl-copy`.
+- The source reader checks an entry's type before opening it and never opens device
+  nodes, FIFOs or sockets (Unix opens use `O_NOCTTY`). `StdFs` metadata, listings and
+  link reads no longer follow symlinked path components; Windows ancestor guards block
+  directory replacement.
+- The store adapter refuses symlinked, foreign-owned or group/other-writable store
+  roots and creates store directories with mode 0700.
+- The plugin root no longer falls back to a directory relative to the working
+  directory when HOME is unset; plugin commands refuse unless HOME or
+  `DCTX_PLUGIN_ROOT` is an absolute path.
+- The Python wrapper loads its `dctx_binary_<platform>` engine package only from the
+  install directory that holds `dctx`, never from the working directory or other
+  `sys.path` entries.
+- The Python, Node and Go package READMEs warn that operation arguments carry full CLI
+  authority.
+- The website playground rate limit can no longer be bypassed with a forged
+  `X-Forwarded-For` header. The website deploy builds without secrets and deploys only
+  from `main` through a protected environment; the desktop release workflow is
+  disabled until the desktop app ships, with pinned toolchains, a frozen lockfile and
+  provenance attestations.
 
 ## [1.2.0] - 2026-11-07
 
@@ -631,7 +781,7 @@ Write to that address with your organisation, the tier you want and a contact na
 - The core (`pack`) and every modality stay open.
 
 </FILE_CONTENT_END ID="F003">
-<FILE_CONTENT_START ID="F004" PATH="README.md" LINES="474">
+<FILE_CONTENT_START ID="F004" PATH="README.md" LINES="514">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 <h1 align="center">dctx</h1>
@@ -641,7 +791,7 @@ Write to that address with your organisation, the tier you want and a contact na
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.2.0-8b5cf6" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.3.0-8b5cf6" alt="Version">
   <a href="https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml?query=branch%3Amain">
     <img src="https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI">
   </a>
@@ -682,7 +832,7 @@ Write to that address with your organisation, the tier you want and a contact na
 ## Installation
 
 **System binary — available now.** Download the archive for your OS and architecture
-from [GitHub Releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0),
+from [GitHub Releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.0),
 compare its SHA-256 with the matching entry in `SHA256SUMS`, extract it, and put
 `dctx` (`dctx.exe` on Windows) on `PATH`. Archives cover Linux x64/ARM64,
 macOS x64/ARM64 and Windows x64. Releases after 1.2.0 also ship cosign signatures,
@@ -693,10 +843,13 @@ a CycloneDX SBOM, build provenance and offline bundles; see
 dctx --version
 ```
 
-**Project libraries — publishing soon.** The pip/npm libraries with their own
-pinned binary are planned. The [Rust facade](docs/MODALITIES.md#rust-library-embed-the-facade)
-is available from tagged Git today; crates.io, `cargo install dctx-cli` and the
-npm CLI (`npx dctx`) are publishing soon. Use release archives now.
+**Project wrappers — built and tested in CI, registry publication pending.** The
+[Python](packages/python/README.md), [Node](packaging/npm/dctx/README.md) and
+[Go](packages/go/README.md) wrappers over `dctx rpc` are built and tested in CI,
+but nothing is published to PyPI, npm, crates.io or a Go module proxy yet. Until
+then, a `dctx` package on those registries is not from this project. The
+[Rust facade](docs/MODALITIES.md#rust-library-embed-the-facade) is available from
+tagged Git. Use the release archives for the CLI.
 
 Follow [the safe path in ten minutes](docs/START.md#safe-path-in-ten-minutes)
 for one project, lean MCP setup and whole-session measurement.
@@ -826,7 +979,7 @@ pub struct Order {
 - [Agents, short tasks](docs/MODALITIES.md#short-agent-task-grep-can-be-enough): compare with grep plus narrow file reads first.
 - [Agents, long sessions and huge trees](docs/MODALITIES.md#huge-trees-scope-before-indexing): scope the root, find symbols and read exact source.
 - [MCP](docs/guides/MCP.md): use the lean profile to start; ACP is planned.
-- [Libraries](docs/MODALITIES.md#rust-library-embed-the-facade): embed the Rust facade today; pip/npm project libraries are publishing soon.
+- [Libraries](docs/MODALITIES.md#rust-library-embed-the-facade): embed the Rust facade today; the [Python, Node and Go wrappers](docs/MODALITIES.md#python-node-and-go-wrappers-registry-publication-pending) are built and tested in CI, with registry publication pending.
 - [CI and prompt caching](docs/MODALITIES.md#ci--prompt-cache-prefix-stability): pin inputs and measure byte stability and provider cache behavior.
 - [Desktop](docs/MODALITIES.md#desktop-app-tauri-preview-today): build the Tauri 0.11 preview; the GPUI rebuild is planned.
 
@@ -890,7 +1043,7 @@ see [Map mode: context for agents](docs/guides/MAP-MODE.md) and the
 From this repository's root:
 
 ```zsh
-dctx map find "SnapshotConfig"
+dctx map find "Session"
 ```
 
 Read exact IDs from the result with `dctx map read 'ID' --json`.
@@ -917,11 +1070,11 @@ See [CI coverage and desktop exclusions](docs/TESTING.md).
 ## Use as a library
 
 The public Rust entry point is the [`dctx` facade](crates/dctx), available from
-Git now; **crates.io publishing soon**.
+Git now; **crates.io publication is pending**.
 
 ```toml
 [dependencies]
-dctx = { git = "https://github.com/Eris-Margeta/dctx", tag = "v1.2.0" }
+dctx = { git = "https://github.com/Eris-Margeta/dctx", tag = "v1.3.0" }
 ```
 
 This example is generated from the [workspace doctest](examples/library/README.md):
@@ -944,37 +1097,68 @@ println!("{}", std::str::from_utf8(output.as_bytes())?);
 The host supplies selection rules and storage policy; `FsSource` does not
 load `.gitignore` automatically. Read the
 [library integration boundary](docs/MODALITIES.md#rust-library-embed-the-facade)
-before embedding it. Python and Node project wrappers are planned.
+before embedding it. Python, Node and Go wrappers over `dctx rpc` live in
+[packages/python](packages/python/README.md), [packaging/npm](packaging/npm/dctx/README.md)
+and [packages/go](packages/go/README.md); they are built and tested in CI, and
+registry publication is pending.
 
 ## CLI Reference
 
 ```
 Usage: dctx <COMMAND> [OPTIONS]
-       dctx pack [PATH] [--output PATH] [--clipboard] [--json] [--tree-stamps=on|off]
+       dctx pack [PATH] [--output PATH] [--clipboard] [--json]
        dctx pack [PATH] --for <TEXT> [--budget TOKENS]
-       dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path|export> [--json]
+       dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path> [--json]
+       dctx context TARGET [--place PATH] [--budget N] [--json] [--session ID --dedupe]
+       dctx rpc
        dctx mcp [PATH]
-       dctx cache status|gc|purge|config|auto
-       dctx template build <PATH> | template list
+       dctx serve [--mcp] [PATH]
+       dctx read <TARGET> [OPTIONS]
+       dctx languages [--json|--markdown]
+       dctx doctor [--json]
+       dctx cache status [--json] [--root PATH]
+       dctx cache gc [--dry-run] [--root PATH] [--max-bytes N]
+       dctx cache purge --root PATH [--dry-run] [--yes]
+       dctx cache purge --all [--dry-run] [--yes]
+       dctx cache config [auto on|off] [--max-bytes N] [--ttl-days N]
+       dctx cache auto [--json]
+       dctx template build <PATH> [--output PATH]
+       dctx template list [--dir PATH]
        dctx plugin search|install|list|info|enable|disable|remove|update|verify
        dctx git <status|protect>
 
-Pack options:
-  -c, --clipboard       Copy to clipboard
-  -o, --output <path>   Write the page to one file
-  --json                Summary report instead of the source page
-  --tree-stamps=on|off  MOD: and SIZE: on tree lines (default off; on = the 1.0.0 text)
-
-Filter options:
-  --ext <list>          Only these extensions, e.g. rs,toml
-  --binary              Include binary files (excluded by default)
-  --empty | --non-empty Only empty / non-empty files
-  --large <MB> | --small <MB>
-  --hidden              Only hidden files and folders
-  --debug-ignored       Show ignored paths without reading them
+Pack filters:
+  --ext <extensions>    Only files with these extensions (comma-separated)
+  --binary              Include binary files (omitted by default)
+  --empty               Only 0-byte files
+  --non-empty           Only files with content
+  --large <MB>          Only files larger than this many megabytes
+  --small <MB>          Only files smaller than this many megabytes
+  --hidden              Only hidden files and directories
+  --debug-ignored       List ignored directories without reading them
+  --include <pattern>   Only files matching this ignore-rule glob (repeatable)
+  --exclude <pattern>   Drop files matching this ignore-rule glob (repeatable)
+  --output, -o <path>   Write the page to one file
+  --clipboard, -c       Copy the page to the clipboard
+  --json                Summary report; with --for, the facade JSON context page
+  --tree-stamps=on|off  MOD: timestamp on tree lines (default off; on = the 1.0.0 text)
+Task context (agent cards):
+  --for <text>          Map find on the names in <text>, then neighbors and read of the best hits
+  --budget <tokens>     With --for: estimated-token cap, 100..100000 (default 3000)
 ```
 
-Run `dctx --help` for the complete reference and `dctx --version --verbose` for feature and precision limits.
+- `dctx context` returns ranked context for a file, symbol name or stable node id;
+  repeated targets in one call share a delivery session.
+- `dctx rpc` serves the versioned engine protocol used by the language wrappers
+  ([protocol](docs/protocol/README.md)); send `hello` first.
+- `dctx mcp` and `dctx serve [--mcp]` serve the map verbs as MCP tools over stdio;
+  `dctx read` is `dctx map read`. `dctx map export` writes the whole graph as JSON or Mermaid.
+- `dctx languages` lists every supported language and its tier.
+- `dctx doctor` lists visible dctx binaries, their scopes, SHA-256 checksums and
+  cache sizes, without network access or cache changes.
+
+Run `dctx --help`, `dctx pack --help` and `dctx map --help` for the complete
+reference and `dctx --version --verbose` for feature and precision limits.
 
 
 See [map commands and limits](docs/guides/MAP-MODE.md),
@@ -1061,7 +1245,13 @@ parsed or cached, and is checked again before output leaves the engine.
 
 | Rule file | Behaviour |
 |---|---|
-| `.gitignore`, `.dctxignore`, global ignore | Excluded from normal selection; `--debug-ignored` shows ignored path metadata without reading content |
+| `.gitignore`, `.dctxignore`, global ignore file | Excluded from normal selection; `--debug-ignored` shows ignored path metadata without reading content |
+
+The global ignore file is `<config dir>/dctx/ignore`: `$XDG_CONFIG_HOME/dctx/ignore`
+or `~/.config/dctx/ignore` on Linux and macOS, `%APPDATA%\dctx\ignore` on Windows.
+dctx does not read Git metadata, so `.git/info/exclude` and Git's
+`core.excludesFile` are **not** applied: copy those patterns into `.dctxignore` or
+the global ignore file when they must keep files out of a pack.
 
 `DCTX_INDEX_IGNORED=1` skips those ignore texts, so leave it unset when relying
 on them. Built-in sensitive-file and `.git` exclusions still apply.
@@ -2395,12 +2585,12 @@ then all 15 checks together on `ac8408c`, passed on the Linux benchmark host bef
 Seeded selection of 3 repos the tools never saw (zoxide, requests, gin), gold from language servers and repo history, published regardless of outcome. Tasks: dctx 22/28 points, 31/36 facts, 6.85 facts per 1k tokens (Trail-Code 19/28, graphify 14/28). Callers against LSP gold, first page: dctx P 0.730 / R 0.341, Trail-Code P 0.731 / R 0.313, graphify P 0.920 / R 0.264. Honest read: dctx leads on task answers and token efficiency; caller recall on unseen repos is far below the in-house corpus (0.851), so the caller floors above hold only for the curated corpora. Full table and raw JSON: `docs/research/bench-independent/results/20261031T191225Z/`.
 
 </FILE_CONTENT_END ID="F017">
-<FILE_CONTENT_START ID="F018" PATH="docs/CLI-EXIT-CODES.md" LINES="54">
+<FILE_CONTENT_START ID="F018" PATH="docs/CLI-EXIT-CODES.md" LINES="55">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # CLI exit codes
 
-`dctx map`, `dctx pack`, `dctx mcp`, `dctx languages`, an unknown command and a non-UTF-8 argument follow one contract:
+`dctx map`, `dctx pack`, `dctx context`, `dctx doctor`, `dctx rpc`, `dctx mcp`, `dctx languages`, `dctx cache`, `dctx template`, a bare `dctx` without a terminal, an unknown command and a non-UTF-8 argument follow one contract:
 
 `dctx serve [PATH]` and `dctx serve --mcp [PATH]` are aliases for `dctx mcp [PATH]`.
 They use the current directory when PATH is omitted, including a directory named
@@ -2411,8 +2601,8 @@ for `dctx map read`, with the same flags and exit codes.
 |---|---|---|
 | 0 | ok: the command answered | a `find` page, including one with no hits; `--help` |
 | 1 | no result: the command ran, but the named target or input has no answer | `map read m:nope.py` (an id not in the index); `map read logo.png` (a binary file); `pack` of a directory with no packable file |
-| 2 | usage: the arguments are wrong | an unknown command or flag; a missing target; `--depth 9`; an empty `find` query; a stale `--cursor`; `m:../outside`; a non-UTF-8 argument |
-| 3 | index error: the place, source, cache or index could not be opened, read, built or written | `--place /no/such/dir`; a corrupt or busy cache; a source over `DCTX_MAX_SOURCE_BYTES`; an `--output` file that cannot be written |
+| 2 | usage: the arguments are wrong | an unknown command or flag; a missing target (`dctx context` with no TARGET); `--depth 9`; an empty `find` query; a stale `--cursor`; `m:../outside`; a non-UTF-8 argument; `cache purge` without `--root`/`--all` or `--yes`; a template that does not compile; a bare `dctx` whose stdin or stdout is not a terminal |
+| 3 | index error: the place, source, cache or index could not be opened, read, built or written | `--place /no/such/dir`; a corrupt or busy cache; a source over `DCTX_MAX_SOURCE_BYTES`; an `--output` file that cannot be written; `template build /no/such/file` (the message names the path) |
 
 Every failure prints two lines on stderr: `❌ Error: <what went wrong>` (prefixed with the command, as `map: …`), then `hint: <what to do next>`. No input should reach a Rust panic; `crates/dctx-cli/tests/cli_errors.rs` and `<repo>/scripts/checks/V1-5.zsh` run twelve bad inputs and assert the code, the message, the hint and the absence of `panicked`.
 
@@ -2421,20 +2611,21 @@ Every failure prints two lines on stderr: `❌ Error: <what went wrong>` (prefix
 - An id the index does not hold is a facade outcome (`gone`), not an error. `dctx map` prints the `gone` page on stdout, then exits 1 with the hint. `dctx mcp` returns the same page to the client as a normal tool result.
 - An empty `find` or `grep` page is an answer and exits 0. Exit 1 is for a named target that is not there.
 - A binary target is detected before the scan: a NUL byte in the first 8 KiB of the file named by `map`, `skeleton`, `explain` or `read` (path or `m:` id). `neighbors` and `path` still accept such a module, since source files can import it.
-- `dctx pack` exits 1 only when no view filter is set (`--ext`, `--include`, `--exclude`, `--binary`, `--empty`, `--non-empty`, `--large`, `--small`, `--hidden`, `--debug-ignored`). A filter that matches nothing still prints an empty page and exits 0. The page and the `pack bytes=…` line are printed before the exit-1 message. `pack` exit 3 covers source, scan, render and output failures.
+- `dctx pack` exits 1 only when no view filter is set (`--ext`, `--include`, `--exclude`, `--binary`, `--empty`, `--non-empty`, `--large`, `--small`, `--hidden`, `--debug-ignored`). A filter that matches nothing still prints an empty page and exits 0. The page (stdout) and the `pack bytes=…` status line (stderr) are printed before the exit-1 message. `pack` exit 3 covers source, scan, render and output failures.
 - A reader that closes stdout early (`dctx pack . | head -1`) ends the run with exit 0 and no message, as `cat` does; every other failure keeps its code.
 - `dctx pack --for <TEXT>` exits 1 when no name in TEXT matched the index (the page is printed first), 2 for a bad flag or a `--budget` outside 100..100000 (or `--budget` without `--for`), and 3 when PATH is not a directory or the index fails.
 - `dctx mcp [--profile default|lean|three | --tools NAME,...] [PATH]` exits 3 when PATH cannot be entered and 2 for invalid arguments (including unknown tool names/profiles). See the [MCP guide](guides/MCP.md). Once serving, a failed tool call goes back to the client as a result with `isError: true`; unknown or unselected tools return JSON-RPC `-32602`. The server exits 0 at end of input.
 - A facade refusal of the query (`InvalidRequest`, `BudgetTooSmall`, `StaleContinuation`, `Stale`, `UnsupportedCapability`, `UnsupportedVersion`) is 2; `PolicyDenied` and `PolicyUnavailable` are 1; every other facade error, and every error of the snapshot build, is 3. The mapping is `dctx_cli::exit::from_facade`.
 - `map hubs`, `map path` and `map export` report their facade errors as text: an `unknown id` end of `map path` is 1, anything else 3.
+- `dctx context` with no TARGET is 2; `dctx context --help` prints usage and exits 0. A TARGET that names nothing prints its empty page, then exits 1.
+- `dctx cache` exits 2 for a bad flag or value, a purge without `--root PATH`/`--all` or `--yes`, and a `--max-bytes` that would loosen the cap; 1 for a `--root` id the ledger does not hold; 3 when the cache directory, policy or ledger cannot be read or written (the message names the directory).
+- `dctx template` exits 2 for a bad flag and for a template that does not compile, and 3 when the template, the `--dir` directory or the `--output` file cannot be read or written (the message names the path). `--output` never writes through a symbolic link and refuses a target that is not a regular file.
+- `dctx` with no command opens the interactive menu only when stdin and stdout are terminals; otherwise it prints the short usage as a hint and exits 2.
+- `dctx doctor` follows the contract; `dctx rpc` keeps exit 0 at end of input (see Engine RPC below).
 
 ## Outside the contract
 
-These commands keep their earlier behaviour, exit 1 for every failure, with no hint line:
-
-- `dctx cache …` and `dctx template …`;
-- the legacy snapshot `dctx PATH` once its arguments parse (a bad snapshot flag is exit 2);
-- `dctx plugin …` and `dctx git …`, which return the plugin host's own codes.
+`dctx plugin …` and `dctx git …` return the plugin host's own codes.
 
 ## Engine RPC
 
@@ -2442,8 +2633,8 @@ These commands keep their earlier behaviour, exit 1 for every failure, with no h
 [versioned NDJSON](protocol/README.md). Each reply carries `engine_version`
 and echoes its request id. An error contains the CLI code, diagnostic, hint and
 any stdout emitted before failure (including gone pages). Protocol/framing
-refusals use code 2 and leave the session usable. Cache status retains its
-legacy code-1 failures. An error reply does not change the server's process exit
+refusals use code 2 and leave the session usable. Cache status replies carry
+the same codes and hints as `dctx cache status`. An error reply does not change the server's process exit
 status: normal EOF exits 0, transport I/O errors exit 3, and broken stdout exits
 quietly with 0. The server performs no piggyback auto-clean.
 
@@ -2662,7 +2853,7 @@ uses `bun run e2e` from `apps/dctx-desktop`. A skipped desktop check does not
 qualify a desktop release. Standalone tools have their own workspaces and checks.
 
 </FILE_CONTENT_END ID="F019">
-<FILE_CONTENT_START ID="F020" PATH="docs/MODALITIES.md" LINES="338">
+<FILE_CONTENT_START ID="F020" PATH="docs/MODALITIES.md" LINES="340">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Choosing how to use dctx
@@ -2677,16 +2868,16 @@ provider caching can change its billed cost. Count both calls and session tokens
 
 | Modality | Install | Status | Best for |
 |---|---|---|---|
-| CLI / interactive terminal | [Prebuilt archives](https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0), or [build from source](../README.md#from-source) | Available now; `cargo install dctx-cli` publishing soon | One-off chat (`pack --clipboard`), shell agents, scripts and CI; run `dctx` for the terminal menu |
+| CLI / interactive terminal | [Prebuilt archives](https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.0), or [build from source](../README.md#from-source) | Available now; crates.io publication pending | One-off chat (`pack --clipboard`), shell agents, scripts and CI; run `dctx` for the terminal menu |
 | MCP server | Included in the CLI; configure `dctx mcp /absolute/project` | Available now, stdio | Claude Code, Cursor and Codex tool calls on a scoped project |
-| Rust library (`dctx` facade) | Tagged Git dependency in the [library section](#rust-library-embed-the-facade) | Available from Git; crates.io publishing soon | Embedding pack, map, templates and cache in Rust tools and editors |
-| npm CLI (`npx dctx`) | `npx dctx` after publication; use archives today | Publishing soon | Running the native CLI from a Node toolchain |
+| Rust library (`dctx` facade) | Tagged Git dependency in the [library section](#rust-library-embed-the-facade) | Available from Git; crates.io publication pending | Embedding pack, map, templates and cache in Rust tools and editors |
 | Desktop app | [Build the Tauri app](../apps/dctx-desktop/README.md#quick-start) | Tauri 0.11 preview today; GPUI rebuild planned | Selecting projects and generating snapshots in a GUI |
-| Python / Node bindings | No supported package install yet | Planned | Future in-process Python and JavaScript integrations |
+| Python, Node and Go wrappers | Not on PyPI, npm or a Go module proxy yet; see [language wrappers](#python-node-and-go-wrappers-registry-publication-pending) | Built and tested in CI; registry publication pending | Calling the engine over `dctx rpc` from Python, Node or Go projects |
 
-The npm package runs the native CLI; it is separate from the planned Node library
-binding. Registry installs marked publishing soon are not available yet; use the
-release archives or the tagged Rust Git dependency today.
+Registry publication is pending for every package: nothing is published to
+crates.io, PyPI or npm, and the Go module has no tag yet. A `dctx` package on those
+registries is not from this project. Use the release archives or the tagged Rust
+Git dependency today.
 
 ## Choose by task
 
@@ -2724,13 +2915,13 @@ pack filters, not map index limits. Inspect the content before sharing it.
 If you know a name and expect only a few file reads, use the existing shell:
 
 ```sh
-grep -R -n -F --include='*.rs' 'SnapshotConfig' crates/dctx-cli/src
-sed -n '1,120p' crates/dctx-cli/src/lib.rs
+grep -R -n -F --include='*.rs' 'struct Session' crates/dctx/src
+sed -n '130,170p' crates/dctx/src/session/mod.rs
 ```
 
 Choose the line range from the search result; reading a narrow range is an
 honest baseline alongside whole-file reads. If a symbol read is useful, call
-`dctx map find SnapshotConfig` through the existing shell. Loading an MCP server
+`dctx map find Session` through the existing shell. Loading an MCP server
 adds tool descriptions to starting context; installing verbose agent
 instructions can add more. Do not add that setup for a tiny edit unless you
 measure a benefit.
@@ -2794,8 +2985,13 @@ For example, merge these project-specific entries into `.dctxignore`:
 /archive/
 ```
 
-The host loads global ignore rules, root and nested `.gitignore` rules, then the
-root `.dctxignore`. Built-in sensitive-file and `.git` exclusions still apply.
+The host loads the global ignore file, root and nested `.gitignore` rules, then
+the root `.dctxignore`. Built-in sensitive-file and `.git` exclusions still apply.
+The global ignore file is `<config dir>/dctx/ignore`: `$XDG_CONFIG_HOME/dctx/ignore`
+or `~/.config/dctx/ignore` on Linux and macOS, `%APPDATA%\dctx\ignore` on Windows.
+dctx does not read Git metadata, so `.git/info/exclude` and Git's
+`core.excludesFile` are not applied; put those patterns in `.dctxignore` or the
+global ignore file.
 Do not set `DCTX_INDEX_IGNORED=1` when relying on these ignore rules.
 
 The built binary documents these **environment variables**, not scan-limit flags:
@@ -2919,7 +3115,7 @@ Save deterministic output from a fixed selection as a build artifact:
 
 ```sh
 dctx pack . --output context.txt
-dctx map find SnapshotConfig --json > symbol-context.json
+dctx map find Session --json > symbol-context.json
 ```
 
 Keep generated artifacts outside the next scan or ignore them. Keep the default
@@ -2942,12 +3138,12 @@ cache retention and minimum-prefix requirements are controlled by dctx.
 The supported entry point for Rust integrations is the [`dctx` facade](../crates/dctx),
 which exposes `Session`, `SnapshotRequest`, `MapRequest`, `PackRequest`, sinks,
 templates and cache operations. Internal engine crates are implementation details.
-The facade is available from Git now; **crates.io publishing soon**. In your
+The facade is available from Git now; **crates.io publication is pending**. In your
 application's `Cargo.toml`:
 
 ```toml
 [dependencies]
-dctx = { git = "https://github.com/Eris-Margeta/dctx", tag = "v1.2.0" }
+dctx = { git = "https://github.com/Eris-Margeta/dctx", tag = "v1.3.0" }
 ```
 
 The [ten-line pack example](../README.md#use-as-a-library) is compiled and run as a
@@ -2972,19 +3168,6 @@ and persistence explicitly. The CLI supplies its own config, rules and cache
 lifecycle, so copying a library call without that host policy is not equivalent
 to invoking the CLI.
 
-## npm CLI: publishing soon
-
-`npx dctx` is the planned npm entry point for the native command-line executable.
-The registry package is not live yet; use the prebuilt release archives today.
-After publication, the intended invocation is:
-
-```sh
-npx dctx pack .
-```
-
-This is a CLI distribution for Node-based workflows, not an in-process JavaScript
-API. Node bindings are a separate planned surface.
-
 ## Desktop app: Tauri preview today
 
 The [desktop app](../apps/dctx-desktop/README.md) is a Tauri 2 app, currently the
@@ -2993,13 +3176,23 @@ source using the app's [quick start](../apps/dctx-desktop/README.md#quick-start)
 the CLI archives do not install a desktop application. A GPUI rebuild is planned,
 not the current downloadable or buildable desktop implementation.
 
-## Python and Node bindings: planned
+## Python, Node and Go wrappers: registry publication pending
 
-There is no supported Python or Node in-process binding package to install yet.
-The [binding plans](../bindings/README.md) describe future work; their illustrative
-APIs are not available today. Until then, Python and JavaScript tools can invoke
-the CLI as a subprocess and consume `--json` map answers. Use the Rust facade when
-you need an in-process engine now.
+Thin wrappers over the versioned [`dctx rpc` protocol](protocol/README.md) live in
+[packages/python](../packages/python/README.md),
+[packaging/npm/dctx](../packaging/npm/dctx/README.md) (which also forwards the
+`dctx` CLI command) and [packages/go](../packages/go/README.md). Each starts the
+native engine, passes CLI argument strings and returns the engine's bytes
+unchanged; CI checks byte parity with the CLI. They are built and tested in CI,
+but **registry publication is pending**: nothing is on PyPI or npm, and the Go
+module has no tag. Install them from CI artifacts (a Python wheelhouse or npm
+tarballs) or a checkout, as each README describes, and point them at an engine
+from the [GitHub release archives](https://github.com/Eris-Margeta/dctx/releases)
+that has `dctx rpc`. Their arguments carry full CLI authority, so never pass
+untrusted values as `--place`, `--output` or dash-leading arguments.
+
+Without a wrapper, any language can invoke the CLI as a subprocess and consume
+`--json` map answers. Use the Rust facade when you need an in-process engine.
 
 </FILE_CONTENT_END ID="F020">
 <FILE_CONTENT_START ID="F021" PATH="docs/SPEC.md" LINES="987">
@@ -3991,7 +4184,7 @@ namespace `dctx/`; file names `.dctx/`, `.dctxignore`,
 | Original map-mode design (historical) | `docs/SPEC-MAP-MODE.md` |
 
 </FILE_CONTENT_END ID="F021">
-<FILE_CONTENT_START ID="F022" PATH="docs/START.md" LINES="231">
+<FILE_CONTENT_START ID="F022" PATH="docs/START.md" LINES="241">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # What dctx is
@@ -4054,15 +4247,20 @@ dctx cache purge --root /absolute/deleted-project --dry-run
 ```
 
 Inspect the dry run before applying cleanup; `purge` requires `--yes`.
-See [cache controls](guides/MAP-MODE.md#index-cache-and-privacy). Per-engine-version
-cache directories are planned; the current layout uses a shared `v2` cache root.
+See [cache controls](guides/MAP-MODE.md#index-cache-and-privacy). Indexes live in an
+engine `major.minor` subdirectory (for example `1.3`) of the cache parent, which is
+`DCTX_CACHE_DIR` or the platform default `v2` cache root; patch releases share it, and
+data from other engine versions is ignored.
 
 ### Agent builder embedding a library
 
-Agent builder embedding a library: project library with its own pinned binary (pip/npm, publishing soon); never parse or slice pack text. Pitfall: re-implementing engine logic.
+Agent builder embedding a library: project library with its own pinned binary (Python, Node or Go wrapper over `dctx rpc`; registry publication pending); never parse or slice pack text. Pitfall: re-implementing engine logic.
 
-The pip/npm vendored-binary wrappers and their rpc client are planned. Today,
-pin the [Rust facade](MODALITIES.md#rust-library-embed-the-facade) from tagged Git,
+The [Python](../packages/python/README.md), [Node](../packaging/npm/dctx/README.md)
+and [Go](../packages/go/README.md) wrappers over `dctx rpc` are built and tested in
+CI, but not yet published to PyPI, npm or a Go module proxy; install them from CI
+artifacts or a checkout as their READMEs describe. Alternatively, pin the
+[Rust facade](MODALITIES.md#rust-library-embed-the-facade) from tagged Git,
 or invoke the installed CLI as a subprocess. The first runnable Rust example is
 in the [library doctest](../examples/library/README.md). For subprocess use:
 
@@ -4081,7 +4279,7 @@ is an in-process API object. See the [scope contract](#two-scopes-one-binary).
 
 ### Team / enterprise admin
 
-Team / enterprise admin: system binary via package manager, signature + SBOM verification, one pinned version fleet-wide. Pitfall: mixing project and system versions without checking (doctor, planned).
+Team / enterprise admin: system binary via package manager, signature + SBOM verification, one pinned version fleet-wide. Pitfall: mixing project and system versions without checking (`dctx doctor`).
 
 This is the rollout target. Today, pin a release archive and check its matching
 `SHA256SUMS` entry; package-manager distribution, signed CLI binaries and a
@@ -4093,8 +4291,9 @@ binary path and start with:
 dctx --version --verbose
 ```
 
-Expect version and feature/precision limits. `dctx doctor` and signature-status
-output are planned. Check paths and versions explicitly during onboarding;
+Expect version and feature/precision limits. `dctx doctor` lists the dctx
+binaries visible from a directory with their scopes and SHA-256 checksums;
+signature-status output is planned. Check paths and versions explicitly during onboarding;
 use [release procedure](../RELEASING.md), [testing](TESTING.md) and
 [security reporting](../SECURITY.md) for the current controls. Signed
 organization policy bundles and audit journals are planned.
@@ -4104,7 +4303,7 @@ organization policy bundles and audit journals are planned.
 ### 1. Install the system binary
 
 Download the archive for your OS and architecture and `SHA256SUMS` from
-[GitHub Releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0).
+[GitHub Releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.0).
 Compare the archive's SHA-256 with its matching entry before extracting it.
 On Linux use `sha256sum ARCHIVE`, on macOS `shasum -a 256 ARCHIVE`, or on Windows
 PowerShell `Get-FileHash ARCHIVE -Algorithm SHA256`, replacing `ARCHIVE` with the
@@ -4118,8 +4317,9 @@ Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.
 dctx --version
 ```
 
-Use the system binary for interactive agents. Project pip/npm libraries are
-publishing soon; no project dependency is needed for this path.
+Use the system binary for interactive agents. The project wrappers (Python, Node,
+Go) are built and tested in CI, with registry publication pending; no project
+dependency is needed for this path.
 
 ### 2. Choose one project and inspect one answer
 
@@ -4187,8 +4387,8 @@ measurement exist.
 
 | Level | dctx provides | You are responsible for |
 |---|---|---|
-| System binary | Signed binary (planned), cache caps, doctor (planned), journals (planned), receipts (planned) | Choosing roots, policy file, keeping one version on PATH |
-| Project library | Pinned vendored binary (planned), protocol client (planned), same bytes as CLI (planned) | Pinning the version, exclusions in the project policy, not re-implementing engine logic |
+| System binary | Release archives with cosign signatures, SBOM and provenance, cache caps, `dctx doctor`, journals (planned), receipts (planned) | Choosing roots, policy file, keeping one version on PATH |
+| Project library | Pinned vendored binary and protocol client (Python, Node, Go wrappers; registry publication pending), same bytes as CLI (checked in CI) | Pinning the version, exclusions in the project policy, not re-implementing engine logic |
 | MCP and ACP agent setup | Lean profile, tested client configs, measured start-up cost | Turning off the host's own file tools, picking a profile, session ids, reading receipts |
 | CI and cache | Byte-stable pack, prefix tiers (planned), deterministic exit codes | Pinning the binary, caching the index between runs, treating pack drift as a signal not noise |
 
@@ -4196,28 +4396,31 @@ For current CLI exclusions, use `.gitignore` and `.dctxignore`; the unified poli
 file is planned. Agent session ids and general receipts in the responsibility
 column describe planned integrations. The Rust facade exists today with explicit
 host-supplied selection and storage policy; the project-library row describes
-the future pip/npm binary wrappers. Existing pack prefix stability is distinct
+the Python, Node and Go wrappers, which are not yet on a public registry. Existing pack prefix stability is distinct
 from the planned layered prefix tiers.
 
 ## Two scopes, one binary
 
-The following is the distribution contract for the planned project-library
-wrappers and signed releases:
+The following is the distribution contract for the project-library wrappers
+(registry publication pending) and signed releases:
 
 > The system `dctx` on PATH belongs to you and your agents. A binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Same signed engine, different owner. Interactive agents and MCP call the system binary; application code and CI call the project binary; a library never silently falls back to PATH.
 
-Today, install the system binary from release archives; Python/Node applications
-and CI can invoke an explicitly pinned CLI path until project wrappers publish.
-The Rust facade is an in-process library, not a vendored executable. No shipped
-wrapper currently enforces the future no-fallback contract.
+Today, install the system binary from release archives. The Python, Node and Go
+wrappers already follow the no-fallback contract: they resolve an explicit path,
+`DCTX_BIN`, their own platform package (Python, Node) or a versioned user cache,
+and never search `PATH`. Until they are published, install them from CI
+artifacts or a checkout, or invoke an explicitly pinned CLI path. The Rust facade
+is an in-process library, not a vendored executable.
 
-The current shared cache uses platform-specific `dctx/v2` roots, with compatible
-generations checked before reuse. The proposed
-`<cache>/<engine-version>/<root-hash>/` layout, version/path in every pack and rpc
-`hello`, and `dctx doctor` coexistence report are planned. Do not assume two
-versions have independent caches today; check the executable path and version
-explicitly and use separate absolute `DCTX_CACHE_DIR` locations when isolation
-is needed. Both future scopes should read the project's exclusions; today the
+The CLI cache lives in `<cache-parent>/<engine-major.minor>/` under the
+platform-specific `dctx/v2` parent (or `DCTX_CACHE_DIR`), so engines 1.2 and 1.3
+keep separate indexes while patch releases of one family share theirs (see
+[scopes](SCOPES.md)). A version/path line in every pack is planned. Today
+`dctx rpc` reports the engine version in `hello`, and `dctx doctor` lists the dctx
+binaries visible from a directory. Check the executable path and version
+explicitly, and use separate absolute `DCTX_CACHE_DIR` locations when two
+installations of the same engine family must not share an index. Both future scopes should read the project's exclusions; today the
 CLI loads ignore files while a Rust host supplies its own selection rules.
 
 Continue with the [documentation index](README.md), [modalities](MODALITIES.md)
@@ -4466,7 +4669,7 @@ Future modes must add their typed VIEW capability and conformance fixture to
 this same compiler/facade contract before release.
 
 </FILE_CONTENT_END ID="F026">
-<FILE_CONTENT_START ID="F028" PATH="docs/guides/AGENTS-SNIPPET.md" LINES="21">
+<FILE_CONTENT_START ID="F028" PATH="docs/guides/AGENTS-SNIPPET.md" LINES="25">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # AGENTS.md snippet: task context from dctx
@@ -4486,10 +4689,14 @@ camelCase, `a::b`, then longer plain words), then `map neighbors` and `map read`
 until the budget is spent. The budget is in estimated tokens, ceil(2 × UTF-8 bytes / 7), not a tokenizer count. The last
 line reports the estimate and how many lines were dropped. Exit 1 means no name in the text matched the index.
 
+Name things in the text: `--for main` or `--for Session` works, but a sentence such as "how does caching work" only
+matches loose words, and dctx says so on stderr (the page itself is unchanged). Put a short name next to prose in
+backticks, as in ``--for 'fix `run` in the pack command'``.
+
 Then narrow with `dctx map find`, `dctx map neighbors <id>` and `dctx map read <id>` as needed (`dctx map --help`).
 
 </FILE_CONTENT_END ID="F028">
-<FILE_CONTENT_START ID="F029" PATH="docs/guides/MAP-MODE.md" LINES="197">
+<FILE_CONTENT_START ID="F029" PATH="docs/guides/MAP-MODE.md" LINES="255">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Map mode
@@ -4506,19 +4713,28 @@ profile and custom tool subsets.
 ## Commands
 
 ```text
-dctx map <map|find|neighbors|explain|read> [TARGET] [OPTIONS]
+dctx map <map|find|neighbors|explain|read|skeleton|grep> <TARGET> [OPTIONS]
+dctx map hubs [--limit N] [--json] [--place PATH] [--budget TOKENS] [--meta]
+dctx map path <FROM> <TO> [--json] [--place PATH] [--budget TOKENS] [--meta]
+dctx map export [--format json|mermaid] [--output PATH] [--place PATH]
 ```
 
 | Verb | Use |
 | --- | --- |
-| `map [TARGET]` | Outline the project root, a path or a node. |
+| `map TARGET` | Outline a place-relative file or a node; TARGET is required (omitting it does not scan). |
 | `find TARGET` | Search for a name or concept; quote multiword targets. |
 | `neighbors TARGET` | Inspect a node's relations. |
 | `explain TARGET` | Inspect one node's details. |
-| `read TARGET` | Read a node's source. |
+| `read TARGET` | Read a node's verified source; a long node pages with `--cursor`. `dctx read` is the same verb. |
+| `skeleton FILE` | A file's (or `m:<path>`'s) declaration signatures in source order, no bodies. |
+| `grep LITERAL` | Exhaustive literal search of indexed files, hits grouped by enclosing symbol. |
+| `hubs` | Most-called symbols and per-directory file and symbol counts. No TARGET. |
+| `path FROM TO` | Shortest edge path (calls, imports, contains; either direction; at most 8 hops), or `no path`. |
+| `export` | The whole graph as one deterministic JSON or Mermaid document; no token cap. |
 
 Copy node IDs from results: `m:sample.py` names a module and
-`s:sample.py#PythonBeacon` names a symbol.
+`s:sample.py#PythonBeacon` names a symbol. `dctx map <verb> --help` prints each
+verb's own page and example.
 
 The following option descriptions follow `dctx map --help`
 ([source](../../crates/dctx-cli/src/map/args.rs)):
@@ -4527,60 +4743,106 @@ The following option descriptions follow `dctx map --help`
 | --- | --- |
 | `--json` | Facade JSON v2, including the precision label. |
 | `--place PATH` | Place or worktree root; default: current directory. |
-| `--budget TOKENS` | Output tokens, 1..2000; `explain` max: 1000. |
-| `--depth N` | `map`: 1..3; `neighbors`: 1..2. |
-| `--limit N --offset N` | `map`, `find`, `neighbors`: bound records; offset above 0 is refused. Pages use the next cursor. |
+| `--meta` | Restore the snapshot digest and generation in the text header and JSON. Without it, answer bytes do not change across unrelated edits or time. |
+| `--profile` | Stage timings and the five slowest files on stderr (`DCTX_PROFILE=1` is the same switch). |
+| `--budget TOKENS` | Output tokens, 1..2000; `explain` max: 1000. `read` with no `--budget` uses the 2,000-token hard cap. |
+| `--depth N` | `map`: 1..3; `neighbors`: 1..4. `explain` and `read` take no depth. |
+| `--limit N` | `map`, `find`, `neighbors` page size; `explain` and `read` accept only 1. `hubs`: 1..60 lines, default 20. |
+| `--offset N` | Refused. Pass the previous page's `next` value to `--cursor`. |
+| `--cursor TOKEN` | Opaque continuation. A stale token is rejected. |
 | `--kind fn,type,doc` | `find`: comma-separated node kinds. |
-| `--in PATH` | `find`: restrict to a relative path. |
+| `--in PATH` | `find` or `grep`: restrict to a relative path. |
+| `-i`, `--ignore-case` | `grep`: ASCII case-insensitive match. |
 | `--edge calls,imports` | `neighbors`: comma-separated edge filter. |
 | `--dir in\|out\|both` | `neighbors`: relation direction. |
-| `--lines A-B --full` | `read`: help describes exact source lines; full permits 400. See limitation below. |
-| `--rev SHA` | Refused: this map build does not link Git. |
+| `--lines A-B --full` | `read`: exactly those absolute source lines inside the node; `--full` permits 400. |
+| `--rev SHA` | Refused: this build does not link Git. |
+
+Environment bounds: `DCTX_MAX_SOURCE_BYTES` (total source bytes one scan may read,
+default 1 GiB), `DCTX_MAX_RECORDS` (files, symbols and edges one index may hold,
+default 1000000), `DCTX_MAX_ENTRIES` (files and directories one scan may visit,
+default 100000) and `DCTX_FRESHNESS` (see below).
 
 The parser also accepts these `--kind` values: `method`, `struct`, `enum`,
 `trait`, `impl`, `const`, `macro`, `class`, `interface`, `symbol`, `module`,
 `package`, `place`, `test`. Edge names also include `contains`, `implements`,
 `uses-type`, `tests`, `documents`, `reexports`.
 
-The CLI currently translates `--lines A-B` into a line count (`B-A+1`) when
-calling the facade; it does not forward the starting line. Exact arbitrary-range
-selection is therefore **unverified**; do not rely on the help wording alone.
 The token estimate is `ceil(2 * UTF-8 bytes / 7)`, not a tokenizer guarantee.
 
 ## Languages and precision
 
-These extensions come from
-[`Language::for_path`](../../crates/dctx-map-parse/src/domain/facts.rs).
-That selector is case-insensitive; the current facade's separate extension
-dispatch matches lowercase spellings, so use the spellings below for CLI input.
+This table is the output of `dctx languages --markdown` for the release build
+(`dctx languages --json` gives the same data as JSON). Extension matching is
+case-insensitive: `Upper.RS` is indexed as Rust.
 
-| Language | Extensions |
-| --- | --- |
-| Rust | `.rs` |
-| JavaScript / JSX | `.js`, `.mjs`, `.cjs`, `.jsx` |
-| TypeScript | `.ts`, `.mts`, `.cts` |
-| TypeScript JSX | `.tsx` |
-| Markdown | `.md`, `.markdown` |
-| Python | `.py`, `.pyi` |
-| Go | `.go` |
-| Java | `.java` |
-| C / C++ | `.c`, `.h`, `.cc`, `.cpp`, `.cxx`, `.hpp`, `.hh` |
-| Configuration | `.json`, `.jsonc`, `.toml`, `.yaml`, `.yml` |
-| C# | `.cs` |
-| Kotlin | `.kt`, `.kts` |
-| Ruby | `.rb`, `.rake`, `.gemspec` |
-| PHP | `.php`, `.phtml`, `.inc` |
-| Swift | `.swift` |
+| Language | Tag | Files | Tier | Confidence |
+|---|---|---|---|---|
+| Rust | `rust` | `.rs` | full | structural |
+| JavaScript | `javascript` | `.js`, `.mjs`, `.cjs`, `.jsx` | full | structural |
+| TypeScript/TSX | `typescript` | `.ts`, `.mts`, `.cts`, `.tsx` | full | structural |
+| Python | `python` | `.py`, `.pyi` | full | structural |
+| Go | `go` | `.go` | full | structural |
+| Java | `java` | `.java` | full | structural |
+| C/C++ | `c` | `.c`, `.h`, `.cc`, `.cpp`, `.cxx`, `.hpp`, `.hh` | full | structural |
+| C# | `csharp` | `.cs` | full | structural |
+| Kotlin | `kotlin` | `.kt`, `.kts` | full | structural |
+| Ruby | `ruby` | `.rb`, `.rake`, `.gemspec`, `Rakefile`, `Gemfile` | full | structural |
+| PHP | `php` | `.php`, `.phtml`, `.inc` | full | structural |
+| Swift | `swift` | `.swift` | full | structural |
+| Vue/Svelte/Astro/HTML script blocks | `web` | `.vue`, `.svelte`, `.astro`, `.html`, `.htm` | full | structural |
+| Scala | `scala` | `.scala`, `.sc` | full | guess |
+| Dart | `dart` | `.dart` | full | guess |
+| Zig | `zig` | `.zig` | full | guess |
+| Solidity | `solidity` | `.sol` | full | guess |
+| Gleam | `gleam` | `.gleam` | full | guess |
+| Fortran | `fortran` | `.f90`, `.f95`, `.f03`, `.f08`, `.f`, `.for` | full | guess |
+| Perl | `perl` | `.pl`, `.pm`, `.t`, `.psgi` | full | guess |
+| Groovy | `groovy` | `.groovy`, `.gradle` | full | guess |
+| PowerShell | `powershell` | `.ps1`, `.psm1`, `.psd1` | full | guess |
+| Elixir | `elixir` | `.ex`, `.exs` | full | guess |
+| Lua | `lua` | `.lua` | full | guess |
+| OCaml | `ocaml` | `.ml`, `.mli` | full | guess |
+| R | `r` | `.r` | full | guess |
+| Julia | `julia` | `.jl` | full | guess |
+| Haskell | `haskell` | `.hs` | full | guess |
+| Erlang | `erlang` | `.erl`, `.hrl` | full | guess |
+| Verilog/SystemVerilog | `verilog` | `.v`, `.vh`, `.sv`, `.svh` | full | guess |
+| Terraform/HCL | `hcl` | `.tf`, `.tfvars`, `.hcl` | full | guess |
+| SQL | `sql` | `.sql`, `*.sql.in` | full | guess |
+| Clojure | `clojure` | `.clj`, `.cljs`, `.cljc`, `.edn` | full | guess |
+| Common Lisp | `lisp` | `.lisp`, `.lsp`, `.cl` | full | guess |
+| Scheme | `scheme` | `.scm`, `.ss` | full | guess |
+| Emacs Lisp | `elisp` | `.el` | full | guess |
+| JSON/JSONC/TOML/YAML | `config` | `.json`, `.jsonc`, `.toml`, `.yaml`, `.yml` | outline | structural |
+| Shell | `shell` | `.sh`, `.bash`, `.zsh`, `.bats` | outline | guess |
+| Makefile | `make` | `.mk`, `Makefile`, `GNUmakefile` | outline | guess |
+| Dockerfile | `docker` | `Dockerfile`, `Containerfile` | outline | guess |
+| Protobuf | `proto` | `.proto` | outline | guess |
+| Pascal | `pascal` | `.pas`, `.pp`, `.dpr` | outline | guess |
+| GraphQL | `graphql` | `.graphql`, `.gql` | outline | guess |
+| Nix | `nix` | `.nix` | outline | guess |
+| Markdown | `markdown` | `.md`, `.markdown` | docs | structural |
+| Plain text | `text` | `.txt` | docs | structural |
+| reStructuredText | `rst` | `.rst` | docs | structural |
+| AsciiDoc | `asciidoc` | `.adoc`, `.asciidoc` | docs | structural |
+| Org | `org` | `.org` | docs | structural |
+| LaTeX | `tex` | `.tex` | docs | structural |
 
-The default CLI extracts structural facts for all these languages. Rust uses a
-line-oriented extractor; the others use the first-party structural lexers,
-including the JS lexer for TypeScript/TSX and the Markdown heading extractor.
-This is not a promise of exact semantic calls, type resolution or macro expansion.
-An optional `syntax-rust` build links `syn` for supported Rust syntax, without
-type checking; the feature alone does not change the CLI's default parser plan.
+Tiers: **full** extracts symbols and call edges, **outline** symbols only, and
+**docs** headed sections. Confidence `guess` marks heuristic outlines, whose
+records carry confidence `guess`. See [language coverage](../LANGUAGE-COVERAGE.md).
+
+Rust uses `syn` in release builds (the `syntax-rust` feature, reported as parser
+`dctx-lex-rust/syn-<version>` with `syntax` coverage), for supported Rust syntax
+only and without type checking. The other languages use the first-party
+structural lexers, including the JS lexer for TypeScript/TSX and the heading
+extractors for documents. This is not a promise of exact semantic calls, type
+resolution or macro expansion. `dctx --version --verbose` lists the parsers and
+features of the running build.
 
 JSON answers expose `precision.coverage`, `precision.completion` and
-`precision.parser` (the default parser identity is `dctx-structural/1`).
+`precision.parser` (the default structural parser identity is `dctx-structural/3`).
 The [model](../../crates/dctx-map-model/src/domain/precision.rs) distinguishes
 `structural`, `syntax` and `opaque` coverage from `complete`, `partial` and
 `refused` completion. These labels describe extraction, separately from edge
@@ -4635,10 +4897,13 @@ plugin and TUI commands run one bounded cleanup when due (daily by default).
 `--no-auto-clean` or `DCTX_AUTO_CLEAN=0` disables that slice.
 
 Ignored files are excluded before content reads; omitted files may have metadata
-listed but their content is never read. The host loads global ignore rules,
+listed but their content is never read. The host loads the global ignore file
+(`<config dir>/dctx/ignore`: `$XDG_CONFIG_HOME/dctx/ignore` or
+`~/.config/dctx/ignore` on Linux and macOS, `%APPDATA%\dctx\ignore` on Windows),
 root and nested `.gitignore` rules, then the chosen root's `.dctxignore`.
 `DCTX_INDEX_IGNORED=1` skips those ignore texts; built-in sensitive-file and
-`.git` exclusions still apply. The core does not read Git metadata or run Git.
+`.git` exclusions still apply. The core does not read Git metadata or run Git, so
+`.git/info/exclude` and Git's `core.excludesFile` are not applied.
 The optional Git plugin has separately disclosed authority; see [Plugins](PLUGINS.md).
 
 ## Two worked examples
@@ -5575,7 +5840,7 @@ $ dctx --help
 Usage: dctx <COMMAND> [OPTIONS]
        dctx pack [PATH] [--output PATH] [--clipboard] [--json]
        dctx pack [PATH] --for <TEXT> [--budget TOKENS]
-       dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path> [--json]
+       dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path|export> [--json]
        dctx context TARGET [--place PATH] [--budget N] [--json] [--session ID --dedupe]
        dctx rpc
        dctx mcp [PATH]
@@ -5632,7 +5897,7 @@ Examples:
   dctx template build policy.dctx_template
 
 Feature and precision limits:
-facade_version: 1.2.0
+facade_version: 1.3.0
 profile: enhanced
 wire_version: 2
 segment_version: 1
@@ -5691,8 +5956,8 @@ Precision: structural declarations, imports, headings and conservative calls.
 Not exact semantic calls, type resolution or macro expansion.
 Token estimate ceil(2 * UTF-8 bytes / 7) is not a tokenizer guarantee.
 Example: dctx map find 'ignore rules' --json
-Example: dctx map map crates/dctx-cli/src/lib.rs --depth 2
-Example: dctx map map m:crates/dctx-cli/src/lib.rs --cursor '<next from the previous page>'
+Example: dctx map map crates/dctx-cli/src/main.rs --depth 2
+Example: dctx map map m:crates/dctx-cli/src/main.rs --cursor '<next from the previous page>'
 Each verb's own page and example: dctx map <verb> --help
 Exit codes: 0 ok, 1 no result (an id not in the index, a binary file), 2 usage, 3 index error; see docs/CLI-EXIT-CODES.md.
 
@@ -5783,12 +6048,12 @@ source: https://github.com/Eris-Margeta/dctx/blob/main/tools/website/data/demo.j
 exit 0, 23 bytes, ~7 est. tokens
 
 ```text
-dctx 1.2.0 (<git sha>)
+dctx 1.3.0 (<git sha>)
 ```
 
 ### dctx pack .
 
-exit 0, 5597 bytes, ~1600 est. tokens
+exit 0, 5545 bytes, ~1585 est. tokens
 
 ```text
 [DCTX_LLM_CONTEXT_SNAPSHOT_V1]
@@ -5977,12 +6242,18 @@ export function formatName(name: string): string {
   return name.trim() === "" ? "guest" : name.trim();
 }
 
-</FILE_CONTENT_END ID="F014">pack bytes=5544 files=11 retention=stdout version=V1
+</FILE_CONTENT_END ID="F014">
+```
+
+stderr:
+
+```text
+pack bytes=5545 files=11 retention=stdout version=V1
 ```
 
 ### dctx pack . --tree-stamps=on
 
-exit 0, 5853 bytes, ~1673 est. tokens
+exit 0, 5801 bytes, ~1658 est. tokens
 
 ```text
 [DCTX_LLM_CONTEXT_SNAPSHOT_V1]
@@ -6171,12 +6442,18 @@ export function formatName(name: string): string {
   return name.trim() === "" ? "guest" : name.trim();
 }
 
-</FILE_CONTENT_END ID="F014">pack bytes=5950 files=11 retention=stdout version=V1
+</FILE_CONTENT_END ID="F014">
+```
+
+stderr:
+
+```text
+pack bytes=5951 files=11 retention=stdout version=V1
 ```
 
 ### dctx pack . --ext rs
 
-exit 0, 2396 bytes, ~685 est. tokens
+exit 0, 2345 bytes, ~670 est. tokens
 
 ```text
 [DCTX_LLM_CONTEXT_SNAPSHOT_V1]
@@ -6252,12 +6529,18 @@ pub fn title_case(name: &str) -> String {
     }
 }
 
-</FILE_CONTENT_END ID="F004">pack bytes=2344 files=3 retention=stdout version=V1
+</FILE_CONTENT_END ID="F004">
+```
+
+stderr:
+
+```text
+pack bytes=2345 files=3 retention=stdout version=V1
 ```
 
 ### dctx pack . --debug-ignored
 
-exit 0, 5722 bytes, ~1635 est. tokens
+exit 0, 5670 bytes, ~1620 est. tokens
 
 ```text
 [DCTX_LLM_CONTEXT_SNAPSHOT_V1]
@@ -6449,7 +6732,13 @@ export function formatName(name: string): string {
   return name.trim() === "" ? "guest" : name.trim();
 }
 
-</FILE_CONTENT_END ID="F017">pack bytes=5669 files=12 retention=stdout version=V1
+</FILE_CONTENT_END ID="F017">
+```
+
+stderr:
+
+```text
+pack bytes=5670 files=12 retention=stdout version=V1
 ```
 
 ### dctx pack . --for 'greet store' --budget 800
@@ -6787,7 +7076,7 @@ exit 0, 7527 bytes, ~2151 est. tokens
 exit 0, 6894 bytes, ~1970 est. tokens
 
 ```text
-{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-06-18","capabilities":{"tools":{}},"serverInfo":{"name":"dctx","version":"1.2.0"}}}
+{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-06-18","capabilities":{"tools":{}},"serverInfo":{"name":"dctx","version":"1.3.0"}}}
 {"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"map","description":"Structural map of a file, directory or node: its symbols and their relations.","inputSchema":{"type":"object","properties":{"target":{"type":"string","description":"Stable id (m:, s:, ...) or a place-relative file path"},"depth":{"type":"integer","description":"Levels to expand, 1..3"},"limit":{"type":"integer","description":"Page size"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"cursor":{"type":"string","description":"The next token of an earlier page, to continue it"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["target"],"additionalProperties":false}},{"name":"find","description":"Find symbols, modules and docs by name or words.","inputSchema":{"type":"object","properties":{"query":{"type":"string","description":"Words or a name to look for"},"kind":{"type":"array","items":{"type":"string"},"description":"Kinds: fn, method, struct, enum, trait, impl, const, type, macro, class, interface, symbol, module, package, place, doc, test"},"in":{"type":"string","description":"Only within this place-relative path"},"limit":{"type":"integer","description":"Page size"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"cursor":{"type":"string","description":"The next token of an earlier page, to continue it"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["query"],"additionalProperties":false}},{"name":"neighbors","description":"Nodes connected to a node by calls or imports, up to 4 hops.","inputSchema":{"type":"object","properties":{"id":{"type":"string","description":"Stable node id from a find or map answer"},"edge":{"type":"array","items":{"type":"string"},"description":"Edge kinds, for example calls, imports"},"dir":{"type":"string","description":"Direction: in, out or both"},"depth":{"type":"integer","description":"Hops, 1..4"},"limit":{"type":"integer","description":"Page size"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"cursor":{"type":"string","description":"The next token of an earlier page, to continue it"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["id"],"additionalProperties":false}},{"name":"explain","description":"Describe one node: its kind, place, signature and relations.","inputSchema":{"type":"object","properties":{"id":{"type":"string","description":"Stable node id"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"cursor":{"type":"string","description":"The next token of an earlier page, to continue it"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["id"],"additionalProperties":false}},{"name":"read","description":"Read node source or absolute lines; set context=true for minimal ranked context of a file/symbol.","inputSchema":{"type":"object","properties":{"id":{"type":"string","description":"Stable node id; with context=true, also a file path or symbol name"},"lines":{"type":"string","description":"Absolute source lines inside the node, as A-B"},"full":{"type":"boolean","description":"Permit up to 400 lines"},"context":{"type":"boolean","description":"Return minimal ranked context for this file/symbol instead of a source read"},"session":{"type":"string","description":"Context delivery session id, scoped to this connection"},"dedupe":{"type":"boolean","description":"Context only: reference chunks already delivered in this session"},"budget":{"type":"integer","description":"Source budget 1..2000; context budget 100..100000 estimated tokens"},"cursor":{"type":"string","description":"The next token of an earlier page, to continue it"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["id"],"additionalProperties":false}},{"name":"hubs","description":"Most-called symbols and per-directory file and symbol counts of the place.","inputSchema":{"type":"object","properties":{"limit":{"type":"integer","description":"Hub lines, 1..60 (default 20)"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":[],"additionalProperties":false}},{"name":"grep","description":"Exhaustive literal search of indexed files, hits grouped by enclosing symbol.","inputSchema":{"type":"object","properties":{"query":{"type":"string","description":"The literal text to search for"},"ignore_case":{"type":"boolean","description":"ASCII case-insensitive match"},"in":{"type":"string","description":"Only within this place-relative path"},"limit":{"type":"integer","description":"Page size"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"cursor":{"type":"string","description":"The next token of an earlier page, to continue it"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["query"],"additionalProperties":false}},{"name":"skeleton","description":"Skeleton of a file or directory: its symbols and their relations, without depth expansion.","inputSchema":{"type":"object","properties":{"target":{"type":"string","description":"Stable id (m:, s:, ...) or a place-relative file path"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["target"],"additionalProperties":false}},{"name":"path","description":"Shortest edge path between two nodes (calls, imports, contains), at most 8 hops.","inputSchema":{"type":"object","properties":{"from":{"type":"string","description":"Start node id (s:...) or place-relative file"},"to":{"type":"string","description":"End node id (s:...) or place-relative file"},"meta":{"type":"boolean","description":"Include hop metadata"},"budget":{"type":"integer","description":"Output token budget, 1..2000"},"cursor":{"type":"string","description":"The next token of an earlier page, to continue it"},"json":{"type":"boolean","description":"Return facade JSON v2 instead of text"}},"required":["from","to"],"additionalProperties":false}},{"name":"export","description":"Whole graph as one deterministic document: graph JSON or a Mermaid flowchart.","inputSchema":{"type":"object","properties":{"format":{"type":"string","description":"Output format: json or mermaid"},"budget":{"type":"integer","description":"Output token budget, 1..2000"}},"required":["format"],"additionalProperties":false}}]}}
 {"jsonrpc":"2.0","id":3,"result":{"content":[{"type":"text","text":"# kiosk find\ns:src/util.rs#greet\tfn\tL2-4\ns:web/app.ts#renderGreeting\tfn\tL10-12\n"}]}}
 ```
