@@ -319,6 +319,12 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
 .toc-m { display: none; border: 1px solid var(--line); border-radius: var(--r); margin: 0 0 18px; background: var(--surface); }
 .toc-m summary { cursor: pointer; padding: 8px 12px; font: 500 14px/1.4 var(--mono); }
 .toc-m ul { margin: 0; padding: 0 12px 10px 28px; font-size: 14px; }
+[aria-label="Documentation"] a[aria-current="page"],
+.toc a[aria-current="location"], .toc-m a[aria-current="location"],
+.toc-row a[aria-current="location"], .how-list a[aria-current="location"] {
+  color: var(--ink); background: var(--surface-2); font-weight: 600;
+  text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px;
+}
 @media (max-width: 1099px) { .toc-m { display: block; } }
 .doc-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font: 14px/1.4 var(--mono); color: var(--muted); margin: 8px 0 18px; }
 .doc-meta a { color: var(--muted); }

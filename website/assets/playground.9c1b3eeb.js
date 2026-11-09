@@ -99,6 +99,64 @@
   var menu = document.querySelector('.menu');
   if (menu) document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && menu.open) { menu.open = false; menu.querySelector('summary').focus(); } });
 
+  /* Scroll-spy: one observer for all section headings, shared by the desktop/mobile TOCs and
+     section lists. Page links in the documentation sidebar keep aria-current="page". */
+  var sectionNavs = $$('.toc, .toc-m, .toc-row, .how-list'), headings = [];
+  var spies = sectionNavs.map(function (nav) {
+    var entries = $$('a[href^="#"]', nav).map(function (link) {
+      var id;
+      try { id = decodeURIComponent(link.hash.slice(1)); } catch (e) { return null; }
+      var target = document.getElementById(id);
+      if (!target) return null;
+      var heading = /^H[1-6]$/.test(target.tagName) ? target : target.querySelector('h1, h2, h3, h4, h5, h6');
+      if (!heading) return null;
+      if (headings.indexOf(heading) < 0) headings.push(heading);
+      return { link: link, heading: heading, target: target };
+    }).filter(Boolean);
+    entries.sort(function (a, b) { return a.heading.compareDocumentPosition(b.heading) & 2 ? 1 : -1; });
+    return { nav: nav, entries: entries };
+  });
+  function spyUpdate() {
+    // Read just below the sticky header; at the foot of the page include even a short last section.
+    var line = (parseFloat(getComputedStyle(root).scrollPaddingTop) || 0) + 1;
+    var bottom = window.scrollY > 0 && Math.ceil(window.scrollY + window.innerHeight) >= root.scrollHeight - 1;
+    spies.forEach(function (spy) {
+      var active = spy.entries[0];
+      spy.entries.forEach(function (entry) {
+        // Some links anchor the section containing the heading (for example, a release).
+        if (bottom || entry.target.getBoundingClientRect().top <= line) active = entry;
+      });
+      spy.entries.forEach(function (entry) {
+        if (entry === active) entry.link.setAttribute('aria-current', 'location');
+        else entry.link.removeAttribute('aria-current');
+      });
+      // Adjust only the sidebar's scroll position: scrollIntoView can move the document too.
+      if (active && spy.nav.clientHeight && spy.nav.scrollHeight > spy.nav.clientHeight &&
+          /auto|scroll/.test(getComputedStyle(spy.nav).overflowY)) {
+        var box = spy.nav.getBoundingClientRect(), link = active.link.getBoundingClientRect();
+        if (link.top < box.top) spy.nav.scrollTop -= box.top - link.top;
+        else if (link.bottom > box.top + spy.nav.clientHeight) spy.nav.scrollTop += link.bottom - box.top - spy.nav.clientHeight;
+      }
+    });
+  }
+  if (headings.length) {
+    var spyFrame = 0;
+    function spySchedule() {
+      if (!spyFrame) spyFrame = requestAnimationFrame(function () { spyFrame = 0; spyUpdate(); });
+    }
+    if ('IntersectionObserver' in window) {
+      var spyObserver = new IntersectionObserver(spySchedule, { rootMargin: '0px 0px -70% 0px' });
+      headings.forEach(function (heading) { spyObserver.observe(heading); });
+    }
+    // Scroll also covers long sections, rapid jumps past the observer band and the page's last section.
+    window.addEventListener('scroll', spySchedule, { passive: true });
+    window.addEventListener('resize', spySchedule);
+    window.addEventListener('hashchange', spySchedule);
+    window.addEventListener('load', spySchedule);
+    window.addEventListener('pageshow', spySchedule);
+    spyUpdate();
+  }
+
   /* New version check: each page carries the id of the build it belongs to (meta dctx-build); /build.json
      names the deployed one. On load, when the tab comes back and every 10 minutes, a different digest
      offers a reload. Same origin only, never cached, nothing stored. */

@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from html.parser import HTMLParser
 from unittest.mock import patch
 from pathlib import Path
 
@@ -42,6 +43,60 @@ class DeploymentCheck(unittest.TestCase):
                 check.staleness(rebuilt, errors, working_tree=True)
                 self.assertEqual(len(errors), 3)
                 git_mock.assert_not_called()
+
+
+class PageScripts(unittest.TestCase):
+    class Page(HTMLParser):
+        def __init__(self, html):
+            super().__init__()
+            self.scripts = []
+            self.builds = []
+            self.has_sections = False
+            self.feed(html)
+
+        def handle_starttag(self, tag, attrs):
+            attrs = dict(attrs)
+            if tag == "script" and attrs.get("src"):
+                self.scripts.append(attrs["src"])
+            if tag == "meta" and attrs.get("name") == "dctx-build":
+                self.builds.append(attrs.get("content", ""))
+            if set(attrs.get("class", "").split()) & {"toc", "toc-m", "toc-row", "how-list"}:
+                self.has_sections = True
+
+    def test_every_section_navigation_loads_scroll_spy(self):
+        source = (HERE / "src/site.js").read_text()
+        spy = source[source.index("  /* Scroll-spy:"):source.index("  /* New version check:")]
+        pages = sorted((ROOT / "website").rglob("*.html"))
+        self.assertTrue(pages)
+        covered = []
+        for page in pages:
+            parsed = self.Page(page.read_text())
+            if parsed.has_sections:
+                with self.subTest(page=page.relative_to(ROOT)):
+                    scripts = [(ROOT / "website" / src.lstrip("/")).read_text() for src in parsed.scripts]
+                    self.assertTrue(any(spy in script for script in scripts), "section navigation needs scroll-spy")
+                covered.append(page.relative_to(ROOT / "website").as_posix())
+        self.assertIn("docs/spec/index.html", covered)
+        self.assertIn("cli/index.html", covered)
+        self.assertIn("changelog/index.html", covered)
+        self.assertIn("examples/index.html", covered)
+        self.assertIn("how-it-works/index.html", covered)
+
+    def test_every_html_page_has_build_meta_and_version_check(self):
+        import json
+
+        build_id = json.loads((ROOT / "website/build.json").read_text())["build_id"]
+        self.assertRegex(build_id, r"^[0-9a-f]{64}$")
+        source = (HERE / "src/site.js").read_text()
+        version_check = source[source.index("  /* New version check:"):]
+        pages = sorted((ROOT / "website").rglob("*.html"))
+        self.assertTrue(pages)
+        for page in pages:
+            with self.subTest(page=page.relative_to(ROOT)):
+                parsed = self.Page(page.read_text())
+                self.assertEqual(parsed.builds, [build_id])
+                scripts = [(ROOT / "website" / src.lstrip("/")).read_text() for src in parsed.scripts]
+                self.assertTrue(any(version_check in script for script in scripts), "every page needs the version check")
 
 
 class Routes(unittest.TestCase):
