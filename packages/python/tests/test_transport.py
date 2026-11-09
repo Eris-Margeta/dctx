@@ -33,7 +33,7 @@ class SchemaTests(unittest.TestCase):
 
     def test_wrapper_boundary(self):
         allowed = {"__future__", "importlib", "json", "os", "pathlib", "platform", "subprocess",
-                   "sys", "threading", "typing", "re"}
+                   "sys", "sysconfig", "threading", "typing", "re"}
         for source in (PACKAGE / "src/dctx").glob("*.py"):
             tree = ast.parse(source.read_text(), filename=str(source))
             for node in ast.walk(tree):
@@ -80,7 +80,7 @@ class ResolutionTests(unittest.TestCase):
         vendored.write_bytes(b"engine")
         vendored.chmod(0o755)
         spec = importlib.util.spec_from_file_location("vendor", module)
-        with mock.patch.object(_binary.importlib.util, "find_spec", return_value=spec), \
+        with mock.patch.object(_binary, "_platform_spec", return_value=spec), \
              mock.patch.object(_binary, "cache_binary", return_value=self.executable):
             self.assertEqual(_binary.resolve_binary(), vendored)
             vendored.unlink()
@@ -88,7 +88,7 @@ class ResolutionTests(unittest.TestCase):
                 _binary.resolve_binary()
 
     def test_cache_then_exact_install_instructions(self):
-        with mock.patch.object(_binary.importlib.util, "find_spec", return_value=None), \
+        with mock.patch.object(_binary, "_platform_spec", return_value=None), \
              mock.patch.object(_binary, "cache_binary", return_value=self.executable):
             self.assertEqual(_binary.resolve_binary(), self.executable)
             self.executable.unlink()
@@ -97,6 +97,57 @@ class ResolutionTests(unittest.TestCase):
             self.assertIn(f'python -m pip install "dctx[binary]=={__version__}"', str(error.exception))
             self.assertIn("--no-index --find-links ./wheelhouse", str(error.exception))
             self.assertIn(str(self.executable), str(error.exception))
+
+    def _plant_platform_module(self, directory):
+        directory.mkdir(parents=True, exist_ok=True)
+        (directory / f"dctx_binary_{_binary.platform_key()}.py").write_text("")
+        planted = directory / _binary.executable_name()
+        planted.write_bytes(b"planted")
+        planted.chmod(0o755)
+        return planted
+
+    def test_platform_module_is_never_taken_from_working_directory(self):
+        # A checkout holding dctx_binary_<platform>.py plus an executable must not supply
+        # the engine through the '' / cwd entries that `python -c`, `-m` and the REPL add.
+        work = self.root / "checkout"
+        self._plant_platform_module(work)
+        missing = self.root / "no-cache" / _binary.executable_name()
+        previous = os.getcwd()
+        os.chdir(work)
+        self.addCleanup(os.chdir, previous)
+        with mock.patch.object(sys, "path", ["", str(work), *sys.path]), \
+             mock.patch.object(_binary, "cache_binary", return_value=missing):
+            self.assertIsNotNone(importlib.util.find_spec(f"dctx_binary_{_binary.platform_key()}"))
+            with self.assertRaises(_binary.BinaryNotFoundError):
+                _binary.resolve_binary()
+
+    def test_platform_module_is_found_beside_the_installed_wrapper(self):
+        site = self.root / "site-packages"
+        package = site / f"dctx_binary_{_binary.platform_key()}"
+        package.mkdir(parents=True)
+        (package / "__init__.py").write_text("")
+        engine = package / _binary.executable_name()
+        engine.write_bytes(b"engine")
+        engine.chmod(0o755)
+        with mock.patch.object(_binary, "_install_roots", return_value=[self.root / "elsewhere", site]):
+            self.assertEqual(_binary.resolve_binary(), engine)
+        # The search starts at the directory that holds the imported dctx package.
+        self.assertEqual(_binary._install_roots()[0], Path(_binary.__file__).resolve().parent.parent)
+
+    def test_missing_home_directory_still_raises_binary_not_found(self):
+        # Windows without USERPROFILE/LOCALAPPDATA: Path.home() raises RuntimeError.
+        with mock.patch.object(_binary, "_platform_spec", return_value=None), \
+             mock.patch.object(_binary.Path, "home", side_effect=RuntimeError("no home")), \
+             mock.patch.object(_binary.sys, "platform", "win32"), \
+             mock.patch.dict(os.environ, {"LOCALAPPDATA": ""}):
+            with self.assertRaises(RuntimeError):
+                _binary.cache_binary()
+            with self.assertRaises(_binary.BinaryNotFoundError) as error:
+                _binary.resolve_binary()
+            self.assertIn("No user cache location is available", str(error.exception))
+            self.assertIn("DCTX_BIN", str(error.exception))
+            with self.assertRaises(_binary.BinaryNotFoundError):
+                _binary.resolve_binary(self.root / "missing")
 
     def test_platform_and_user_cache_locations(self):
         for system, machine, key, cache in (
