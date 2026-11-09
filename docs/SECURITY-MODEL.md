@@ -4,8 +4,6 @@
 This document describes implementation boundaries and regression evidence for the
 current engine and its CLI, stdio MCP, and stdio RPC. It is not a security
 certification. See [SECURITY.md](../SECURITY.md) for reporting.
-The execution results and platform coverage for this review are recorded in
-[DCX-SEC-01](results/DCX-SEC-01.md).
 
 ## Trust and assets
 
