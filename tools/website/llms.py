@@ -9,6 +9,7 @@ import hashlib
 import html
 import json
 import re
+import sys
 
 import md
 from common import BLOB, CONTACT, ORIGIN, ROOT, TREE, VERSION, date_of, demo, e, read, rec
@@ -23,17 +24,12 @@ def abs_url(path: str) -> str:
     return ORIGIN + path
 
 
-def strapline() -> str:
-    text = md.prepare("README.md")
-    m = re.search(r"\*\*(.+?)\*\* (.+)", text)
-    return m.group(1) + " " + m.group(2)
-
-
-LLMS_SECTIONS = ["Docs", "CLI", "Examples", "Evidence", "Project", "Optional"]
+LLMS_LIMIT = {"llms-small.txt": 20_480, "llms.txt": 102_400, "llms-full.txt": 1_048_576}
+LLMS_SECTIONS = ["Overview", "Docs", "CLI", "Examples", "Evidence", "Project", "Optional"]
 HISTORICAL = ("CHANGELOG.md", "docs/research/")  # records of what was true then; removed commands may appear
 TIER_LINE = {"llms-small.txt": "the facts and the route table, with an outline of the start documents",
-             "llms.txt": "the facts, the route table and the start documents",
-             "llms-full.txt": "the facts, the route table, every document the budget allows, the captured CLI help and examples"}
+             "llms.txt": "the facts and an index of every public HTML page",
+             "llms-full.txt": "the facts, every public HTML page, the document pack and captured CLI help and examples"}
 
 _facts: dict | None = None
 _capture: dict | None = None
@@ -104,16 +100,25 @@ def facts_markdown() -> str:
     return "\n".join(out) + "\n"
 
 
-def route_table() -> str:
-    from routes import build_routes
-    routes = [r for r in build_routes(NEWS) if r.indexable and r.llms]
-    out = ["## Pages", "", "Documents link to their Markdown twin (index.md), the repository file with only link targets rewritten.", ""]
+def facts_for_file(name: str) -> str:
+    text = facts_markdown()
+    # llms.txt reserves headings for its H1 and H2 URL lists (llmstxt.org).
+    return intro(text) if name == "llms.txt" else text
+
+
+def intro(text: str) -> str:
+    return re.sub(r"^#{2,} (.+)$", r"**\1**", text, flags=re.M)
+
+
+def route_table(pages: dict[str, str], routes, *, index: bool = False) -> str:
+    """The llms.txt index uses the HTML URL and the page's actual meta description."""
+    out = [] if index else ["## Pages", ""]
     for section in LLMS_SECTIONS:
-        rows = [r for r in routes if r.llms == section]
+        rows = [r for r in routes if (r.llms or "Overview") == section]
         if not rows:
             continue
-        out += [f"### {section}", ""]
-        out += [f"- [{r.title}]({abs_url(r.path + ('index.md' if r.kind == 'doc' else ''))}): {r.desc}" for r in rows]
+        out += [f"{'##' if index else '###'} {section}", ""]
+        out += [f"- [{r.title}]({abs_url(r.path)}): {extract_page(pages[r.path])['description']}" for r in rows]
         out.append("")
     return "\n".join(out)
 
@@ -124,11 +129,13 @@ def about(name: str) -> str:
     cmds = "; ".join("`" + " ".join(c) + "`" for c in t["commands"])
     out = ["## About this file", "",
            f"- This is {name}: {TIER_LINE[name]}. The other entry points: {others}.",
-           f"- Engine: dctx {cap['version']}. The documents section is the unedited output of the dctx binary on a copy of "
-           f"the documents, recorded by {BLOB}tools/website/capture.py; the site check re-runs it and fails on any byte of drift.",
+           f"- Engine: dctx {cap['version']}. Document captures are the unedited output of the dctx binary on a copy of "
+           f"the documents, recorded by {BLOB}tools/website/capture.py; the site check re-runs them and fails on any byte of drift. "
+           f"Read the pack at {ORIGIN}/llms-full.txt.",
            f"- Docs commit: {cap['docs_commit']} ({cap['docs_date']}), the last commit that changed one of the documents.",
            f"- Command: {cmds}",
-           f"- Budget: {t['est_tokens']:,} of {t['budget']:,} estimated tokens (ceil(2 * UTF-8 bytes / 7)), {len(t['files'])} documents."]
+           f"- Document capture budget: {t['est_tokens']:,} of {t['budget']:,} estimated tokens "
+           f"(ceil(2 * UTF-8 bytes / 7)), {len(t['files'])} documents."]
     if t.get("altered"):
         out.append("- Known engine issue: dctx " + cap["version"] + " pack substitutes template variables written as `{{name}}` inside file "
                    "content, so these documents differ from the repository here: " + ", ".join(t["altered"]) + f". Read them at {TREE}.")
@@ -145,27 +152,31 @@ def documents(name: str) -> str:
     return "## Documents\n\n" + t["output"]
 
 
-def llms_file(name: str, tail: str = "") -> str:
-    parts = ["# dctx", "", f"> {strapline()}", "", about(name), facts_markdown(), route_table(), documents(name)]
-    return "\n".join(parts) + tail
+def llms_file(name: str, pages: dict[str, str], routes) -> str:
+    provenance = intro(about(name)) if name == "llms.txt" else about(name)
+    parts = ["# dctx", "", f"> {strapline()}", "", provenance, facts_for_file(name),
+             route_table(pages, routes, index=name == "llms.txt")]
+    if name != "llms.txt":
+        parts.append(documents(name))
+    return "\n".join(parts)
 
 
-def llms_txt() -> str:
-    return llms_file("llms.txt")
+def llms_txt(pages: dict[str, str], routes) -> str:
+    return llms_file("llms.txt", pages, routes)
 
 
-def llms_small() -> str:
-    return llms_file("llms-small.txt")
+def llms_small(pages: dict[str, str], routes) -> str:
+    return llms_file("llms-small.txt", pages, routes)
 
 
 def full_header(url: str, title: str, source: str) -> str:
     return f"---\nurl: {url}\ntitle: {title}\nsource: {source}\n---\n\n"
 
 
-def llms_full() -> str:
+def captured_listings() -> list[str]:
     help_ids = ["help", "map-help"] + [f"help-{v}" for v in ["map", "find", "neighbors", "explain", "read", "skeleton", "grep", "hubs", "path", "export"]] + ["languages-help"]
     cli = "".join(f"$ {command(rec(i))}\n{rec(i)['stdout']}\n" for i in help_ids)
-    parts = ["\n## CLI reference and examples (captured from the binary)\n\n",
+    parts = ["\n## CLI reference and examples (captured from the binary)\n\n" +
              full_header(abs_url("/cli/"), "CLI reference (captured help)", BLOB + "tools/website/data/demo.json") + "```text\n" + cli + "```\n\n"]
     ex = []
     for r in demo()["records"]:
@@ -174,7 +185,52 @@ def llms_full() -> str:
         ex.append(f"### {command(r)}\n\nexit {r['exit']}, {r['bytes']} bytes, ~{r['est_tokens']} est. tokens\n\n```text\n{r['stdout']}```\n"
                   + (f"\nstderr:\n\n```text\n{r['stderr']}```\n" if r["stderr"] else ""))
     parts.append(full_header(abs_url("/examples/"), "Examples (captured on the kiosk sample)", BLOB + "tools/website/data/demo.json") + "\n".join(ex) + "\n")
-    return llms_file("llms-full.txt", "".join(parts))
+    return parts
+
+
+def page_texts(pages: dict[str, str], routes, packed: str) -> str:
+    """Keep route order. Link packed documents and add only text absent from the pack.
+
+    Markdown markup and generated page furniture can change the rendered text, so those
+    lines still need to be included. Prose already present verbatim is not copied again.
+    """
+    packed_text = normalize(packed)
+    parts = ["\n## Public HTML pages\n\n"]
+    for r in routes:
+        extracted = extract_page(pages[r.path])
+        parts.append(full_header(abs_url(r.path), r.title, BLOB + r.source if r.source else abs_url(r.path)))
+        lines = extracted["lines"]
+        if r.source and r.source in tier("llms-full.txt")["files"]:
+            parts.append(f"Document: `{r.source}` in [Documents](#documents). [Read the page]({abs_url(r.path)}).\n\n")
+            lines = [line for line in lines if normalize(line) not in packed_text]
+            if lines:
+                parts.append("Rendered text and page details not already verbatim in the document pack:\n\n")
+        parts.append("\n".join(lines) + "\n\n")
+    return "".join(parts)
+
+
+def llms_full(pages: dict[str, str], routes) -> str:
+    base = llms_file("llms-full.txt", pages, routes)
+    base += page_texts(pages, routes, tier("llms-full.txt")["output"])
+    listings = captured_listings()
+    full = base + "".join(listings)
+    limit = LLMS_LIMIT["llms-full.txt"]
+    # Only these supplemental generated listings can be shortened; page prose and
+    # the document pack are mandatory even when they exceed the limit on their own.
+    for i in sorted(range(len(listings)), key=lambda i: len(listings[i].encode()), reverse=True):
+        if len(full.encode()) <= limit:
+            break
+        url, title = (("/cli/", "CLI help"), ("/examples/", "Command examples"))[i]
+        before = len(listings[i].encode())
+        listings[i] = (f"\n{title}: the generated listing is available on [the full page]({abs_url(url)}); "
+                       "its page text is included above. Commands, outputs and exit codes come from the captured binary runs.\n")
+        full = base + "".join(listings)
+        print(f"llms-full.txt: {len(base.encode()):,} mandatory bytes; summarized {title} "
+              f"({before:,} -> {len(listings[i].encode()):,} bytes); total {len(full.encode()):,}, limit {limit:,}", file=sys.stderr)
+    if len(full.encode()) > limit:
+        raise ValueError(f"llms-full.txt: {len(full.encode()):,} bytes > {limit:,}; "
+                         f"mandatory page text and document pack: {len(base.encode()):,} bytes")
+    return full
 
 
 def atom(title: str, self_path: str, page_path: str, entries: list[tuple[str, str, str, str, str]]) -> str:
@@ -259,15 +315,34 @@ def opensearch() -> str:
 """
 
 
+def normalize(text: str) -> str:
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def extract_page(page: str) -> dict:
+    """Shared search/llms extraction: visible main text, headings and meta description.
+
+    Preserve source line boundaries for verbatim pack deduplication and the freshness
+    gate; inline tags and whitespace are handled exactly as in the search index.
+    """
+    main = page[page.index('<main id="main"'):page.index("</main>")]
+    main = re.sub(r"<(script|style|svg|nav|footer|header)\b.*?</\1>", "", main, flags=re.S)
+    main = re.sub(r"<!--.*?-->", "", main, flags=re.S)
+    heads = [html.unescape(re.sub(r"<[^>]+>", "", h)).replace("#", "").strip()
+             for h in re.findall(r"<h[23][^>]*>(.*?)</h[23]>", main, re.S)]
+    plain = html.unescape(re.sub(r"<[^>]+>", " ", main))
+    lines = [normalize(line) for line in plain.splitlines() if normalize(line)]
+    description = re.search(r'<meta name="description" content="([^"]*)"', page)
+    return {"text": normalize(plain), "lines": lines, "headings": heads,
+            "description": normalize(html.unescape(description.group(1))) if description else ""}
+
+
 def search_index(pages: dict[str, str], routes) -> str:
     out = []
     for r in routes:
         if not r.indexable:
             continue
-        page = pages[r.path]
-        main = page[page.index('<main id="main"'):page.index("</main>")]
-        main = re.sub(r"<script.*?</script>", "", main, flags=re.S)
-        heads = [html.unescape(re.sub(r"<[^>]+>", "", h)).replace("#", "").strip() for h in re.findall(r"<h[23][^>]*>(.*?)</h[23]>", main, re.S)]
-        text = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", main))).strip()
-        out.append({"url": r.path, "title": r.title, "h": heads[:60], "text": (r.desc or text)[:160]})
+        extracted = extract_page(pages[r.path])
+        out.append({"url": r.path, "title": r.title, "h": extracted["headings"][:60],
+                    "text": (extracted["description"] or extracted["text"])[:160]})
     return json.dumps(out, ensure_ascii=False, separators=(",", ":")) + "\n"

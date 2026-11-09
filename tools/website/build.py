@@ -170,9 +170,9 @@ def build(out: Path, skip_og: bool = False) -> int:
         for url, data in og.all_images(routes, scene).items():
             files[url.lstrip("/")] = data
     files["favicon.svg"] = (ICON.replace(' aria-hidden="true" focusable="false"', ' xmlns="http://www.w3.org/2000/svg"') + "\n").encode()
-    files["llms.txt"] = llms.llms_txt().encode()
-    files["llms-small.txt"] = llms.llms_small().encode()
-    files["llms-full.txt"] = llms.llms_full().encode()
+    files["llms.txt"] = llms.llms_txt(pages, routes).encode()
+    files["llms-small.txt"] = llms.llms_small(pages, routes).encode()
+    files["llms-full.txt"] = llms.llms_full(pages, routes).encode()
     for rel in llms.stale_sources():
         print(f"warning: {rel} changed since data/llms.json was captured; run capture.py --llms (check.py fails)", file=sys.stderr)
     files["news/feed.xml"] = llms.news_feed().encode()
