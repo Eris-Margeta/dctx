@@ -174,11 +174,11 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
 .term .meta b { color: var(--ok); font-weight: 500; }
 .term .meta b.bad { color: var(--warn); }
 .term .gap { min-height: .7em; }
-.motion .term[data-live] .ln { opacity: 0; }
+.motion .term[data-live] .ln { opacity: .32; transition: opacity .3s; }
 .motion .term[data-live] .ln.on { opacity: 1; animation: lnIn .35s cubic-bezier(.16, 1, .3, 1) both; }
 .motion .term[data-live] .ln.typing { opacity: 1; clip-path: inset(0 100% 0 0); animation: type var(--t, 1s) steps(var(--n, 30)) forwards; }
 .motion .term[data-live] .ln.typing::after, .motion .term[data-live] .ln.caret::after { content: ""; display: inline-block; width: .55em; height: 1.1em; margin-left: 2px; vertical-align: -.2em; background: var(--brand); animation: blink 1s steps(1) infinite; }
-.motion .term[data-live] .ln.caret-wait { opacity: 1; clip-path: inset(0 calc(100% - 1.3ch) 0 0); }
+.motion .term[data-live] .ln.caret-wait { opacity: 1; }
 .motion .term[data-live] .ln.caret-wait .p { animation: blink 1s steps(1) infinite; }
 @keyframes type { to { clip-path: inset(0 0 0 0); } }
 @keyframes blink { 50% { opacity: 0; } }
@@ -568,3 +568,4 @@ h3 .state { margin-left: 6px; font-weight: 500; }
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
 }
 @media print { .hdr, .ftr, .sidebar, .toc, .copy, .anim-view, [data-replay] { display: none !important; } body { background: #fff; color: #000; } .anim-prose { position: static !important; width: auto; height: auto; clip: auto; clip-path: none; white-space: normal; } }
+@media (max-width: 599px) { .timeline li > span { display: none; } }
