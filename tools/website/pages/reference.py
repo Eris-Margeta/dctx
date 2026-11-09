@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 
 import data
+import highlight
 from common import ORG_ID, ORIGIN, PERSON_ID, APP_ID, VERSION, e, read, rec, src
 from components import output_examples, table
 from routes import doc_path
@@ -11,8 +12,9 @@ from routes import doc_path
 VERBS = ["map", "find", "neighbors", "explain", "read", "skeleton", "grep", "hubs", "path", "export"]
 
 
-def pre(text: str) -> str:
-    return f'<div class="code"><div class="code-head"><span>verbatim</span><button class="copy" type="button" hidden>Copy</button></div><pre><code>{e(text)}</code></pre></div>'
+def pre(text: str, lang: str = "help") -> str:
+    return (f'<div class="code"><div class="code-head"><span>verbatim</span><button class="copy" type="button" hidden>Copy</button></div>'
+            f'<pre><code>{highlight.highlight(text, lang)}</code></pre></div>')
 
 
 def cli() -> tuple[str, list]:

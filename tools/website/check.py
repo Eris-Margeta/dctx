@@ -52,7 +52,7 @@ ALLOWED_EXTERNAL = ("https://github.com/Eris-Margeta", "https://github.com/spons
 BUDGET = {"/": {"requests": 8, "bytes": 370_000}, "*": {"requests": 9, "bytes": 450_000}}
 LARGEST = 200_000
 HTML_LIMIT = {"docs/spec/index.html": 450_000, "cli/index.html": 300_000, "docs/benchmark-oct/index.html": 300_000,
-              "changelog/index.html": 200_000, "examples/index.html": 200_000, "docs/benchmark/index.html": 200_000}
+              "changelog/index.html": 200_000, "examples/index.html": 300_000, "docs/benchmark/index.html": 200_000}
 SALES = re.compile(r"(?i)free forever|(?<!not )enterprise|pricing|trusted by|world[- ]class|revolutionary|best[- ]in[- ]class")
 LEGACY_RULES = re.compile(r"(?i)\.legacyignore|\.dctxomitcontent|config/dctx/omitcontent")
 LLMS_LIMIT = {"llms-small.txt": 20_480, "llms.txt": 102_400, "llms-full.txt": 1_048_576}
@@ -432,6 +432,9 @@ def contrast(css: str, errors: list[str]) -> list[str]:
         rgb = [int(hexv[i:i + 2], 16) / 255 for i in (1, 3, 5)]
         lin = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in rgb]
         return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]
+    def ratio_of(x: str, y: str) -> float:
+        a, b = sorted((lum(x), lum(y)), reverse=True)
+        return (a + 0.05) / (b + 0.05)
     out = []
     # Body text and links in it at least 7:1 (WCAG AAA); secondary text at least 4.5:1 (design review R3, section 7).
     minimum = {"ink": 7.0, "brand-text": 7.0, "muted": 4.5}
@@ -446,6 +449,16 @@ def contrast(css: str, errors: list[str]) -> list[str]:
             out.append(f"{name} {fg}/{bg} {ratio:.2f}")
             if ratio < minimum[fg]:
                 errors.append(f"contrast: {name} --{fg} on --{bg} is {ratio:.2f}:1 (< {minimum[fg]})")
+        # Syntax colours (highlight.py, the .t-* classes) at least 4.5:1 on both code backgrounds.
+        hl = sorted(k for k in theme if k.startswith("hl-"))
+        if len(hl) < 9:
+            errors.append(f"contrast: {name} theme defines {len(hl)} --hl-* syntax colours, expected 9")
+        for fg in hl:
+            worst = min(ratio_of(theme[fg], theme.get(bg, "#000000")) for bg in ("surface", "surface-2", "bg"))
+            if worst < 4.5:
+                errors.append(f"contrast: {name} --{fg} is {worst:.2f}:1 on a code background (< 4.5)")
+        if hl:
+            out.append(f"{name} {len(hl)} syntax colours >= 4.5")
     return out
 
 

@@ -2,7 +2,6 @@
 #   python3 -m venv tools/website/.venv && tools/website/.venv/bin/pip install -r tools/website/requirements.txt
 # build.py and check.py use the interpreter that runs them; CI never installs packages on its own.
 Markdown==3.7
-Pygments==2.18.0
 pillow==13.0.0
 fonttools==4.68.0
 brotli==1.2.1

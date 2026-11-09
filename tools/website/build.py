@@ -9,7 +9,7 @@ Inputs are repository files only (documents, CHANGELOG.md, the capture in data/d
 templates, the hand-written CSS/JS in src/ and the fonts in fonts/); see README.md. The build reads
 no clock and no network: dates come from data/dates.json (refreshed from git with --refresh-dates),
 so a clean `git archive` of a commit builds the same bytes as the committed website/.
-Needs Markdown, Pygments and Pillow (tools/website/requirements.txt).
+Needs Markdown and Pillow (tools/website/requirements.txt).
 """
 from __future__ import annotations
 
@@ -231,7 +231,6 @@ def main(argv: list[str]) -> int:
     try:
         import markdown  # noqa: F401
         import PIL  # noqa: F401
-        import pygments  # noqa: F401
     except ImportError as error:
         print(f"build: {error}; install tools/website/requirements.txt (see tools/website/README.md)", file=sys.stderr)
         return 2

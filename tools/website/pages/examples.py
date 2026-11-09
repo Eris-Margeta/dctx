@@ -5,11 +5,7 @@ import difflib
 import json
 import re
 
-from pygments import highlight
-from pygments.formatters import HtmlFormatter
-from pygments.lexer import RegexLexer, bygroups
-from pygments.token import Comment, Keyword, Name, Operator, String, Text
-
+import highlight
 from common import BLOB, ORIGIN, VERSION, demo, e, fmt, read, rec, src
 from components import command, pretty, term, transcript
 
@@ -29,13 +25,13 @@ def block(r: dict) -> str:
     is_json = r["group"] in ("json", "mcp") or r["id"] == "export-json"
     if is_json and "scrubbed" not in r:
         shown = term(transcript(r, stdout=pretty(r["stdout"]), note="# pretty-printed; the raw bytes are below"), "kiosk")
-        raw = f'<details class="raw"><summary>Raw output ({fmt(r["bytes"])} bytes, as captured)</summary><pre>{e(r["stdout"])}</pre></details>'
+        raw = f'<details class="raw"><summary>Raw output ({fmt(r["bytes"])} bytes, as captured)</summary><pre>{highlight.highlight(r["stdout"].rstrip(chr(10)), "json")}</pre></details>'
     else:
         shown = term(transcript(r), "kiosk")
         raw = ""
     stdin = ""
     if r.get("stdin"):
-        stdin = f'<details class="raw"><summary>stdin ({len(r["stdin"].splitlines())} lines)</summary><pre>{e(r["stdin"])}</pre></details>'
+        stdin = f'<details class="raw"><summary>stdin ({len(r["stdin"].splitlines())} lines)</summary><pre>{highlight.highlight(r["stdin"].rstrip(chr(10)), "json")}</pre></details>'
     return (f'<section class="ex" id="{r["id"]}"><div class="ex-head"><h3><a href="#{r["id"]}">{e(command(r))}</a></h3>{badges(r)}</div>'
             f"{note}{stdin}{shown}{raw}</section>")
 
@@ -72,29 +68,8 @@ def examples() -> tuple[str, list]:
     return body, [{"@merge": True, "hasPart": [{"@id": p["@id"]} for p in parts]}] + parts
 
 
-class DtsLexer(RegexLexer):
-    """The dctx template source format (ADR-003): sections, variables, data fields, comments."""
-    name = "DTS"
-    tokens = {"root": [
-        (r"#.*?$", Comment.Single),
-        (r"^\[[A-Z_]+(?::[A-Z_]+)?\]", Keyword),
-        (r"\{\{\{[^}]+\}\}\}", Name.Variable),
-        (r"\{\{[^}]+\}\}", Name.Constant),
-        (r'^([a-z_]+)(\s*)(=)', bygroups(Name.Attribute, Text, Operator)),
-        (r'"', String, "string"),
-        (r"[^#\[{\"\n]+|.", Text),
-        (r"\n", Text),
-    ], "string": [
-        (r'\\.', String.Escape),
-        (r"\{\{\{[^}]+\}\}\}", Name.Variable),
-        (r"\{\{[^}]+\}\}", Name.Constant),
-        (r'"', String, "#pop"),
-        (r'[^"\\{]+|.', String),
-    ]}
-
-
 def highlight_dts(text: str) -> str:
-    return highlight(text, DtsLexer(), HtmlFormatter(nowrap=True, classprefix="t-"))
+    return highlight.highlight(text, "dts")
 
 
 def tree_lines(stdout: str) -> list[str]:

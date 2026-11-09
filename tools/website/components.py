@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import re
 
+import highlight
 from common import demo, e, fmt
 
 SAFE = re.compile(r"^[A-Za-z0-9_./=,:@%+-]+$")
@@ -29,16 +30,9 @@ def command(record: dict) -> str:
     return " ".join(quote(a) for a in record["argv"])
 
 
-def out_line(text: str) -> str:
-    """One output line with record ids and header lines marked up."""
-    if text.startswith("#"):
-        return f'<span class="ln out hdrl">{e(text)}</span>'
-    m = re.match(r"^((?:calls|imports|contains):(?:in|out):)?([smdkp]:\S+?)(\t|$)", text)
-    if m:
-        prefix, ident = m.group(1) or "", m.group(2)
-        rest = text[m.end(2):]
-        return f'<span class="ln out"><span class="cm">{e(prefix)}</span><span class="id">{e(ident)}</span>{e(rest)}</span>'
-    return f'<span class="ln out">{e(text)}</span>'
+def command_html(record: dict) -> str:
+    """The command of a run, highlighted; the prompt span (.p) stays outside the copied text."""
+    return '<span class="p">$ </span>' + highlight.highlight(command(record), "sh")
 
 
 def meta_line(record: dict) -> str:
@@ -48,16 +42,16 @@ def meta_line(record: dict) -> str:
 
 
 def transcript(record: dict, stdout: str | None = None, limit: int | None = None, more: str | None = None,
-               note: str | None = None) -> str:
+               note: str | None = None, lang: str | None = None) -> str:
     """The lines of one captured run: the command, stdout, stderr and the facts line."""
-    lines = [f'<span class="ln cmd"><span class="p">$ </span>{e(command(record))}</span>']
+    lines = [f'<span class="ln cmd">{command_html(record)}</span>']
     if note:
         lines.append(f'<span class="ln out hdrl">{e(note)}</span>')
     text = record["stdout"] if stdout is None else stdout
     body = text[:-1] if text.endswith("\n") else text
-    out = body.split("\n") if body else []
+    out = highlight.lines(body, lang or highlight.output_lang(record["argv"], body)) if body else []
     shown = out[:limit] if limit else out
-    lines += [out_line(t) for t in shown]
+    lines += [f'<span class="ln out">{t}</span>' for t in shown]
     if limit and len(out) > limit:
         lines.append(f'<span class="ln out hdrl">… {len(out) - limit} more lines{(" · " + more) if more else ""}</span>')
     if record["stderr"]:
@@ -74,18 +68,13 @@ def term(inner: str, title: str, *, play: str | None = None, cls: str = "", repl
 
 
 def code(label: str, text: str, lang: str = "") -> str:
-    lines = []
-    for raw in text.split("\n"):
-        m = re.match(r"^(.*?)(\s+#\s.*)?$", raw)
-        cmd, comment = m.group(1), m.group(2) or ""
-        if raw.lstrip().startswith("#"):
-            lines.append(f'<span class="t-c1">{e(raw)}</span>')
-        elif lang == "shell":
-            lines.append(f'<span class="p">$ </span>{e(cmd)}' + (f'<span class="t-c1">{e(comment)}</span>' if comment else ""))
-        else:
-            lines.append(e(raw))
+    """A labelled code block. Shell lines get a prompt (not copied); comment lines stay as they are."""
+    if lang == "shell":
+        text = "\n".join(line if not line.strip() or line.lstrip().startswith("#") else "$ " + line for line in text.split("\n"))
+        lang = "sh"
+    body = highlight.highlight(text, lang)
     return (f'<div class="code"><div class="code-head"><span>{e(label)}</span><button class="copy" type="button" hidden>Copy</button></div>'
-            f'<pre><code>{chr(10).join(lines)}</code></pre></div>')
+            f'<pre><code>{body}</code></pre></div>')
 
 
 def table(head: list[str], rows: list[list[str]], *, caption: str = "", numeric: set[int] = frozenset(), raw: bool = False,

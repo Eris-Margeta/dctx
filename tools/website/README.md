@@ -60,6 +60,7 @@ examples is handwritten. The Rust snippet comes from the workspace doctest in
 | OG images, the poster, icons | `og.py` (Pillow), from the same scene geometry as the canvas animation |
 | `llms-small.txt`, `llms.txt`, `llms-full.txt` | `llms.py`: the facts block from `data/facts.json`, the route table in `routes.py`, then the dctx binary's own output over the documents, recorded in `data/llms.json` by `capture.py --llms` (see below) |
 | sitemap, feeds, robots, `security.txt`, `humans.txt`, manifest, OpenSearch, search index, `build.json` | `llms.py`, from the route table in `routes.py` |
+| syntax colours in every code block, terminal transcript, help text and template | `highlight.py`, an in-house highlighter run at build time (no library, no runtime script); `.t-*` classes coloured by the `--hl-*` tokens in `src/site.css` |
 | CSS and JS | hand-written in `src/`, published content-hashed (`assets.py`); `theme.js` runs inline and `tools/playground/nginx.conf` allows it by hash |
 | fonts | `fonts/` (Geist and JetBrains Mono, SIL OFL 1.1), made once by `fonts.py` |
 
@@ -165,5 +166,5 @@ internal links and fragments; external links only to the allowlist; JSON-LD type
 Person/Organization/SoftwareApplication values; OG images (1200×630, dark and light, the 24-frame GIF);
 the llms files (size limits, facts first, every facts and route-table URL resolving, capture and document drift, removed commands); Markdown twins against their sources; sitemap equals the
 indexable pages; feeds parse; `security.txt` expiry; hashed and referenced assets; CSS, JS, font and
-HTML budgets; WCAG contrast of the colour tokens in both themes (body text and links 7:1, secondary text 4.5:1); nginx.conf headers; no legacy commands
+HTML budgets; WCAG contrast of the colour tokens in both themes (body text and links 7:1, secondary text and the nine syntax colours 4.5:1); nginx.conf headers; no legacy commands
 or rule files and no sales wording on hand-written pages.

@@ -234,7 +234,7 @@ Site: https://tejl.com/ and https://tejl.hr/
 Last update: {updated}
 Language: English
 Standards: HTML, CSS, schema.org JSON-LD, Atom, Open Graph, llms.txt, OpenAPI 3.1
-Components: a Python standard-library generator with Markdown and Pygments, Pillow for images; Geist and JetBrains Mono (SIL OFL 1.1); no frameworks, no third-party requests
+Components: a Python standard-library generator with Markdown, an in-house build-time syntax highlighter and Pillow for images; Geist and JetBrains Mono (SIL OFL 1.1); no frameworks, no third-party requests
 Source: {BLOB}tools/website
 """
 

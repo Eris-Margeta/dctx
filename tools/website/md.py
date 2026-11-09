@@ -17,8 +17,8 @@ import re
 from dataclasses import dataclass, field
 
 import markdown
-from markdown.extensions.codehilite import CodeHiliteExtension
 
+import highlight
 from common import ALIASES, BLOB, ORIGIN, ROOT, TREE, read, slugify
 
 # External link targets a rendered document may keep. Anything else is unlinked (text kept).
@@ -160,10 +160,20 @@ def _md_links(text: str, rel: str, linker: Linker) -> str:
 
 
 def _converter() -> markdown.Markdown:
-    return markdown.Markdown(extensions=[
-        "extra", "sane_lists",
-        CodeHiliteExtension(css_class="hl", guess_lang=False, classprefix="t-", wrapcode=True),
-    ])
+    return markdown.Markdown(extensions=["extra", "sane_lists"])
+
+
+def _code_block(m: re.Match) -> str:
+    """A fenced or indented block, highlighted at build time (highlight.py); the language label is shown."""
+    lang, body = m.group(1) or "", html.unescape(m.group(2))
+    body = body[:-1] if body.endswith("\n") else body
+    shown = highlight.ALIASES.get(lang.lower(), lang.lower())
+    if shown in ("", "text", "txt", "plain"):
+        shown = highlight.detect(body)
+    label = {"sh": "shell", "js": "js/ts", "transcript": "shell", "text": "", "pack": "dctx pack", "map": "dctx map"}.get(shown, shown)
+    attr = f' data-lang="{html.escape(label)}"' if label else ""
+    return f'<div class="hl"{attr}><pre><code>{highlight.highlight(body, lang)}</code></pre></div>'
+
 
 
 def to_html(text: str, rel: str, linker: Linker) -> tuple[str, list[tuple[int, str, str]], str]:
@@ -199,7 +209,7 @@ def to_html(text: str, rel: str, linker: Linker) -> tuple[str, list[tuple[int, s
     body = re.sub(r"<h([1-6])>(.*?)</h\1>", heading, body, flags=re.S)
     body = re.sub(r' style="text-align: (left|right|center);"', r' class="al-\1"', body)
     body = body.replace("<table>", '<div class="table-wrap"><table>').replace("</table>", "</table></div>")
-    body = body.replace('<div class="hl"><pre><span></span>', '<div class="hl"><pre>')
+    body = re.sub(r'<pre><code(?: class="language-([\w+#.-]+)")?>(.*?)</code></pre>', _code_block, body, flags=re.S)
     return body, toc, title
 
 

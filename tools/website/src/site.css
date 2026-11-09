@@ -15,6 +15,7 @@
 :root {
   --bg: #fbfaff; --surface: #ffffff; --surface-2: #f2effa; --ink: #16131f; --muted: #5b566e; --line: #e4e0ef;
   --brand: #6d3df0; --brand-text: #5b2fd6; --signal: #0e7490; --relation: #a21caf; --ok: #15803d; --warn: #b45309;
+  --hl-k: #6d28d9; --hl-s: #047857; --hl-c: #676179; --hl-m: #92400e; --hl-f: #1d4ed8; --hl-a: #0e7490; --hl-b: #a21caf; --hl-t: #5b2fd6; --hl-v: #be123c;
   --glow: rgba(109, 61, 240, .10); --shadow: 0 1px 2px rgba(22, 19, 31, .05), 0 8px 24px rgba(22, 19, 31, .06);
   --sans: Geist, "Geist Fallback", "Geist Fallback D", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "JetBrains Mono", "JetBrains Mono Fallback", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -25,6 +26,7 @@
   :root:not([data-theme="light"]) {
     --bg: #07060f; --surface: #0f0d1a; --surface-2: #161228; --ink: #efeaff; --muted: #b4aed6; --line: #262040;
     --brand: #8b5cf6; --brand-text: #b79cff; --signal: #22d3ee; --relation: #e879f9; --ok: #4ade80; --warn: #fbbf24;
+    --hl-k: #c4b5fd; --hl-s: #6ee7b7; --hl-c: #9a94b8; --hl-m: #fcd34d; --hl-f: #93c5fd; --hl-a: #67e8f9; --hl-b: #f0abfc; --hl-t: #b79cff; --hl-v: #fda4af;
     --glow: rgba(139, 92, 246, .16); --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 12px 32px rgba(0, 0, 0, .35);
     color-scheme: dark;
   }
@@ -32,6 +34,7 @@
 :root[data-theme="dark"] {
   --bg: #07060f; --surface: #0f0d1a; --surface-2: #161228; --ink: #efeaff; --muted: #b4aed6; --line: #262040;
   --brand: #8b5cf6; --brand-text: #b79cff; --signal: #22d3ee; --relation: #e879f9; --ok: #4ade80; --warn: #fbbf24;
+  --hl-k: #c4b5fd; --hl-s: #6ee7b7; --hl-c: #9a94b8; --hl-m: #fcd34d; --hl-f: #93c5fd; --hl-a: #67e8f9; --hl-b: #f0abfc; --hl-t: #b79cff; --hl-v: #fda4af;
   --glow: rgba(139, 92, 246, .16); --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 12px 32px rgba(0, 0, 0, .35);
   color-scheme: dark;
 }
@@ -146,15 +149,12 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
 .copy:hover { color: var(--ink); }
 .hl > .copy { position: absolute; top: 6px; right: 6px; opacity: 0; transition: opacity .15s; }
 .hl:hover > .copy, .hl > .copy:focus { opacity: 1; }
-.t-k, .t-kd, .t-kn, .t-kr, .t-kt, .t-kc, .t-ow, .t-nt { color: var(--brand-text); }
-.t-s, .t-s1, .t-s2, .t-sb, .t-sd, .t-se, .t-sh, .t-si, .t-sx, .t-sr, .t-ss, .t-sc { color: var(--signal); }
-.t-c, .t-c1, .t-cm, .t-cs, .t-cp, .t-ch, .t-cpf { color: var(--muted); font-style: italic; }
-.t-m, .t-mi, .t-mf, .t-mh, .t-mo, .t-il { color: var(--warn); }
-.t-nf, .t-fm, .t-nc, .t-nn, .t-nd { color: var(--relation); }
-.t-nv, .t-vi, .t-nb, .t-bp, .t-na { color: var(--ok); }
-.t-gh, .t-gu { color: var(--brand-text); font-weight: 600; }
-.t-gi { color: var(--ok); } .t-gd { color: var(--warn); }
-.t-err { color: inherit; }
+/* Build-time highlighting (highlight.py); --hl-* contrast is checked in both themes. */
+.t-k { color: var(--hl-k); } .t-s { color: var(--hl-s); } .t-c { color: var(--hl-c); font-style: italic; }
+.t-m { color: var(--hl-m); } .t-f { color: var(--hl-f); } .t-a { color: var(--hl-a); } .t-b { color: var(--hl-b); }
+.t-t { color: var(--hl-t); font-weight: 600; } .t-v { color: var(--hl-v); }
+.hl[data-lang]::before { content: attr(data-lang); position: absolute; top: 7px; right: 12px; font: 500 12px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); pointer-events: none; transition: opacity .15s; }
+.hl[data-lang]:hover::before, .hl[data-lang]:focus-within::before { opacity: 0; }
 
 /* Terminal */
 .term { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
@@ -169,8 +169,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
 .term .cmd .p { color: var(--brand); user-select: none; }
 .term .cmd { color: var(--ink); font-weight: 500; }
 .term .out { color: var(--ink); }
-.term .id { color: var(--signal); }
-.term .hdrl, .term .cm { color: var(--muted); }
+.term .hdrl { color: var(--muted); }
 .term .err { color: var(--warn); }
 .term .meta { color: var(--muted); font-size: 14px; }
 .term .meta b { color: var(--ok); font-weight: 500; }
