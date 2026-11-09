@@ -6,9 +6,9 @@
 
 - This is llms-full.txt: the facts, the route table, every document the budget allows, the captured CLI help and examples. The other entry points: https://www.dctx.internet.technology/llms-small.txt, https://www.dctx.internet.technology/llms.txt.
 - Engine: dctx 1.3.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
-- Docs commit: 06aeba10729f91be40ed0509603749de69b5adeb (2026-11-09T11:46:16+01:00), the last commit that changed one of the documents.
+- Docs commit: b337dad2f57099e24f5a0eb4ca7e0ae6db8fd7c0 (2026-11-09T12:41:22+01:00), the last commit that changed one of the documents.
 - Command: `dctx pack . --include /docs/START.md --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md --include /docs/guides/MAP-MODE.md --include /docs/guides/AGENTS-SNIPPET.md --include /docs/guides/PLUGINS.md --include /docs/SPEC.md --include /docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md --include /docs/ADR-018-Language-Coverage.md --include /docs/design/contracts/DTS-v2.md --include /docs/ADR-003-Templating-Engine.md --include /docs/CRATE-MAP.md --include /docs/CLI-EXIT-CODES.md --include /docs/BENCHMARK-20261030.md --include /docs/research/stability-20261105/REPORT.md --include /docs/research/trail-code-2026-10/REPORT.md --include /RELEASING.md --include /CONTRIBUTING.md --include /SECURITY.md --include /TRADEMARK.md --include /MAINTENANCE.md --include /CHANGELOG.md --include /crates/dctx-template/templates/default.dctx_template --include /crates/dctx-template/templates/stamped.dctx_template`
-- Budget: 97,935 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 25 documents.
+- Budget: 97,997 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 25 documents.
 
 ## Facts
 
@@ -781,7 +781,7 @@ Write to that address with your organisation, the tier you want and a contact na
 - The core (`pack`) and every modality stay open.
 
 </FILE_CONTENT_END ID="F003">
-<FILE_CONTENT_START ID="F004" PATH="README.md" LINES="520">
+<FILE_CONTENT_START ID="F004" PATH="README.md" LINES="522">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 <h1 align="center">dctx</h1>
@@ -832,6 +832,8 @@ Write to that address with your organisation, the tier you want and a contact na
 ## Project status
 
 **dctx is not yet stable and not enterprise-ready.** It has been in development since January 2026. Until version 2.0, expect breaking changes often. AI providers keep changing how they optimize context on their side; dctx adapts to those changes quickly, but not in real time. Stability is the goal of 2.0, and the project is working toward it: we see an ultimate solution to this problem, and we are denoising it.
+
+dctx began as an internal tool that was never meant to be open-sourced, so parts of it are still messy. It was opened up because colleagues who rely on it needed it in the open, and development continues in public.
 
 The founding promise is zero dependencies. Today dctx still has dependencies. The goal is to become the single best context management tool.
 
