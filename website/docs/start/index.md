@@ -67,12 +67,13 @@ data from other engine versions is ignored.
 
 ### Agent builder embedding a library
 
-Agent builder embedding a library: project library with its own pinned binary (Python, Node or Go wrapper over `dctx rpc`; registry publication pending); never parse or slice pack text. Pitfall: re-implementing engine logic.
+Agent builder embedding a library: project library with its own pinned binary (Python, Node or Go wrapper over `dctx rpc`); never parse or slice pack text. Pitfall: re-implementing engine logic.
 
 The [Python](https://github.com/Eris-Margeta/dctx/blob/main/packages/python/README.md), [Node](https://github.com/Eris-Margeta/dctx/blob/main/packaging/npm/dctx/README.md)
 and [Go](https://github.com/Eris-Margeta/dctx/blob/main/packages/go/README.md) wrappers over `dctx rpc` are built and tested in
-CI, but not yet published to PyPI, npm or a Go module proxy; install them from CI
-artifacts or a checkout as their READMEs describe. Alternatively, pin the
+CI. Install Node with `npm install dctx`, which includes a pinned
+`@tejl/dctx-<platform>` optional dependency; use CI artifacts or a checkout for
+Python and Go as their READMEs describe. Alternatively, pin the
 [Rust facade](https://www.dctx.internet.technology/docs/modalities/#rust-library-embed-the-facade) from tagged Git,
 or invoke the installed CLI as a subprocess. The first runnable Rust example is
 in the [library doctest](https://github.com/Eris-Margeta/dctx/blob/main/examples/library/README.md). For subprocess use:
@@ -116,7 +117,7 @@ organization policy bundles and audit journals are planned.
 ### 1. Install the system binary
 
 Download the archive for your OS and architecture and `SHA256SUMS` from
-[GitHub Releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.0).
+[GitHub Releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.1).
 Compare the archive's SHA-256 with its matching entry before extracting it.
 On Linux use `sha256sum ARCHIVE`, on macOS `shasum -a 256 ARCHIVE`, or on Windows
 PowerShell `Get-FileHash ARCHIVE -Algorithm SHA256`, replacing `ARCHIVE` with the
@@ -130,9 +131,9 @@ Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.
 dctx --version
 ```
 
-Use the system binary for interactive agents. The project wrappers (Python, Node,
-Go) are built and tested in CI, with registry publication pending; no project
-dependency is needed for this path.
+Use the system binary for interactive agents. Project wrappers are available
+through npm for Node and CI artifacts for Python and Go; no project dependency
+is needed for this path.
 
 ### 2. Choose one project and inspect one answer
 
@@ -201,7 +202,7 @@ measurement exist.
 | Level | dctx provides | You are responsible for |
 |---|---|---|
 | System binary | Release archives with cosign signatures, SBOM and provenance, cache caps, `dctx doctor`, journals (planned), receipts (planned) | Choosing roots, policy file, keeping one version on PATH |
-| Project library | Pinned vendored binary and protocol client (Python, Node, Go wrappers; registry publication pending), same bytes as CLI (checked in CI) | Pinning the version, exclusions in the project policy, not re-implementing engine logic |
+| Project library | Pinned vendored binary and protocol client (Node on npm; Python and Go from CI), same bytes as CLI (checked in CI) | Pinning the version, exclusions in the project policy, not re-implementing engine logic |
 | MCP and ACP agent setup | Lean profile, tested client configs, measured start-up cost | Turning off the host's own file tools, picking a profile, session ids, reading receipts |
 | CI and cache | Byte-stable pack, prefix tiers (planned), deterministic exit codes | Pinning the binary, caching the index between runs, treating pack drift as a signal not noise |
 
@@ -209,13 +210,13 @@ For current CLI exclusions, use `.gitignore` and `.dctxignore`; the unified poli
 file is planned. Agent session ids and general receipts in the responsibility
 column describe planned integrations. The Rust facade exists today with explicit
 host-supplied selection and storage policy; the project-library row describes
-the Python, Node and Go wrappers, which are not yet on a public registry. Existing pack prefix stability is distinct
+the Python, Node and Go wrappers, with Node available on npm. Existing pack prefix stability is distinct
 from the planned layered prefix tiers.
 
 ## Two scopes, one binary
 
 The following is the distribution contract for the project-library wrappers
-(registry publication pending) and signed releases:
+and signed releases:
 
 > The system `dctx` on PATH belongs to you and your agents. A binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Same signed engine, different owner. Interactive agents and MCP call the system binary; application code and CI call the project binary; a library never silently falls back to PATH.
 

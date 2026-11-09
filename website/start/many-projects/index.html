@@ -20,7 +20,7 @@
 <meta name="description" content="You move between many small and medium repositories during the day. Setup, first command, what to expect and the pitfall to avoid.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
-<meta name="dctx-build" content="6ec16984f5124290870c80c78e9d150ccb77f7bd4f1f5b65a78b9c8ad3708910">
+<meta name="dctx-build" content="8a68aad362b48ef50d2bf6292061239065f6689bff2347f43b9106dd528a4a54">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -107,7 +107,7 @@
    "@type": "SoftwareApplication",
    "@id": "https://www.dctx.internet.technology/#software",
    "name": "dctx",
-   "softwareVersion": "1.3.0",
+   "softwareVersion": "1.3.1",
    "applicationCategory": "DeveloperApplication",
    "operatingSystem": "Linux, macOS, Windows",
    "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
@@ -116,7 +116,7 @@
    "isAccessibleForFree": true,
    "codeRepository": "https://github.com/Eris-Margeta/dctx",
    "programmingLanguage": "Rust",
-   "releaseNotes": "https://www.dctx.internet.technology/changelog/#v1-3-0",
+   "releaseNotes": "https://www.dctx.internet.technology/changelog/#v1-3-1",
    "softwareHelp": {
     "@type": "CreativeWork",
     "url": "https://www.dctx.internet.technology/docs/"
@@ -174,7 +174,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="hdr">
  <div class="wrap hdr-in">
-  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span><span class="ver">1.3.0</span></a>
+  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span><span class="ver">1.3.1</span></a>
   <nav class="nav" aria-label="Primary"><ul><li><a href="/start/" aria-current="page">Start</a></li><li><a href="/docs/">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
   <div class="hdr-end">
    <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
@@ -187,11 +187,11 @@
 <main id="main">
 <div class="wrap narrow" data-path-page="many-projects"><div class="page-head"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/start/">Choose your path</a></li><li><a href="/start/many-projects/" aria-current="page">Many smaller projects</a></li></ol></nav><span class="eyebrow">Choose your path</span><h1>Many smaller projects</h1>
 <p class="lede">You move between many small and medium repositories during the day.</p></div>
-<dl class="kv path-kv"><dt>you get</dt><dd>Set up once, then every project you open gives your agent the same two tools: find and read.</dd><dt>modality</dt><dd>System binary, the lean MCP profile once in your agent, nothing per project.</dd><dt>version</dt><dd>dctx 1.3.0</dd></dl>
+<dl class="kv path-kv"><dt>you get</dt><dd>Set up once, then every project you open gives your agent the same two tools: find and read.</dd><dt>modality</dt><dd>System binary, the lean MCP profile once in your agent, nothing per project.</dd><dt>version</dt><dd>dctx 1.3.1</dd></dl>
 <section class="sec" aria-labelledby="setup-h"><h2 id="setup-h">Setup</h2><ol class="safe"><li>Install the system binary once and put it on PATH.</li><li>Add one MCP entry to your agent: command <code>dctx</code>, arguments <code>mcp --profile lean</code>. With no path, the server serves the directory the client starts it in.</li><li>If your client does not start servers in the project directory, add the absolute project path as the last argument instead.</li><li>Nothing else per project: dctx reads <code>.gitignore</code> and <code>.dctxignore</code> where they already are.</li></ol></section>
 <section class="sec" aria-labelledby="first-h"><h2 id="first-h">First command</h2><div class="code"><div class="code-head"><span>shell</span><button class="copy" type="button" hidden>Copy</button></div><pre><code><span class="p">$ </span><span class="t-f">dctx</span> mcp <span class="t-a">--profile</span> lean</code></pre></div></section>
 <section class="sec" aria-labelledby="expect-h"><h2 id="expect-h">What to expect</h2><p>This is the command your agent starts; in a terminal it waits for JSON-RPC on stdin (Ctrl-C stops it). Your agent sees two tools, <code>find</code> and <code>read</code>. <code>find</code> returns stable ids; <code>read</code> returns the verified source bytes of one id. The captured run below is the CLI equivalent on the sample project.</p>
-<p class="note">A real run on the <a href="/examples/">kiosk sample project</a>, recorded from the release binary by <code>capture.py</code>:</p><div class="term "><div class="term-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="title">~/kiosk  ·  dctx 1.3.0</span></div><div class="scroll"><pre><span class="ln cmd"><span class="p">$ </span><span class="t-f">dctx</span> map find greet</span><span class="ln out"><span class="t-c"># kiosk find</span></span><span class="ln out"><span class="t-v">s:src/util.rs#greet</span>	<span class="t-b">fn</span>	<span class="t-m">L2-4</span></span><span class="ln out"><span class="t-v">s:web/app.ts#renderGreeting</span>	<span class="t-b">fn</span>	<span class="t-m">L10-12</span></span><span class="ln meta"># <b>exit 0</b> &middot; 79 bytes &middot; ~23 est. tokens</span></pre></div></div></section>
+<p class="note">A real run on the <a href="/examples/">kiosk sample project</a>, recorded from the release binary by <code>capture.py</code>:</p><div class="term "><div class="term-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="title">~/kiosk  ·  dctx 1.3.1</span></div><div class="scroll"><pre><span class="ln cmd"><span class="p">$ </span><span class="t-f">dctx</span> map find greet</span><span class="ln out"><span class="t-c"># kiosk find</span></span><span class="ln out"><span class="t-v">s:src/util.rs#greet</span>	<span class="t-b">fn</span>	<span class="t-m">L2-4</span></span><span class="ln out"><span class="t-v">s:web/app.ts#renderGreeting</span>	<span class="t-b">fn</span>	<span class="t-m">L10-12</span></span><span class="ln meta"># <b>exit 0</b> &middot; 79 bytes &middot; ~23 est. tokens</span></pre></div></div></section>
 <section class="sec" aria-labelledby="pit-h"><h2 id="pit-h">The pitfall</h2><div class="callout callout-warn"><p class="callout-text">Stale caches of projects you deleted or no longer use. Auto-clean runs once a day and drops unpinned roots after 30 idle days; to clean by hand, run <code>dctx cache status</code>, then <code>dctx cache gc --dry-run</code> or <code>dctx cache purge --root PATH --dry-run</code>.</p></div></section>
 <section class="sec" aria-labelledby="next-h"><h2 id="next-h">Read next</h2><p><a href="/docs/modalities/#client-configuration">MCP client configuration</a> &middot; <a href="/docs/modalities/">Choosing how to use dctx</a> &middot; <a href="/start/#responsibilities">Who is responsible for what</a></p>
 <p>Other paths:</p><ul class="inline-list"><li><a href="/start/giant-folder/">One giant folder</a></li><li><a href="/start/library/">Agent builder embedding a library</a></li><li><a href="/start/team/">Team or organisation admin</a></li></ul><div class="callout" role="note"><p class="callout-text">dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.</p><p class="callout-sub">Status: Receipts are planned. The safe path uses the lean MCP profile, <code>dctx mcp --profile lean</code>.</p></div></section>
@@ -204,7 +204,7 @@
     <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
     <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
     <p>An advanced tool with several ways to use it: <a href="/start/">start with the safe path</a>.</p>
-    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0</p>
+    <p class="mono small">dctx 1.3.1 &middot; Apache-2.0</p>
     <p class="ftr-prefs"><button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Animations: on</button></p>
    </div>
    <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/start/">Choose your path</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>

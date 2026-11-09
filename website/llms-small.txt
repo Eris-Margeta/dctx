@@ -5,10 +5,10 @@
 ## About this file
 
 - This is llms-small.txt: the facts and the route table, with an outline of the start documents. The other entry points: https://www.dctx.internet.technology/llms.txt, https://www.dctx.internet.technology/llms-full.txt.
-- Engine: dctx 1.3.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
-- Docs commit: e3eb1af86963ef644c1da7c8383bd814b05bca8c (2026-11-09T19:32:23+01:00), the last commit that changed one of the documents.
+- Engine: dctx 1.3.1. Document captures are the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs them and fails on any byte of drift. Read the pack at https://www.dctx.internet.technology/llms-full.txt.
+- Docs commit: cf3ddf9720040635b8ce515ec2ac9b1b6ae9c669 (2026-11-09T21:53:14+01:00), the last commit that changed one of the documents.
 - Command: `dctx map map docs/START.md --depth 2`; `dctx map map docs/WHY-DCTX.md --depth 2`; `dctx map map README.md --depth 2`; `dctx map map docs/MODALITIES.md --depth 2`
-- Budget: 1,017 of 2,500 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
+- Document capture budget: 1,008 of 2,500 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
 
 ## Facts
 
@@ -25,7 +25,7 @@ What it is not:
 
 ### Version and download
 
-- Current version: 1.3.0, released 2026-11-09 (tag `v1.3.0`): https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.0
+- Current version: 1.3.1, released 2026-11-09 (tag `v1.3.1`): https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.1
 - Each release on GitHub ships prebuilt archives for Linux x64/ARM64, macOS x64/ARM64 and Windows x64 with a SHA256SUMS file.
 - Verify a download: `sha256sum --check --ignore-missing SHA256SUMS`
 - Releases from 1.3.0 also ship keyless cosign signatures, CycloneDX SBOMs, build provenance and offline bundles; see [verification](https://github.com/Eris-Margeta/dctx/blob/main/docs/VERIFYING.md).
@@ -38,12 +38,12 @@ What it is not:
 - CI and prompt cache (available): Deterministic pack and map output; tree lines carry no timestamps by default, so the prefix stays stable across a touch. https://www.dctx.internet.technology/docs/modalities/#ci--prompt-cache-prefix-stability
 - Rust library (available from Git): The `dctx` facade crate as a tagged Git dependency; crates.io publication pending. https://www.dctx.internet.technology/docs/modalities/#rust-library-embed-the-facade
 - Desktop app (preview): A Tauri preview you build from source; a GPUI rebuild is planned. https://www.dctx.internet.technology/docs/modalities/#desktop-app-tauri-preview-today
-- Python, Node and Go wrappers (registry publication pending): Thin `dctx rpc` wrappers, built and tested in CI; not on PyPI, npm or a Go module proxy yet. Use the release archives today. https://www.dctx.internet.technology/docs/modalities/#python-node-and-go-wrappers-registry-publication-pending
+- Python, Node and Go wrappers (Node on npm; Python and Go from CI): Thin `dctx rpc` wrappers, built and tested in CI. Install Node with `npm install dctx`, which includes pinned `@tejl/dctx-<platform>` optional dependencies; use CI artifacts for Python and Go. https://www.dctx.internet.technology/docs/modalities/#python-node-and-go-wrappers
 
 Two scopes, one binary:
 
 - System binary: the `dctx` on PATH belongs to you and your agents, and you upgrade it. Interactive agents and MCP call this one.
-- Project binary (with the Python, Node and Go wrappers, registry publication pending): a binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Application code and CI call this one; a library never silently falls back to PATH.
+- Project binary (Node from npm; Python and Go from CI): a binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Application code and CI call this one; a library never silently falls back to PATH.
 - Same engine, different owner. `dctx doctor` lists every binary in reach; verify each against SHA256SUMS and its cosign signature.
 
 ### Before you start
@@ -79,7 +79,12 @@ These existed before 1.2.0 and no longer work. A transcript that uses them descr
 
 ## Pages
 
-Documents link to their Markdown twin (index.md), the repository file with only link targets rewritten.
+### Overview
+
+- [dctx](https://www.dctx.internet.technology/): dctx is the open-source context engine for AI-assisted development: deterministic, bounded code context for agents and chat, offline, with no telemetry. Apache-2.0.
+- [Search](https://www.dctx.internet.technology/search/): Search the dctx website.
+- [Playground offline](https://www.dctx.internet.technology/playground/offline/): The playground service is not reachable right now.
+- [Page not found](https://www.dctx.internet.technology/404.html): This page does not exist on the dctx website.
 
 ### Docs
 
@@ -90,19 +95,19 @@ Documents link to their Markdown twin (index.md), the repository file with only 
 - [Agent builder embedding a library](https://www.dctx.internet.technology/start/library/): You build an agent, editor or tool and want dctx inside it. Setup, first command, what to expect and the pitfall to avoid.
 - [Team or organisation admin](https://www.dctx.internet.technology/start/team/): You roll dctx out to a team or a fleet of machines. Setup, first command, what to expect and the pitfall to avoid.
 - [For AI evaluators](https://www.dctx.internet.technology/for-ai-evaluators/): What dctx is and is not, its version, modalities, benchmark status, removed commands and how to verify every claim.
-- [Why dctx](https://www.dctx.internet.technology/why/index.md): Why dctx exists, its philosophy, and why byte-identical output keeps the prompt cache hitting.
-- [README](https://www.dctx.internet.technology/docs/readme/index.md): Installation, quick start, map mode, language tiers and the CLI reference.
-- [What dctx is](https://www.dctx.internet.technology/docs/start/index.md): The claim and its limits, the advanced-user notice, choose your path, the safe path in ten minutes, responsibilities and the two scopes.
-- [Choosing how to use dctx](https://www.dctx.internet.technology/docs/modalities/index.md): Clipboard, grep plus reads, long sessions, huge trees, MCP startup cost and CI.
-- [Map mode guide](https://www.dctx.internet.technology/docs/map-mode/index.md): Every map verb with examples, budgets, ids and precision labels.
-- [Agent snippet](https://www.dctx.internet.technology/docs/agents/index.md): The AGENTS.md section that tells coding agents to ask dctx first.
-- [Plugins guide](https://www.dctx.internet.technology/docs/plugins/index.md): The plugin boundary, capabilities, consent and current limits.
-- [Specification](https://www.dctx.internet.technology/docs/spec/index.md): The core belief, the five constraints, the ten RAG defect classes, policy and roadmap.
-- [Privacy guarantees](https://www.dctx.internet.technology/docs/privacy/index.md): Ignore semantics and the full sensitive-file deny list.
-- [Language coverage (ADR-018)](https://www.dctx.internet.technology/docs/language-coverage/index.md): The three tiers and how a language enters one.
-- [Template contract (DTS v2)](https://www.dctx.internet.technology/docs/templates-contract/index.md): DTS source v2 and the compiled plan IR v1.
-- [Templating engine (ADR-003)](https://www.dctx.internet.technology/docs/templating/index.md): Markers, ahead-of-time compilation, the two rendering passes and the data variables.
-- [CLI exit codes](https://www.dctx.internet.technology/docs/exit-codes/index.md): The exit-code contract for map, pack, mcp and languages.
+- [Why dctx](https://www.dctx.internet.technology/why/): Why dctx exists, its philosophy, and why byte-identical output keeps the prompt cache hitting.
+- [README](https://www.dctx.internet.technology/docs/readme/): Installation, quick start, map mode, language tiers and the CLI reference.
+- [What dctx is](https://www.dctx.internet.technology/docs/start/): The claim and its limits, the advanced-user notice, choose your path, the safe path in ten minutes, responsibilities and the two scopes.
+- [Choosing how to use dctx](https://www.dctx.internet.technology/docs/modalities/): Clipboard, grep plus reads, long sessions, huge trees, MCP startup cost and CI.
+- [Map mode guide](https://www.dctx.internet.technology/docs/map-mode/): Every map verb with examples, budgets, ids and precision labels.
+- [Agent snippet](https://www.dctx.internet.technology/docs/agents/): The AGENTS.md section that tells coding agents to ask dctx first.
+- [Plugins guide](https://www.dctx.internet.technology/docs/plugins/): The plugin boundary, capabilities, consent and current limits.
+- [Specification](https://www.dctx.internet.technology/docs/spec/): The core belief, the five constraints, the ten RAG defect classes, policy and roadmap.
+- [Privacy guarantees](https://www.dctx.internet.technology/docs/privacy/): Ignore semantics and the full sensitive-file deny list.
+- [Language coverage (ADR-018)](https://www.dctx.internet.technology/docs/language-coverage/): The three tiers and how a language enters one.
+- [Template contract (DTS v2)](https://www.dctx.internet.technology/docs/templates-contract/): DTS source v2 and the compiled plan IR v1.
+- [Templating engine (ADR-003)](https://www.dctx.internet.technology/docs/templating/): Markers, ahead-of-time compilation, the two rendering passes and the data variables.
+- [CLI exit codes](https://www.dctx.internet.technology/docs/exit-codes/): The exit-code contract for map, pack, mcp and languages.
 - [How dctx works](https://www.dctx.internet.technology/how-it-works/): Five short animations: two scopes of one binary, calls times context, prefix stability, the giant folder and the safe path for new users.
 
 ### CLI
@@ -118,19 +123,19 @@ Documents link to their Markdown twin (index.md), the repository file with only 
 
 ### Evidence
 
-- [Measurement evidence](https://www.dctx.internet.technology/docs/benchmark/index.md): Grep plus file reads first; whole-session scope and secondary historical protocols.
-- [Byte-stability report](https://www.dctx.internet.technology/docs/stability/index.md): Protocol, raw answers and limits of the 33/33 measurement.
-- [Earlier two-way study](https://www.dctx.internet.technology/docs/benchmark-oct/index.md): October 2026, before call edges: the benchmark that set the roadmap.
+- [Measurement evidence](https://www.dctx.internet.technology/docs/benchmark/): Grep plus file reads first; whole-session scope and secondary historical protocols.
+- [Byte-stability report](https://www.dctx.internet.technology/docs/stability/): Protocol, raw answers and limits of the 33/33 measurement.
+- [Earlier two-way study](https://www.dctx.internet.technology/docs/benchmark-oct/): October 2026, before call edges: the benchmark that set the roadmap.
 - [Benchmarks](https://www.dctx.internet.technology/benchmarks/): Grep plus file reads, whole-session accounting, byte stability and secondary historical measurements.
 
 ### Project
 
-- [Crate map](https://www.dctx.internet.technology/docs/crate-map/index.md): How the Rust workspace is organised.
-- [Releasing](https://www.dctx.internet.technology/docs/releasing/index.md): How a release is cut and checked.
-- [Contributing](https://www.dctx.internet.technology/docs/contributing/index.md): How to propose changes, with a DCO sign-off.
-- [Security policy](https://www.dctx.internet.technology/security/index.md): How to report a vulnerability privately, and what happens next.
-- [Trademark policy](https://www.dctx.internet.technology/trademark/index.md): What the dctx name and logo may be used for, and what forks may call themselves.
-- [Maintenance](https://www.dctx.internet.technology/maintenance/index.md): dctx is free under Apache-2.0. Maintenance agreements fund security response, long-term support and priority work.
+- [Crate map](https://www.dctx.internet.technology/docs/crate-map/): How the Rust workspace is organised.
+- [Releasing](https://www.dctx.internet.technology/docs/releasing/): How a release is cut and checked.
+- [Contributing](https://www.dctx.internet.technology/docs/contributing/): How to propose changes, with a DCO sign-off.
+- [Security policy](https://www.dctx.internet.technology/security/): How to report a vulnerability privately, and what happens next.
+- [Trademark policy](https://www.dctx.internet.technology/trademark/): What the dctx name and logo may be used for, and what forks may call themselves.
+- [Maintenance](https://www.dctx.internet.technology/maintenance/): dctx is free under Apache-2.0. Maintenance agreements fund security response, long-term support and priority work.
 
 ### Optional
 
@@ -146,19 +151,19 @@ Documents link to their Markdown twin (index.md), the repository file with only 
 
 ```text
 # dctx map
-d:docs/START.md#What dctx is	heading	L3-240
-d:docs/START.md#Choose your path	heading	L17-113
+d:docs/START.md#What dctx is	heading	L3-241
+d:docs/START.md#Choose your path	heading	L17-114
 d:docs/START.md#One giant folder	heading	L27-45
 d:docs/START.md#Many small projects	heading	L46-67
-d:docs/START.md#Agent builder embedding a library	heading	L68-92
-d:docs/START.md#Team / enterprise admin	heading	L93-113
-d:docs/START.md#Safe path in ten minutes	heading	L114-193
-d:docs/START.md#1. Install the system binary	heading	L116-136
-d:docs/START.md#2. Choose one project and inspect one answer	heading	L137-150
-d:docs/START.md#3. Configure the lean MCP profile	heading	L151-172
-d:docs/START.md#4. Measure before changing anything	heading	L173-193
-d:docs/START.md#Responsibilities	heading	L194-214
-d:docs/START.md#Two scopes, one binary	heading	L215-240
+d:docs/START.md#Agent builder embedding a library	heading	L68-93
+d:docs/START.md#Team / enterprise admin	heading	L94-114
+d:docs/START.md#Safe path in ten minutes	heading	L115-194
+d:docs/START.md#1. Install the system binary	heading	L117-137
+d:docs/START.md#2. Choose one project and inspect one answer	heading	L138-151
+d:docs/START.md#3. Configure the lean MCP profile	heading	L152-173
+d:docs/START.md#4. Measure before changing anything	heading	L174-194
+d:docs/START.md#Responsibilities	heading	L195-215
+d:docs/START.md#Two scopes, one binary	heading	L216-241
 # dctx map
 d:docs/WHY-DCTX.md#Why dctx exists	heading	L3-145
 d:docs/WHY-DCTX.md#The problem	heading	L7-14
@@ -209,5 +214,5 @@ d:docs/MODALITIES.md#Tools and startup cost	heading	L205-255
 d:docs/MODALITIES.md#CI / prompt-cache prefix stability	heading	L256-279
 d:docs/MODALITIES.md#Rust library: embed the facade	heading	L280-314
 d:docs/MODALITIES.md#Desktop app: Tauri preview today	heading	L315-322
-d:docs/MODALITIES.md#Python, Node and Go wrappers: registry publication pending	heading	L323-339
+d:docs/MODALITIES.md#Python, Node and Go wrappers	heading	L323-339
 ```

@@ -12,16 +12,16 @@ provider caching can change its billed cost. Count both calls and session tokens
 
 | Modality | Install | Status | Best for |
 |---|---|---|---|
-| CLI / interactive terminal | [Prebuilt archives](https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.0), or [build from source](https://www.dctx.internet.technology/docs/readme/#from-source) | Available now; crates.io publication pending | One-off chat (`pack --clipboard`), shell agents, scripts and CI; run `dctx` for the terminal menu |
+| CLI / interactive terminal | [Prebuilt archives](https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.1), or [build from source](https://www.dctx.internet.technology/docs/readme/#from-source) | Available now; crates.io publication pending | One-off chat (`pack --clipboard`), shell agents, scripts and CI; run `dctx` for the terminal menu |
 | MCP server | Included in the CLI; configure `dctx mcp /absolute/project` | Available now, stdio | Claude Code, Cursor and Codex tool calls on a scoped project |
 | Rust library (`dctx` facade) | Tagged Git dependency in the [library section](#rust-library-embed-the-facade) | Available from Git; crates.io publication pending | Embedding pack, map, templates and cache in Rust tools and editors |
 | Desktop app | [Build the Tauri app](https://github.com/Eris-Margeta/dctx/blob/main/apps/dctx-desktop/README.md#quick-start) | Tauri 0.11 preview today; GPUI rebuild planned | Selecting projects and generating snapshots in a GUI |
-| Python, Node and Go wrappers | Not on PyPI, npm or a Go module proxy yet; see [language wrappers](#python-node-and-go-wrappers-registry-publication-pending) | Built and tested in CI; registry publication pending | Calling the engine over `dctx rpc` from Python, Node or Go projects |
+| Python, Node and Go wrappers | `npm install dctx` for Node; CI artifacts for Python and Go; see [language wrappers](#python-node-and-go-wrappers) | Node published on npm; all wrappers tested in CI | Calling the engine over `dctx rpc` from Python, Node or Go projects |
 
-Registry publication is pending for every package: nothing is published to
-crates.io, PyPI or npm, and the Go module has no tag yet. A `dctx` package on those
-registries is not from this project. Use the release archives or the tagged Rust
-Git dependency today.
+The npm release publishes `dctx` with pinned `@tejl/dctx-<platform>` optional
+dependencies. Python and Go wrappers are available as CI artifacts; the Rust
+facade is available as a tagged Git dependency. Native release archives remain
+available for system installation or an explicit `DCTX_BIN` path.
 
 ## Choose by task
 
@@ -287,7 +287,7 @@ application's `Cargo.toml`:
 
 ```toml
 [dependencies]
-dctx = { git = "https://github.com/Eris-Margeta/dctx", tag = "v1.3.0" }
+dctx = { git = "https://github.com/Eris-Margeta/dctx", tag = "v1.3.1" }
 ```
 
 The [ten-line pack example](https://www.dctx.internet.technology/docs/readme/#use-as-a-library) is compiled and run as a
@@ -320,17 +320,17 @@ source using the app's [quick start](https://github.com/Eris-Margeta/dctx/blob/m
 the CLI archives do not install a desktop application. A GPUI rebuild is planned,
 not the current downloadable or buildable desktop implementation.
 
-## Python, Node and Go wrappers: registry publication pending
+## Python, Node and Go wrappers
 
 Thin wrappers over the versioned [`dctx rpc` protocol](https://github.com/Eris-Margeta/dctx/blob/main/docs/protocol/README.md) live in
 [packages/python](https://github.com/Eris-Margeta/dctx/blob/main/packages/python/README.md),
 [packaging/npm/dctx](https://github.com/Eris-Margeta/dctx/blob/main/packaging/npm/dctx/README.md) (which also forwards the
 `dctx` CLI command) and [packages/go](https://github.com/Eris-Margeta/dctx/blob/main/packages/go/README.md). Each starts the
 native engine, passes CLI argument strings and returns the engine's bytes
-unchanged; CI checks byte parity with the CLI. They are built and tested in CI,
-but **registry publication is pending**: nothing is on PyPI or npm, and the Go
-module has no tag. Install them from CI artifacts (a Python wheelhouse or npm
-tarballs) or a checkout, as each README describes, and point them at an engine
+unchanged; CI checks byte parity with the CLI. Install the Node wrapper with
+`npm install dctx`; npm includes the matching pinned `@tejl/dctx-<platform>`
+optional dependency. Install Python and Go wrappers from CI artifacts or a
+checkout, as each README describes, and point them at an engine
 from the [GitHub release archives](https://github.com/Eris-Margeta/dctx/releases)
 that has `dctx rpc`. Their arguments carry full CLI authority, so never pass
 untrusted values as `--place`, `--output` or dash-leading arguments.

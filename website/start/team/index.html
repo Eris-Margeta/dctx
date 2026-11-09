@@ -20,7 +20,7 @@
 <meta name="description" content="You roll dctx out to a team or a fleet of machines. Setup, first command, what to expect and the pitfall to avoid.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
-<meta name="dctx-build" content="6ec16984f5124290870c80c78e9d150ccb77f7bd4f1f5b65a78b9c8ad3708910">
+<meta name="dctx-build" content="8a68aad362b48ef50d2bf6292061239065f6689bff2347f43b9106dd528a4a54">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -107,7 +107,7 @@
    "@type": "SoftwareApplication",
    "@id": "https://www.dctx.internet.technology/#software",
    "name": "dctx",
-   "softwareVersion": "1.3.0",
+   "softwareVersion": "1.3.1",
    "applicationCategory": "DeveloperApplication",
    "operatingSystem": "Linux, macOS, Windows",
    "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
@@ -116,7 +116,7 @@
    "isAccessibleForFree": true,
    "codeRepository": "https://github.com/Eris-Margeta/dctx",
    "programmingLanguage": "Rust",
-   "releaseNotes": "https://www.dctx.internet.technology/changelog/#v1-3-0",
+   "releaseNotes": "https://www.dctx.internet.technology/changelog/#v1-3-1",
    "softwareHelp": {
     "@type": "CreativeWork",
     "url": "https://www.dctx.internet.technology/docs/"
@@ -174,7 +174,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="hdr">
  <div class="wrap hdr-in">
-  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span><span class="ver">1.3.0</span></a>
+  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span><span class="ver">1.3.1</span></a>
   <nav class="nav" aria-label="Primary"><ul><li><a href="/start/" aria-current="page">Start</a></li><li><a href="/docs/">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
   <div class="hdr-end">
    <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
@@ -187,11 +187,11 @@
 <main id="main">
 <div class="wrap narrow" data-path-page="team"><div class="page-head"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/start/">Choose your path</a></li><li><a href="/start/team/" aria-current="page">Team or organisation admin</a></li></ol></nav><span class="eyebrow">Choose your path</span><h1>Team or organisation admin</h1>
 <p class="lede">You roll dctx out to a team or a fleet of machines.</p></div>
-<dl class="kv path-kv"><dt>you get</dt><dd>One verified, pinned version on every machine, with the same safety rules everywhere.</dd><dt>modality</dt><dd>System binary distributed through your own package channel, one pinned version everywhere.</dd><dt>version</dt><dd>dctx 1.3.0</dd></dl>
+<dl class="kv path-kv"><dt>you get</dt><dd>One verified, pinned version on every machine, with the same safety rules everywhere.</dd><dt>modality</dt><dd>System binary distributed through your own package channel, one pinned version everywhere.</dd><dt>version</dt><dd>dctx 1.3.1</dd></dl>
 <section class="sec" aria-labelledby="setup-h"><h2 id="setup-h">Setup</h2><ol class="safe"><li>Download the release archives from GitHub Releases and verify them against SHA256SUMS and their cosign signatures; each release also ships an SBOM.</li><li>Ship one pinned version through your own package manager, image or configuration tool.</li><li>Ship shared ignore rules (<code>.dctxignore</code> and a global ignore); the built-in deny for secrets, <code>.git</code> and symlinks always applies.</li><li>Tighten the cache cap per machine if you need to: <code>dctx cache config --max-bytes N</code> can only lower it.</li></ol></section>
 <section class="sec" aria-labelledby="first-h"><h2 id="first-h">First command</h2><div class="code"><div class="code-head"><span>shell</span><button class="copy" type="button" hidden>Copy</button></div><pre><code><span class="p">$ </span><span class="t-f">dctx</span> <span class="t-a">--version</span></code></pre></div></section>
 <section class="sec" aria-labelledby="expect-h"><h2 id="expect-h">What to expect</h2><p>One line with the version on every machine; <code>dctx --version --verbose</code> adds the feature list and precision and cache limits. Every machine should print the same line.</p>
-<p class="note">A real run on the <a href="/examples/">kiosk sample project</a>, recorded from the release binary by <code>capture.py</code>:</p><div class="term "><div class="term-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="title">~/kiosk  ·  dctx 1.3.0</span></div><div class="scroll"><pre><span class="ln cmd"><span class="p">$ </span><span class="t-f">dctx</span> <span class="t-a">--version</span></span><span class="ln out">dctx 1.3.0 (&lt;git sha&gt;)</span><span class="ln meta"># <b>exit 0</b> &middot; 23 bytes &middot; ~7 est. tokens</span></pre></div></div></section>
+<p class="note">A real run on the <a href="/examples/">kiosk sample project</a>, recorded from the release binary by <code>capture.py</code>:</p><div class="term "><div class="term-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="title">~/kiosk  ·  dctx 1.3.1</span></div><div class="scroll"><pre><span class="ln cmd"><span class="p">$ </span><span class="t-f">dctx</span> <span class="t-a">--version</span></span><span class="ln out">dctx 1.3.1 (&lt;git sha&gt;)</span><span class="ln meta"># <b>exit 0</b> &middot; 23 bytes &middot; ~7 est. tokens</span></pre></div></div></section>
 <section class="sec" aria-labelledby="pit-h"><h2 id="pit-h">The pitfall</h2><div class="callout callout-warn"><p class="callout-text">Mixing project and system versions without checking. Run <code>dctx doctor</code> to list every binary in reach, and check <code>dctx --version</code> on PATH and the version each project pins, as part of onboarding.</p></div></section>
 <section class="sec" aria-labelledby="next-h"><h2 id="next-h">Read next</h2><p><a href="/docs/privacy/">Privacy guarantees</a> &middot; <a href="/security/">Security policy</a> &middot; <a href="/start/#responsibilities">Who is responsible for what</a></p>
 <p>Other paths:</p><ul class="inline-list"><li><a href="/start/giant-folder/">One giant folder</a></li><li><a href="/start/many-projects/">Many smaller projects</a></li><li><a href="/start/library/">Agent builder embedding a library</a></li></ul><div class="callout" role="note"><p class="callout-text">dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.</p><p class="callout-sub">Status: Receipts are planned. The safe path uses the lean MCP profile, <code>dctx mcp --profile lean</code>.</p></div></section>
@@ -204,7 +204,7 @@
     <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
     <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
     <p>An advanced tool with several ways to use it: <a href="/start/">start with the safe path</a>.</p>
-    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0</p>
+    <p class="mono small">dctx 1.3.1 &middot; Apache-2.0</p>
     <p class="ftr-prefs"><button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Animations: on</button></p>
    </div>
    <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/start/">Choose your path</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
