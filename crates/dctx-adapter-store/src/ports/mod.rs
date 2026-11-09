@@ -250,7 +250,7 @@ pub(crate) fn set_nofollow(options: &mut std::fs::OpenOptions) {
     #[cfg(unix)]
     {
         use std::os::unix::fs::OpenOptionsExt;
-        options.custom_flags(NOFOLLOW);
+        options.custom_flags(no_follow());
     }
     #[cfg(not(unix))]
     {
@@ -476,24 +476,31 @@ fn walk(
     Ok(())
 }
 
-#[cfg(any(target_os = "linux", target_os = "android"))]
-const NOFOLLOW: i32 = 0x20000;
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "watchos"
-))]
-const NOFOLLOW: i32 = 0x100;
-#[cfg(all(
-    unix,
-    not(any(
-        target_os = "linux",
-        target_os = "android",
-        target_os = "macos",
-        target_os = "ios",
-        target_os = "tvos",
-        target_os = "watchos"
-    ))
-))]
-const NOFOLLOW: i32 = 0;
+/// `O_NOFOLLOW` for the build target, from rustix (its value differs between Linux architectures).
+#[cfg(unix)]
+fn no_follow() -> i32 {
+    rustix::fs::OFlags::NOFOLLOW.bits() as i32
+}
+
+#[cfg(all(test, unix))]
+mod tests {
+    use super::*;
+
+    /// A wrong hard-coded value (Linux aarch64 uses 0x8000, x86_64 0x20000) would silently follow links.
+    #[test]
+    fn no_follow_is_the_target_o_nofollow_and_refuses_a_link_at_open() {
+        assert_eq!(no_follow(), libc::O_NOFOLLOW);
+        let fixture = tempfile::tempdir().expect("fixture");
+        let victim = fixture.path().join("victim");
+        std::fs::write(&victim, "keep me").expect("victim");
+        let link = fixture.path().join("link");
+        std::os::unix::fs::symlink(&victim, &link).expect("symlink");
+        let mut options = std::fs::OpenOptions::new();
+        options.read(true);
+        set_nofollow(&mut options);
+        assert!(
+            options.open(&link).is_err(),
+            "the open followed a symbolic link"
+        );
+    }
+}

@@ -120,7 +120,7 @@ fn create_output(path: &Path) -> std::io::Result<std::fs::File> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::OpenOptionsExt;
-        options.custom_flags(NOFOLLOW);
+        options.custom_flags(no_follow());
     }
     #[cfg(windows)]
     {
@@ -147,36 +147,11 @@ fn create_output(path: &Path) -> std::io::Result<std::fs::File> {
     Ok(file)
 }
 
-#[cfg(any(target_os = "linux", target_os = "android"))]
-const NOFOLLOW: i32 = 0x20000;
-#[cfg(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "tvos",
-    target_os = "watchos",
-    target_os = "freebsd",
-    target_os = "openbsd",
-    target_os = "netbsd",
-    target_os = "dragonfly"
-))]
-const NOFOLLOW: i32 = 0x100;
-/// Other Unix targets rely on the `symlink_metadata` check before opening.
-#[cfg(all(
-    unix,
-    not(any(
-        target_os = "linux",
-        target_os = "android",
-        target_os = "macos",
-        target_os = "ios",
-        target_os = "tvos",
-        target_os = "watchos",
-        target_os = "freebsd",
-        target_os = "openbsd",
-        target_os = "netbsd",
-        target_os = "dragonfly"
-    ))
-))]
-const NOFOLLOW: i32 = 0;
+/// `O_NOFOLLOW` for the build target, from rustix (its value differs between Linux architectures).
+#[cfg(unix)]
+fn no_follow() -> i32 {
+    rustix::fs::OFlags::NOFOLLOW.bits() as i32
+}
 
 #[cfg(test)]
 mod tests {
@@ -283,5 +258,24 @@ mod tests {
         assert!(!fixture.path().join("created-through-link").exists());
         let refused = run(fixture.path()).expect_err("directory");
         assert!(refused.contains("not a regular file"), "{refused}");
+    }
+
+    /// A wrong hard-coded value (Linux aarch64 uses 0x8000, x86_64 0x20000) would silently follow links.
+    #[cfg(unix)]
+    #[test]
+    fn no_follow_is_the_target_o_nofollow_and_refuses_a_link_at_open() {
+        assert_eq!(no_follow(), libc::O_NOFOLLOW);
+        let fixture = tempfile::tempdir().expect("fixture");
+        let victim = fixture.path().join("victim");
+        std::fs::write(&victim, "keep me").expect("victim");
+        let link = fixture.path().join("link");
+        std::os::unix::fs::symlink(&victim, &link).expect("symlink");
+        use std::os::unix::fs::OpenOptionsExt;
+        let opened = std::fs::OpenOptions::new()
+            .write(true)
+            .custom_flags(no_follow())
+            .open(&link);
+        assert!(opened.is_err(), "the open followed a symbolic link");
+        assert_eq!(std::fs::read_to_string(&victim).expect("victim"), "keep me");
     }
 }

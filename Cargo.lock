@@ -853,6 +853,7 @@ version = "1.3.0"
 dependencies = [
  "dctx-hash",
  "dctx-map-segment",
+ "libc",
  "proptest",
  "rustix",
  "tempfile",
@@ -876,7 +877,9 @@ dependencies = [
  "dctx-plugin-protocol",
  "dctx-template",
  "ed25519-dalek",
+ "libc",
  "proptest",
+ "rustix",
  "serde_json",
  "tempfile",
 ]
@@ -917,6 +920,8 @@ dependencies = [
  "dctx-core",
  "dctx-plugin-distribution",
  "dctx-template",
+ "libc",
+ "rustix",
  "serde",
  "serde_json",
 ]

@@ -212,26 +212,10 @@ fn open_nofollow(path: &Path) -> std::io::Result<File> {
     }
 }
 
-/// `O_NOFOLLOW`. Linux and Android use `0x20000`; macOS and iOS use `0x100`.
+/// `O_NOFOLLOW` for the build target, from rustix (its value differs between Linux architectures).
 #[cfg(unix)]
 fn nofollow_flag() -> i32 {
-    #[cfg(any(target_os = "linux", target_os = "android"))]
-    {
-        0x20000
-    }
-    #[cfg(any(target_os = "macos", target_os = "ios"))]
-    {
-        0x100
-    }
-    #[cfg(not(any(
-        target_os = "linux",
-        target_os = "android",
-        target_os = "macos",
-        target_os = "ios"
-    )))]
-    {
-        0
-    }
+    rustix::fs::OFlags::NOFOLLOW.bits() as i32
 }
 
 fn same_file(opened: &fs::Metadata, path_meta: &fs::Metadata) -> bool {
@@ -280,5 +264,26 @@ mod tests {
         assert!(cleaned.contains("!.g*/"));
         assert!(cleaned.contains("!nested/.git/"));
         assert!(cleaned.contains("!keep.txt"));
+    }
+
+    /// A wrong hard-coded value (Linux aarch64 uses 0x8000, x86_64 0x20000) would silently follow links.
+    #[cfg(unix)]
+    #[test]
+    fn nofollow_flag_is_the_target_o_nofollow_and_refuses_a_link_at_open() {
+        assert_eq!(nofollow_flag(), libc::O_NOFOLLOW);
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("clock")
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!("dctx-nofollow-{stamp}"));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir(&dir).expect("dir");
+        let victim = dir.join("victim");
+        fs::write(&victim, "rules").expect("victim");
+        let link = dir.join("link");
+        std::os::unix::fs::symlink(&victim, &link).expect("symlink");
+        let opened = open_nofollow(&link);
+        let _ = fs::remove_dir_all(&dir);
+        assert!(opened.is_err(), "the open followed a symbolic link");
     }
 }
