@@ -209,7 +209,7 @@
   {
    "name": "Libraries",
    "line": "embed the engine in your own tool; the project pins its own binary and never re-implements engine logic.",
-   "status": "Rust from Git now; pip and npm publishing soon",
+   "status": "Rust from Git now; Python, Node and Go wrappers built in CI, registry publication pending",
    "link": "/docs/modalities/#rust-library-embed-the-facade"
   },
   {
@@ -233,7 +233,7 @@
    ],
    [
     "Project library",
-    "Pinned vendored binary, protocol client, same bytes as CLI (pip and npm publishing soon; Rust facade from Git today)",
+    "Pinned vendored binary, protocol client, same bytes as CLI (Python, Node and Go wrappers, registry publication pending; Rust facade from Git today)",
     "Pinning the version, exclusions in the project policy, not re-implementing engine logic"
    ],
    [
@@ -355,7 +355,7 @@
  ],
  "install": {
   "system": "Download the archive for your OS from GitHub Releases, verify it against SHA256SUMS, extract it and put `dctx` on PATH. Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.",
-  "project": "pip and npm packages that carry their own pinned binary are publishing soon, as are `cargo install dctx-cli` and `npx dctx`. Today, embed the Rust facade from a tagged Git dependency."
+  "project": "The Python, Node and Go wrappers over `dctx rpc` are built and tested in CI; their PyPI, npm and Go module publication is pending, as are `cargo install dctx-cli` and `npx dctx`. Today, embed the Rust facade from a tagged Git dependency."
  },
  "philosophy": "The binary is everything. One file holds the engine, the CLI and the MCP server; there is no service to run, no account and no model behind it. It works offline and makes zero network calls. The same tree and the same question give the same bytes, so answers can be compared, cached and trusted."
 }

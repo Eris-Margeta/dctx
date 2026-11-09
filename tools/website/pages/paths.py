@@ -35,7 +35,8 @@ def selector(level: int = 3) -> str:
 def responsibilities(caption: bool = True) -> str:
     r = facts.load()["responsibilities"]
     rows = [[f"<b>{e(a)}</b>", md_inline(b), md_inline(c)] for a, b, c in r["rows"]]
-    cap = 'Items marked planned or publishing soon are not in dctx 1.2.x yet.' if caption else ""
+    cap = (f'Items marked planned or pending are not in dctx {".".join(VERSION.split(".")[:2])}.x yet.'
+           if caption else "")
     return table(r["head"], rows, raw=True, caption=cap, cls="resp")
 
 

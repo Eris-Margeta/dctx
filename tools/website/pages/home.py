@@ -200,7 +200,7 @@ def body(scene: dict) -> str:
     {code("From source (Rust 1.91 or newer)", data.readme_block("From source"), "shell")}
    </div>
    <div>
-    <h3>Project libraries <span class="state">publishing soon</span></h3>
+    <h3>Project libraries <span class="state">registry publication pending</span></h3>
     <p>{md_inline(f["install"]["project"])}</p>
     {code("Cargo.toml (Rust facade, from Git today)", rust_dependency())}
     <h4>Two scopes, one binary</h4>
