@@ -126,7 +126,7 @@ fn map_find_read_and_pack_accept_linked_boundaries_and_refuse_in_tree_links() {
 }
 
 #[test]
-fn linked_global_and_project_rule_files_are_still_refused() {
+fn linked_global_rule_file_is_refused_and_linked_project_rule_file_is_skipped() {
     let fixture = Fixture::new();
     let place = fixture.linked.join("project");
     let rule = fixture.real.join("config/dctx/ignore");
@@ -146,6 +146,8 @@ fn linked_global_and_project_rule_files_are_still_refused() {
         fixture.real.join("project/.gitignore"),
     )
     .unwrap();
+    // A linked project rule file is skipped with a warning, never read through the link, and the
+    // warning names the place-relative path, not the absolute root.
     let output = fixture
         .command(false)
         .arg("pack")
@@ -153,5 +155,13 @@ fn linked_global_and_project_rule_files_are_still_refused() {
         .output()
         .unwrap();
     no_outside_bytes(&output);
-    assert!(!output.status.success(), "{output:?}");
+    assert!(output.status.success(), "{output:?}");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("warning: skipped rule file .gitignore"),
+        "{stderr}"
+    );
+    for root in [&fixture.real, &fixture.linked] {
+        assert!(!stderr.contains(root.to_str().unwrap()), "{stderr}");
+    }
 }

@@ -101,11 +101,11 @@ fn local_ignore_walk(
     walk: &mut RuleWalk<'_>,
 ) -> Result<Option<String>, String> {
     let mut local = String::new();
-    if let Some(text) = read_rule_file(&root.join(".gitignore"))? {
+    if let Some(text) = read_local_rule(root, ".gitignore")? {
         append_text(&mut local, &text)?;
     }
     collect_nested(root, "", &mut local, global_ignore, 0, &mut 0, walk)?;
-    if let Some(text) = read_rule_file(&root.join(".dctxignore"))? {
+    if let Some(text) = read_local_rule(root, ".dctxignore")? {
         append_text(&mut local, &text)?;
     }
     if local.is_empty() {
@@ -133,7 +133,7 @@ fn scoped_ignore_walk(
 ) -> Result<Option<String>, String> {
     let scope = dctx_core::ids::RelativePath::parse(scope).map_err(|error| error.to_string())?;
     let mut local = String::new();
-    if let Some(text) = read_rule_file(&root.join(".gitignore"))? {
+    if let Some(text) = read_local_rule(root, ".gitignore")? {
         append_text(&mut local, &text)?;
     }
     let mut relative = String::new();
@@ -146,7 +146,7 @@ fn scoped_ignore_walk(
         let meta = match fs::symlink_metadata(&path) {
             Ok(meta) => meta,
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => break,
-            Err(error) => return Err(format!("{}: {error}", path.display())),
+            Err(error) => return Err(format!("{relative}: {error}")),
         };
         // The source adapter also refuses links. Never read rule files through them.
         if meta.file_type().is_symlink() || !meta.is_dir() {
@@ -167,11 +167,11 @@ fn scoped_ignore_walk(
                 &mut 0,
                 walk,
             )?;
-        } else if let Some(text) = read_rule_file(&path.join(".gitignore"))? {
+        } else if let Some(text) = read_local_rule(root, &format!("{relative}/.gitignore"))? {
             append_nested(&mut local, &relative, &text)?;
         }
     }
-    if let Some(text) = read_rule_file(&root.join(".dctxignore"))? {
+    if let Some(text) = read_local_rule(root, ".dctxignore")? {
         append_text(&mut local, &text)?;
     }
     Ok((!local.is_empty()).then_some(local))
@@ -229,6 +229,42 @@ fn read_rule_file(path: &Path) -> Result<Option<String>, String> {
         .map_err(|error| format!("{}: {error}", path.display()))
 }
 
+/// Reads one rule file inside the place, named by its place-relative path.
+/// A link, directory, FIFO or other non-regular entry is skipped with a warning, as if absent:
+/// rule files are never read through links. Errors name the relative path, never the root.
+fn read_local_rule(root: &Path, relative: &str) -> Result<Option<String>, String> {
+    use dctx_adapter_fs::{SourceFs, StdFs};
+    let path = root.join(relative);
+    match fs::symlink_metadata(&path) {
+        Ok(meta) if meta.file_type().is_symlink() || !meta.is_file() => {
+            warn_skipped_rule(relative);
+            return Ok(None);
+        }
+        Ok(_) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(error) => return Err(format!("{relative}: {error}")),
+    }
+    StdFs
+        .read_policy(&path)
+        .map_err(|error| format!("{relative}: {error}"))
+}
+
+/// One stderr warning per skipped rule path and process (a server loads rules many times).
+fn warn_skipped_rule(relative: &str) {
+    static WARNED: std::sync::Mutex<std::collections::BTreeSet<String>> =
+        std::sync::Mutex::new(std::collections::BTreeSet::new());
+    let first = WARNED
+        .lock()
+        .map_or(true, |mut warned| warned.insert(relative.to_string()));
+    if first {
+        eprintln!("{}", skipped_rule_warning(relative));
+    }
+}
+
+fn skipped_rule_warning(relative: &str) -> String {
+    format!("warning: skipped rule file {relative}: it is a link or not a regular file, so its rules do not apply")
+}
+
 fn collect_nested(
     root: &Path,
     prefix: &str,
@@ -241,16 +277,13 @@ fn collect_nested(
     if depth > MAX_RULE_DEPTH {
         // The last directory's rule was historically loaded before stopping
         // descent. Preserve that boundary without listing below the rule cap.
-        if let Some(text) = read_rule_file(&root.join(prefix).join(".gitignore"))? {
+        if let Some(text) = read_local_rule(root, &format!("{prefix}/.gitignore"))? {
             append_nested(rules, prefix, &text)?;
         }
         return Ok(());
     }
-    let dir = if prefix.is_empty() {
-        root.to_path_buf()
-    } else {
-        root.join(prefix)
-    };
+    // Errors name the place-relative directory, never the absolute root.
+    let dir = if prefix.is_empty() { "." } else { prefix };
     let mut names = Vec::new();
     let relative =
         dctx_core::ids::RelativePath::parse(prefix).map_err(|error| error.to_string())?;
@@ -260,13 +293,13 @@ fn collect_nested(
             let entries = matches!(&error, dctx_core::error::DctxError::ResourceLimit { resource: dctx_core::error::Resource::Entries, .. });
             let error = DctxError::from_core(error);
             if entries {
-                format!("rule walk {}: {error}; raise DCTX_MAX_ENTRIES (1..100000000) or choose a smaller place", dir.display())
-            } else { format!("rule walk {}: {error}", dir.display()) }
+                format!("rule walk {dir}: {error}; raise DCTX_MAX_ENTRIES (1..100000000) or choose a smaller place")
+            } else { format!("rule walk {dir}: {error}") }
         })?;
     // The inventory also discovers rule leaves. Missing rules need no separate
     // root-to-leaf open, and links remain visible here and refused by the reader.
     if !prefix.is_empty() && entries.iter().any(|entry| entry.name == ".gitignore") {
-        if let Some(text) = read_rule_file(&dir.join(".gitignore"))? {
+        if let Some(text) = read_local_rule(root, &format!("{prefix}/.gitignore"))? {
             append_nested(rules, prefix, &text)?;
         }
     }
@@ -590,5 +623,34 @@ mod tests {
         fs::write(outside.join(".gitignore"), [0xff]).expect("invalid outside rule");
         std::os::unix::fs::symlink(&outside, root.join("link")).expect("link");
         assert!(scoped_ignore_text(&root, "link/file.py", None).is_ok());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn linked_and_non_regular_rule_files_are_skipped_without_the_root_path() {
+        let temp =
+            tempfile::tempdir_in(fs::canonicalize(std::env::temp_dir()).unwrap()).expect("fixture");
+        let root = temp.path().join("place");
+        let outside = temp.path().join("outside");
+        fs::create_dir_all(root.join("sub/.gitignore")).expect("directory rule");
+        fs::create_dir_all(&outside).expect("outside");
+        fs::write(outside.join("rules"), "secret-outside-rule\n").expect("outside rule");
+        std::os::unix::fs::symlink(outside.join("rules"), root.join(".gitignore")).expect("link");
+        fs::write(root.join(".dctxignore"), "kept-rule\n").expect("dctxignore");
+        let text = local_ignore_text(&root, None)
+            .expect("links and directories are skipped")
+            .expect("regular rules still load");
+        assert!(text.contains("kept-rule"), "{text}");
+        assert!(!text.contains("secret-outside-rule"), "{text}");
+        let scoped = scoped_ignore_text(&root, "sub/file.py", None).expect("scoped skip");
+        assert!(!scoped.unwrap_or_default().contains("secret-outside-rule"));
+        let warning = skipped_rule_warning("sub/.gitignore");
+        assert!(warning.starts_with("warning: skipped rule file sub/.gitignore"));
+        // An unreadable rule still fails, and the error names only the relative path.
+        fs::remove_file(root.join(".gitignore")).expect("unlink");
+        fs::write(root.join(".gitignore"), [0xff]).expect("invalid rule");
+        let error = local_ignore_text(&root, None).unwrap_err();
+        assert!(error.starts_with(".gitignore: "), "{error}");
+        assert!(!error.contains(&root.display().to_string()), "{error}");
     }
 }
