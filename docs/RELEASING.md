@@ -3,7 +3,8 @@
 # Releasing dctx
 
 Maintainer runbook for `.github/workflows/release.yml` and `deploy-site.yml`. Desktop
-keeps its separate `desktop-v*` workflow. The existing [publication gate](../RELEASING.md#publication-gate)
+keeps its separate `release-desktop.yml`; it is disabled (manual dispatch on a
+`desktop-v*` tag only) until the desktop app ships. The existing [publication gate](../RELEASING.md#publication-gate)
 still applies. Do not use `just release` without reviewing
 its commit/tag/push prompts. Publication starts when a maintainer pushes a `v*` tag.
 
@@ -59,14 +60,20 @@ its commit/tag/push prompts. Publication starts when a maintainer pushes a `v*` 
 5. **Website:** pushes to main affecting website, website tooling, docs or CHANGELOG
    build with the pinned requirements in a Python venv, then run
    `check.py --working-tree --no-capture`
-   before rsync. The full CLI capture check remains in normal CI. Generated website
+   before rsync. The build job has no secrets; it hands the built site to the
+   `deploy` job as an artifact. `deploy` runs no repository code, runs only for
+   `refs/heads/main` (a dispatch from another branch builds but never deploys) and
+   uses the `dctx-site` GitHub Environment: store the three `DCTX_SITE_*` secrets
+   there and restrict the environment to the `main` branch, with required reviewers
+   if wanted. The full CLI capture check remains in normal CI. Generated website
    files must be committed alongside source changes for normal CI (`just site`);
    deployment checks its fresh build against an independent rebuild. Update
    `tools/website/data/dates.json` with `build.py --refresh-dates` after doc commits.
    Deployment serializes runs and pins SSH host keys. The remote `./` resolves to
    `/srv/sites/dctx/` through the server's `rrsync -wo /srv/sites/dctx` forced command.
 
-Create these **repository Actions secrets** before enabling publication/deployment:
+Create these Actions secrets before enabling publication/deployment (the registry
+tokens as repository secrets, the `DCTX_SITE_*` secrets in the `dctx-site` environment):
 
 | Secret | Required credentials |
 | --- | --- |
@@ -80,7 +87,7 @@ Create these **repository Actions secrets** before enabling publication/deployme
 keyless signing needs no stored signing key. The cosign bootstrap is pinned by
 version and the GitHub API release-asset SHA-256 in `tools/release/install-cosign.sh`. The repository must permit GitHub
 artifact attestations. Enable GitHub private vulnerability reporting as described
-in [SECURITY.md](../SECURITY.md). Missing any site secret skips the deploy job.
+in [SECURITY.md](../SECURITY.md). Missing any site secret skips the deploy.
 No registry tokens or SSH material belong in git.
 
 The quality job runs pinned `cargo-audit` 0.22.2 against Cargo.lock alongside the

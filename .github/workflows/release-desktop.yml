@@ -1,17 +1,33 @@
 name: Release Desktop App
 
+# The desktop app is deferred and does not ship with the CLI release.
+# The `desktop-v*` tag trigger is disabled until the desktop app ships: the workflow runs only when a
+# maintainer dispatches it on a `desktop-v*` tag (the guard job refuses any other ref).
+# Hardening kept for when it is re-enabled: pinned bun and Rust toolchains, `bun install --frozen-lockfile`,
+# a read-only build job, a separate write job that only uploads, and build provenance attestations.
 on:
-  push:
-    tags:
-      - 'desktop-v*'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  release:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require a desktop-v tag
+        env:
+          REF: ${{ github.ref }}
+        run: |
+          case "$REF" in
+            refs/tags/desktop-v*) echo "releasing $REF" ;;
+            *) echo "dispatch this workflow on a desktop-v* tag, not $REF" >&2; exit 1 ;;
+          esac
+
+  build:
+    needs: guard
     permissions:
-      contents: write
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -30,6 +46,10 @@ jobs:
             arch: x64
 
     runs-on: ${{ matrix.platform.os }}
+    env:
+      # src-tauri is a workspace member, so bundles land in the workspace target directory.
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target
+      BUNDLE: target/${{ matrix.platform.target }}/release/bundle
 
     steps:
       - name: Checkout repository
@@ -40,12 +60,15 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@f4d14e03ff726c06358e5557344e1da148b56cf7 # v1 (GitHub API resolved)
         with:
-          bun-version: latest
+          bun-version: 1.4.3
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable (GitHub API resolved)
-        with:
-          targets: ${{ matrix.platform.target }}
+      - name: Install pinned Rust toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          source tools/release/toolchain.env
+          rustup toolchain install "$DCTX_RELEASE_RUST" --profile minimal --target '${{ matrix.platform.target }}'
+          rustup default "$DCTX_RELEASE_RUST"
 
       - name: Install Linux dependencies
         if: matrix.platform.os == 'ubuntu-latest'
@@ -64,7 +87,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: apps/dctx-desktop
-        run: bun install
+        run: bun install --frozen-lockfile
 
       - name: Build frontend
         working-directory: apps/dctx-desktop
@@ -77,50 +100,75 @@ jobs:
       - name: Prepare release artifacts (macOS)
         if: matrix.platform.os == 'macos-latest'
         run: |
-          cd apps/dctx-desktop/src-tauri/target/${{ matrix.platform.target }}/release/bundle
+          mkdir -p dist-desktop
+          cd "$BUNDLE"
           if [ -d "dmg" ]; then
-            mv dmg/*.dmg dctx-desktop-${{ matrix.platform.arch }}.dmg || true
+            mv dmg/*.dmg "$GITHUB_WORKSPACE/dist-desktop/dctx-desktop-${{ matrix.platform.arch }}.dmg"
           fi
           if [ -d "macos" ]; then
-            cd macos
-            tar -czf ../dctx-desktop-${{ matrix.platform.arch }}.app.tar.gz ./*.app || true
+            (cd macos && tar -czf "$GITHUB_WORKSPACE/dist-desktop/dctx-desktop-${{ matrix.platform.arch }}.app.tar.gz" ./*.app)
           fi
 
       - name: Prepare release artifacts (Windows)
         if: matrix.platform.os == 'windows-latest'
         shell: pwsh
         run: |
-          cd apps/dctx-desktop/src-tauri/target/${{ matrix.platform.target }}/release/bundle
-          if (Test-Path "msi") {
-            Get-ChildItem msi/*.msi | Rename-Item -NewName "dctx-desktop-${{ matrix.platform.arch }}.msi"
-          }
+          New-Item -ItemType Directory -Force -Path dist-desktop | Out-Null
+          Get-ChildItem "$env:BUNDLE/msi/*.msi" | Select-Object -First 1 |
+            Copy-Item -Destination "dist-desktop/dctx-desktop-${{ matrix.platform.arch }}.msi"
 
       - name: Prepare release artifacts (Linux)
         if: matrix.platform.os == 'ubuntu-latest'
         run: |
-          cd apps/dctx-desktop/src-tauri/target/${{ matrix.platform.target }}/release/bundle
+          mkdir -p dist-desktop
+          cd "$BUNDLE"
           if [ -d "deb" ]; then
-            mv deb/*.deb dctx-desktop-${{ matrix.platform.arch }}.deb || true
+            mv deb/*.deb "$GITHUB_WORKSPACE/dist-desktop/dctx-desktop-${{ matrix.platform.arch }}.deb"
           fi
           if [ -d "appimage" ]; then
-            mv appimage/*.AppImage dctx-desktop-${{ matrix.platform.arch }}.AppImage || true
+            mv appimage/*.AppImage "$GITHUB_WORKSPACE/dist-desktop/dctx-desktop-${{ matrix.platform.arch }}.AppImage"
           fi
+
+      - name: Keep the bundles for the publish job
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2 (GitHub API resolved)
+        with:
+          name: desktop-${{ matrix.platform.target }}
+          path: dist-desktop/*
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Collect the bundles
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0 (GitHub API resolved)
+        with:
+          path: dist-desktop
+          pattern: desktop-*
+          merge-multiple: true
+
+      - name: Attest every bundle
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3 (GitHub API resolved)
+        with:
+          subject-path: dist-desktop/*
 
       - name: Upload Release Assets
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1 (GitHub API resolved)
         with:
-          files: |
-            apps/dctx-desktop/src-tauri/target/${{ matrix.platform.target }}/release/bundle/*.dmg
-            apps/dctx-desktop/src-tauri/target/${{ matrix.platform.target }}/release/bundle/*.app.tar.gz
-            apps/dctx-desktop/src-tauri/target/${{ matrix.platform.target }}/release/bundle/*.msi
-            apps/dctx-desktop/src-tauri/target/${{ matrix.platform.target }}/release/bundle/*.deb
-            apps/dctx-desktop/src-tauri/target/${{ matrix.platform.target }}/release/bundle/*.AppImage
+          files: dist-desktop/*
+          fail_on_unmatched_files: true
           draft: false
           prerelease: true
           body: |
             # dctx Desktop ${{ github.ref_name }}
 
             ⚠️ **SECURITY NOTICE**: These binaries are NOT code-signed.
+            Each bundle has a GitHub build provenance attestation:
+            `gh attestation verify <file> --repo ${{ github.repository }}`.
 
             ## Installation Instructions
 
@@ -160,12 +208,10 @@ jobs:
             ## Why Unsigned?
 
             We're an open-source project and can't afford code signing certificates ($400/year).
-            All source code is available for inspection at [github.com/your-repo/dctx](https://github.com/your-repo/dctx).
-
-            **Prefer to build from source?** See [BUILDING.md](../../apps/dctx-desktop/BUILDING.md)
+            All source code is available for inspection at ${{ github.server_url }}/${{ github.repository }}.
 
             ## What's New
 
-            See [CHANGELOG.md](../../apps/dctx-desktop/CHANGELOG.md) for full release notes.
+            See [CHANGELOG.md](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/apps/dctx-desktop/CHANGELOG.md) for full release notes.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
