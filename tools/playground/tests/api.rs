@@ -240,6 +240,24 @@ fn per_client_rate_limit_is_429_with_retry_after() {
 }
 
 #[test]
+fn a_spoofed_first_forwarded_entry_does_not_get_a_new_bucket() {
+    let s = start(&["--burst", "2", "--rate", "1"]);
+    let send = |i: usize, header: &str| {
+        let body = format!(r#"{{"cmd":["map","find","s{i}"]}}"#);
+        let req = format!("POST /api/v1/run HTTP/1.1\r\nHost: t\r\n{header}\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{body}", body.len());
+        raw(&s.addr, req.as_bytes()).0
+    };
+    // The proxy appends the visitor as the last entry; a new first entry each time changes nothing.
+    let codes: Vec<u16> = (0..3).map(|i| send(i, &format!("X-Forwarded-For: 192.0.2.{i}, 198.51.100.9"))).collect();
+    assert_eq!(codes, [200, 200, 429]);
+    // X-Real-IP (set by the proxy) wins over any X-Forwarded-For value.
+    let codes: Vec<u16> = (3..6)
+        .map(|i| send(i, &format!("X-Real-IP: 198.51.100.10\r\nX-Forwarded-For: 192.0.2.{i}")))
+        .collect();
+    assert_eq!(codes, [200, 200, 429]);
+}
+
+#[test]
 fn identical_requests_come_from_the_cache_without_using_the_rate() {
     let s = start(&["--burst", "1", "--rate", "1"]);
     let body = r#"{"cmd":["map","find","greet"]}"#;

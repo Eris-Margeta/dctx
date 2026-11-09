@@ -176,13 +176,15 @@ fn depth(value: &Json) -> usize {
     }
 }
 
+/// The visitor address the rate limit is keyed on. Only the proxy may set it: nginx overwrites
+/// `X-Real-IP` and `X-Forwarded-For` with the address it trusts (the entry Traefik appended), so the
+/// last `X-Forwarded-For` entry is the proxy's, never a client-supplied first entry. Without either
+/// header (a direct local run) the peer address is used.
 fn client(req: &Request, peer: &str) -> String {
-    // Traefik (and the nginx in front of this service) are the only peers; the first
-    // X-Forwarded-For entry is the visitor. Without the header the peer address is used.
-    req.header("x-forwarded-for")
-        .and_then(|v| v.split(',').next())
-        .map(|v| v.trim().to_string())
-        .filter(|v| !v.is_empty() && v.len() <= 64)
+    let ip = |v: &str| v.trim().parse::<std::net::IpAddr>().ok().map(|ip| ip.to_string());
+    req.header("x-real-ip")
+        .and_then(ip)
+        .or_else(|| req.header("x-forwarded-for").and_then(|v| v.rsplit(',').next()).and_then(ip))
         .unwrap_or_else(|| peer.to_string())
 }
 

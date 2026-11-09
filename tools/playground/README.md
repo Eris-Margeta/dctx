@@ -16,8 +16,8 @@ It is a separate Cargo package (excluded from the workspace), standard library o
   read `# kiosk find`, exactly as on the website) or `project` for pasted files; an empty environment;
   `RLIMIT_CPU` 2 s, `RLIMIT_AS` 256 MiB, `RLIMIT_NOFILE` 64, `RLIMIT_FSIZE` 8 MiB, `RLIMIT_NPROC` 16;
   a 3 s wall clock, then `SIGKILL`; stdout capped at 256 KiB; the directory is deleted afterwards.
-- **Abuse controls**: 20 runs per minute per visitor (burst 5; the first `X-Forwarded-For` entry, set by
-  the proxy), 2 concurrent runs, 4 workers and a queue of 8 connections (then `503 Retry-After: 2`),
+- **Abuse controls**: 20 runs per minute per visitor (burst 5; keyed on `X-Real-IP`, else the last `X-Forwarded-For`
+  entry, both set by the proxy, never a client-supplied first entry), 2 concurrent runs, 4 workers and a queue of 8 connections (then `503 Retry-After: 2`),
   a 60 s cache of 64 identical requests, counters only (no addresses, nothing on disk).
 
 ## Build, test, run
