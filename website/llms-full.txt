@@ -6,9 +6,9 @@
 
 - This is llms-full.txt: the facts, the route table, every document the budget allows, the captured CLI help and examples. The other entry points: https://www.dctx.internet.technology/llms-small.txt, https://www.dctx.internet.technology/llms.txt.
 - Engine: dctx 1.3.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
-- Docs commit: 8461deb1405fa38b58d75ca1427f828c0f0e3a43 (2026-11-09T12:50:17+01:00), the last commit that changed one of the documents.
+- Docs commit: 9cb1076754eae7ea12f9dead0c5f456d680fad76 (2026-11-09T13:47:20+01:00), the last commit that changed one of the documents.
 - Command: `dctx pack . --include /docs/START.md --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md --include /docs/guides/MAP-MODE.md --include /docs/guides/AGENTS-SNIPPET.md --include /docs/guides/PLUGINS.md --include /docs/SPEC.md --include /docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md --include /docs/ADR-018-Language-Coverage.md --include /docs/design/contracts/DTS-v2.md --include /docs/ADR-003-Templating-Engine.md --include /docs/CRATE-MAP.md --include /docs/CLI-EXIT-CODES.md --include /docs/BENCHMARK-20261030.md --include /docs/research/stability-20261105/REPORT.md --include /docs/research/trail-code-2026-10/REPORT.md --include /RELEASING.md --include /CONTRIBUTING.md --include /SECURITY.md --include /TRADEMARK.md --include /MAINTENANCE.md --include /CHANGELOG.md --include /crates/dctx-template/templates/default.dctx_template --include /crates/dctx-template/templates/stamped.dctx_template`
-- Budget: 98,124 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 25 documents.
+- Budget: 98,193 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 25 documents.
 
 ## Facts
 
@@ -191,7 +191,7 @@ Documents link to their Markdown twin (index.md), the repository file with only 
       [D] docs/research/trail-code-2026-10 (ID:D034)
         [F] docs/research/trail-code-2026-10/REPORT.md (ID:F035)
 </DIRECTORY_TREE>
-<FILE_CONTENT_START ID="F001" PATH="CHANGELOG.md" LINES="452">
+<FILE_CONTENT_START ID="F001" PATH="CHANGELOG.md" LINES="455">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Changelog
@@ -310,6 +310,9 @@ until it happens, the release archives are the install path.
   skipped with a warning instead of failing the command; rule-file errors no longer
   print the absolute project path.
 - Cache policy saves no longer get stuck on a `policy.v1.tmp` left by a crash.
+- `dctx plugin` and `dctx git` work when the plugin root sits below a symlinked
+  directory (macOS `/var` and `/tmp`, a linked home) instead of failing with
+  `Interrupted`; a symlinked plugin root itself and symlinks inside it stay refused.
 - `dctx doctor` shows each binary's build commit (`commit:` in text, `"commit"` in
   JSON) and names an invalid argument.
 - `dctx --help` lists `map export`; the `dctx map --help` examples map a file that has
