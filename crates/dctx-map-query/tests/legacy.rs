@@ -49,7 +49,10 @@ fn linked_cache_ancestors_preserve_save_identity_and_refuse_legacy_file_links() 
     fs::create_dir(&real).unwrap();
     let linked = temp.path().join("linked");
     std::os::unix::fs::symlink(&real, &linked).unwrap();
-    let database = linked.join("index.sqlite");
+    // The link is an ancestor of the store directory (as `/var` or `/tmp` on macOS); a
+    // store directory that is itself a symlink is refused by `dctx_adapter_store::StdFs::open`.
+    fs::create_dir(real.join("cache")).unwrap();
+    let database = linked.join("cache").join("index.sqlite");
     let legacy = database.with_extension("query.json");
     let bytes = serde_json::to_vec(&serde_json::json!({
         "version": 1, "place": "fixture", "files": {}, "moves": {}
@@ -58,7 +61,7 @@ fn linked_cache_ancestors_preserve_save_identity_and_refuse_legacy_file_links() 
     fs::write(&legacy, &bytes).unwrap();
     let index = Index::open("fixture", &database).unwrap();
     index.save(&database).unwrap();
-    assert!(index.save(real.join("index.sqlite")).is_err());
+    assert!(index.save(real.join("cache").join("index.sqlite")).is_err());
     drop(index);
     let outside = temp.path().join("outside.json");
     fs::write(&outside, &bytes).unwrap();
