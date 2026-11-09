@@ -18,12 +18,12 @@ pub const RESERVED_ALIASES: &[&str] = &[
 pub fn bundled_git_plugin() -> KnownPlugin {
     KnownPlugin {
         id: "dctx/git".to_string(),
-        version: "1.2.0".to_string(),
+        version: "1.3.0".to_string(),
         digest: Some(hex32(
             "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
         )),
         manifest_digest: Some(hex32(
-            "4f80070730be7a37178ab24ba646822faadf5ee2bf793526a0162c01f5cb8602",
+            "71ce88d68a50db590c8c1889d992b5e5e5132d512082b80bb10158a81d7629a6",
         )),
         publisher_key: "fixture-key-1".to_string(),
         origin: PluginOrigin::Bundled,

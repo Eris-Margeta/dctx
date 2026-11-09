@@ -312,7 +312,7 @@ mod tests {
                 "\"target\": \"aarch64-apple-darwin\"",
                 "\"target\": \"riscv64\"",
             ),
-            ("\"version\": \"1.2.0\"", "\"version\": \"latest\""),
+            ("\"version\": \"1.3.0\"", "\"version\": \"latest\""),
             (
                 "\"license\": \"Apache-2.0\",",
                 "\"license\": \"Apache-2.0\", \"post_install\": \"x\",",

@@ -35,7 +35,7 @@ export async function installTauriMock(page, fixtures = {}) {
     let recent = clone(options.recentProjects ?? [{ path: '/fixtures/dctx-demo', name: 'dctx-demo',
       last_accessed: '2026-10-17T08:00:00.000Z', access_count: 3 }]);
     const plugins = [{
-      id: 'dctx/git', name: 'Git', version: '1.2.0', source: 'bundled',
+      id: 'dctx/git', name: 'Git', version: '1.3.0', source: 'bundled',
       state: 'enabled', enabled: true, needs_consent: false,
       capabilities: [
         'required: Read file (path: .gitignore; scope: project; max bytes: 1048576)',

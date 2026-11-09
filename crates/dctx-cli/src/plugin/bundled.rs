@@ -92,7 +92,7 @@ mod tests {
         }
         assert_eq!(catalog().alias, "git");
         assert_eq!(catalog().id, "dctx/git");
-        assert_eq!(catalog().version, "1.2.0");
+        assert_eq!(catalog().version, "1.3.0");
         assert!(capabilities().unwrap().len() >= 3);
     }
 
@@ -107,6 +107,6 @@ mod tests {
     fn strict_build_keeps_catalog_metadata_without_linking_the_worker() {
         assert!(!worker_linked());
         assert_eq!(catalog().id, "dctx/git");
-        assert_eq!(installed_version().unwrap().version.as_str(), "1.2.0");
+        assert_eq!(installed_version().unwrap().version.as_str(), "1.3.0");
     }
 }

@@ -359,7 +359,7 @@ mod tests {
             validate_cache_base(parent.path().to_path_buf()).expect("parent"),
             parent.path()
         );
-        assert_eq!(engine_cache_namespace(), "1.2");
+        assert_eq!(engine_cache_namespace(), "1.3");
         assert!(!parent.path().join(engine_cache_namespace()).exists());
         assert_eq!(
             fs::read(parent.path().join("ledger.v1")).expect("unchanged"),

@@ -10,7 +10,7 @@ function row(overrides: Partial<PluginRow> = {}): PluginRow {
   return {
     id: 'dctx/git',
     name: 'Git',
-    version: '1.2.0',
+    version: '1.3.0',
     source: 'bundled',
     state: 'enabled',
     enabled: true,
@@ -28,7 +28,7 @@ test('bundled Git remains enabled and discloses every supplied grant', () => {
   expect(view).toEqual({
     id: 'dctx/git',
     name: 'Git',
-    versionLabel: 'Version 1.2.0',
+    versionLabel: 'Version 1.3.0',
     sourceLabel: 'Bundled',
     stateLabel: 'Enabled',
     badgeClass: 'plugin-badge plugin-state-enabled',
@@ -135,7 +135,7 @@ test('unknown state or source refuses rather than suggesting an enabled plugin',
 
 test('presentation preserves the exact consent payload and never treats approval as enablement', () => {
   const approval = {
-    id: 'dctx/git', version: '1.2.0', digest: 'a'.repeat(64),
+    id: 'dctx/git', version: '1.3.0', digest: 'a'.repeat(64),
     capabilities: {
       required: [{ kind: 'file.read', path: '.git/HEAD', max_bytes: 4096 }],
       optional: [], outputs: [], network: [],
