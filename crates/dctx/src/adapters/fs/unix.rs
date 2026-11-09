@@ -16,10 +16,12 @@ const DIRECTORY: OFlags = OFlags::RDONLY
     .union(OFlags::DIRECTORY)
     .union(OFlags::NOFOLLOW)
     .union(OFlags::CLOEXEC);
+/// Content opens never follow a link, never block on a FIFO, and never make a terminal the controlling tty.
 const CONTENT: OFlags = OFlags::RDONLY
     .union(OFlags::NOFOLLOW)
     .union(OFlags::CLOEXEC)
-    .union(OFlags::NONBLOCK);
+    .union(OFlags::NONBLOCK)
+    .union(OFlags::NOCTTY);
 
 fn error(error: rustix::io::Errno) -> CoreError {
     if matches!(error, rustix::io::Errno::LOOP | rustix::io::Errno::NOTDIR) {
@@ -47,7 +49,14 @@ pub(super) fn open_root(path: &Path) -> Result<File, CoreError> {
     Ok(directory)
 }
 
+/// Opens a regular file under `parent`. The entry's type is checked without opening it first, so a device node,
+/// FIFO or socket is refused before `open` can reach a driver; the handle is checked again in case the entry was
+/// swapped between the two calls.
 fn open_content(parent: &File, name: &str) -> Result<File, CoreError> {
+    let listed = statat(parent, name, AtFlags::SYMLINK_NOFOLLOW).map_err(error)?;
+    if FileType::from_raw_mode(listed.st_mode) != FileType::RegularFile {
+        return Err(CoreError::PolicyDenied);
+    }
     let file = openat(parent, name, CONTENT, Mode::empty())
         .map(File::from)
         .map_err(error)?;
@@ -474,6 +483,33 @@ mod tests {
                 .unwrap_err(),
             CoreError::PolicyDenied
         );
+    }
+
+    #[test]
+    fn device_nodes_sockets_and_links_are_refused_before_they_are_opened() {
+        let root = tempfile::tempdir().unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        fs::write(outside.path().join("target"), b"OUTSIDE_SENTINEL").unwrap();
+        symlink("/dev/null", root.path().join("null")).unwrap();
+        symlink(outside.path().join("target"), root.path().join("link")).unwrap();
+        let _socket = std::os::unix::net::UnixListener::bind(root.path().join("sock")).unwrap();
+        fs::write(root.path().join("plain.rs"), b"inside").unwrap();
+        let source = FsSource::open(root.path()).unwrap();
+        for name in ["null", "link", "sock"] {
+            assert_eq!(
+                source.read(&grant(name), 64).unwrap_err(),
+                CoreError::PolicyDenied,
+                "{name}"
+            );
+        }
+        assert_eq!(source.read(&grant("plain.rs"), 64).unwrap(), b"inside");
+        // A character device reached through a pinned directory handle is refused by its listed type.
+        let dev = File::from(openat(rustix::fs::CWD, "/dev", DIRECTORY, Mode::empty()).unwrap());
+        assert_eq!(
+            open_content(&dev, "null").unwrap_err(),
+            CoreError::PolicyDenied
+        );
+        assert!(CONTENT.contains(OFlags::NOCTTY));
     }
 
     #[test]
