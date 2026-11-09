@@ -116,6 +116,9 @@ until it happens, the release archives are the install path.
   skipped with a warning instead of failing the command; rule-file errors no longer
   print the absolute project path.
 - Cache policy saves no longer get stuck on a `policy.v1.tmp` left by a crash.
+- `dctx plugin` and `dctx git` work when the plugin root sits below a symlinked
+  directory (macOS `/var` and `/tmp`, a linked home) instead of failing with
+  `Interrupted`; a symlinked plugin root itself and symlinks inside it stay refused.
 - `dctx doctor` shows each binary's build commit (`commit:` in text, `"commit"` in
   JSON) and names an invalid argument.
 - `dctx --help` lists `map export`; the `dctx map --help` examples map a file that has

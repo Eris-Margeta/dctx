@@ -178,10 +178,54 @@ pub struct FsStore {
 
 impl FsStore {
     /// Binds `root` without creating it.
+    ///
+    /// On Unix, symlinked ancestors of `root` are resolved once here, at the boundary (macOS
+    /// `/var` -> `/private/var`, `/tmp`). The root leaf and every directory below it stay
+    /// no-follow: a symlinked root or an in-tree symlink is still refused by each operation.
     pub fn new(root: impl Into<PathBuf>) -> Self {
+        let root = root.into();
+        #[cfg(unix)]
+        let root = resolve_ancestors(&root).unwrap_or(root);
         Self {
-            root: root.into(),
+            root,
             held: Mutex::new(None),
+        }
+    }
+}
+
+/// Absolute `root` with its existing ancestors canonicalized and its leaf left as written.
+/// Missing trailing ancestors are kept lexically; the store creates them no-follow later.
+/// `..` components are refused so they cannot be resolved through a symlink.
+#[cfg(unix)]
+pub(crate) fn resolve_ancestors(root: &Path) -> io::Result<PathBuf> {
+    use std::path::Component;
+    let absolute = std::path::absolute(root)?;
+    if absolute
+        .components()
+        .any(|part| matches!(part, Component::ParentDir))
+    {
+        return Err(io::Error::other("non-normal store path"));
+    }
+    let (Some(parent), Some(name)) = (absolute.parent(), absolute.file_name()) else {
+        return Ok(absolute);
+    };
+    let mut existing = parent;
+    let mut missing = Vec::new();
+    loop {
+        match fs::canonicalize(existing) {
+            Ok(mut resolved) => {
+                resolved.extend(missing.iter().rev());
+                resolved.push(name);
+                return Ok(resolved);
+            }
+            Err(error) if error.kind() == io::ErrorKind::NotFound => {
+                let (Some(up), Some(part)) = (existing.parent(), existing.file_name()) else {
+                    return Err(error);
+                };
+                missing.push(part);
+                existing = up;
+            }
+            Err(error) => return Err(error),
         }
     }
 }
@@ -751,5 +795,33 @@ mod root_tests {
         assert_eq!(root, PathBuf::from(home).join("dctx").join("Plugins"));
         let root = root_from(env(&[("DCTX_PLUGIN_ROOT", "chosen")]), "linux").unwrap();
         assert_eq!(root, PathBuf::from("chosen"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn linked_ancestors_resolve_but_the_leaf_and_missing_tail_stay_lexical() {
+        use super::resolve_ancestors;
+        use std::os::unix::fs::symlink;
+        let temp = tempfile::tempdir().unwrap();
+        let real = std::fs::canonicalize(temp.path()).unwrap().join("real");
+        std::fs::create_dir(&real).unwrap();
+        let linked = temp.path().join("linked");
+        symlink(&real, &linked).unwrap();
+        assert_eq!(
+            resolve_ancestors(&linked.join("plugins")).unwrap(),
+            real.join("plugins")
+        );
+        assert_eq!(
+            resolve_ancestors(&linked.join("missing/deeper/plugins")).unwrap(),
+            real.join("missing/deeper/plugins")
+        );
+        // A symlinked leaf is kept as written so the store refuses it.
+        std::fs::create_dir(real.join("target")).unwrap();
+        symlink(real.join("target"), real.join("leaf")).unwrap();
+        assert_eq!(
+            resolve_ancestors(&linked.join("leaf")).unwrap(),
+            real.join("leaf")
+        );
+        assert!(resolve_ancestors(&linked.join("x/../plugins")).is_err());
     }
 }

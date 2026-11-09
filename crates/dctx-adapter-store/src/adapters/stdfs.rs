@@ -356,4 +356,19 @@ mod root_tests {
         fs::set_permissions(&shared, fs::Permissions::from_mode(0o777)).unwrap();
         assert!(StdFs::open(&shared.join("store")).is_err());
     }
+
+    #[test]
+    fn a_root_under_a_linked_ancestor_resolves_to_the_real_directory() {
+        // Mirrors macOS temporary directories under /var -> /private/var on any Unix.
+        let dir = tempfile::tempdir().unwrap();
+        let real = fs::canonicalize(dir.path()).unwrap().join("real");
+        fs::create_dir(&real).unwrap();
+        let linked = dir.path().join("linked");
+        std::os::unix::fs::symlink(&real, &linked).unwrap();
+        let fs = StdFs::open(&linked.join("store")).unwrap();
+        assert_eq!(fs.root, real.join("store"));
+        assert_eq!(mode(&real.join("store")), 0o700);
+        fs.create("objects/name").unwrap();
+        assert!(real.join("store/objects").is_dir());
+    }
 }

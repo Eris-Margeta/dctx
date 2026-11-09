@@ -165,3 +165,89 @@ fn linked_global_rule_file_is_refused_and_linked_project_rule_file_is_skipped() 
         assert!(!stderr.contains(root.to_str().unwrap()), "{stderr}");
     }
 }
+
+/// Plugin command under the fixture, with the plugin root explicit or derived from the config home.
+fn plugin(fixture: &Fixture, root: Option<&std::path::Path>, args: &[&str]) -> Output {
+    let mut command = fixture.command(false);
+    if let Some(root) = root {
+        command.env("DCTX_PLUGIN_ROOT", root);
+    }
+    command.args(args).output().unwrap()
+}
+
+#[test]
+fn plugin_root_under_a_linked_ancestor_works_and_a_linked_root_leaf_is_refused() {
+    let fixture = Fixture::new();
+    let explicit = fixture.linked.join("plugins");
+    // macOS temporary directories live under /var -> /private/var: the explicit root and the
+    // HOME/XDG default must both resolve that ancestor instead of failing as Interrupted.
+    let default_real = if cfg!(target_os = "macos") {
+        fixture
+            .real
+            .join("home/Library/Application Support/dctx/plugin-config")
+    } else {
+        fixture.real.join("config/dctx/plugins")
+    };
+    for (root, real) in [
+        (Some(explicit.as_path()), fixture.real.join("plugins")),
+        (None, default_real),
+    ] {
+        let list = plugin(&fixture, root, &["plugin", "list"]);
+        assert!(list.status.success(), "{root:?}: {list:?}");
+        assert!(String::from_utf8_lossy(&list.stdout).contains("dctx/git"));
+        if cfg!(feature = "git-worker") {
+            let refused = plugin(&fixture, root, &["git", "status"]);
+            let stderr = String::from_utf8_lossy(&refused.stderr);
+            assert!(stderr.contains("(ConsentRequired)"), "{root:?}: {stderr}");
+            let enabled = plugin(
+                &fixture,
+                root,
+                &["plugin", "enable", "dctx/git", "--approve"],
+            );
+            assert!(enabled.status.success(), "{root:?}: {enabled:?}");
+            assert!(real.join("registry.json").is_file(), "{}", real.display());
+            let admitted = plugin(&fixture, root, &["git", "status"]);
+            assert!(admitted.status.success(), "{root:?}: {admitted:?}");
+        }
+    }
+    // The root leaf itself stays no-follow, even below a resolved ancestor.
+    let target = fixture.real.join("outside/plugins");
+    fs::create_dir(&target).unwrap();
+    let leaf = fixture.real.join("plugins-link");
+    symlink(&target, &leaf).unwrap();
+    let linked_leaf = fixture.linked.join("plugins-link");
+    for args in [
+        &["plugin", "list"][..],
+        &["plugin", "enable", "dctx/git", "--approve"],
+    ] {
+        let output = plugin(&fixture, Some(&linked_leaf), args);
+        assert!(!output.status.success(), "{args:?}: {output:?}");
+    }
+    assert_eq!(fs::read_dir(&target).unwrap().count(), 0);
+}
+
+#[test]
+fn output_files_under_a_linked_ancestor_are_written() {
+    let fixture = Fixture::new();
+    let place = fixture.linked.join("project");
+    let place = place.to_str().unwrap();
+    let pack = fixture.linked.join("tmp/pack.txt");
+    let output = fixture
+        .command(false)
+        .args(["pack", place, "--output"])
+        .arg(&pack)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let packed = fs::read_to_string(fixture.real.join("tmp/pack.txt")).unwrap();
+    assert!(packed.contains("pub fn KeptBeacon"), "{packed}");
+    let export = fixture.linked.join("tmp/map.json");
+    let output = fixture
+        .command(false)
+        .args(["map", "export", "--place", place, "--output"])
+        .arg(&export)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    assert!(fixture.real.join("tmp/map.json").is_file());
+}

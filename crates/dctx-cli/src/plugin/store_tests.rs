@@ -303,9 +303,10 @@ fn symlinked_roots_children_and_registry_are_refused() {
     symlink(&outside, &store.root).unwrap();
     assert_eq!(store.load_registry(), Err(DistributionError::Interrupted));
     assert_eq!(store.try_lock(), Err(DistributionError::Interrupted));
+    // A symlinked ancestor is resolved once, at the boundary; the leaf below it stays no-follow.
     assert_eq!(
-        FsStore::new(store.root.join("nested")).try_lock(),
-        Err(DistributionError::Interrupted)
+        FsStore::new(store.root.join("nested")).root,
+        fs::canonicalize(&outside).unwrap().join("nested")
     );
     assert!(!outside.join("registry.lock").exists());
     fs::remove_file(&store.root).unwrap();
