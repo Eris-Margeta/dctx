@@ -6,6 +6,7 @@
   "description": "dctx Desktop - Cross-platform GUI for directory context generation",
   "type": "module",
   "scripts": {
+    "test": "bun test ./tests",
     "e2e": "node e2e/runner.mjs",
     "dev": "bunx --bun vite",
     "build": "bun run build:ts && bunx --bun vite build",

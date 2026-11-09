@@ -14,6 +14,14 @@ and distribution plans below do not describe the current release.
 
 ## [Unreleased]
 
+- Release version checks now cover the bundled git plugin, its fixtures and their digests.
+
+## [1.3.1] - 2026-11-09
+
+### Changed
+
+- npm packages are published as `dctx` with platform packages `@tejl/dctx-<platform>`.
+
 ### Fixed
 
 - Segment store: publishing a new generation no longer fails with `InvalidRequest(generation)`

@@ -1,9 +1,9 @@
 {
  "schema": 1,
  "note": "The one facts source: the llms files (llms.py, facts_markdown), /for-ai-evaluators/, the home notice, the choose-your-path selector and /start/ pages (facts.py). Schema: tools/website/README.md. check.py fails if version differs from VERSION, if released differs from CHANGELOG.md or the release tag, or if a removed command appears outside the removed list. Honesty rule: only what ships in the current release is stated as existing; everything else says planned or publishing soon.",
- "version": "1.3.0",
+ "version": "1.3.1",
  "released": "2026-11-09",
- "release_tag": "v1.3.0",
+ "release_tag": "v1.3.1",
  "is": "dctx is an open-source (Apache-2.0) Rust context engine for AI-assisted coding: one local binary that packs a project into one structured block, or answers bounded, byte-stable symbol queries (find, read, neighbors, skeleton) as CLI output or MCP tools.",
  "is_not": [
   "No RAG: no embeddings, no vector search, and the engine never calls a model.",
@@ -15,7 +15,7 @@
   "available": "Each release on GitHub ships prebuilt archives for Linux x64/ARM64, macOS x64/ARM64 and Windows x64 with a SHA256SUMS file.",
   "command": "sha256sum --check --ignore-missing SHA256SUMS",
   "planned": "Releases from 1.3.0 also ship keyless cosign signatures, CycloneDX SBOMs, build provenance and offline bundles; see [verification](https://github.com/Eris-Margeta/dctx/blob/main/docs/VERIFYING.md).",
-  "link": "https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.0"
+  "link": "https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.1"
  },
  "modalities": [
   {
@@ -56,14 +56,14 @@
   },
   {
    "name": "Python, Node and Go wrappers",
-   "status": "registry publication pending",
-   "line": "Thin `dctx rpc` wrappers, built and tested in CI; not on PyPI, npm or a Go module proxy yet. Use the release archives today.",
-   "link": "/docs/modalities/#python-node-and-go-wrappers-registry-publication-pending"
+   "status": "Node on npm; Python and Go from CI",
+   "line": "Thin `dctx rpc` wrappers, built and tested in CI. Install Node with `npm install dctx`, which includes pinned `@tejl/dctx-<platform>` optional dependencies; use CI artifacts for Python and Go.",
+   "link": "/docs/modalities/#python-node-and-go-wrappers"
   }
  ],
  "scopes": [
   "System binary: the `dctx` on PATH belongs to you and your agents, and you upgrade it. Interactive agents and MCP call this one.",
-  "Project binary (with the Python, Node and Go wrappers, registry publication pending): a binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Application code and CI call this one; a library never silently falls back to PATH.",
+  "Project binary (Node from npm; Python and Go from CI): a binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Application code and CI call this one; a library never silently falls back to PATH.",
   "Same engine, different owner. `dctx doctor` lists every binary in reach; verify each against SHA256SUMS and its cosign signature."
  ],
  "notice": "dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.",
@@ -209,7 +209,7 @@
   {
    "name": "Libraries",
    "line": "embed the engine in your own tool; the project pins its own binary and never re-implements engine logic.",
-   "status": "Rust from Git now; Python, Node and Go wrappers built in CI, registry publication pending",
+   "status": "Rust from Git now; Python, Node and Go wrappers built in CI, Node on npm; Python and Go from CI",
    "link": "/docs/modalities/#rust-library-embed-the-facade"
   },
   {
@@ -233,7 +233,7 @@
    ],
    [
     "Project library",
-    "Pinned vendored binary, protocol client, same bytes as CLI (Python, Node and Go wrappers, registry publication pending; Rust facade from Git today)",
+    "Pinned vendored binary, protocol client, same bytes as CLI (Node on npm; Python and Go from CI; Rust facade from Git)",
     "Pinning the version, exclusions in the project policy, not re-implementing engine logic"
    ],
    [
@@ -308,9 +308,9 @@
    "name": "Agent builder embedding a library",
    "gets": "Stable ids and the exact source bytes inside your own app, from the same engine as the CLI.",
    "who": "You build an agent, editor or tool and want dctx inside it.",
-   "modality": "Project library with its own pinned binary. The Python, Node and Go wrappers over `dctx rpc` are built and tested in CI, with registry publication pending; today use the Rust facade from a tagged Git dependency, or run a pinned CLI binary and read its `--json` output.",
+   "modality": "Project library with its own pinned binary. Install the Node wrapper with `npm install dctx`; use CI artifacts for Python and Go, embed the Rust facade from a tagged Git dependency, or run a pinned CLI binary and read its `--json` output.",
    "setup": [
-    "Pin one version in your project, for example the Rust facade: `dctx = { git = \"https://github.com/Eris-Margeta/dctx\", tag = \"v1.3.0\" }`.",
+    "Pin one version in your project, for example the Rust facade: `dctx = { git = \"https://github.com/Eris-Margeta/dctx\", tag = \"v1.3.1\" }`.",
     "Pass your own ignore rules: the library does not load `.gitignore` by itself; the host supplies selection policy, storage limits and the clock.",
     "Move ids, not text: call `find`, keep the returned ids, call `read` with them."
    ],
@@ -359,7 +359,7 @@
  ],
  "install": {
   "system": "Download the archive for your OS from GitHub Releases, verify it against SHA256SUMS, extract it and put `dctx` on PATH. Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.",
-  "project": "The Python, Node and Go wrappers over `dctx rpc` are built and tested in CI; their PyPI, npm and Go module publication is pending, as are `cargo install dctx-cli` and `npx dctx`. Today, embed the Rust facade from a tagged Git dependency."
+  "project": "Install the Node wrapper with `npm install dctx`, then run `npx dctx`. It pins the matching `@tejl/dctx-<platform>` optional dependency. Use CI artifacts for Python and Go, or embed the Rust facade from a tagged Git dependency."
  },
  "philosophy": "The binary is everything. One file holds the engine, the CLI and the MCP server; there is no service to run, no account and no model behind it. It works offline and makes zero network calls. The same tree and the same question give the same bytes, so answers can be compared, cached and trusted."
 }

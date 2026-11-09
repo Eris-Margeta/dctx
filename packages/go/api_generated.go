@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 )
 
-const Version = "1.3.0"
+const Version = "1.3.1"
 const schemaSHA256 = "f4a86edac9cc6384def06c896a7c731605b5a13582ffce4e07f4a8f9ae2fe54e"
 
 // Verb is an engine operation. Arguments retain CLI spelling.

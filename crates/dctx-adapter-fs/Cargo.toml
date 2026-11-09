@@ -1,6 +1,6 @@
 [package]
 name = "dctx-adapter-fs"
-version = "1.3.0"
+version = "1.3.1"
 edition = "2024"
 license.workspace = true
 repository.workspace = true
@@ -12,7 +12,7 @@ categories.workspace = true
 description = "Confined filesystem Source adapter"
 
 [dependencies]
-dctx-hash = { version = "=1.3.0", path = "../dctx-hash" }
+dctx-hash = { version = "=1.3.1", path = "../dctx-hash" }
 thiserror = "=2.0.18"
 
 [target.'cfg(unix)'.dependencies]

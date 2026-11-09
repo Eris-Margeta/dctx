@@ -6,13 +6,13 @@
       "path": "fixtures/valid/manifest-git.json",
       "encoding": "exact-file-bytes",
       "bytes": 2969,
-      "sha256": "71ce88d68a50db590c8c1889d992b5e5e5132d512082b80bb10158a81d7629a6"
+      "sha256": "75e85d17d6a2815c44298874a011f6f642aa481ef99491ee3a8c94548b6d9bd5"
     },
     {
       "path": "fixtures/valid/dts-plan.json",
       "encoding": "canonical-json",
       "bytes": 1303,
-      "sha256": "2e63bdb68ff2b19b46c3bf0247ac2df852cee1e5318f5cb51d744d014e67f048"
+      "sha256": "c50f23306aeefe5e751e9dc0734a51a6d1764d9fcf582e013069155034170879"
     }
   ],
   "selection_fixture": {

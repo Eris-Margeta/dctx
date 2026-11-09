@@ -59,6 +59,7 @@ fn source(hooks: &[&str], required: bool, roots: &str) -> String {
         .collect::<Vec<_>>()
         .join(", ");
     let flag = if required { "true" } else { "false" };
+    let version = env!("CARGO_PKG_VERSION");
     format!(
         "\
 [DTS]
@@ -74,7 +75,7 @@ selection = \"s\"
 index = \"s\"
 budget = \"b\"
 [PLUGIN:dctx/git]
-version = \"1.3.0\"
+version = \"{version}\"
 digest = \"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\"
 hooks = [{listed}]
 required = {flag}

@@ -29,15 +29,15 @@ budget = \"b\"
 
 fn git_source() -> String {
     v2(
-        "\
+        concat!("\
 [PLUGIN:dctx/git]
-version = \"1.3.0\"
+version = \"", env!("CARGO_PKG_VERSION"), "\"
 digest = \"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\"
 hooks = [\"before-pack-output-written\"]
 required = true
 allow = [\"file.read:.gitignore\", \"file.write:.gitignore\", \"program:git.add-ignore\", \"resource:git-admin:stage-ignore\"]
 config.stage = true
-",
+"),
     )
 }
 
@@ -243,17 +243,26 @@ required = false
         compile(&token, &git_host()),
         Err(TemplateError::InvalidSyntax { .. })
     ));
-    let range = git_source().replace("version = \"1.3.0\"", "version = \"^1.3.0\"");
+    let range = git_source().replace(
+        concat!("version = \"", env!("CARGO_PKG_VERSION"), "\""),
+        concat!("version = \"^", env!("CARGO_PKG_VERSION"), "\""),
+    );
     let err = compile(&range, &git_host()).expect_err("range");
     assert!(
         matches!(err, TemplateError::InvalidSyntax { detail, .. } if detail.contains("version"))
     );
-    let unmet = git_source().replace("version = \"1.3.0\"", "version = \"9.9.9\"");
+    let unmet = git_source().replace(
+        concat!("version = \"", env!("CARGO_PKG_VERSION"), "\""),
+        "version = \"9.9.9\"",
+    );
     let err = compile(&unmet, &git_host()).expect_err("unmet");
     assert!(
         matches!(err, TemplateError::InvalidSyntax { detail, .. } if detail.contains("version"))
     );
-    let bare = git_source().replace("version = \"1.3.0\"", "version = \"1\"");
+    let bare = git_source().replace(
+        concat!("version = \"", env!("CARGO_PKG_VERSION"), "\""),
+        "version = \"1\"",
+    );
     let err = compile(&bare, &git_host()).expect_err("not semver");
     assert!(
         matches!(err, TemplateError::InvalidSyntax { detail, .. } if detail.contains("version"))
@@ -268,15 +277,19 @@ fn disable_and_the_policy_ceiling_outrank_the_template() {
         compile(&git_source(), &host),
         Err(TemplateError::UserDisabled { .. })
     ));
-    let optional = v2("\
+    let optional = v2(concat!(
+        "\
 [PLUGINS:eng]
 network = \"none\"
 enabled = [\"dctx/git\"]
 [PLUGIN:dctx/git]
-version = \"1.3.0\"
+version = \"",
+        env!("CARGO_PKG_VERSION"),
+        "\"
 required = false
 config.stage = true
-");
+"
+    ));
     let disabled = compile(&optional, &host).expect("sticky disable");
     assert_eq!(disabled.plugins.plugins[0].state, PluginState::Disabled);
     assert_eq!(

@@ -14,12 +14,12 @@ platform wheel artifacts from CI into `./wheelhouse` (or build them as shown
 below), then explicitly install into your project's virtual environment:
 
 ```sh
-python -m pip install --no-index --find-links ./wheelhouse 'dctx[binary]==1.3.0'
+python -m pip install --no-index --find-links ./wheelhouse 'dctx[binary]==1.3.1'
 ```
 
 The `binary` extra installs only the matching platform distribution, pinned to
 the wrapper's exact version. There are no installation hooks or runtime
-downloads. Installing the `dctx==1.3.0` wrapper wheel alone is supported when you
+downloads. Installing the `dctx==1.3.1` wrapper wheel alone is supported when you
 already have the matching executable, for example the `dctx` engine from the
 [GitHub release archives](https://github.com/Eris-Margeta/dctx/releases) set as
 `DCTX_BIN`.
@@ -67,7 +67,7 @@ on engine operations. Diagnostics inherit stderr, which avoids an unread stderr
 pipe. No daemon or service is started.
 
 The initial hello and every response must report exactly the package's engine
-release (`1.3.0`); RPC major version 1 is required independently. A mismatch raises
+release (`1.3.1`); RPC major version 1 is required independently. A mismatch raises
 `VersionMismatchError` and ends the process before any operation is sent. Engine
 refusals raise `EngineError` with unchanged `code`, `message`, `hint` and `output`.
 Transport failures raise `TransportError`, terminate the session and are never
@@ -89,7 +89,7 @@ Binary resolution is entirely local, in this order:
    here yourself, retaining its executable permission.
 4. A hard error. The wrapper never searches `PATH` or downloads anything.
 
-Cache layout: `<cache-root>/dctx/bin/1.3.0/<platform>/dctx`, where cache root is
+Cache layout: `<cache-root>/dctx/bin/1.3.1/<platform>/dctx`, where cache root is
 `$XDG_CACHE_HOME` or `~/.cache` on Linux, `~/Library/Caches` on macOS, and
 `%LOCALAPPDATA%` or `~/AppData/Local` on Windows. Windows uses `dctx.exe`.
 When no home directory can be determined (for example Windows without

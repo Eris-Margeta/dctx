@@ -10,7 +10,7 @@ use plugin_index::{IndexError, validate_index};
 use proptest::prelude::*;
 
 const FINGERPRINT: &str = "21fe31dfa154a261626bf854046fd2271b7bed4b6abe45aa58877ef47f9721b9";
-const DIGEST: &str = "71ce88d68a50db590c8c1889d992b5e5e5132d512082b80bb10158a81d7629a6";
+const DIGEST: &str = "75e85d17d6a2815c44298874a011f6f642aa481ef99491ee3a8c94548b6d9bd5";
 
 fn page(summary: &str, second_id: Option<&str>) -> String {
     let second = match second_id {

@@ -20,7 +20,8 @@ use dctx_plugin_protocol::records::capability::Capability;
 use dctx_plugin_protocol::records::scalars::{Digest, PluginId, ProjectPath, Token};
 
 const DIGEST: &str = "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
-const TEMPLATE: &str = r#"
+const TEMPLATE: &str = concat!(
+    r#"
 [DTS]
 version = 2
 [SELECT:s]
@@ -34,12 +35,15 @@ selection = "s"
 index = "s"
 budget = "b"
 [PLUGIN:dctx/git]
-version = "1.3.0"
+version = ""#,
+    env!("CARGO_PKG_VERSION"),
+    r#""
 digest = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
 hooks = ["before-pack-output-written"]
 required = true
 allow = ["file.read:.gitignore", "file.write:.gitignore", "program:git.add-ignore", "resource:git-admin:stage-ignore"]
-"#;
+"#
+);
 
 #[derive(Clone, Copy, Debug)]
 enum Change {

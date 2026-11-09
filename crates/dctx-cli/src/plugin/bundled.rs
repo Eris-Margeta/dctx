@@ -7,7 +7,7 @@
 use dctx_plugin_distribution::{
     CapabilitySet, DistributionError, Document, InstalledVersion, PluginId, Sha256Hex, Version,
 };
-use dctx_plugin_protocol::{decode_object, DecodeLimits};
+use dctx_plugin_protocol::{DecodeLimits, decode_object};
 
 /// Public index locator. Refresh is explicit; this URL is not fetched by list or help.
 pub const DEFAULT_INDEX_URL: &str = "https://example.invalid/dctx/index.json";
@@ -92,7 +92,7 @@ mod tests {
         }
         assert_eq!(catalog().alias, "git");
         assert_eq!(catalog().id, "dctx/git");
-        assert_eq!(catalog().version, "1.3.0");
+        assert_eq!(catalog().version, env!("CARGO_PKG_VERSION"));
         assert!(capabilities().unwrap().len() >= 3);
     }
 
@@ -107,6 +107,9 @@ mod tests {
     fn strict_build_keeps_catalog_metadata_without_linking_the_worker() {
         assert!(!worker_linked());
         assert_eq!(catalog().id, "dctx/git");
-        assert_eq!(installed_version().unwrap().version.as_str(), "1.3.0");
+        assert_eq!(
+            installed_version().unwrap().version.as_str(),
+            env!("CARGO_PKG_VERSION")
+        );
     }
 }

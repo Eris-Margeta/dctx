@@ -4,7 +4,7 @@
 
 Start with [What dctx is](START.md). Choose a workflow before adding tools;
 measure whole sessions against grep plus file reads. The current release is
-1.3.0. Pages marked **coming** describe future documentation or features and
+1.3.1. Pages marked **coming** describe future documentation or features and
 have no page link; specifications also include planned behavior.
 
 ## Start
@@ -21,14 +21,14 @@ have no page link; specifications also include planned behavior.
 - [Agents](MODALITIES.md#choose-by-task): short tasks, repeated source reads and huge-tree scoping.
 - [MCP](guides/MCP.md): lean/default/custom profiles, client setup and startup cost.
 - ACP: **coming**.
-- [Libraries](MODALITIES.md#rust-library-embed-the-facade): Rust facade now; Python, Node and Go wrappers built in CI, registry publication pending.
+- [Libraries](MODALITIES.md#rust-library-embed-the-facade): Rust facade from Git; Node wrapper on npm as `dctx` with `@tejl/dctx-<platform>` native packages; Python and Go wrappers from CI.
 - [CI and caching](MODALITIES.md#ci--prompt-cache-prefix-stability): fixed inputs, byte stability and measurement limits.
 - [Desktop](MODALITIES.md#desktop-app-tauri-preview-today): Tauri preview and planned GPUI rebuild.
 
 ## Scopes
 
 - [System binary](START.md#two-scopes-one-binary): you and your interactive agents own the executable on PATH.
-- [Project binary](START.md#agent-builder-embedding-a-library): the planned pinned pip/npm wrapper contract and today's Rust alternative.
+- [Project binary](START.md#agent-builder-embedding-a-library): pinned Node wrapper from npm, Python and Go wrappers from CI, or the Rust facade.
 - [Coexistence](START.md#two-scopes-one-binary): per-engine-version cache namespaces.
 - [Scopes, coexistence and `dctx doctor`](SCOPES.md): binary ownership, cache namespaces and the doctor command.
 

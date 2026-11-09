@@ -60,9 +60,9 @@ class Packaging(unittest.TestCase):
 
             main = packages / "dctx"
             native = packages / "cli-linux-x64"
-            modules = main / "node_modules/@dctx"
+            modules = main / "node_modules/@tejl"
             modules.mkdir(parents=True)
-            (modules / "cli-linux-x64").symlink_to(native, target_is_directory=True)
+            (modules / "dctx-linux-x64").symlink_to(native, target_is_directory=True)
             command = ["node", str(main / "bin/dctx.js"), "with spaces", "--flag", "λ"]
             env = {**os.environ, "XDG_CACHE_HOME": str(directory / "cache"),
                    "HOME": str(directory / "home")}
@@ -74,10 +74,10 @@ class Packaging(unittest.TestCase):
             (native / "bin/dctx").write_bytes(handshake + b"kill -TERM $$\n")
             result = subprocess.run(command, capture_output=True, text=True, env=env)
             self.assertEqual(result.returncode, -15)
-            (modules / "cli-linux-x64").unlink()
+            (modules / "dctx-linux-x64").unlink()
             result = subprocess.run(command, capture_output=True, text=True, env=env)
             self.assertEqual(result.returncode, 1)
-            self.assertIn("npm install --omit=optional --ignore-scripts ./dctx-cli-linux-x64-1.2.3.tgz", result.stderr)
+            self.assertIn("npm install @tejl/dctx-linux-x64@1.2.3", result.stderr)
             self.assertNotIn("dctx@", result.stderr)
             # A damaged archive must be rejected before any output package is written.
             archive.write_bytes(b"corrupted")

@@ -1,6 +1,6 @@
 [package]
 name = "dctx"
-version = "1.3.0"
+version = "1.3.1"
 edition = "2024"
 license.workspace = true
 repository.workspace = true
@@ -32,29 +32,29 @@ warm-index-cache = []
 wire-json = ["dctx-map-model/wire-json"]
 
 [dependencies]
-dctx-adapter-cache = { version = "=1.3.0", path = "../dctx-adapter-cache" }
-dctx-core = { version = "=1.3.0", path = "../dctx-core" }
-dctx-hash = { version = "=1.3.0", path = "../dctx-hash" }
-dctx-lex-c = { version = "=1.3.0", path = "../dctx-lex-c" }
-dctx-lex-cfg = { version = "=1.3.0", path = "../dctx-lex-cfg" }
-dctx-lex-cs = { version = "=1.3.0", path = "../dctx-lex-cs" }
-dctx-lex-go = { version = "=1.3.0", path = "../dctx-lex-go" }
-dctx-lex-java = { version = "=1.3.0", path = "../dctx-lex-java" }
-dctx-lex-js = { version = "=1.3.0", path = "../dctx-lex-js" }
-dctx-lex-kt = { version = "=1.3.0", path = "../dctx-lex-kt" }
-dctx-lex-md = { version = "=1.3.0", path = "../dctx-lex-md" }
-dctx-lex-php = { version = "=1.3.0", path = "../dctx-lex-php" }
-dctx-lex-py = { version = "=1.3.0", path = "../dctx-lex-py" }
-dctx-lex-rb = { version = "=1.3.0", path = "../dctx-lex-rb" }
-dctx-lex-rust = { version = "=1.3.0", path = "../dctx-lex-rust", optional = true }
-dctx-lex-swift = { version = "=1.3.0", path = "../dctx-lex-swift" }
-dctx-map-model = { version = "=1.3.0", path = "../dctx-map-model", default-features = false }
-dctx-pack = { version = "=1.3.0", path = "../dctx-pack" }
-dctx-ports = { version = "=1.3.0", path = "../dctx-ports" }
-dctx-template = { version = "=1.3.0", path = "../dctx-template" }
-dctx-plugin-host = { version = "=1.3.0", path = "../dctx-plugin-host", optional = true }
-dctx-plugin-platform = { version = "=1.3.0", path = "../dctx-plugin-platform", optional = true }
-dctx-plugin-protocol = { version = "=1.3.0", path = "../dctx-plugin-protocol", optional = true }
+dctx-adapter-cache = { version = "=1.3.1", path = "../dctx-adapter-cache" }
+dctx-core = { version = "=1.3.1", path = "../dctx-core" }
+dctx-hash = { version = "=1.3.1", path = "../dctx-hash" }
+dctx-lex-c = { version = "=1.3.1", path = "../dctx-lex-c" }
+dctx-lex-cfg = { version = "=1.3.1", path = "../dctx-lex-cfg" }
+dctx-lex-cs = { version = "=1.3.1", path = "../dctx-lex-cs" }
+dctx-lex-go = { version = "=1.3.1", path = "../dctx-lex-go" }
+dctx-lex-java = { version = "=1.3.1", path = "../dctx-lex-java" }
+dctx-lex-js = { version = "=1.3.1", path = "../dctx-lex-js" }
+dctx-lex-kt = { version = "=1.3.1", path = "../dctx-lex-kt" }
+dctx-lex-md = { version = "=1.3.1", path = "../dctx-lex-md" }
+dctx-lex-php = { version = "=1.3.1", path = "../dctx-lex-php" }
+dctx-lex-py = { version = "=1.3.1", path = "../dctx-lex-py" }
+dctx-lex-rb = { version = "=1.3.1", path = "../dctx-lex-rb" }
+dctx-lex-rust = { version = "=1.3.1", path = "../dctx-lex-rust", optional = true }
+dctx-lex-swift = { version = "=1.3.1", path = "../dctx-lex-swift" }
+dctx-map-model = { version = "=1.3.1", path = "../dctx-map-model", default-features = false }
+dctx-pack = { version = "=1.3.1", path = "../dctx-pack" }
+dctx-ports = { version = "=1.3.1", path = "../dctx-ports" }
+dctx-template = { version = "=1.3.1", path = "../dctx-template" }
+dctx-plugin-host = { version = "=1.3.1", path = "../dctx-plugin-host", optional = true }
+dctx-plugin-platform = { version = "=1.3.1", path = "../dctx-plugin-platform", optional = true }
+dctx-plugin-protocol = { version = "=1.3.1", path = "../dctx-plugin-protocol", optional = true }
 
 serde = { version = "1", features = ["derive"], optional = true }
 serde_json = { version = "=1.0.149", optional = true }

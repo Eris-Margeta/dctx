@@ -6,6 +6,7 @@
 # installed) and the vX.Y.Z release links and install pins in the docs and package
 # READMEs, and the committed npm package manifests (the release rewrites copies of
 # them from the tag with tools/release/prepare-npm.py).
+# The bundled git catalog, plugin fixtures and their digest chain also follow VERSION.
 # The desktop app keeps its own version line.
 set -eu
 
@@ -21,6 +22,8 @@ if [ "$MODE" != --check ] && [ "$MODE" != --write ]; then
 fi
 
 python3 - "$SCRIPT_DIR/.." "$MODE" <<'PYTHON'
+import hashlib
+import json
 import re
 import shutil
 import subprocess
@@ -69,7 +72,7 @@ mentions = [
     # committed manifests (and the parity tests run against them) follow VERSION.
     # prepare-npm.py rewrites copies of them from the tag at release time.
     ("packaging/npm/dctx/package.json", r'(?m)(^  "version": ")' + V + r'(")', 1),
-    ("packaging/npm/dctx/package.json", r'("@dctx/cli-[a-z0-9-]+": ")' + V + r'(")', 5),
+    ("packaging/npm/dctx/package.json", r'("@tejl/dctx-[a-z0-9-]+": ")' + V + r'(")', 5),
     ("packaging/npm/README.md", r"(prepare-npm\.py v)" + V + r"()", 1),
     ("docs/protocol/README.md", r'("engine_version":")' + V + r'(")', 1),
     # The website facts source; check.py also compares "released" with CHANGELOG.md.
@@ -145,12 +148,110 @@ for relative, rules in by_file.items():
     if before != after:
         updates.append((path, relative, after))
 
+# Stage the complete plugin update before writing, including digests of staged
+# bytes. --check reads only this worktree and never runs Cargo or fetches URLs.
+staged = {relative: after for _, relative, after in updates}
+
+def content(relative):
+    return staged.get(relative, (root / relative).read_bytes().decode("utf-8"))
+
+def rewrite(relative, pattern, replacement, least=1):
+    after, count = re.subn(pattern, replacement, content(relative))
+    if count < least:
+        sys.exit(f"Expected at least {least} bundled plugin field(s) in {relative} for {pattern!r}; found {count}")
+    staged[relative] = after
+
+def plugin_version(relative):
+    rewrite(relative, r'("version": ")' + V + r'(")', rf'\g<1>{version}\2')
+
+fixtures = "docs/design/plugin-api/fixtures"
+manifest = f"{fixtures}/valid/manifest-git.json"
+plugin_version("plugins/dctx-plugin-git/plugin.json")
+for name in ("manifest-git", "hello-selected", "initialize", "receipt", "index"):
+    plugin_version(f"{fixtures}/valid/{name}.json")
+
+# These independent negative manifests test version/range validation and are not
+# copies of the bundled manifest. Keep their intentionally invalid inputs intact.
+independent_manifests = {"manifest-prerelease-zero.json", "manifest-range-reversed.json"}
+for path in sorted((root / fixtures / "invalid").glob("manifest-*.json")):
+    if path.name not in independent_manifests:
+        plugin_version(path.relative_to(root).as_posix())
+
+for path in sorted((root / fixtures).glob("*/*.dts")) + [root / "docs/design/plugin-api/dts.md"]:
+    relative = path.relative_to(root).as_posix()
+    rewrite(relative, r'(\[PLUGIN:dctx/git\]\s*\nversion = ")' + V + r'(")', rf'\g<1>{version}\2')
+
+# Exact manifest bytes (wire.md §Bytes); this is the fixture manifest, whose
+# publisher/artifacts deliberately differ from the distributable plugin.json.
+manifest_bytes = content(manifest).encode("utf-8")
+manifest_digest = hashlib.sha256(manifest_bytes).hexdigest()
+rewrite("crates/dctx-template/src/plugin/catalog.rs",
+        r'(manifest_digest: Some\(hex32\(\s*")[0-9a-f]{64}(")',
+        rf'\g<1>{manifest_digest}\2')
+for relative in ("tools/plugin-index/src/domain/index.rs", "tools/plugin-index/tests/display_properties.rs"):
+    rewrite(relative, r'(const DIGEST: &str = ")[0-9a-f]{64}(")', rf'\g<1>{manifest_digest}\2')
+
+for path in sorted((root / fixtures).glob("*/dts-*.json")):
+    relative = path.relative_to(root).as_posix()
+    # Unavailable-plugin fixtures have no resolved manifest or version.
+    if '"manifest_digest"' not in content(relative):
+        continue
+    if path.name != "dts-floating-version.json":
+        plugin_version(relative)
+    rewrite(relative, r'("manifest_digest": "sha256:)[0-9a-f]{64}(")', rf'\g<1>{manifest_digest}\2')
+
+index_paths = [root / fixtures / "valid/index.json"]
+index_paths += sorted((root / fixtures / "invalid").glob("index-*.json"))
+index_paths += [root / "plugins/index/index.json"]
+index_paths += sorted((root / "plugins/index/invalid").glob("*.json"))
+for path in index_paths:
+    relative = path.relative_to(root).as_posix()
+    # The duplicate-id index intentionally has a separate 1.0.1/sequence-2 row.
+    rewrite(relative, r'("version": ")' + V + r'(",\s*"release_sequence": 1)', rf'\g<1>{version}\2')
+    rewrite(relative, r'("manifest_sha256": ")[0-9a-f]{64}(")', rf'\g<1>{manifest_digest}\2')
+    # Only sequence-1 URLs follow the release; preserve the duplicate's 1.0.1 URL.
+    staged[relative] = re.sub(
+        r'("release_sequence": 1,\s*"manifest_url": "[^"\n]*/)' + V + r'(/plugin\.json")',
+        rf'\g<1>{version}\2', content(relative))
+
+def canonical(value):
+    # wire.md: UTF-8, byte-sorted keys, no whitespace, decimal integers and
+    # lowercase \u00xx for every control character (including newline/tab).
+    text = json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    escapes = {"b": r"\u0008", "f": r"\u000c", "n": r"\u000a", "r": r"\u000d", "t": r"\u0009"}
+    # Consume escaped quotes/backslashes too, so a literal backslash + n stays intact.
+    return re.sub(r'\\(["\\bfnrt])', lambda m: escapes.get(m[1], m[0]), text).encode("utf-8")
+
+plan = f"{fixtures}/valid/dts-plan.json"
+plan_bytes = canonical(json.loads(content(plan)))
+plan_digest = hashlib.sha256(plan_bytes).hexdigest()
+for name in ("initialize", "receipt"):
+    rewrite(f"{fixtures}/valid/{name}.json", r'("plan_digest": "sha256:)[0-9a-f]{64}(")', rf'\g<1>{plan_digest}\2')
+
+relative = f"{fixtures}/digests.json"
+goldens = json.loads(content(relative))
+for entry in goldens["entries"]:
+    if entry["encoding"] == "exact-file-bytes":
+        preimage = content(f'docs/design/plugin-api/{entry["path"]}').encode("utf-8")
+    elif entry["encoding"] == "canonical-json":
+        preimage = canonical(json.loads(content(f'docs/design/plugin-api/{entry["path"]}')))
+    else:
+        sys.exit(f"Unknown digest encoding in {relative}: {entry['encoding']}")
+    entry.update(bytes=len(preimage), sha256=hashlib.sha256(preimage).hexdigest())
+staged[relative] = json.dumps(goldens, indent=2) + "\n"
+
+# The standalone index validator locks two workspace path dependencies as well.
+relative = "tools/plugin-index/Cargo.lock"
+rewrite(relative, r'(?m)(^name = "(?:dctx-ed25519|dctx-hash)"\nversion = ")[^"]+(")', rf'\g<1>{version}\2', least=2)
+
+updates = [(root / relative, relative, after) for relative, after in staged.items()
+           if (root / relative).read_bytes().decode("utf-8") != after]
 for path, relative, after in updates:
     if mode == "--write":
         path.write_text(after)
         print(f"Updated {relative}")
     else:
-        print(f"Version mismatch: {relative}", file=sys.stderr)
+        print(f"Version or digest mismatch: {relative}", file=sys.stderr)
 if mode == "--write":
     go = shutil.which("go")
     if go:
@@ -162,6 +263,6 @@ if mode == "--check" and updates:
     sys.exit(1)
 print(
     f"{len(lock)} crate versions, their Cargo.lock entries, the metadata, the Python, Go and npm package versions "
-    f"and the docs release links match VERSION ({version})."
+    f"and the docs release links, bundled git plugin and fixture digests match VERSION ({version})."
 )
 PYTHON

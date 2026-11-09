@@ -127,7 +127,8 @@ fn render_edit_and_plugin_edit_touch_only_their_digests() {
 
     let mut plugin_host = HostCeiling::base();
     plugin_host.plugins.push(bundled_git_plugin());
-    let plugin = "\
+    let plugin = concat!(
+        "\
 [DTS]
 version = 2
 [SELECT:s]
@@ -140,12 +141,15 @@ records = 1
 selection = \"s\"
 budget = \"b\"
 [PLUGIN:dctx/git]
-version = \"1.3.0\"
+version = \"",
+        env!("CARGO_PKG_VERSION"),
+        "\"
 hooks = [\"before-pack-output-written\"]
 required = true
 allow = [\"file.read:.gitignore\"]
 config.stage = true
-";
+"
+    );
     let enabled = compile(plugin, &plugin_host).expect("plugin");
     assert_eq!(enabled.plugins.plugins[0].state, PluginState::Enabled);
     assert_eq!(enabled.plugins.order, vec!["dctx/git".to_string()]);

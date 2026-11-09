@@ -58,7 +58,7 @@ def prepare(tag, artifacts, output):
         manifest = json.loads(manifest_path.read_text())
         manifest["version"] = version
         if directory == "dctx":
-            manifest["optionalDependencies"] = {f"@dctx/cli-{p}": version for p in PLATFORMS}
+            manifest["optionalDependencies"] = {f"@tejl/dctx-{p}": version for p in PLATFORMS}
         else:
             executable, binary = binaries[directory.removeprefix("cli-")]
             path = destination / "bin" / executable

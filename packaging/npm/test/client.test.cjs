@@ -115,7 +115,7 @@ test('explicit executable overrides environment; invalid explicit choice never f
   assert.equal(resolveBinary({ cwd: path.dirname(process.execPath), binaryPath: path.basename(process.execPath) }), process.execPath);
 });
 
-test('optional package precedes cache; missing binaries give exact offline instructions', (t) => {
+test('optional package precedes cache; missing binaries give registry and offline instructions', (t) => {
   const { cwd } = fixture(t);
   const packageDir = path.join(cwd, 'package');
   fs.cpSync(path.join(__dirname, '../dctx'), packageDir, { recursive: true, filter: (source) => !source.includes('node_modules') });
@@ -125,9 +125,9 @@ test('optional package precedes cache; missing binaries give exact offline instr
   assert.ok(cached.includes(version));
   assert.throws(() => isolated.resolveBinary({ env }), (error) => {
     assert.ok(error.message.includes(cached));
-    // Registry publication is pending: never suggest a registry install of dctx or @dctx/*.
-    assert.ok(!error.message.includes(`dctx@${version}`), error.message);
-    assert.ok(error.message.includes(`npm install --omit=optional --ignore-scripts ./dctx-cli-${process.platform}-${process.arch}-${version}.tgz`));
+    assert.ok(error.message.includes(`npm install @tejl/dctx-${process.platform}-${process.arch}@${version}`), error.message);
+    assert.ok(error.message.includes('npm install dctx normally includes it as an optional dependency.'));
+    assert.ok(error.message.includes(`https://github.com/Eris-Margeta/dctx/releases/tag/v${version}`));
     assert.ok(error.message.includes('DCTX_BIN'));
     assert.ok(error.message.includes('SHA256SUMS'));
     return true;
@@ -135,7 +135,7 @@ test('optional package precedes cache; missing binaries give exact offline instr
   fs.mkdirSync(path.dirname(cached), { recursive: true });
   fs.writeFileSync(cached, 'fixture', { mode: 0o755 });
   assert.equal(isolated.resolveBinary({ env }), cached);
-  const native = path.join(packageDir, 'node_modules/@dctx', `cli-${process.platform}-${process.arch}`, 'bin', process.platform === 'win32' ? 'dctx.exe' : 'dctx');
+  const native = path.join(packageDir, 'node_modules/@tejl', `dctx-${process.platform}-${process.arch}`, 'bin', process.platform === 'win32' ? 'dctx.exe' : 'dctx');
   fs.mkdirSync(path.dirname(native), { recursive: true });
   fs.writeFileSync(native, 'fixture', { mode: 0o755 });
   // The optional package resolves through require.resolve, which returns the real path
@@ -155,7 +155,7 @@ test('a tarball without optional dependencies (CI pack) resolves explicit and ca
   const env = { HOME: cwd, USERPROFILE: cwd, LOCALAPPDATA: cwd, XDG_CACHE_HOME: cwd };
   assert.equal(isolated.resolveBinary({ env: { ...env, DCTX_BIN: process.execPath } }), process.execPath);
   // A planted platform package is ignored when the manifest does not declare it.
-  const native = path.join(packageDir, 'node_modules/@dctx', `cli-${process.platform}-${process.arch}`, 'bin', process.platform === 'win32' ? 'dctx.exe' : 'dctx');
+  const native = path.join(packageDir, 'node_modules/@tejl', `dctx-${process.platform}-${process.arch}`, 'bin', process.platform === 'win32' ? 'dctx.exe' : 'dctx');
   fs.mkdirSync(path.dirname(native), { recursive: true });
   fs.writeFileSync(native, 'fixture', { mode: 0o755 });
   assert.throws(() => isolated.resolveBinary({ env }), (error) => {

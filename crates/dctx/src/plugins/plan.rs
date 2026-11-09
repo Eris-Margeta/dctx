@@ -296,17 +296,19 @@ budget = \"b\"
 
     #[test]
     fn participants_follow_plan_order_and_skip_undeclared_hooks() {
-        let compiled = plan(
+        let compiled = plan(concat!(
             "\
 [PLUGIN:ex/other]
 version = \"1.0.0\"
 hooks = [\"before-pack-output-written\"]
 [PLUGIN:dctx/git]
-version = \"1.3.0\"
+version = \"",
+            env!("CARGO_PKG_VERSION"),
+            "\"
 digest = \"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\"
 hooks = [\"before-pack-output-written\", \"cache-gc\"]
-",
-        );
+"
+        ));
         let before: Vec<&str> = participants(&compiled, Boundary::BeforePack)
             .iter()
             .map(|plugin| plugin.id.as_str())

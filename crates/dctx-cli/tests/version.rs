@@ -22,14 +22,15 @@ fn stdout_of(arg: &str) -> String {
 
 #[test]
 fn version_starts_with_release_and_ends_with_build_sha() {
+    let prefix = format!("dctx {} (", env!("CARGO_PKG_VERSION"));
     for arg in ["--version", "-v", "version"] {
         let line = stdout_of(arg);
-        assert!(line.starts_with("dctx 1.3.0 ("), "{arg}: {line:?}");
+        assert!(line.starts_with(&prefix), "{arg}: {line:?}");
         let sha = line
             .trim_end()
-            .strip_prefix("dctx 1.3.0 (")
+            .strip_prefix(&prefix)
             .and_then(|rest| rest.strip_suffix(')'))
-            .expect("dctx 1.3.0 (<sha>)");
+            .expect("dctx <version> (<sha>)");
         assert!(
             sha == "unknown"
                 || (sha.len() >= 7 && sha.bytes().all(|byte| byte.is_ascii_hexdigit())),
@@ -41,6 +42,6 @@ fn version_starts_with_release_and_ends_with_build_sha() {
 
 #[test]
 fn version_matches_the_package_version() {
-    assert_eq!(env!("CARGO_PKG_VERSION"), "1.3.0");
+    assert_eq!(env!("CARGO_PKG_VERSION"), include_str!("../../../VERSION").trim());
     assert!(stdout_of("--version").starts_with(&format!("dctx {} (", env!("CARGO_PKG_VERSION"))));
 }

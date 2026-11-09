@@ -1,6 +1,12 @@
 // Deterministic browser transport for DX-E2E; install before navigating to the app.
 // Mirrors desktop settings/recent-project commands and PL-APP plugin row transport.
 // Used by Playwright specs through addInitScript; no native commands are executed.
+import { readFileSync } from 'node:fs';
+
+const bundledVersion = JSON.parse(readFileSync(
+  new URL('../../../plugins/dctx-plugin-git/plugin.json', import.meta.url), 'utf8',
+)).version;
+
 export async function installTauriMock(page, fixtures = {}) {
   await page.addInitScript(fixtures => {
     const clone = value => structuredClone(value);
@@ -35,7 +41,7 @@ export async function installTauriMock(page, fixtures = {}) {
     let recent = clone(options.recentProjects ?? [{ path: '/fixtures/dctx-demo', name: 'dctx-demo',
       last_accessed: '2026-10-17T08:00:00.000Z', access_count: 3 }]);
     const plugins = [{
-      id: 'dctx/git', name: 'Git', version: '1.3.0', source: 'bundled',
+      id: 'dctx/git', name: 'Git', version: options.bundledVersion, source: 'bundled',
       state: 'enabled', enabled: true, needs_consent: false,
       capabilities: [
         'required: Read file (path: .gitignore; scope: project; max bytes: 1048576)',
@@ -194,5 +200,5 @@ export async function installTauriMock(page, fixtures = {}) {
     window.__TAURI_EVENT_PLUGIN_INTERNALS__ = {
       unregisterListener(_event, id) { listeners.delete(id); },
     };
-  }, fixtures);
+  }, { ...fixtures, bundledVersion });
 }

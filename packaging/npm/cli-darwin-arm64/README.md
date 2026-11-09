@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
-# @dctx/cli-darwin-arm64
+# @tejl/dctx-darwin-arm64
 
 Native darwin-arm64 binary for [dctx](https://www.npmjs.com/package/dctx).
 Install the `dctx` package to select your platform automatically.

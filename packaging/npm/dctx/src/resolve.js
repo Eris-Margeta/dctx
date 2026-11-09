@@ -46,7 +46,7 @@ function resolveBinary({ binaryPath, env = process.env, cwd = process.cwd() } = 
     }
   }
   const platform = `${process.platform}-${process.arch}`;
-  const packageName = `@dctx/cli-${platform}`;
+  const packageName = `@tejl/dctx-${platform}`;
   if (Object.hasOwn(optionalDependencies, packageName)) {
     let filename;
     try {
@@ -57,7 +57,7 @@ function resolveBinary({ binaryPath, env = process.env, cwd = process.cwd() } = 
     if (filename) {
       try { return executable(filename); } catch (error) {
         throw new Error(`dctx: cannot execute ${filename}: ${error.message}. ` +
-          `Reinstall the ${packageName} ${version} tarball, or set DCTX_BIN to a dctx ${version} executable.`, { cause: error });
+          `Reinstall with npm install ${packageName}@${version}, or set DCTX_BIN to a dctx ${version} executable.`, { cause: error });
       }
     }
   }
@@ -69,11 +69,9 @@ function resolveBinary({ binaryPath, env = process.env, cwd = process.cwd() } = 
         `${process.platform === 'win32' ? '.' : ' or restore executable permission on the cache file (chmod 755).'}`, { cause: error });
     }
   }
-  // npm registry publication is pending: never point users at a registry install, where the
-  // dctx and @dctx/* names are not owned by this project.
   const install = Object.hasOwn(optionalDependencies, packageName)
-    ? `Install the matching platform tarball in the same project: npm install --omit=optional --ignore-scripts ` +
-      `./${packageName.slice(1).replace('/', '-')}-${version}.tgz (not from a registry: npm publication is pending). ` : '';
+    ? `Install the matching platform package in the same project: npm install ${packageName}@${version}. ` +
+      `npm install dctx normally includes it as an optional dependency. ` : '';
   throw new Error(`dctx: no ${version} binary for ${platform}. ${install}` +
     `${install ? 'Or obtain' : 'Obtain'} dctx ${version} from https://github.com/Eris-Margeta/dctx/releases/tag/v${version}, ` +
     `verify its SHA256SUMS, and set DCTX_BIN to the executable's absolute path or place it at ${cached}` +

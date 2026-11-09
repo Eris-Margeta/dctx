@@ -3,14 +3,19 @@
 // Kernel-run separately from tsconfig's src-only compilation.
 
 import { test, expect } from 'bun:test';
+import { readFileSync } from 'node:fs';
 import { pluginsToViewModels } from '../src/plugins-model';
 import type { PluginRow } from '../src/plugins-model';
+
+const bundledVersion = JSON.parse(readFileSync(
+  new URL('../../../plugins/dctx-plugin-git/plugin.json', import.meta.url), 'utf8',
+)).version as string;
 
 function row(overrides: Partial<PluginRow> = {}): PluginRow {
   return {
     id: 'dctx/git',
     name: 'Git',
-    version: '1.3.0',
+    version: bundledVersion,
     source: 'bundled',
     state: 'enabled',
     enabled: true,
@@ -28,7 +33,7 @@ test('bundled Git remains enabled and discloses every supplied grant', () => {
   expect(view).toEqual({
     id: 'dctx/git',
     name: 'Git',
-    versionLabel: 'Version 1.3.0',
+    versionLabel: `Version ${bundledVersion}`,
     sourceLabel: 'Bundled',
     stateLabel: 'Enabled',
     badgeClass: 'plugin-badge plugin-state-enabled',
@@ -135,7 +140,7 @@ test('unknown state or source refuses rather than suggesting an enabled plugin',
 
 test('presentation preserves the exact consent payload and never treats approval as enablement', () => {
   const approval = {
-    id: 'dctx/git', version: '1.3.0', digest: 'a'.repeat(64),
+    id: 'dctx/git', version: bundledVersion, digest: 'a'.repeat(64),
     capabilities: {
       required: [{ kind: 'file.read', path: '.git/HEAD', max_bytes: 4096 }],
       optional: [], outputs: [], network: [],

@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.3.0-8b5cf6" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.3.1-8b5cf6" alt="Version">
   <a href="https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml?query=branch%3Amain">
     <img src="https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI">
   </a>
@@ -56,7 +56,7 @@ The founding promise is zero dependencies. Today dctx still has dependencies. Th
 ## Installation
 
 **System binary — available now.** Download the archive for your OS and architecture
-from [GitHub Releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.0),
+from [GitHub Releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.1),
 compare its SHA-256 with the matching entry in `SHA256SUMS`, extract it, and put
 `dctx` (`dctx.exe` on Windows) on `PATH`. Archives cover Linux x64/ARM64,
 macOS x64/ARM64 and Windows x64. Releases after 1.2.0 also ship cosign signatures,
@@ -67,11 +67,11 @@ a CycloneDX SBOM, build provenance and offline bundles; see
 dctx --version
 ```
 
-**Project wrappers — built and tested in CI, registry publication pending.** The
-[Python](packages/python/README.md), [Node](packaging/npm/dctx/README.md) and
-[Go](packages/go/README.md) wrappers over `dctx rpc` are built and tested in CI,
-but nothing is published to PyPI, npm, crates.io or a Go module proxy yet. Until
-then, a `dctx` package on those registries is not from this project. The
+**Node wrapper — available on npm.** Run `npm install dctx` to install the
+[Node wrapper](packaging/npm/dctx/README.md) and its matching pinned
+`@tejl/dctx-<platform>` native package, then `npx dctx --version` to check it.
+The [Python](packages/python/README.md) and [Go](packages/go/README.md) wrappers
+over `dctx rpc` are built and tested in CI; use their CI artifacts. The
 [Rust facade](docs/MODALITIES.md#rust-library-embed-the-facade) is available from
 tagged Git. Use the release archives for the CLI.
 
@@ -203,7 +203,7 @@ pub struct Order {
 - [Agents, short tasks](docs/MODALITIES.md#short-agent-task-grep-can-be-enough): compare with grep plus narrow file reads first.
 - [Agents, long sessions and huge trees](docs/MODALITIES.md#huge-trees-scope-before-indexing): scope the root, find symbols and read exact source.
 - [MCP](docs/guides/MCP.md): use the lean profile to start; ACP is planned.
-- [Libraries](docs/MODALITIES.md#rust-library-embed-the-facade): embed the Rust facade today; the [Python, Node and Go wrappers](docs/MODALITIES.md#python-node-and-go-wrappers-registry-publication-pending) are built and tested in CI, with registry publication pending.
+- [Libraries](docs/MODALITIES.md#rust-library-embed-the-facade): embed the Rust facade today; install the [Node wrapper](packaging/npm/dctx/README.md) with `npm install dctx`, or use CI artifacts for the Python and Go wrappers.
 - [CI and prompt caching](docs/MODALITIES.md#ci--prompt-cache-prefix-stability): pin inputs and measure byte stability and provider cache behavior.
 - [Desktop](docs/MODALITIES.md#desktop-app-tauri-preview-today): build the Tauri 0.11 preview; the GPUI rebuild is planned.
 
@@ -298,7 +298,7 @@ Git now; **crates.io publication is pending**.
 
 ```toml
 [dependencies]
-dctx = { git = "https://github.com/Eris-Margeta/dctx", tag = "v1.3.0" }
+dctx = { git = "https://github.com/Eris-Margeta/dctx", tag = "v1.3.1" }
 ```
 
 This example is generated from the [workspace doctest](examples/library/README.md):
@@ -323,8 +323,8 @@ load `.gitignore` automatically. Read the
 [library integration boundary](docs/MODALITIES.md#rust-library-embed-the-facade)
 before embedding it. Python, Node and Go wrappers over `dctx rpc` live in
 [packages/python](packages/python/README.md), [packaging/npm](packaging/npm/dctx/README.md)
-and [packages/go](packages/go/README.md); they are built and tested in CI, and
-registry publication is pending.
+and [packages/go](packages/go/README.md); they are built and tested in CI.
+Install the Node wrapper with `npm install dctx`; use CI artifacts for Python and Go.
 
 ## CLI Reference
 

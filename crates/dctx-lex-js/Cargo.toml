@@ -1,6 +1,6 @@
 [package]
 name = "dctx-lex-js"
-version = "1.3.0"
+version = "1.3.1"
 edition = "2024"
 license.workspace = true
 repository.workspace = true
@@ -12,8 +12,8 @@ categories.workspace = true
 description = "First-party hand-written JavaScript and TypeScript structural extractor for dctx map mode"
 
 [dependencies]
-dctx-hash = { version = "=1.3.0", path = "../dctx-hash" }
-dctx-map-model = { version = "=1.3.0", path = "../dctx-map-model" }
+dctx-hash = { version = "=1.3.1", path = "../dctx-hash" }
+dctx-map-model = { version = "=1.3.1", path = "../dctx-map-model" }
 
 [dev-dependencies]
 dctx-map-parse = { path = "../dctx-map-parse" }

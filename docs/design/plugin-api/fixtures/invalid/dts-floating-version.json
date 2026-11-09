@@ -12,7 +12,7 @@
         "status": "available",
         "version": "^1.0.0",
         "artifact_digest": "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-        "manifest_digest": "sha256:71ce88d68a50db590c8c1889d992b5e5e5132d512082b80bb10158a81d7629a6",
+        "manifest_digest": "sha256:75e85d17d6a2815c44298874a011f6f642aa481ef99491ee3a8c94548b6d9bd5",
         "publisher_key": "fixture-key-1",
         "origin": "bundled"
       },

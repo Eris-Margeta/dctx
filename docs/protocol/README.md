@@ -14,7 +14,7 @@ Send `hello` first:
 
 ```json
 {"id":"init","verb":"hello"}
-{"id":"init","engine_version":"1.3.0","result":{"protocol_version":"1.0.0","verbs":["hello","pack","context","map","find","read","skeleton","explain","neighbors","grep","hubs","path","languages","cache_status"]}}
+{"id":"init","engine_version":"1.3.1","result":{"protocol_version":"1.0.0","verbs":["hello","pack","context","map","find","read","skeleton","explain","neighbors","grep","hubs","path","languages","cache_status"]}}
 {"id":1,"verb":"find","args":["ping","--limit","1"]}
 ```
 

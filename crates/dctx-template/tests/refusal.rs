@@ -357,16 +357,18 @@ from-a
 fn plugin_declarations_narrow_the_catalog() {
     let mut host = HostCeiling::base();
     host.plugins.push(bundled_git_plugin());
-    let good = skeleton(
+    let good = skeleton(concat!(
         r#"
 [PLUGIN:dctx/git]
-version = "1.3.0"
+version = ""#,
+        env!("CARGO_PKG_VERSION"),
+        r#""
 hooks = ["before-pack-output-written"]
 required = true
 allow = ["file.read:.gitignore", "file.write:.gitignore", "program:git.add-ignore", "resource:git-admin:stage-ignore"]
 config.stage = true
-"#,
-    );
+"#
+    ));
     let plan = compile(&good, &host).expect("git");
     assert_eq!(plan.plugins.plugins[0].state, PluginState::Enabled);
     assert_eq!(plan.plugins.plugins[0].alias, "git");
@@ -393,7 +395,11 @@ config.stage = true
         Err(TemplateError::UnknownCapability { .. })
     ));
 
-    let missing = skeleton("[PLUGIN:dctx/git]\nversion = \"1.3.0\"\nrequired = true\n");
+    let missing = skeleton(concat!(
+        "[PLUGIN:dctx/git]\nversion = \"",
+        env!("CARGO_PKG_VERSION"),
+        "\"\nrequired = true\n"
+    ));
     assert!(matches!(
         compile(&missing, &HostCeiling::base()),
         Err(TemplateError::RequiredPluginMissing { .. })
@@ -423,7 +429,7 @@ config.stage = true
     let aliased = good.replace("required = true", "required = true\nalias = \"git\"");
     assert!(compile(&aliased, &host).is_ok());
 
-    let bad_version = good.replace("1.3.0", "9.9.9");
+    let bad_version = good.replace(env!("CARGO_PKG_VERSION"), "9.9.9");
     let err = compile(&bad_version, &host).expect_err("version");
     assert!(
         matches!(err, TemplateError::InvalidSyntax { detail, .. } if detail.contains("version"))
@@ -509,16 +515,18 @@ version = "1.0.0"
     );
 
     host.plugins.push(bundled_git_plugin());
-    let external = skeleton(
+    let external = skeleton(concat!(
         r#"
 [PLUGINS:main]
 network = "external"
 enabled = ["dctx/git"]
 [PLUGIN:dctx/git]
-version = "1.3.0"
+version = ""#,
+        env!("CARGO_PKG_VERSION"),
+        r#""
 required = true
-"#,
-    );
+"#
+    ));
     assert!(matches!(
         compile(&external, &host),
         Err(TemplateError::GrantExpansion { kind: "network" })

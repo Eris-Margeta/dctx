@@ -4,14 +4,14 @@
 //! No filesystem, network or worker execution; verifies consent, sticky disable and views.
 
 use dctx_desktop_api::{
-    bundled_plugin_version, DesktopError, PluginFailure, PluginOps, PluginSource, PluginState,
+    DesktopError, PluginFailure, PluginOps, PluginSource, PluginState, bundled_plugin_version,
 };
 use dctx_plugin_distribution::{
-    domain::registry_codec,
-    fakes::{FakeNetwork, Fault, FixedClock, MemoryStore},
     CapabilitySet, Confinement, ConsentApproval, ConsentScope, Distribution, DistributionError,
     Enablement, HttpsUrl, IndexEntry, IndexRelease, InstallPolicy, Origin, PluginId, Registry,
     Sha256Hex, Store, Target, TrustStore, VerifiedIndex, Version,
+    domain::registry_codec,
+    fakes::{FakeNetwork, Fault, FixedClock, MemoryStore},
 };
 
 struct Fixture {
@@ -89,7 +89,7 @@ fn official_installation_acceptance_lists_default_bundled_enabled_with_grants() 
     assert_eq!(rows.len(), 1);
     let row = &rows[0];
     assert_eq!(row.id, "dctx/git");
-    assert_eq!(row.version.as_deref(), Some("1.3.0"));
+    assert_eq!(row.version.as_deref(), Some(env!("CARGO_PKG_VERSION")));
     assert_eq!(row.source, PluginSource::Bundled);
     assert_eq!(row.state, PluginState::Enabled);
     assert!(row.enabled);
@@ -126,14 +126,15 @@ fn migrated_or_copied_binary_needs_consent_and_enable_never_grants_it() {
         PluginState::NeedsConsent
     );
     assert_eq!(before, f.store.load_registry().unwrap());
-    assert!(f
-        .dist()
-        .registry()
-        .unwrap()
-        .get(&id)
-        .unwrap()
-        .consent
-        .is_none());
+    assert!(
+        f.dist()
+            .registry()
+            .unwrap()
+            .get(&id)
+            .unwrap()
+            .consent
+            .is_none()
+    );
 }
 
 #[test]
@@ -143,7 +144,7 @@ fn disable_survives_bundled_and_independent_updates_and_can_be_explicitly_reenab
     assert_eq!(f.ops().disable("dctx/git").unwrap(), 0);
     let id = PluginId::parse("dctx/git").unwrap();
     let mut update = bundled_plugin_version().unwrap();
-    update.version = Version::parse("1.3.0").unwrap();
+    update.version = Version::parse(env!("CARGO_PKG_VERSION")).unwrap();
     update.release_sequence = 2;
     update.digest = Sha256Hex::from_bytes([2; 32]);
     f.dist().register_bundled(&id, update.clone()).unwrap();
@@ -174,7 +175,7 @@ fn disable_survives_bundled_and_independent_updates_and_can_be_explicitly_reenab
         .find(|row| row.id == id.as_str())
         .unwrap();
     assert_eq!(row.state, PluginState::Disabled);
-    assert_eq!(row.version.as_deref(), Some("1.3.0"));
+    assert_eq!(row.version.as_deref(), Some(env!("CARGO_PKG_VERSION")));
     assert_eq!(ops.enable(id.as_str()).unwrap().state, PluginState::Enabled);
 }
 
@@ -318,14 +319,15 @@ fn independent_update_check_uses_only_the_supplied_verified_index() {
     assert!(!result.containing_release);
     assert_eq!(result.version.as_deref(), Some("2.0.0"));
     assert!(f.ops().check_update(id.as_str(), None, None).is_err());
-    assert!(f
-        .ops()
-        .check_update(
-            id.as_str(),
-            Some(&index),
-            Some(&Version::parse("9.0.0").unwrap())
-        )
-        .is_err());
+    assert!(
+        f.ops()
+            .check_update(
+                id.as_str(),
+                Some(&index),
+                Some(&Version::parse("9.0.0").unwrap())
+            )
+            .is_err()
+    );
     assert_eq!(before, f.store.load_registry().unwrap());
     assert_eq!(f.network.requests(), [] as [std::string::String; 0]);
 }
@@ -362,14 +364,15 @@ fn review_payload_serializes_exact_identity_bounds_and_roundtrips_to_approval() 
     let encoded = serde_json::to_value(&row).unwrap();
     let payload = &encoded["consent"];
     assert_eq!(payload["id"], row.id);
-    assert_eq!(payload["version"], "1.3.0");
+    assert_eq!(payload["version"], env!("CARGO_PKG_VERSION"));
     assert_eq!(payload["digest"], approval().digest.to_string());
     assert_eq!(payload["scope"], serde_json::json!({"kind": "user"}));
     let lines = payload["capability_lines"].as_array().unwrap();
     assert_eq!(lines.len(), approval().capabilities.len());
-    assert!(lines.iter().all(|line| row
-        .capabilities
-        .contains(&line.as_str().unwrap().to_owned())));
+    assert!(lines.iter().all(|line| {
+        row.capabilities
+            .contains(&line.as_str().unwrap().to_owned())
+    }));
 
     // Import the transported entries through the public codec to prove every bound
     // and section survives transport, rather than reconstructing grants from labels.
@@ -459,6 +462,6 @@ fn review_payload_selects_inactive_candidate_and_refuses_stale_versions() {
         .unwrap();
     let registry = f.dist().registry().unwrap();
     let payload = row.with_consent(&registry).unwrap().consent.unwrap();
-    assert_eq!(payload["version"], "1.3.0");
+    assert_eq!(payload["version"], env!("CARGO_PKG_VERSION"));
     assert_eq!(payload["digest"], approval().digest.to_string());
 }

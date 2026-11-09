@@ -8,19 +8,24 @@ strings and returns engine envelopes without parsing or rendering their output.
 It includes the `dctx` CLI command, which verifies the engine handshake and then
 forwards CLI arguments, standard streams, exit status and signals.
 
-The package and its native platform packages are built and tested in CI;
-**npm registry publication is pending**. Nothing is published to npm yet, so a
-`dctx` package or `@dctx/*` scope there is not from this project: do not install
-it, and do not rely on `npx dctx`. Use the prebuilt native archives from
-[GitHub Releases](https://github.com/Eris-Margeta/dctx/releases) for the CLI, or
-the packed tarball from CI (Node 18+) with `DCTX_BIN` pointing at a verified
-engine. There are no install hooks, binary downloads, network calls, fallback
-operations or retries.
+Install from npm (Node 18+):
+
+```sh
+npm install dctx
+npx dctx --version
+```
+
+The `dctx` package pins `@tejl/dctx-<os>-<arch>` optional dependencies, and npm
+installs the matching native platform package. If optional dependencies were
+omitted, install the package for your platform at the same version, for example
+`npm install @tejl/dctx-linux-x64@1.3.1`.
+The transport itself makes no network calls and has no install hooks, binary
+downloads, fallback operations or retries.
 
 Install a CI tarball offline-safe, then point it at a verified release binary:
 
 ```sh
-npm install --omit=optional --ignore-scripts ./dctx-1.2.0.tgz
+npm install --omit=optional --ignore-scripts ./dctx-1.3.1.tgz
 # The matching archive from the GitHub release, checked against its SHA256SUMS.
 export DCTX_BIN=/absolute/path/to/dctx
 ```
@@ -28,18 +33,16 @@ export DCTX_BIN=/absolute/path/to/dctx
 The CI tarball (`packaging/npm/scripts/build-pack.mjs`) declares no
 dependencies, so npm resolves nothing from a registry for it. Registry builds
 (`tools/release/prepare-npm.py`) declare the native platform packages
-`@dctx/cli-<os>-<arch>` as pinned optional dependencies. Those names are not
-registered yet, so install such a tarball only with `--omit=optional` and name
-the matching platform tarball explicitly:
+`@tejl/dctx-<os>-<arch>` as pinned optional dependencies. To install prepared
+tarballs without resolving optional dependencies from a registry, name the
+matching platform tarball explicitly:
 
 ```sh
-npm install --omit=optional --ignore-scripts ./dctx-1.2.0.tgz ./dctx-cli-linux-x64-1.2.0.tgz
+npm install --omit=optional --ignore-scripts ./dctx-1.3.1.tgz ./tejl-dctx-linux-x64-1.3.1.tgz
 ```
 
-Without `--omit=optional`, npm looks up the other platform names in the
-configured registry and would install whatever is published there. Keep
-`omit=optional` in the project's `.npmrc` so later `npm install` and `npm ci`
-runs skip them too.
+Registry installs normally include optional dependencies. For an offline project,
+keep `omit=optional` in its `.npmrc` so later installs also skip registry lookups.
 
 ```js
 import { connect } from 'dctx'; // In an ES module (.mjs)
@@ -96,7 +99,7 @@ available source:
 1. `binaryPath`, then `DCTX_BIN`, as an executable path. Relative paths resolve
    against `cwd`. An invalid explicit choice fails immediately. The npm command
    shim itself is refused to prevent recursive process startup.
-2. The pinned optional package `@dctx/cli-<os>-<arch>`, containing `bin/dctx`
+2. The pinned optional package `@tejl/dctx-<os>-<arch>`, containing `bin/dctx`
    (`bin/dctx.exe` on Windows), only when this package's manifest declares it
    (registry builds; the CI tarball does not). Linux x64/arm64, macOS x64/arm64
    and Windows x64 are packaged. An installed binary that cannot be executed
@@ -108,8 +111,8 @@ available source:
    `~/AppData/Local` on Windows.
 4. An error with the release URL, checksum verification instruction and cache
    destination, plus, when the platform package is declared, the
-   `npm install --omit=optional` command for its local tarball. It never
-   suggests a registry install while publication is pending. Nothing downloads.
+   `npm install @tejl/dctx-<os>-<arch>@<version>` command. The transport never
+   downloads a binary itself.
 
 To use your own engine, obtain the matching release, verify `SHA256SUMS`, and
 set `DCTX_BIN` to its executable path (or use `binaryPath`). On Unix, give a

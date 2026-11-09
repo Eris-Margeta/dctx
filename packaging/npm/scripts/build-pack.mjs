@@ -20,8 +20,17 @@ run(process.execPath, [resolve(dirname(fileURLToPath(import.meta.url)), 'generat
 const manifest = JSON.parse(readFileSync(resolve(packageDir, 'package.json')));
 const engineManifest = readFileSync(resolve(root, 'crates/dctx-cli/Cargo.toml'), 'utf8');
 if (engineManifest.match(/^version\s*=\s*"([^"]+)"/m)?.[1] !== manifest.version) throw new Error('npm and engine versions differ');
+const platformDirectories = {
+  '@tejl/dctx-linux-x64': 'cli-linux-x64',
+  '@tejl/dctx-linux-arm64': 'cli-linux-arm64',
+  '@tejl/dctx-darwin-x64': 'cli-darwin-x64',
+  '@tejl/dctx-darwin-arm64': 'cli-darwin-arm64',
+  '@tejl/dctx-win32-x64': 'cli-win32-x64',
+};
 for (const [name, version] of Object.entries(manifest.optionalDependencies)) {
-  const native = JSON.parse(readFileSync(resolve(root, 'packaging/npm', name.slice('@dctx/'.length), 'package.json')));
+  const directory = platformDirectories[name];
+  if (!directory) throw new Error(`Unknown platform package: ${name}`);
+  const native = JSON.parse(readFileSync(resolve(root, 'packaging/npm', directory, 'package.json')));
   if (version !== manifest.version || native.version !== version || native.name !== name) throw new Error(`Version mismatch: ${name}`);
 }
 for (const source of ['bin/dctx.js', 'src/index.js', 'src/resolve.js']) {
@@ -34,10 +43,10 @@ const command = npmCli ? process.execPath : process.platform === 'win32' ? 'npm.
 if (process.platform === 'win32' && !npmCli) {
   throw new Error('On Windows run: npm exec -- node packaging/npm/scripts/build-pack.mjs [output-directory]');
 }
-// The @dctx/cli-* names are not registered yet, so a tarball that declares them as optional
-// dependencies makes `npm install <tarball>` resolve them from whatever registry is configured.
-// The local tarball therefore drops optionalDependencies; it uses DCTX_BIN, binaryPath or the cache
-// path. tools/release/prepare-npm.py restores them for registry publication.
+// Local tarballs drop optionalDependencies so `npm install <tarball>` does not resolve
+// platform packages from the configured registry. They use DCTX_BIN, binaryPath or the
+// cache path. tools/release/prepare-npm.py restores the pinned @tejl/dctx-* dependencies
+// for registry publication.
 const staging = mkdtempSync(join(tmpdir(), 'dctx-npm-pack-'));
 try {
   const stagedPackage = join(staging, 'dctx');

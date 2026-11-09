@@ -1,6 +1,6 @@
 {
-  "name": "@dctx/cli-linux-x64",
-  "version": "1.3.0",
+  "name": "@tejl/dctx-linux-x64",
+  "version": "1.3.1",
   "description": "dctx native CLI for linux-x64",
   "license": "Apache-2.0",
   "repository": {
