@@ -94,8 +94,10 @@ class ResolutionTests(unittest.TestCase):
             self.executable.unlink()
             with self.assertRaises(_binary.BinaryNotFoundError) as error:
                 _binary.resolve_binary()
-            self.assertIn(f'python -m pip install "dctx[binary]=={__version__}"', str(error.exception))
-            self.assertIn("--no-index --find-links ./wheelhouse", str(error.exception))
+            self.assertIn(f'--no-index --find-links ./wheelhouse "dctx[binary]=={__version__}"',
+                          str(error.exception))
+            # Registry publication is pending: never suggest a plain registry install.
+            self.assertNotIn(f'python -m pip install "dctx', str(error.exception))
             self.assertIn(str(self.executable), str(error.exception))
 
     def _plant_platform_module(self, directory):

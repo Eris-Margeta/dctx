@@ -150,7 +150,7 @@ with dctx.Client(sys.argv[1]) as client:
                                      "import dctx, sys; dctx.Client(sys.argv[1])", str(root)],
                                     cwd=root, env=env, capture_output=True, timeout=60)
             self.assertNotEqual(missing.returncode, 0)
-            self.assertIn(f'python -m pip install "dctx[binary]=={version}"'.encode(), missing.stderr)
+            self.assertIn(f'--find-links ./wheelhouse "dctx[binary]=={version}"'.encode(), missing.stderr)
 
 
 if __name__ == "__main__":

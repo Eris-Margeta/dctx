@@ -59,11 +59,9 @@ def install_instructions() -> str:
         local = ("No user cache location is available on this host (no home directory); "
                  "set DCTX_BIN to the engine's absolute executable path.")
     return (
-        f'Install matching wheels explicitly: python -m pip install "dctx[binary]=={__version__}". '
-        "For an offline wheelhouse: "
+        "Registry publication is pending, so install the matching wheels from a local wheelhouse "
+        "(CI wheel artifacts, or packages/python/tools/build_wheels.py; see packages/python/README.md): "
         f'python -m pip install --no-index --find-links ./wheelhouse "dctx[binary]=={__version__}". '
-        "Until registry publication, use the CI wheel artifacts or build them with "
-        "packages/python/tools/build_wheels.py (see packages/python/README.md). "
         f"{local} No automatic download is performed."
     )
 
