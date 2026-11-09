@@ -3,7 +3,11 @@
 
 use std::{fs, path::Path};
 
-use super::{discover::Context, inspect, render, Scope};
+use super::{
+    discover::Context,
+    inspect::{self, Probe},
+    render, Scope,
+};
 
 fn context(root: &Path) -> Context {
     Context {
@@ -129,8 +133,23 @@ fn cache_accounting_does_not_follow_symlinks_or_loops() {
 fn versions_cannot_escape_the_cache_namespace() {
     assert_eq!(
         inspect::version_line("dctx 1.2.3 (abc123)\n"),
-        Some("1.2.3".into())
+        Some(Probe {
+            version: "1.2.3".into(),
+            commit: Some("abc123".into())
+        })
     );
+    for (text, commit) in [
+        ("dctx 1.2.3\n", None),
+        ("dctx 1.2.3 (unknown)\n", None),
+        ("dctx 1.2.3 (ab/../c)\n", None),
+        ("dctx 1.2.3 (abc\u{1b}1)\n", None),
+    ] {
+        assert_eq!(
+            inspect::version_line(text).and_then(|probe| probe.commit),
+            commit,
+            "{text}"
+        );
+    }
     assert_eq!(inspect::namespace("2.4.0-rc.1+build"), Some("2.4".into()));
     for text in [
         "dctx 1.2/../../secret",
@@ -150,7 +169,7 @@ fn missing_explicit_override_is_a_row_with_errors_and_valid_json_escaping() {
     let mut context = context(dir.path());
     context.explicit = Some(dir.path().join("missing\"\n\u{1b}"));
     let cache = dir.path().join("cache");
-    let rows = inspect::binaries(&context, Ok(cache.clone()));
+    let rows = inspect::binaries(&context, Ok(cache.clone()), false);
     assert_eq!(rows.len(), 2);
     let missing = rows
         .iter()
@@ -161,6 +180,7 @@ fn missing_explicit_override_is_a_row_with_errors_and_valid_json_escaping() {
     assert!(missing.sha256.is_none());
     let running = rows.iter().find(|row| row.running).unwrap();
     assert_eq!(running.version.as_deref(), Some(env!("CARGO_PKG_VERSION")));
+    assert_eq!(running.commit.as_deref(), Some(env!("DCTX_GIT_SHA")));
     assert_eq!(running.cache_size_bytes, Some(0));
     assert!(!cache.exists());
     let text = render::report(&rows, true);
@@ -179,7 +199,13 @@ fn probes_are_bounded_and_bad_candidates_do_not_hide_other_installations() {
     let candidate = dir.path().join("dctx");
     executable(&candidate);
     fs::write(&candidate, b"#!/bin/sh\nprintf 'dctx 9.8.7 (fixture)\\n'\n").unwrap();
-    assert_eq!(inspect::probe_version(&candidate).unwrap(), "9.8.7");
+    assert_eq!(
+        inspect::probe_version(&candidate).unwrap(),
+        Probe {
+            version: "9.8.7".into(),
+            commit: None
+        }
+    );
     fs::write(&candidate, b"#!/bin/sh\nexit 42\n").unwrap();
     assert!(inspect::probe_version(&candidate)
         .unwrap_err()
@@ -192,4 +218,70 @@ fn probes_are_bounded_and_bad_candidates_do_not_hide_other_installations() {
         .unwrap_err()
         .contains("timed out"));
     assert!(start.elapsed() < std::time::Duration::from_secs(10));
+}
+
+#[test]
+fn only_running_explicit_and_absolute_path_candidates_may_be_executed_by_default() {
+    let dir = tempfile::tempdir().unwrap();
+    let context = context(dir.path());
+    let name = if cfg!(windows) { "dctx.exe" } else { "dctx" };
+    assert!(context.trusted_to_execute(&dir.path().join("system").join(name)));
+    assert!(context.trusted_to_execute(context.explicit.as_ref().unwrap()));
+    assert!(context.trusted_to_execute(&context.running));
+    for untrusted in [
+        dir.path().join("relative").join(name),
+        dir.path().join("node_modules/.bin").join(name),
+        dir.path().join("venv/bin").join(name),
+        dir.path().join("system/nested").join(name),
+    ] {
+        assert!(
+            !context.trusted_to_execute(&untrusted),
+            "{}",
+            untrusted.display()
+        );
+    }
+}
+
+/// A checkout can commit an executable `node_modules/.bin/dctx`; doctor must not run it unless asked.
+#[cfg(unix)]
+#[test]
+fn planted_project_candidates_are_checksummed_but_never_executed_by_default() {
+    let dir = tempfile::tempdir().unwrap();
+    let context = context(dir.path());
+    let marker = dir.path().join("ran");
+    let script = format!(
+        "#!/bin/sh\n: > '{}'\nprintf 'dctx 9.9.9 (abc1234)\\n'\n",
+        marker.display()
+    );
+    let planted = [
+        dir.path().join("node_modules/.bin/dctx"),
+        dir.path().join("venv/bin/dctx"),
+        dir.path().join("relative/dctx"),
+    ];
+    for path in &planted {
+        executable(path);
+        fs::write(path, &script).unwrap();
+    }
+    let rows = inspect::binaries(&context, Ok(dir.path().join("cache")), false);
+    assert!(
+        !marker.exists(),
+        "doctor executed a project-local candidate"
+    );
+    for path in &planted {
+        let row = rows.iter().find(|row| &row.path == path).unwrap();
+        assert!(row.version.is_none());
+        assert!(row.commit.is_none());
+        assert_eq!(row.sha256.as_ref().map(String::len), Some(64));
+        assert!(row
+            .errors
+            .iter()
+            .any(|error| error.contains("--probe-project")));
+    }
+    let rows = inspect::binaries(&context, Ok(dir.path().join("cache")), true);
+    assert!(marker.exists());
+    for path in &planted {
+        let row = rows.iter().find(|row| &row.path == path).unwrap();
+        assert_eq!(row.version.as_deref(), Some("9.9.9"));
+        assert_eq!(row.commit.as_deref(), Some("abc1234"));
+    }
 }

@@ -69,9 +69,11 @@ fn doctor_and_verbose_version_never_create_a_cache_or_project_files() {
     assert!(json.contains("\"running\":true"));
     assert!(json.contains("\"cache_size_bytes\":0"));
     assert!(json.contains("\"errors\":[]"));
+    assert!(json.contains(&format!("\"commit\":\"{}\"", env!("DCTX_GIT_SHA"))));
     let output = fixture.run(&["doctor"]);
     let text = String::from_utf8(output.stdout).unwrap();
     assert!(text.contains("scope: system"));
+    assert!(text.contains(&format!("  commit: {}\n", env!("DCTX_GIT_SHA"))));
     assert!(text.contains("sha256: "));
     assert!(!fixture.root().join("cache").exists());
     assert_eq!(
@@ -87,6 +89,53 @@ fn doctor_and_verbose_version_never_create_a_cache_or_project_files() {
         .unwrap();
     assert_eq!(output.status.code(), Some(2));
     assert!(output.stdout.is_empty());
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("`--bogus`"),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+/// A cloned repository can commit an executable `node_modules/.bin/dctx`; plain `doctor` must not run it.
+#[cfg(unix)]
+#[test]
+fn doctor_never_executes_a_planted_project_binary_by_default() {
+    use std::os::unix::fs::PermissionsExt;
+    let fixture = Fixture::new();
+    let marker = fixture.root().join("ran");
+    let planted = fixture.root().join("project/node_modules/.bin/dctx");
+    fs::create_dir_all(planted.parent().unwrap()).unwrap();
+    fs::write(
+        &planted,
+        format!(
+            "#!/bin/sh\n: > '{}'\nprintf 'dctx 9.9.9 (abc1234)\\n'\n",
+            marker.display()
+        ),
+    )
+    .unwrap();
+    fs::set_permissions(&planted, fs::Permissions::from_mode(0o755)).unwrap();
+    let path =
+        std::env::join_paths([fixture.root().join("system"), "node_modules/.bin".into()]).unwrap();
+    let output = fixture
+        .command()
+        .env("PATH", path)
+        .args(["doctor", "--json"])
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert!(!marker.exists(), "doctor executed a planted project binary");
+    let json = String::from_utf8(output.stdout).unwrap();
+    assert!(!json.contains("9.9.9"), "{json}");
+    assert!(json.contains("--probe-project"), "{json}");
+    let output = fixture
+        .command()
+        .args(["doctor", "--json", "--probe-project"])
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert!(marker.exists());
+    assert!(String::from_utf8_lossy(&output.stdout)
+        .contains("\"version\":\"9.9.9\",\"commit\":\"abc1234\""));
 }
 
 #[test]
@@ -161,21 +210,39 @@ fn all_discovery_sources_report_distinct_versions_checksums_and_cache_sizes() {
         fixture.root().join("system"),
     ])
     .unwrap();
-    let output = fixture
-        .command()
-        .env("PATH", path)
-        .env("VIRTUAL_ENV", fixture.root().join("venv"))
-        .env("DCTX_BIN", fixture.root().join("explicit"))
-        .args(["doctor", "--json"])
-        .output()
-        .unwrap();
-    assert!(
-        output.status.success(),
-        "{}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    assert!(output.stderr.is_empty());
-    let json = String::from_utf8(output.stdout).unwrap();
+    let doctor = |args: &[&str]| {
+        let output = fixture
+            .command()
+            .env("PATH", &path)
+            .env("VIRTUAL_ENV", fixture.root().join("venv"))
+            .env("DCTX_BIN", fixture.root().join("explicit"))
+            .arg("doctor")
+            .args(args)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(output.stderr.is_empty());
+        String::from_utf8(output.stdout).unwrap()
+    };
+    // Project-local candidates are checksummed but not executed unless --probe-project is given.
+    let json = doctor(&["--json"]);
+    assert_eq!(json.matches("\"path\":").count(), 6, "{json}");
+    assert_eq!(json.matches("\"errors\":[]").count(), 4, "{json}");
+    assert_eq!(json.matches("--probe-project").count(), 2, "{json}");
+    for version in ["7.8.9", "10.11.12"] {
+        assert!(!json.contains(version), "{json}");
+    }
+    for version in ["4.5.6", "13.14.15"] {
+        assert!(
+            json.contains(&format!("\"version\":\"{version}\"")),
+            "{json}"
+        );
+    }
+    let json = doctor(&["--probe-project", "--json"]);
     let decoded = dctx_plugin_protocol::decode_object(
         json.as_bytes(),
         dctx_plugin_protocol::DecodeLimits::WIRE,

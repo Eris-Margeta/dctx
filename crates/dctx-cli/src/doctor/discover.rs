@@ -63,6 +63,24 @@ impl Context {
         paths.into_iter().collect()
     }
 
+    /// True when doctor may run `path --version` without `--probe-project`: the running file, `DCTX_BIN`,
+    /// or a file found through an absolute PATH entry. Candidates reached only through `./node_modules/.bin`,
+    /// `VIRTUAL_ENV` or a relative PATH entry can be planted by an untrusted checkout and are never executed
+    /// by default.
+    pub fn trusted_to_execute(&self, path: &Path) -> bool {
+        if self.explicit.as_deref() == Some(path)
+            || path == self.invocation_path()
+            || path == absolute(&self.cwd, &self.running)
+        {
+            return true;
+        }
+        path.parent().is_some_and(|parent| {
+            self.path
+                .iter()
+                .any(|entry| entry.is_absolute() && absolute(&self.cwd, entry) == parent)
+        })
+    }
+
     pub fn scope(&self, path: &Path) -> Scope {
         if self.explicit.as_deref() == Some(path) {
             return Scope::Explicit;

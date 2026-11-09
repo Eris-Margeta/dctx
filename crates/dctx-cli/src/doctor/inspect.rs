@@ -21,8 +21,20 @@ use super::{
 
 const PROBE_TIMEOUT: Duration = Duration::from_secs(2);
 const VERSION_BYTES: u64 = 4096;
+const NOT_EXECUTED: &str = "not executed: found only in ./node_modules/.bin, VIRTUAL_ENV or a relative PATH entry, which an untrusted checkout can plant; rerun with --probe-project to run its --version";
 
-pub(super) fn binaries(context: &Context, cache_base: Result<PathBuf, String>) -> Vec<Binary> {
+/// Engine version and optional short build commit parsed from `dctx --version`.
+#[derive(Debug, PartialEq, Eq)]
+pub(super) struct Probe {
+    pub version: String,
+    pub commit: Option<String>,
+}
+
+pub(super) fn binaries(
+    context: &Context,
+    cache_base: Result<PathBuf, String>,
+    probe_project: bool,
+) -> Vec<Binary> {
     let mut sizes = BTreeMap::new();
     context
         .candidates()
@@ -35,15 +47,20 @@ pub(super) fn binaries(context: &Context, cache_base: Result<PathBuf, String>) -
                 &mut errors,
             );
             let running = same_file(&path, &context.running);
-            let version = record(
-                if running {
-                    Ok(env!("CARGO_PKG_VERSION").to_string())
-                } else {
-                    probe_version(&path)
-                },
-                "version",
-                &mut errors,
-            );
+            let probed = if running {
+                Ok(Probe {
+                    version: env!("CARGO_PKG_VERSION").to_string(),
+                    commit: Some(env!("DCTX_GIT_SHA").to_string()),
+                })
+            } else if probe_project || context.trusted_to_execute(&path) {
+                probe_version(&path)
+            } else {
+                Err(NOT_EXECUTED.into())
+            };
+            let (version, commit) = match record(probed, "version", &mut errors) {
+                Some(probe) => (Some(probe.version), probe.commit),
+                None => (None, None),
+            };
             let sha256 = record(checksum(&path), "sha256", &mut errors);
             let cache_root = match (&cache_base, &version) {
                 (Ok(base), Some(version)) => {
@@ -67,6 +84,7 @@ pub(super) fn binaries(context: &Context, cache_base: Result<PathBuf, String>) -
                 real_path,
                 running,
                 version,
+                commit,
                 cache_root,
                 cache_size_bytes,
                 sha256,
@@ -144,14 +162,25 @@ pub(super) fn directory_size(root: &Path) -> Result<u64, String> {
 }
 
 /// Parses only dctx's version line; never uses candidate output as a path.
-pub(super) fn version_line(text: &str) -> Option<String> {
+pub(super) fn version_line(text: &str) -> Option<Probe> {
     let mut words = text.lines().next()?.split_whitespace();
     if words.next()? != "dctx" {
         return None;
     }
     let version = words.next()?;
     namespace(version)?;
-    Some(version.to_string())
+    // `dctx X.Y.Z (abc1234)`: keep the commit only when it is plain hex, never arbitrary candidate text.
+    let commit = words
+        .next()
+        .and_then(|word| word.strip_prefix('(')?.strip_suffix(')'))
+        .filter(|sha| {
+            (1..=64).contains(&sha.len()) && sha.bytes().all(|byte| byte.is_ascii_hexdigit())
+        })
+        .map(str::to_string);
+    Some(Probe {
+        version: version.to_string(),
+        commit,
+    })
 }
 
 pub(super) fn namespace(version: &str) -> Option<String> {
@@ -173,7 +202,7 @@ pub(super) fn namespace(version: &str) -> Option<String> {
     Some(format!("{major}.{minor}"))
 }
 
-pub(super) fn probe_version(path: &Path) -> Result<String, String> {
+pub(super) fn probe_version(path: &Path) -> Result<Probe, String> {
     let mut child = Command::new(path)
         .arg("--version")
         .env("DCTX_AUTO_CLEAN", "0")
