@@ -218,16 +218,98 @@ class LlmsPipeline(unittest.TestCase):
         self.assertEqual(json.loads((HERE / "data/facts.json").read_text())["schema"], 1)
 
     def test_every_file_is_facts_routes_then_the_capture(self):
-        facts, routes = self.llms.facts_markdown(), self.llms.route_table()
+        routes = build_routes(NEWS)
+        pages = {r.path: (ROOT / "website" / (r.path.lstrip("/") + ("index.html" if r.path.endswith("/") else ""))).read_text()
+                 for r in routes}
         for t in self.cap["tiers"]:
+            name = t["file"]
+            facts = self.llms.facts_for_file(name)
+            table = self.llms.route_table(pages, routes, index=name == "llms.txt")
             text = (ROOT / "website" / t["file"]).read_text()
             self.assertTrue(text.startswith("# dctx\n\n> "), t["file"])
-            self.assertLess(text.index("## About this file"), text.index(facts), t["file"])
-            self.assertLess(text.index(facts), text.index(routes), t["file"])
-            self.assertIn(t["output"], text, t["file"])
-            self.assertLess(text.index(routes), text.index(t["output"]), t["file"])
+            about = "**About this file**" if name == "llms.txt" else "## About this file"
+            self.assertLess(text.index(about), text.index(facts), t["file"])
+            self.assertLess(text.index(facts), text.index(table), t["file"])
+            if t["file"] != "llms.txt":
+                self.assertIn(t["output"], text, t["file"])
+                self.assertLess(text.index(table), text.index(t["output"]), t["file"])
             self.assertIn(f"Engine: dctx {self.cap['version']}.", text)
             self.assertIn(f"Docs commit: {self.cap['docs_commit']} ({self.cap['docs_date']})", text)
+
+    def test_index_shape_uses_only_h1_and_h2_file_lists(self):
+        text = (ROOT / "website/llms.txt").read_text()
+        self.assertTrue(text.startswith("# dctx\n\n> "))
+        self.assertNotRegex(text, r"(?m)^#{3,} ")
+        sections = re.split(r"(?m)^## .+\n", text)[1:]
+        self.assertTrue(sections)
+        for section in sections:
+            for line in section.strip().splitlines():
+                if line:
+                    self.assertRegex(line, r"^- \[.+\]\(https://[^)]+\): .+")
+
+    def test_stale_full_text_fails_freshness_gate(self):
+        import check
+        from routes import Route
+        route = Route("/", "Home", "A description from HTML.", "home")
+        page = ('<meta name="description" content="A description from HTML.">'
+                '<main id="main"><h1>Home</h1>\n<p>Fresh prose that the previous build did not contain.</p></main>')
+        with tempfile.TemporaryDirectory() as tmp:
+            site = Path(tmp)
+            (site / "index.html").write_text(page)
+            pages = {"/": page}
+            texts = {"llms.txt": self.llms.llms_txt(pages, [route]),
+                     "llms-small.txt": self.llms.llms_small(pages, [route]),
+                     "llms-full.txt": self.llms.llms_full(pages, [route])}
+            for name, text in texts.items():
+                (site / name).write_text(text)
+            errors = []
+            check.llms_fresh(site, errors, [route])
+            self.assertEqual(errors, [])
+            (site / "llms-full.txt").write_text(texts["llms-full.txt"].replace(
+                "Fresh prose that the previous build did not contain.", "Old prose."))
+            check.llms_fresh(site, errors, [route])
+            self.assertTrue(any("missing extracted text from /" in error for error in errors), errors)
+            for name, text in texts.items():
+                for field in ("version", "released", "release_tag"):
+                    (site / name).write_text(text.replace(self.llms.facts()[field], "stale"))
+                    errors = []
+                    check.llms_fresh(site, errors, [route])
+                    self.assertTrue(any(f"{name} facts differ" in error for error in errors), errors)
+                (site / name).write_text(text)
+            (site / "unlisted.html").write_text(page)
+            errors = []
+            check.llms_fresh(site, errors, [route])
+            self.assertTrue(any("/unlisted.html is missing from the route table" in error for error in errors), errors)
+
+    def test_shared_extraction_and_packed_prose_deduplication(self):
+        from routes import Route
+        route = Route("/", "Home", "Ignored route description", "home", source="README.md")
+        page = ('<meta name="description" content="Actual &amp; current description.">'
+                '<main id="main"><nav>Navigation only</nav><h1>Home</h1>\n'
+                '<p>Verbatim packed prose.</p>\n<p>Rendered <code>details</code> &amp; text.</p>'
+                '<script>hidden()</script></main>')
+        extracted = self.llms.extract_page(page)
+        self.assertNotIn("Navigation", extracted["text"])
+        self.assertNotIn("hidden", extracted["text"])
+        self.assertIn("Rendered details & text.", extracted["text"])
+        index = self.llms.search_index({"/": page}, [route])
+        self.assertIn("Actual & current description.", index)
+        text = self.llms.page_texts({"/": page}, [route], "Verbatim packed prose.")
+        self.assertNotIn("Verbatim packed prose.", text)
+        self.assertIn("[Documents](#documents)", text)
+        self.assertIn("Rendered details & text.", text)
+
+    def test_budget_shortens_only_supplemental_generated_listings(self):
+        from routes import Route
+        route = Route("/", "Home", "Description", "home")
+        pages = {"/": '<meta name="description" content="Description"><main id="main">Page prose must stay.</main>'}
+        full = self.llms.llms_full(pages, [route])
+        with patch.dict(self.llms.LLMS_LIMIT, {"llms-full.txt": len(full.encode()) - 1}):
+            shortened = self.llms.llms_full(pages, [route])
+        self.assertIn("Page prose must stay.", shortened)
+        self.assertIn(self.llms.tier("llms-full.txt")["output"], shortened)
+        self.assertIn("the generated listing is available", shortened)
+        self.assertLess(len(shortened.encode()), len(full.encode()))
 
     def test_tiers_respect_their_budgets(self):
         from routes import llms_tiers

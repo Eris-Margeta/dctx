@@ -59,7 +59,7 @@ examples is handwritten. The Rust snippet comes from the workspace doctest in
 | the home notice and path selector, `/start/` and its four persona pages, `/for-ai-evaluators/` | `data/facts.json` through `facts.py` (see below); persona runs are records from `data/demo.json` |
 | the home showcase (five ways to use dctx: chat, task, agent, MCP, library) | `pages/tour.py`: a plain-language step beside the real captured run of each (`data/demo.json`, long output cut with an exact `… N lines` marker); `src/hero.js` turns it into tabs that advance with motion on |
 | OG images, icons | `og.py` (Pillow), from the same scene geometry |
-| `llms-small.txt`, `llms.txt`, `llms-full.txt` | `llms.py`: the facts block from `data/facts.json`, the route table in `routes.py`, then the dctx binary's own output over the documents, recorded in `data/llms.json` by `capture.py --llms` (see below) |
+| `llms-small.txt`, `llms.txt`, `llms-full.txt` | `llms.py`: facts from `data/facts.json`, every route with its HTML meta description, the shared search/page text extraction, and document captures from `data/llms.json` (see below) |
 | sitemap, feeds, robots, `security.txt`, `humans.txt`, manifest, OpenSearch, search index, `build.json` | `llms.py`, from the route table in `routes.py` |
 | syntax colours in every code block, terminal transcript, help text and template | `highlight.py`, an in-house highlighter run at build time (no library, no runtime script); `.t-*` classes coloured by the `--hl-*` tokens in `src/site.css` |
 | CSS and JS | hand-written in `src/`, published content-hashed (`assets.py`); `theme.js` runs inline and `tools/playground/nginx.conf` allows it by hash |
@@ -99,14 +99,21 @@ the measured numbers parsed by `data.py`; numbers are never typed into facts.jso
 Links starting with `/` are site paths. Everything marked planned stays labelled planned (see the honesty rule
 in the canonical wording); change a status only when the release has it.
 
-Each llms file is: title and strapline; "About this file" (engine version, docs commit and its date from git,
-the exact dctx commands, the budget); the facts block; the route table (`## Pages`); then the dctx output.
-`routes.llms_tiers()` defines the tiers: `llms-small.txt` adds `dctx map map FILE --depth 2` of the start
-documents, `llms.txt` adds `dctx pack` of the start documents, and `llms-full.txt` adds `dctx pack` of every
-document, policy, the changelog and the built-in templates, then the captured CLI help and examples.
-Documents are taken in order while the output stays within the tier's budget in estimated tokens; the rest
-are named as left out. If the engine changes a document's bytes inside the pack (dctx 1.2.0 substitutes
-`{{name}}` template variables in file content), the file says so and names the documents.
+Each llms file starts with an H1 and blockquote summary, capture provenance, the facts block and
+sections linking every public HTML route with its meta description. `llms.txt` is the page index;
+`llms-small.txt` also adds `dctx map map FILE --depth 2` of the start documents.
+`llms-full.txt` retains the document pack (documents, policies, changelog and built-in templates),
+then includes every HTML page under its absolute URL and title, in route-table order. `extract_page()`
+is shared with the search index. For packed documents, a link identifies the document and only rendered
+lines absent verbatim from the pack are added, so formatting changes and page details remain readable
+without copying the same prose twice. Search, offline and error pages are included too.
+
+`routes.llms_tiers()` defines the document capture budgets. Documents are taken in order while the
+capture stays within its estimated-token budget; the rest are named as left out. If the engine changes
+a document's bytes inside the pack, the file says so and names the documents. Those capture budgets
+do not limit HTML page coverage. The full file must fit `LLMS_LIMIT` (1 MiB): if necessary, the largest
+supplemental CLI/example listings become one-paragraph summaries linking their pages. The build reports
+the byte counts and never drops page prose or the document pack; it fails if those alone exceed the limit.
 
 ```sh
 DCTX_BIN=target/release/dctx-cli python3 tools/website/capture.py --llms   # rewrite data/llms.json
@@ -115,8 +122,10 @@ DCTX_BIN=target/release/dctx-cli python3 tools/website/capture.py --llms   # rew
 Run it after committing a document change (the docs commit is part of the output, as with `dates.json`).
 `build.py` warns when a document differs from the capture. `check.py` fails when a document's sha256 differs
 from `data/llms.json`, when the docs commit differs from git (skipped in a shallow clone), when a re-capture
-with `DCTX_BIN` differs by one byte, when `facts.json` disagrees with `VERSION`, `CHANGELOG.md` or the tag, when
-a link in the facts or the route table does not resolve, and when a removed command (`removed.items[].patterns`)
+with `DCTX_BIN` differs by one byte, when `facts.json` disagrees with `VERSION`, `CHANGELOG.md` or the tag,
+when facts in any llms file differ from `facts.json`, when any built page's extracted lines are absent
+from `llms-full.txt`, when a URL or meta description is absent from `llms.txt`, when a page is absent
+from the route table, when a link does not resolve, and when a removed command (`removed.items[].patterns`)
 appears anywhere except the removed list, a historical source inside a pack (`CHANGELOG.md`, `docs/research/`)
 or a line that itself calls it legacy or removed. An HTML page may show the removed list only inside one
 element with `data-facts="removed"`.

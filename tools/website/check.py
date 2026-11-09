@@ -38,6 +38,8 @@ from urllib.parse import unquote, urljoin, urlsplit
 ROOT = Path(__file__).resolve().parents[2]
 HERE = ROOT / "tools/website"
 sys.path.insert(0, str(HERE))
+from llms import LLMS_LIMIT
+
 ORIGIN = "https://www.dctx.internet.technology"
 HOST = urlsplit(ORIGIN).hostname
 STATIC = {".gitignore", "assets/tejl-logo-off-black.svg"}
@@ -55,7 +57,6 @@ HTML_LIMIT = {"docs/spec/index.html": 450_000, "cli/index.html": 300_000, "docs/
               "changelog/index.html": 200_000, "examples/index.html": 300_000, "docs/benchmark/index.html": 200_000}
 SALES = re.compile(r"(?i)free forever|(?<!not )enterprise|pricing|trusted by|world[- ]class|revolutionary|best[- ]in[- ]class")
 LEGACY_RULES = re.compile(r"(?i)\.legacyignore|\.dctxomitcontent|config/dctx/omitcontent")
-LLMS_LIMIT = {"llms-small.txt": 20_480, "llms.txt": 102_400, "llms-full.txt": 1_048_576}
 LEGACY_CALL = re.compile(r"dctx \.(?:\s+-[a-zA-Z]|[ \t]*$)", re.M)
 
 
@@ -209,9 +210,19 @@ def removed_outside_list(label: str, text: str, errors: list[str]) -> None:
     """A removed command may appear only in the facts' removed list, in a historical source inside a pack
     (llms.HISTORICAL), or on a line that itself calls it legacy or removed."""
     from llms import HISTORICAL
+    from common import BLOB
+    from routes import DOCS, POLICIES
     pats = removed_list_patterns()
-    source, in_list = None, False
+    documents = {file for _, file, *_ in DOCS} | {file for _, file, *_ in POLICIES} | {"CHANGELOG.md"}
+    source, in_list, rendered_doc = None, False, False
     for n, line in enumerate(text.split("\n"), 1):
+        if source is None and line.startswith("url: "):
+            rendered_doc = False
+        if source is None and line.startswith("source: " + BLOB):
+            # Like their HTML pages, rendered document additions are checked through
+            # the source pack. Tag spacing can turn a prose link ending in "dctx" and
+            # a full stop into an apparent implicit snapshot command.
+            rendered_doc = line.removeprefix("source: " + BLOB) in documents
         m = re.match(r'<FILE_CONTENT_START ID="[^"]+" PATH="([^"]+)"', line)
         if m:
             source = m.group(1)
@@ -219,9 +230,9 @@ def removed_outside_list(label: str, text: str, errors: list[str]) -> None:
         if line.startswith("</FILE_CONTENT_END "):
             source = None
             continue
-        if source is None and line.startswith("#"):
-            in_list = line.startswith("### Removed in ")
-        if in_list or (source and source.startswith(HISTORICAL)) or re.search(r"(?i)(?<![-\w])legacy\b|\bremoved\b", line):
+        if source is None and (line.startswith("#") or re.fullmatch(r"\*\*.+\*\*", line)):
+            in_list = line.startswith(("### Removed in ", "**Removed in "))
+        if rendered_doc or in_list or (source and source.startswith(HISTORICAL)) or re.search(r"(?i)(?<![-\w])legacy\b|\bremoved\b", line):
             continue
         for was, p in pats:
             if p.search(line):
@@ -466,6 +477,59 @@ def page_label(path: str) -> str:
     return path.lstrip("/") + ("index.html" if path.endswith("/") else "")
 
 
+def llms_fresh(site: Path, errors: list[str], routes=None) -> None:
+    """Every built HTML page must remain discoverable and its extracted text readable.
+
+    Check the output, not a second rendering of llms-full: stale or missing text must
+    fail even when the generator itself stops adding a page. Verbatim document text
+    can live in the pack; every other extracted line must be present as well.
+    """
+    import llms
+    from routes import build_routes
+    from pages.news_content import NEWS
+    routes = build_routes(NEWS) if routes is None else routes
+    texts = {name: (site / name).read_text() for name in LLMS_LIMIT}
+    full = llms.normalize(texts["llms-full.txt"])
+    paths = {r.path for r in routes}
+    for page in sorted(site.rglob("*.html")):
+        rel = page.relative_to(site).as_posix()
+        path = "/" + rel.removesuffix("index.html") if page.name == "index.html" else "/" + rel
+        url = ORIGIN + path
+        if path not in paths:
+            errors.append(f"llms freshness: {path} is missing from the route table")
+        for name in ("llms.txt", "llms-full.txt"):
+            if url not in texts[name]:
+                errors.append(f"llms freshness: {name} does not mention {url}")
+        extracted = llms.extract_page(page.read_text())
+        missing = [line for line in extracted["lines"] if line not in full]
+        if missing:
+            errors.append(f"llms freshness: llms-full.txt is missing extracted text from {path}: {missing[0][:100]!r} "
+                          f"({len(missing)} lines)")
+    positions = []
+    for r in routes:
+        page = site / (r.path.lstrip("/") + ("index.html" if r.path.endswith("/") else ""))
+        if not page.is_file():
+            errors.append(f"llms freshness: route {r.path} has no HTML page")
+            continue
+        url = ORIGIN + r.path
+        header = f"url: {url}\ntitle: {r.title}\n"
+        if header not in texts["llms-full.txt"]:
+            errors.append(f"llms freshness: llms-full.txt has no page header for {url}")
+        else:
+            positions.append(texts["llms-full.txt"].index(header))
+        desc = llms.extract_page(page.read_text())["description"]
+        if not desc or f"- [{r.title}]({url}): {desc}\n" not in texts["llms.txt"]:
+            errors.append(f"llms freshness: llms.txt needs {url} with its meta description")
+        if r.path.count("/") <= 2 and f"]({url})" not in texts["llms-small.txt"]:
+            errors.append(f"llms freshness: llms-small.txt does not link to top-level page {url}")
+    if positions != sorted(positions):
+        errors.append("llms freshness: llms-full.txt pages are not in route-table order")
+    # facts_fresh separately checks facts.json against VERSION, CHANGELOG.md and git.
+    for name, text in texts.items():
+        if llms.facts_for_file(name) not in text:
+            errors.append(f"llms freshness: {name} facts differ from data/facts.json (version, release tag or date)")
+
+
 def check_site(site: Path, errors: list[str], report: dict) -> None:
     from PIL import Image
     from pages.news_content import NEWS
@@ -636,11 +700,13 @@ def check_site(site: Path, errors: list[str], report: dict) -> None:
         errors.append(f"home.gif is {gif.stat().st_size:,} bytes > 1.5 MB")
     report["og"] = {"png": len(pngs), "gif_bytes": gif.stat().st_size, "largest_png": max(f.stat().st_size for f in pngs)}
     llms_texts = {name: (site / name).read_text() for name in LLMS_LIMIT}
+    llms_fresh(site, errors, routes)
     for name, text in llms_texts.items():
         if len(text.encode()) > LLMS_LIMIT[name]:
             errors.append(f"{name} is {len(text.encode()):,} bytes > {LLMS_LIMIT[name]:,}")
         head = re.split(r"^## (?:Documents|Outline of the start documents)$", text, maxsplit=1, flags=re.M)[0]
-        if not head.startswith("# dctx\n\n> ") or "## Facts" not in head or "## Pages" not in head:
+        markers = ("**Facts**", "## Overview") if name == "llms.txt" else ("## Facts", "## Pages")
+        if not head.startswith("# dctx\n\n> ") or any(marker not in head for marker in markers):
             errors.append(f"{name}: does not start with the title, the facts block and the route table")
         for u in sorted({x.rstrip(".,;:") for x in re.findall(r"https?://[^\s)`]+", head)}):
             p = urlsplit(u)
