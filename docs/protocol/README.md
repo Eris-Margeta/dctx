@@ -53,9 +53,10 @@ PATH for pack operations.
 
 A successful operation returns `result: {"output":"..."}`. After decoding the
 outer JSON string, `output` is **exactly the CLI stdout bytes**, including all
-trailing newlines. It is deliberately opaque. A pack summary includes the CLI's
-`pack bytes=...` report line after its JSON page; clients must not assume the
-string is one JSON document. `pack --for TEXT --json` returns the engine's JSON
+trailing newlines. It is deliberately opaque. A pack summary is exactly one JSON
+document ending in a newline: the CLI prints its `pack bytes=...` status line on
+stderr, which the protocol does not carry. With `--output` or `--clipboard` the
+output is empty. `pack --for TEXT --json` returns the engine's JSON
 v2 context page with `verb: "context"`, `text` (the whole budgeted text page) and
 `hits`. Budgeting applies to the text page before JSON escaping. Text context
 output continues to use the same engine selection and renderer.

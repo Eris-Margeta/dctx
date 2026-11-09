@@ -54,6 +54,7 @@ impl Fixture {
         Self { root, repo }
     }
 
+    /// The page from stdout followed by the status line from stderr.
     fn pack(&self, args: &[&str]) -> String {
         let mut command = Command::new(env!("CARGO_BIN_EXE_dctx-cli"));
         command
@@ -77,12 +78,19 @@ impl Fixture {
             output.status,
             String::from_utf8_lossy(&output.stderr),
         );
+        // stdout is exactly the page; the status line is the only stderr line.
+        let page = String::from_utf8(output.stdout).expect("utf8 stdout");
+        let status = String::from_utf8(output.stderr).expect("utf8 stderr");
         assert!(
-            output.stderr.is_empty(),
-            "{args:?}: {}",
-            String::from_utf8_lossy(&output.stderr)
+            page.ends_with('\n') && !page.contains("pack bytes="),
+            "{args:?}: {page}"
         );
-        String::from_utf8(output.stdout).expect("utf8 stdout")
+        assert!(
+            status.starts_with("pack bytes=") && status.lines().count() == 1,
+            "{args:?}: {status}"
+        );
+        // Helpers read the page, then the status line after it.
+        format!("{page}{status}")
     }
 }
 

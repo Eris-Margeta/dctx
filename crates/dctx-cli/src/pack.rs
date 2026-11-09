@@ -6,6 +6,7 @@
 //! Binaries are omitted unless `--binary`. Include and exclude globs are selection rules.
 //! View filters ride on [`PackRequest`] and hide non-matching files before a read.
 
+use std::io::Write as _;
 use std::path::PathBuf;
 
 use dctx::{DctxError, PackRequest, VecSink};
@@ -24,6 +25,7 @@ use narrow::{file_count, narrow};
 mod narrowed;
 use narrowed::NarrowedSource;
 mod markers;
+mod output_file;
 mod spool;
 pub use markers::legacy_markers;
 use markers::{into_legacy_markers, source_document};
@@ -60,7 +62,7 @@ pub struct PackOutcome {
     pub wrote: Option<PathBuf>,
     /// True when the page was copied to the clipboard.
     pub clipboard: bool,
-    /// Byte count and retention class.
+    /// Byte count and retention class: the status line `dctx pack` prints on stderr.
     pub report_line: String,
     /// Files in the page; 0 makes a plain `dctx pack` exit 1.
     pub files: u64,
@@ -87,6 +89,7 @@ Pack filters (ADR-011, ADR-009):
 Task context (agent cards):
   --for <text>          Instead of the source page: map find on the names in <text>, then neighbors and read of the best hits
   --budget <tokens>     With --for: cap in estimated tokens, ceil(2 * UTF-8 bytes / 7), 100..100000 (default 3000); whole lines only
+Output: stdout is exactly the page (or one JSON document with --json); the status line `pack bytes=N files=N ...` goes to stderr.
 Example: dctx pack src --ext rs,toml --output context.txt
 Example: dctx pack --for \"fix alpha_body in BetaStore\" --budget 3000
 Exit codes: 0 ok, 1 nothing to pack (no view filter), 2 usage, 3 source or output error; see docs/CLI-EXIT-CODES.md.
@@ -129,33 +132,38 @@ pub fn write_output(args: &[String], stdout: &mut dyn std::io::Write) -> Result<
     }
     // Summary pages contain only bounded counters and version metadata.
     if plan.report_format.is_some() {
-        return output(args)?.write_to(stdout);
+        let outcome = execute_plan(&plan).map_err(|error| error.within("pack"))?;
+        if outcome.wrote.is_none() && !outcome.clipboard {
+            stdout
+                .write_all(&outcome.body)
+                .map_err(crate::exit::write_failure)?;
+        }
+        stdout.flush().map_err(crate::exit::write_failure)?;
+        report_status(&outcome.report_line);
+        return no_result(&plan, outcome.files).map_or(Ok(()), Err);
     }
     let mut spool = spool::Spool::new(&plan.path).map_err(crate::exit::write_failure)?;
     let (markers, files, document) =
         source_markers(&plan, Some(&mut spool)).map_err(|error| error.within("pack"))?;
     let bodies = spool.finish().map_err(crate::exit::write_failure)?;
     let version = Version::new_v1();
+    // Every destination gets the same bytes: the page, ending in exactly one added newline when
+    // the template leaves it open.
     let render = |writer: &mut dyn std::io::Write| {
+        let mut page = PageWriter::new(writer);
         dctx_template::write_legacy_snapshot_with(
-            writer,
+            &mut page,
             &document.template,
             &markers,
             &version,
             false,
             document.omit_svg_content,
             &|node| bodies.load(node),
-        )
+        )?;
+        page.finish()
     };
     let bytes = match &plan.destination {
-        Destination::Stdout => {
-            let mut counted = CountingWriter {
-                inner: stdout,
-                bytes: 0,
-            };
-            render(&mut counted).map_err(crate::exit::write_failure)?;
-            counted.bytes
-        }
+        Destination::Stdout => render(stdout).map_err(crate::exit::write_failure)?,
         Destination::File(path) | Destination::FileAndClipboard(path) => {
             if path.as_os_str().is_empty() {
                 return Err(pack_io_failure("--output path is empty".to_string()).within("pack"));
@@ -164,21 +172,13 @@ pub fn write_output(args: &[String], stdout: &mut dyn std::io::Write) -> Result<
                 pack_io_failure(format!("failed to write {}: {error}", path.display()))
                     .within("pack")
             };
-            let file = std::fs::File::create(path).map_err(failed)?;
-            let mut buffered = std::io::BufWriter::with_capacity(64 * 1024, file);
-            let mut counted = CountingWriter {
-                inner: &mut buffered,
-                bytes: 0,
-            };
-            render(&mut counted).map_err(failed)?;
-            std::io::Write::flush(&mut counted).map_err(failed)?;
-            let bytes = counted.bytes;
+            let bytes = output_file::write_with(path, |writer| render(writer)).map_err(failed)?;
             if matches!(plan.destination, Destination::FileAndClipboard(_)) {
                 crate::clipboard::copy_with(|writer| {
                     render(writer).map_err(|error| error.to_string())
                 })
                 .map_err(|error| {
-                    pack_io_failure(format!(
+                    clipboard_failure(format!(
                         "{error}; explicit file already written at {}",
                         path.display()
                     ))
@@ -187,40 +187,60 @@ pub fn write_output(args: &[String], stdout: &mut dyn std::io::Write) -> Result<
             }
             bytes
         }
-        Destination::Clipboard => crate::clipboard::copy_with(|writer| {
-            let mut counted = CountingWriter {
-                inner: writer,
-                bytes: 0,
-            };
-            render(&mut counted).map_err(|error| error.to_string())?;
-            Ok(counted.bytes)
-        })
-        .map_err(|error| pack_io_failure(error).within("pack"))?,
-    };
-    let retention = match &plan.destination {
-        Destination::File(path) | Destination::FileAndClipboard(path) => {
-            format!("explicit path={}", path.display())
+        Destination::Clipboard => {
+            crate::clipboard::copy_with(|writer| render(writer).map_err(|error| error.to_string()))
+                .map_err(|error| clipboard_failure(error).within("pack"))?
         }
-        Destination::Clipboard => "clipboard".to_string(),
-        Destination::Stdout => "stdout".to_string(),
     };
-    writeln!(
-        stdout,
-        "pack bytes={bytes} files={files} retention={retention} version={version}"
-    )
-    .map_err(crate::exit::write_failure)?;
     stdout.flush().map_err(crate::exit::write_failure)?;
+    report_status(&emit::status_line(
+        bytes,
+        files,
+        &plan.destination,
+        &version.to_string(),
+    ));
     no_result(&plan, files).map_or(Ok(()), Err)
 }
 
-struct CountingWriter<'a> {
-    inner: &'a mut dyn std::io::Write,
-    bytes: u64,
+/// Prints the status line on stderr, so stdout stays exactly the page (or the one JSON document).
+/// A closed stderr is not a pack failure.
+fn report_status(line: &str) {
+    let mut stderr = std::io::stderr().lock();
+    let _ = writeln!(stderr, "{line}").and_then(|()| stderr.flush());
 }
 
-impl std::io::Write for CountingWriter<'_> {
+/// Counts the page bytes and ends the page with a newline when the template leaves it open.
+struct PageWriter<'a> {
+    inner: &'a mut dyn std::io::Write,
+    bytes: u64,
+    last: Option<u8>,
+}
+
+impl<'a> PageWriter<'a> {
+    fn new(inner: &'a mut dyn std::io::Write) -> Self {
+        Self {
+            inner,
+            bytes: 0,
+            last: None,
+        }
+    }
+
+    /// Writes the closing newline if needed, flushes, and returns the page length in bytes.
+    fn finish(mut self) -> std::io::Result<u64> {
+        if self.last != Some(b'\n') {
+            std::io::Write::write_all(&mut self, b"\n")?;
+        }
+        std::io::Write::flush(&mut self)?;
+        Ok(self.bytes)
+    }
+}
+
+impl std::io::Write for PageWriter<'_> {
     fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
         let count = self.inner.write(bytes)?;
+        if count > 0 {
+            self.last = Some(bytes[count - 1]);
+        }
         self.bytes += count as u64;
         Ok(count)
     }
@@ -264,12 +284,11 @@ pub fn output(args: &[String]) -> Result<crate::exit::CommandOutput, Failure> {
         return Err(usage(message.to_string()));
     }
     let outcome = execute_plan(&plan).map_err(|error| error.within("pack"))?;
+    // stdout is exactly the page, or one JSON document; the status line belongs to stderr.
     let mut stdout = String::new();
     if outcome.wrote.is_none() && !outcome.clipboard {
         stdout.push_str(&String::from_utf8_lossy(&outcome.body));
     }
-    stdout.push_str(&outcome.report_line);
-    stdout.push('\n');
     let failure = no_result(&plan, outcome.files);
     Ok(crate::exit::CommandOutput { stdout, failure })
 }
@@ -287,7 +306,7 @@ fn execute_plan(plan: &Plan) -> Result<PackOutcome, Failure> {
         return facade_summary(plan);
     }
     let (body, files, version) = source_page(plan)?;
-    emit(&plan.destination, &body, files, &version).map_err(pack_io_failure)
+    emit(&plan.destination, body, files, &version)
 }
 
 fn pack_io_failure(message: String) -> Failure {
@@ -298,6 +317,17 @@ fn pack_io_failure(message: String) -> Failure {
         );
     }
     Failure::index(message, "check that PATH is an existing, readable directory and that --output names a writable file")
+}
+
+/// Clipboard failures name the tools tried (in the message) and offer `--output` instead.
+fn clipboard_failure(message: String) -> Failure {
+    Failure::index(
+        message,
+        format!(
+            "install a clipboard tool ({}), or write the page to a file with --output FILE",
+            crate::clipboard::tool_names().join(", ")
+        ),
+    )
 }
 
 /// Preserve typed capacity refusals until their recovery hint has been selected.
@@ -337,11 +367,10 @@ fn facade_summary(plan: &Plan) -> Result<PackOutcome, Failure> {
         .map_err(pack_facade_failure)?;
     emit(
         &plan.destination,
-        sink.as_bytes(),
+        sink.as_bytes().to_vec(),
         report.files,
         &report.version,
     )
-    .map_err(pack_io_failure)
 }
 
 /// Source page. Selection comes from the repository rules. View filters hide files first.

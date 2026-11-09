@@ -172,6 +172,26 @@ fn command(root: &Path, place: &Path) -> Command {
     command
 }
 
+/// A `dctx pack` page: stdout is exactly the page, the status line is the only stderr line.
+fn ok_pack(output: Output) -> String {
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let status = String::from_utf8(output.stderr).expect("UTF-8 status");
+    assert!(
+        status.starts_with("pack bytes=") && status.lines().count() == 1,
+        "{status}"
+    );
+    let page = String::from_utf8(output.stdout).expect("UTF-8 page");
+    assert!(
+        page.ends_with('\n') && !page.contains("pack bytes="),
+        "{page}"
+    );
+    page
+}
+
 fn ok(output: Output) -> String {
     assert!(
         output.status.success(),
@@ -211,21 +231,26 @@ fn cli_pack_preserves_literal_source_and_the_original_reported_files() {
         fs::write(place.join(path), body).expect("original source");
     }
     for stamps in ["--tree-stamps=off", "--tree-stamps=on"] {
-        let page = ok(command(state.path(), &place)
-            .args(["pack", ".", stamps])
-            .output()
-            .expect("pack"));
+        let page = ok_pack(
+            command(state.path(), &place)
+                .args(["pack", ".", stamps])
+                .output()
+                .expect("pack"),
+        );
         assert_body(&page, FILE_PATH, BODY);
         for (path, body) in originals {
             assert_body(&page, path, body);
         }
         assert!(page.contains(&format!("[DIRECTORY:{PROJECT}]")));
         // CLI --json is intentionally a summary; source JSON is covered above.
-        let page = ok(command(state.path(), &place)
-            .args(["pack", ".", stamps, "--json"])
-            .output()
-            .expect("pack summary"));
-        let report = json(page.split_once("\npack bytes=").expect("status").0);
+        let page = ok_pack(
+            command(state.path(), &place)
+                .args(["pack", ".", stamps, "--json"])
+                .output()
+                .expect("pack summary"),
+        );
+        // stdout is exactly one JSON document.
+        let report = json(page.strip_suffix('\n').expect("one line"));
         assert_eq!(report.get("files").and_then(Json::as_int), Some(4));
     }
 }

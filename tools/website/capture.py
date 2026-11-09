@@ -167,7 +167,8 @@ def capture(binary: str, version: str) -> dict:
         mcp_lines = [json.loads(line) for line in by_id["mcp"]["stdout"].splitlines() if line.strip()]
         tools = next(m["result"]["tools"] for m in mcp_lines if m.get("id") == 2)
         footer = re.search(r"^# end body_tokens=(\d+) budget=(\d+) dropped=(\d+)$", by_id["pack-for"]["stdout"], re.M)
-        pack_line = re.search(r"pack bytes=(\d+) files=(\d+)", by_id["pack"]["stdout"])
+        # `dctx pack` prints the page on stdout and its status line on stderr.
+        pack_line = re.search(r"pack bytes=(\d+) files=(\d+)", by_id["pack"]["stderr"])
         return {
             "schema": 1,
             "version": version,
@@ -196,17 +197,17 @@ def docs_commit(files: list[str]) -> dict:
     return {"docs_commit": sha, "docs_date": date}
 
 
-def _pack_page(stdout: str, files: list[str]) -> str:
-    """The pack page without the trailing `pack bytes=N files=M ...` status line."""
-    m = re.search(r"pack bytes=(\d+) files=(\d+) [^\n]*\n?\Z", stdout)
+def _pack_page(stdout: str, stderr: str, files: list[str]) -> str:
+    """The pack page: stdout is exactly the page; the `pack bytes=N files=M ...` status line is on stderr."""
+    m = re.search(r"^pack bytes=(\d+) files=(\d+) [^\n]*$", stderr, re.M)
     if not m:
-        raise SystemExit("capture --llms: no `pack bytes=` status line; the pack output format changed")
+        raise SystemExit("capture --llms: no `pack bytes=` status line on stderr; the pack output format changed")
     if int(m.group(2)) != len(files):
         raise SystemExit(f"capture --llms: pack read {m.group(2)} files, expected {len(files)}: {files}")
-    page = stdout.encode("utf-8")[:int(m.group(1))].decode("utf-8")
-    if not page.startswith("[DCTX_LLM_CONTEXT_SNAPSHOT_V1]") or not stdout[len(page):].startswith("pack bytes="):
-        raise SystemExit("capture --llms: pack page and status line do not split cleanly")
-    return page.rstrip("\n") + "\n"
+    # The packed documents may quote `pack bytes=`, so only the byte count proves the split.
+    if not stdout.startswith("[DCTX_LLM_CONTEXT_SNAPSHOT_V1]") or len(stdout.encode("utf-8")) != int(m.group(1)):
+        raise SystemExit("capture --llms: stdout is not exactly the pack page the status line counts")
+    return stdout.rstrip("\n") + "\n"
 
 
 def pack_body(page: str, rel: str) -> str | None:
@@ -248,7 +249,7 @@ def capture_llms(binary: str, version: str, keep_git: dict | None = None) -> dic
                 out, err, code = run(binary, argv, place, env)
                 if code:
                     raise SystemExit(f"capture --llms: dctx {' '.join(argv)} exited {code}: {err}")
-                return _pack_page(out, files), [["dctx", *argv]]
+                return _pack_page(out, err, files), [["dctx", *argv]]
             parts, argvs = [], []
             for f in files:
                 argv = ["map", "map", f, "--depth", "2"]

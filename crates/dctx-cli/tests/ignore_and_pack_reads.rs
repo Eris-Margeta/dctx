@@ -122,10 +122,13 @@ fn count_line(stderr: &str, label: &str) -> u64 {
         .unwrap_or_else(|| panic!("missing {label} in {stderr}"))
 }
 
+/// stdout of `dctx pack` is exactly the page: the status line is on stderr.
 fn payload(stdout: &str) -> &str {
+    assert!(
+        stdout.ends_with('\n') && !stdout.contains("pack bytes="),
+        "status line in {stdout}"
+    );
     stdout
-        .rfind("pack bytes=")
-        .map_or_else(|| panic!("status line in {stdout}"), |pos| &stdout[..pos])
 }
 
 fn file_paths(page: &str) -> BTreeSet<String> {
@@ -224,7 +227,10 @@ fn pack_ext_opens_only_rust_files_and_matches_the_filtered_page() {
     let repo = Repository::new();
     let place = repo.repo().to_string_lossy().into_owned();
     let (open, open_err) = repo.run(&["pack", place.as_str()], &[]);
-    assert!(open_err.is_empty(), "{open_err}");
+    assert!(
+        open_err.starts_with("pack bytes=") && open_err.lines().count() == 1,
+        "{open_err}"
+    );
     let open_page = payload(&open);
     assert!(open_page.contains("notes_marker"), "{open_page}");
     assert!(open_page.contains("keep_marker"), "{open_page}");
@@ -252,6 +258,7 @@ fn pack_ext_opens_only_rust_files_and_matches_the_filtered_page() {
     let filtered_page = payload(&filtered);
     assert_eq!(file_paths(filtered_page), rust_only, "{filtered_page}");
     assert_eq!(read_paths(&filtered_err), rust_only, "{filtered_err}");
+    assert!(filtered_err.contains("\npack bytes="), "{filtered_err}");
     assert!(filtered_page.contains("lib_marker"), "{filtered_page}");
     assert!(!filtered_page.contains("notes_marker"), "{filtered_page}");
     assert!(!filtered_page.contains("png_marker"), "{filtered_page}");
