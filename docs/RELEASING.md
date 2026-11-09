@@ -16,7 +16,12 @@ its commit/tag/push prompts. Publication starts when a maintainer pushes a `v*` 
    `packages/go`, so install Go first; without Go only the const line is rewritten);
    and the `vX.Y.Z` release links, tag pins and install commands in README.md,
    `docs/{MODALITIES,START,VERIFYING,README}.md` and the Go and Python package
-   READMEs. npm package versions come from the tag (`tools/release/prepare-npm.py`).
+   READMEs; and the committed npm manifests under `packaging/npm/*/package.json`
+   (the npm client requires the engine version to equal its package version, so the
+   npm parity tests need them in step). At release time `tools/release/prepare-npm.py`
+   rewrites copies of them from the tag. `sync-version.sh` also updates the RPC `hello` example in
+   `docs/protocol/README.md` and the version, tag and links in the website facts
+   (`tools/website/data/facts.json`); set its `released` date to the changelog date.
    Desktop versions remain separate. Then regenerate the website (`just site`) so
    its copies of those docs follow. Move completed changes into a dated
    `## [X.Y.Z]` section in root `CHANGELOG.md`.
