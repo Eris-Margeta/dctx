@@ -51,13 +51,13 @@ examples is handwritten. The Rust snippet comes from the workspace doctest in
 | Output | Source |
 |---|---|
 | `/docs/<slug>/`, `/security/`, `/trademark/`, `/maintenance/`, `/why/` (once `docs/WHY-DCTX.md` exists) | the repository Markdown, rendered at build time (`md.py`); `index.md` next to each page is the file itself with only link targets rewritten, and `check.py` fails if it drifts |
-| `/cli/`, `/languages/`, `/examples/`, the hero terminal | `data/demo.json`, recorded from the real binary by `capture.py` on `sample/`; `check.py` re-records and fails on drift |
+| `/cli/`, `/languages/`, `/examples/`, the home showcase | `data/demo.json`, recorded from the real binary by `capture.py` on `sample/`; `check.py` re-records and fails on drift |
 | `/templates/` | `crates/dctx-template/templates/*.dctx_template`, ADR-003 and the template captures |
 | `/benchmarks/`, the home facts | tables parsed from `docs/BENCHMARK-20261030.md`, the run 7 `aggregate.json` and the stability report (`data.py`) |
 | `/how-it-works/` and the explainer animations | `pages/animations.py` (figures, captions, prose fallbacks) and `src/anim.js` (five deterministic canvas scenes, frame-counted, in the `home.js` and `how.js` bundles) |
 | `/changelog/` and its feed | `CHANGELOG.md` |
 | the home notice and path selector, `/start/` and its four persona pages, `/for-ai-evaluators/` | `data/facts.json` through `facts.py` (see below); persona runs are records from `data/demo.json` |
-| the home hero figure (folder, policy, graph, bounded page) | `pages/flow.py`: HTML and inline SVG from the same scene geometry as the OG images and the `pack --for` record; `src/hero.js` only plays the steps |
+| the home showcase (five ways to use dctx: chat, task, agent, MCP, library) | `pages/tour.py`: a plain-language step beside the real captured run of each (`data/demo.json`, long output cut with an exact `… N lines` marker); `src/hero.js` turns it into tabs that advance with motion on |
 | OG images, icons | `og.py` (Pillow), from the same scene geometry |
 | `llms-small.txt`, `llms.txt`, `llms-full.txt` | `llms.py`: the facts block from `data/facts.json`, the route table in `routes.py`, then the dctx binary's own output over the documents, recorded in `data/llms.json` by `capture.py --llms` (see below) |
 | sitemap, feeds, robots, `security.txt`, `humans.txt`, manifest, OpenSearch, search index, `build.json` | `llms.py`, from the route table in `routes.py` |
@@ -92,7 +92,7 @@ the measured numbers parsed by `data.py`; numbers are never typed into facts.jso
 | `safe_path[]` | `[step, line]` pairs for /start/ |
 | `ways[]` | the home modalities grid (usage patterns: CLI, agents short and long session, MCP and ACP, libraries, CI): `name`, `line`, `status`, `link` |
 | `responsibilities` | `head` and four `rows` of level / dctx provides / you are responsible for, planned items marked |
-| `personas[]` | the four choose-your-path pages: `id` (the path /start/ID/), `name`, `who`, `modality`, `setup[]`, `first_command`, `expect`, `record` (a `data/demo.json` id shown as the real run), `pitfall`, `links[]` |
+| `personas[]` | the four choose-your-path pages: `id` (the path /start/ID/), `name`, `who`, `gets` (what you get, one plain line), `modality`, `setup[]`, `first_command`, `expect`, `record` (a `data/demo.json` id shown as the real run), `pitfall`, `links[]` |
 | `install` | `system` and `project` text for the home install block |
 | `philosophy` | the home philosophy paragraph |
 
@@ -123,8 +123,8 @@ element with `data-facts="removed"`.
 
 ## Home page order and the animation hook
 
-`pages/home.py` follows the design review: claim and hero animation, the notice with the
-choose-your-path selector, captured output, what has been measured, modalities, responsibilities,
+`pages/home.py` follows the design review: plain-language claim and the showcase, the project status, the
+choose-your-path selector (who it is for and what you get first, setup, first command and pitfall folded) with the notice, captured output, what has been measured, modalities, responsibilities,
 philosophy, install per scope; the footer links the llms files. Five slots call
 `pages/animations.py` when that module exists: `two_scopes()`, `calls_times_context()`,
 `prefix_stability()`, `giant_folder()` and `safe_path()`, each returning an HTML string placed in a
@@ -154,9 +154,10 @@ First visit to `/`: 7 requests (HTML, one stylesheet, one script, four preloaded
 Fonts are preloaded and use `font-display: optional` (a font that misses the first paint is not swapped in,
 so a slow font never moves text), with metric-matched fallback faces (`size-adjust` and ascent, descent and
 line-gap overrides) for Arial/Helvetica/Liberation Sans and DejaVu Sans, computed from letter-frequency
-weighted advance widths of Geist against each fallback. The hero figure is complete HTML from the first paint;
-with motion on, it dims and then lights its four steps in order when it scrolls into view (never blank), and the
-hero terminal starts after the load event, when the main thread is idle. Every page also carries the id of its build
+weighted advance widths of Geist against each fallback. Every showcase panel is complete HTML from the first paint;
+with JS the panels share one grid cell, so the tallest sets the height and switching steps never moves the page. With motion
+on, the steps advance every 7 s (paused on hover, focus, a hidden tab or off screen) and the lines of the shown panel brighten
+in order (never blank); with motion off or reduced motion nothing moves and every step stays one click away. Every page also carries the id of its build
 (`<meta name="dctx-build">`, a digest of every output file); `site.js` compares it with `/build.json` (fetched with
 `cache: 'no-store'` on load, when the tab becomes visible and every 10 minutes) and offers a reload when they differ.
 The CSS is minified at build time (`assets.minify_css`). `check.py` enforces the first-load

@@ -1,5 +1,6 @@
-"""The home page, in the order of the design review (R3, section 2): claim and hero animation; the
-advanced-user notice with the choose-your-path selector; real captured output; what has been measured;
+"""The home page, in the order of the design review (R3, section 2): claim and the showcase (pages/tour.py:
+five ways to use dctx beside their real captured runs); the project status; the choose-your-path selector
+with the advanced-user notice; real captured output; what has been measured;
 the modalities; responsibilities; philosophy; install per scope. The footer (shell.py) links llms.txt.
 
 Animation hook: pages/animations.py is written on its own card. When it exists, its functions
@@ -10,18 +11,15 @@ from __future__ import annotations
 import datetime
 import importlib
 import importlib.util
-import json
 import re
 
 import data
 import facts as factsrc
-from common import REPO, VERSION, e, line_of, read, rec, src
-from components import code, output_examples, term, transcript
-from pages.flow import flow
-from pages.paths import md_inline, notice, responsibilities, scopes, selector
+from common import REPO, VERSION, e, line_of, read, src
+from components import code, output_examples
+from pages.paths import PATHS_INTRO, md_inline, notice, responsibilities, scopes, selector
+from pages.tour import tour
 from routes import has_why
-
-HERO_RECORDS = ["pack-for", "find", "neighbors-in", "read-json"]
 
 # The first commit of the repository. The age shown on the home page is counted from here to the release
 # date in facts.json, never to the clock, so the build stays reproducible and the number moves with each release.
@@ -74,19 +72,6 @@ def status(f: dict) -> str:
 </aside>"""
 
 
-def hero_terminal() -> str:
-    parts = []
-    for rid in HERO_RECORDS:
-        r = rec(rid)
-        if rid == "read-json":
-            pretty = json.dumps(json.loads(r["stdout"]), ensure_ascii=False, indent=1) + "\n"
-            parts.append(transcript(r, stdout=pretty, limit=6, more='<a href="/examples/#read-json">full output</a>',
-                                    note="# one JSON line; pretty-printed here"))
-        else:
-            parts.append(transcript(r))
-    return '<span class="ln gap"></span>'.join(parts)
-
-
 def facts() -> tuple[str, int]:
     r7 = data.run7()
     stab = data.stability()
@@ -134,7 +119,7 @@ def modalities() -> str:
     return f'<ul class="mods">{items}</ul>'
 
 
-def body(scene: dict) -> str:
+def body() -> str:
     f = factsrc.load()
     facts_html, _ = facts()
     privacy = [
@@ -150,31 +135,30 @@ def body(scene: dict) -> str:
     release = f"{REPO}/releases/tag/v{VERSION}"
     html = f"""
 <section class="hero" aria-labelledby="hero-title">
- <div class="wrap hero-grid">
-  <div class="hero-copy">
-   <ul class="chips" aria-label="Project facts">
-    <li><a href="/changelog/#v{VERSION.replace('.', '-')}">dctx <b>{VERSION}</b></a></li><li>Apache-2.0</li><li>C/Rust</li><li><a href="/cli/#mcp"><b>{len(data.mcp_tools())}</b> MCP tools</a></li><li>no telemetry</li><li class="chip-status"><a href="#status">not yet stable &middot; pre-2.0</a></li>
-   </ul>
-   <h1 id="hero-title">Context, <span class="accent">engineered.</span></h1>
-   <p class="lede">dctx gives a model the fewest, most relevant bytes of your code, in an order that stays the same between turns. Deterministic, bounded and offline.</p>
-   <div class="actions">
-    <a class="btn btn-primary" href="#paths">Choose your path</a><a class="btn" href="/docs/">Read the docs</a><a class="btn" href="/playground/">Playground</a><a class="btn" href="{REPO}">GitHub</a>
+ <div class="wrap">
+  <ul class="chips" aria-label="Project facts">
+   <li><a href="/changelog/#v{VERSION.replace('.', '-')}">dctx <b>{VERSION}</b></a></li><li>Apache-2.0</li><li>C/Rust</li><li><a href="/cli/#mcp"><b>{len(data.mcp_tools())}</b> MCP tools</a></li><li>no telemetry</li><li class="chip-status"><a href="#status">not yet stable &middot; pre-2.0</a></li>
+  </ul>
+  <div class="hero-grid">
+   <h1 id="hero-title">Give AI the right code, <span class="accent">not all of it.</span></h1>
+   <div class="hero-copy">
+    <p class="lede">dctx reads your project on your machine and hands an AI only the parts that matter, as one short page. Same project, same page, every time. No network, no telemetry.</p>
+    <div class="actions">
+     <a class="btn btn-primary" href="#paths">Choose your path</a><a class="btn" href="/docs/">Read the docs</a><a class="btn" href="/playground/">Playground</a><a class="btn" href="{REPO}">GitHub</a>
+    </div>
    </div>
   </div>
-  <div class="hero-side">
-   {term(hero_terminal(), "~/kiosk  ·  dctx " + VERSION, play="scene", cls="term-hero")}
-  </div>
+  {tour()}
  </div>
- <div class="wrap">{flow(scene)}</div>
 </section>
 
 {status(f)}
 
-<section class="sec sec-paths" id="paths" aria-labelledby="notice-h">
+<section class="sec sec-paths" id="paths" aria-labelledby="paths-h">
  <div class="wrap">
-  {notice("notice-h")}
-  <p class="path-lead">Choose your path. Each one has its own setup, first command and pitfall:</p>
+  <div class="sec-head"><h2 id="paths-h">Choose your path</h2><p>{PATHS_INTRO}</p></div>
   {selector(3)}
+  {notice("notice-h", level=3, title="Not sure? Take the safe path")}
   {anim("safe_path")}
   <p><a href="/start/">The safe path, the two scopes and every path in full &rarr;</a></p>
  </div>

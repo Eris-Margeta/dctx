@@ -103,7 +103,7 @@ def build(out: Path, skip_og: bool = False) -> int:
 
     for r in routes:
         if r.kind == "home":
-            emit(r, home.body(scene), script="home.js")
+            emit(r, home.body(), script="home.js")
         elif r.path == "/start/":
             emit(r, paths.start())
         elif r.extra.get("persona"):

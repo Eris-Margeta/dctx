@@ -14,12 +14,15 @@ def md_inline(text: str) -> str:
     return re.sub(r"`([^`]+)`", r"<code>\1</code>", e(text, quote=False))
 
 
-def notice(heading_id: str | None = None, level: int = 2) -> str:
-    """The advanced-user notice, verbatim from facts.json."""
+def notice(heading_id: str | None = None, level: int = 2, title: str | None = None) -> str:
+    """The advanced-user notice, verbatim from facts.json. With a title (the home page), the heading is that
+    title and the ways figure is left out: the home showcase covers the ways in."""
     f = facts.load()
-    head = (f'<h{level} id="{heading_id}" class="notice-h">Advanced tool, several ways to use it</h{level}>' if heading_id else "")
-    return (f'<div class="callout" role="note">{head}<p class="callout-text">{md_inline(f["notice"])}</p>'
-            f'<p class="callout-sub">Status: {md_inline(f["notice_status"])}</p>{ways() if heading_id == "notice-h" else ""}</div>')
+    head = (f'<h{level} id="{heading_id}" class="notice-h">{e(title or "Advanced tool, several ways to use it")}</h{level}>'
+            if heading_id else "")
+    figure = ways() if heading_id == "notice-h" and title is None else ""
+    return (f'<div class="callout{" callout-soft" if title else ""}" role="note">{head}<p class="callout-text">{md_inline(f["notice"])}</p>'
+            f'<p class="callout-sub">Status: {md_inline(f["notice_status"])}</p>{figure}</div>')
 
 
 # The four ways in, for the figure under the home notice: (name, command, facts.json "ways" entry for the
@@ -46,15 +49,40 @@ def ways() -> str:
             f'<ol class="ways-list">{"".join(items)}</ol></figure>')
 
 
+PATHS_INTRO = ("dctx fits into your work in a few different ways. Pick the situation that sounds most like yours: "
+               "each path says what you get, what to set up, the first command to run and the one mistake to avoid.")
+
+# One small line icon per persona (24x24, stroke only, coloured by CSS); decorative.
+ICONS = {
+    "giant-folder": '<path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2h8.5A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/>'
+                    '<circle cx="12" cy="13" r="2.5"/><path d="m14 15 2.5 2.5"/>',
+    "many-projects": '<rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="4" width="8" height="7" rx="1.5"/>'
+                     '<rect x="3" y="13" width="8" height="7" rx="1.5"/><rect x="13" y="13" width="8" height="7" rx="1.5"/>',
+    "library": '<path d="m8 8-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/>',
+    "team": '<circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.3"/><path d="M15.5 14.2A4.5 4.5 0 0 1 21 18.5"/>',
+}
+
+
 def selector(level: int = 3) -> str:
-    """Four cards, one per persona; site.js remembers the choice (localStorage, optional)."""
+    """Four cards, one per persona: who it is for and what you get up front; setup, the first command and the
+    pitfall folded into a details element (all of facts.json, nothing dropped). site.js remembers the choice."""
     cards = []
     for p in facts.load()["personas"]:
         href = facts.persona_path(p["id"])
-        cards.append(f'<li class="path-card" data-path="{p["id"]}"><h{level}><a href="{href}">{e(p["name"])}</a></h{level}>'
-                     f'<p>{md_inline(p["who"])}</p><p class="path-mod">{md_inline(p["modality"])}</p>'
-                     f'<p class="path-pit"><b>Pitfall:</b> {md_inline(p["pitfall"].split(". ")[0].rstrip("."))}.</p></li>')
-    return ('<ul class="paths" data-path-select aria-label="Choose your path">' + "".join(cards) + '</ul>')
+        steps = "".join(f"<li>{md_inline(x)}</li>" for x in p["setup"])
+        icon = (f'<svg class="path-ico" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">'
+                f'{ICONS.get(p["id"], ICONS["many-projects"])}</svg>')
+        cards.append(
+            f'<li class="path-card" data-path="{p["id"]}"><div class="path-top">{icon}<h{level}><a href="{href}">{e(p["name"])}</a></h{level}></div>'
+            f'<dl class="path-dl"><div><dt>Who it&rsquo;s for</dt><dd>{md_inline(p["who"])}</dd></div>'
+            f'<div><dt>What you get</dt><dd>{md_inline(p["gets"])}</dd></div>'
+            f'<div><dt>What you use</dt><dd class="path-mod">{md_inline(p["modality"])}</dd></div></dl>'
+            f'<details class="path-more"><summary>Setup, first command and the pitfall</summary>'
+            f'<p class="path-h">Setup</p><ol class="path-steps">{steps}</ol>'
+            f'<p class="path-h">First command</p><pre class="path-cmd"><code><span class="p">$ </span>{highlight.highlight(p["first_command"], "sh")}</code></pre>'
+            f'<p class="path-h path-h-warn">Watch out for</p><p class="path-pit">{md_inline(p["pitfall"])}</p></details>'
+            f'<p class="path-go"><a href="{href}" aria-label="The full path: {e(p["name"])}">Open the full path &rarr;</a></p></li>')
+    return '<ul class="paths" data-path-select aria-label="Choose your path">' + "".join(cards) + '</ul>'
 
 
 def responsibilities(caption: bool = True) -> str:
@@ -75,9 +103,9 @@ def scopes() -> str:
 
 def start() -> str:
     return f"""<div class="wrap narrow"><div class="page-head">{{{{crumbs}}}}<span class="eyebrow">Start</span><h1>Choose your path</h1>
-<p class="lede">dctx is one binary used in very different ways. Each way has its own setup, its own first command and its own way to go wrong. Pick the one closest to your work.</p></div>
-{notice("notice-h")}
+<p class="lede">{PATHS_INTRO}</p></div>
 <section class="sec" aria-labelledby="paths-h"><h2 id="paths-h">Four paths</h2>{selector(3)}</section>
+{notice("notice-h")}
 <section class="sec" aria-labelledby="safe-h"><h2 id="safe-h">The safe path, if you are not sure</h2>{safe_path()}
 <p>Then pick the path above that matches your work. <a href="/docs/modalities/">Choosing how to use dctx</a> compares every mode with grep plus file reads.</p></section>
 <section class="sec" id="two-scopes" aria-labelledby="scopes-h"><h2 id="scopes-h">Two scopes, one binary</h2>{scopes()}</section>
@@ -97,7 +125,7 @@ def persona(pid: str) -> str:
     steps = "".join(f"<li>{md_inline(s)}</li>" for s in p["setup"])
     return f"""<div class="wrap narrow" data-path-page="{pid}"><div class="page-head">{{{{crumbs}}}}<span class="eyebrow">Choose your path</span><h1>{e(p["name"])}</h1>
 <p class="lede">{md_inline(p["who"])}</p></div>
-<dl class="kv path-kv"><dt>modality</dt><dd>{md_inline(p["modality"])}</dd><dt>version</dt><dd>dctx {VERSION}</dd></dl>
+<dl class="kv path-kv"><dt>you get</dt><dd>{md_inline(p["gets"])}</dd><dt>modality</dt><dd>{md_inline(p["modality"])}</dd><dt>version</dt><dd>dctx {VERSION}</dd></dl>
 <section class="sec" aria-labelledby="setup-h"><h2 id="setup-h">Setup</h2><ol class="safe">{steps}</ol></section>
 <section class="sec" aria-labelledby="first-h"><h2 id="first-h">First command</h2>{code("shell", p["first_command"], "shell")}</section>
 <section class="sec" aria-labelledby="expect-h"><h2 id="expect-h">What to expect</h2><p>{md_inline(p["expect"])}</p>

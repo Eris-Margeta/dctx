@@ -7,5 +7,5 @@ with sync_playwright() as p:
     print(pg.evaluate("""() => { const H = innerHeight, vis = el => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= H && r.height > 0; };
       const inBox = el => { const b = el.closest('.scroll'); if (!b) return true; const r = el.getBoundingClientRect(), q = b.getBoundingClientRect(); return r.top >= q.top && r.bottom <= q.bottom; };
       const count = s => [...document.querySelectorAll(s)].filter(e => vis(e) && inBox(e)).length;
-      return {chips: count('.chips li'), steps: count('.flow-steps > li'), facts: count('.facts > div'), paths: count('.paths > li'), notice: count('.callout'), terminal_lines: count('.term-hero .ln'), nav: count('.nav li'), figure_rows: count('.files li') + count('.ranked li')}; }"""))
+      return {chips: count('.chips li'), steps: count('.tour-steps > li'), facts: count('.facts > div'), paths: count('.paths > li'), notice: count('.callout'), terminal_lines: count('.tour-panel.on .ln'), nav: count('.nav li')}; }"""))
     b.close()

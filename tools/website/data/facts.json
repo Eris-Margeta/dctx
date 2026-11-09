@@ -252,6 +252,7 @@
   {
    "id": "giant-folder",
    "name": "One giant folder",
+   "gets": "Short answers about only the part of the tree you name; the rest is never scanned.",
    "who": "You work inside one very large tree, for example a 200 GB monorepo, data or document folder.",
    "modality": "System binary, scoped roots, ignore rules at each root you query.",
    "setup": [
@@ -278,6 +279,7 @@
   {
    "id": "many-projects",
    "name": "Many smaller projects",
+   "gets": "Set up once, then every project you open gives your agent the same two tools: find and read.",
    "who": "You move between many small and medium repositories during the day.",
    "modality": "System binary, the lean MCP profile once in your agent, nothing per project.",
    "setup": [
@@ -304,6 +306,7 @@
   {
    "id": "library",
    "name": "Agent builder embedding a library",
+   "gets": "Stable ids and the exact source bytes inside your own app, from the same engine as the CLI.",
    "who": "You build an agent, editor or tool and want dctx inside it.",
    "modality": "Project library with its own pinned binary. The Python, Node and Go wrappers over `dctx rpc` are built and tested in CI, with registry publication pending; today use the Rust facade from a tagged Git dependency, or run a pinned CLI binary and read its `--json` output.",
    "setup": [
@@ -329,6 +332,7 @@
   {
    "id": "team",
    "name": "Team or organisation admin",
+   "gets": "One verified, pinned version on every machine, with the same safety rules everywhere.",
    "who": "You roll dctx out to a team or a fleet of machines.",
    "modality": "System binary distributed through your own package channel, one pinned version everywhere.",
    "setup": [

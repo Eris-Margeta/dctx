@@ -16,7 +16,7 @@ from common import VERSION, read
 
 REQUIRED = ("version", "released", "is", "is_not", "verify_download", "modalities", "scopes", "notice", "benchmarks",
             "removed", "verify", "notice_status", "safe_path", "ways", "responsibilities", "personas", "install", "philosophy")
-PERSONA_KEYS = ("id", "name", "who", "modality", "setup", "first_command", "expect", "record", "pitfall", "links")
+PERSONA_KEYS = ("id", "name", "who", "gets", "modality", "setup", "first_command", "expect", "record", "pitfall", "links")
 
 _cache: dict | None = None
 
