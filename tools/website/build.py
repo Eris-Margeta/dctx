@@ -189,8 +189,14 @@ def build(out: Path, skip_og: bool = False) -> int:
 
     # build.json: what was built from what. No clock: the source digest identifies the inputs.
     digest = hashlib.sha256("".join(f"{k}\0{v}\n" for k, v in sorted(READS.items())).encode()).hexdigest()
+    # build_id: every output file (pages still carrying the mark), so a change of code, style or content
+    # gives a new id; each page carries it in <meta name="dctx-build"> and site.js compares it with build.json.
+    build_id = hashlib.sha256("".join(f"{k}\0{hashlib.sha256(v).hexdigest()}\n" for k, v in sorted(files.items())).encode()).hexdigest()
+    mark = shell.BUILD_MARK.encode()
+    for rel in [r for r in files if r.endswith(".html")]:
+        files[rel] = files[rel].replace(mark, build_id.encode())
     total = sum(len(v) for v in files.values())
-    files["build.json"] = (json.dumps({"version": VERSION, "source_sha256": digest, "sources": len(READS),
+    files["build.json"] = (json.dumps({"version": VERSION, "build_id": build_id, "source_sha256": digest, "sources": len(READS),
                                         "sources_updated": updated, "pages": len(pages), "files": len(files) + 1 + len(STATIC),
                                         "bytes": total}, indent=1) + "\n").encode()
 
