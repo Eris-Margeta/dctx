@@ -31,7 +31,8 @@ impl StdFs {
     ///
     /// A missing root is created with mode 0700 on Unix. A symlinked or non-directory root is
     /// refused. On Unix an existing root must also be owned by the effective user and not
-    /// writable by group or others, and its ancestors must be trusted (see [`ports::prepare_root`]).
+    /// writable by group or others, and its ancestors must be owned by root or that user and not
+    /// writable by others (root-owned sticky directories and read-only mounts excepted).
     ///
     /// # Errors
     /// Returns [`StoreError::InvalidRequest`] for an unsafe root, or directory-creation and
