@@ -173,7 +173,7 @@ min_interval_ms: {}
 
 pub fn auto_text(report: &AutoReport, json: bool) -> String {
     let last = match report.last_auto_clean_ms {
-        Some(stamp) => stamp.to_string(),
+        Some(stamp) => format!("{stamp} ({})", utc(stamp)),
         None => "none".to_string(),
     };
     if json {
@@ -194,9 +194,39 @@ command: auto
 enabled: {}
 last_auto_clean_ms: {last}
 reclaimed_bytes: {}
-next_due_ms: {}
+next_due_ms: {} ({})
 ",
-        report.enabled, report.reclaimed_bytes, report.next_due_ms
+        report.enabled,
+        report.reclaimed_bytes,
+        report.next_due_ms,
+        utc(report.next_due_ms)
+    )
+}
+
+/// Epoch milliseconds as an ISO 8601 UTC time to the second, as `2026-11-09T10:04:38Z`.
+fn utc(epoch_ms: u64) -> String {
+    let seconds = epoch_ms / 1000;
+    let (days, of_day) = (seconds / 86_400, seconds % 86_400);
+    // Civil date from days since 1970-01-01 (Howard Hinnant's days_from_civil inverse), unsigned since stamps are >= 1970.
+    let shifted = days + 719_468;
+    let era = shifted / 146_097;
+    let day_of_era = shifted % 146_097;
+    let year_of_era =
+        (day_of_era - day_of_era / 1460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
+    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
+    let month_index = (5 * day_of_year + 2) / 153;
+    let day = day_of_year - (153 * month_index + 2) / 5 + 1;
+    let month = if month_index < 10 {
+        month_index + 3
+    } else {
+        month_index - 9
+    };
+    let year = year_of_era + era * 400 + u64::from(month <= 2);
+    format!(
+        "{year:04}-{month:02}-{day:02}T{:02}:{:02}:{:02}Z",
+        of_day / 3600,
+        of_day % 3600 / 60,
+        of_day % 60
     )
 }
 
@@ -298,5 +328,44 @@ mod tests {
         assert!(text.contains("reclaimable_bytes: "));
         assert!(text.contains("pending: "));
         assert!(text.contains("session_reclaimed_bytes: 0"));
+    }
+
+    #[test]
+    fn utc_formats_epoch_milliseconds() {
+        assert_eq!(utc(0), "1970-01-01T00:00:00Z");
+        assert_eq!(utc(951_782_400_000), "2000-02-29T00:00:00Z");
+        assert_eq!(utc(1_794_218_678_651), "2026-11-09T10:04:38Z");
+        assert_eq!(utc(4_102_444_799_999), "2099-12-31T23:59:59Z");
+    }
+
+    #[test]
+    fn auto_text_adds_utc_times_and_json_keeps_raw_milliseconds() {
+        let report = AutoReport {
+            enabled: true,
+            last_auto_clean_ms: Some(1_794_218_678_651),
+            reclaimed_bytes: 7,
+            next_due_ms: 1_794_305_078_651,
+        };
+        let text = auto_text(&report, false);
+        assert!(
+            text.contains("last_auto_clean_ms: 1794218678651 (2026-11-09T10:04:38Z)\n"),
+            "{text}"
+        );
+        assert!(
+            text.contains("next_due_ms: 1794305078651 (2026-11-10T10:04:38Z)\n"),
+            "{text}"
+        );
+        let json = auto_text(&report, true);
+        assert!(
+            json.contains("\"last_auto_clean_ms\":1794218678651,"),
+            "{json}"
+        );
+        assert!(json.contains("\"next_due_ms\":1794305078651}"), "{json}");
+        assert!(!json.contains('T'), "{json}");
+        let never = AutoReport {
+            last_auto_clean_ms: None,
+            ..report
+        };
+        assert!(auto_text(&never, false).contains("last_auto_clean_ms: none\n"));
     }
 }

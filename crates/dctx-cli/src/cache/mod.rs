@@ -14,6 +14,7 @@ use dctx_adapter_cache::{
     ClockSample, GcRequest, Lifecycle, PurgeRequest, PurgeScope, RootId, SliceBudget,
 };
 
+use crate::exit::Failure;
 use crate::host::{self, SessionCacheCall};
 use parse::{Command, Scope};
 
@@ -34,11 +35,15 @@ pub struct CacheEnv<'a> {
     pub roots: &'a RootTable,
 }
 
+/// Hint for a wrong cache argument.
+const HELP_HINT: &str = "run `dctx cache --help` for cache commands and flags";
+
 /// Runs a cache command against the persisted ledger and prints the report.
+/// Failures follow docs/CLI-EXIT-CODES.md: 2 for arguments, 1 for an unregistered root, 3 for cache I/O.
 /// # Errors
-/// Returns command parsing, cache policy, ledger, maintenance, or filesystem failures as display text.
-pub fn run(args: &[String]) -> Result<(), String> {
-    let report = run_in(args, None)?;
+/// Returns command parsing, cache policy, ledger, maintenance, or filesystem failures with their exit code and hint.
+pub fn run(args: &[String]) -> Result<(), Failure> {
+    let report = output_in(args, None)?;
     if report.is_empty() {
         return Ok(());
     }
@@ -53,15 +58,27 @@ pub fn run(args: &[String]) -> Result<(), String> {
 /// # Errors
 /// Returns command parsing, root/policy validation, ledger, maintenance, or filesystem failures as display text.
 pub fn run_in(args: &[String], root: Option<&Path>) -> Result<String, String> {
-    let command = parse::parse(args)?;
+    output_in(args, root).map_err(|failure| failure.message)
+}
+
+/// Same as [`run_in`], keeping the exit code and hint of each failure.
+/// # Errors
+/// Usage failures (exit 2), an unregistered `--root` (exit 1), and cache directory, policy or ledger failures (exit 3).
+pub fn output_in(args: &[String], root: Option<&Path>) -> Result<String, Failure> {
+    let command = parse::parse(args).map_err(|message| Failure::usage(message, HELP_HINT))?;
     if matches!(command, Command::Help) {
         return Ok(crate::help::text());
     }
     let resolved = match root {
         Some(path) => path.to_path_buf(),
-        None => host::cache_root_dir()?,
+        None => host::cache_root_dir().map_err(|message| {
+            Failure::index(
+                format!("cannot locate the cache directory: {message}"),
+                "set DCTX_CACHE_DIR to a writable directory",
+            )
+        })?,
     };
-    host::ensure_cache_dir(&resolved)?;
+    host::ensure_cache_dir(&resolved).map_err(|message| io_failure(&resolved, &message))?;
     match command {
         Command::Help => Ok(crate::help::text()),
         Command::Config {
@@ -70,28 +87,57 @@ pub fn run_in(args: &[String], root: Option<&Path>) -> Result<String, String> {
             max_bytes,
             ttl_days,
         } => {
-            let policy = host::configure(&resolved, auto, max_bytes, ttl_days)?;
+            let policy = host::configure(&resolved, auto, max_bytes, ttl_days)
+                .map_err(|message| config_failure(&resolved, message))?;
             Ok(text::config_text(&policy, json))
         }
-        Command::Auto { json } => Ok(text::auto_text(&host::auto_report(&resolved)?, json)),
+        Command::Auto { json } => Ok(text::auto_text(
+            &host::auto_report(&resolved).map_err(|message| io_failure(&resolved, &message))?,
+            json,
+        )),
         other => persisted(other, &resolved),
     }
 }
 
-/// Captures cache status for RPC, retaining the legacy cache exit-1 failure taxonomy.
-/// # Errors
-/// Returns the original cache failure with exit 1, including argument failures.
-pub fn status_output(args: &[String]) -> Result<crate::exit::CommandOutput, crate::exit::Failure> {
-    let command = parse::parse(args)
-        .map_err(|message| crate::exit::Failure::new(1, format!("cache: {message}"), ""))?;
-    if !matches!(command, Command::Status { .. } | Command::Help) {
-        return Err(crate::exit::Failure::usage(
-            "expected cache status",
-            "use cache_status",
-        ));
+/// Exit 3 for the cache directory, its policy or its ledger, naming the directory.
+fn io_failure(root: &Path, message: &str) -> Failure {
+    let hint = if message.contains("corrupt ledger") {
+        format!(
+            "the cache ledger cannot be read; remove the cache directory {} to start an empty cache",
+            root.display()
+        )
+    } else {
+        "check that the cache directory exists and is writable, or set DCTX_CACHE_DIR to another directory"
+            .to_string()
+    };
+    Failure::index(
+        format!("cache directory {}: {message}", root.display()),
+        hint,
+    )
+}
+
+/// `--max-bytes` that loosens the cap is a usage error; every other policy failure is cache I/O.
+fn config_failure(root: &Path, message: String) -> Failure {
+    if message.contains("only tighten") || message.contains("cannot exceed") {
+        Failure::usage(
+            message,
+            "pass a --max-bytes no larger than the max_bytes shown by `dctx cache config`",
+        )
+    } else {
+        io_failure(root, &message)
     }
-    let mut stdout = run_in(args, None)
-        .map_err(|message| crate::exit::Failure::new(1, format!("cache: {message}"), ""))?;
+}
+
+/// Captures cache status for RPC with the same exit codes, messages and hints as `dctx cache status`.
+/// # Errors
+/// Returns the CLI failure of [`output_in`], prefixed `cache:`; a non-status command is a usage error.
+pub fn status_output(args: &[String]) -> Result<crate::exit::CommandOutput, Failure> {
+    let command =
+        parse::parse(args).map_err(|message| Failure::usage(message, HELP_HINT).within("cache"))?;
+    if !matches!(command, Command::Status { .. } | Command::Help) {
+        return Err(Failure::usage("expected cache status", "use cache_status"));
+    }
+    let mut stdout = output_in(args, None).map_err(|failure| failure.within("cache"))?;
     if !stdout.is_empty() && !stdout.ends_with('\n') {
         stdout.push('\n');
     }
@@ -104,15 +150,16 @@ pub fn status_output(args: &[String]) -> Result<crate::exit::CommandOutput, crat
 /// Applies `args` to an injected ledger. Persistence tests use [`run_in`].
 #[cfg(test)]
 fn execute(args: &[String], env: CacheEnv<'_>) -> Result<String, String> {
-    apply(parse::parse(args)?, env)
+    apply(parse::parse(args)?, env).map_err(|failure| failure.message)
 }
 
-fn persisted(command: Command, root: &Path) -> Result<String, String> {
+fn persisted(command: Command, root: &Path) -> Result<String, Failure> {
     let commit = matches!(
         command,
         Command::Gc { dry_run: false, .. } | Command::Purge { dry_run: false, .. }
     );
-    host::with_ledger(root, |life| {
+    let mut refused = None;
+    let report = host::with_ledger(root, |life| {
         let roots = RootTable::default();
         let now = host::unix_millis();
         let clock = ClockSample {
@@ -125,16 +172,33 @@ fn persisted(command: Command, root: &Path) -> Result<String, String> {
             clock,
             roots: &roots,
         };
-        let report = apply(command, env)?;
-        Ok((report, commit))
-    })
+        match apply(command, env) {
+            Ok(report) => Ok((report, commit)),
+            Err(failure) => {
+                let message = failure.message.clone();
+                refused = Some(failure);
+                Err(message)
+            }
+        }
+    });
+    match (report, refused) {
+        (Ok(report), _) => Ok(report),
+        (Err(_), Some(failure)) => Err(failure),
+        (Err(message), None) => Err(io_failure(root, &message)),
+    }
 }
 
-fn apply(command: Command, mut env: CacheEnv<'_>) -> Result<String, String> {
+fn apply(command: Command, mut env: CacheEnv<'_>) -> Result<String, Failure> {
     match command {
         Command::Help => Ok(crate::help::text()),
-        Command::Config { .. } => Err("cache config writes the persisted policy".to_string()),
-        Command::Auto { .. } => Err("cache auto reads the persisted ledger".to_string()),
+        Command::Config { .. } => Err(Failure::index(
+            "cache config writes the persisted policy",
+            HELP_HINT,
+        )),
+        Command::Auto { .. } => Err(Failure::index(
+            "cache auto reads the persisted ledger",
+            HELP_HINT,
+        )),
         Command::Status { json, root } => status(&env, json, root),
         Command::Gc {
             json,
@@ -151,8 +215,16 @@ fn apply(command: Command, mut env: CacheEnv<'_>) -> Result<String, String> {
     }
 }
 
-fn status(env: &CacheEnv<'_>, json: bool, root: Option<String>) -> Result<String, String> {
-    let session = host::session_cache(SessionCacheCall::Status)?;
+/// Exit 3 for a ledger maintenance or session cache failure.
+fn maintenance(message: impl Into<String>) -> Failure {
+    Failure::index(
+        message,
+        "another dctx process may hold the cache; run the command again, or check that the cache directory is writable",
+    )
+}
+
+fn status(env: &CacheEnv<'_>, json: bool, root: Option<String>) -> Result<String, Failure> {
+    let session = host::session_cache(SessionCacheCall::Status).map_err(maintenance)?;
     let mut report = env.life.status();
     if let Some(token) = root {
         let id = resolve(&token, env)?;
@@ -167,7 +239,7 @@ fn sweep(
     dry_run: bool,
     root: Option<String>,
     max_bytes: Option<u64>,
-) -> Result<String, String> {
+) -> Result<String, Failure> {
     env.life.observe(env.clock);
     let only = match root {
         Some(token) => Some(resolve(&token, env)?),
@@ -183,11 +255,14 @@ fn sweep(
     let report = if dry_run {
         env.life
             .plan_gc(request)
-            .map_err(|error| error.to_string())?
+            .map_err(|error| maintenance(error.to_string()))?
     } else {
-        env.life.gc(request).map_err(|error| error.to_string())?
+        env.life
+            .gc(request)
+            .map_err(|error| maintenance(error.to_string()))?
     };
-    let session = host::session_cache(SessionCacheCall::Gc { apply: !dry_run })?;
+    let session =
+        host::session_cache(SessionCacheCall::Gc { apply: !dry_run }).map_err(maintenance)?;
     Ok(text::gc(&report, dry_run, &session, json))
 }
 
@@ -197,10 +272,20 @@ fn purge(
     dry_run: bool,
     yes: bool,
     scope: Scope,
-) -> Result<String, String> {
+) -> Result<String, Failure> {
     let (adapter_scope, label) = match scope {
-        Scope::Missing => return Err("purge requires --root PATH or --all".to_string()),
-        Scope::Both => return Err("purge accepts either --root PATH or --all".to_string()),
+        Scope::Missing => {
+            return Err(Failure::usage(
+                "purge requires --root PATH or --all",
+                "name the scope, as `dctx cache purge --all --dry-run`",
+            ))
+        }
+        Scope::Both => {
+            return Err(Failure::usage(
+                "purge accepts either --root PATH or --all",
+                "pass only one of --root PATH and --all",
+            ))
+        }
         Scope::All => (PurgeScope::All, "all".to_string()),
         Scope::Root(token) => {
             let id = resolve(&token, env)?;
@@ -208,19 +293,27 @@ fn purge(
         }
     };
     if !dry_run && !yes {
-        return Err("purge requires --yes".to_string());
+        return Err(Failure::usage(
+            "purge requires --yes",
+            "preview with --dry-run, then run the same command with --yes to drop the entries",
+        ));
     }
     let request = PurgeRequest {
         scope: adapter_scope,
         confirm: yes || dry_run,
         dry_run,
     };
-    let report = env.life.purge(request).map_err(|error| error.to_string())?;
-    let session = host::session_cache(SessionCacheCall::Purge { apply: !dry_run })?;
+    let report = env
+        .life
+        .purge(request)
+        .map_err(|error| maintenance(error.to_string()))?;
+    let session =
+        host::session_cache(SessionCacheCall::Purge { apply: !dry_run }).map_err(maintenance)?;
     Ok(text::purge(&report, &label, &session, json))
 }
 
-fn resolve(token: &str, env: &CacheEnv<'_>) -> Result<RootId, String> {
+/// A `--root` token the ledger does not hold is a named target with no answer: exit 1.
+fn resolve(token: &str, env: &CacheEnv<'_>) -> Result<RootId, Failure> {
     if let Some(id) = env.roots.paths.get(token) {
         return Ok(*id);
     }
@@ -230,7 +323,10 @@ fn resolve(token: &str, env: &CacheEnv<'_>) -> Result<RootId, String> {
             return Ok(id);
         }
     }
-    Err(format!("root is not registered: {token}"))
+    Err(Failure::no_result(
+        format!("root is not registered: {token}"),
+        "pass a root id from the `root` lines of `dctx cache status`, or use --all",
+    ))
 }
 
 #[cfg(test)]
@@ -430,6 +526,41 @@ mod tests {
             std::fs::read(root.join("ledger.v1")).expect("kept"),
             b"not-a-ledger"
         );
+    }
+
+    #[test]
+    fn failures_carry_contract_codes_hints_and_the_cache_path() {
+        let root = scratch("codes");
+        let code = |parts: &[&str]| output_in(&args(parts), Some(&root)).expect_err("refused");
+        for parts in [
+            &["cache", "purge"][..],
+            &["cache", "purge", "--all"],
+            &["cache", "purge", "--all", "--root", "7", "--yes"],
+            &["cache", "frobnicate"],
+            &["cache", "gc", "--max-bytes", "0"],
+            &["cache", "config", "--max-bytes", "999999999999"],
+        ] {
+            let failure = code(parts);
+            assert_eq!(failure.code, crate::exit::USAGE, "{parts:?}: {failure:?}");
+            assert!(!failure.hint.is_empty(), "{parts:?}");
+        }
+        let unknown = code(&["cache", "status", "--root", "424242"]);
+        assert_eq!(unknown.code, crate::exit::NO_RESULT);
+        assert!(unknown.hint.contains("dctx cache status"));
+        std::fs::write(root.join("ledger.v1"), b"not-a-ledger").expect("corrupt");
+        let corrupt = code(&["cache", "status"]);
+        assert_eq!(corrupt.code, crate::exit::INDEX);
+        assert!(
+            corrupt.message.contains(&root.display().to_string()),
+            "{}",
+            corrupt.message
+        );
+        assert!(!corrupt.hint.is_empty());
+        let file = root.join("not-a-dir");
+        std::fs::write(&file, b"x").expect("file");
+        let blocked = output_in(&args(&["cache", "status"]), Some(&file)).expect_err("file");
+        assert_eq!(blocked.code, crate::exit::INDEX);
+        assert!(blocked.message.contains(&file.display().to_string()));
     }
 
     fn scratch(name: &str) -> std::path::PathBuf {

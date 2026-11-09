@@ -79,7 +79,7 @@ pub fn text() -> String {
 Usage: dctx <COMMAND> [OPTIONS]
        dctx pack [PATH] [--output PATH] [--clipboard] [--json]
        dctx pack [PATH] --for <TEXT> [--budget TOKENS]
-       dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path> [--json]
+       dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path|export> [--json]
        dctx context TARGET [--place PATH] [--budget N] [--json] [--session ID --dedupe]
        dctx rpc
        dctx mcp [PATH]
@@ -139,6 +139,22 @@ Examples:
     );
     out.push_str(&limits());
     out
+}
+
+/// The usage lines `dctx pack --help` prints before its flag list; the global page stays on `dctx --help`.
+#[allow(
+    clippy::must_use_candidate,
+    reason = "A static page accessor; callers print it."
+)]
+pub fn pack_usage() -> &'static str {
+    "\
+Usage: dctx pack [PATH] [--output PATH] [--clipboard] [--json] [FILTERS]
+       dctx pack [PATH] --for <TEXT> [--budget TOKENS] [--json]
+
+Pack writes the source page of PATH (default: the current directory) to stdout, the clipboard or --output.
+It does not create a project text file. Run `dctx --help` for every command.
+
+"
 }
 
 /// Feature, storage and precision limits for this build.
@@ -222,6 +238,23 @@ mod tests {
         assert!(limits.contains("30 days"));
         assert!(limits.contains("auto-clean interval: 1 day"));
         assert!(page.contains(&limits));
+    }
+
+    #[test]
+    fn the_map_usage_line_names_every_verb_including_export() {
+        assert!(text().contains(
+            "dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path|export> [--json]"
+        ));
+    }
+
+    #[test]
+    fn pack_usage_is_only_the_pack_page() {
+        let page = pack_usage();
+        assert!(page.starts_with("Usage: dctx pack [PATH]"));
+        assert!(page.contains("--for <TEXT>"));
+        for global in ["precision:", "dctx cache", "dctx map", "Template Commands"] {
+            assert!(!page.contains(global), "{global}: {page}");
+        }
     }
 
     #[test]

@@ -66,7 +66,7 @@ pub struct PackOutcome {
     pub files: u64,
 }
 
-/// Flag names `dctx pack --help` prints after the shared help page.
+/// Flag names `dctx pack --help` prints after the pack usage lines.
 fn flag_help() -> &'static str {
     "\
 Pack filters (ADR-011, ADR-009):
@@ -248,7 +248,7 @@ fn no_result(plan: &Plan, files: u64) -> Option<Failure> {
 pub fn output(args: &[String]) -> Result<crate::exit::CommandOutput, Failure> {
     if args.iter().any(|arg| arg == "--help" || arg == "-h") {
         return Ok(crate::exit::CommandOutput {
-            stdout: format!("{}{}", crate::help::text(), flag_help()),
+            stdout: format!("{}{}", crate::help::pack_usage(), flag_help()),
             failure: None,
         });
     }

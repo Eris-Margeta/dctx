@@ -15,7 +15,13 @@ pub(crate) struct Runtime(RefCell<ContextSessions>);
 
 impl Runtime {
     pub(crate) fn output(&self, args: &[String]) -> Result<CommandOutput, Failure> {
-        if args.is_empty() || has_flag(args, "--help") || has_flag(args, "-h") {
+        if args.is_empty() {
+            return Err(Failure::usage(
+                "context requires TARGET",
+                "name a file, symbol or stable id, as `dctx context src/main.rs`; run `dctx context --help` for options",
+            ));
+        }
+        if has_flag(args, "--help") || has_flag(args, "-h") {
             return Ok(CommandOutput {
                 stdout: HELP.into(),
                 failure: None,

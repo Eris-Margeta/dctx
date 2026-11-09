@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! The CLI exit-code contract of docs/CLI-EXIT-CODES.md: 0 ok, 1 no result, 2 usage, 3 index error.
-//! `map`, `pack`, `mcp`, `languages`, unknown commands and non-UTF-8 arguments return a [`Failure`]; `main` prints it and exits with its code.
-//! Every failure carries a hint the user can act on. Cache and template command failures use exit 1.
+//! Every command but `plugin` and `git`, unknown commands and non-UTF-8 arguments return a [`Failure`]; `main` prints it and exits with its code.
+//! Every failure carries a hint the user can act on.
 
 use dctx::{DctxError, ErrorCode, Resource};
 
@@ -17,7 +17,7 @@ pub const INDEX: i32 = 3;
 /// One failed command: its exit code, what went wrong and what the user can do next.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Failure {
-    /// [`NO_RESULT`], [`USAGE`], [`INDEX`], or 1 for a cache or template command.
+    /// [`NO_RESULT`], [`USAGE`] or [`INDEX`].
     /// Zero marks a disconnected output consumer for a quiet CLI return.
     pub code: i32,
     /// What went wrong, one line, no trailing newline.

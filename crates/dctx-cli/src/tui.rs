@@ -2,9 +2,10 @@
 //! Terminal menus for explicit pack, template and managed cache commands.
 //! Menu copy lives in help; terminal IO uses std without child processes.
 
+use crate::exit::Failure;
 pub use crate::help::{create_cache_menu, create_main_menu, create_template_menu};
 use std::{
-    io::{self, Write},
+    io::{self, IsTerminal, Write},
     path::PathBuf,
 };
 
@@ -181,7 +182,31 @@ fn notice(message: &str, color: &str) -> io::Result<()> {
     Ok(())
 }
 
+/// Refuses the interactive menu unless stdin and stdout are both terminals.
+/// A bare `dctx` in a pipe, a script or CI would otherwise write ANSI menus into the pipe and read EOF.
+/// # Errors
+/// Returns a usage failure (exit 2) with the short usage when either stream is not a terminal.
+pub fn require_terminal() -> Result<(), Failure> {
+    terminal_check(io::stdin().is_terminal(), io::stdout().is_terminal())
+}
+
+fn terminal_check(stdin: bool, stdout: bool) -> Result<(), Failure> {
+    if stdin && stdout {
+        return Ok(());
+    }
+    let stream = match (stdin, stdout) {
+        (false, false) => "stdin and stdout are",
+        (false, true) => "stdin is",
+        _ => "stdout is",
+    };
+    Err(Failure::usage(
+        format!("a command is required: the interactive menu needs a terminal, and {stream} not one"),
+        "usage: dctx <COMMAND> [OPTIONS], as `dctx pack .` or `dctx map find NAME`; run `dctx --help` for commands",
+    ))
+}
+
 /// Run the interactive command loop through the explicit command handlers.
+/// Callers check [`require_terminal`] first.
 pub fn run() {
     let current = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
     let context = MenuContext::new(current.display().to_string());
@@ -239,8 +264,8 @@ fn cache_menu() {
             Ok(()) => {
                 let _ = show_message("Cache command complete.");
             }
-            Err(error) => {
-                let _ = show_error(&error);
+            Err(failure) => {
+                let _ = show_error(&failure.render());
             }
         }
     }
@@ -249,6 +274,22 @@ fn cache_menu() {
 #[cfg(test)]
 mod tests {
     use super::term;
+
+    #[test]
+    fn the_menu_runs_only_with_a_terminal_on_both_streams() {
+        assert!(super::terminal_check(true, true).is_ok());
+        for (stdin, stdout, named) in [
+            (false, true, "stdin is not"),
+            (true, false, "stdout is not"),
+            (false, false, "stdin and stdout are not"),
+        ] {
+            let failure = super::terminal_check(stdin, stdout).expect_err("no terminal");
+            assert_eq!(failure.code, crate::exit::USAGE);
+            assert!(failure.message.contains(named), "{}", failure.message);
+            assert!(failure.hint.contains("dctx --help"), "{}", failure.hint);
+        }
+    }
+
     #[test]
     fn terminal_control_codes_are_unchanged() {
         assert_eq!(term::CLEAR_SCREEN, "\x1B[2J\x1B[H");

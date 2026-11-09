@@ -66,8 +66,8 @@ and RPC contract, including final encoded budgets and reference lifetimes.
 
 Errors return `error: {"code":2,"message":"...","hint":"...","output":""}`.
 Codes reuse [CLI-EXIT-CODES.md](../CLI-EXIT-CODES.md): 1 means no result, 2 means
-usage or protocol refusal, and 3 means index/source/I/O failure. The legacy cache
-command retains code 1 for every operation failure, including invalid arguments.
+usage or protocol refusal, and 3 means index/source/I/O failure. `cache_status`
+uses the same codes as `dctx cache status`.
 Clients branch on the numeric code, never diagnostic prose. `error.output` holds
 any stdout emitted before failure: a gone page or an empty context pack is not
 lost. MCP treats a gone page as an ordinary tool result, as documented in the CLI

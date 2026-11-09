@@ -191,19 +191,29 @@ fn invalid_context_options_are_usage_errors_and_missing_targets_emit_empty_pages
         vec!["ping", "--session", ""],
         vec![],
     ] {
+        let missing = args.is_empty();
         let output = command(temp.path())
             .arg("context")
-            .args(args)
+            .args(&args)
             .output()
             .unwrap();
-        // Empty arguments display help; every malformed option is exit 2.
-        if output.status.success() {
-            assert!(output.stdout.starts_with(b"Usage:"));
-        } else {
-            assert_eq!(output.status.code(), Some(2));
-            assert!(output.stdout.is_empty());
-        }
+        // A missing TARGET and every malformed option are exit 2 with a hint and no stdout.
+        assert_eq!(output.status.code(), Some(2), "{args:?}");
+        assert!(output.stdout.is_empty());
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(stderr.starts_with("❌ Error: "), "{stderr}");
+        assert!(stderr.contains("\nhint: "), "{stderr}");
+        assert!(
+            !missing || stderr.contains("context requires TARGET"),
+            "{stderr}"
+        );
     }
+    let output = command(temp.path())
+        .args(["context", "--help"])
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(0));
+    assert!(output.stdout.starts_with(b"Usage:"));
     let output = command(temp.path())
         .args(["context", "missing_target", "--json"])
         .output()

@@ -39,7 +39,7 @@ fn main() {
         maybe_auto_clean(allow_auto_clean);
         std::process::exit(i32::from(plugin::enter(&args)));
     }
-    // map, pack, mcp, languages and unknown commands follow docs/CLI-EXIT-CODES.md; cache and template use exit 1.
+    // Every command but plugin and git follows docs/CLI-EXIT-CODES.md.
     let result = match head {
         Some("doctor") => doctor::run(&args[2..]),
         Some("map") => {
@@ -76,20 +76,18 @@ fn main() {
                 pack::run(&args[1..])
             }
         }
-        Some("cache") => {
-            cache::run(&args[1..]).map_err(|error| command_error(format!("cache: {error}")))
-        }
+        Some("cache") => cache::run(&args[1..]).map_err(|failure| failure.within("cache")),
         // Reads only the facade registry: no source, no cache, so no auto-clean either.
         Some("languages") => languages::output(&args[2..]).and_then(exit::CommandOutput::emit),
         Some("template") => {
             maybe_auto_clean(allow_auto_clean);
-            template::run(&args[1..]).map_err(|error| command_error(format!("template: {error}")))
+            template::run(&args[1..]).map_err(|failure| failure.within("template"))
         }
-        None => {
+        // The menu needs a terminal on stdin and stdout; a pipe or script gets the short usage and exit 2.
+        None => tui::require_terminal().map(|()| {
             maybe_auto_clean(allow_auto_clean);
             tui::run();
-            Ok(())
-        }
+        }),
         Some(word) if is_unknown_command(word) => Err(Failure::usage(
             format!("unknown command `{word}`"),
             "run `dctx --help` for commands; use `dctx pack PATH` to pack a directory",
@@ -148,11 +146,6 @@ fn is_broken_stdout(message: &str) -> bool {
 fn fail(failure: &Failure) -> ! {
     eprint!("{}", failure.render());
     std::process::exit(failure.code);
-}
-
-/// A failure of a command outside the exit-code contract: exit 1 as before, with no hint.
-fn command_error(message: String) -> Failure {
-    Failure::new(1, message, "")
 }
 
 /// The process arguments as UTF-8. `env::args` panics on a non-UTF-8 argument; this refuses it with exit 2 instead.

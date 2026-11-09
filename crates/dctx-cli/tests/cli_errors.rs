@@ -225,3 +225,60 @@ fn every_subcommand_help_has_an_example() {
         );
     }
 }
+
+#[test]
+fn a_bare_dctx_without_a_terminal_prints_usage_and_exits_2() {
+    let fixture = Fixture::new();
+    // `Command::output` gives the child a null stdin and piped stdout: neither is a terminal.
+    let output = fixture.output(&[]);
+    assert_eq!(output.status.code(), Some(2));
+    assert!(output.stdout.is_empty(), "{:?}", output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("needs a terminal"), "{stderr}");
+    assert!(stderr.contains("hint: usage: dctx <COMMAND>"), "{stderr}");
+    assert!(!stderr.contains('\x1b'), "{stderr}");
+}
+
+#[test]
+fn cache_and_template_failures_follow_the_contract() {
+    let fixture = Fixture::new();
+    fixture.refuse(
+        2,
+        "cache: purge requires --root PATH or --all",
+        &words(&["cache", "purge"]),
+    );
+    fixture.refuse(
+        2,
+        "cache: purge requires --yes",
+        &words(&["cache", "purge", "--all"]),
+    );
+    fixture.refuse(
+        2,
+        "cache: unknown cache command",
+        &words(&["cache", "frobnicate"]),
+    );
+    fixture.refuse(
+        2,
+        "template: unknown template action",
+        &words(&["template", "x"]),
+    );
+    let missing = fixture.path("missing.dctx_template");
+    fixture.refuse(
+        3,
+        &format!("template: failed to read template {}", missing.display()),
+        &with_path(&["template", "build"], &missing),
+    );
+}
+
+#[test]
+fn pack_help_is_the_pack_page_only() {
+    let fixture = Fixture::new();
+    let page = fixture.ok(&words(&["pack", "--help"]));
+    assert!(page.starts_with("Usage: dctx pack"), "{page}");
+    assert!(page.contains("Pack filters"));
+    for global in ["precision:", "dctx cache", "Template Commands"] {
+        assert!(!page.contains(global), "{global}: {page}");
+    }
+    let global = fixture.ok(&words(&["--help"]));
+    assert!(global.contains("hubs|path|export>"), "{global}");
+}
