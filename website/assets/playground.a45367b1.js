@@ -20,7 +20,7 @@
   var mt = document.getElementById('motion-toggle'), reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
   function label() {
     var on = root.classList.contains('motion') && !reduce.matches;
-    mt.textContent = 'Motion: ' + (on ? 'on' : 'off');
+    mt.textContent = 'Animations: ' + (on ? 'on' : 'off');
     mt.setAttribute('aria-pressed', String(on));
     mt.disabled = reduce.matches;
     mt.title = reduce.matches ? 'Your system asks for reduced motion' : 'Turn animations ' + (on ? 'off' : 'on');
@@ -40,7 +40,8 @@
     var pre = block.querySelector('pre'); if (!pre) return '';
     var cmds = $$('.cmd', pre);
     if (block.classList.contains('term') && cmds.length) return cmds.map(function (c) { return c.textContent.replace(/^\$ /, ''); }).join('\n');
-    return pre.textContent.replace(/\n$/, '');
+    var copy = pre.cloneNode(true); $$('.p', copy).forEach(function (p) { p.remove(); });
+    return copy.textContent.replace(/\n$/, '');
   }
   $$('.hl, .code, .term').forEach(function (block) {
     var btn = block.querySelector('.copy');
@@ -97,6 +98,30 @@
 
   var menu = document.querySelector('.menu');
   if (menu) document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && menu.open) { menu.open = false; menu.querySelector('summary').focus(); } });
+
+  /* New version check: each page carries the id of the build it belongs to (meta dctx-build); /build.json
+     names the deployed one. On load, when the tab comes back and every 10 minutes, a different digest
+     offers a reload. Same origin only, never cached, nothing stored. */
+  var meta = document.querySelector('meta[name="dctx-build"]'), mine = meta ? meta.content : '', note = null, HEX = /^[0-9a-f]{64}$/;
+  function offer() {
+    note = document.createElement('div'); note.className = 'update'; note.setAttribute('role', 'status');
+    note.innerHTML = '<p><b>New version available.</b> This page was updated since you opened it.</p>'
+      + '<button class="btn btn-primary" type="button">Reload</button><button class="btn" type="button">Dismiss</button>';
+    var b = note.querySelectorAll('button');
+    b[0].addEventListener('click', function () { location.reload(); });
+    b[1].addEventListener('click', function () { note.remove(); });
+    document.body.appendChild(note);
+  }
+  function check() {
+    if (note || document.hidden || !window.fetch) return;
+    fetch('/build.json', { cache: 'no-store', credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (b) { if (!note && b && HEX.test(b.build_id || '') && b.build_id !== mine) offer(); }, function () {});
+  }
+  if (HEX.test(mine) && location.protocol !== 'file:') {
+    (window.requestIdleCallback || function (f) { setTimeout(f, 2000); })(check, { timeout: 5000 });
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
+    setInterval(check, 600000);
+  }
 })();
 
 /* Playground: sends the form to the JSON API and shows the answer in a terminal pane.

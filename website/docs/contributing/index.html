@@ -12,7 +12,7 @@
   if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
   if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
 })();</script>
-<link rel="stylesheet" href="/assets/site.637c934a.css">
+<link rel="stylesheet" href="/assets/site.78d109a3.css">
 <link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
@@ -20,6 +20,7 @@
 <meta name="description" content="How to propose changes, with a DCO sign-off.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
+<meta name="dctx-build" content="5815d282ddf2f51f78d4c1f4044d8c5fe014c611a19674febc7d71438e67e237">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -58,7 +59,7 @@
 <link rel="alternate" type="application/atom+xml" title="dctx releases" href="/changelog/feed.xml">
 <link rel="alternate" type="text/markdown" href="/docs/contributing/index.md" title="Contributing as Markdown">
 <link rel="prev" href="/docs/releasing/">
-<script src="/assets/page.da8d3bbd.js" defer></script>
+<script src="/assets/page.c246e049.js" defer></script>
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -111,7 +112,7 @@
    "name": "dctx",
    "softwareVersion": "1.3.0",
    "applicationCategory": "DeveloperApplication",
-   "operatingSystem": "Linux (x86_64 tested)",
+   "operatingSystem": "Linux, macOS, Windows",
    "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
    "url": "https://www.dctx.internet.technology/",
    "license": "https://www.apache.org/licenses/LICENSE-2.0",
@@ -210,7 +211,6 @@
   <nav class="nav" aria-label="Primary"><ul><li><a href="/start/">Start</a></li><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
   <div class="hdr-end">
    <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
-   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
    <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
    <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
     <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/start/">Start</a></li><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav></details>
@@ -234,12 +234,10 @@ what you tried and the relevant documentation link.</p>
 <h2 id="cli-development-setup">CLI development setup<a class="hd" href="#cli-development-setup" aria-label="Link to CLI development setup">#</a></h2>
 <p>Use a recent stable Rust toolchain with Cargo; the workspace includes Rust 2024
 crates. Clone the repository and run commands from its root:</p>
-<div class="hl"><pre><code>git<span class="t-w"> </span>clone<span class="t-w"> </span>https://github.com/Eris-Margeta/dctx
-<span class="t-nb">cd</span><span class="t-w"> </span>dctx
-cargo<span class="t-w"> </span>build<span class="t-w"> </span>--locked<span class="t-w"> </span>-p<span class="t-w"> </span>dctx-cli
-cargo<span class="t-w"> </span>run<span class="t-w"> </span>--locked<span class="t-w"> </span>-p<span class="t-w"> </span>dctx-cli<span class="t-w"> </span>--<span class="t-w"> </span>--help
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">git</span> clone https://github.com/Eris-Margeta/dctx
+<span class="t-f">cd</span> dctx
+<span class="t-f">cargo</span> build <span class="t-a">--locked</span> <span class="t-a">-p</span> dctx-cli
+<span class="t-f">cargo</span> run <span class="t-a">--locked</span> <span class="t-a">-p</span> dctx-cli <span class="t-a">--</span> <span class="t-a">--help</span></code></pre></div>
 <p>Cargo builds <strong><code>dctx-cli</code></strong>, while help text calls the tool <strong><code>dctx</code></strong>. See
 <a href="/docs/readme/#installation">installation</a> for aliases and install choices.</p>
 <p>Keep changes focused on the relevant crates and preserve unrelated work. The
@@ -249,9 +247,7 @@ crates should not acquire filesystem, network or process effects. The
 runtime limitations.</p>
 <h2 id="validation">Validation<a class="hd" href="#validation" aria-label="Link to Validation">#</a></h2>
 <p>Start with the CLI and facade checks (some tests validate documentation):</p>
-<div class="hl"><pre><code>cargo<span class="t-w"> </span><span class="t-nb">test</span><span class="t-w"> </span>-p<span class="t-w"> </span>dctx-cli<span class="t-w"> </span>-p<span class="t-w"> </span>dctx<span class="t-w"> </span>--locked
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">cargo</span> test <span class="t-a">-p</span> dctx-cli <span class="t-a">-p</span> dctx <span class="t-a">--locked</span></code></pre></div>
 <p>For documentation changes, install the Python dependencies using
 <a href="https://github.com/Eris-Margeta/dctx/blob/main/tools/website/README.md">the website setup</a>, then run
 <code>tools/website/.venv/bin/python tools/check-markdown-links.py</code>. It checks local
@@ -272,9 +268,7 @@ invokes desktop setup and is broader than the main CI jobs.</p>
 <p>Contributions use the <a href="https://developercertificate.org">Developer Certificate of Origin</a>
 (DCO) instead of a contributor license agreement. Sign off each commit to certify that
 you wrote the change, or otherwise have the right to submit it under Apache-2.0:</p>
-<div class="hl"><pre><code>git<span class="t-w"> </span>commit<span class="t-w"> </span>-s
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">git</span> commit <span class="t-a">-s</span></code></pre></div>
 <p>The <code>-s</code> flag adds a <code>Signed-off-by:</code> line with your name and email. Pull requests with
 unsigned commits will be asked to amend them with <code>git commit --amend -s</code>, or to rebase
 with <code>--signoff</code>.</p>
@@ -297,7 +291,8 @@ validation before merging. Pull requests, including forks, run on GitHub-hosted 
     <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
     <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
     <p>An advanced tool with several ways to use it: <a href="/start/">start with the safe path</a>.</p>
-    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
+    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0</p>
+    <p class="ftr-prefs"><button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Animations: on</button></p>
    </div>
    <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/start/">Choose your path</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
    <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/for-ai-evaluators/">For AI evaluators</a></li><li><a href="/llms-small.txt">llms-small.txt</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>

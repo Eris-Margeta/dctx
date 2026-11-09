@@ -20,7 +20,7 @@
   var mt = document.getElementById('motion-toggle'), reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
   function label() {
     var on = root.classList.contains('motion') && !reduce.matches;
-    mt.textContent = 'Motion: ' + (on ? 'on' : 'off');
+    mt.textContent = 'Animations: ' + (on ? 'on' : 'off');
     mt.setAttribute('aria-pressed', String(on));
     mt.disabled = reduce.matches;
     mt.title = reduce.matches ? 'Your system asks for reduced motion' : 'Turn animations ' + (on ? 'off' : 'on');
@@ -40,7 +40,8 @@
     var pre = block.querySelector('pre'); if (!pre) return '';
     var cmds = $$('.cmd', pre);
     if (block.classList.contains('term') && cmds.length) return cmds.map(function (c) { return c.textContent.replace(/^\$ /, ''); }).join('\n');
-    return pre.textContent.replace(/\n$/, '');
+    var copy = pre.cloneNode(true); $$('.p', copy).forEach(function (p) { p.remove(); });
+    return copy.textContent.replace(/\n$/, '');
   }
   $$('.hl, .code, .term').forEach(function (block) {
     var btn = block.querySelector('.copy');
@@ -97,6 +98,140 @@
 
   var menu = document.querySelector('.menu');
   if (menu) document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && menu.open) { menu.open = false; menu.querySelector('summary').focus(); } });
+
+  /* New version check: each page carries the id of the build it belongs to (meta dctx-build); /build.json
+     names the deployed one. On load, when the tab comes back and every 10 minutes, a different digest
+     offers a reload. Same origin only, never cached, nothing stored. */
+  var meta = document.querySelector('meta[name="dctx-build"]'), mine = meta ? meta.content : '', note = null, HEX = /^[0-9a-f]{64}$/;
+  function offer() {
+    note = document.createElement('div'); note.className = 'update'; note.setAttribute('role', 'status');
+    note.innerHTML = '<p><b>New version available.</b> This page was updated since you opened it.</p>'
+      + '<button class="btn btn-primary" type="button">Reload</button><button class="btn" type="button">Dismiss</button>';
+    var b = note.querySelectorAll('button');
+    b[0].addEventListener('click', function () { location.reload(); });
+    b[1].addEventListener('click', function () { note.remove(); });
+    document.body.appendChild(note);
+  }
+  function check() {
+    if (note || document.hidden || !window.fetch) return;
+    fetch('/build.json', { cache: 'no-store', credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (b) { if (!note && b && HEX.test(b.build_id || '') && b.build_id !== mine) offer(); }, function () {});
+  }
+  if (HEX.test(mine) && location.protocol !== 'file:') {
+    (window.requestIdleCallback || function (f) { setTimeout(f, 2000); })(check, { timeout: 5000 });
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
+    setInterval(check, 600000);
+  }
+})();
+
+/* Terminal playback. The full transcript is already in the page (screen readers and no-JS
+   visitors read it as is); with motion on, commands are typed and output lines stream in. */
+(function () {
+  'use strict';
+  var root = document.documentElement, reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  function motion() { return root.classList.contains('motion') && !reduce.matches; }
+  function Term(el) {
+    this.el = el; this.lines = [].slice.call(el.querySelectorAll('.ln')); this.box = el.querySelector('.scroll'); this.timer = 0; this.i = 0;
+    var self = this, btn = el.querySelector('[data-replay]');
+    if (btn) { btn.hidden = false; btn.addEventListener('click', function () { self.play(); }); }
+  }
+  Term.prototype.reset = function () {
+    clearTimeout(this.timer); this.i = 0;
+    this.lines.forEach(function (l) { l.classList.remove('on', 'typing', 'caret', 'caret-wait'); });
+  };
+  Term.prototype.finish = function () {
+    this.reset(); this.el.removeAttribute('data-live');
+  };
+  Term.prototype.show = function (l) {
+    var b = this.box; if (!b) return;
+    var over = l.getBoundingClientRect().bottom + 12 - b.getBoundingClientRect().bottom;
+    if (over > 0) b.scrollTop += over;
+  };
+  Term.prototype.play = function () {
+    if (!motion()) { this.finish(); return; }
+    this.el.setAttribute('data-live', ''); this.reset(); if (this.box) this.box.scrollTop = 0;
+    var self = this;
+    function next() {
+      if (document.hidden) { self.timer = setTimeout(next, 300); return; }
+      if (self.i >= self.lines.length) { var last = self.lines[self.lines.length - 1]; if (last) last.classList.add('caret'); return; }
+      var l = self.lines[self.i++];
+      if (l.classList.contains('cmd')) {
+        var n = l.textContent.length, d = n * 28;
+        l.style.setProperty('--n', n); l.style.setProperty('--t', d + 'ms'); l.classList.add('typing'); self.show(l);
+        self.timer = setTimeout(function () { l.classList.remove('typing'); l.classList.add('on'); self.timer = setTimeout(next, 300); }, d);
+      } else {
+        l.classList.add('on'); self.show(l);
+        self.timer = setTimeout(next, l.classList.contains('meta') ? 260 : 24);
+      }
+    }
+    next();
+  };
+  var terms = [].slice.call(document.querySelectorAll('.term[data-play]')).map(function (el) { return new Term(el); });
+  terms.forEach(function (t) {
+    var start = t.el.getAttribute('data-play');
+    if (!motion()) return;
+    if (start === 'scene') {
+      t.el.setAttribute('data-live', '');
+      if (t.lines[0]) t.lines[0].classList.add('caret-wait');
+      var fallback = setTimeout(function () { t.play(); }, 14000);
+      document.addEventListener('dctx:scene', function () { clearTimeout(fallback); t.play(); });
+    } else if ('IntersectionObserver' in window) {
+      t.el.setAttribute('data-live', '');
+      var io = new IntersectionObserver(function (en) { if (en[0].isIntersecting) { io.disconnect(); t.play(); } }, { threshold: .3 });
+      io.observe(t.el);
+    }
+  });
+  document.addEventListener('dctx:motion', function () { terms.forEach(function (t) { if (!motion()) t.finish(); }); });
+})();
+
+/* dctx hero: one real run on the sample project, folder -> policy -> graph -> bounded page. The final
+   state is plain HTML and SVG built from the captured data (pages/flow.py); with motion on, this plays
+   the four steps in order with CSS transitions when the figure scrolls into view. With motion off or
+   prefers-reduced-motion, nothing moves and the final state stays. It also starts the hero terminal. */
+(function () {
+  'use strict';
+  var root = document.documentElement, flow = document.querySelector('[data-flow]');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)'), timers = [], seen = false, started = false;
+  function motion() { return root.classList.contains('motion') && !reduce.matches; }
+  function scene() { document.dispatchEvent(new CustomEvent('dctx:scene')); }
+  function boot(f) { (window.requestIdleCallback || function (g) { setTimeout(g, 120); })(f, { timeout: 900 }); }
+  if (!flow) { if (document.readyState === 'complete') boot(scene); else window.addEventListener('load', function () { boot(scene); }); return; }
+  var steps = [].slice.call(flow.querySelectorAll('[data-step]')), btn = flow.querySelector('[data-replay]');
+  ['.files li', '.ranked li', '.page .pl'].forEach(function (sel) {
+    [].forEach.call(flow.querySelectorAll(sel), function (el, i) { el.style.setProperty('--k', i); });
+  });
+  // Stage n is reached at AT[n] ms; the step it lights is ON[n] (1 and 2 share the repository panel).
+  var AT = [0, 250, 1700, 3100, 4700, 7200], ON = [0, 1, 1, 3, 4, 0];
+  function clear() { timers.forEach(clearTimeout); timers = []; }
+  function set(n) {
+    for (var i = 1; i <= 5; i++) flow.classList.toggle('s' + i, i <= n);
+    steps.forEach(function (s) { s.classList.toggle('on', +s.getAttribute('data-step') === ON[n]); });
+  }
+  function finish() { clear(); flow.classList.remove('play'); set(5); if (btn) btn.hidden = !motion(); }
+  function play() {
+    clear();
+    if (!motion()) { finish(); return; }
+    started = true; flow.classList.add('play'); set(0); if (btn) btn.hidden = false;
+    // Two frames so the hidden state is painted before the first transition starts.
+    requestAnimationFrame(function () { requestAnimationFrame(function () {
+      AT.forEach(function (t, n) { if (n) timers.push(setTimeout(function () { set(n); if (n === 5) flow.classList.remove('play'); }, t)); });
+    }); });
+  }
+  function arm() {
+    if (!motion()) { finish(); return; }
+    flow.classList.add('play'); set(0);
+    if (seen) play();
+  }
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (en) {
+      if (en[0].isIntersecting && !seen) { seen = true; if (motion() && !started) play(); }
+    }, { threshold: 0.25 }).observe(flow);
+  } else seen = true;
+  if (btn) btn.addEventListener('click', play);
+  document.addEventListener('dctx:motion', function () { started = false; if (motion()) arm(); else finish(); });
+  if (motion()) arm(); else finish();
+  // The terminal starts after the load event, when the main thread is idle.
+  if (document.readyState === 'complete') boot(scene); else window.addEventListener('load', function () { boot(scene); });
 })();
 
 /* dctx explainer animations: five canvas scenes for <figure data-anim> blocks made by

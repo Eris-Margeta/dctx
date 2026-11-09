@@ -12,7 +12,7 @@
   if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
   if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
 })();</script>
-<link rel="stylesheet" href="/assets/site.637c934a.css">
+<link rel="stylesheet" href="/assets/site.78d109a3.css">
 <link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
@@ -20,6 +20,7 @@
 <meta name="description" content="Every map verb with examples, budgets, ids and precision labels.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
+<meta name="dctx-build" content="5815d282ddf2f51f78d4c1f4044d8c5fe014c611a19674febc7d71438e67e237">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -59,7 +60,7 @@
 <link rel="alternate" type="text/markdown" href="/docs/map-mode/index.md" title="Map mode guide as Markdown">
 <link rel="prev" href="/docs/modalities/">
 <link rel="next" href="/docs/agents/">
-<script src="/assets/page.da8d3bbd.js" defer></script>
+<script src="/assets/page.c246e049.js" defer></script>
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -112,7 +113,7 @@
    "name": "dctx",
    "softwareVersion": "1.3.0",
    "applicationCategory": "DeveloperApplication",
-   "operatingSystem": "Linux (x86_64 tested)",
+   "operatingSystem": "Linux, macOS, Windows",
    "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
    "url": "https://www.dctx.internet.technology/",
    "license": "https://www.apache.org/licenses/LICENSE-2.0",
@@ -211,7 +212,6 @@
   <nav class="nav" aria-label="Primary"><ul><li><a href="/start/">Start</a></li><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
   <div class="hdr-end">
    <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
-   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
    <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
    <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
     <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/start/">Start</a></li><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav></details>
@@ -231,9 +231,7 @@ profile and custom tool subsets.</p>
 <div class="hl"><pre><code>dctx map &lt;map|find|neighbors|explain|read|skeleton|grep&gt; &lt;TARGET&gt; [OPTIONS]
 dctx map hubs [--limit N] [--json] [--place PATH] [--budget TOKENS] [--meta]
 dctx map path &lt;FROM&gt; &lt;TO&gt; [--json] [--place PATH] [--budget TOKENS] [--meta]
-dctx map export [--format json|mermaid] [--output PATH] [--place PATH]
-</code></pre></div>
-
+dctx map export [--format json|mermaid] [--output PATH] [--place PATH]</code></pre></div>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -799,14 +797,12 @@ size cap and an automatic cleaner. Defaults are 7 days for idle overlays/preview
 30 days for unpinned roots and 1 day for staging; the hard cap is 2 GiB, the soft
 watermark 1.5 GiB and the eviction target 1.2 GiB. These are cache policies, not
 a claim that every map query persists those object types.</p>
-<div class="hl"><pre><code>dctx<span class="t-w"> </span>cache<span class="t-w"> </span>status<span class="t-w"> </span>--json
-dctx<span class="t-w"> </span>cache<span class="t-w"> </span>gc<span class="t-w"> </span>--dry-run
-dctx<span class="t-w"> </span>cache<span class="t-w"> </span>purge<span class="t-w"> </span>--root<span class="t-w"> </span>/absolute/project/path<span class="t-w"> </span>--dry-run
-dctx<span class="t-w"> </span>cache<span class="t-w"> </span>purge<span class="t-w"> </span>--all<span class="t-w"> </span>--dry-run
-dctx<span class="t-w"> </span>cache<span class="t-w"> </span>config<span class="t-w"> </span>auto<span class="t-w"> </span>off<span class="t-w"> </span>--max-bytes<span class="t-w"> </span><span class="t-m">1000000</span><span class="t-w"> </span>--ttl-days<span class="t-w"> </span><span class="t-m">7</span>
-dctx<span class="t-w"> </span>cache<span class="t-w"> </span>auto
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> cache status <span class="t-a">--json</span>
+<span class="t-f">dctx</span> cache gc <span class="t-a">--dry-run</span>
+<span class="t-f">dctx</span> cache purge <span class="t-a">--root</span> /absolute/project/path <span class="t-a">--dry-run</span>
+<span class="t-f">dctx</span> cache purge <span class="t-a">--all</span> <span class="t-a">--dry-run</span>
+<span class="t-f">dctx</span> cache config auto off <span class="t-a">--max-bytes</span> 1000000 <span class="t-a">--ttl-days</span> 7
+<span class="t-f">dctx</span> cache auto</code></pre></div>
 <p><code>status</code> accepts <code>--root PATH</code>; <code>gc</code> accepts <code>--root PATH</code>, <code>--max-bytes N</code> and
 <code>--legacy</code>. Applying <code>purge</code> requires <code>--yes</code> and either <code>--root PATH</code> or <code>--all</code>.
 <code>cache config</code> without arguments shows persisted policy; <code>auto on|off</code> controls
@@ -827,31 +823,19 @@ The optional Git plugin has separately disclosed authority; see <a href="/docs/p
 <a href="https://github.com/Eris-Margeta/dctx/blob/main/crates/dctx-cli/tests/map_cli.rs"><code>map_cli.rs</code></a>. The test checks fragments,
 not full transcripts; the output blocks below are excerpts, without invented
 columns or counts. Create a project containing <code>sample.py</code>:</p>
-<div class="hl"><pre><code><span class="t-k">def</span> <span class="t-nf">PythonBeacon</span><span class="t-p">():</span>
-    <span class="t-k">return</span> <span class="t-mi">1</span>
-</code></pre></div>
-
+<div class="hl" data-lang="python"><pre><code><span class="t-k">def</span> <span class="t-f">PythonBeacon</span>():
+    <span class="t-k">return</span> <span class="t-m">1</span></code></pre></div>
 <p>From that project, outline its module:</p>
-<div class="hl"><pre><code>dctx<span class="t-w"> </span>map<span class="t-w"> </span>map<span class="t-w"> </span>m:sample.py<span class="t-w"> </span>--depth<span class="t-w"> </span><span class="t-m">2</span><span class="t-w"> </span>--budget<span class="t-w"> </span><span class="t-m">2000</span>
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> map map m:sample.py <span class="t-a">--depth</span> 2 <span class="t-a">--budget</span> 2000</code></pre></div>
 <p>Expected output contains:</p>
-<div class="hl"><pre><code>s:sample.py#PythonBeacon
-</code></pre></div>
-
+<div class="hl"><pre><code>s:sample.py#PythonBeacon</code></pre></div>
 <p>For the second example, add <code>sample.unknown</code> with:</p>
-<div class="hl"><pre><code><span class="t-k">def</span> <span class="t-nf">OpaqueBeacon</span><span class="t-p">():</span>
-    <span class="t-k">return</span> <span class="t-mi">1</span>
-</code></pre></div>
-
+<div class="hl" data-lang="python"><pre><code><span class="t-k">def</span> <span class="t-f">OpaqueBeacon</span>():
+    <span class="t-k">return</span> <span class="t-m">1</span></code></pre></div>
 <p>Search the unsupported source extension:</p>
-<div class="hl"><pre><code>dctx<span class="t-w"> </span>map<span class="t-w"> </span>find<span class="t-w"> </span>OpaqueBeacon<span class="t-w"> </span>--json
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> map find OpaqueBeacon <span class="t-a">--json</span></code></pre></div>
 <p>Expected JSON contains this exact fragment and does not contain <code>OpaqueBeacon</code>:</p>
-<div class="hl"><pre><code>&quot;records&quot;:[]
-</code></pre></div>
-
+<div class="hl"><pre><code>"records":[]</code></pre></div>
 <p>For crate responsibilities and optional parser dependencies, see the
 <a href="/docs/crate-map/">crate map</a>.</p><nav class="pager" aria-label="Previous and next"><a class="prev" href="/docs/modalities/" rel="prev"><span>Previous</span>Choosing how to use dctx</a><a class="next" href="/docs/agents/" rel="next"><span>Next</span>Agent snippet</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#commands">Commands</a></li><li class="l2"><a href="#languages-and-precision">Languages and precision</a></li><li class="l2"><a href="#index-cache-and-privacy">Index, cache and privacy</a></li><li class="l2"><a href="#two-worked-examples">Two worked examples</a></li></ul></nav></div>
 </main>
@@ -862,7 +846,8 @@ columns or counts. Create a project containing <code>sample.py</code>:</p>
     <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
     <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
     <p>An advanced tool with several ways to use it: <a href="/start/">start with the safe path</a>.</p>
-    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
+    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0</p>
+    <p class="ftr-prefs"><button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Animations: on</button></p>
    </div>
    <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/start/">Choose your path</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
    <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/for-ai-evaluators/">For AI evaluators</a></li><li><a href="/llms-small.txt">llms-small.txt</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>

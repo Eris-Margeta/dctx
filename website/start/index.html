@@ -12,7 +12,7 @@
   if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
   if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
 })();</script>
-<link rel="stylesheet" href="/assets/site.637c934a.css">
+<link rel="stylesheet" href="/assets/site.78d109a3.css">
 <link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
@@ -20,6 +20,7 @@
 <meta name="description" content="dctx is an advanced tool with several ways to use it. Pick the path that matches your work: one giant folder, many small projects, a library in your own tool, or a team rollout.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
+<meta name="dctx-build" content="5815d282ddf2f51f78d4c1f4044d8c5fe014c611a19674febc7d71438e67e237">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -55,7 +56,7 @@
 <link rel="search" type="application/opensearchdescription+xml" title="dctx" href="/opensearch.xml">
 <link rel="alternate" type="application/atom+xml" title="dctx news" href="/news/feed.xml">
 <link rel="alternate" type="application/atom+xml" title="dctx releases" href="/changelog/feed.xml">
-<script src="/assets/page.da8d3bbd.js" defer></script>
+<script src="/assets/page.c246e049.js" defer></script>
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -108,7 +109,7 @@
    "name": "dctx",
    "softwareVersion": "1.3.0",
    "applicationCategory": "DeveloperApplication",
-   "operatingSystem": "Linux (x86_64 tested)",
+   "operatingSystem": "Linux, macOS, Windows",
    "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
    "url": "https://www.dctx.internet.technology/",
    "license": "https://www.apache.org/licenses/LICENSE-2.0",
@@ -171,7 +172,6 @@
   <nav class="nav" aria-label="Primary"><ul><li><a href="/start/" aria-current="page">Start</a></li><li><a href="/docs/">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
   <div class="hdr-end">
    <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
-   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
    <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
    <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
     <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/start/" aria-current="page">Start</a></li><li><a href="/docs/">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav></details>
@@ -181,7 +181,7 @@
 <main id="main">
 <div class="wrap narrow"><div class="page-head"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/start/" aria-current="page">Choose your path</a></li></ol></nav><span class="eyebrow">Start</span><h1>Choose your path</h1>
 <p class="lede">dctx is one binary used in very different ways. Each way has its own setup, its own first command and its own way to go wrong. Pick the one closest to your work.</p></div>
-<div class="callout" role="note"><h2 id="notice-h" class="notice-h">Advanced tool, several ways to use it</h2><p class="callout-text">dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.</p><p class="callout-sub">Status: Receipts are planned. The safe path uses the lean MCP profile, <code>dctx mcp --profile lean</code>.</p></div>
+<div class="callout" role="note"><h2 id="notice-h" class="notice-h">Advanced tool, several ways to use it</h2><p class="callout-text">dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.</p><p class="callout-sub">Status: Receipts are planned. The safe path uses the lean MCP profile, <code>dctx mcp --profile lean</code>.</p><figure class="ways"><figcaption class="ways-hub"><b>dctx</b> one binary, local and offline</figcaption><ol class="ways-list"><li class="way"><a href="/docs/modalities/#human-one-off-pack-to-clipboard"><b>CLI pack</b></a><code class="way-cmd"><span class="p">$ </span><span class="t-f">dctx</span> pack .</code><p>Pack a project or one task into a bounded page for chat, scripts and shell agents.</p><p class="way-st">available</p></li><li class="way"><a href="/docs/map-mode/"><b>Map mode for agents</b></a><code class="way-cmd"><span class="p">$ </span><span class="t-f">dctx</span> map find greet</code><p>Find, then read by stable id, with skeleton for orientation, in big files and long sessions.</p><p class="way-st">available</p></li><li class="way"><a href="/docs/modalities/#mcp-server-convenient-tools-with-startup-context"><b>MCP server</b></a><code class="way-cmd"><span class="p">$ </span><span class="t-f">dctx</span> mcp <span class="t-a">--profile</span> lean</code><p><code>dctx mcp</code> serves the map verbs to Claude Code, Cursor and Codex; the lean profile keeps startup small.</p><p class="way-st">MCP available (stdio); ACP planned</p></li><li class="way"><a href="/docs/modalities/#rust-library-embed-the-facade"><b>Library and wrappers</b></a><code class="way-cmd">Rust · Python · Node · Go</code><p>Embed the engine in your own tool; the project pins its own binary and never re-implements engine logic.</p><p class="way-st">Rust from Git now; Python, Node and Go wrappers built in CI, registry publication pending</p></li></ol></figure></div>
 <section class="sec" aria-labelledby="paths-h"><h2 id="paths-h">Four paths</h2><ul class="paths" data-path-select aria-label="Choose your path"><li class="path-card" data-path="giant-folder"><h3><a href="/start/giant-folder/">One giant folder</a></h3><p>You work inside one very large tree, for example a 200 GB monorepo, data or document folder.</p><p class="path-mod">System binary, scoped roots, ignore rules at each root you query.</p><p class="path-pit"><b>Pitfall:</b> Pointing an agent at the whole root.</p></li><li class="path-card" data-path="many-projects"><h3><a href="/start/many-projects/">Many smaller projects</a></h3><p>You move between many small and medium repositories during the day.</p><p class="path-mod">System binary, the lean MCP profile once in your agent, nothing per project.</p><p class="path-pit"><b>Pitfall:</b> Stale caches of projects you deleted or no longer use.</p></li><li class="path-card" data-path="library"><h3><a href="/start/library/">Agent builder embedding a library</a></h3><p>You build an agent, editor or tool and want dctx inside it.</p><p class="path-mod">Project library with its own pinned binary. The Python, Node and Go wrappers over <code>dctx rpc</code> are built and tested in CI, with registry publication pending; today use the Rust facade from a tagged Git dependency, or run a pinned CLI binary and read its <code>--json</code> output.</p><p class="path-pit"><b>Pitfall:</b> Re-implementing engine logic: parsing or slicing pack text, recounting budgets, rebuilding ids.</p></li><li class="path-card" data-path="team"><h3><a href="/start/team/">Team or organisation admin</a></h3><p>You roll dctx out to a team or a fleet of machines.</p><p class="path-mod">System binary distributed through your own package channel, one pinned version everywhere.</p><p class="path-pit"><b>Pitfall:</b> Mixing project and system versions without checking.</p></li></ul></section>
 <section class="sec" aria-labelledby="safe-h"><h2 id="safe-h">The safe path, if you are not sure</h2><ol class="safe"><li><b>One project.</b> Start with one project you know, not your whole disk.</li><li><b>The system binary.</b> Install the release archive from GitHub Releases and verify it against SHA256SUMS.</li><li><b>The lean MCP profile.</b> <code>dctx mcp --profile lean</code> exposes two tools, find and read, with compact descriptions.</li><li><b>Measure.</b> Run the same task with grep plus file reads and with dctx; compare whole-session tokens and calls, not only answer size.</li></ol>
 <p>Then pick the path above that matches your work. <a href="/docs/modalities/">Choosing how to use dctx</a> compares every mode with grep plus file reads.</p></section>
@@ -197,7 +197,8 @@
     <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
     <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
     <p>An advanced tool with several ways to use it: <a href="/start/">start with the safe path</a>.</p>
-    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
+    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0</p>
+    <p class="ftr-prefs"><button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Animations: on</button></p>
    </div>
    <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/start/">Choose your path</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
    <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/for-ai-evaluators/">For AI evaluators</a></li><li><a href="/llms-small.txt">llms-small.txt</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>

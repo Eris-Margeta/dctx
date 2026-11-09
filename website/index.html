@@ -12,7 +12,7 @@
   if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
   if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
 })();</script>
-<link rel="stylesheet" href="/assets/site.637c934a.css">
+<link rel="stylesheet" href="/assets/site.78d109a3.css">
 <link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
@@ -20,6 +20,7 @@
 <meta name="description" content="dctx is the open-source context engine for AI-assisted development: deterministic, bounded code context for agents and chat, offline, with no telemetry. Apache-2.0.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
+<meta name="dctx-build" content="5815d282ddf2f51f78d4c1f4044d8c5fe014c611a19674febc7d71438e67e237">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -51,7 +52,7 @@
 <link rel="alternate" type="application/atom+xml" title="dctx news" href="/news/feed.xml">
 <link rel="alternate" type="application/atom+xml" title="dctx releases" href="/changelog/feed.xml">
 <link rel="me" href="https://github.com/Eris-Margeta">
-<script src="/assets/home.92cbcfe5.js" defer></script>
+<script src="/assets/home.d29c105d.js" defer></script>
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -104,7 +105,7 @@
    "name": "dctx",
    "softwareVersion": "1.3.0",
    "applicationCategory": "DeveloperApplication",
-   "operatingSystem": "Linux (x86_64 tested)",
+   "operatingSystem": "Linux, macOS, Windows",
    "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
    "url": "https://www.dctx.internet.technology/",
    "license": "https://www.apache.org/licenses/LICENSE-2.0",
@@ -149,7 +150,6 @@
   <nav class="nav" aria-label="Primary"><ul><li><a href="/start/">Start</a></li><li><a href="/docs/">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
   <div class="hdr-end">
    <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
-   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
    <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
    <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
     <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/start/">Start</a></li><li><a href="/docs/">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav></details>
@@ -162,47 +162,70 @@
  <div class="wrap hero-grid">
   <div class="hero-copy">
    <ul class="chips" aria-label="Project facts">
-    <li><a href="/changelog/#v1-3-0">dctx <b>1.3.0</b></a></li><li>Apache-2.0</li><li>C/Rust</li><li>Linux x86_64 tested</li><li><a href="/cli/#mcp"><b>10</b> MCP tools</a></li><li>no telemetry</li><li class="chip-status"><a href="#status">not yet stable &middot; pre-2.0</a></li>
+    <li><a href="/changelog/#v1-3-0">dctx <b>1.3.0</b></a></li><li>Apache-2.0</li><li>C/Rust</li><li><a href="/cli/#mcp"><b>10</b> MCP tools</a></li><li>no telemetry</li><li class="chip-status"><a href="#status">not yet stable &middot; pre-2.0</a></li>
    </ul>
    <h1 id="hero-title">Context, <span class="accent">engineered.</span></h1>
    <p class="lede">dctx gives a model the fewest, most relevant bytes of your code, in an order that stays the same between turns. Deterministic, bounded and offline.</p>
    <div class="actions">
     <a class="btn btn-primary" href="#paths">Choose your path</a><a class="btn" href="/docs/">Read the docs</a><a class="btn" href="/playground/">Playground</a><a class="btn" href="https://github.com/Eris-Margeta/dctx">GitHub</a>
    </div>
-   <h2 class="eyebrow" id="scene-h">On the sample project <a href="/examples/">kiosk</a></h2>
-   <ol class="steps" aria-label="What the animation shows"><li><b>repository</b><span>13 files on disk</span></li><li><b>policy</b><span>11 listed, 10 read</span></li><li><b>graph</b><span>41 nodes, 13 call/import edges</span></li><li><b>bounded page</b><span>223 of 800 tokens</span></li></ol>
   </div>
   <div class="hero-side">
-   <div class="stage" data-scene aria-labelledby="scene-h">
-    <picture><source srcset="/assets/og/scene.dark.png" media="(prefers-color-scheme: dark)"><img src="/assets/og/scene.light.png" width="1200" height="630" alt="The kiosk sample as dctx sees it: 41 nodes and 13 call and import edges, the query find greet lighting s:src/util.rs#greet, and its 223-token page inside a 800-token budget." fetchpriority="high"></picture>
-    <canvas aria-hidden="true"></canvas>
-    <div class="stage-cap"><span data-cap>4 bounded page &middot; 223 of 800 tokens</span><button class="tbtn" type="button" data-replay hidden>Replay</button></div>
-   </div>
-   <div class="term term-hero" data-play="scene"><div class="term-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="title">~/kiosk  ·  dctx 1.3.0</span><button class="tbtn" type="button" data-replay hidden>Replay</button></div><div class="scroll"><pre><span class="ln cmd"><span class="p">$ </span>dctx pack . --for &#x27;greet store&#x27; --budget 800</span><span class="ln out hdrl"># dctx pack --for budget=800 terms=2</span><span class="ln out hdrl">## find greet</span><span class="ln out"><span class="cm"></span><span class="id">s:src/util.rs#greet</span>	fn	L2-4</span><span class="ln out"><span class="cm"></span><span class="id">s:web/app.ts#renderGreeting</span>	fn	L10-12</span><span class="ln out hdrl">## find store</span><span class="ln out"><span class="cm"></span><span class="id">s:src/store.rs#Order</span>	struct	L4-8</span><span class="ln out"><span class="cm"></span><span class="id">s:src/store.rs#checksum</span>	fn	L22-24</span><span class="ln out"><span class="cm"></span><span class="id">s:src/store.rs#encode</span>	fn	L17-19</span><span class="ln out hdrl">## neighbors s:src/util.rs#greet</span><span class="ln out"><span class="cm">calls:in:</span><span class="id">s:src/main.rs#main</span>	fn	src/main.rs	L7</span><span class="ln out"><span class="cm">calls:out:</span><span class="id">s:src/util.rs#title_case</span>	fn	src/util.rs</span><span class="ln out"><span class="cm">contains:in:</span><span class="id">m:src/util.rs</span>	module	src/util.rs</span><span class="ln out hdrl">## neighbors s:src/store.rs#Order</span><span class="ln out"><span class="cm">contains:in:</span><span class="id">m:src/store.rs</span>	module	src/store.rs</span><span class="ln out hdrl">## read s:src/util.rs#greet</span><span class="ln out"><span class="cm"></span><span class="id">s:src/util.rs#greet</span>	fn	src/util.rs</span><span class="ln out">pub fn greet(name: &amp;str) -&gt; String {</span><span class="ln out">    format!(&quot;Hello, {}!&quot;, title_case(name))</span><span class="ln out">}</span><span class="ln out hdrl">## read s:src/store.rs#Order</span><span class="ln out"><span class="cm"></span><span class="id">s:src/store.rs#Order</span>	struct	src/store.rs</span><span class="ln out">pub struct Order {</span><span class="ln out">    pub id: u32,</span><span class="ln out">    pub item: String,</span><span class="ln out">    pub qty: u32,</span><span class="ln out">}</span><span class="ln out hdrl"># end body_tokens=223 budget=800 dropped=0</span><span class="ln meta"># <b>exit 0</b> &middot; 822 bytes &middot; ~235 est. tokens</span><span class="ln gap"></span><span class="ln cmd"><span class="p">$ </span>dctx map find greet</span><span class="ln out hdrl"># kiosk find</span><span class="ln out"><span class="cm"></span><span class="id">s:src/util.rs#greet</span>	fn	L2-4</span><span class="ln out"><span class="cm"></span><span class="id">s:web/app.ts#renderGreeting</span>	fn	L10-12</span><span class="ln meta"># <b>exit 0</b> &middot; 79 bytes &middot; ~23 est. tokens</span><span class="ln gap"></span><span class="ln cmd"><span class="p">$ </span>dctx map neighbors &#x27;s:src/util.rs#greet&#x27; --edge calls --dir in</span><span class="ln out hdrl"># kiosk neighbors</span><span class="ln out"><span class="cm">calls:in:</span><span class="id">s:src/main.rs#main</span>	fn	src/main.rs	L7</span><span class="ln meta"># <b>exit 0</b> &middot; 64 bytes &middot; ~19 est. tokens</span><span class="ln gap"></span><span class="ln cmd"><span class="p">$ </span>dctx map read &#x27;s:src/util.rs#greet&#x27; --json</span><span class="ln out hdrl"># one JSON line; pretty-printed here</span><span class="ln out">{</span><span class="ln out"> &quot;v&quot;: 2,</span><span class="ln out"> &quot;place&quot;: &quot;kiosk&quot;,</span><span class="ln out"> &quot;verb&quot;: &quot;read&quot;,</span><span class="ln out"> &quot;freshness&quot;: {</span><span class="ln out">  &quot;mode&quot;: &quot;strict&quot;,</span><span class="ln out hdrl">… 33 more lines · <a href="/examples/#read-json">full output</a></span><span class="ln meta"># <b>exit 0</b> &middot; 561 bytes &middot; ~161 est. tokens</span></pre></div></div>
+   <div class="term term-hero" data-play="scene"><div class="term-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="title">~/kiosk  ·  dctx 1.3.0</span><button class="tbtn" type="button" data-replay hidden>Replay</button></div><div class="scroll"><pre><span class="ln cmd"><span class="p">$ </span><span class="t-f">dctx</span> pack . <span class="t-a">--for</span> <span class="t-s">'greet store'</span> <span class="t-a">--budget</span> 800</span><span class="ln out"><span class="t-c"># dctx pack --for </span><span class="t-a">budget</span><span class="t-c">=</span><span class="t-m">800</span><span class="t-c"> </span><span class="t-a">terms</span><span class="t-c">=</span><span class="t-m">2</span></span><span class="ln out"><span class="t-t">## find</span> <span class="t-v">greet</span></span><span class="ln out"><span class="t-v">s:src/util.rs#greet</span>	<span class="t-b">fn</span>	<span class="t-m">L2-4</span></span><span class="ln out"><span class="t-v">s:web/app.ts#renderGreeting</span>	<span class="t-b">fn</span>	<span class="t-m">L10-12</span></span><span class="ln out"><span class="t-t">## find</span> <span class="t-v">store</span></span><span class="ln out"><span class="t-v">s:src/store.rs#Order</span>	<span class="t-b">struct</span>	<span class="t-m">L4-8</span></span><span class="ln out"><span class="t-v">s:src/store.rs#checksum</span>	<span class="t-b">fn</span>	<span class="t-m">L22-24</span></span><span class="ln out"><span class="t-v">s:src/store.rs#encode</span>	<span class="t-b">fn</span>	<span class="t-m">L17-19</span></span><span class="ln out"><span class="t-t">## neighbors</span> <span class="t-v">s:src/util.rs#greet</span></span><span class="ln out"><span class="t-c">calls:in:</span><span class="t-v">s:src/main.rs#main</span>	<span class="t-b">fn</span>	src/main.rs	<span class="t-m">L7</span></span><span class="ln out"><span class="t-c">calls:out:</span><span class="t-v">s:src/util.rs#title_case</span>	<span class="t-b">fn</span>	src/util.rs</span><span class="ln out"><span class="t-c">contains:in:</span><span class="t-v">m:src/util.rs</span>	<span class="t-b">module</span>	src/util.rs</span><span class="ln out"><span class="t-t">## neighbors</span> <span class="t-v">s:src/store.rs#Order</span></span><span class="ln out"><span class="t-c">contains:in:</span><span class="t-v">m:src/store.rs</span>	<span class="t-b">module</span>	src/store.rs</span><span class="ln out"><span class="t-t">## read</span> <span class="t-v">s:src/util.rs#greet</span></span><span class="ln out"><span class="t-v">s:src/util.rs#greet</span>	<span class="t-b">fn</span>	src/util.rs</span><span class="ln out"><span class="t-k">pub</span> <span class="t-k">fn</span> <span class="t-f">greet</span>(name: &amp;<span class="t-b">str</span>) -&gt; <span class="t-b">String</span> {</span><span class="ln out">    <span class="t-f">format!</span>(<span class="t-s">"Hello, {}!"</span>, <span class="t-f">title_case</span>(name))</span><span class="ln out">}</span><span class="ln out"><span class="t-t">## read</span> <span class="t-v">s:src/store.rs#Order</span></span><span class="ln out"><span class="t-v">s:src/store.rs#Order</span>	<span class="t-b">struct</span>	src/store.rs</span><span class="ln out"><span class="t-k">pub</span> <span class="t-k">struct</span> <span class="t-f">Order</span> {</span><span class="ln out">    <span class="t-k">pub</span> id: <span class="t-b">u32</span>,</span><span class="ln out">    <span class="t-k">pub</span> item: <span class="t-b">String</span>,</span><span class="ln out">    <span class="t-k">pub</span> qty: <span class="t-b">u32</span>,</span><span class="ln out">}</span><span class="ln out"><span class="t-c"># end </span><span class="t-a">body_tokens</span><span class="t-c">=</span><span class="t-m">223</span><span class="t-c"> </span><span class="t-a">budget</span><span class="t-c">=</span><span class="t-m">800</span><span class="t-c"> </span><span class="t-a">dropped</span><span class="t-c">=</span><span class="t-m">0</span></span><span class="ln meta"># <b>exit 0</b> &middot; 822 bytes &middot; ~235 est. tokens</span><span class="ln gap"></span><span class="ln cmd"><span class="p">$ </span><span class="t-f">dctx</span> map find greet</span><span class="ln out"><span class="t-c"># kiosk find</span></span><span class="ln out"><span class="t-v">s:src/util.rs#greet</span>	<span class="t-b">fn</span>	<span class="t-m">L2-4</span></span><span class="ln out"><span class="t-v">s:web/app.ts#renderGreeting</span>	<span class="t-b">fn</span>	<span class="t-m">L10-12</span></span><span class="ln meta"># <b>exit 0</b> &middot; 79 bytes &middot; ~23 est. tokens</span><span class="ln gap"></span><span class="ln cmd"><span class="p">$ </span><span class="t-f">dctx</span> map neighbors <span class="t-s">'s:src/util.rs#greet'</span> <span class="t-a">--edge</span> calls <span class="t-a">--dir</span> in</span><span class="ln out"><span class="t-c"># kiosk neighbors</span></span><span class="ln out"><span class="t-c">calls:in:</span><span class="t-v">s:src/main.rs#main</span>	<span class="t-b">fn</span>	src/main.rs	<span class="t-m">L7</span></span><span class="ln meta"># <b>exit 0</b> &middot; 64 bytes &middot; ~19 est. tokens</span><span class="ln gap"></span><span class="ln cmd"><span class="p">$ </span><span class="t-f">dctx</span> map read <span class="t-s">'s:src/util.rs#greet'</span> <span class="t-a">--json</span></span><span class="ln out hdrl"># one JSON line; pretty-printed here</span><span class="ln out">{</span><span class="ln out"> <span class="t-a">"v"</span>: <span class="t-m">2</span>,</span><span class="ln out"> <span class="t-a">"place"</span>: <span class="t-s">"kiosk"</span>,</span><span class="ln out"> <span class="t-a">"verb"</span>: <span class="t-s">"read"</span>,</span><span class="ln out"> <span class="t-a">"freshness"</span>: {</span><span class="ln out">  <span class="t-a">"mode"</span>: <span class="t-s">"strict"</span>,</span><span class="ln out hdrl">… 33 more lines · <a href="/examples/#read-json">full output</a></span><span class="ln meta"># <b>exit 0</b> &middot; 561 bytes &middot; ~161 est. tokens</span></pre></div></div>
   </div>
  </div>
- <script type="application/json" id="scene-data">{"w":1200,"h":630,"files":[{"p":".env","s":"listed-not-read","x":337.0,"y":492.0},{"p":".gitignore","s":"packed","x":464.5,"y":157.0},{"p":"Cargo.toml","s":"packed","x":561.8,"y":433.5},{"p":"README.md","s":"packed","x":489.8,"y":357.6},{"p":"assets/logo.png","s":"binary","x":211.6,"y":405.5},{"p":"config.toml","s":"packed","x":104.4,"y":194.6},{"p":"src/main.rs","s":"packed","x":314.8,"y":278.9},{"p":"src/store.rs","s":"packed","x":500.7,"y":536.2},{"p":"src/util.rs","s":"packed","x":80.2,"y":236.6},{"p":"target/debug/kiosk.d","s":"ignored","x":453.6,"y":323.4},{"p":"tools/report.py","s":"packed","x":499.4,"y":115.0},{"p":"web/app.ts","s":"packed","x":388.9,"y":83.1},{"p":"web/format.ts","s":"packed","x":310.6,"y":136.8}],"nodes":[{"id":"d:README.md#Configuration","k":"heading","x":34.0,"y":285.3},{"id":"d:README.md#Orders","k":"heading","x":10.4,"y":266.8},{"id":"d:README.md#Run","k":"heading","x":29.3,"y":243.4},{"id":"d:README.md#kiosk","k":"heading","x":32.1,"y":213.5},{"id":"m:.gitignore","k":"module","x":80,"y":560},{"id":"m:Cargo.toml","k":"module","x":690,"y":110},{"id":"m:README.md","k":"module","x":70,"y":260},{"id":"m:assets/logo.png","k":"module","x":620,"y":585},{"id":"m:config.toml","k":"module","x":360,"y":545},{"id":"m:src/main.rs","k":"module","x":360,"y":300},{"id":"m:src/store.rs","k":"module","x":560,"y":430},{"id":"m:src/util.rs","k":"module","x":150,"y":420},{"id":"m:tools/report.py","k":"module","x":650,"y":255},{"id":"m:web/app.ts","k":"module","x":190,"y":150},{"id":"m:web/format.ts","k":"module","x":450,"y":95},{"id":"s:Cargo.toml#dependencies","k":"struct","x":690.9,"y":66.0},{"id":"s:Cargo.toml#package","k":"struct","x":711.3,"y":53.9},{"id":"s:Cargo.toml#package.description","k":"fn","x":718.5,"y":76.5},{"id":"s:Cargo.toml#package.edition","k":"fn","x":742.0,"y":80.1},{"id":"s:Cargo.toml#package.license","k":"fn","x":733.3,"y":102.1},{"id":"s:Cargo.toml#package.name","k":"fn","x":749.2,"y":119.8},{"id":"s:Cargo.toml#package.version","k":"fn","x":728.5,"y":131.3},{"id":"s:config.toml#orders","k":"struct","x":396.0,"y":570.2},{"id":"s:config.toml#orders.folder","k":"fn","x":387.7,"y":598.2},{"id":"s:config.toml#screen","k":"struct","x":360.0,"y":589.0},{"id":"s:config.toml#screen.currency","k":"fn","x":332.3,"y":598.2},{"id":"s:config.toml#screen.title","k":"fn","x":324.0,"y":570.2},{"id":"s:src/main.rs#main","k":"fn","x":360.0,"y":256.0},{"id":"s:src/store.rs#Order","k":"struct","x":603.3,"y":422.4},{"id":"s:src/store.rs#checksum","k":"fn","x":616.8,"y":449.2},{"id":"s:src/store.rs#encode","k":"fn","x":589.8,"y":462.4},{"id":"s:src/store.rs#save","k":"fn","x":574.5,"y":488.2},{"id":"s:src/util.rs#greet","k":"fn","x":118.4,"y":450.6},{"id":"s:src/util.rs#title_case","k":"fn","x":92.2,"y":436.0},{"id":"s:tools/report.py#main","k":"fn","x":690.5,"y":237.7},{"id":"s:tools/report.py#read_orders","k":"fn","x":709.7,"y":260.8},{"id":"s:web/app.ts#Line","k":"interface","x":147.1,"y":140.3},{"id":"s:web/app.ts#renderGreeting","k":"fn","x":145.0,"y":110.3},{"id":"s:web/app.ts#renderReceipt","k":"fn","x":175.0,"y":108.6},{"id":"s:web/format.ts#formatName","k":"fn","x":457.2,"y":51.6},{"id":"s:web/format.ts#formatPrice","k":"fn","x":487.0,"y":47.7}],"edges":[[9,10,"imports"],[9,11,"imports"],[12,34,"calls"],[13,39,"imports"],[13,40,"imports"],[27,31,"calls"],[27,32,"calls"],[30,29,"calls"],[31,30,"calls"],[32,33,"calls"],[34,35,"calls"],[37,39,"calls"],[38,40,"calls"]],"tree":[[5,15],[5,16],[5,17],[5,18],[5,19],[5,20],[5,21],[6,0],[6,1],[6,2],[6,3],[8,22],[8,23],[8,24],[8,25],[8,26],[9,27],[10,28],[10,29],[10,30],[10,31],[11,32],[11,33],[12,34],[12,35],[13,36],[13,37],[13,38],[14,39],[14,40]],"hit":32,"nbrs":[27,33],"bars":[{"w":221.9,"n":32,"h":1},{"w":80.1,"n":32,"h":1},{"w":172.6,"n":32,"h":0},{"w":234.2,"n":37,"h":0},{"w":80.1,"n":37,"h":1},{"w":221.9,"n":28,"h":0},{"w":209.6,"n":29,"h":0},{"w":209.6,"n":30,"h":0},{"w":197.2,"n":32,"h":1},{"w":283.5,"n":32,"h":0},{"w":314.3,"n":32,"h":0},{"w":289.7,"n":32,"h":0},{"w":203.4,"n":28,"h":1},{"w":295.8,"n":28,"h":0},{"w":166.4,"n":32,"h":1},{"w":215.7,"n":32,"h":0},{"w":221.9,"n":32,"h":0},{"w":265.0,"n":32,"h":0},{"w":6.2,"n":32,"h":0},{"w":172.6,"n":28,"h":1},{"w":271.2,"n":28,"h":0},{"w":110.9,"n":28,"h":0},{"w":98.6,"n":28,"h":0},{"w":129.4,"n":28,"h":0},{"w":104.8,"n":28,"h":0},{"w":6.2,"n":28,"h":0},{"w":258.9,"n":28,"h":1}],"frame":{"x":745,"y":112,"w":330,"h":379},"counts":{"disk":13,"listed":11,"read":10,"nodes":41,"edges":13,"body_tokens":223,"budget":800,"dropped":0}}</script>
+ <div class="wrap"><div class="flow" data-flow>
+ <div class="flow-head">
+  <h2 class="eyebrow" id="scene-h">On the sample project <a href="/examples/">kiosk</a>: one command, four steps</h2>
+  <p class="flow-cmd"><code><span class="p">$ </span><span class="t-f">dctx</span> pack . <span class="t-a">--for</span> <span class="t-s">'greet store'</span> <span class="t-a">--budget</span> 800</code>
+   <button class="tbtn" type="button" data-replay hidden>Replay</button></p>
+ </div>
+ <ol class="flow-steps">
+  <li class="fs fs-repo" data-step="1">
+   <div class="fs-head"><span class="n">1</span><b>repository</b><span class="n">2</span><b>policy</b></div>
+   <ul class="files" aria-label="Files of the sample project and what the policy did with each"><li class="f-warn" data-i="0"><span class="fp">.env</span><span class="tag" title="listed, never read">name only</span></li><li class="f-ok" data-i="1"><span class="fp">.gitignore</span><span class="tag" title="read">read</span></li><li class="f-ok" data-i="2"><span class="fp">Cargo.toml</span><span class="tag" title="read">read</span></li><li class="f-ok" data-i="3"><span class="fp">README.md</span><span class="tag" title="read">read</span></li><li class="f-skip" data-i="4"><span class="fp"><span class="dir">assets/</span>logo.png</span><span class="tag" title="not listed">binary</span></li><li class="f-ok" data-i="5"><span class="fp">config.toml</span><span class="tag" title="read">read</span></li><li class="f-ok" data-i="6"><span class="fp"><span class="dir">src/</span>main.rs</span><span class="tag" title="read">read</span></li><li class="f-ok" data-i="7"><span class="fp"><span class="dir">src/</span>store.rs</span><span class="tag" title="read">read</span></li><li class="f-ok" data-i="8"><span class="fp"><span class="dir">src/</span>util.rs</span><span class="tag" title="read">read</span></li><li class="f-skip" data-i="9"><span class="fp"><span class="dir">target/debug/</span>kiosk.d</span><span class="tag" title="not listed">ignored</span></li><li class="f-ok" data-i="10"><span class="fp"><span class="dir">tools/</span>report.py</span><span class="tag" title="read">read</span></li><li class="f-ok" data-i="11"><span class="fp"><span class="dir">web/</span>app.ts</span><span class="tag" title="read">read</span></li><li class="f-ok" data-i="12"><span class="fp"><span class="dir">web/</span>format.ts</span><span class="tag" title="read">read</span></li></ul>
+   <p class="fs-foot"><b>13</b> files on disk <span class="arr" aria-hidden="true">→</span> <b>11</b> listed, <b>10</b> read</p>
+  </li>
+  <li class="fs fs-graph" data-step="3">
+   <div class="fs-head"><span class="n">3</span><b>graph</b><span class="q">--for <q>greet store</q></span></div>
+   <svg class="graph" viewBox="0 0 767 303" role="img" aria-label="The symbol graph of the sample project: 41 nodes; the matches and their neighbours are highlighted"><line class="et" x1="693.6" y1="45.1" x2="694.5" y2="23.1"/><line class="et" x1="693.6" y1="45.1" x2="714.9" y2="17.1"/><line class="et" x1="693.6" y1="45.1" x2="722.1" y2="28.4"/><line class="et" x1="693.6" y1="45.1" x2="745.6" y2="30.2"/><line class="et" x1="693.6" y1="45.1" x2="736.9" y2="41.2"/><line class="et" x1="693.6" y1="45.1" x2="752.8" y2="50.0"/><line class="et" x1="693.6" y1="45.1" x2="732.1" y2="55.8"/><line class="et" x1="73.6" y1="120.2" x2="37.6" y2="132.8"/><line class="et" x1="73.6" y1="120.2" x2="14.0" y2="123.6"/><line class="et" x1="73.6" y1="120.2" x2="32.9" y2="111.8"/><line class="et" x1="73.6" y1="120.2" x2="35.7" y2="96.9"/><line class="et" x1="363.6" y1="262.6" x2="399.6" y2="275.2"/><line class="et" x1="363.6" y1="262.6" x2="391.3" y2="289.2"/><line class="et" x1="363.6" y1="262.6" x2="363.6" y2="284.6"/><line class="et" x1="363.6" y1="262.6" x2="335.9" y2="289.2"/><line class="et" x1="363.6" y1="262.6" x2="327.6" y2="275.2"/><line class="et" x1="363.6" y1="140.2" x2="363.6" y2="118.2"/><line class="et" x1="563.6" y1="205.2" x2="606.9" y2="201.3"/><line class="et" x1="563.6" y1="205.2" x2="620.4" y2="214.8"/><line class="et" x1="563.6" y1="205.2" x2="593.4" y2="221.3"/><line class="et" x1="563.6" y1="205.2" x2="578.1" y2="234.2"/><line class="et" x1="153.6" y1="200.2" x2="122.0" y2="215.5"/><line class="et" x1="153.6" y1="200.2" x2="95.8" y2="208.2"/><line class="et" x1="653.6" y1="117.7" x2="694.1" y2="109.0"/><line class="et" x1="653.6" y1="117.7" x2="713.3" y2="120.6"/><line class="et" x1="193.6" y1="65.2" x2="150.7" y2="60.3"/><line class="et" x1="193.6" y1="65.2" x2="148.6" y2="45.3"/><line class="et" x1="193.6" y1="65.2" x2="178.6" y2="44.4"/><line class="et" x1="453.6" y1="37.6" x2="460.8" y2="15.9"/><line class="et" x1="453.6" y1="37.6" x2="490.6" y2="14.0"/><line class="ec" x1="363.6" y1="140.2" x2="563.6" y2="205.2"/><line class="ec" x1="363.6" y1="140.2" x2="153.6" y2="200.2"/><line class="ec" x1="653.6" y1="117.7" x2="694.1" y2="109.0"/><line class="ec" x1="193.6" y1="65.2" x2="460.8" y2="15.9"/><line class="ec" x1="193.6" y1="65.2" x2="490.6" y2="14.0"/><line class="ec" x1="363.6" y1="118.2" x2="578.1" y2="234.2"/><line class="ec lit" x1="363.6" y1="118.2" x2="122.0" y2="215.5"/><line class="ec lit" x1="593.4" y1="221.3" x2="620.4" y2="214.8"/><line class="ec" x1="578.1" y1="234.2" x2="593.4" y2="221.3"/><line class="ec lit" x1="122.0" y1="215.5" x2="95.8" y2="208.2"/><line class="ec" x1="694.1" y1="109.0" x2="713.3" y2="120.6"/><line class="ec" x1="148.6" y1="45.3" x2="460.8" y2="15.9"/><line class="ec" x1="178.6" y1="44.4" x2="490.6" y2="14.0"/><circle cx="37.6" cy="132.8" r="5"/><circle cx="14.0" cy="123.6" r="5"/><circle cx="32.9" cy="111.8" r="5"/><circle cx="35.7" cy="96.9" r="5"/><circle class="mod" cx="83.6" cy="270.1" r="7"/><circle class="mod" cx="693.6" cy="45.1" r="7"/><circle class="mod" cx="73.6" cy="120.2" r="7"/><circle class="mod" cx="623.6" cy="282.6" r="7"/><circle class="mod" cx="363.6" cy="262.6" r="7"/><circle class="mod" cx="363.6" cy="140.2" r="7"/><circle class="nb" cx="563.6" cy="205.2" r="7"/><circle class="nb" cx="153.6" cy="200.2" r="7"/><circle class="mod" cx="653.6" cy="117.7" r="7"/><circle class="mod" cx="193.6" cy="65.2" r="7"/><circle class="mod" cx="453.6" cy="37.6" r="7"/><circle cx="694.5" cy="23.1" r="5"/><circle cx="714.9" cy="17.1" r="5"/><circle cx="722.1" cy="28.4" r="5"/><circle cx="745.6" cy="30.2" r="5"/><circle cx="736.9" cy="41.2" r="5"/><circle cx="752.8" cy="50.0" r="5"/><circle cx="732.1" cy="55.8" r="5"/><circle cx="399.6" cy="275.2" r="5"/><circle cx="391.3" cy="289.2" r="5"/><circle cx="363.6" cy="284.6" r="5"/><circle cx="335.9" cy="289.2" r="5"/><circle cx="327.6" cy="275.2" r="5"/><circle class="nb" cx="363.6" cy="118.2" r="5"/><circle class="hit" cx="606.9" cy="201.3" r="9"/><circle class="hit" cx="620.4" cy="214.8" r="9"/><circle class="hit" cx="593.4" cy="221.3" r="9"/><circle cx="578.1" cy="234.2" r="5"/><circle class="hit" cx="122.0" cy="215.5" r="9"/><circle class="nb" cx="95.8" cy="208.2" r="5"/><circle cx="694.1" cy="109.0" r="5"/><circle cx="713.3" cy="120.6" r="5"/><circle cx="150.7" cy="60.3" r="5"/><circle class="hit" cx="148.6" cy="45.3" r="9"/><circle cx="178.6" cy="44.4" r="5"/><circle cx="460.8" cy="15.9" r="5"/><circle cx="490.6" cy="14.0" r="5"/></svg>
+   <ol class="ranked" aria-label="What the query selected, in page order"><li class="r-find"><span class="rk">find greet</span><span class="rn"><i>fn</i> greet</span><span class="rw">src/util.rs:2-4</span></li><li class="r-find"><span class="rk">find greet</span><span class="rn"><i>fn</i> renderGreeting</span><span class="rw">web/app.ts:10-12</span></li><li class="r-find"><span class="rk">find store</span><span class="rn"><i>struct</i> Order</span><span class="rw">src/store.rs:4-8</span></li><li class="r-find"><span class="rk">find store</span><span class="rn"><i>fn</i> checksum</span><span class="rw">src/store.rs:22-24</span></li><li class="r-find"><span class="rk">find store</span><span class="rn"><i>fn</i> encode</span><span class="rw">src/store.rs:17-19</span></li><li class="r-near"><span class="rk">neighbor</span><span class="rn"><i>fn</i> main → greet</span><span class="rw">calls</span></li><li class="r-near"><span class="rk">neighbor</span><span class="rn"><i>fn</i> greet → title_case</span><span class="rw">calls</span></li><li class="r-read"><span class="rk">read</span><span class="rn"><i>fn</i> greet</span><span class="rw">source in the page</span></li><li class="r-read"><span class="rk">read</span><span class="rn"><i>struct</i> Order</span><span class="rw">source in the page</span></li></ol>
+   <p class="fs-foot"><b>41</b> nodes, <b>13</b> call/import edges</p>
+  </li>
+  <li class="fs fs-page" data-step="4">
+   <div class="fs-head"><span class="n">4</span><b>bounded page</b><span class="q">for the model</span></div>
+   <pre class="page" tabindex="0" aria-label="The page dctx printed, in full"><span class="pl"><span class="t-c"># dctx pack --for </span><span class="t-a">budget</span><span class="t-c">=</span><span class="t-m">800</span><span class="t-c"> </span><span class="t-a">terms</span><span class="t-c">=</span><span class="t-m">2</span></span><span class="pl"><span class="t-t">## find</span> <span class="t-v">greet</span></span><span class="pl"><span class="t-v">s:src/util.rs#greet</span>	<span class="t-b">fn</span>	<span class="t-m">L2-4</span></span><span class="pl"><span class="t-v">s:web/app.ts#renderGreeting</span>	<span class="t-b">fn</span>	<span class="t-m">L10-12</span></span><span class="pl"><span class="t-t">## find</span> <span class="t-v">store</span></span><span class="pl"><span class="t-v">s:src/store.rs#Order</span>	<span class="t-b">struct</span>	<span class="t-m">L4-8</span></span><span class="pl"><span class="t-v">s:src/store.rs#checksum</span>	<span class="t-b">fn</span>	<span class="t-m">L22-24</span></span><span class="pl"><span class="t-v">s:src/store.rs#encode</span>	<span class="t-b">fn</span>	<span class="t-m">L17-19</span></span><span class="pl"><span class="t-t">## neighbors</span> <span class="t-v">s:src/util.rs#greet</span></span><span class="pl"><span class="t-c">calls:in:</span><span class="t-v">s:src/main.rs#main</span>	<span class="t-b">fn</span>	src/main.rs	<span class="t-m">L7</span></span><span class="pl"><span class="t-c">calls:out:</span><span class="t-v">s:src/util.rs#title_case</span>	<span class="t-b">fn</span>	src/util.rs</span><span class="pl"><span class="t-c">contains:in:</span><span class="t-v">m:src/util.rs</span>	<span class="t-b">module</span>	src/util.rs</span><span class="pl"><span class="t-t">## neighbors</span> <span class="t-v">s:src/store.rs#Order</span></span><span class="pl"><span class="t-c">contains:in:</span><span class="t-v">m:src/store.rs</span>	<span class="t-b">module</span>	src/store.rs</span><span class="pl"><span class="t-t">## read</span> <span class="t-v">s:src/util.rs#greet</span></span><span class="pl"><span class="t-v">s:src/util.rs#greet</span>	<span class="t-b">fn</span>	src/util.rs</span><span class="pl"><span class="t-k">pub</span> <span class="t-k">fn</span> <span class="t-f">greet</span>(name: &amp;<span class="t-b">str</span>) -&gt; <span class="t-b">String</span> {</span><span class="pl">    <span class="t-f">format!</span>(<span class="t-s">"Hello, {}!"</span>, <span class="t-f">title_case</span>(name))</span><span class="pl">}</span><span class="pl"><span class="t-t">## read</span> <span class="t-v">s:src/store.rs#Order</span></span><span class="pl"><span class="t-v">s:src/store.rs#Order</span>	<span class="t-b">struct</span>	src/store.rs</span><span class="pl"><span class="t-k">pub</span> <span class="t-k">struct</span> <span class="t-f">Order</span> {</span><span class="pl">    <span class="t-k">pub</span> id: <span class="t-b">u32</span>,</span><span class="pl">    <span class="t-k">pub</span> item: <span class="t-b">String</span>,</span><span class="pl">    <span class="t-k">pub</span> qty: <span class="t-b">u32</span>,</span><span class="pl">}</span><span class="pl"><span class="t-c"># end </span><span class="t-a">body_tokens</span><span class="t-c">=</span><span class="t-m">223</span><span class="t-c"> </span><span class="t-a">budget</span><span class="t-c">=</span><span class="t-m">800</span><span class="t-c"> </span><span class="t-a">dropped</span><span class="t-c">=</span><span class="t-m">0</span></span></pre>
+   <svg class="meter" viewBox="0 0 800 8" preserveAspectRatio="none" role="img" aria-label="223 of 800 tokens used, 0 dropped"><rect width="800" height="8"/><rect class="used" width="223" height="8"/></svg>
+   <p class="fs-foot"><b>223</b> of 800 tokens, <b>0</b> dropped, same order every turn</p>
+  </li>
+ </ol>
+</div></div>
 </section>
 
-<section class="sec sec-status" id="status" aria-labelledby="status-h">
+<aside class="sec-status" id="status" aria-labelledby="status-h">
  <div class="wrap">
   <div class="status-panel">
-   <div class="status-copy">
+   <div class="status-main">
     <p class="eyebrow status-eyebrow">Project status &middot; in development since January 2026</p>
     <h2 id="status-h">Not yet stable. Working toward 2.0.</h2>
     <p>dctx is <strong>not yet stable</strong> and <strong>not enterprise-ready</strong>. Until version 2.0, expect breaking changes often.</p>
-    <p>Why: AI providers keep changing how they optimize context on their side. dctx adapts to those changes quickly, but not in real time. Stability arrives with 2.0, and the project is working toward it.</p>
+    <ol class="timeline" aria-label="Project timeline"><li class="tl-done"><b>January 2026</b><span>First commit 8 January 2026</span></li><li class="tl-now"><b>1.3.0 &middot; today</b><span>10 months in development at the 1.3.0 release; not yet stable</span></li><li class="tl-way"><b>denoising</b><span>Breaking changes are expected often until 2.0</span></li><li class="tl-goal"><b>2.0 &middot; stable</b><span>Stability is the goal of version 2.0, and the project is working toward it.</span></li></ol>
+   </div>
+   <div class="status-more status-wide"><p>Why: AI providers keep changing how they optimize context on their side. dctx adapts to those changes quickly, but not in real time. Stability arrives with 2.0, and the project is working toward it.</p>
     <p>Where it comes from: dctx began as an internal tool that was never meant to be open-sourced, so parts of it are still messy. It was opened up because colleagues who rely on it needed it in the open, and development continues in public.</p>
     <p class="status-thesis">We see an ultimate solution to this problem, and we are denoising it.</p>
-   </div>
-   <dl class="status-kv"><div><dt>Started</dt><dd><b>January 2026</b><span>First commit 8 January 2026; 10 months in development at the 1.3.0 release.</span></dd></div><div><dt>Today</dt><dd><b>1.3.0, not yet stable</b><span>Not enterprise-ready. Breaking changes are expected often until 2.0.</span></dd></div><div><dt>Stable</dt><dd><b>2.0</b><span>Stability is the goal of version 2.0, and the project is working toward it.</span></dd></div><div><dt>Promise</dt><dd><b>Zero dependencies</b><span>The principle dctx was founded on. Today dctx still has dependencies.</span></dd></div><div><dt>Goal</dt><dd><b>The single best context management tool</b><span>That is what dctx is being built to become.</span></dd></div></dl>
+    <dl class="status-kv"><div><dt>Promise</dt><dd><b>Zero dependencies</b><span>The principle dctx was founded on. Today dctx still has dependencies.</span></dd></div><div><dt>Goal</dt><dd><b>The single best context management tool</b><span>That is what dctx is being built to become.</span></dd></div></dl></div>
+   <details class="status-more status-narrow"><summary>Why, where it comes from, and the goal</summary><p>Why: AI providers keep changing how they optimize context on their side. dctx adapts to those changes quickly, but not in real time. Stability arrives with 2.0, and the project is working toward it.</p>
+    <p>Where it comes from: dctx began as an internal tool that was never meant to be open-sourced, so parts of it are still messy. It was opened up because colleagues who rely on it needed it in the open, and development continues in public.</p>
+    <p class="status-thesis">We see an ultimate solution to this problem, and we are denoising it.</p>
+    <dl class="status-kv"><div><dt>Promise</dt><dd><b>Zero dependencies</b><span>The principle dctx was founded on. Today dctx still has dependencies.</span></dd></div><div><dt>Goal</dt><dd><b>The single best context management tool</b><span>That is what dctx is being built to become.</span></dd></div></dl></details>
   </div>
  </div>
-</section>
+</aside>
 
 <section class="sec sec-paths" id="paths" aria-labelledby="notice-h">
  <div class="wrap">
-  <div class="callout" role="note"><h2 id="notice-h" class="notice-h">Advanced tool, several ways to use it</h2><p class="callout-text">dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.</p><p class="callout-sub">Status: Receipts are planned. The safe path uses the lean MCP profile, <code>dctx mcp --profile lean</code>.</p></div>
+  <div class="callout" role="note"><h2 id="notice-h" class="notice-h">Advanced tool, several ways to use it</h2><p class="callout-text">dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.</p><p class="callout-sub">Status: Receipts are planned. The safe path uses the lean MCP profile, <code>dctx mcp --profile lean</code>.</p><figure class="ways"><figcaption class="ways-hub"><b>dctx</b> one binary, local and offline</figcaption><ol class="ways-list"><li class="way"><a href="/docs/modalities/#human-one-off-pack-to-clipboard"><b>CLI pack</b></a><code class="way-cmd"><span class="p">$ </span><span class="t-f">dctx</span> pack .</code><p>Pack a project or one task into a bounded page for chat, scripts and shell agents.</p><p class="way-st">available</p></li><li class="way"><a href="/docs/map-mode/"><b>Map mode for agents</b></a><code class="way-cmd"><span class="p">$ </span><span class="t-f">dctx</span> map find greet</code><p>Find, then read by stable id, with skeleton for orientation, in big files and long sessions.</p><p class="way-st">available</p></li><li class="way"><a href="/docs/modalities/#mcp-server-convenient-tools-with-startup-context"><b>MCP server</b></a><code class="way-cmd"><span class="p">$ </span><span class="t-f">dctx</span> mcp <span class="t-a">--profile</span> lean</code><p><code>dctx mcp</code> serves the map verbs to Claude Code, Cursor and Codex; the lean profile keeps startup small.</p><p class="way-st">MCP available (stdio); ACP planned</p></li><li class="way"><a href="/docs/modalities/#rust-library-embed-the-facade"><b>Library and wrappers</b></a><code class="way-cmd">Rust · Python · Node · Go</code><p>Embed the engine in your own tool; the project pins its own binary and never re-implements engine logic.</p><p class="way-st">Rust from Git now; Python, Node and Go wrappers built in CI, registry publication pending</p></li></ol></figure></div>
   <p class="path-lead">Choose your path. Each one has its own setup, first command and pitfall:</p>
   <ul class="paths" data-path-select aria-label="Choose your path"><li class="path-card" data-path="giant-folder"><h3><a href="/start/giant-folder/">One giant folder</a></h3><p>You work inside one very large tree, for example a 200 GB monorepo, data or document folder.</p><p class="path-mod">System binary, scoped roots, ignore rules at each root you query.</p><p class="path-pit"><b>Pitfall:</b> Pointing an agent at the whole root.</p></li><li class="path-card" data-path="many-projects"><h3><a href="/start/many-projects/">Many smaller projects</a></h3><p>You move between many small and medium repositories during the day.</p><p class="path-mod">System binary, the lean MCP profile once in your agent, nothing per project.</p><p class="path-pit"><b>Pitfall:</b> Stale caches of projects you deleted or no longer use.</p></li><li class="path-card" data-path="library"><h3><a href="/start/library/">Agent builder embedding a library</a></h3><p>You build an agent, editor or tool and want dctx inside it.</p><p class="path-mod">Project library with its own pinned binary. The Python, Node and Go wrappers over <code>dctx rpc</code> are built and tested in CI, with registry publication pending; today use the Rust facade from a tagged Git dependency, or run a pinned CLI binary and read its <code>--json</code> output.</p><p class="path-pit"><b>Pitfall:</b> Re-implementing engine logic: parsing or slicing pack text, recounting budgets, rebuilding ids.</p></li><li class="path-card" data-path="team"><h3><a href="/start/team/">Team or organisation admin</a></h3><p>You roll dctx out to a team or a fleet of machines.</p><p class="path-mod">System binary distributed through your own package channel, one pinned version everywhere.</p><p class="path-pit"><b>Pitfall:</b> Mixing project and system versions without checking.</p></li></ul>
   <div class="anim-slot" data-anim="safe_path"><figure class="anim" data-anim="safe_path" data-v="1.3.0" data-q="greet store" data-b="800" data-end="# end body_tokens=223 budget=800 dropped=0"><div class="anim-view"><div class="anim-stage"><canvas aria-hidden="true"></canvas></div><div class="anim-bar"><span class="anim-step" data-step aria-hidden="true"></span><span class="anim-ctl" data-ctl hidden><button class="tbtn" type="button" data-pause aria-pressed="false"><span data-l>Pause</span><span class="visually-hidden"> animation: the safe path</span></button><button class="tbtn" type="button" data-replay>Replay<span class="visually-hidden"> animation: the safe path</span></button></span></div></div><figcaption><b>Measure before you change anything.</b> The safe path for a new user, with commands that exist in dctx 1.3.0. Receipts are planned.</figcaption><div class="anim-prose"><p>If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything. Step by step:</p><ol><li>A new user with one agent and one repository.</li><li>Install the system binary: download the archive for your platform from GitHub Releases, check it with <code>sha256sum -c SHA256SUMS --ignore-missing</code>, then run <code>dctx --version</code>.</li><li>Pick one project, not your home folder or a huge tree. The system binary serves it; nothing is installed per project.</li><li>Connect the lean MCP profile: <code>dctx mcp --profile lean /abs/path/to/app</code> exposes two tools, find and read, with compact descriptions, so fewer tool definitions ride along in every turn.</li><li>Make the first call, for example <code>dctx pack . --for &#x27;greet store&#x27; --budget 800</code>, and read its last line: <code># end body_tokens=223 budget=800 dropped=0</code> on the sample project.</li><li>Measure: per task, count the calls, the start-up tokens and the total input, and compare with grep and file reads on the same task. Receipts that count this for you are planned.</li><li>Only then change one thing at a time.</li></ol></div></figure></div>
@@ -217,102 +240,93 @@
 <p>These are real runs on the tiny <a href="https://github.com/Eris-Margeta/dctx/tree/main/tools/website/sample">kiosk sample</a>, captured by <a href="https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py">capture.py</a> from the release binary. Commands run inside a copy named <code>kiosk</code>. For source builds, the executable is <code>dctx-cli</code> (or define a <code>dctx</code> alias).</p>
 <h3 id="pack-a-project">Pack a project<a class="hd" href="#pack-a-project" aria-label="Link to Pack a project">#</a></h3>
 <p>The header explains the format, the tree assigns IDs, and file blocks carry paths and line counts. The first 40 output lines follow; only the tail is omitted. <code>.env</code> is listed without its contents.</p>
-<div class="hl"><pre><code>$ dctx pack .
-[DCTX_LLM_CONTEXT_SNAPSHOT_V1]
-[DIRECTORY:kiosk]
-&lt;INSTRUCTIONS&gt;
-1. Manifest: The &lt;DIRECTORY_TREE&gt; section lists all files.
-   - Each entry: [TYPE] RELATIVE_PATH (ID:UNIQUE_ID)
-   - TYPE is [D] for directory, [F] for file.
-2. Content Access: To read a specific file:
-   - Find its UNIQUE_ID from the directory tree.
-   - Search for the marker: &lt;FILE_CONTENT_START ID=&quot;UNIQUE_ID&quot;&gt;
-   - The content is between this marker and &lt;/FILE_CONTENT_END ID=&quot;UNIQUE_ID&quot;&gt;
-&lt;/INSTRUCTIONS&gt;
-&lt;DIRECTORY_TREE&gt;
-[D]  (ID:ROOT)
-  [F] .env (ID:F001)
-  [F] .gitignore (ID:F002)
-  [F] Cargo.toml (ID:F003)
-  [F] README.md (ID:F004)
-  [F] config.toml (ID:F005)
-  [D] src (ID:D006)
-    [F] src/main.rs (ID:F007)
-    [F] src/store.rs (ID:F008)
-    [F] src/util.rs (ID:F009)
-  [D] tools (ID:D010)
-    [F] tools/report.py (ID:F011)
-  [D] web (ID:D012)
-    [F] web/app.ts (ID:F013)
-    [F] web/format.ts (ID:F014)
-&lt;/DIRECTORY_TREE&gt;
-&lt;FILE_CONTENT_START ID=&quot;F001&quot; PATH=&quot;.env&quot; LINES=&quot;0&quot;&gt;
-[Content omitted by pattern rules]
-&lt;/FILE_CONTENT_END ID=&quot;F001&quot;&gt;
-&lt;FILE_CONTENT_START ID=&quot;F002&quot; PATH=&quot;.gitignore&quot; LINES=&quot;2&quot;&gt;
-target/
+<div class="hl" data-lang="shell"><pre><code><span class="p">$ </span><span class="t-f">dctx</span> pack .
+<span class="t-k">[DCTX_LLM_CONTEXT_SNAPSHOT_V1]</span>
+<span class="t-k">[DIRECTORY:kiosk]</span>
+<span class="t-t">&lt;INSTRUCTIONS</span><span class="t-t">&gt;</span>
+<span class="t-k">1.</span> Manifest: The <span class="t-t">&lt;DIRECTORY_TREE</span><span class="t-t">&gt;</span> section lists all files.
+   <span class="t-k">-</span> Each entry: [TYPE] RELATIVE_PATH (ID:UNIQUE_ID)
+   <span class="t-k">-</span> TYPE is [D] for directory, [F] for file.
+<span class="t-k">2.</span> Content Access: To read a specific file:
+   <span class="t-k">-</span> Find its UNIQUE_ID from the directory tree.
+   <span class="t-k">-</span> Search for the marker: <span class="t-t">&lt;FILE_CONTENT_START</span> <span class="t-a">ID</span>=<span class="t-s">"UNIQUE_ID"</span><span class="t-t">&gt;</span>
+   <span class="t-k">-</span> The content is between this marker and <span class="t-t">&lt;/FILE_CONTENT_END</span> <span class="t-a">ID</span>=<span class="t-s">"UNIQUE_ID"</span><span class="t-t">&gt;</span>
+<span class="t-t">&lt;/INSTRUCTIONS</span><span class="t-t">&gt;</span>
+<span class="t-t">&lt;DIRECTORY_TREE</span><span class="t-t">&gt;</span>
+<span class="t-k">[D]</span>  <span class="t-m">(ID:ROOT)</span>
+  <span class="t-k">[F]</span> .env <span class="t-m">(ID:F001)</span>
+  <span class="t-k">[F]</span> .gitignore <span class="t-m">(ID:F002)</span>
+  <span class="t-k">[F]</span> Cargo.toml <span class="t-m">(ID:F003)</span>
+  <span class="t-k">[F]</span> README.md <span class="t-m">(ID:F004)</span>
+  <span class="t-k">[F]</span> config.toml <span class="t-m">(ID:F005)</span>
+  <span class="t-k">[D]</span> src <span class="t-m">(ID:D006)</span>
+    <span class="t-k">[F]</span> src/main.rs <span class="t-m">(ID:F007)</span>
+    <span class="t-k">[F]</span> src/store.rs <span class="t-m">(ID:F008)</span>
+    <span class="t-k">[F]</span> src/util.rs <span class="t-m">(ID:F009)</span>
+  <span class="t-k">[D]</span> tools <span class="t-m">(ID:D010)</span>
+    <span class="t-k">[F]</span> tools/report.py <span class="t-m">(ID:F011)</span>
+  <span class="t-k">[D]</span> web <span class="t-m">(ID:D012)</span>
+    <span class="t-k">[F]</span> web/app.ts <span class="t-m">(ID:F013)</span>
+    <span class="t-k">[F]</span> web/format.ts <span class="t-m">(ID:F014)</span>
+<span class="t-t">&lt;/DIRECTORY_TREE</span><span class="t-t">&gt;</span>
+<span class="t-t">&lt;FILE_CONTENT_START</span> <span class="t-a">ID</span>=<span class="t-s">"F001"</span> <span class="t-a">PATH</span>=<span class="t-s">".env"</span> <span class="t-a">LINES</span>=<span class="t-s">"0"</span><span class="t-t">&gt;</span>
+<span class="t-c">[Content omitted by pattern rules]</span>
+<span class="t-t">&lt;/FILE_CONTENT_END</span> <span class="t-a">ID</span>=<span class="t-s">"F001"</span><span class="t-t">&gt;</span>
+<span class="t-t">&lt;FILE_CONTENT_START</span> <span class="t-a">ID</span>=<span class="t-s">"F002"</span> <span class="t-a">PATH</span>=<span class="t-s">".gitignore"</span> <span class="t-a">LINES</span>=<span class="t-s">"2"</span><span class="t-t">&gt;</span>
+target<span class="t-m">/</span>
 
-&lt;/FILE_CONTENT_END ID=&quot;F002&quot;&gt;
-&lt;FILE_CONTENT_START ID=&quot;F003&quot; PATH=&quot;Cargo.toml&quot; LINES=&quot;9&quot;&gt;
-[package]
-name = &quot;kiosk&quot;
-version = &quot;0.1.0&quot;
-edition = &quot;2021&quot;
-… (147 more lines)
-</code></pre></div>
-
+<span class="t-t">&lt;/FILE_CONTENT_END</span> <span class="t-a">ID</span>=<span class="t-s">"F002"</span><span class="t-t">&gt;</span>
+<span class="t-t">&lt;FILE_CONTENT_START</span> <span class="t-a">ID</span>=<span class="t-s">"F003"</span> <span class="t-a">PATH</span>=<span class="t-s">"Cargo.toml"</span> <span class="t-a">LINES</span>=<span class="t-s">"9"</span><span class="t-t">&gt;</span>
+<span class="t-t">[package]</span>
+<span class="t-a">name</span> = <span class="t-s">"kiosk"</span>
+<span class="t-a">version</span> = <span class="t-s">"0.1.0"</span>
+<span class="t-a">edition</span> = <span class="t-s">"2021"</span>
+<span class="t-c">… (147 more lines)</span></code></pre></div>
 <h3 id="find-a-symbol-then-read-it">Find a symbol, then read it<a class="hd" href="#find-a-symbol-then-read-it" aria-label="Link to Find a symbol, then read it">#</a></h3>
 <p>Pass the exact ID from <code>find</code> to <code>read</code> to get its metadata and verified source bytes:</p>
-<div class="hl"><pre><code>$ dctx map find greet
-# kiosk find
-s:src/util.rs#greet fn  L2-4
-s:web/app.ts#renderGreeting fn  L10-12
-</code></pre></div>
-
-<div class="hl"><pre><code>$ dctx map read &#39;s:src/util.rs#greet&#39;
-# kiosk read
+<div class="hl" data-lang="shell"><pre><code><span class="p">$ </span><span class="t-f">dctx</span> map find greet
+<span class="t-c"># kiosk find</span>
+s:src/util.rs#greet fn  L<span class="t-m">2</span>-<span class="t-m">4</span>
+s:web/app.ts#renderGreeting fn  L<span class="t-m">10</span>-<span class="t-m">12</span></code></pre></div>
+<div class="hl" data-lang="shell"><pre><code><span class="p">$ </span><span class="t-f">dctx</span> map read <span class="t-s">'s:src/util.rs#greet'</span>
+<span class="t-c"># kiosk read</span>
 s:src/util.rs#greet fn  src/util.rs
 pub fn greet(name: &amp;str) -&gt; String {
-    format!(&quot;Hello, {}!&quot;, title_case(name))
-}
-</code></pre></div>
-
+    format!("Hello, {}!", title_case(name))
+}</code></pre></div>
 <p>For structured consumption, <code>--json</code> puts the same source bytes in <code>source_utf8</code> (one JSON line, shown verbatim):</p>
-<div class="hl"><pre><code>$ dctx map read &#39;s:src/util.rs#greet&#39; --json
-{&quot;v&quot;:2,&quot;place&quot;:&quot;kiosk&quot;,&quot;verb&quot;:&quot;read&quot;,&quot;freshness&quot;:{&quot;mode&quot;:&quot;strict&quot;,&quot;state&quot;:&quot;verified&quot;},&quot;precision&quot;:{&quot;coverage&quot;:&quot;syntax&quot;,&quot;completion&quot;:&quot;complete&quot;,&quot;parser&quot;:&quot;dctx-lex-rust/syn-3.0.9&quot;},&quot;records&quot;:[{&quot;id&quot;:&quot;s:src/util.rs#greet&quot;,&quot;kind&quot;:&quot;fn&quot;,&quot;path&quot;:&quot;src/util.rs&quot;,&quot;lines&quot;:[2,4],&quot;summary&quot;:&quot;The greeting shown on the kiosk screen.&quot;,&quot;summary_source&quot;:&quot;doc&quot;,&quot;signature&quot;:null,&quot;span&quot;:[44,126],&quot;source_utf8&quot;:&quot;pub fn greet(name: &amp;str) -&gt; String {\n    format!(\&quot;Hello, {}!\&quot;, title_case(name))\n}&quot;,&quot;edge&quot;:null,&quot;direction&quot;:null,&quot;target&quot;:null,&quot;confidence&quot;:null}],&quot;more&quot;:0,&quot;next&quot;:null}
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="p">$ </span><span class="t-f">dctx</span> map read <span class="t-s">'s:src/util.rs#greet'</span> <span class="t-a">--json</span>
+{<span class="t-a">"v"</span>:<span class="t-m">2</span>,<span class="t-a">"place"</span>:<span class="t-s">"kiosk"</span>,<span class="t-a">"verb"</span>:<span class="t-s">"read"</span>,<span class="t-a">"freshness"</span>:{<span class="t-a">"mode"</span>:<span class="t-s">"strict"</span>,<span class="t-a">"state"</span>:<span class="t-s">"verified"</span>},<span class="t-a">"precision"</span>:{<span class="t-a">"coverage"</span>:<span class="t-s">"syntax"</span>,<span class="t-a">"completion"</span>:<span class="t-s">"complete"</span>,<span class="t-a">"parser"</span>:<span class="t-s">"dctx-lex-rust/syn-3.0.9"</span>},<span class="t-a">"records"</span>:[{<span class="t-a">"id"</span>:<span class="t-s">"s:src/util.rs#greet"</span>,<span class="t-a">"kind"</span>:<span class="t-s">"fn"</span>,<span class="t-a">"path"</span>:<span class="t-s">"src/util.rs"</span>,<span class="t-a">"lines"</span>:[<span class="t-m">2</span>,<span class="t-m">4</span>],<span class="t-a">"summary"</span>:<span class="t-s">"The greeting shown on the kiosk screen."</span>,<span class="t-a">"summary_source"</span>:<span class="t-s">"doc"</span>,<span class="t-a">"signature"</span>:<span class="t-k">null</span>,<span class="t-a">"span"</span>:[<span class="t-m">44</span>,<span class="t-m">126</span>],<span class="t-a">"source_utf8"</span>:<span class="t-s">"pub fn greet(name: &amp;str) -&gt; String {\n    format!(\"Hello, {}!\", title_case(name))\n}"</span>,<span class="t-a">"edge"</span>:<span class="t-k">null</span>,<span class="t-a">"direction"</span>:<span class="t-k">null</span>,<span class="t-a">"target"</span>:<span class="t-k">null</span>,<span class="t-a">"confidence"</span>:<span class="t-k">null</span>}],<span class="t-a">"more"</span>:<span class="t-m">0</span>,<span class="t-a">"next"</span>:<span class="t-k">null</span>}</code></pre></div>
 <h3 id="pack-for-a-task">Pack for a task<a class="hd" href="#pack-for-a-task" aria-label="Link to Pack for a task">#</a></h3>
 <p><code>--for</code> uses the task terms to select find results, neighbors and source reads. <code>--budget 800</code> bounds estimated output tokens, not scan size; the footer reports usage and dropped records.</p>
-<div class="hl"><pre><code>$ dctx pack . --for &#39;greet store&#39; --budget 800
-# dctx pack --for budget=800 terms=2
-## find greet
-s:src/util.rs#greet fn  L2-4
-s:web/app.ts#renderGreeting fn  L10-12
-## find store
-s:src/store.rs#Order    struct  L4-8
-s:src/store.rs#checksum fn  L22-24
-s:src/store.rs#encode   fn  L17-19
-## neighbors s:src/util.rs#greet
-calls:in:s:src/main.rs#main fn  src/main.rs L7
+<div class="hl" data-lang="shell"><pre><code><span class="p">$ </span><span class="t-f">dctx</span> pack . <span class="t-a">--for</span> <span class="t-s">'greet store'</span> <span class="t-a">--budget</span> 800
+<span class="t-c"># dctx pack --for </span><span class="t-a">budget</span><span class="t-c">=</span><span class="t-m">800</span><span class="t-c"> </span><span class="t-a">terms</span><span class="t-c">=</span><span class="t-m">2</span>
+<span class="t-t">## find</span> <span class="t-v">greet</span>
+s:src/util.rs#greet fn  L<span class="t-m">2</span>-<span class="t-m">4</span>
+s:web/app.ts#renderGreeting fn  L<span class="t-m">10</span>-<span class="t-m">12</span>
+<span class="t-t">## find</span> <span class="t-v">store</span>
+s:src/store.rs#Order    struct  L<span class="t-m">4</span>-<span class="t-m">8</span>
+s:src/store.rs#checksum fn  L<span class="t-m">22</span>-<span class="t-m">24</span>
+s:src/store.rs#encode   fn  L<span class="t-m">17</span>-<span class="t-m">19</span>
+<span class="t-t">## neighbors</span> <span class="t-v">s:src/util.rs#greet</span>
+calls:in:s:src/main.rs#main fn  src/main.rs L<span class="t-m">7</span>
 calls:out:s:src/util.rs#title_case  fn  src/util.rs
 contains:in:m:src/util.rs   module  src/util.rs
-## neighbors s:src/store.rs#Order
+<span class="t-t">## neighbors</span> <span class="t-v">s:src/store.rs#Order</span>
 contains:in:m:src/store.rs  module  src/store.rs
-## read s:src/util.rs#greet
+<span class="t-t">## read</span> <span class="t-v">s:src/util.rs#greet</span>
 s:src/util.rs#greet fn  src/util.rs
 pub fn greet(name: &amp;str) -&gt; String {
-    format!(&quot;Hello, {}!&quot;, title_case(name))
+    format!("Hello, {}!", title_case(name))
 }
-## read s:src/store.rs#Order
+<span class="t-t">## read</span> <span class="t-v">s:src/store.rs#Order</span>
 s:src/store.rs#Order    struct  src/store.rs
 pub struct Order {
-    pub id: u32,
+    pub id: u<span class="t-m">32</span>,
     pub item: String,
-    pub qty: u32,
+    pub qty: u<span class="t-m">32</span>,
 }
-# end body_tokens=223 budget=800 dropped=0
-</code></pre></div></div></div>
+<span class="t-c"># end </span><span class="t-a">body_tokens</span><span class="t-c">=</span><span class="t-m">223</span><span class="t-c"> </span><span class="t-a">budget</span><span class="t-c">=</span><span class="t-m">800</span><span class="t-c"> </span><span class="t-a">dropped</span><span class="t-c">=</span><span class="t-m">0</span></code></pre></div></div></div>
 </section>
 
 <section class="sec" id="proof" aria-labelledby="proof-h">
@@ -362,21 +376,21 @@ pub struct Order {
    <div>
     <h3>System binary <span class="state">available now</span></h3>
     <p>Download the archive for your OS from GitHub Releases, verify it against SHA256SUMS, extract it and put <code>dctx</code> on PATH. Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64. <a href="https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.0">GitHub Releases (v1.3.0)</a> <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/README.md#L56" title="Source: README.md">README</a></p>
-    <div class="code"><div class="code-head"><span>Quick start (README)</span><button class="copy" type="button" hidden>Copy</button></div><pre><code><span class="p">$ </span>mkdir dctx-demo
-<span class="p">$ </span>cd dctx-demo
-<span class="p">$ </span>printf &#x27;def hello(name):\n    return f&quot;Hello, {name}!&quot;\n&#x27; &gt; hello.py
-<span class="p">$ </span>dctx map skeleton hello.py</code></pre></div>
-    <div class="code"><div class="code-head"><span>From source (Rust 1.91 or newer)</span><button class="copy" type="button" hidden>Copy</button></div><pre><code><span class="p">$ </span>git clone https://github.com/Eris-Margeta/dctx
-<span class="p">$ </span>cd dctx
-<span class="p">$ </span>cargo build --locked --release -p dctx-cli
-<span class="p">$ </span>./target/release/dctx-cli --version
-<span class="p">$ </span>alias dctx=&quot;$PWD/target/release/dctx-cli&quot;</code></pre></div>
+    <div class="code"><div class="code-head"><span>Quick start (README)</span><button class="copy" type="button" hidden>Copy</button></div><pre><code><span class="p">$ </span><span class="t-f">mkdir</span> dctx-demo
+<span class="p">$ </span><span class="t-f">cd</span> dctx-demo
+<span class="p">$ </span><span class="t-f">printf</span> <span class="t-s">'def hello(name):\n    return f"Hello, {name}!"\n'</span> <span class="t-k">&gt;</span> <span class="t-f">hello.py</span>
+<span class="p">$ </span><span class="t-f">dctx</span> map skeleton hello.py</code></pre></div>
+    <div class="code"><div class="code-head"><span>From source (Rust 1.91 or newer)</span><button class="copy" type="button" hidden>Copy</button></div><pre><code><span class="p">$ </span><span class="t-f">git</span> clone https://github.com/Eris-Margeta/dctx
+<span class="p">$ </span><span class="t-f">cd</span> dctx
+<span class="p">$ </span><span class="t-f">cargo</span> build <span class="t-a">--locked</span> <span class="t-a">--release</span> <span class="t-a">-p</span> dctx-cli
+<span class="p">$ </span><span class="t-f">./target/release/dctx-cli</span> <span class="t-a">--version</span>
+<span class="p">$ </span><span class="t-k">alias</span> <span class="t-v">dctx</span>=<span class="t-s">"$PWD/target/release/dctx-cli"</span></code></pre></div>
    </div>
    <div>
     <h3>Project libraries <span class="state">registry publication pending</span></h3>
     <p>The Python, Node and Go wrappers over <code>dctx rpc</code> are built and tested in CI; their PyPI, npm and Go module publication is pending, as are <code>cargo install dctx-cli</code> and <code>npx dctx</code>. Today, embed the Rust facade from a tagged Git dependency.</p>
     <div class="code"><div class="code-head"><span>Cargo.toml (Rust facade, from Git today)</span><button class="copy" type="button" hidden>Copy</button></div><pre><code>[dependencies]
-dctx = { git = &quot;https://github.com/Eris-Margeta/dctx&quot;, tag = &quot;v1.3.0&quot; }</code></pre></div>
+dctx = { git = "https://github.com/Eris-Margeta/dctx", tag = "v1.3.0" }</code></pre></div>
     <h4>Two scopes, one binary</h4>
     <ul class="facts-list"><li>System binary: the <code>dctx</code> on PATH belongs to you and your agents, and you upgrade it. Interactive agents and MCP call this one.</li><li>Project binary (with the Python, Node and Go wrappers, registry publication pending): a binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Application code and CI call this one; a library never silently falls back to PATH.</li><li>Same engine, different owner. <code>dctx doctor</code> lists every binary in reach; verify each against SHA256SUMS and its cosign signature.</li></ul>
     <p class="note"><a href="/docs/modalities/">Compare modes, installs and status</a></p>
@@ -394,7 +408,8 @@ dctx = { git = &quot;https://github.com/Eris-Margeta/dctx&quot;, tag = &quot;v1.
     <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
     <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
     <p>An advanced tool with several ways to use it: <a href="/start/">start with the safe path</a>.</p>
-    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
+    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0</p>
+    <p class="ftr-prefs"><button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Animations: on</button></p>
    </div>
    <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/start/">Choose your path</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
    <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/for-ai-evaluators/">For AI evaluators</a></li><li><a href="/llms-small.txt">llms-small.txt</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>

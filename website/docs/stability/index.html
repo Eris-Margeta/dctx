@@ -12,7 +12,7 @@
   if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
   if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
 })();</script>
-<link rel="stylesheet" href="/assets/site.637c934a.css">
+<link rel="stylesheet" href="/assets/site.78d109a3.css">
 <link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
@@ -20,6 +20,7 @@
 <meta name="description" content="Protocol, raw answers and limits of the 33/33 measurement.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
+<meta name="dctx-build" content="5815d282ddf2f51f78d4c1f4044d8c5fe014c611a19674febc7d71438e67e237">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -59,7 +60,7 @@
 <link rel="alternate" type="text/markdown" href="/docs/stability/index.md" title="Byte-stability report as Markdown">
 <link rel="prev" href="/docs/benchmark/">
 <link rel="next" href="/docs/benchmark-oct/">
-<script src="/assets/page.da8d3bbd.js" defer></script>
+<script src="/assets/page.c246e049.js" defer></script>
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -112,7 +113,7 @@
    "name": "dctx",
    "softwareVersion": "1.3.0",
    "applicationCategory": "DeveloperApplication",
-   "operatingSystem": "Linux (x86_64 tested)",
+   "operatingSystem": "Linux, macOS, Windows",
    "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
    "url": "https://www.dctx.internet.technology/",
    "license": "https://www.apache.org/licenses/LICENSE-2.0",
@@ -211,7 +212,6 @@
   <nav class="nav" aria-label="Primary"><ul><li><a href="/start/">Start</a></li><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
   <div class="hdr-end">
    <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
-   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
    <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
    <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
     <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/start/">Start</a></li><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav></details>
@@ -376,24 +376,20 @@ contract remains a target. Other text fields, JSON compaction and provenance-tra
 contracts were not promoted to landed by this measurement.</p>
 <h2 id="exact-commands-and-exits">Exact commands and exits<a class="hd" href="#exact-commands-and-exits" aria-label="Link to Exact commands and exits">#</a></h2>
 <p>Run from <code>/path/to/workdir/codex/STAB-01R</code>:</p>
-<div class="hl"><pre><code><span class="t-nb">export</span><span class="t-w"> </span><span class="t-nv">PATH</span><span class="t-o">=</span><span class="t-nv">$HOME</span>/.cargo/bin:<span class="t-nv">$PATH</span>
-<span class="t-nb">export</span><span class="t-w"> </span><span class="t-nv">CARGO_TARGET_DIR</span><span class="t-o">=</span><span class="t-nv">$PWD</span>/.target-stab
-cargo<span class="t-w"> </span>--offline<span class="t-w"> </span>build<span class="t-w"> </span>--locked<span class="t-w"> </span>-p<span class="t-w"> </span>dctx-cli<span class="t-w"> </span>&gt;<span class="t-w"> </span>/tmp/stab-01-build.log<span class="t-w"> </span><span class="t-m">2</span>&gt;<span class="t-p">&amp;</span><span class="t-m">1</span>
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-k">export</span> <span class="t-v">PATH</span>=<span class="t-s">$HOME/.cargo/bin:$PATH</span>
+<span class="t-k">export</span> <span class="t-v">CARGO_TARGET_DIR</span>=<span class="t-s">$PWD/.target-stab</span>
+<span class="t-f">cargo</span> <span class="t-a">--offline</span> build <span class="t-a">--locked</span> <span class="t-a">-p</span> dctx-cli <span class="t-k">&gt;</span> <span class="t-f">/tmp/stab-01-build.log</span> 2<span class="t-k">&gt;</span><span class="t-k">&amp;</span><span class="t-f">1</span></code></pre></div>
 <p>Exit <strong>101</strong>: configured <code>sccache</code> failed with <code>Operation not permitted</code>, before
 compilation. A retry after <code>unset RUSTC_WRAPPER</code>, with output redirected to
 <code>/tmp/stab-01-build-no-wrapper.log</code>, also exited <strong>101</strong>: Cargo's user config still
 specified <code>build.rustc-wrapper = "sccache"</code>.</p>
-<div class="hl"><pre><code><span class="t-nb">export</span><span class="t-w"> </span><span class="t-nv">PATH</span><span class="t-o">=</span><span class="t-nv">$HOME</span>/.cargo/bin:<span class="t-nv">$PATH</span>
-<span class="t-nb">export</span><span class="t-w"> </span><span class="t-nv">CARGO_TARGET_DIR</span><span class="t-o">=</span><span class="t-nv">$PWD</span>/.target-stab
-<span class="t-nb">export</span><span class="t-w"> </span><span class="t-nv">RUSTC_WRAPPER</span><span class="t-o">=</span>
-cargo<span class="t-w"> </span>--offline<span class="t-w"> </span>build<span class="t-w"> </span>--locked<span class="t-w"> </span>-p<span class="t-w"> </span>dctx-cli<span class="t-w"> </span>&gt;<span class="t-w"> </span>/tmp/stab-01-build-direct.log<span class="t-w"> </span><span class="t-m">2</span>&gt;<span class="t-p">&amp;</span><span class="t-m">1</span>
-python3<span class="t-w"> </span>docs/research/stability-20261105/measure.py<span class="t-w"> </span>&gt;<span class="t-w"> </span>/tmp/stab-01-measure.log<span class="t-w"> </span><span class="t-m">2</span>&gt;<span class="t-p">&amp;</span><span class="t-m">1</span>
-python3<span class="t-w"> </span>docs/research/stability-20261105/verify.py
-git<span class="t-w"> </span>diff<span class="t-w"> </span>--check
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-k">export</span> <span class="t-v">PATH</span>=<span class="t-s">$HOME/.cargo/bin:$PATH</span>
+<span class="t-k">export</span> <span class="t-v">CARGO_TARGET_DIR</span>=<span class="t-s">$PWD/.target-stab</span>
+<span class="t-k">export</span> <span class="t-v">RUSTC_WRAPPER</span>=
+<span class="t-f">cargo</span> <span class="t-a">--offline</span> build <span class="t-a">--locked</span> <span class="t-a">-p</span> dctx-cli <span class="t-k">&gt;</span> <span class="t-f">/tmp/stab-01-build-direct.log</span> 2<span class="t-k">&gt;</span><span class="t-k">&amp;</span><span class="t-f">1</span>
+<span class="t-f">python3</span> docs/research/stability-20261105/measure.py <span class="t-k">&gt;</span> <span class="t-f">/tmp/stab-01-measure.log</span> 2<span class="t-k">&gt;</span><span class="t-k">&amp;</span><span class="t-f">1</span>
+<span class="t-f">python3</span> docs/research/stability-20261105/verify.py
+<span class="t-f">git</span> diff <span class="t-a">--check</span></code></pre></div>
 <p>Exits: build <strong>0</strong>; measurement <strong>0</strong>; independent raw-data audit <strong>0</strong>;
 <code>git diff --check</code> <strong>0</strong>. Build logs and <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/measurement.txt"><code>measurement.txt</code></a> are
 preserved here. <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/commands.md"><code>commands.md</code></a> lists every query shape and setup/control
@@ -415,7 +411,8 @@ historical source.</p><nav class="pager" aria-label="Previous and next"><a class
     <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
     <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
     <p>An advanced tool with several ways to use it: <a href="/start/">start with the safe path</a>.</p>
-    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
+    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0</p>
+    <p class="ftr-prefs"><button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Animations: on</button></p>
    </div>
    <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/start/">Choose your path</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
    <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/for-ai-evaluators/">For AI evaluators</a></li><li><a href="/llms-small.txt">llms-small.txt</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>

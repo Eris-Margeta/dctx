@@ -12,7 +12,7 @@
   if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
   if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
 })();</script>
-<link rel="stylesheet" href="/assets/site.637c934a.css">
+<link rel="stylesheet" href="/assets/site.78d109a3.css">
 <link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
@@ -20,6 +20,7 @@
 <meta name="description" content="Installation, quick start, map mode, language tiers and the CLI reference.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
+<meta name="dctx-build" content="5815d282ddf2f51f78d4c1f4044d8c5fe014c611a19674febc7d71438e67e237">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -59,7 +60,7 @@
 <link rel="alternate" type="text/markdown" href="/docs/readme/index.md" title="README as Markdown">
 <link rel="prev" href="/why/">
 <link rel="next" href="/docs/start/">
-<script src="/assets/page.da8d3bbd.js" defer></script>
+<script src="/assets/page.c246e049.js" defer></script>
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -112,7 +113,7 @@
    "name": "dctx",
    "softwareVersion": "1.3.0",
    "applicationCategory": "DeveloperApplication",
-   "operatingSystem": "Linux (x86_64 tested)",
+   "operatingSystem": "Linux, macOS, Windows",
    "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
    "url": "https://www.dctx.internet.technology/",
    "license": "https://www.apache.org/licenses/LICENSE-2.0",
@@ -211,7 +212,6 @@
   <nav class="nav" aria-label="Primary"><ul><li><a href="/start/">Start</a></li><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
   <div class="hdr-end">
    <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
-   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
    <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
    <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
     <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/start/">Start</a></li><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav></details>
@@ -234,9 +234,7 @@ compare its SHA-256 with the matching entry in <code>SHA256SUMS</code>, extract 
 macOS x64/ARM64 and Windows x64. Releases after 1.2.0 also ship cosign signatures,
 a CycloneDX SBOM, build provenance and offline bundles; see
 <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/VERIFYING.md">verification, provenance and offline installation</a>.</p>
-<div class="hl"><pre><code>dctx<span class="t-w"> </span>--version
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> <span class="t-a">--version</span></code></pre></div>
 <p><strong>Project wrappers — built and tested in CI, registry publication pending.</strong> The
 <a href="https://github.com/Eris-Margeta/dctx/blob/main/packages/python/README.md">Python</a>, <a href="https://github.com/Eris-Margeta/dctx/blob/main/packaging/npm/dctx/README.md">Node</a> and
 <a href="https://github.com/Eris-Margeta/dctx/blob/main/packages/go/README.md">Go</a> wrappers over <code>dctx rpc</code> are built and tested in CI,
@@ -250,103 +248,93 @@ for one project, lean MCP setup and whole-session measurement.</p>
 <p>These are real runs on the tiny <a href="https://github.com/Eris-Margeta/dctx/tree/main/tools/website/sample">kiosk sample</a>, captured by <a href="https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py">capture.py</a> from the release binary. Commands run inside a copy named <code>kiosk</code>. For source builds, the executable is <code>dctx-cli</code> (or define a <code>dctx</code> alias).</p>
 <h3 id="pack-a-project">Pack a project<a class="hd" href="#pack-a-project" aria-label="Link to Pack a project">#</a></h3>
 <p>The header explains the format, the tree assigns IDs, and file blocks carry paths and line counts. The first 40 output lines follow; only the tail is omitted. <code>.env</code> is listed without its contents.</p>
-<div class="hl"><pre><code>$ dctx pack .
-[DCTX_LLM_CONTEXT_SNAPSHOT_V1]
-[DIRECTORY:kiosk]
-&lt;INSTRUCTIONS&gt;
-1. Manifest: The &lt;DIRECTORY_TREE&gt; section lists all files.
-   - Each entry: [TYPE] RELATIVE_PATH (ID:UNIQUE_ID)
-   - TYPE is [D] for directory, [F] for file.
-2. Content Access: To read a specific file:
-   - Find its UNIQUE_ID from the directory tree.
-   - Search for the marker: &lt;FILE_CONTENT_START ID=&quot;UNIQUE_ID&quot;&gt;
-   - The content is between this marker and &lt;/FILE_CONTENT_END ID=&quot;UNIQUE_ID&quot;&gt;
-&lt;/INSTRUCTIONS&gt;
-&lt;DIRECTORY_TREE&gt;
-[D]  (ID:ROOT)
-  [F] .env (ID:F001)
-  [F] .gitignore (ID:F002)
-  [F] Cargo.toml (ID:F003)
-  [F] README.md (ID:F004)
-  [F] config.toml (ID:F005)
-  [D] src (ID:D006)
-    [F] src/main.rs (ID:F007)
-    [F] src/store.rs (ID:F008)
-    [F] src/util.rs (ID:F009)
-  [D] tools (ID:D010)
-    [F] tools/report.py (ID:F011)
-  [D] web (ID:D012)
-    [F] web/app.ts (ID:F013)
-    [F] web/format.ts (ID:F014)
-&lt;/DIRECTORY_TREE&gt;
-&lt;FILE_CONTENT_START ID=&quot;F001&quot; PATH=&quot;.env&quot; LINES=&quot;0&quot;&gt;
-[Content omitted by pattern rules]
-&lt;/FILE_CONTENT_END ID=&quot;F001&quot;&gt;
-&lt;FILE_CONTENT_START ID=&quot;F002&quot; PATH=&quot;.gitignore&quot; LINES=&quot;2&quot;&gt;
-target/
+<div class="hl" data-lang="shell"><pre><code><span class="p">$ </span><span class="t-f">dctx</span> pack .
+<span class="t-k">[DCTX_LLM_CONTEXT_SNAPSHOT_V1]</span>
+<span class="t-k">[DIRECTORY:kiosk]</span>
+<span class="t-t">&lt;INSTRUCTIONS</span><span class="t-t">&gt;</span>
+<span class="t-k">1.</span> Manifest: The <span class="t-t">&lt;DIRECTORY_TREE</span><span class="t-t">&gt;</span> section lists all files.
+   <span class="t-k">-</span> Each entry: [TYPE] RELATIVE_PATH (ID:UNIQUE_ID)
+   <span class="t-k">-</span> TYPE is [D] for directory, [F] for file.
+<span class="t-k">2.</span> Content Access: To read a specific file:
+   <span class="t-k">-</span> Find its UNIQUE_ID from the directory tree.
+   <span class="t-k">-</span> Search for the marker: <span class="t-t">&lt;FILE_CONTENT_START</span> <span class="t-a">ID</span>=<span class="t-s">"UNIQUE_ID"</span><span class="t-t">&gt;</span>
+   <span class="t-k">-</span> The content is between this marker and <span class="t-t">&lt;/FILE_CONTENT_END</span> <span class="t-a">ID</span>=<span class="t-s">"UNIQUE_ID"</span><span class="t-t">&gt;</span>
+<span class="t-t">&lt;/INSTRUCTIONS</span><span class="t-t">&gt;</span>
+<span class="t-t">&lt;DIRECTORY_TREE</span><span class="t-t">&gt;</span>
+<span class="t-k">[D]</span>  <span class="t-m">(ID:ROOT)</span>
+  <span class="t-k">[F]</span> .env <span class="t-m">(ID:F001)</span>
+  <span class="t-k">[F]</span> .gitignore <span class="t-m">(ID:F002)</span>
+  <span class="t-k">[F]</span> Cargo.toml <span class="t-m">(ID:F003)</span>
+  <span class="t-k">[F]</span> README.md <span class="t-m">(ID:F004)</span>
+  <span class="t-k">[F]</span> config.toml <span class="t-m">(ID:F005)</span>
+  <span class="t-k">[D]</span> src <span class="t-m">(ID:D006)</span>
+    <span class="t-k">[F]</span> src/main.rs <span class="t-m">(ID:F007)</span>
+    <span class="t-k">[F]</span> src/store.rs <span class="t-m">(ID:F008)</span>
+    <span class="t-k">[F]</span> src/util.rs <span class="t-m">(ID:F009)</span>
+  <span class="t-k">[D]</span> tools <span class="t-m">(ID:D010)</span>
+    <span class="t-k">[F]</span> tools/report.py <span class="t-m">(ID:F011)</span>
+  <span class="t-k">[D]</span> web <span class="t-m">(ID:D012)</span>
+    <span class="t-k">[F]</span> web/app.ts <span class="t-m">(ID:F013)</span>
+    <span class="t-k">[F]</span> web/format.ts <span class="t-m">(ID:F014)</span>
+<span class="t-t">&lt;/DIRECTORY_TREE</span><span class="t-t">&gt;</span>
+<span class="t-t">&lt;FILE_CONTENT_START</span> <span class="t-a">ID</span>=<span class="t-s">"F001"</span> <span class="t-a">PATH</span>=<span class="t-s">".env"</span> <span class="t-a">LINES</span>=<span class="t-s">"0"</span><span class="t-t">&gt;</span>
+<span class="t-c">[Content omitted by pattern rules]</span>
+<span class="t-t">&lt;/FILE_CONTENT_END</span> <span class="t-a">ID</span>=<span class="t-s">"F001"</span><span class="t-t">&gt;</span>
+<span class="t-t">&lt;FILE_CONTENT_START</span> <span class="t-a">ID</span>=<span class="t-s">"F002"</span> <span class="t-a">PATH</span>=<span class="t-s">".gitignore"</span> <span class="t-a">LINES</span>=<span class="t-s">"2"</span><span class="t-t">&gt;</span>
+target<span class="t-m">/</span>
 
-&lt;/FILE_CONTENT_END ID=&quot;F002&quot;&gt;
-&lt;FILE_CONTENT_START ID=&quot;F003&quot; PATH=&quot;Cargo.toml&quot; LINES=&quot;9&quot;&gt;
-[package]
-name = &quot;kiosk&quot;
-version = &quot;0.1.0&quot;
-edition = &quot;2021&quot;
-… (147 more lines)
-</code></pre></div>
-
+<span class="t-t">&lt;/FILE_CONTENT_END</span> <span class="t-a">ID</span>=<span class="t-s">"F002"</span><span class="t-t">&gt;</span>
+<span class="t-t">&lt;FILE_CONTENT_START</span> <span class="t-a">ID</span>=<span class="t-s">"F003"</span> <span class="t-a">PATH</span>=<span class="t-s">"Cargo.toml"</span> <span class="t-a">LINES</span>=<span class="t-s">"9"</span><span class="t-t">&gt;</span>
+<span class="t-t">[package]</span>
+<span class="t-a">name</span> = <span class="t-s">"kiosk"</span>
+<span class="t-a">version</span> = <span class="t-s">"0.1.0"</span>
+<span class="t-a">edition</span> = <span class="t-s">"2021"</span>
+<span class="t-c">… (147 more lines)</span></code></pre></div>
 <h3 id="find-a-symbol-then-read-it">Find a symbol, then read it<a class="hd" href="#find-a-symbol-then-read-it" aria-label="Link to Find a symbol, then read it">#</a></h3>
 <p>Pass the exact ID from <code>find</code> to <code>read</code> to get its metadata and verified source bytes:</p>
-<div class="hl"><pre><code>$ dctx map find greet
-# kiosk find
-s:src/util.rs#greet fn  L2-4
-s:web/app.ts#renderGreeting fn  L10-12
-</code></pre></div>
-
-<div class="hl"><pre><code>$ dctx map read &#39;s:src/util.rs#greet&#39;
-# kiosk read
+<div class="hl" data-lang="shell"><pre><code><span class="p">$ </span><span class="t-f">dctx</span> map find greet
+<span class="t-c"># kiosk find</span>
+s:src/util.rs#greet fn  L<span class="t-m">2</span>-<span class="t-m">4</span>
+s:web/app.ts#renderGreeting fn  L<span class="t-m">10</span>-<span class="t-m">12</span></code></pre></div>
+<div class="hl" data-lang="shell"><pre><code><span class="p">$ </span><span class="t-f">dctx</span> map read <span class="t-s">'s:src/util.rs#greet'</span>
+<span class="t-c"># kiosk read</span>
 s:src/util.rs#greet fn  src/util.rs
 pub fn greet(name: &amp;str) -&gt; String {
-    format!(&quot;Hello, {}!&quot;, title_case(name))
-}
-</code></pre></div>
-
+    format!("Hello, {}!", title_case(name))
+}</code></pre></div>
 <p>For structured consumption, <code>--json</code> puts the same source bytes in <code>source_utf8</code> (one JSON line, shown verbatim):</p>
-<div class="hl"><pre><code>$ dctx map read &#39;s:src/util.rs#greet&#39; --json
-{&quot;v&quot;:2,&quot;place&quot;:&quot;kiosk&quot;,&quot;verb&quot;:&quot;read&quot;,&quot;freshness&quot;:{&quot;mode&quot;:&quot;strict&quot;,&quot;state&quot;:&quot;verified&quot;},&quot;precision&quot;:{&quot;coverage&quot;:&quot;syntax&quot;,&quot;completion&quot;:&quot;complete&quot;,&quot;parser&quot;:&quot;dctx-lex-rust/syn-3.0.9&quot;},&quot;records&quot;:[{&quot;id&quot;:&quot;s:src/util.rs#greet&quot;,&quot;kind&quot;:&quot;fn&quot;,&quot;path&quot;:&quot;src/util.rs&quot;,&quot;lines&quot;:[2,4],&quot;summary&quot;:&quot;The greeting shown on the kiosk screen.&quot;,&quot;summary_source&quot;:&quot;doc&quot;,&quot;signature&quot;:null,&quot;span&quot;:[44,126],&quot;source_utf8&quot;:&quot;pub fn greet(name: &amp;str) -&gt; String {\n    format!(\&quot;Hello, {}!\&quot;, title_case(name))\n}&quot;,&quot;edge&quot;:null,&quot;direction&quot;:null,&quot;target&quot;:null,&quot;confidence&quot;:null}],&quot;more&quot;:0,&quot;next&quot;:null}
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="p">$ </span><span class="t-f">dctx</span> map read <span class="t-s">'s:src/util.rs#greet'</span> <span class="t-a">--json</span>
+{<span class="t-a">"v"</span>:<span class="t-m">2</span>,<span class="t-a">"place"</span>:<span class="t-s">"kiosk"</span>,<span class="t-a">"verb"</span>:<span class="t-s">"read"</span>,<span class="t-a">"freshness"</span>:{<span class="t-a">"mode"</span>:<span class="t-s">"strict"</span>,<span class="t-a">"state"</span>:<span class="t-s">"verified"</span>},<span class="t-a">"precision"</span>:{<span class="t-a">"coverage"</span>:<span class="t-s">"syntax"</span>,<span class="t-a">"completion"</span>:<span class="t-s">"complete"</span>,<span class="t-a">"parser"</span>:<span class="t-s">"dctx-lex-rust/syn-3.0.9"</span>},<span class="t-a">"records"</span>:[{<span class="t-a">"id"</span>:<span class="t-s">"s:src/util.rs#greet"</span>,<span class="t-a">"kind"</span>:<span class="t-s">"fn"</span>,<span class="t-a">"path"</span>:<span class="t-s">"src/util.rs"</span>,<span class="t-a">"lines"</span>:[<span class="t-m">2</span>,<span class="t-m">4</span>],<span class="t-a">"summary"</span>:<span class="t-s">"The greeting shown on the kiosk screen."</span>,<span class="t-a">"summary_source"</span>:<span class="t-s">"doc"</span>,<span class="t-a">"signature"</span>:<span class="t-k">null</span>,<span class="t-a">"span"</span>:[<span class="t-m">44</span>,<span class="t-m">126</span>],<span class="t-a">"source_utf8"</span>:<span class="t-s">"pub fn greet(name: &amp;str) -&gt; String {\n    format!(\"Hello, {}!\", title_case(name))\n}"</span>,<span class="t-a">"edge"</span>:<span class="t-k">null</span>,<span class="t-a">"direction"</span>:<span class="t-k">null</span>,<span class="t-a">"target"</span>:<span class="t-k">null</span>,<span class="t-a">"confidence"</span>:<span class="t-k">null</span>}],<span class="t-a">"more"</span>:<span class="t-m">0</span>,<span class="t-a">"next"</span>:<span class="t-k">null</span>}</code></pre></div>
 <h3 id="pack-for-a-task">Pack for a task<a class="hd" href="#pack-for-a-task" aria-label="Link to Pack for a task">#</a></h3>
 <p><code>--for</code> uses the task terms to select find results, neighbors and source reads. <code>--budget 800</code> bounds estimated output tokens, not scan size; the footer reports usage and dropped records.</p>
-<div class="hl"><pre><code>$ dctx pack . --for &#39;greet store&#39; --budget 800
-# dctx pack --for budget=800 terms=2
-## find greet
-s:src/util.rs#greet fn  L2-4
-s:web/app.ts#renderGreeting fn  L10-12
-## find store
-s:src/store.rs#Order    struct  L4-8
-s:src/store.rs#checksum fn  L22-24
-s:src/store.rs#encode   fn  L17-19
-## neighbors s:src/util.rs#greet
-calls:in:s:src/main.rs#main fn  src/main.rs L7
+<div class="hl" data-lang="shell"><pre><code><span class="p">$ </span><span class="t-f">dctx</span> pack . <span class="t-a">--for</span> <span class="t-s">'greet store'</span> <span class="t-a">--budget</span> 800
+<span class="t-c"># dctx pack --for </span><span class="t-a">budget</span><span class="t-c">=</span><span class="t-m">800</span><span class="t-c"> </span><span class="t-a">terms</span><span class="t-c">=</span><span class="t-m">2</span>
+<span class="t-t">## find</span> <span class="t-v">greet</span>
+s:src/util.rs#greet fn  L<span class="t-m">2</span>-<span class="t-m">4</span>
+s:web/app.ts#renderGreeting fn  L<span class="t-m">10</span>-<span class="t-m">12</span>
+<span class="t-t">## find</span> <span class="t-v">store</span>
+s:src/store.rs#Order    struct  L<span class="t-m">4</span>-<span class="t-m">8</span>
+s:src/store.rs#checksum fn  L<span class="t-m">22</span>-<span class="t-m">24</span>
+s:src/store.rs#encode   fn  L<span class="t-m">17</span>-<span class="t-m">19</span>
+<span class="t-t">## neighbors</span> <span class="t-v">s:src/util.rs#greet</span>
+calls:in:s:src/main.rs#main fn  src/main.rs L<span class="t-m">7</span>
 calls:out:s:src/util.rs#title_case  fn  src/util.rs
 contains:in:m:src/util.rs   module  src/util.rs
-## neighbors s:src/store.rs#Order
+<span class="t-t">## neighbors</span> <span class="t-v">s:src/store.rs#Order</span>
 contains:in:m:src/store.rs  module  src/store.rs
-## read s:src/util.rs#greet
+<span class="t-t">## read</span> <span class="t-v">s:src/util.rs#greet</span>
 s:src/util.rs#greet fn  src/util.rs
 pub fn greet(name: &amp;str) -&gt; String {
-    format!(&quot;Hello, {}!&quot;, title_case(name))
+    format!("Hello, {}!", title_case(name))
 }
-## read s:src/store.rs#Order
+<span class="t-t">## read</span> <span class="t-v">s:src/store.rs#Order</span>
 s:src/store.rs#Order    struct  src/store.rs
 pub struct Order {
-    pub id: u32,
+    pub id: u<span class="t-m">32</span>,
     pub item: String,
-    pub qty: u32,
+    pub qty: u<span class="t-m">32</span>,
 }
-# end body_tokens=223 budget=800 dropped=0
-</code></pre></div>
-
+<span class="t-c"># end </span><span class="t-a">body_tokens</span><span class="t-c">=</span><span class="t-m">223</span><span class="t-c"> </span><span class="t-a">budget</span><span class="t-c">=</span><span class="t-m">800</span><span class="t-c"> </span><span class="t-a">dropped</span><span class="t-c">=</span><span class="t-m">0</span></code></pre></div>
 <h2 id="which-mode">Which mode?<a class="hd" href="#which-mode" aria-label="Link to Which mode?">#</a></h2>
 <ul>
 <li><a href="/docs/modalities/#human-one-off-pack-to-clipboard">CLI and one-off chat</a>: pack selected source for a prompt or use the interactive terminal.</li>
@@ -384,32 +372,26 @@ dctx does not use embeddings; it selects lexical symbols and document sections.<
 <a href="/docs/spec/#2-the-core-belief-prompt-processing-efficiency">testable constraints</a>.</p>
 <h2 id="quick-start">Quick Start<a class="hd" href="#quick-start" aria-label="Link to Quick Start">#</a></h2>
 <p>Try a tiny project (POSIX shell; on Windows use Git Bash):</p>
-<div class="hl"><pre><code>mkdir<span class="t-w"> </span>dctx-demo
-<span class="t-nb">cd</span><span class="t-w"> </span>dctx-demo
-<span class="t-nb">printf</span><span class="t-w"> </span><span class="t-s1">&#39;def hello(name):\n    return f&quot;Hello, {name}!&quot;\n&#39;</span><span class="t-w"> </span>&gt;<span class="t-w"> </span>hello.py
-dctx<span class="t-w"> </span>map<span class="t-w"> </span>skeleton<span class="t-w"> </span>hello.py
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">mkdir</span> dctx-demo
+<span class="t-f">cd</span> dctx-demo
+<span class="t-f">printf</span> <span class="t-s">'def hello(name):\n    return f"Hello, {name}!"\n'</span> <span class="t-k">&gt;</span> <span class="t-f">hello.py</span>
+<span class="t-f">dctx</span> map skeleton hello.py</code></pre></div>
 <p>Use the <a href="/docs/start/#safe-path-in-ten-minutes">safe path</a> or the
 <a href="https://github.com/Eris-Margeta/dctx/blob/main/examples/README.md">runnable pack and map example</a>. For repeated agent work,
 see <a href="/docs/map-mode/">Map mode: context for agents</a> and the
 <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/guides/MCP.md">MCP client guide</a>.</p>
 <h2 id="map-mode-context-for-agents">Map mode: context for agents<a class="hd" href="#map-mode-context-for-agents" aria-label="Link to Map mode: context for agents">#</a></h2>
 <p>From this repository's root:</p>
-<div class="hl"><pre><code>dctx<span class="t-w"> </span>map<span class="t-w"> </span>find<span class="t-w"> </span><span class="t-s2">&quot;Session&quot;</span>
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> map find <span class="t-s">"Session"</span></code></pre></div>
 <p>Read exact IDs from the result with <code>dctx map read 'ID' --json</code>.
 See the <a href="/docs/map-mode/">map guide</a> for commands, budgets and limits.</p>
 <h2 id="from-source">From source<a class="hd" href="#from-source" aria-label="Link to From source">#</a></h2>
 <p>Requires Rust 1.91 or newer.</p>
-<div class="hl"><pre><code>git<span class="t-w"> </span>clone<span class="t-w"> </span>https://github.com/Eris-Margeta/dctx
-<span class="t-nb">cd</span><span class="t-w"> </span>dctx
-cargo<span class="t-w"> </span>build<span class="t-w"> </span>--locked<span class="t-w"> </span>--release<span class="t-w"> </span>-p<span class="t-w"> </span>dctx-cli
-./target/release/dctx-cli<span class="t-w"> </span>--version
-<span class="t-nb">alias</span><span class="t-w"> </span><span class="t-nv">dctx</span><span class="t-o">=</span><span class="t-s2">&quot;</span><span class="t-nv">$PWD</span><span class="t-s2">/target/release/dctx-cli&quot;</span>
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">git</span> clone https://github.com/Eris-Margeta/dctx
+<span class="t-f">cd</span> dctx
+<span class="t-f">cargo</span> build <span class="t-a">--locked</span> <span class="t-a">--release</span> <span class="t-a">-p</span> dctx-cli
+<span class="t-f">./target/release/dctx-cli</span> <span class="t-a">--version</span>
+<span class="t-k">alias</span> <span class="t-v">dctx</span>=<span class="t-s">"$PWD/target/release/dctx-cli"</span></code></pre></div>
 <p>Cargo builds <code>dctx-cli</code> (<code>dctx-cli.exe</code> on Windows); release archives supply
 <code>dctx</code>. For a local source installation, use
 <code>cargo install --locked --path crates/dctx-cli</code> and <code>alias dctx=dctx-cli</code>.
@@ -418,23 +400,19 @@ See <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/TESTING.md">CI 
 <h2 id="use-as-a-library">Use as a library<a class="hd" href="#use-as-a-library" aria-label="Link to Use as a library">#</a></h2>
 <p>The public Rust entry point is the <a href="https://github.com/Eris-Margeta/dctx/tree/main/crates/dctx"><code>dctx</code> facade</a>, available from
 Git now; <strong>crates.io publication is pending</strong>.</p>
-<div class="hl"><pre><code><span class="t-k">[dependencies]</span>
-<span class="t-n">dctx</span><span class="t-w"> </span><span class="t-o">=</span><span class="t-w"> </span><span class="t-p">{</span><span class="t-w"> </span><span class="t-n">git</span><span class="t-w"> </span><span class="t-p">=</span><span class="t-w"> </span><span class="t-s2">&quot;https://github.com/Eris-Margeta/dctx&quot;</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-n">tag</span><span class="t-w"> </span><span class="t-p">=</span><span class="t-w"> </span><span class="t-s2">&quot;v1.3.0&quot;</span><span class="t-w"> </span><span class="t-p">}</span>
-</code></pre></div>
-
+<div class="hl" data-lang="toml"><pre><code><span class="t-t">[dependencies]</span>
+<span class="t-a">dctx</span> = { git = <span class="t-s">"https://github.com/Eris-Margeta/dctx"</span>, tag = <span class="t-s">"v1.3.0"</span> }</code></pre></div>
 <p>This example is generated from the <a href="https://github.com/Eris-Margeta/dctx/blob/main/examples/library/README.md">workspace doctest</a>:</p>
-<div class="hl"><pre><code><span class="t-k">use</span><span class="t-w"> </span><span class="t-n">dctx</span><span class="t-p">::{</span><span class="t-n">memory</span><span class="t-p">::{</span><span class="t-n">CancelFlag</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-n">FixedClock</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-n">MemorySource</span><span class="t-p">},</span><span class="t-w"> </span><span class="t-o">*</span><span class="t-p">};</span>
-<span class="t-kd">let</span><span class="t-w"> </span><span class="t-k">mut</span><span class="t-w"> </span><span class="t-n">source</span><span class="t-w"> </span><span class="t-o">=</span><span class="t-w"> </span><span class="t-n">MemorySource</span><span class="t-p">::</span><span class="t-n">new</span><span class="t-p">();</span>
-<span class="t-n">source</span><span class="t-p">.</span><span class="t-n">insert_file</span><span class="t-p">(</span><span class="t-s">&quot;hello.rs&quot;</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-s">b&quot;pub fn hello() {}</span><span class="t-se">\n</span><span class="t-s">&quot;</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-mi">0</span><span class="t-p">)</span><span class="t-o">?</span><span class="t-p">;</span>
-<span class="t-kd">let</span><span class="t-w"> </span><span class="t-k">mut</span><span class="t-w"> </span><span class="t-n">session</span><span class="t-w"> </span><span class="t-o">=</span><span class="t-w"> </span><span class="t-n">Session</span><span class="t-p">::</span><span class="t-n">builder</span><span class="t-p">(</span><span class="t-n">source</span><span class="t-p">).</span><span class="t-n">clock</span><span class="t-p">(</span><span class="t-n">FixedClock</span><span class="t-p">(</span><span class="t-n">Timestamp</span><span class="t-p">(</span><span class="t-mi">0</span><span class="t-p">)))</span>
-<span class="t-w">    </span><span class="t-p">.</span><span class="t-n">cancellation</span><span class="t-p">(</span><span class="t-n">std</span><span class="t-p">::</span><span class="t-n">sync</span><span class="t-p">::</span><span class="t-n">Arc</span><span class="t-p">::</span><span class="t-n">new</span><span class="t-p">(</span><span class="t-n">CancelFlag</span><span class="t-p">::</span><span class="t-n">new</span><span class="t-p">())).</span><span class="t-n">ceiling</span><span class="t-p">(</span><span class="t-n">HostCeiling</span><span class="t-p">::</span><span class="t-n">base</span><span class="t-p">())</span>
-<span class="t-w">    </span><span class="t-p">.</span><span class="t-n">selection</span><span class="t-p">(</span><span class="t-n">SelectionPolicy</span><span class="t-p">::</span><span class="t-n">from_texts</span><span class="t-p">(</span><span class="t-o">&amp;</span><span class="t-n">RuleTexts</span><span class="t-p">::</span><span class="t-n">default</span><span class="t-p">())).</span><span class="t-n">grants</span><span class="t-p">(</span><span class="t-n">HostGrants</span><span class="t-p">::</span><span class="t-n">PermitAll</span><span class="t-p">)</span>
-<span class="t-w">    </span><span class="t-p">.</span><span class="t-n">storage</span><span class="t-p">(</span><span class="t-n">StoragePolicy</span><span class="t-p">::</span><span class="t-n">Ephemeral</span><span class="t-w"> </span><span class="t-p">{</span><span class="t-w"> </span><span class="t-n">max_bytes</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-mi">8</span><span class="t-w"> </span><span class="t-o">*</span><span class="t-w"> </span><span class="t-mi">1024</span><span class="t-w"> </span><span class="t-o">*</span><span class="t-w"> </span><span class="t-mi">1024</span><span class="t-w"> </span><span class="t-p">}).</span><span class="t-n">place</span><span class="t-p">(</span><span class="t-s">&quot;demo&quot;</span><span class="t-p">).</span><span class="t-n">view</span><span class="t-p">(</span><span class="t-s">&quot;pack&quot;</span><span class="t-p">).</span><span class="t-n">build</span><span class="t-p">()</span><span class="t-o">?</span><span class="t-p">;</span>
-<span class="t-kd">let</span><span class="t-w"> </span><span class="t-k">mut</span><span class="t-w"> </span><span class="t-n">output</span><span class="t-w"> </span><span class="t-o">=</span><span class="t-w"> </span><span class="t-n">VecSink</span><span class="t-p">::</span><span class="t-n">new</span><span class="t-p">();</span>
-<span class="t-n">session</span><span class="t-p">.</span><span class="t-n">pack</span><span class="t-p">(</span><span class="t-o">&amp;</span><span class="t-n">PackRequest</span><span class="t-p">::</span><span class="t-n">new</span><span class="t-p">(),</span><span class="t-w"> </span><span class="t-o">&amp;</span><span class="t-k">mut</span><span class="t-w"> </span><span class="t-n">output</span><span class="t-p">)</span><span class="t-o">?</span><span class="t-p">;</span>
-<span class="t-fm">println!</span><span class="t-p">(</span><span class="t-s">&quot;{}&quot;</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-n">std</span><span class="t-p">::</span><span class="t-kt">str</span><span class="t-p">::</span><span class="t-n">from_utf8</span><span class="t-p">(</span><span class="t-n">output</span><span class="t-p">.</span><span class="t-n">as_bytes</span><span class="t-p">())</span><span class="t-o">?</span><span class="t-p">);</span>
-</code></pre></div>
-
+<div class="hl" data-lang="rust"><pre><code><span class="t-k">use</span> dctx::{memory::{<span class="t-b">CancelFlag</span>, <span class="t-b">FixedClock</span>, <span class="t-b">MemorySource</span>}, *};
+<span class="t-k">let</span> <span class="t-k">mut</span> source = <span class="t-b">MemorySource</span>::<span class="t-f">new</span>();
+source.<span class="t-f">insert_file</span>(<span class="t-s">"hello.rs"</span>, <span class="t-s">b"pub fn hello() {}\n"</span>, <span class="t-m">0</span>)?;
+<span class="t-k">let</span> <span class="t-k">mut</span> session = <span class="t-b">Session</span>::<span class="t-f">builder</span>(source).<span class="t-f">clock</span>(<span class="t-b">FixedClock</span>(<span class="t-b">Timestamp</span>(<span class="t-m">0</span>)))
+    .<span class="t-f">cancellation</span>(std::sync::<span class="t-b">Arc</span>::<span class="t-f">new</span>(<span class="t-b">CancelFlag</span>::<span class="t-f">new</span>())).<span class="t-f">ceiling</span>(<span class="t-b">HostCeiling</span>::<span class="t-f">base</span>())
+    .<span class="t-f">selection</span>(<span class="t-b">SelectionPolicy</span>::<span class="t-f">from_texts</span>(&amp;<span class="t-b">RuleTexts</span>::<span class="t-f">default</span>())).<span class="t-f">grants</span>(<span class="t-b">HostGrants</span>::<span class="t-b">PermitAll</span>)
+    .<span class="t-f">storage</span>(<span class="t-b">StoragePolicy</span>::<span class="t-b">Ephemeral</span> { max_bytes: <span class="t-m">8</span> * <span class="t-m">1024</span> * <span class="t-m">1024</span> }).<span class="t-f">place</span>(<span class="t-s">"demo"</span>).<span class="t-f">view</span>(<span class="t-s">"pack"</span>).<span class="t-f">build</span>()?;
+<span class="t-k">let</span> <span class="t-k">mut</span> output = <span class="t-b">VecSink</span>::<span class="t-f">new</span>();
+session.<span class="t-f">pack</span>(&amp;<span class="t-b">PackRequest</span>::<span class="t-f">new</span>(), &amp;<span class="t-k">mut</span> output)?;
+<span class="t-f">println!</span>(<span class="t-s">"{}"</span>, std::<span class="t-b">str</span>::<span class="t-f">from_utf8</span>(output.<span class="t-f">as_bytes</span>())?);</code></pre></div>
 <p>The host supplies selection rules and storage policy; <code>FsSource</code> does not
 load <code>.gitignore</code> automatically. Read the
 <a href="/docs/modalities/#rust-library-embed-the-facade">library integration boundary</a>
@@ -482,9 +460,7 @@ Pack filters:
   --tree-stamps=on|off  MOD: timestamp on tree lines (default off; on = the 1.0.0 text)
 Task context (agent cards):
   --for &lt;text&gt;          Map find on the names in &lt;text&gt;, then neighbors and read of the best hits
-  --budget &lt;tokens&gt;     With --for: estimated-token cap, 100..100000 (default 3000)
-</code></pre></div>
-
+  --budget &lt;tokens&gt;     With --for: estimated-token cap, 100..100000 (default 3000)</code></pre></div>
 <ul>
 <li><code>dctx context</code> returns ranked context for a file, symbol name or stable node id;
   repeated targets in one call share a delivery session.</li>
@@ -632,7 +608,8 @@ The <a href="/changelog/">changelog</a> and <a href="https://github.com/Eris-Mar
     <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
     <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
     <p>An advanced tool with several ways to use it: <a href="/start/">start with the safe path</a>.</p>
-    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
+    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0</p>
+    <p class="ftr-prefs"><button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Animations: on</button></p>
    </div>
    <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/start/">Choose your path</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
    <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/for-ai-evaluators/">For AI evaluators</a></li><li><a href="/llms-small.txt">llms-small.txt</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>

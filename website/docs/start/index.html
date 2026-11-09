@@ -12,7 +12,7 @@
   if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
   if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
 })();</script>
-<link rel="stylesheet" href="/assets/site.637c934a.css">
+<link rel="stylesheet" href="/assets/site.78d109a3.css">
 <link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
@@ -20,6 +20,7 @@
 <meta name="description" content="The claim and its limits, the advanced-user notice, choose your path, the safe path in ten minutes, responsibilities and the two scopes.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
+<meta name="dctx-build" content="5815d282ddf2f51f78d4c1f4044d8c5fe014c611a19674febc7d71438e67e237">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -59,7 +60,7 @@
 <link rel="alternate" type="text/markdown" href="/docs/start/index.md" title="What dctx is as Markdown">
 <link rel="prev" href="/docs/readme/">
 <link rel="next" href="/docs/modalities/">
-<script src="/assets/page.da8d3bbd.js" defer></script>
+<script src="/assets/page.c246e049.js" defer></script>
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -112,7 +113,7 @@
    "name": "dctx",
    "softwareVersion": "1.3.0",
    "applicationCategory": "DeveloperApplication",
-   "operatingSystem": "Linux (x86_64 tested)",
+   "operatingSystem": "Linux, macOS, Windows",
    "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
    "url": "https://www.dctx.internet.technology/",
    "license": "https://www.apache.org/licenses/LICENSE-2.0",
@@ -211,7 +212,6 @@
   <nav class="nav" aria-label="Primary"><ul><li><a href="/start/">Start</a></li><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
   <div class="hdr-end">
    <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
-   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
    <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
    <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
     <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/start/">Start</a></li><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav></details>
@@ -244,9 +244,7 @@ scope and distribution features are labeled explicitly.</p>
 <p>One giant folder (e.g. 200 GB): system binary; per-root ignore policy; name a sub-root/--place in tasks. Pitfall: pointing agents at the whole root.</p>
 <p>Install the <a href="#safe-path-in-ten-minutes">system binary</a>, choose a relevant package,
 and put exclusions in that root's <code>.dctxignore</code> before the first query:</p>
-<div class="hl"><pre><code>dctx<span class="t-w"> </span>map<span class="t-w"> </span>find<span class="t-w"> </span>Config<span class="t-w"> </span>--place<span class="t-w"> </span>packages/service-a<span class="t-w"> </span>--budget<span class="t-w"> </span><span class="t-m">500</span><span class="t-w"> </span>--limit<span class="t-w"> </span><span class="t-m">5</span>
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> map find Config <span class="t-a">--place</span> packages/service-a <span class="t-a">--budget</span> 500 <span class="t-a">--limit</span> 5</code></pre></div>
 <p>Expect bounded symbol IDs and line ranges, not a complete answer about the whole
 parent tree. Use an ID with <code>map read</code>. There is no general receipt yet;
 <code>--json</code> exposes freshness, precision and pagination. Each invocation checks
@@ -261,11 +259,9 @@ agent. The config can live at user scope; launch the server with the intended
 project root for each session. No project dependency is required. Start with a
 <code>find</code> call followed by <code>read</code> using its exact ID. Expect source plus freshness
 and precision in JSON, not a general receipt or session delta.</p>
-<div class="hl"><pre><code>dctx<span class="t-w"> </span>cache<span class="t-w"> </span>status<span class="t-w"> </span>--json
-dctx<span class="t-w"> </span>cache<span class="t-w"> </span>gc<span class="t-w"> </span>--dry-run
-dctx<span class="t-w"> </span>cache<span class="t-w"> </span>purge<span class="t-w"> </span>--root<span class="t-w"> </span>/absolute/deleted-project<span class="t-w"> </span>--dry-run
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> cache status <span class="t-a">--json</span>
+<span class="t-f">dctx</span> cache gc <span class="t-a">--dry-run</span>
+<span class="t-f">dctx</span> cache purge <span class="t-a">--root</span> /absolute/deleted-project <span class="t-a">--dry-run</span></code></pre></div>
 <p>Inspect the dry run before applying cleanup; <code>purge</code> requires <code>--yes</code>.
 See <a href="/docs/map-mode/#index-cache-and-privacy">cache controls</a>. Indexes live in an
 engine <code>major.minor</code> subdirectory (for example <code>1.3</code>) of the cache parent, which is
@@ -280,9 +276,7 @@ artifacts or a checkout as their READMEs describe. Alternatively, pin the
 <a href="/docs/modalities/#rust-library-embed-the-facade">Rust facade</a> from tagged Git,
 or invoke the installed CLI as a subprocess. The first runnable Rust example is
 in the <a href="https://github.com/Eris-Margeta/dctx/blob/main/examples/library/README.md">library doctest</a>. For subprocess use:</p>
-<div class="hl"><pre><code>dctx<span class="t-w"> </span>map<span class="t-w"> </span>find<span class="t-w"> </span>Config<span class="t-w"> </span>--json<span class="t-w"> </span>--budget<span class="t-w"> </span><span class="t-m">500</span><span class="t-w"> </span>--limit<span class="t-w"> </span><span class="t-m">5</span>
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> map find Config <span class="t-a">--json</span> <span class="t-a">--budget</span> 500 <span class="t-a">--limit</span> 5</code></pre></div>
 <p>Expect JSON records with IDs and precision/freshness metadata; pass a returned
 ID to <code>map read --json</code> for <code>source_utf8</code>. Keep engine selection and rendering in
 the engine. Pass opaque continuation cursors back unchanged rather than slicing
@@ -298,9 +292,7 @@ is an in-process API object. See the <a href="#two-scopes-one-binary">scope cont
 release SBOM verification workflow are planned. Deploy the verified archive and
 root ignore rules through your existing fleet tooling. Record the resolved
 binary path and start with:</p>
-<div class="hl"><pre><code>dctx<span class="t-w"> </span>--version<span class="t-w"> </span>--verbose
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> <span class="t-a">--version</span> <span class="t-a">--verbose</span></code></pre></div>
 <p>Expect version and feature/precision limits. <code>dctx doctor</code> lists the dctx
 binaries visible from a directory with their scopes and SHA-256 checksums;
 signature-status output is planned. Check paths and versions explicitly during onboarding;
@@ -318,34 +310,28 @@ downloaded filename. This checks integrity against the release checksums;
 signed binary verification is planned.</p>
 <p>Extract the archive and put <code>dctx</code> (<code>dctx.exe</code> on Windows) on your user <code>PATH</code>.
 Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.</p>
-<div class="hl"><pre><code>dctx<span class="t-w"> </span>--version
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> <span class="t-a">--version</span></code></pre></div>
 <p>Use the system binary for interactive agents. The project wrappers (Python, Node,
 Go) are built and tested in CI, with registry publication pending; no project
 dependency is needed for this path.</p>
 <h3 id="2-choose-one-project-and-inspect-one-answer">2. Choose one project and inspect one answer<a class="hd" href="#2-choose-one-project-and-inspect-one-answer" aria-label="Link to 2. Choose one project and inspect one answer">#</a></h3>
 <p>Use a small project or a relevant sub-root. Check <code>.gitignore</code> and <code>.dctxignore</code>
 before scanning; leave <code>DCTX_INDEX_IGNORED</code> unset. From that directory:</p>
-<div class="hl"><pre><code>dctx<span class="t-w"> </span>map<span class="t-w"> </span>find<span class="t-w"> </span>Config<span class="t-w"> </span>--json<span class="t-w"> </span>--budget<span class="t-w"> </span><span class="t-m">500</span><span class="t-w"> </span>--limit<span class="t-w"> </span><span class="t-m">5</span>
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> map find Config <span class="t-a">--json</span> <span class="t-a">--budget</span> 500 <span class="t-a">--limit</span> 5</code></pre></div>
 <p>Replace <code>Config</code> with a symbol or heading in your project. Read a returned ID
 with <code>dctx map read 'ID' --json</code>. The JSON includes verified source bytes as
 <code>source_utf8</code> and reports precision, freshness and pagination. Keep the same
 root between calls, because root-relative IDs change when the root changes.</p>
 <h3 id="3-configure-the-lean-mcp-profile">3. Configure the lean MCP profile<a class="hd" href="#3-configure-the-lean-mcp-profile" aria-label="Link to 3. Configure the lean MCP profile">#</a></h3>
 <p>In a client accepting <code>mcpServers</code>, replace both absolute paths:</p>
-<div class="hl"><pre><code><span class="t-p">{</span>
-<span class="t-w">  </span><span class="t-nt">&quot;mcpServers&quot;</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">{</span>
-<span class="t-w">    </span><span class="t-nt">&quot;dctx&quot;</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">{</span>
-<span class="t-w">      </span><span class="t-nt">&quot;command&quot;</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-s2">&quot;/absolute/path/to/dctx&quot;</span><span class="t-p">,</span>
-<span class="t-w">      </span><span class="t-nt">&quot;args&quot;</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-s2">&quot;mcp&quot;</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-s2">&quot;--profile&quot;</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-s2">&quot;lean&quot;</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-s2">&quot;/absolute/path/to/project&quot;</span><span class="t-p">]</span>
-<span class="t-w">    </span><span class="t-p">}</span>
-<span class="t-w">  </span><span class="t-p">}</span>
-<span class="t-p">}</span>
-</code></pre></div>
-
+<div class="hl" data-lang="json"><pre><code>{
+  <span class="t-a">"mcpServers"</span>: {
+    <span class="t-a">"dctx"</span>: {
+      <span class="t-a">"command"</span>: <span class="t-s">"/absolute/path/to/dctx"</span>,
+      <span class="t-a">"args"</span>: [<span class="t-s">"mcp"</span>, <span class="t-s">"--profile"</span>, <span class="t-s">"lean"</span>, <span class="t-s">"/absolute/path/to/project"</span>]
+    }
+  }
+}</code></pre></div>
 <p>Restart the client and confirm that <code>find</code> and <code>read</code> are available. The lean
 profile has <strong>two tools</strong>, not the planned <code>context/read/find</code> profile. For a
 controlled comparison, turn off overlapping host file tools where the client
@@ -360,9 +346,7 @@ available. Include the history carried into each model turn. Smaller tool
 answers alone do not establish whole-session savings.</p>
 <p>General receipts are planned. Today, retain JSON metadata and the agent's usage
 report. For task packs, the shipped footer is a useful output accounting line:</p>
-<div class="hl"><pre><code>dctx<span class="t-w"> </span>pack<span class="t-w"> </span>.<span class="t-w"> </span>--for<span class="t-w"> </span><span class="t-s1">&#39;Config&#39;</span><span class="t-w"> </span>--budget<span class="t-w"> </span><span class="t-m">800</span>
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> pack . <span class="t-a">--for</span> <span class="t-s">'Config'</span> <span class="t-a">--budget</span> 800</code></pre></div>
 <p>It reports <code>body_tokens</code>, <code>budget</code> and <code>dropped</code>, using estimated tokens rather
 than a provider tokenizer. It is not a whole-session receipt. Save outputs
 outside the selected tree, and compare repeated runs with identical inputs.
@@ -441,7 +425,8 @@ or <a href="/docs/spec/">engine specification</a>.</p><nav class="pager" aria-la
     <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
     <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
     <p>An advanced tool with several ways to use it: <a href="/start/">start with the safe path</a>.</p>
-    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
+    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0</p>
+    <p class="ftr-prefs"><button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Animations: on</button></p>
    </div>
    <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/start/">Choose your path</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
    <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/for-ai-evaluators/">For AI evaluators</a></li><li><a href="/llms-small.txt">llms-small.txt</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>

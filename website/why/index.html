@@ -12,7 +12,7 @@
   if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
   if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
 })();</script>
-<link rel="stylesheet" href="/assets/site.637c934a.css">
+<link rel="stylesheet" href="/assets/site.78d109a3.css">
 <link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
@@ -20,6 +20,7 @@
 <meta name="description" content="Why dctx exists, its philosophy, and why byte-identical output keeps the prompt cache hitting.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
+<meta name="dctx-build" content="5815d282ddf2f51f78d4c1f4044d8c5fe014c611a19674febc7d71438e67e237">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -58,7 +59,7 @@
 <link rel="alternate" type="application/atom+xml" title="dctx releases" href="/changelog/feed.xml">
 <link rel="alternate" type="text/markdown" href="/why/index.md" title="Why dctx as Markdown">
 <link rel="next" href="/docs/readme/">
-<script src="/assets/page.da8d3bbd.js" defer></script>
+<script src="/assets/page.c246e049.js" defer></script>
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -111,7 +112,7 @@
    "name": "dctx",
    "softwareVersion": "1.3.0",
    "applicationCategory": "DeveloperApplication",
-   "operatingSystem": "Linux (x86_64 tested)",
+   "operatingSystem": "Linux, macOS, Windows",
    "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
    "url": "https://www.dctx.internet.technology/",
    "license": "https://www.apache.org/licenses/LICENSE-2.0",
@@ -210,7 +211,6 @@
   <nav class="nav" aria-label="Primary"><ul><li><a href="/start/">Start</a></li><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
   <div class="hdr-end">
    <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
-   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
    <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
    <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
     <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/start/">Start</a></li><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav></details>
@@ -234,22 +234,20 @@ It aims to be one context-management tool across these workflows; choose the
 surface that fits in <a href="/docs/modalities/">Choosing how to use dctx</a>.</p>
 <h3 id="a-small-worked-example">A small worked example<a class="hd" href="#a-small-worked-example" aria-label="Link to A small worked example">#</a></h3>
 <p>Run with dctx 1.1.0 on a copy of this repository's <code>crates/dctx-lex-go</code> folder. The output is real and complete.</p>
-<div class="hl"><pre><code>$ dctx map find Add
-# dctx-lex-go find
-s:tests/fixtures/basic.go#Add   fn  L43-45
+<div class="hl" data-lang="shell"><pre><code><span class="p">$ </span><span class="t-f">dctx</span> map find Add
+<span class="t-c"># dctx-lex-go find</span>
+s:tests/fixtures/basic.go#Add   fn  L<span class="t-m">43</span>-<span class="t-m">45</span>
 
-$ dctx map read &#39;s:tests/fixtures/basic.go#Add&#39;
-# dctx-lex-go read
+<span class="p">$ </span><span class="t-f">dctx</span> map read <span class="t-s">'s:tests/fixtures/basic.go#Add'</span>
+<span class="t-c"># dctx-lex-go read</span>
 s:tests/fixtures/basic.go#Add   fn  tests/fixtures/basic.go
 func Add[T ~int](a, b T) T {
     return a
 }
 
-$ dctx map neighbors &#39;s:tests/fixtures/basic.go#Add&#39; --edge calls --dir in
-# dctx-lex-go neighbors
-calls:in:s:tests/fixtures/basic.go#main fn  tests/fixtures/basic.go L59
-</code></pre></div>
-
+<span class="p">$ </span><span class="t-f">dctx</span> map neighbors <span class="t-s">'s:tests/fixtures/basic.go#Add'</span> <span class="t-a">--edge</span> calls <span class="t-a">--dir</span> in
+<span class="t-c"># dctx-lex-go neighbors</span>
+calls:in:s:tests/fixtures/basic.go#main fn  tests/fixtures/basic.go L<span class="t-m">59</span></code></pre></div>
 <p><code>find</code> returns a stable id, the kind of thing it is (a function) and its lines. This is a historical 1.1.0 transcript; the current CLI also includes verified source bytes in text <code>read</code> output, or in <code>source_utf8</code> with <code>read --json</code>. <code>neighbors</code> says that <code>main</code> calls it, on line 59.</p>
 <h2 id="the-philosophy">The philosophy<a class="hd" href="#the-philosophy" aria-label="Link to The philosophy">#</a></h2>
 <p>The <a href="/docs/spec/#2-the-core-belief-prompt-processing-efficiency">specification</a> turns this into five testable rules.</p>
@@ -279,9 +277,7 @@ calls:in:s:tests/fixtures/basic.go#main fn  tests/fixtures/basic.go L59
 <p>Timestamps are the classic problem. In 1.0.0, every line of the <code>dctx pack</code> file tree carried a modification time, and file lines a size. The tree sits near the top, so merely re-saving a file (a <code>touch</code>) changed almost the whole page as far as a cache is concerned. Since 1.1.0 tree lines carry only an id. A bare <code>touch</code> leaves the output byte-identical, and an edit keeps everything before the edited file as a shared prefix. <code>--tree-stamps=on</code> brings back the old lines.</p>
 <p>In the same folder we appended one comment line to the last file in the tree, <code>tests/review_lexers_a.rs</code>, and compared <code>dctx pack .</code> before and after:</p>
 <div class="hl"><pre><code>default output:      first 117,215 of 122,437 bytes unchanged
---tree-stamps=on:    first   2,151 of 123,159 bytes unchanged
-</code></pre></div>
-
+--tree-stamps=on:    first   2,151 of 123,159 bytes unchanged</code></pre></div>
 <p>By default about 96% of the page is still a reusable prefix. With timestamps on, almost nothing is.</p>
 <h3 id="the-evidence">The evidence<a class="hd" href="#the-evidence" aria-label="Link to The evidence">#</a></h3>
 <p>The <a href="/docs/stability/">stability report</a> measured map answers on 6 November 2026, on three pinned local corpora with 11 kinds of question each. <strong>33 of 33</strong> text answers and <strong>33 of 33</strong> JSON answers were byte-identical after an unrelated edit elsewhere in the project, and all were identical over five separate runs.</p>
@@ -333,7 +329,8 @@ calls:in:s:tests/fixtures/basic.go#main fn  tests/fixtures/basic.go L59
     <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
     <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
     <p>An advanced tool with several ways to use it: <a href="/start/">start with the safe path</a>.</p>
-    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
+    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0</p>
+    <p class="ftr-prefs"><button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Animations: on</button></p>
    </div>
    <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/start/">Choose your path</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
    <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/for-ai-evaluators/">For AI evaluators</a></li><li><a href="/llms-small.txt">llms-small.txt</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>

@@ -12,7 +12,7 @@
   if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
   if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
 })();</script>
-<link rel="stylesheet" href="/assets/site.637c934a.css">
+<link rel="stylesheet" href="/assets/site.78d109a3.css">
 <link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
@@ -20,6 +20,7 @@
 <meta name="description" content="Clipboard, grep plus reads, long sessions, huge trees, MCP startup cost and CI.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
+<meta name="dctx-build" content="5815d282ddf2f51f78d4c1f4044d8c5fe014c611a19674febc7d71438e67e237">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -59,7 +60,7 @@
 <link rel="alternate" type="text/markdown" href="/docs/modalities/index.md" title="Choosing how to use dctx as Markdown">
 <link rel="prev" href="/docs/start/">
 <link rel="next" href="/docs/map-mode/">
-<script src="/assets/page.da8d3bbd.js" defer></script>
+<script src="/assets/page.c246e049.js" defer></script>
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -112,7 +113,7 @@
    "name": "dctx",
    "softwareVersion": "1.3.0",
    "applicationCategory": "DeveloperApplication",
-   "operatingSystem": "Linux (x86_64 tested)",
+   "operatingSystem": "Linux, macOS, Windows",
    "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
    "url": "https://www.dctx.internet.technology/",
    "license": "https://www.apache.org/licenses/LICENSE-2.0",
@@ -211,7 +212,6 @@
   <nav class="nav" aria-label="Primary"><ul><li><a href="/start/">Start</a></li><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
   <div class="hdr-end">
    <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
-   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
    <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
    <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
     <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/start/">Start</a></li><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav></details>
@@ -316,36 +316,28 @@ Git dependency today.</p>
 </table></div>
 <h2 id="human-one-off-pack-to-clipboard">Human, one-off: pack to clipboard<a class="hd" href="#human-one-off-pack-to-clipboard" aria-label="Link to Human, one-off: pack to clipboard">#</a></h2>
 <p>From the project or relevant subfolder:</p>
-<div class="hl"><pre><code>dctx<span class="t-w"> </span>pack<span class="t-w"> </span>.<span class="t-w"> </span>--clipboard
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> pack . <span class="t-a">--clipboard</span></code></pre></div>
 <p>Paste the resulting structured context into your chat. The local clipboard must
 be available. To inspect or save the same selection instead:</p>
-<div class="hl"><pre><code>dctx<span class="t-w"> </span>pack<span class="t-w"> </span>.<span class="t-w"> </span>--output<span class="t-w"> </span>context.txt
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> pack . <span class="t-a">--output</span> context.txt</code></pre></div>
 <p>Do not use an unbounded whole-project pack for a large tree or when only one
 function matters. Narrow the root first, or use map reads. Pack's <code>--ext rs,toml</code>
 and <code>--small 1</code> filters can restrict extensions and file sizes (MB); they are
 pack filters, not map index limits. Inspect the content before sharing it.</p>
 <h2 id="short-agent-task-grep-can-be-enough">Short agent task: grep can be enough<a class="hd" href="#short-agent-task-grep-can-be-enough" aria-label="Link to Short agent task: grep can be enough">#</a></h2>
 <p>If you know a name and expect only a few file reads, use the existing shell:</p>
-<div class="hl"><pre><code>grep<span class="t-w"> </span>-R<span class="t-w"> </span>-n<span class="t-w"> </span>-F<span class="t-w"> </span>--include<span class="t-o">=</span><span class="t-s1">&#39;*.rs&#39;</span><span class="t-w"> </span><span class="t-s1">&#39;struct Session&#39;</span><span class="t-w"> </span>crates/dctx/src
-sed<span class="t-w"> </span>-n<span class="t-w"> </span><span class="t-s1">&#39;130,170p&#39;</span><span class="t-w"> </span>crates/dctx/src/session/mod.rs
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">grep</span> <span class="t-a">-R</span> <span class="t-a">-n</span> <span class="t-a">-F</span> <span class="t-a">--include=</span>'*.rs' <span class="t-s">'struct Session'</span> crates/dctx/src
+<span class="t-f">sed</span> <span class="t-a">-n</span> <span class="t-s">'130,170p'</span> crates/dctx/src/session/mod.rs</code></pre></div>
 <p>Choose the line range from the search result; reading a narrow range is an
 honest baseline alongside whole-file reads. If a symbol read is useful, call
 <code>dctx map find Session</code> through the existing shell. Loading an MCP server
 adds tool descriptions to starting context; installing verbose agent
 instructions can add more. Do not add that setup for a tiny edit unless you
 measure a benefit.</p>
-<div class="hl"><pre><code><span class="t-nb">cd</span><span class="t-w"> </span>crates/dctx-lex-go
-dctx<span class="t-w"> </span>map<span class="t-w"> </span>find<span class="t-w"> </span>Add<span class="t-w"> </span>--budget<span class="t-w"> </span><span class="t-m">500</span><span class="t-w"> </span>--limit<span class="t-w"> </span><span class="t-m">5</span>
-dctx<span class="t-w"> </span>map<span class="t-w"> </span><span class="t-nb">read</span><span class="t-w"> </span><span class="t-s1">&#39;s:tests/fixtures/basic.go#Add&#39;</span><span class="t-w"> </span>--json
-dctx<span class="t-w"> </span>map<span class="t-w"> </span>skeleton<span class="t-w"> </span>tests/fixtures/basic.go<span class="t-w"> </span>--budget<span class="t-w"> </span><span class="t-m">1000</span>
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">cd</span> crates/dctx-lex-go
+<span class="t-f">dctx</span> map find Add <span class="t-a">--budget</span> 500 <span class="t-a">--limit</span> 5
+<span class="t-f">dctx</span> map read <span class="t-s">'s:tests/fixtures/basic.go#Add'</span> <span class="t-a">--json</span>
+<span class="t-f">dctx</span> map skeleton tests/fixtures/basic.go <span class="t-a">--budget</span> 1000</code></pre></div>
 <p>For your project, use the exact ID returned by <code>find</code>. Both text <code>read</code> and
 <code>read --json</code> include verified source bytes; JSON carries them in <code>source_utf8</code>. Skeletons
 show declaration signatures without bodies. If an answer has <code>more</code> and <code>next</code>,
@@ -370,12 +362,10 @@ cache-limit error; it does not quietly return a complete partial index. Repeatin
 the same unscoped request will not fix this. The cap is not a RAM-usage or exact
 filesystem-size guarantee. <code>cache config --max-bytes</code> can only tighten it.</p>
 <p>Start at the relevant package, not the huge parent:</p>
-<div class="hl"><pre><code><span class="t-nb">cd</span><span class="t-w"> </span>packages/service-a
-dctx<span class="t-w"> </span>map<span class="t-w"> </span>find<span class="t-w"> </span>Config<span class="t-w"> </span>--budget<span class="t-w"> </span><span class="t-m">500</span><span class="t-w"> </span>--limit<span class="t-w"> </span><span class="t-m">5</span>
-<span class="t-c1"># Equivalent root selection from elsewhere:</span>
-dctx<span class="t-w"> </span>map<span class="t-w"> </span>find<span class="t-w"> </span>Config<span class="t-w"> </span>--place<span class="t-w"> </span>packages/service-a<span class="t-w"> </span>--budget<span class="t-w"> </span><span class="t-m">500</span><span class="t-w"> </span>--limit<span class="t-w"> </span><span class="t-m">5</span>
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">cd</span> packages/service-a
+<span class="t-f">dctx</span> map find Config <span class="t-a">--budget</span> 500 <span class="t-a">--limit</span> 5
+<span class="t-c"># Equivalent root selection from elsewhere:</span>
+<span class="t-f">dctx</span> map find Config <span class="t-a">--place</span> packages/service-a <span class="t-a">--budget</span> 500 <span class="t-a">--limit</span> 5</code></pre></div>
 <p><code>--place</code> selects the scan root. <code>--in src</code> narrows find/grep matches <strong>after</strong>
 indexing; <code>--budget</code>, <code>--limit</code> and <code>--cursor</code> bound answers, not the tree scan.
 Running from a subfolder changes relative paths and IDs; retain the needed ignore
@@ -383,11 +373,9 @@ rules there instead of assuming parent project rules were inherited.</p>
 <p>Use existing <code>.gitignore</code> and a <code>.dctxignore</code> at the chosen root to exclude data,
 generated output and irrelevant documents before reads, parsing and caching.
 For example, merge these project-specific entries into <code>.dctxignore</code>:</p>
-<div class="hl"><pre><code>/data/
-/generated/
-/archive/
-</code></pre></div>
-
+<div class="hl" data-lang="gitignore"><pre><code>/data<span class="t-m">/</span>
+/generated<span class="t-m">/</span>
+/archive<span class="t-m">/</span></code></pre></div>
 <p>The host loads the global ignore file, root and nested <code>.gitignore</code> rules, then
 the root <code>.dctxignore</code>. Built-in sensitive-file and <code>.git</code> exclusions still apply.
 The global ignore file is <code>&lt;config dir&gt;/dctx/ignore</code>: <code>$XDG_CONFIG_HOME/dctx/ignore</code>
@@ -424,12 +412,10 @@ Do not set <code>DCTX_INDEX_IGNORED=1</code> when relying on these ignore rules.
 </tbody>
 </table></div>
 <p>For a deliberately smaller scope and fail-fast ceilings:</p>
-<div class="hl"><pre><code><span class="t-nv">DCTX_MAX_SOURCE_BYTES</span><span class="t-o">=</span><span class="t-m">268435456</span><span class="t-w"> </span><span class="t-nv">DCTX_MAX_RECORDS</span><span class="t-o">=</span><span class="t-m">250000</span><span class="t-w"> </span><span class="t-nv">DCTX_MAX_ENTRIES</span><span class="t-o">=</span><span class="t-m">25000</span><span class="t-w"> </span><span class="t-se">\</span>
-<span class="t-w">  </span>dctx<span class="t-w"> </span>map<span class="t-w"> </span>find<span class="t-w"> </span>Config<span class="t-w"> </span>--place<span class="t-w"> </span>packages/service-a<span class="t-w"> </span>--budget<span class="t-w"> </span><span class="t-m">500</span><span class="t-w"> </span>--limit<span class="t-w"> </span><span class="t-m">5</span>
-dctx<span class="t-w"> </span>cache<span class="t-w"> </span>status<span class="t-w"> </span>--json
-dctx<span class="t-w"> </span>cache<span class="t-w"> </span>gc<span class="t-w"> </span>--dry-run
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-v">DCTX_MAX_SOURCE_BYTES</span>=<span class="t-s">268435456</span> <span class="t-v">DCTX_MAX_RECORDS</span>=<span class="t-s">250000</span> <span class="t-v">DCTX_MAX_ENTRIES</span>=<span class="t-s">25000</span> <span class="t-k">\</span>
+  <span class="t-f">dctx</span> map find Config <span class="t-a">--place</span> packages/service-a <span class="t-a">--budget</span> 500 <span class="t-a">--limit</span> 5
+<span class="t-f">dctx</span> cache status <span class="t-a">--json</span>
+<span class="t-f">dctx</span> cache gc <span class="t-a">--dry-run</span></code></pre></div>
 <p>Limits refuse an oversized scan; they do not produce an exhaustive answer from
 a truncated scan. Raising source or record ceilings does not raise the 2 GiB
 cache cap. A different absolute <code>DCTX_CACHE_DIR</code> selects a separate cache
@@ -438,9 +424,7 @@ would exclude facts your task requires; use grep and direct reads across the
 needed directories, or query several explicit scopes and account for extra calls.</p>
 <h2 id="mcp-server-convenient-tools-with-startup-context">MCP server: convenient tools with startup context<a class="hd" href="#mcp-server-convenient-tools-with-startup-context" aria-label="Link to MCP server: convenient tools with startup context">#</a></h2>
 <p>Configure your MCP client to launch this process in the selected project root:</p>
-<div class="hl"><pre><code>dctx<span class="t-w"> </span>mcp<span class="t-w"> </span>.
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> mcp .</code></pre></div>
 <h3 id="client-configuration">Client configuration<a class="hd" href="#client-configuration" aria-label="Link to Client configuration">#</a></h3>
 <p>Install the CLI archive first. Replace both absolute paths below with your
 executable and the project to index (on Windows, use <code>dctx.exe</code> and JSON-escaped
@@ -448,24 +432,20 @@ paths). An explicit project path avoids relying on the client's working director
 For a source build, point <code>command</code> at <code>target/release/dctx-cli</code>.</p>
 <p><a href="https://code.claude.com/docs/en/mcp">Claude Code</a> (<code>.mcp.json</code> at the project root)
 and <a href="https://cursor.com/docs/mcp">Cursor</a> (<code>.cursor/mcp.json</code>) use this JSON:</p>
-<div class="hl"><pre><code><span class="t-p">{</span>
-<span class="t-w">  </span><span class="t-nt">&quot;mcpServers&quot;</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">{</span>
-<span class="t-w">    </span><span class="t-nt">&quot;dctx&quot;</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">{</span>
-<span class="t-w">      </span><span class="t-nt">&quot;type&quot;</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-s2">&quot;stdio&quot;</span><span class="t-p">,</span>
-<span class="t-w">      </span><span class="t-nt">&quot;command&quot;</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-s2">&quot;/absolute/path/to/dctx&quot;</span><span class="t-p">,</span>
-<span class="t-w">      </span><span class="t-nt">&quot;args&quot;</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-s2">&quot;mcp&quot;</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-s2">&quot;/absolute/path/to/project&quot;</span><span class="t-p">]</span>
-<span class="t-w">    </span><span class="t-p">}</span>
-<span class="t-w">  </span><span class="t-p">}</span>
-<span class="t-p">}</span>
-</code></pre></div>
-
+<div class="hl" data-lang="json"><pre><code>{
+  <span class="t-a">"mcpServers"</span>: {
+    <span class="t-a">"dctx"</span>: {
+      <span class="t-a">"type"</span>: <span class="t-s">"stdio"</span>,
+      <span class="t-a">"command"</span>: <span class="t-s">"/absolute/path/to/dctx"</span>,
+      <span class="t-a">"args"</span>: [<span class="t-s">"mcp"</span>, <span class="t-s">"/absolute/path/to/project"</span>]
+    }
+  }
+}</code></pre></div>
 <p><a href="https://developers.openai.com/codex/mcp/">Codex</a> uses <code>~/.codex/config.toml</code>
 (or <code>.codex/config.toml</code> in a trusted project):</p>
-<div class="hl"><pre><code><span class="t-k">[mcp_servers.dctx]</span>
-<span class="t-n">command</span><span class="t-w"> </span><span class="t-o">=</span><span class="t-w"> </span><span class="t-s2">&quot;/absolute/path/to/dctx&quot;</span>
-<span class="t-n">args</span><span class="t-w"> </span><span class="t-o">=</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-s2">&quot;mcp&quot;</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-s2">&quot;/absolute/path/to/project&quot;</span><span class="t-p">]</span>
-</code></pre></div>
-
+<div class="hl" data-lang="toml"><pre><code><span class="t-t">[mcp_servers.dctx]</span>
+<span class="t-a">command</span> = <span class="t-s">"/absolute/path/to/dctx"</span>
+<span class="t-a">args</span> = [<span class="t-s">"mcp"</span>, <span class="t-s">"/absolute/path/to/project"</span>]</code></pre></div>
 <h3 id="tools-and-startup-cost">Tools and startup cost<a class="hd" href="#tools-and-startup-cost" aria-label="Link to Tools and startup cost">#</a></h3>
 <p>It exposes ten tools: <code>map</code>, <code>find</code>, <code>neighbors</code>, <code>explain</code>, <code>read</code>, <code>skeleton</code>,
 <code>grep</code>, <code>hubs</code>, <code>path</code>, <code>export</code>. These are query tools, not a pack or cache-admin
@@ -505,38 +485,34 @@ actual model tokenizer</strong>. Clients may transform schemas, add wrappers or 
 loading tools, so this is the definition payload's estimated startup cost, not
 the client's exact input-token count.</p>
 <p>Reproduce from the project root (with <code>dctx</code> on PATH):</p>
-<div class="hl"><pre><code>python3<span class="t-w"> </span>-<span class="t-w"> </span><span class="t-s">&lt;&lt;&#39;PYCODE&#39;</span>
-<span class="t-s">import json</span>
-<span class="t-s">import subprocess</span>
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">python3</span> - <span class="t-k">&lt;</span><span class="t-k">&lt;</span><span class="t-s">'PYCODE'</span>
+<span class="t-f">import</span> json
+<span class="t-f">import</span> subprocess
 
-<span class="t-s">requests = [</span>
-<span class="t-s">    {&quot;jsonrpc&quot;: &quot;2.0&quot;, &quot;id&quot;: 1, &quot;method&quot;: &quot;initialize&quot;, &quot;params&quot;: {</span>
-<span class="t-s">        &quot;protocolVersion&quot;: &quot;2025-06-18&quot;, &quot;capabilities&quot;: {},</span>
-<span class="t-s">        &quot;clientInfo&quot;: {&quot;name&quot;: &quot;dctx-modality-measurement&quot;, &quot;version&quot;: &quot;1&quot;}}},</span>
-<span class="t-s">    {&quot;jsonrpc&quot;: &quot;2.0&quot;, &quot;method&quot;: &quot;notifications/initialized&quot;},</span>
-<span class="t-s">    {&quot;jsonrpc&quot;: &quot;2.0&quot;, &quot;id&quot;: 2, &quot;method&quot;: &quot;tools/list&quot;},</span>
-<span class="t-s">]</span>
-<span class="t-s">wire = &quot;&quot;.join(json.dumps(r, separators=(&quot;,&quot;, &quot;:&quot;)) + &quot;\n&quot; for r in requests)</span>
-<span class="t-s">reply = subprocess.run([&quot;dctx&quot;, &quot;mcp&quot;, &quot;.&quot;], input=wire.encode(),</span>
-<span class="t-s">                       stdout=subprocess.PIPE, check=True).stdout</span>
-<span class="t-s">line = next(x for x in reply.splitlines() if json.loads(x).get(&quot;id&quot;) == 2)</span>
-<span class="t-s">definitions = json.dumps(json.loads(line)[&quot;result&quot;][&quot;tools&quot;],</span>
-<span class="t-s">                         ensure_ascii=False, separators=(&quot;,&quot;, &quot;:&quot;)).encode()</span>
-<span class="t-s">for name, payload in [(&quot;response without LF&quot;, line), (&quot;tools array&quot;, definitions)]:</span>
-<span class="t-s">    print(name, len(payload), &quot;bytes;&quot;, (2 * len(payload) + 6) // 7, &quot;est. tokens&quot;)</span>
-<span class="t-s">PYCODE</span>
-</code></pre></div>
-
+<span class="t-f">requests</span> = [
+    <span class="t-f">{"jsonrpc":</span> <span class="t-s">"2.0"</span>, <span class="t-s">"id"</span>: 1, <span class="t-s">"method"</span>: <span class="t-s">"initialize"</span>, <span class="t-s">"params"</span>: {
+        <span class="t-s">"protocolVersion"</span>: <span class="t-s">"2025-06-18"</span>, <span class="t-s">"capabilities"</span>: {},
+        <span class="t-s">"clientInfo"</span>: {"name": <span class="t-s">"dctx-modality-measurement"</span>, <span class="t-s">"version"</span>: <span class="t-s">"1"</span>}}},
+    <span class="t-f">{"jsonrpc":</span> <span class="t-s">"2.0"</span>, <span class="t-s">"method"</span>: <span class="t-s">"notifications/initialized"</span>},
+    <span class="t-f">{"jsonrpc":</span> <span class="t-s">"2.0"</span>, <span class="t-s">"id"</span>: 2, <span class="t-s">"method"</span>: <span class="t-s">"tools/list"</span>},
+<span class="t-f">]</span>
+<span class="t-f">wire</span> = <span class="t-s">""</span>.join(json.dumps(r, separators=(",", <span class="t-s">":"</span>)) + <span class="t-s">"\n"</span> for r in requests)
+<span class="t-f">reply</span> = subprocess.run(["dctx", <span class="t-s">"mcp"</span>, <span class="t-s">"."</span>], input=wire.encode(),
+                       <span class="t-v">stdout</span>=<span class="t-s">subprocess.PIPE,</span> <span class="t-v">check</span>=<span class="t-s">True).stdout</span>
+<span class="t-f">line</span> = next(x for x in reply.splitlines() if json.loads(x).get("id") == 2)
+<span class="t-f">definitions</span> = json.dumps(json.loads(line)["result"]["tools"],
+                         <span class="t-v">ensure_ascii</span>=<span class="t-s">False,</span> <span class="t-v">separators</span>=<span class="t-s">(",",</span> <span class="t-s">":"</span>)).encode()
+<span class="t-k">for</span> <span class="t-f">name,</span> payload in [("response without LF", line), ("tools array", definitions)]:
+    <span class="t-f">print(name,</span> len(payload), <span class="t-s">"bytes;"</span>, (2 * len(payload) + 6) // 7, <span class="t-s">"est. tokens"</span>)
+<span class="t-f">PYCODE</span></code></pre></div>
 <p>Do not enable MCP solely to save output tokens on a short task. Prefer existing
 shell access when it avoids adding definitions; use MCP when the client's tool
 workflow makes repeated focused queries useful. Compare total session usage
 under the same client and model, including definition loading and extra turns.</p>
 <h2 id="ci--prompt-cache-prefix-stability">CI / prompt-cache prefix stability<a class="hd" href="#ci--prompt-cache-prefix-stability" aria-label="Link to CI / prompt-cache prefix stability">#</a></h2>
 <p>Save deterministic output from a fixed selection as a build artifact:</p>
-<div class="hl"><pre><code>dctx<span class="t-w"> </span>pack<span class="t-w"> </span>.<span class="t-w"> </span>--output<span class="t-w"> </span>context.txt
-dctx<span class="t-w"> </span>map<span class="t-w"> </span>find<span class="t-w"> </span>Session<span class="t-w"> </span>--json<span class="t-w"> </span>&gt;<span class="t-w"> </span>symbol-context.json
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> pack . <span class="t-a">--output</span> context.txt
+<span class="t-f">dctx</span> map find Session <span class="t-a">--json</span> <span class="t-k">&gt;</span> <span class="t-f">symbol-context.json</span></code></pre></div>
 <p>Keep generated artifacts outside the next scan or ignore them. Keep the default
 <code>--tree-stamps=off</code> for stable prefixes. For map,
 leave <code>--meta</code> off to exclude changing snapshot, generation and age metadata.
@@ -555,17 +531,13 @@ which exposes <code>Session</code>, <code>SnapshotRequest</code>, <code>MapReque
 templates and cache operations. Internal engine crates are implementation details.
 The facade is available from Git now; <strong>crates.io publication is pending</strong>. In your
 application's <code>Cargo.toml</code>:</p>
-<div class="hl"><pre><code><span class="t-k">[dependencies]</span>
-<span class="t-n">dctx</span><span class="t-w"> </span><span class="t-o">=</span><span class="t-w"> </span><span class="t-p">{</span><span class="t-w"> </span><span class="t-n">git</span><span class="t-w"> </span><span class="t-p">=</span><span class="t-w"> </span><span class="t-s2">&quot;https://github.com/Eris-Margeta/dctx&quot;</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-n">tag</span><span class="t-w"> </span><span class="t-p">=</span><span class="t-w"> </span><span class="t-s2">&quot;v1.3.0&quot;</span><span class="t-w"> </span><span class="t-p">}</span>
-</code></pre></div>
-
+<div class="hl" data-lang="toml"><pre><code><span class="t-t">[dependencies]</span>
+<span class="t-a">dctx</span> = { git = <span class="t-s">"https://github.com/Eris-Margeta/dctx"</span>, tag = <span class="t-s">"v1.3.0"</span> }</code></pre></div>
 <p>The <a href="/docs/readme/#use-as-a-library">ten-line pack example</a> is compiled and run as a
 <a href="https://github.com/Eris-Margeta/dctx/blob/main/examples/library/README.md">workspace doctest</a>. It uses an in-memory source and
 an explicit 8 MiB ephemeral storage ceiling, so it needs no CLI subprocess or
 project scan. Run it from this repository's root:</p>
-<div class="hl"><pre><code>cargo<span class="t-w"> </span><span class="t-nb">test</span><span class="t-w"> </span>--locked<span class="t-w"> </span>-p<span class="t-w"> </span>dctx-library-example<span class="t-w"> </span>--doc
-</code></pre></div>
-
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">cargo</span> test <span class="t-a">--locked</span> <span class="t-a">-p</span> dctx-library-example <span class="t-a">--doc</span></code></pre></div>
 <p>The host supplies source, clock, cancellation, selection policy, grants, storage
 and place/view names. The facade does not discover a home directory, global
 configuration, Git executable or plugin host; it does not print to stdout.
@@ -606,7 +578,8 @@ untrusted values as <code>--place</code>, <code>--output</code> or dash-leading 
     <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
     <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
     <p>An advanced tool with several ways to use it: <a href="/start/">start with the safe path</a>.</p>
-    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
+    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0</p>
+    <p class="ftr-prefs"><button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Animations: on</button></p>
    </div>
    <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/start/">Choose your path</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
    <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/for-ai-evaluators/">For AI evaluators</a></li><li><a href="/llms-small.txt">llms-small.txt</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>

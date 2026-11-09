@@ -12,7 +12,7 @@
   if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
   if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
 })();</script>
-<link rel="stylesheet" href="/assets/site.637c934a.css">
+<link rel="stylesheet" href="/assets/site.78d109a3.css">
 <link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
@@ -20,6 +20,7 @@
 <meta name="description" content="Markers, ahead-of-time compilation, the two rendering passes and the data variables.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
+<meta name="dctx-build" content="5815d282ddf2f51f78d4c1f4044d8c5fe014c611a19674febc7d71438e67e237">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -59,7 +60,7 @@
 <link rel="alternate" type="text/markdown" href="/docs/templating/index.md" title="Templating engine (ADR-003) as Markdown">
 <link rel="prev" href="/docs/templates-contract/">
 <link rel="next" href="/docs/crate-map/">
-<script src="/assets/page.da8d3bbd.js" defer></script>
+<script src="/assets/page.c246e049.js" defer></script>
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -112,7 +113,7 @@
    "name": "dctx",
    "softwareVersion": "1.3.0",
    "applicationCategory": "DeveloperApplication",
-   "operatingSystem": "Linux (x86_64 tested)",
+   "operatingSystem": "Linux, macOS, Windows",
    "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
    "url": "https://www.dctx.internet.technology/",
    "license": "https://www.apache.org/licenses/LICENSE-2.0",
@@ -211,7 +212,6 @@
   <nav class="nav" aria-label="Primary"><ul><li><a href="/start/">Start</a></li><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
   <div class="hdr-end">
    <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
-   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
    <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
    <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
     <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/start/">Start</a></li><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav></details>
@@ -285,32 +285,32 @@
 # --- 1. Syntactic Markers (Granular Control) ---
 # Defines the exact characters used to wrap tags.
 # Allows handling XML, HTML, or Custom formats safely.
-start_marker_open  = &quot;&lt;&quot;
-start_marker_close = &quot;&gt;&quot;
-end_marker_open    = &quot;&lt;/&quot;
-end_marker_close   = &quot;&gt;&quot;
+start_marker_open  = "&lt;"
+start_marker_close = "&gt;"
+end_marker_open    = "&lt;/"
+end_marker_close   = "&gt;"
 
 # --- 2. Semantic Marker Names ---
 # Defines the keywords used inside the tags.
-instr_marker         = &quot;INSTRUCTIONS&quot;
-tree_start_marker    = &quot;DIRECTORY_TREE&quot;
-tree_end_marker      = &quot;DIRECTORY_TREE&quot;
-file_start_marker    = &quot;FILE_CONTENT_START&quot;
-file_end_marker      = &quot;FILE_CONTENT_END&quot;
+instr_marker         = "INSTRUCTIONS"
+tree_start_marker    = "DIRECTORY_TREE"
+tree_end_marker      = "DIRECTORY_TREE"
+file_start_marker    = "FILE_CONTENT_START"
+file_end_marker      = "FILE_CONTENT_END"
 
 # --- 3. Attribute Keys ---
 # Used inside tags to denote properties.
-attr_id    = &quot;ID&quot;
-attr_path  = &quot;PATH&quot;
-attr_size  = &quot;SIZE&quot;
-attr_lines = &quot;LINES&quot;
-attr_mod   = &quot;MOD&quot;
+attr_id    = "ID"
+attr_path  = "PATH"
+attr_size  = "SIZE"
+attr_lines = "LINES"
+attr_mod   = "MOD"
 
 # --- 4. Instructions Block Text ---
 # This text explains the format to the LLM. It references the variables above
 # to ensure the instructions always match the actual format used.
-# Use &#39;\n&#39; for new lines.
-instructions_text = &quot;1. Manifest: The {{start_marker_open}}{{tree_start_marker}}{{start_marker_close}} section lists all files.\n   - Each entry: [TYPE] RELATIVE_PATH ({{attr_id}}:UNIQUE_ID)\n   - TYPE is [D] for directory, [F] for file.\n2. Content Access: To read a specific file:\n   - Find its UNIQUE_ID from the directory tree.\n   - Search for the marker: {{start_marker_open}}{{file_start_marker}} {{attr_id}}=\&quot;UNIQUE_ID\&quot;{{start_marker_close}}\n   - The content is between this marker and {{end_marker_open}}{{file_end_marker}} {{attr_id}}=\&quot;UNIQUE_ID\&quot;{{end_marker_close}}&quot;
+# Use '\n' for new lines.
+instructions_text = "1. Manifest: The {{start_marker_open}}{{tree_start_marker}}{{start_marker_close}} section lists all files.\n   - Each entry: [TYPE] RELATIVE_PATH ({{attr_id}}:UNIQUE_ID)\n   - TYPE is [D] for directory, [F] for file.\n2. Content Access: To read a specific file:\n   - Find its UNIQUE_ID from the directory tree.\n   - Search for the marker: {{start_marker_open}}{{file_start_marker}} {{attr_id}}=\"UNIQUE_ID\"{{start_marker_close}}\n   - The content is between this marker and {{end_marker_open}}{{file_end_marker}} {{attr_id}}=\"UNIQUE_ID\"{{end_marker_close}}"
 
 # ==============================================================================
 # [PARTIALS]
@@ -318,19 +318,19 @@ instructions_text = &quot;1. Manifest: The {{start_marker_open}}{{tree_start_mar
 # ==============================================================================
 
 # --- Tree Entry Partial ---
-# Context: &#39;node&#39; object
+# Context: 'node' object
 # Available Data: {{{node.type_char}}}, {{{node.path}}}, {{{node.id}}}, {{{node.mod}}}, {{{node.size}}}
 # The default entry leaves {{{node.mod}}} and {{{node.size_part}}} out (1.0.1); a custom template may add `, {{attr_mod}}:{{{node.mod}}}{{{node.size_part}}}`.
 [PARTIAL:TREE_ENTRY]
 {{{node.type_char}}} {{{node.path}}} ({{attr_id}}:{{{node.id}}})
 
 # --- File Block Partial ---
-# Context: &#39;file&#39; object
+# Context: 'file' object
 # Available Data: {{{file.id}}}, {{{file.path}}}, {{{file.lines}}}, {{{file.size}}}, {{{file.content}}}
 [PARTIAL:FILE_BLOCK]
-{{start_marker_open}}{{file_start_marker}} {{attr_id}}=&quot;{{{file.id}}}&quot; {{attr_path}}=&quot;{{{file.path}}}&quot; {{attr_size}}=&quot;{{{file.size}}}&quot; {{attr_lines}}=&quot;{{{file.lines}}}&quot;{{start_marker_close}}
+{{start_marker_open}}{{file_start_marker}} {{attr_id}}="{{{file.id}}}" {{attr_path}}="{{{file.path}}}" {{attr_size}}="{{{file.size}}}" {{attr_lines}}="{{{file.lines}}}"{{start_marker_close}}
 {{{file.content}}}
-{{end_marker_open}}{{file_end_marker}} {{attr_id}}=&quot;{{{file.id}}}&quot;{{end_marker_close}}
+{{end_marker_open}}{{file_end_marker}} {{attr_id}}="{{{file.id}}}"{{end_marker_close}}
 
 # ==============================================================================
 # [LAYOUT]
@@ -347,8 +347,7 @@ instructions_text = &quot;1. Manifest: The {{start_marker_open}}{{tree_start_mar
 {{{comp.tree}}}
 {{end_marker_open}}{{tree_end_marker}}{{end_marker_close}}
 
-{{{comp.files}}}
-</code></pre></div><nav class="pager" aria-label="Previous and next"><a class="prev" href="/docs/templates-contract/" rel="prev"><span>Previous</span>Template contract (DTS v2)</a><a class="next" href="/docs/crate-map/" rel="next"><span>Next</span>Crate map</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#1-decision-explicit-marker-definition">1. Decision: Explicit Marker Definition</a></li><li class="l2"><a href="#2-decision-ahead-of-time-aot-template-compilation">2. Decision: &quot;Ahead-of-Time&quot; (AOT) Template Compilation</a></li><li class="l3"><a href="#the-baked-in-default">The &quot;Baked-In&quot; Default</a></li><li class="l3"><a href="#user-custom-templates">User Custom Templates</a></li><li class="l2"><a href="#3-decision-two-pass-rendering-engine">3. Decision: Two-Pass Rendering Engine</a></li><li class="l2"><a href="#4-template-file-structure">4. Template File Structure</a></li><li class="l2"><a href="#5-available-data-variables-runtime">5. Available Data Variables (Runtime)</a></li></ul></nav></div>
+{{{comp.files}}}</code></pre></div><nav class="pager" aria-label="Previous and next"><a class="prev" href="/docs/templates-contract/" rel="prev"><span>Previous</span>Template contract (DTS v2)</a><a class="next" href="/docs/crate-map/" rel="next"><span>Next</span>Crate map</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#1-decision-explicit-marker-definition">1. Decision: Explicit Marker Definition</a></li><li class="l2"><a href="#2-decision-ahead-of-time-aot-template-compilation">2. Decision: &quot;Ahead-of-Time&quot; (AOT) Template Compilation</a></li><li class="l3"><a href="#the-baked-in-default">The &quot;Baked-In&quot; Default</a></li><li class="l3"><a href="#user-custom-templates">User Custom Templates</a></li><li class="l2"><a href="#3-decision-two-pass-rendering-engine">3. Decision: Two-Pass Rendering Engine</a></li><li class="l2"><a href="#4-template-file-structure">4. Template File Structure</a></li><li class="l2"><a href="#5-available-data-variables-runtime">5. Available Data Variables (Runtime)</a></li></ul></nav></div>
 </main>
 <footer class="ftr">
  <div class="wrap">
@@ -357,7 +356,8 @@ instructions_text = &quot;1. Manifest: The {{start_marker_open}}{{tree_start_mar
     <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
     <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
     <p>An advanced tool with several ways to use it: <a href="/start/">start with the safe path</a>.</p>
-    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
+    <p class="mono small">dctx 1.3.0 &middot; Apache-2.0</p>
+    <p class="ftr-prefs"><button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Animations: on</button></p>
    </div>
    <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/start/">Choose your path</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
    <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/for-ai-evaluators/">For AI evaluators</a></li><li><a href="/llms-small.txt">llms-small.txt</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>

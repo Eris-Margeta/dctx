@@ -20,7 +20,7 @@
   var mt = document.getElementById('motion-toggle'), reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
   function label() {
     var on = root.classList.contains('motion') && !reduce.matches;
-    mt.textContent = 'Motion: ' + (on ? 'on' : 'off');
+    mt.textContent = 'Animations: ' + (on ? 'on' : 'off');
     mt.setAttribute('aria-pressed', String(on));
     mt.disabled = reduce.matches;
     mt.title = reduce.matches ? 'Your system asks for reduced motion' : 'Turn animations ' + (on ? 'off' : 'on');
@@ -40,7 +40,8 @@
     var pre = block.querySelector('pre'); if (!pre) return '';
     var cmds = $$('.cmd', pre);
     if (block.classList.contains('term') && cmds.length) return cmds.map(function (c) { return c.textContent.replace(/^\$ /, ''); }).join('\n');
-    return pre.textContent.replace(/\n$/, '');
+    var copy = pre.cloneNode(true); $$('.p', copy).forEach(function (p) { p.remove(); });
+    return copy.textContent.replace(/\n$/, '');
   }
   $$('.hl, .code, .term').forEach(function (block) {
     var btn = block.querySelector('.copy');
@@ -97,4 +98,57 @@
 
   var menu = document.querySelector('.menu');
   if (menu) document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && menu.open) { menu.open = false; menu.querySelector('summary').focus(); } });
+
+  /* New version check: each page carries the id of the build it belongs to (meta dctx-build); /build.json
+     names the deployed one. On load, when the tab comes back and every 10 minutes, a different digest
+     offers a reload. Same origin only, never cached, nothing stored. */
+  var meta = document.querySelector('meta[name="dctx-build"]'), mine = meta ? meta.content : '', note = null, HEX = /^[0-9a-f]{64}$/;
+  function offer() {
+    note = document.createElement('div'); note.className = 'update'; note.setAttribute('role', 'status');
+    note.innerHTML = '<p><b>New version available.</b> This page was updated since you opened it.</p>'
+      + '<button class="btn btn-primary" type="button">Reload</button><button class="btn" type="button">Dismiss</button>';
+    var b = note.querySelectorAll('button');
+    b[0].addEventListener('click', function () { location.reload(); });
+    b[1].addEventListener('click', function () { note.remove(); });
+    document.body.appendChild(note);
+  }
+  function check() {
+    if (note || document.hidden || !window.fetch) return;
+    fetch('/build.json', { cache: 'no-store', credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (b) { if (!note && b && HEX.test(b.build_id || '') && b.build_id !== mine) offer(); }, function () {});
+  }
+  if (HEX.test(mine) && location.protocol !== 'file:') {
+    (window.requestIdleCallback || function (f) { setTimeout(f, 2000); })(check, { timeout: 5000 });
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
+    setInterval(check, 600000);
+  }
+})();
+
+/* Client-side search over /assets/search-index.*.json (titles, headings, excerpts). */
+(function () {
+  'use strict';
+  var form = document.getElementById('search-form'); if (!form || !window.fetch) return;
+  var input = form.elements.q, list = document.getElementById('search-results'), note = document.getElementById('search-note'), index = null;
+  function esc(s) { return s.replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function run() {
+    var q = input.value.trim().toLowerCase(), terms = q.split(/\s+/).filter(Boolean);
+    if (!index || !terms.length) { list.innerHTML = ''; note.textContent = index ? '' : 'Loading the index…'; return; }
+    var hits = index.map(function (p) {
+      var t = p.title.toLowerCase(), h = p.h.join(' ').toLowerCase(), x = p.text.toLowerCase(), score = 0;
+      for (var i = 0; i < terms.length; i++) {
+        var w = terms[i], s = (t.indexOf(w) >= 0 ? 10 : 0) + (h.indexOf(w) >= 0 ? 4 : 0) + (x.indexOf(w) >= 0 ? 1 : 0);
+        if (!s) return null; score += s;
+      }
+      return { p: p, s: score };
+    }).filter(Boolean).sort(function (a, b) { return b.s - a.s || a.p.url.localeCompare(b.p.url); }).slice(0, 30);
+    note.textContent = hits.length + ' page' + (hits.length === 1 ? '' : 's') + ' match “' + input.value.trim() + '”.';
+    list.innerHTML = hits.map(function (r) {
+      var heads = r.p.h.filter(function (h) { return terms.some(function (w) { return h.toLowerCase().indexOf(w) >= 0; }); }).slice(0, 3);
+      return '<li><a href="' + esc(r.p.url) + '">' + esc(r.p.title) + '</a><div class="u">' + esc(r.p.url) + '</div><p>' + esc(heads.length ? heads.join(' · ') : r.p.text) + '</p></li>';
+    }).join('');
+  }
+  fetch(form.getAttribute('data-index')).then(function (r) { return r.json(); }).then(function (j) { index = j; run(); }, function () { note.textContent = 'The search index could not be loaded.'; });
+  var q = new URLSearchParams(location.search).get('q'); if (q) input.value = q;
+  input.addEventListener('input', run);
+  form.addEventListener('submit', function (e) { e.preventDefault(); history.replaceState(null, '', '?q=' + encodeURIComponent(input.value)); run(); });
 })();
