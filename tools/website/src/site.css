@@ -593,3 +593,4 @@ h3 .state { margin-left: 6px; font-weight: 500; }
 }
 @media print { .hdr, .ftr, .sidebar, .toc, .copy, .anim-view, [data-replay] { display: none !important; } body { background: #fff; color: #000; } .anim-prose { position: static !important; width: auto; height: auto; clip: auto; clip-path: none; white-space: normal; } }
 @media (max-width: 599px) { .timeline li > span { display: none; } }
+@media (max-width: 599px) { .anim-slot[data-anim="safe_path"] { display: none; } }
