@@ -71,6 +71,65 @@ verification with `--bundle` without fetching attestations from GitHub. Provenan
 binds bytes to a workflow and source; it is not a claim of independent review or
 of reproducibility on every platform.
 
+## Verify npm packages
+
+When published, `dctx` is the Node.js shim and `@tejl/dctx-<platform>` packages
+contain the native binaries. The owner publishes these packages manually from a
+Mac using the GitHub release assets; CI does not publish them. **There is no npm
+provenance attestation.** The cosign signatures and GitHub build attestations
+above authenticate the release archives, not the npm tarballs or JavaScript shim.
+
+To check an installed binary, select the same version and platform for npm and
+the GitHub release. First authenticate `SHA256SUMS`, verify the selected release
+archive's checksum, and verify its build provenance using the sections above.
+`SHA256SUMS` lists archive hashes, not raw executable hashes: compare the npm
+binary with the executable extracted from that verified archive.
+
+For the Linux x64 example above, retain `TAG` and `ASSET`. When the npm packages
+are published, run in a fresh verification directory containing the authenticated
+release files. Set `INSTALLED_BINARY` to your project's installed native binary:
+
+```sh
+set -eu
+VERSION="${TAG#v}"
+PLATFORM=linux-x64
+INSTALLED_BINARY="../your-project/node_modules/@tejl/dctx-$PLATFORM/bin/dctx"
+# Fetch the exact platform package without running lifecycle scripts.
+npm pack "@tejl/dctx-$PLATFORM@$VERSION" --ignore-scripts
+mkdir npm-dctx release-dctx
+tar -xzf "tejl-dctx-$PLATFORM-$VERSION.tgz" -C npm-dctx package/bin/dctx
+tar -xzf "$ASSET" -C release-dctx dctx
+
+# Hash both binaries; these hashes must match, not the compressed archive hash.
+sha256sum release-dctx/dctx npm-dctx/package/bin/dctx
+cmp release-dctx/dctx npm-dctx/package/bin/dctx
+
+# Check the installed copy as well.
+sha256sum "$INSTALLED_BINARY"
+cmp release-dctx/dctx "$INSTALLED_BINARY"
+```
+
+Adjust `INSTALLED_BINARY` if your package manager uses a different `node_modules`
+layout. Require the hashes to match and both `cmp` commands to succeed before
+executing the binary. The installed copy must
+match the packed copy as well as the authenticated release executable.
+
+For other platforms, choose the corresponding release archive and npm suffix:
+
+| npm platform | Release archive | Executable |
+| --- | --- | --- |
+| `linux-x64` | `dctx-x86_64-unknown-linux-musl.tar.gz` | `dctx` |
+| `linux-arm64` | `dctx-aarch64-unknown-linux-musl.tar.gz` | `dctx` |
+| `darwin-x64` | `dctx-x86_64-apple-darwin.tar.gz` | `dctx` |
+| `darwin-arm64` | `dctx-aarch64-apple-darwin.tar.gz` | `dctx` |
+| `win32-x64` | `dctx-x86_64-pc-windows-msvc.zip` | `dctx.exe` |
+
+On macOS substitute `shasum -a 256` for `sha256sum`. On Windows extract the release
+ZIP and npm tarball into separate directories, then compare the three executable
+hashes with `Get-FileHash -Algorithm SHA256` (or use Git Bash with `sha256sum` and
+`cmp`). This verifies native binary equality; it does not attest the npm package
+metadata or the `dctx` JavaScript shim.
+
 ## Air-gap transfer and offline install
 
 Each `dctx-TARGET-airgap.tar.gz` contains the executable, LICENSE, NOTICE, platform

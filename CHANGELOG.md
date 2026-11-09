@@ -14,6 +14,7 @@ and distribution plans below do not describe the current release.
 
 ## [Unreleased]
 
+- Clarify npm stability and binary verification, and guard every npm package manifest against install hooks.
 - Release version checks now cover the bundled git plugin, its fixtures and their digests.
 
 ## [1.3.1] - 2026-11-09

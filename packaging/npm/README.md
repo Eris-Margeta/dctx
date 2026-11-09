@@ -5,10 +5,13 @@
 `dctx/` contains the dependency-free Node.js RPC client and CLI transport.
 Each `cli-*` directory is an optional OS/CPU constrained package containing the
 native binary. Executables are generated and ignored by git. There are no
-installation hooks or binary downloads. Releases publish `dctx` with pinned
-`@tejl/dctx-<platform>` optional dependencies to npm after the release tag.
-Run `npm install dctx` to install the shim and the matching native package.
+installation hooks or binary downloads. The owner publishes manually from a Mac,
+using the GitHub release assets; CI does not publish npm packages.
+When published, `dctx` pins `@tejl/dctx-<platform>` optional dependencies.
+Then `npm install dctx` installs the shim and the matching native package.
 See [the package API](dctx/README.md) for resolution and handshake behavior.
+See [npm verification](../../docs/VERIFYING.md#verify-npm-packages) for binary
+checksum checks. There is no npm provenance attestation.
 
 From the repository root:
 
@@ -34,7 +37,9 @@ Users of that tarball set `DCTX_BIN` (see
 [the package API](dctx/README.md)).
 CI checks Node 18 and 24 on Linux, macOS and Windows, every RPC verb against CLI
 stdout/status, transport lifecycle/refusals, TypeScript consumers and actual
-packed contents. The output string is opaque, including errors and trailing
+packed contents. The package suite also rejects `preinstall`, `install`,
+`postinstall` and `prepare` scripts in every npm package manifest.
+The output string is opaque, including errors and trailing
 newlines. Tests discover the verb set from the schema to prevent coverage drift.
 
 To fill all six packages from five local release archives and `SHA256SUMS`:
@@ -53,5 +58,4 @@ dependencies from a registry, name both tarballs explicitly:
 `npm install --omit=optional --ignore-scripts ./dctx-<version>.tgz ./tejl-dctx-<os>-<arch>-<version>.tgz`.
 Archive names use full Cargo target triples. The Linux x64 packaging test exercises all six tarballs,
 checksum rejection, CLI argument forwarding, exit status and signals without
-publishing. See [the maintainer runbook](../../docs/RELEASING.md) for the existing
-credential-gated release process. The npm transport CI job requires no tokens.
+publishing. The npm transport CI job requires no tokens.

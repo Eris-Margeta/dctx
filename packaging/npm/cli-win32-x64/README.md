@@ -3,6 +3,8 @@
 # @tejl/dctx-win32-x64
 
 Native win32-x64 binary for [dctx](https://www.npmjs.com/package/dctx).
-Install the `dctx` package to select your platform automatically.
+When published, install the `dctx` package to select your platform automatically.
 
-Registry publication is coming soon. Install from [GitHub Releases](https://github.com/Eris-Margeta/dctx/releases) until then.
+Until then, install from [GitHub Releases](https://github.com/Eris-Margeta/dctx/releases).
+See [npm binary verification](https://github.com/Eris-Margeta/dctx/blob/main/docs/VERIFYING.md#verify-npm-packages).
+There is no npm provenance attestation.

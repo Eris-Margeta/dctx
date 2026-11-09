@@ -2,13 +2,16 @@
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # dctx
 
+**dctx is not yet stable and not enterprise-ready.** Until version 2.0, expect
+breaking changes often. Treat these npm packages as **not stable until 2.0**.
+
 A dependency-free Node.js transport for `dctx rpc`. The native engine produces
 all context, maps, results and diagnostics. This package forwards argument
 strings and returns engine envelopes without parsing or rendering their output.
 It includes the `dctx` CLI command, which verifies the engine handshake and then
 forwards CLI arguments, standard streams, exit status and signals.
 
-Install from npm (Node 18+):
+When published, install from npm (Node 18+):
 
 ```sh
 npm install dctx
@@ -18,14 +21,17 @@ npx dctx --version
 The `dctx` package pins `@tejl/dctx-<os>-<arch>` optional dependencies, and npm
 installs the matching native platform package. If optional dependencies were
 omitted, install the package for your platform at the same version, for example
-`npm install @tejl/dctx-linux-x64@1.3.1`.
+`npm install "@tejl/dctx-linux-x64@<version>"`. Replace `<version>` in these
+examples with your selected release version.
 The transport itself makes no network calls and has no install hooks, binary
 downloads, fallback operations or retries.
+For checksum verification and the limits of npm provenance, see
+[Verifying npm packages](https://github.com/Eris-Margeta/dctx/blob/main/docs/VERIFYING.md#verify-npm-packages).
 
 Install a CI tarball offline-safe, then point it at a verified release binary:
 
 ```sh
-npm install --omit=optional --ignore-scripts ./dctx-1.3.1.tgz
+npm install --omit=optional --ignore-scripts "./dctx-<version>.tgz"
 # The matching archive from the GitHub release, checked against its SHA256SUMS.
 export DCTX_BIN=/absolute/path/to/dctx
 ```
@@ -38,7 +44,7 @@ tarballs without resolving optional dependencies from a registry, name the
 matching platform tarball explicitly:
 
 ```sh
-npm install --omit=optional --ignore-scripts ./dctx-1.3.1.tgz ./tejl-dctx-linux-x64-1.3.1.tgz
+npm install --omit=optional --ignore-scripts "./dctx-<version>.tgz" "./tejl-dctx-linux-x64-<version>.tgz"
 ```
 
 Registry installs normally include optional dependencies. For an offline project,
