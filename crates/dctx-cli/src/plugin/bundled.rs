@@ -7,7 +7,7 @@
 use dctx_plugin_distribution::{
     CapabilitySet, DistributionError, Document, InstalledVersion, PluginId, Sha256Hex, Version,
 };
-use dctx_plugin_protocol::{DecodeLimits, decode_object};
+use dctx_plugin_protocol::{decode_object, DecodeLimits};
 
 /// Public index locator. Refresh is explicit; this URL is not fetched by list or help.
 pub const DEFAULT_INDEX_URL: &str = "https://example.invalid/dctx/index.json";

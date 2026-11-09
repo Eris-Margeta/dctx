@@ -42,6 +42,9 @@ fn version_starts_with_release_and_ends_with_build_sha() {
 
 #[test]
 fn version_matches_the_package_version() {
-    assert_eq!(env!("CARGO_PKG_VERSION"), include_str!("../../../VERSION").trim());
+    assert_eq!(
+        env!("CARGO_PKG_VERSION"),
+        include_str!("../../../VERSION").trim()
+    );
     assert!(stdout_of("--version").starts_with(&format!("dctx {} (", env!("CARGO_PKG_VERSION"))));
 }

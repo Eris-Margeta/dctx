@@ -4,14 +4,14 @@
 //! No filesystem, network or worker execution; verifies consent, sticky disable and views.
 
 use dctx_desktop_api::{
-    DesktopError, PluginFailure, PluginOps, PluginSource, PluginState, bundled_plugin_version,
+    bundled_plugin_version, DesktopError, PluginFailure, PluginOps, PluginSource, PluginState,
 };
 use dctx_plugin_distribution::{
+    domain::registry_codec,
+    fakes::{FakeNetwork, Fault, FixedClock, MemoryStore},
     CapabilitySet, Confinement, ConsentApproval, ConsentScope, Distribution, DistributionError,
     Enablement, HttpsUrl, IndexEntry, IndexRelease, InstallPolicy, Origin, PluginId, Registry,
     Sha256Hex, Store, Target, TrustStore, VerifiedIndex, Version,
-    domain::registry_codec,
-    fakes::{FakeNetwork, Fault, FixedClock, MemoryStore},
 };
 
 struct Fixture {
@@ -126,15 +126,14 @@ fn migrated_or_copied_binary_needs_consent_and_enable_never_grants_it() {
         PluginState::NeedsConsent
     );
     assert_eq!(before, f.store.load_registry().unwrap());
-    assert!(
-        f.dist()
-            .registry()
-            .unwrap()
-            .get(&id)
-            .unwrap()
-            .consent
-            .is_none()
-    );
+    assert!(f
+        .dist()
+        .registry()
+        .unwrap()
+        .get(&id)
+        .unwrap()
+        .consent
+        .is_none());
 }
 
 #[test]
@@ -319,15 +318,14 @@ fn independent_update_check_uses_only_the_supplied_verified_index() {
     assert!(!result.containing_release);
     assert_eq!(result.version.as_deref(), Some("2.0.0"));
     assert!(f.ops().check_update(id.as_str(), None, None).is_err());
-    assert!(
-        f.ops()
-            .check_update(
-                id.as_str(),
-                Some(&index),
-                Some(&Version::parse("9.0.0").unwrap())
-            )
-            .is_err()
-    );
+    assert!(f
+        .ops()
+        .check_update(
+            id.as_str(),
+            Some(&index),
+            Some(&Version::parse("9.0.0").unwrap())
+        )
+        .is_err());
     assert_eq!(before, f.store.load_registry().unwrap());
     assert_eq!(f.network.requests(), [] as [std::string::String; 0]);
 }
