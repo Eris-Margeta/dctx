@@ -7,7 +7,7 @@
 use crate::domain::{Recovery, StoreError, current_path, previous_path};
 use crate::ports::StoreFs;
 
-use super::store::{PointerView, SegmentStore, inspect};
+use super::store::{PointerView, SegmentStore, inspect, newest};
 
 enum Class {
     Keep,
@@ -23,6 +23,7 @@ impl<F: StoreFs> SegmentStore<F> {
     /// # Errors
     /// Refuses a crashed store, busy writer or unrecoverable pointer closure; propagates inspection, repair, cleanup and durability failures.
     pub fn recover(&self) -> Result<Recovery, StoreError> {
+        let _visibility = self.write_visibility();
         self.ensure_live()?;
         if !self.fs.held_roots().is_empty() {
             return Err(StoreError::Busy);
@@ -67,7 +68,8 @@ impl<F: StoreFs> SegmentStore<F> {
         let discarded_tmp = self.discard_tmp()?;
         let mut best: Option<(u64, String)> = None;
         for root in roots {
-            if let Some(generation) = self.committed(root)? {
+            if let Some(closure) = newest(&self.fs, root)? {
+                let generation = closure.generation;
                 let replace = best.as_ref().is_none_or(|(have, _)| generation > *have);
                 if replace {
                     best = Some((generation, root.clone()));

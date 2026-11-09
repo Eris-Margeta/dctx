@@ -14,7 +14,7 @@ use crate::domain::{
 use crate::ports::StoreFs;
 use dctx_map_segment::{decode, segment_object_digest};
 
-use super::store::{SegmentStore, inspect, manifest_bytes_ok, newest};
+use super::store::{PointerView, SegmentStore, inspect, manifest_bytes_ok, newest};
 
 mod prepare;
 mod stage;
@@ -122,6 +122,8 @@ impl<F: StoreFs> SegmentStore<F> {
         reason = "Keep the public publication entry point consuming its request; borrowing would change its ownership contract."
     )]
     pub fn publish(&self, request: PublishRequest) -> Result<Published, StoreError> {
+        // The guard outlives Attempt, including its writer-protection and temp cleanup.
+        let _visibility = self.write_visibility();
         self.ensure_live()?;
         self.require_durability()?;
         check_root(&request.root)?;
@@ -145,6 +147,7 @@ impl<F: StoreFs> SegmentStore<F> {
         root: &str,
         generation: u64,
     ) -> Result<(), StoreError> {
+        let _visibility = self.write_visibility();
         self.ensure_live()?;
         self.require_durability()?;
         check_root(root)?;
@@ -207,7 +210,10 @@ impl<F: StoreFs> SegmentStore<F> {
         request: &PublishRequest,
         attempt: &mut Attempt<'_, F>,
     ) -> Result<Published, StoreError> {
-        if !self.current_pointer_closed(&request.root)? {
+        if matches!(
+            inspect(&self.fs, &current_path(&request.root))?,
+            PointerView::Broken
+        ) {
             return Err(StoreError::CorruptIndex { reason: "pointer" });
         }
         let current = newest(&self.fs, &request.root)?;

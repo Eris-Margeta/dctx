@@ -14,6 +14,12 @@ and distribution plans below do not describe the current release.
 
 ## [Unreleased]
 
+### Fixed
+
+- Segment store: publishing a new generation no longer fails with `InvalidRequest(generation)`
+  when garbage collection runs at the same time. Publication now excludes a collection's
+  mark-through-unlink, so a collector can no longer hide the newest generation from a writer.
+
 ## [1.3.0] - 2026-11-09
 
 Install from the GitHub release archives. The npm, crates.io and PyPI packages and

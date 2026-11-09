@@ -5,6 +5,7 @@
 //! [`crate::domain::MarkMode::OmitLeases`] is the falsifying mutation. A sharing violation stays pending.
 
 use std::collections::BTreeSet;
+use std::sync::PoisonError;
 use std::sync::atomic::Ordering;
 
 use crate::domain::{
@@ -37,6 +38,12 @@ impl<F: StoreFs> SegmentStore<F> {
     /// # Errors
     /// Refuses a crashed store or cancellation; propagates mark, cursor, unlink and durability errors.
     pub fn gc_with_mark(&self, budget: GcBudget, mode: MarkMode) -> Result<GcReport, StoreError> {
+        // A fresh mark alone is insufficient: publication can change reachability
+        // both during pointer inspection and between that check and unlink.
+        // Pins may proceed: retained pointers cannot change under this shared
+        // guard. Serialize collectors as well, since they share a durable cursor.
+        let _visibility = self.read_visibility();
+        let _gc = self.gc_lock.lock().unwrap_or_else(PoisonError::into_inner);
         self.ensure_live()?;
         if self.pull_cancel() {
             return Err(StoreError::Cancelled);
@@ -58,6 +65,7 @@ impl<F: StoreFs> SegmentStore<F> {
     /// # Errors
     /// Refuses a crashed store, invalid root, busy lock or invalid current closure; propagates unlink and directory-sync errors.
     pub fn drop_previous(&self, root: &str) -> Result<(), StoreError> {
+        let _visibility = self.write_visibility();
         self.ensure_live()?;
         crate::domain::check_root(root)?;
         self.fs.try_lock(root)?;
@@ -71,6 +79,7 @@ impl<F: StoreFs> SegmentStore<F> {
     /// # Errors
     /// Refuses a crashed store, invalid root or busy lock; propagates pointer removal and directory-sync errors.
     pub fn retire_root(&self, root: &str) -> Result<(), StoreError> {
+        let _visibility = self.write_visibility();
         self.ensure_live()?;
         crate::domain::check_root(root)?;
         self.fs.try_lock(root)?;
@@ -367,3 +376,7 @@ mod tests {
         assert_eq!(decode_cursor(&encode_cursor("").unwrap()).unwrap(), "");
     }
 }
+
+#[cfg(test)]
+#[path = "gc/regression.rs"]
+mod regression;

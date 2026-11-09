@@ -6,7 +6,7 @@
 
 use std::collections::{BTreeSet, HashSet};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Mutex, MutexGuard, PoisonError};
+use std::sync::{Mutex, MutexGuard, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use crate::domain::{
     DurabilityMode, EMERGENCY_METADATA, MAX_ACQUIRE, Manifest, POINTER_LEN, Pin, PinnedSegment,
@@ -75,6 +75,10 @@ pub(crate) enum PointerView {
 pub struct SegmentStore<F: StoreFs> {
     pub(crate) fs: F,
     pub(crate) options: StoreOptions,
+    // Lock order: visibility, filesystem writer locks / gc_lock, coord. Exclusive
+    // publication excludes GC's entire mark-through-unlink and writer cleanup.
+    pub(crate) visibility: RwLock<()>,
+    pub(crate) gc_lock: Mutex<()>,
     pub(crate) coord: Mutex<Coord>,
     pub(crate) cancel: AtomicBool,
     pub(crate) poisoned: AtomicBool,
@@ -90,6 +94,8 @@ impl<F: StoreFs> SegmentStore<F> {
         Ok(Self {
             fs,
             options,
+            visibility: RwLock::new(()),
+            gc_lock: Mutex::new(()),
             coord: Mutex::new(Coord::default()),
             cancel: AtomicBool::new(false),
             poisoned: AtomicBool::new(false),
@@ -109,6 +115,18 @@ impl<F: StoreFs> SegmentStore<F> {
 
     pub(crate) fn coord(&self) -> MutexGuard<'_, Coord> {
         self.coord.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    pub(crate) fn read_visibility(&self) -> RwLockReadGuard<'_, ()> {
+        self.visibility
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+    }
+
+    pub(crate) fn write_visibility(&self) -> RwLockWriteGuard<'_, ()> {
+        self.visibility
+            .write()
+            .unwrap_or_else(PoisonError::into_inner)
     }
 
     pub(crate) fn protect(&self, digest: [u8; 32]) {
@@ -151,6 +169,7 @@ impl<F: StoreFs> SegmentStore<F> {
     /// # Errors
     /// Refuses a crashed store or invalid root and propagates pointer inspection IO failures.
     pub fn current_pointer_closed(&self, root: &str) -> Result<bool, StoreError> {
+        let _visibility = self.read_visibility();
         self.ensure_live()?;
         check_root(root)?;
         Ok(!matches!(
@@ -164,6 +183,7 @@ impl<F: StoreFs> SegmentStore<F> {
     /// # Errors
     /// Refuses a crashed store, invalid root or corrupt pointer; propagates bounded-read errors.
     pub fn raw_current_generation(&self, root: &str) -> Result<Option<u64>, StoreError> {
+        let _visibility = self.read_visibility();
         self.ensure_live()?;
         check_root(root)?;
         let path = current_path(root);
@@ -179,6 +199,7 @@ impl<F: StoreFs> SegmentStore<F> {
     /// # Errors
     /// Refuses a crashed store, invalid root or unrecoverable pointer closure; propagates inspection IO failures.
     pub fn committed(&self, root: &str) -> Result<Option<u64>, StoreError> {
+        let _visibility = self.read_visibility();
         self.ensure_live()?;
         Ok(newest(&self.fs, root)?.map(|closure| closure.generation))
     }
@@ -197,6 +218,7 @@ impl<F: StoreFs> SegmentStore<F> {
     /// # Errors
     /// Refuses a crashed store, invalid or empty root, corrupt closure or repeated acquisition races; propagates inspection failures.
     pub fn pin(&self, root: &str) -> Result<Pin, StoreError> {
+        let _visibility = self.read_visibility();
         self.ensure_live()?;
         check_root(root)?;
         for _ in 0..MAX_ACQUIRE {
