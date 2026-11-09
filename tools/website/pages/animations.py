@@ -41,18 +41,18 @@ def two_scopes() -> str:
     return _figure(
         "two_scopes", "two scopes, one binary", "Same engine, different owner.",
         "The system <code>dctx</code> is yours; a project's <code>dctx</code> is pinned by that project. "
-        "<code>dctx doctor</code> and binary signing are planned.",
+        "<code>dctx doctor</code> lists every <code>dctx</code> in reach; release archives are cosign-signed.",
         "What the animation shows, step by step:",
         ["One machine.",
          f"The system <code>dctx</code> on <code>PATH</code> (version {VERSION}) belongs to you and your agents; you decide when to upgrade it.",
          "A project vendors its own <code>dctx</code> inside <code>node_modules</code> or a virtualenv, pinned by its lockfile "
-         "and upgraded only when the project bumps it. The pip and npm packages are publishing soon.",
+         "and upgraded only when the project bumps it. The pip and npm packages are built in CI; registry publication is pending.",
          "Both are the same engine at different versions.",
          "Interactive agents and MCP call the system binary; application code and CI call the project binary. "
          "A library never falls back to <code>PATH</code> silently.",
-         "<code>dctx doctor</code>, planned and not in the current release, would list every <code>dctx</code> visible from the "
-         "current folder with its version and scope. Until binary signing ships, verify prebuilt archives against <code>SHA256SUMS</code>."],
-        {"v": VERSION, "pv": "1.1.0"})
+         "<code>dctx doctor</code> lists every <code>dctx</code> visible from the current folder with its version, build commit, "
+         "scope and SHA-256. Verify prebuilt archives against <code>SHA256SUMS</code> and their cosign signatures."],
+        {"v": VERSION, "pv": "1.2.0"})
 
 
 def calls_times_context() -> str:

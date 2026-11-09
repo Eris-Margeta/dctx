@@ -76,9 +76,9 @@
     t: 11.5,
     steps: [[0, 'one machine'], [.8, 'the system dctx on PATH belongs to you'], [2.2, 'a project vendors its own dctx, pinned by its lockfile'],
             [4.2, 'same engine, different version'], [5.8, 'agents and MCP call the system binary; app code and CI call the project one'],
-            [7.6, 'dctx doctor would list both (planned)']],
+            [7.6, 'dctx doctor lists both']],
     draw: function (g, t, D) {
-      var V = D.v || '1.2.0', P = D.pv || '1.1.0', a0 = sm(0, .6, t), p3 = sm(4.2, 5.2, t), p4 = sm(5.8, 6.8, t), p5 = sm(7.6, 8.2, t);
+      var V = D.v || '1.3.0', P = D.pv || '1.2.0', a0 = sm(0, .6, t), p3 = sm(4.2, 5.2, t), p4 = sm(5.8, 6.8, t), p5 = sm(7.6, 8.2, t);
       g.box(8, 8, 504, 284, { s: 'line', sa: a0, r: 8 });
       g.tx('your machine', 20, 22, 'muted', a0, 9);
       card(g, 24, 34, 'system scope', 'brand-text', t, .8, [['/usr/local/bin/dctx', 'ink'], ['on PATH', 'muted'], ['version ' + V, 'ink'],
@@ -287,7 +287,7 @@
     lines: function (D) {
       return [
         ['# you have: one agent, one repository, no plan yet', '# the safe path: one project, the system binary,', '# the lean MCP profile; measure before you change anything'],
-        ["# download your platform's archive from GitHub Releases", '$ sha256sum -c SHA256SUMS --ignore-missing', '$ dctx --version', 'dctx ' + (D.v || '1.2.0')],
+        ["# download your platform's archive from GitHub Releases", '$ sha256sum -c SHA256SUMS --ignore-missing', '$ dctx --version', 'dctx ' + (D.v || '1.3.0')],
         ['$ cd ~/code/app', '# one project root, not your home folder or a 200 GB tree', '# the system binary serves it; nothing installed per project'],
         ['$ dctx mcp --profile lean /abs/path/to/app', '# two tools, find and read, with compact descriptions:', '# fewer tool definitions in every turn'],
         ["$ dctx pack . --for '" + (D.q || 'greet store') + "' --budget " + (D.b || '800'), '# ... the bounded page ...', '!' + (D.end || '# end body_tokens=223 budget=800 dropped=0'), '# that last line is your first measurement'],

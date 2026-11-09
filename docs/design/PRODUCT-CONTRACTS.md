@@ -4,7 +4,7 @@
 
 Status: current design reference. The [specification](../SPEC.md) distinguishes
 shipped behavior from planned features; the [README](../../README.md) describes
-release 1.2.0. Earlier planning is retained in the [archive](../archive/README.md).
+the current release. Earlier planning is retained in the [archive](../archive/README.md).
 
 ## Engine and surfaces
 

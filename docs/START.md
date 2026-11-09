@@ -200,7 +200,7 @@ measurement exist.
 
 | Level | dctx provides | You are responsible for |
 |---|---|---|
-| System binary | Signed binary (planned), cache caps, `dctx doctor`, journals (planned), receipts (planned) | Choosing roots, policy file, keeping one version on PATH |
+| System binary | Release archives with cosign signatures, SBOM and provenance, cache caps, `dctx doctor`, journals (planned), receipts (planned) | Choosing roots, policy file, keeping one version on PATH |
 | Project library | Pinned vendored binary and protocol client (Python, Node, Go wrappers; registry publication pending), same bytes as CLI (checked in CI) | Pinning the version, exclusions in the project policy, not re-implementing engine logic |
 | MCP and ACP agent setup | Lean profile, tested client configs, measured start-up cost | Turning off the host's own file tools, picking a profile, session ids, reading receipts |
 | CI and cache | Byte-stable pack, prefix tiers (planned), deterministic exit codes | Pinning the binary, caching the index between runs, treating pack drift as a signal not noise |
