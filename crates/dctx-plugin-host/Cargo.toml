@@ -1,6 +1,6 @@
 [package]
 name = "dctx-plugin-host"
-version = "1.2.0"
+version = "1.3.0"
 edition = "2024"
 description = "**Unstable** (no stability promise in v1). dctx plugin host domain and brokers: grants, receipts, budgets, liveness and lifecycle over ports"
 license.workspace = true
@@ -12,8 +12,8 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-dctx-hash = { version = "=1.2.0", path = "../dctx-hash" }
-dctx-plugin-protocol = { version = "=1.2.0", path = "../dctx-plugin-protocol" }
+dctx-hash = { version = "=1.3.0", path = "../dctx-hash" }
+dctx-plugin-protocol = { version = "=1.3.0", path = "../dctx-plugin-protocol" }
 
 [dev-dependencies]
 proptest = "1"

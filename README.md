@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.2.0-8b5cf6" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.3.0-8b5cf6" alt="Version">
   <a href="https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml?query=branch%3Amain">
     <img src="https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI">
   </a>
@@ -48,7 +48,7 @@
 ## Installation
 
 **System binary — available now.** Download the archive for your OS and architecture
-from [GitHub Releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0),
+from [GitHub Releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.0),
 compare its SHA-256 with the matching entry in `SHA256SUMS`, extract it, and put
 `dctx` (`dctx.exe` on Windows) on `PATH`. Archives cover Linux x64/ARM64,
 macOS x64/ARM64 and Windows x64. Releases after 1.2.0 also ship cosign signatures,
@@ -290,7 +290,7 @@ Git now; **crates.io publication is pending**.
 
 ```toml
 [dependencies]
-dctx = { git = "https://github.com/Eris-Margeta/dctx", tag = "v1.2.0" }
+dctx = { git = "https://github.com/Eris-Margeta/dctx", tag = "v1.3.0" }
 ```
 
 This example is generated from the [workspace doctest](examples/library/README.md):

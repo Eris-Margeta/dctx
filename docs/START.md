@@ -116,7 +116,7 @@ organization policy bundles and audit journals are planned.
 ### 1. Install the system binary
 
 Download the archive for your OS and architecture and `SHA256SUMS` from
-[GitHub Releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0).
+[GitHub Releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.0).
 Compare the archive's SHA-256 with its matching entry before extracting it.
 On Linux use `sha256sum ARCHIVE`, on macOS `shasum -a 256 ARCHIVE`, or on Windows
 PowerShell `Get-FileHash ARCHIVE -Algorithm SHA256`, replacing `ARCHIVE` with the

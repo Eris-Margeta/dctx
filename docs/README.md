@@ -4,7 +4,7 @@
 
 Start with [What dctx is](START.md). Choose a workflow before adding tools;
 measure whole sessions against grep plus file reads. The current release is
-1.2.0. Pages marked **coming** describe future documentation or features and
+1.3.0. Pages marked **coming** describe future documentation or features and
 have no page link; specifications also include planned behavior.
 
 ## Start

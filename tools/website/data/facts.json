@@ -1,9 +1,9 @@
 {
  "schema": 1,
  "note": "The one facts source: the llms files (llms.py, facts_markdown), /for-ai-evaluators/, the home notice, the choose-your-path selector and /start/ pages (facts.py). Schema: tools/website/README.md. check.py fails if version differs from VERSION, if released differs from CHANGELOG.md or the release tag, or if a removed command appears outside the removed list. Honesty rule: only what ships in the current release is stated as existing; everything else says planned or publishing soon.",
- "version": "1.2.0",
- "released": "2026-11-07",
- "release_tag": "v1.2.0",
+ "version": "1.3.0",
+ "released": "2026-11-09",
+ "release_tag": "v1.3.0",
  "is": "dctx is an open-source (Apache-2.0) Rust context engine for AI-assisted coding: one local binary that packs a project into one structured block, or answers bounded, byte-stable symbol queries (find, read, neighbors, skeleton) as CLI output or MCP tools.",
  "is_not": [
   "No RAG: no embeddings, no vector search, and the engine never calls a model.",
@@ -14,8 +14,8 @@
  "verify_download": {
   "available": "Each release on GitHub ships prebuilt archives for Linux x64/ARM64, macOS x64/ARM64 and Windows x64 with a SHA256SUMS file.",
   "command": "sha256sum --check --ignore-missing SHA256SUMS",
-  "planned": "Signed release binaries and an SBOM are planned; there is no signature to verify yet.",
-  "link": "https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0"
+  "planned": "Releases from 1.3.0 also ship keyless cosign signatures, CycloneDX SBOMs, build provenance and offline bundles; see [verification](https://github.com/Eris-Margeta/dctx/blob/main/docs/VERIFYING.md).",
+  "link": "https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.0"
  },
  "modalities": [
   {
@@ -63,8 +63,8 @@
  ],
  "scopes": [
   "System binary: the `dctx` on PATH belongs to you and your agents, and you upgrade it. Interactive agents and MCP call this one.",
-  "Project binary (planned with the Python and Node libraries): a binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Application code and CI call this one; a library never silently falls back to PATH.",
-  "Same engine, different owner. Release signing is planned; today both are verified against SHA256SUMS."
+  "Project binary (with the Python, Node and Go wrappers, registry publication pending): a binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Application code and CI call this one; a library never silently falls back to PATH.",
+  "Same engine, different owner. `dctx doctor` lists every binary in reach; verify each against SHA256SUMS and its cosign signature."
  ],
  "notice": "dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.",
  "benchmarks": {
@@ -162,7 +162,7 @@
    "link": "https://github.com/Eris-Margeta/dctx/tree/main/tools/website"
   }
  ],
- "notice_status": "A three-tool profile and receipts are planned. Until they ship, the safe path uses the lean MCP profile, `dctx mcp --profile lean`.",
+ "notice_status": "Receipts are planned. The safe path uses the lean MCP profile, `dctx mcp --profile lean`.",
  "safe_path": [
   [
    "One project",
@@ -305,9 +305,9 @@
    "id": "library",
    "name": "Agent builder embedding a library",
    "who": "You build an agent, editor or tool and want dctx inside it.",
-   "modality": "Project library with its own pinned binary. pip and npm packages are publishing soon; today use the Rust facade from a tagged Git dependency, or run a pinned CLI binary and read its `--json` output.",
+   "modality": "Project library with its own pinned binary. The Python, Node and Go wrappers over `dctx rpc` are built and tested in CI, with registry publication pending; today use the Rust facade from a tagged Git dependency, or run a pinned CLI binary and read its `--json` output.",
    "setup": [
-    "Pin one version in your project, for example the Rust facade: `dctx = { git = \"https://github.com/Eris-Margeta/dctx\", tag = \"v1.2.0\" }`.",
+    "Pin one version in your project, for example the Rust facade: `dctx = { git = \"https://github.com/Eris-Margeta/dctx\", tag = \"v1.3.0\" }`.",
     "Pass your own ignore rules: the library does not load `.gitignore` by itself; the host supplies selection policy, storage limits and the clock.",
     "Move ids, not text: call `find`, keep the returned ids, call `read` with them."
    ],
@@ -332,7 +332,7 @@
    "who": "You roll dctx out to a team or a fleet of machines.",
    "modality": "System binary distributed through your own package channel, one pinned version everywhere.",
    "setup": [
-    "Download the release archives from GitHub Releases and verify them against SHA256SUMS. Signatures and an SBOM are planned.",
+    "Download the release archives from GitHub Releases and verify them against SHA256SUMS and their cosign signatures; each release also ships an SBOM.",
     "Ship one pinned version through your own package manager, image or configuration tool.",
     "Ship shared ignore rules (`.dctxignore` and a global ignore); the built-in deny for secrets, `.git` and symlinks always applies.",
     "Tighten the cache cap per machine if you need to: `dctx cache config --max-bytes N` can only lower it."
@@ -340,7 +340,7 @@
    "first_command": "dctx --version",
    "expect": "One line with the version on every machine; `dctx --version --verbose` adds the feature list and precision and cache limits. Every machine should print the same line.",
    "record": "version",
-   "pitfall": "Mixing project and system versions without checking. Until `dctx doctor` (planned) lists every binary in reach, check `dctx --version` on PATH and the version each project pins, as part of onboarding.",
+   "pitfall": "Mixing project and system versions without checking. Run `dctx doctor` to list every binary in reach, and check `dctx --version` on PATH and the version each project pins, as part of onboarding.",
    "links": [
     [
      "Privacy guarantees",

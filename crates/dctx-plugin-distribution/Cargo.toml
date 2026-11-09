@@ -1,6 +1,6 @@
 [package]
 name = "dctx-plugin-distribution"
-version = "1.2.0"
+version = "1.3.0"
 edition = "2024"
 description = "**Unstable** (no stability promise in v1). dctx plugin installer, trust and discovery client: signed manifests, offline bundles and atomic activation over ports"
 license.workspace = true
@@ -12,9 +12,9 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-dctx-ed25519 = { version = "=1.2.0", path = "../dctx-ed25519" }
-dctx-hash = { version = "=1.2.0", path = "../dctx-hash" }
-dctx-plugin-protocol = { version = "=1.2.0", path = "../dctx-plugin-protocol" }
+dctx-ed25519 = { version = "=1.3.0", path = "../dctx-ed25519" }
+dctx-hash = { version = "=1.3.0", path = "../dctx-hash" }
+dctx-plugin-protocol = { version = "=1.3.0", path = "../dctx-plugin-protocol" }
 
 [dev-dependencies]
 ed25519-dalek = { version = "=2.2.0", default-features = false, features = ["std"] }

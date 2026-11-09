@@ -12,7 +12,7 @@ provider caching can change its billed cost. Count both calls and session tokens
 
 | Modality | Install | Status | Best for |
 |---|---|---|---|
-| CLI / interactive terminal | [Prebuilt archives](https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0), or [build from source](../README.md#from-source) | Available now; crates.io publication pending | One-off chat (`pack --clipboard`), shell agents, scripts and CI; run `dctx` for the terminal menu |
+| CLI / interactive terminal | [Prebuilt archives](https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.0), or [build from source](../README.md#from-source) | Available now; crates.io publication pending | One-off chat (`pack --clipboard`), shell agents, scripts and CI; run `dctx` for the terminal menu |
 | MCP server | Included in the CLI; configure `dctx mcp /absolute/project` | Available now, stdio | Claude Code, Cursor and Codex tool calls on a scoped project |
 | Rust library (`dctx` facade) | Tagged Git dependency in the [library section](#rust-library-embed-the-facade) | Available from Git; crates.io publication pending | Embedding pack, map, templates and cache in Rust tools and editors |
 | Desktop app | [Build the Tauri app](../apps/dctx-desktop/README.md#quick-start) | Tauri 0.11 preview today; GPUI rebuild planned | Selecting projects and generating snapshots in a GUI |
@@ -287,7 +287,7 @@ application's `Cargo.toml`:
 
 ```toml
 [dependencies]
-dctx = { git = "https://github.com/Eris-Margeta/dctx", tag = "v1.2.0" }
+dctx = { git = "https://github.com/Eris-Margeta/dctx", tag = "v1.3.0" }
 ```
 
 The [ten-line pack example](../README.md#use-as-a-library) is compiled and run as a

@@ -14,14 +14,165 @@ and distribution plans below do not describe the current release.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-09
+
+Install from the GitHub release archives. The npm, crates.io and PyPI packages and
+the Go module are built and tested in CI, but registry publication is still pending;
+until it happens, the release archives are the install path.
+
+### Added
+
+- `dctx rpc`: a versioned, newline-delimited JSON engine protocol over stdin/stdout
+  (protocol 1.0.0, schema in `docs/protocol/`). Every reply carries `engine_version`;
+  operation output is exactly the CLI stdout bytes.
+- `dctx context TARGET...`: minimal ranked context for a file, symbol name or stable
+  node id, with chunk ids, `--budget`, `--json` and `--session ID --dedupe`.
+  `pack --for TEXT --json` now returns the same JSON context page.
+- `dctx doctor [--json] [--probe-project]`: lists the dctx binaries visible from the
+  current folder with path, ownership scope, version, build commit, SHA-256 and cache
+  sizes. It changes nothing and uses no network.
+- MCP `--profile lean|three` and `--tools NAME,...` select a smaller tool set with
+  compact descriptions (lean start-up tool definitions: 6,278 -> 1,637 bytes). See
+  [docs/guides/MCP.md](docs/guides/MCP.md).
+- Python, Node (npm) and Go client packages over `dctx rpc`, each with CLI byte-parity
+  tests in CI. They are not published to a registry yet.
+- Release supply chain: keyless cosign signatures, CycloneDX SBOMs, GitHub build
+  provenance attestations, a reproducible Linux musl build check and offline
+  (air-gap) bundles. See [docs/VERIFYING.md](docs/VERIFYING.md). CI runs `cargo audit`.
+  SECURITY.md and SUPPORT.md describe the security and support policy.
+- Robustness tests and a fuzz smoke workflow in CI.
+- `dctx pack --for` prints a warning on stderr when the text names no identifiers;
+  the page is unchanged.
+- `dctx pack --clipboard` supports `xsel` on Linux.
+- Experimental `tools/catalog-bench` for huge-tree catalog measurements (not part of
+  the CLI).
+
+### Changed
+
+- `dctx pack` prints its `pack bytes=… files=… retention=… version=V1` status line on
+  stderr. stdout is exactly the page and ends in a newline; `pack --json` stdout is
+  exactly one JSON document. Scripts that read the status line from stdout must read
+  stderr instead.
+- Indexes live in an engine `major.minor` subdirectory of the cache parent
+  (`DCTX_CACHE_DIR` or the platform `dctx/v2` root). 1.3 builds its own index on first
+  use; patch releases share it, and older unscoped cache data is ignored, not deleted.
+- Faster warm path: one fused inventory walk with directory-relative stats, rule files
+  validated by stamps and cheaper decoding (measured checkout 288 -> 94 ms, 4k-file
+  tree 88 -> 32 ms). Timestamp-only changes reuse the index generation.
+- Each place keeps its own warm index; targeted queries no longer admit the whole
+  place first; capacity errors name the exact limit and the flag that changes it.
+- Pack output streams with bounded memory and spools large pages. Pack history uses
+  compact manifest caches.
+- Language extraction audit with new goldens; the default parser id is now
+  `dctx-structural/3`.
+- `dctx pack --for` keeps bare short names such as `main` and `run`, and keeps the
+  case of capitalized words. Exact-case names and non-test code rank first, so
+  `--for Session` finds the `Session` types before test functions.
+- `dctx cache`, `dctx template`, `dctx context` and a bare `dctx` follow the exit-code
+  contract in [docs/CLI-EXIT-CODES.md](docs/CLI-EXIT-CODES.md): 2 for usage errors,
+  3 for I/O errors (naming the path), each with a `hint:` line. RPC `cache_status`
+  returns the same codes. `dctx context` with no TARGET exits 2.
+- A bare `dctx` whose stdin or stdout is not a terminal prints short usage and exits 2
+  instead of starting the interactive menu.
+- `dctx pack --help` prints only the pack usage and flags.
+- `dctx plugin …` and `dctx git` text output is plain text. Refusals go to stderr as
+  `❌ Error:` with a `hint:` line; a missing consent names
+  `dctx plugin enable <id> --approve`. JSON output and exit codes are unchanged.
+- `dctx cache auto` text shows a UTC time next to `last_auto_clean_ms` and
+  `next_due_ms`; JSON is unchanged.
+- Docs and package READMEs no longer present `npx dctx`, `npm install`,
+  `cargo install dctx-cli`, `pip install dctx` or `go get` as working install paths.
+  The Python missing-engine message no longer suggests a PyPI install.
+- Bundled SQLite is 3.54.1 (rusqlite 0.41).
+
+### Removed
+
+- `dctx plugin run` and `dctx git` JSON replies no longer repeat the
+  `facade_spawns` and `facade_git_children` keys. The facade counters remain once in
+  `--json` output and are gone from text output.
+- The cwd-relative plugin root fallback used when HOME was unset (see Security).
+
 ### Fixed
 
-- Pack headers now show `ID="UNIQUE_ID"` with clean quotes in the file-access
+- Pack headers show `ID="UNIQUE_ID"` with clean quotes in the file-access
   instructions, including stamped and tree-only output. This changes pack output bytes.
-
 - Pack rendering preserves literal template syntax in file bodies and paths, including
-  backslashes, for default, stamped and compiled templates. Variable substitution now
+  backslashes, for default, stamped and compiled templates. Variable substitution
   applies only to template structure; `pack --for` also preserves source CRLF bytes.
+- The last `</FILE_CONTENT_END …>` marker of a pack page is no longer glued to the
+  status line.
+- `dctx pack --for` with no usable terms says so and suggests backticks, instead of
+  reporting that no name matched the index. Its flag refusal now lists `--json`.
+- `dctx map` call edges stay within the caller's language family: a Rust `.all(..)`
+  no longer resolves to a Makefile target. A guessed method call such as
+  `iter.map(..)` links to a project method only when the caller can see that method's
+  type. Hubs, neighbors, path and `pack --for` lose these false edges.
+- `dctx plugin search` and the other text-mode plugin commands no longer mix JSON
+  fields or internal counters (`facade_git= spawns= git_children=`) into the output;
+  `dctx git status` without consent no longer prints `git: ConsentRequired`.
+- `dctx pack --clipboard` with no clipboard tool names the tools it tried and suggests
+  `--output FILE`.
+- A symlinked or non-regular `.gitignore` or `.dctxignore` inside the project is
+  skipped with a warning instead of failing the command; rule-file errors no longer
+  print the absolute project path.
+- Cache policy saves no longer get stuck on a `policy.v1.tmp` left by a crash.
+- `dctx doctor` shows each binary's build commit (`commit:` in text, `"commit"` in
+  JSON) and names an invalid argument.
+- `dctx --help` lists `map export`; the `dctx map --help` examples map a file that has
+  symbols.
+- The Python wrapper raises `BinaryNotFoundError`, not `RuntimeError`, when no home
+  directory is available (Windows without `USERPROFILE`/`LOCALAPPDATA`).
+- Windows: durable file replacement, inode identity and racy-window directory stamps
+  in map refresh. macOS: symlinked ancestors of the project, config and cache roots
+  (such as `/var` and `/tmp`) are resolved at the boundary while in-tree symlinks stay
+  refused; file names that APFS refuses are handled. Other cross-platform test and
+  code fixes.
+- README CLI reference, map-mode guide, modalities, start, testing and exit-code docs
+  match the current binary and CI: all commands, 50 languages, neighbors depth 1..4,
+  exact `--lines`, the global ignore file path, and that `.git/info/exclude` and
+  `core.excludesFile` are not read.
+- `tools/sync-version.sh` also syncs the Python, Go and npm package versions and the
+  release links in the docs and package READMEs.
+
+### Security
+
+- Bundled SQLite upgraded to 3.54.1 (rusqlite 0.41, libsqlite3-sys 0.39.1) for
+  RUSTSEC-2026-0459.
+- Hardening across the engine and CLI, documented in
+  [docs/SECURITY-MODEL.md](docs/SECURITY-MODEL.md).
+- Pack and diff output entity-encode `&`, `<`, `>`, `"` and control or line-separator
+  characters in file paths, so a file name cannot forge file boundary markers.
+  Ordinary paths are unchanged and output stays byte-stable.
+- `dctx doctor` no longer executes dctx binaries found in `./node_modules/.bin`,
+  `$VIRTUAL_ENV` or relative PATH entries, which an untrusted checkout can plant; they
+  are listed with path and SHA-256. `--probe-project` opts in.
+- MCP tool arguments are passed after `--` and taken literally, so a flag-shaped id or
+  query (for example `--place`) cannot change the place outside the server root. MCP
+  never forwards `--place` or `--output`.
+- `pack --output`, `map export --output` and `template build --output` never follow a
+  symlink or write into a non-regular target; pack and template write a fresh sibling
+  file and rename it into place.
+- Clipboard tools are looked up only in absolute PATH entries, so `.` or empty entries
+  cannot run a repository's own `xclip` or `wl-copy`.
+- The source reader checks an entry's type before opening it and never opens device
+  nodes, FIFOs or sockets (Unix opens use `O_NOCTTY`). `StdFs` metadata, listings and
+  link reads no longer follow symlinked path components; Windows ancestor guards block
+  directory replacement.
+- The store adapter refuses symlinked, foreign-owned or group/other-writable store
+  roots and creates store directories with mode 0700.
+- The plugin root no longer falls back to a directory relative to the working
+  directory when HOME is unset; plugin commands refuse unless HOME or
+  `DCTX_PLUGIN_ROOT` is an absolute path.
+- The Python wrapper loads its `dctx_binary_<platform>` engine package only from the
+  install directory that holds `dctx`, never from the working directory or other
+  `sys.path` entries.
+- The Python, Node and Go package READMEs warn that operation arguments carry full CLI
+  authority.
+- The website playground rate limit can no longer be bypassed with a forged
+  `X-Forwarded-For` header. The website deploy builds without secrets and deploys only
+  from `main` through a protected environment; the desktop release workflow is
+  disabled until the desktop app ships, with pinned toolchains, a frozen lockfile and
+  provenance attestations.
 
 ## [1.2.0] - 2026-11-07
 

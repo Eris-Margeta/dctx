@@ -80,7 +80,7 @@ can fill unnoticed. Responses have no wrapper-imposed output-size limit.
 1 means no result, 2 usage/protocol refusal, and 3 index/source/I/O failure (the
 legacy cache command retains its CLI code 1). Engine refusals leave the session
 usable. `TransportError` and `VersionMismatchError` terminate it. The initial
-hello and every response must report engine **1.2.0**; RPC major **1** is checked
+hello and every response must report engine **1.3.0**; RPC major **1** is checked
 independently. Unknown envelope fields and added verbs are tolerated.
 
 Binary discovery is entirely local:
@@ -94,20 +94,20 @@ Binary discovery is entirely local:
    never searches `PATH`, falls back from an unusable override, or downloads.
 
 The cache layout matches the Python package:
-`<cache-root>/dctx/bin/1.2.0/<platform>/dctx` (`dctx.exe` on Windows).
+`<cache-root>/dctx/bin/1.3.0/<platform>/dctx` (`dctx.exe` on Windows).
 Cache roots are `$XDG_CACHE_HOME` or `~/.cache` on Linux, `~/Library/Caches` on
 macOS, and `%LOCALAPPDATA%` or `~/AppData/Local` on Windows. Platforms include
 `linux_x86_64`, `linux_aarch64`, `darwin_x86_64`, `darwin_aarch64`, and
 `windows_x86_64`. Other hosts can provide a matching engine explicitly.
 
 Download the engine explicitly from
-[v1.2.0 releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0), verify
+[v1.3.0 releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.0), verify
 the archive against `SHA256SUMS`, extract it and set `DCTX_BIN` to its absolute
 executable path, or place it at `CacheBinary()`. A tagged source install is also
 explicit:
 
 ```sh
-cargo install --locked --git https://github.com/Eris-Margeta/dctx --tag v1.2.0 dctx-cli
+cargo install --locked --git https://github.com/Eris-Margeta/dctx --tag v1.3.0 dctx-cli
 export DCTX_BIN="$HOME/.cargo/bin/dctx-cli"
 ```
 
@@ -118,7 +118,7 @@ Until a module tag exists, use a local replacement in the consuming module's
 `go.mod`:
 
 ```text
-require github.com/Eris-Margeta/dctx/packages/go v1.2.0
+require github.com/Eris-Margeta/dctx/packages/go v1.3.0
 replace github.com/Eris-Margeta/dctx/packages/go => ../dctx/packages/go
 ```
 
@@ -145,6 +145,6 @@ that skip. Linux tests both Go 1.23 and stable; macOS and Windows test stable.
 
 Release preparation consists of updating the engine version, regenerating and
 checking the API, and passing the gates. The module's eventual Git tag must be
-`packages/go/v1.2.0`, matching Go's subdirectory-module convention. Only after
+`packages/go/v1.3.0`, matching Go's subdirectory-module convention. Only after
 that tag is pushed will `go get` of the module resolve; no such tag has been
 created yet, and no publishing or registry upload step is configured.
