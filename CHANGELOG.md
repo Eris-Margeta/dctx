@@ -168,6 +168,12 @@ until it happens, the release archives are the install path.
   `sys.path` entries.
 - The Python, Node and Go package READMEs warn that operation arguments carry full CLI
   authority.
+- The no-follow open flag used by `map export --output`, the map store and the desktop
+  snapshot rules now comes from the platform instead of a hard-coded x86 value, so it
+  also holds on Linux ARM64.
+- The npm wrapper tarball built in CI no longer lists the unpublished `@dctx/cli-*`
+  platform packages, so installing it never resolves those names from the public
+  registry; error messages point to the release archive and `DCTX_BIN`.
 - The website playground rate limit can no longer be bypassed with a forged
   `X-Forwarded-For` header. The website deploy builds without secrets and deploys only
   from `main` through a protected environment; the desktop release workflow is
