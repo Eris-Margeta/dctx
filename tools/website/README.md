@@ -57,7 +57,8 @@ examples is handwritten. The Rust snippet comes from the workspace doctest in
 | `/how-it-works/` and the explainer animations | `pages/animations.py` (figures, captions, prose fallbacks) and `src/anim.js` (five deterministic canvas scenes, frame-counted, in the `home.js` and `how.js` bundles) |
 | `/changelog/` and its feed | `CHANGELOG.md` |
 | the home notice and path selector, `/start/` and its four persona pages, `/for-ai-evaluators/` | `data/facts.json` through `facts.py` (see below); persona runs are records from `data/demo.json` |
-| OG images, the poster, icons | `og.py` (Pillow), from the same scene geometry as the canvas animation |
+| the home hero figure (folder, policy, graph, bounded page) | `pages/flow.py`: HTML and inline SVG from the same scene geometry as the OG images and the `pack --for` record; `src/hero.js` only plays the steps |
+| OG images, icons | `og.py` (Pillow), from the same scene geometry |
 | `llms-small.txt`, `llms.txt`, `llms-full.txt` | `llms.py`: the facts block from `data/facts.json`, the route table in `routes.py`, then the dctx binary's own output over the documents, recorded in `data/llms.json` by `capture.py --llms` (see below) |
 | sitemap, feeds, robots, `security.txt`, `humans.txt`, manifest, OpenSearch, search index, `build.json` | `llms.py`, from the route table in `routes.py` |
 | syntax colours in every code block, terminal transcript, help text and template | `highlight.py`, an in-house highlighter run at build time (no library, no runtime script); `.t-*` classes coloured by the `--hl-*` tokens in `src/site.css` |
@@ -149,12 +150,16 @@ blocks in the light theme, no text under 14 px, tables zebra-striped at a 3 % ti
 
 ## Loading
 
-First visit to `/`: 8 requests (HTML, one stylesheet, one script, four preloaded fonts, the poster image).
+First visit to `/`: 7 requests (HTML, one stylesheet, one script, four preloaded fonts).
 Fonts are preloaded and use `font-display: optional` (a font that misses the first paint is not swapped in,
 so a slow font never moves text), with metric-matched fallback faces (`size-adjust` and ascent, descent and
 line-gap overrides) for Arial/Helvetica/Liberation Sans and DejaVu Sans, computed from letter-frequency
-weighted advance widths of Geist against each fallback. The hero animation starts after the load event,
-when the main thread is idle; the poster is on screen before that. `check.py` enforces the first-load
+weighted advance widths of Geist against each fallback. The hero figure is complete HTML from the first paint;
+with motion on, it dims and then lights its four steps in order when it scrolls into view (never blank), and the
+hero terminal starts after the load event, when the main thread is idle. Every page also carries the id of its build
+(`<meta name="dctx-build">`, a digest of every output file); `site.js` compares it with `/build.json` (fetched with
+`cache: 'no-store'` on load, when the tab becomes visible and every 10 minutes) and offers a reload when they differ.
+The CSS is minified at build time (`assets.minify_css`). `check.py` enforces the first-load
 budget (requests, bytes, largest asset) of every page.
 
 ## Rules check.py enforces

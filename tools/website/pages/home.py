@@ -17,6 +17,7 @@ import data
 import facts as factsrc
 from common import REPO, VERSION, e, line_of, read, rec, src
 from components import code, output_examples, term, transcript
+from pages.flow import flow
 from pages.paths import md_inline, notice, responsibilities, scopes, selector
 from routes import has_why
 
@@ -34,34 +35,43 @@ def age_at_release(released: str) -> int:
 
 
 def status(f: dict) -> str:
-    """The honest project status: not yet stable, why, where it is going (2.0), the promise and the goal."""
+    """The honest project status as a quiet aside: a timeline (first commit, today, 2.0), then why, where
+    it comes from, the promise and the goal. On a phone the longer text is folded into a details element."""
     months = age_at_release(f["released"])
     started = FIRST_COMMIT.strftime("%B %Y")
     first = f"{FIRST_COMMIT.day} {FIRST_COMMIT.strftime('%B %Y')}"
+    timeline = [
+        ("tl-done", started, f"First commit {first}"),
+        ("tl-now", f"{VERSION} &middot; today", f"{months} months in development at the {VERSION} release; not yet stable"),
+        ("tl-way", "denoising", "Breaking changes are expected often until 2.0"),
+        ("tl-goal", "2.0 &middot; stable", "Stability is the goal of version 2.0, and the project is working toward it."),
+    ]
+    tl = '<ol class="timeline" aria-label="Project timeline">' + "".join(
+        f'<li class="{c}"><b>{a}</b><span>{e(b)}</span></li>' for c, a, b in timeline) + "</ol>"
     rows = [
-        ("Started", started, f"First commit {first}; {months} months in development at the {VERSION} release."),
-        ("Today", f"{VERSION}, not yet stable", "Not enterprise-ready. Breaking changes are expected often until 2.0."),
-        ("Stable", "2.0", "Stability is the goal of version 2.0, and the project is working toward it."),
         ("Promise", "Zero dependencies", "The principle dctx was founded on. Today dctx still has dependencies."),
         ("Goal", "The single best context management tool", "That is what dctx is being built to become."),
     ]
     kv = '<dl class="status-kv">' + "".join(
         f"<div><dt>{a}</dt><dd><b>{e(b)}</b><span>{e(c)}</span></dd></div>" for a, b, c in rows) + "</dl>"
-    return f"""<section class="sec sec-status" id="status" aria-labelledby="status-h">
+    more = f"""<p>Why: AI providers keep changing how they optimize context on their side. dctx adapts to those changes quickly, but not in real time. Stability arrives with 2.0, and the project is working toward it.</p>
+    <p>Where it comes from: dctx began as an internal tool that was never meant to be open-sourced, so parts of it are still messy. It was opened up because colleagues who rely on it needed it in the open, and development continues in public.</p>
+    <p class="status-thesis">We see an ultimate solution to this problem, and we are denoising it.</p>
+    {kv}"""
+    return f"""<aside class="sec-status" id="status" aria-labelledby="status-h">
  <div class="wrap">
   <div class="status-panel">
-   <div class="status-copy">
+   <div class="status-main">
     <p class="eyebrow status-eyebrow">Project status &middot; in development since {started}</p>
     <h2 id="status-h">Not yet stable. Working toward 2.0.</h2>
     <p>dctx is <strong>not yet stable</strong> and <strong>not enterprise-ready</strong>. Until version 2.0, expect breaking changes often.</p>
-    <p>Why: AI providers keep changing how they optimize context on their side. dctx adapts to those changes quickly, but not in real time. Stability arrives with 2.0, and the project is working toward it.</p>
-    <p>Where it comes from: dctx began as an internal tool that was never meant to be open-sourced, so parts of it are still messy. It was opened up because colleagues who rely on it needed it in the open, and development continues in public.</p>
-    <p class="status-thesis">We see an ultimate solution to this problem, and we are denoising it.</p>
+    {tl}
    </div>
-   {kv}
+   <div class="status-more status-wide">{more}</div>
+   <details class="status-more status-narrow"><summary>Why, where it comes from, and the goal</summary>{more}</details>
   </div>
  </div>
-</section>"""
+</aside>"""
 
 
 def hero_terminal() -> str:
@@ -127,18 +137,6 @@ def modalities() -> str:
 def body(scene: dict) -> str:
     f = factsrc.load()
     facts_html, _ = facts()
-    c = scene["counts"]
-    steps = [
-        ("repository", f'{c["disk"]} files on disk'),
-        ("policy", f'{c["listed"]} listed, {c["read"]} read'),
-        ("graph", f'{c["nodes"]} nodes, {c["edges"]} call/import edges'),
-        ("bounded page", f'{c["body_tokens"]} of {c["budget"]} tokens'),
-    ]
-    steps_html = '<ol class="steps" aria-label="What the animation shows">' + "".join(
-        f"<li><b>{a}</b><span>{b}</span></li>" for a, b in steps) + "</ol>"
-    scene_json = json.dumps(scene, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c")
-    poster_alt = (f"The kiosk sample as dctx sees it: {c['nodes']} nodes and {c['edges']} call and import edges, the query find greet "
-                  f"lighting s:src/util.rs#greet, and its {c['body_tokens']}-token page inside a {c['budget']}-token budget.")
     privacy = [
         ("Ignore rules first.", "<code>.gitignore</code>, <code>.dctxignore</code> and a global ignore exclude files before they are opened.", "Excluded from normal selection"),
         ("A built-in deny with no override.", "Env files, private keys, credential and secret files are listed by name but never read.", "Sensitive files"),
@@ -155,26 +153,19 @@ def body(scene: dict) -> str:
  <div class="wrap hero-grid">
   <div class="hero-copy">
    <ul class="chips" aria-label="Project facts">
-    <li><a href="/changelog/#v{VERSION.replace('.', '-')}">dctx <b>{VERSION}</b></a></li><li>Apache-2.0</li><li>C/Rust</li><li>Linux x86_64 tested</li><li><a href="/cli/#mcp"><b>{len(data.mcp_tools())}</b> MCP tools</a></li><li>no telemetry</li><li class="chip-status"><a href="#status">not yet stable &middot; pre-2.0</a></li>
+    <li><a href="/changelog/#v{VERSION.replace('.', '-')}">dctx <b>{VERSION}</b></a></li><li>Apache-2.0</li><li>C/Rust</li><li><a href="/cli/#mcp"><b>{len(data.mcp_tools())}</b> MCP tools</a></li><li>no telemetry</li><li class="chip-status"><a href="#status">not yet stable &middot; pre-2.0</a></li>
    </ul>
    <h1 id="hero-title">Context, <span class="accent">engineered.</span></h1>
    <p class="lede">dctx gives a model the fewest, most relevant bytes of your code, in an order that stays the same between turns. Deterministic, bounded and offline.</p>
    <div class="actions">
     <a class="btn btn-primary" href="#paths">Choose your path</a><a class="btn" href="/docs/">Read the docs</a><a class="btn" href="/playground/">Playground</a><a class="btn" href="{REPO}">GitHub</a>
    </div>
-   <h2 class="eyebrow" id="scene-h">On the sample project <a href="/examples/">kiosk</a></h2>
-   {steps_html}
   </div>
   <div class="hero-side">
-   <div class="stage" data-scene aria-labelledby="scene-h">
-    <picture><source srcset="/assets/og/scene.dark.png" media="(prefers-color-scheme: dark)"><img src="/assets/og/scene.light.png" width="1200" height="630" alt="{e(poster_alt)}" fetchpriority="high"></picture>
-    <canvas aria-hidden="true"></canvas>
-    <div class="stage-cap"><span data-cap>4 bounded page &middot; {c['body_tokens']} of {c['budget']} tokens</span><button class="tbtn" type="button" data-replay hidden>Replay</button></div>
-   </div>
    {term(hero_terminal(), "~/kiosk  ·  dctx " + VERSION, play="scene", cls="term-hero")}
   </div>
  </div>
- <script type="application/json" id="scene-data">{scene_json}</script>
+ <div class="wrap">{flow(scene)}</div>
 </section>
 
 {status(f)}

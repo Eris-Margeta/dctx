@@ -24,7 +24,7 @@ def base_graph() -> list:
          "potentialAction": {"@type": "SearchAction", "target": ORIGIN + "/search/?q={search_term_string}",
                              "query-input": "required name=search_term_string"}},
         {"@type": "SoftwareApplication", "@id": APP_ID, "name": "dctx", "softwareVersion": VERSION,
-         "applicationCategory": "DeveloperApplication", "operatingSystem": "Linux (x86_64 tested)",
+         "applicationCategory": "DeveloperApplication", "operatingSystem": "Linux, macOS, Windows",
          "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
          "url": ORIGIN + "/", "license": LICENSE_URL, "isAccessibleForFree": True, "codeRepository": REPO,
          "programmingLanguage": "Rust", "releaseNotes": ORIGIN + "/changelog/#v" + VERSION.replace(".", "-"),
@@ -43,6 +43,11 @@ def nav_links(section: str | None) -> str:
     return "".join(items)
 
 
+# Replaced in every page by build.py with the build id that build.json also carries; site.js compares
+# the two to offer a reload when a newer build is deployed. Same length as a SHA-256 hex digest.
+BUILD_MARK = "dctx-build-id-pending".ljust(64, "-")
+
+
 def footer() -> str:
     col = lambda hid, title, links: (f'<nav aria-labelledby="{hid}"><h2 id="{hid}">{title}</h2><ul>'  # noqa: E731
                                      + "".join(f'<li><a href="{h}">{t}</a></li>' for h, t in links) + "</ul></nav>")
@@ -53,7 +58,8 @@ def footer() -> str:
     <a class="brand" href="/">{ICON}<span>dctx</span></a>
     <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
     <p>An advanced tool with several ways to use it: <a href="/start/">start with the safe path</a>.</p>
-    <p class="mono small">dctx {VERSION} &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
+    <p class="mono small">dctx {VERSION} &middot; Apache-2.0</p>
+    <p class="ftr-prefs"><button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Animations: on</button></p>
    </div>
    {col("f-product", "Product", [("/start/", "Choose your path"), ("/docs/", "Documentation"), ("/cli/", "CLI reference"), ("/examples/", "Examples"), ("/templates/", "Templates"), ("/playground/", "Playground"), ("/languages/", "Languages"), ("/benchmarks/", "Benchmarks")])}
    {col("f-res", "Resources", [("/docs/spec/", "Specification"), ("/changelog/", "Changelog"), ("/news/", "News"), ("/news/feed.xml", "News feed (Atom)"), ("/changelog/feed.xml", "Release feed (Atom)"), ("/for-ai-evaluators/", "For AI evaluators"), ("/llms-small.txt", "llms-small.txt"), ("/llms.txt", "llms.txt"), ("/llms-full.txt", "llms-full.txt"), ("/search/", "Search")])}
@@ -143,6 +149,7 @@ def page(route: Route, body: str, assets, *, graph: list | None = None, parents=
 <meta name="description" content="{e(route.desc)}">
 <meta name="robots" content="{robots}">
 <meta name="generator" content="dctx website builder">
+<meta name="dctx-build" content="{BUILD_MARK}">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -178,7 +185,6 @@ def page(route: Route, body: str, assets, *, graph: list | None = None, parents=
   <nav class="nav" aria-label="Primary"><ul>{nav}</ul></nav>
   <div class="hdr-end">
    <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
-   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
    <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
    <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
     <nav class="menu-panel" aria-label="Mobile"><ul>{nav}</ul></nav></details>

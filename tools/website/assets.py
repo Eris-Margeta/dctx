@@ -19,6 +19,16 @@ BUNDLES = {"page.js": ["site.js"], "home.js": ["site.js", "term.js", "hero.js", 
            "playground.js": ["site.js", "playground.js"], "search.js": ["site.js", "search.js"], "how.js": ["site.js", "anim.js"]}
 
 
+def minify_css(css: str) -> str:
+    """Conservative: drop comments and the whitespace around punctuation and at line starts. Strings and
+    url() values in site.css hold no such whitespace; check.py still reads the colour tokens."""
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+    css = re.sub(r"\s*\n\s*", "\n", css)
+    css = re.sub(r"\s*([{};])\s*", r"\1", css)
+    css = re.sub(r";}", "}", css)
+    return css.strip() + "\n"
+
+
 class Assets:
     def __init__(self) -> None:
         self.files: dict[str, bytes] = {}   # published path (with leading /) -> bytes
@@ -43,6 +53,7 @@ class Assets:
             self.add(f"{name}.woff2", read_bytes(f"tools/website/fonts/{name}.woff2"))
         css = read_bytes("tools/website/src/site.css").decode("utf-8")
         css = re.sub(r"@font:([a-z0-9-]+)", lambda m: self.url(m.group(1) + ".woff2"), css)
+        css = minify_css(css)
         self.add("site.css", css.encode("utf-8"))
         for name, parts in BUNDLES.items():
             self.add(name, b"\n".join(read_bytes(f"tools/website/src/{p}") for p in parts))

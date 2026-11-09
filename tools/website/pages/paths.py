@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 
 import facts
+import highlight
 from common import BLOB, REPO, VERSION, e, rec, src
 from components import code, pretty, table, term, transcript
 
@@ -18,7 +19,31 @@ def notice(heading_id: str | None = None, level: int = 2) -> str:
     f = facts.load()
     head = (f'<h{level} id="{heading_id}" class="notice-h">Advanced tool, several ways to use it</h{level}>' if heading_id else "")
     return (f'<div class="callout" role="note">{head}<p class="callout-text">{md_inline(f["notice"])}</p>'
-            f'<p class="callout-sub">Status: {md_inline(f["notice_status"])}</p></div>')
+            f'<p class="callout-sub">Status: {md_inline(f["notice_status"])}</p>{ways() if heading_id == "notice-h" else ""}</div>')
+
+
+# The four ways in, for the figure under the home notice: (name, command, facts.json "ways" entry for the
+# line and status). Commands are the documented entry points (docs/MODALITIES.md, the CLI reference).
+WAYS = [
+    ("CLI pack", "dctx pack .", "CLI"),
+    ("Map mode for agents", "dctx map find greet", "Agents, long session"),
+    ("MCP server", "dctx mcp --profile lean", "MCP and ACP"),
+    ("Library and wrappers", "Rust · Python · Node · Go", "Libraries"),
+]
+
+
+def ways() -> str:
+    """One binary, four ways in: a small figure; the pulse runs only with motion on (CSS)."""
+    by = {w["name"]: w for w in facts.load()["ways"]}
+    items = []
+    for name, cmd, key in WAYS:
+        w = by[key]
+        shown = (f'<code class="way-cmd"><span class="p">$ </span>{highlight.highlight(cmd, "sh")}</code>' if cmd.startswith("dctx")
+                 else f'<code class="way-cmd">{e(cmd)}</code>')
+        items.append(f'<li class="way"><a href="{w["link"]}"><b>{e(name)}</b></a>{shown}'
+                     f'<p>{md_inline(w["line"][:1].upper() + w["line"][1:])}</p><p class="way-st">{e(w["status"])}</p></li>')
+    return (f'<figure class="ways"><figcaption class="ways-hub"><b>dctx</b> one binary, local and offline</figcaption>'
+            f'<ol class="ways-list">{"".join(items)}</ol></figure>')
 
 
 def selector(level: int = 3) -> str:
