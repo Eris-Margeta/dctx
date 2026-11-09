@@ -69,8 +69,8 @@ Precision: structural declarations, imports, headings and conservative calls.
 Not exact semantic calls, type resolution or macro expansion.
 Token estimate ceil(2 * UTF-8 bytes / 7) is not a tokenizer guarantee.
 Example: dctx map find 'ignore rules' --json
-Example: dctx map map crates/dctx-cli/src/lib.rs --depth 2
-Example: dctx map map m:crates/dctx-cli/src/lib.rs --cursor '<next from the previous page>'
+Example: dctx map map crates/dctx-cli/src/main.rs --depth 2
+Example: dctx map map m:crates/dctx-cli/src/main.rs --cursor '<next from the previous page>'
 Each verb's own page and example: dctx map <verb> --help
 Exit codes: 0 ok, 1 no result (an id not in the index, a binary file), 2 usage, 3 index error; see docs/CLI-EXIT-CODES.md.
 ";
@@ -381,6 +381,32 @@ mod tests {
         ] {
             assert!(options(&args).is_err(), "{args:?}");
         }
+    }
+}
+
+#[cfg(test)]
+mod help_examples {
+    /// The help's own `map map` examples must name a file that has symbols, or they print zero records.
+    #[test]
+    fn map_examples_target_a_file_with_declarations() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let mut seen = 0;
+        for line in super::HELP.lines() {
+            let Some(rest) = line.strip_prefix("Example: dctx map map ") else {
+                continue;
+            };
+            let target = rest.split_whitespace().next().expect("target");
+            let file = target.strip_prefix("m:").unwrap_or(target);
+            let source = std::fs::read_to_string(root.join(file)).expect(file);
+            assert!(
+                source
+                    .lines()
+                    .any(|line| line.starts_with("fn ") || line.starts_with("pub fn ")),
+                "{file} declares no functions"
+            );
+            seen += 1;
+        }
+        assert_eq!(seen, 2);
     }
 }
 

@@ -250,7 +250,7 @@ fn an_existing_file_path_returns_the_same_records_as_its_module_id() {
     let help = repo.run(&["map", "--help"]);
     assert!(help.contains("--cursor"), "{help}");
     assert!(help.contains("place-relative file"), "{help}");
-    assert!(help.contains("crates/dctx-cli/src/lib.rs"), "{help}");
+    assert!(help.contains("crates/dctx-cli/src/main.rs"), "{help}");
     assert!(!help.contains("crates/dctx-core --depth"), "{help}");
 }
 
