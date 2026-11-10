@@ -256,7 +256,8 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
             "{name} requires a target: a stable id (m:, s:, …) or a place-relative file path"
         ));
     }
-    request.validate().map_err(|e| e.to_string())?;
+    let name = args.first().map_or("map", String::as_str);
+    request.validate_as(name).map_err(|e| e.to_string())?;
     Ok(Options {
         request,
         format,

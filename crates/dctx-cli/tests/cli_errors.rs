@@ -137,7 +137,7 @@ fn twelve_bad_inputs_get_their_exit_code_and_a_hint() {
     );
     fixture.refuse(
         2,
-        "limit or depth exceeds",
+        "limit or depth exceeds the verb's bounds: --depth 9 is above neighbors' maximum 4 (allowed range 1..=4)",
         &words(&["map", "neighbors", "s:a.py#alpha", "--depth", "9"]),
     );
     fixture.refuse(2, "requires a target", &words(&["map", "find", ""]));
@@ -180,6 +180,149 @@ fn twelve_bad_inputs_get_their_exit_code_and_a_hint() {
     assert!(fixture
         .ok(&words(&["map", "read", "s:a.py#alpha"]))
         .contains("return beta()"));
+}
+
+#[test]
+fn grep_limits_are_independent_of_literal_case_and_windows_style_paths() {
+    let fixture = Fixture::new();
+    fs::write(
+        fixture.path("place").join("a.py"),
+        "def alpha():\n    return \"ESCALATED TODO HTTP_ERROR\"\n",
+    )
+    .expect("all-caps literals");
+    // Shell quotes are removed before argv reaches the CLI. The literal is one argument
+    // here too; path-shaped literals simulate what MSYS argument conversion can produce.
+    for literal in [
+        "ESCALATED",
+        "TODO",
+        "HTTP_ERROR",
+        "alpha",
+        "C:/msys64/ESCALATED",
+        r"C:\repo\ESCALATED",
+    ] {
+        for limit in ["1", "40"] {
+            let page = fixture.ok(&words(&["map", "grep", literal, "--limit", limit]));
+            assert!(page.contains(" grep\n"), "{page}");
+        }
+        for limit in 41..=60 {
+            fixture.refuse(
+                2,
+                &format!("limit or depth exceeds the verb's bounds: --limit {limit} is above grep's maximum 40 (allowed range 1..=40)"),
+                &words(&["map", "grep", literal, "--limit", &limit.to_string()]),
+            );
+        }
+    }
+}
+
+#[test]
+fn map_bounds_use_the_displayed_verb_and_preserve_exit_2() {
+    let fixture = Fixture::new();
+    for (verb, target, option, value, detail) in [
+        (
+            "grep",
+            "ESCALATED",
+            "--limit",
+            "0",
+            "--limit 0 is below grep's minimum 1 (allowed range 1..=40)",
+        ),
+        (
+            "find",
+            "alpha",
+            "--limit",
+            "50",
+            "--limit 50 is above find's maximum 40 (allowed range 1..=40)",
+        ),
+        (
+            "map",
+            "a.py",
+            "--limit",
+            "61",
+            "--limit 61 is above map's maximum 60 (allowed range 1..=60)",
+        ),
+        (
+            "skeleton",
+            "a.py",
+            "--limit",
+            "61",
+            "--limit 61 is above skeleton's maximum 60 (allowed range 1..=60)",
+        ),
+        (
+            "hubs",
+            "",
+            "--limit",
+            "61",
+            "--limit 61 is above hubs' maximum 60 (allowed range 1..=60)",
+        ),
+        (
+            "map",
+            "a.py",
+            "--depth",
+            "0",
+            "--depth 0 is below map's minimum 1 (allowed range 1..=3)",
+        ),
+        (
+            "map",
+            "a.py",
+            "--depth",
+            "4",
+            "--depth 4 is above map's maximum 3 (allowed range 1..=3)",
+        ),
+        (
+            "neighbors",
+            "s:a.py#alpha",
+            "--depth",
+            "5",
+            "--depth 5 is above neighbors' maximum 4 (allowed range 1..=4)",
+        ),
+    ] {
+        let mut args = words(&["map", verb]);
+        if !target.is_empty() {
+            args.push(target.into());
+        }
+        args.extend(words(&[option, value]));
+        fixture.refuse(
+            2,
+            &format!("limit or depth exceeds the verb's bounds: {detail}"),
+            &args,
+        );
+    }
+    for (verb, target, option, maximum) in [
+        ("map", "a.py", "--limit", "60"),
+        ("neighbors", "s:a.py#alpha", "--limit", "60"),
+        ("map", "a.py", "--depth", "3"),
+        ("neighbors", "s:a.py#alpha", "--depth", "4"),
+    ] {
+        fixture.ok(&words(&["map", verb, target, option, maximum]));
+    }
+}
+
+#[test]
+fn malformed_windows_style_argv_gets_its_own_diagnostic() {
+    let fixture = Fixture::new();
+    for (args, message) in [
+        (
+            vec!["map", "grep", "ESCALATED\r"],
+            "target is too long or contains control characters",
+        ),
+        (
+            vec!["map", "grep", "ESCALATED", "--limit", "50\r"],
+            "invalid number: 50\r",
+        ),
+        (
+            vec!["map", "grep", "ESCALATED", "--limit\r", "50"],
+            "unknown or inapplicable option --limit\r",
+        ),
+        (
+            vec!["map", "grep", "ESCALATED", "--in", "C:/msys64/src"],
+            "path must be relative to the place",
+        ),
+        (
+            vec!["map", "grep", "ESCALATED", "--depth", "9"],
+            "unknown or inapplicable option --depth",
+        ),
+    ] {
+        fixture.refuse(2, message, &words(&args));
+    }
 }
 
 #[test]

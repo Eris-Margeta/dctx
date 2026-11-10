@@ -43,7 +43,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
             _ => return Err(format!("hubs takes no target and only --json, --place, --limit, --budget and --meta; got {flag}")),
         }
     }
-    request.validate().map_err(|e| e.to_string())?;
+    request.validate_as("hubs").map_err(|e| e.to_string())?;
     Ok(Options {
         request,
         format,

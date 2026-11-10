@@ -16,6 +16,8 @@ and distribution plans below do not describe the current release.
 
 ### Fixed
 
+- Map query bounds errors name the offending option, its value, the user-facing
+  verb (including `grep`) and its allowed range; usage errors still exit 2.
 - Windows: a file briefly locked by another process (antivirus, indexer, editor) no longer fails the whole pack; dctx retries for up to ~0.3 s.
 
 ### Changed
@@ -29,7 +31,9 @@ and distribution plans below do not describe the current release.
 
 ### Changed
 
-- npm packages are published as `dctx` with platform packages `@tejl/dctx-<platform>`.
+- The Node wrapper is published as `@tejl/dctx`, with platform packages
+  `@tejl/dctx-<platform>`. The registry refused the unscoped name `dctx`;
+  use `npx @tejl/dctx`.
 
 ### Fixed
 

@@ -79,15 +79,39 @@ impl Request {
     /// # Errors
     /// Refuses invalid verb limits, depth, targets, source ranges, full-mode combinations and escaping or malformed paths.
     pub fn validate(&self) -> Result<()> {
-        let maximum = if self.verb == Verb::Find { 40 } else { 60 };
-        if self.limit == 0
-            || self.limit > maximum
-            || self.depth == 0
-            || self.depth > if self.verb == Verb::Neighbors { 4 } else { 3 }
-        {
-            return Err(Error::Request(
-                "limit or depth exceeds the verb's bounds".into(),
-            ));
+        let name = match self.verb {
+            Verb::Map => "map",
+            Verb::Find => "find",
+            Verb::Neighbors => "neighbors",
+            Verb::Explain => "explain",
+            Verb::Read => "read",
+        };
+        self.validate_as(name)
+    }
+
+    /// Validates using a user-facing verb name in bounds errors, such as `grep` for `find`.
+    /// The name affects diagnostics only; [`Self::verb`] determines the bounds.
+    ///
+    /// # Errors
+    /// Returns the same refusals as [`Self::validate`].
+    pub fn validate_as(&self, name: &str) -> Result<()> {
+        let limit_max = if self.verb == Verb::Find { 40 } else { 60 };
+        let depth_max = if self.verb == Verb::Neighbors { 4 } else { 3 };
+        for (option, value, maximum) in [
+            ("--limit", self.limit, limit_max),
+            ("--depth", usize::from(self.depth), depth_max),
+        ] {
+            let (relation, boundary, bound) = if value == 0 {
+                ("below", "minimum", 1)
+            } else if value > maximum {
+                ("above", "maximum", maximum)
+            } else {
+                continue;
+            };
+            let possessive = if name.ends_with('s') { "'" } else { "'s" };
+            return Err(Error::Request(format!(
+                "limit or depth exceeds the verb's bounds: {option} {value} is {relation} {name}{possessive} {boundary} {bound} (allowed range 1..={maximum})"
+            )));
         }
         if self.verb != Verb::Map && self.target.trim().is_empty() {
             return Err(Error::Request("this verb requires a target".into()));
@@ -209,6 +233,58 @@ pub(crate) fn inside(path: &str, prefix: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bounds_errors_identify_the_option_value_verb_and_range() {
+        for (verb, limit_max, depth_max, name) in [
+            (Verb::Map, 60, 3, "map's"),
+            (Verb::Find, 40, 3, "find's"),
+            (Verb::Neighbors, 60, 4, "neighbors'"),
+            (Verb::Explain, 60, 3, "explain's"),
+            (Verb::Read, 60, 3, "read's"),
+        ] {
+            let mut request = Request::new(verb, "target");
+            request.limit = limit_max;
+            request.depth = depth_max;
+            assert!(request.validate().is_ok());
+            for (limit, depth, detail) in [
+                (
+                    0,
+                    1,
+                    format!("--limit 0 is below {name} minimum 1 (allowed range 1..={limit_max})"),
+                ),
+                (
+                    limit_max + 1,
+                    1,
+                    format!(
+                        "--limit {} is above {name} maximum {limit_max} (allowed range 1..={limit_max})",
+                        limit_max + 1
+                    ),
+                ),
+                (
+                    1,
+                    0,
+                    format!("--depth 0 is below {name} minimum 1 (allowed range 1..={depth_max})"),
+                ),
+                (
+                    1,
+                    depth_max + 1,
+                    format!(
+                        "--depth {} is above {name} maximum {depth_max} (allowed range 1..={depth_max})",
+                        depth_max + 1
+                    ),
+                ),
+            ] {
+                request.limit = limit;
+                request.depth = depth;
+                assert_eq!(
+                    request.validate().expect_err("bounds").to_string(),
+                    format!("limit or depth exceeds the verb's bounds: {detail}")
+                );
+            }
+        }
+    }
+
     #[test]
     fn refuses_bounds_and_path_escape() {
         let mut request = Request::new(Verb::Find, "event");
