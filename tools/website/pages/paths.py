@@ -77,7 +77,7 @@ def selector(level: int = 3) -> str:
             f'<dl class="path-dl"><div><dt>Who it&rsquo;s for</dt><dd>{md_inline(p["who"])}</dd></div>'
             f'<div><dt>What you get</dt><dd>{md_inline(p["gets"])}</dd></div>'
             f'<div><dt>What you use</dt><dd class="path-mod">{md_inline(p["modality"])}</dd></div></dl>'
-            f'<details class="path-more"><summary>Setup, first command and the pitfall</summary>'
+            f'<details class="path-more"><summary><svg class="path-chevron" width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="m3 1 4 4-4 4"/></svg>Setup, first command and the pitfall</summary>'
             f'<p class="path-h">Setup</p><ol class="path-steps">{steps}</ol>'
             f'<p class="path-h">First command</p><pre class="path-cmd"><code><span class="p">$ </span>{highlight.highlight(p["first_command"], "sh")}</code></pre>'
             f'<p class="path-h path-h-warn">Watch out for</p><p class="path-pit">{md_inline(p["pitfall"])}</p></details>'

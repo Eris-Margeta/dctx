@@ -87,7 +87,9 @@ def table(head: list[str], rows: list[list[str]], *, caption: str = "", numeric:
         text = re.sub(r"`([^`]+)`", r"<code>\1</code>", text)
         return re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", text)
     sort = ' data-sort=""' if sortable else ""
-    th = "".join(f'<th scope="col"{" class=\"num\"" if i in numeric else ""}{sort}>{cell(h)}</th>' for i, h in enumerate(head))
+    from glyphs import icon
+    sort_icon = icon(0x2191, "sort-icon") if sortable else ""
+    th = "".join(f'<th scope="col"{" class=\"num\"" if i in numeric else ""}{sort}>{cell(h)}{sort_icon}</th>' for i, h in enumerate(head))
     trs = "".join("<tr>" + "".join(f'<td{" class=\"num\"" if i in numeric else ""}>{cell(c)}</td>' for i, c in enumerate(r)) + "</tr>" for r in rows)
     cap = f"<caption>{caption}</caption>" if caption else ""
     return (f'<div class="table-wrap"><table{" data-sortable" if sortable else ""}{f" class={chr(34)}{cls}{chr(34)}" if cls else ""}>'

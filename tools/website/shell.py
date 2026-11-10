@@ -80,20 +80,18 @@ def footer() -> str:
 
 
 def og_tags(route: Route, assets) -> tuple[str, str]:
-    """OG image meta (GIF first on the home page, then dark, then light) and the twitter image."""
-    slug = route.slug if route.kind != "error" else "home"
-    alt = f"dctx: {route.title}" if route.kind != "home" else "dctx: a repository flows through ignore rules into a graph, then into one bounded, stable page."
-    if route.kind == "home":  # owner 07.11: the classic card only, so every platform picks it
-        images = [("/assets/og/home.png", "image/png")]
-    else:
-        images = [(f"/assets/og/{slug}.dark.png", "image/png"), (f"/assets/og/{slug}.light.png", "image/png")]
+    """Animated OG, its exact first frame, and a separately composed 2:1 Twitter card."""
+    slug = route.slug
+    alt = f"dctx: {route.title}. {route.desc}"
+    images = [(f"/assets/og/{slug}.gif", "image/gif"), (f"/assets/og/{slug}.png", "image/png")]
     tags = "".join(
-        f'<meta property="og:image" content="{ORIGIN}{u}">\n<meta property="og:image:type" content="{t}">\n'
+        f'<meta property="og:image" content="{ORIGIN}{assets.url(u)}">\n<meta property="og:image:type" content="{t}">\n'
         f'<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n'
         f'<meta property="og:image:alt" content="{e(alt)}">\n' for u, t in images)
-    twitter = (f'<meta name="twitter:image" content="{ORIGIN}{images[0][0]}">\n'
+    tw = f"/assets/og/{slug}.twitter.png"
+    twitter = (f'<meta name="twitter:image" content="{ORIGIN}{assets.url(tw)}">\n'
                f'<meta name="twitter:image:alt" content="{e(alt)}">\n')
-    for url, _ in images:
+    for url in [u for u, _ in images] + [tw]:
         assets.require(url)
     return tags, twitter
 
@@ -184,9 +182,9 @@ def page(route: Route, body: str, assets, *, graph: list | None = None, parents=
   <a class="brand" href="/">{ICON}<span>dctx</span><span class="ver">{VERSION}</span></a>
   <nav class="nav" aria-label="Primary"><ul>{nav}</ul></nav>
   <div class="hdr-end">
-   <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
-   <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
-   <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
+   <a class="tbtn search-link" href="/search/" aria-label="Search"><svg width="16" height="16" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
+   <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg width="16" height="16" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
+   <details class="menu"><summary class="tbtn" aria-label="Menu"><svg width="16" height="16" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
     <nav class="menu-panel" aria-label="Mobile"><ul>{nav}</ul></nav></details>
   </div>
  </div>

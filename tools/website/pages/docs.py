@@ -19,7 +19,7 @@ def toc_html(toc: list[tuple[int, str, str]]) -> tuple[str, str]:
         return "", ""
     items = "".join(f'<li class="l{lvl}"><a href="#{i}">{e(t)}</a></li>' for lvl, i, t in toc)
     side = f'<nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul>{items}</ul></nav>'
-    mobile = f'<details class="toc-m"><summary>On this page</summary><ul>{"".join(f"<li><a href=\"#{i}\">{e(t)}</a></li>" for lvl, i, t in toc if lvl == 2)}</ul></details>'
+    mobile = f'<details class="toc-m"><summary><svg class="disclosure" width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true" focusable="false"><path d="m2 1 6 4-6 4z"/></svg>On this page</summary><ul>{"".join(f"<li><a href=\"#{i}\">{e(t)}</a></li>" for lvl, i, t in toc if lvl == 2)}</ul></details>'
     return side, mobile
 
 

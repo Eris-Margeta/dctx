@@ -101,7 +101,7 @@ MUST satisfy the five **PPE** constraints:
 | Id | Constraint | Status |
 |---|---|---|
 | **PPE-1 Bounded** | Every answer has a declared byte and estimated-token ceiling, reserved before records are written; records are never split | landed (`dctx_core::budget`, API-PORTS-v1 `BoundedSink`) |
-| **PPE-2 Deterministic** | Same source snapshot, policy, plan, ranking revision and request ⇒ identical bytes, on every OS and thread count | landed on Linux (every text verb identical over 5 runs; property P6, canonical payload); cross-OS gate open (§11) |
+| **PPE-2 Deterministic** | Same source snapshot, policy, plan, ranking revision and request => identical bytes, on every OS and thread count | landed on Linux (every text verb identical over 5 runs; property P6, canonical payload); cross-OS gate open (§11) |
 | **PPE-3 Prefix-stable** | Context injected across turns is layered so that bytes that did not need to change do not change (§12) | tier layering remains target (§12.1); on 2026-11-06, `0495f5f` preserved 33/33 text and 33/33 JSON answers after unrelated comment edits on three pinned local corpora; all identical over five runs, paired-answer M7 = 1.0 ([protocol and limits](https://www.dctx.internet.technology/docs/stability/)); historical baseline 0/63 (§31.0) |
 | **PPE-4 Non-redundant** | Within one session a record already delivered is not re-sent unless its content changed (§12.4) | target |
 | **PPE-5 Honest** | Every answer states its freshness, precision and provenance; the engine never asserts what it does not know | landed (`precision.*`, `freshness.*` in the wire format) |
@@ -245,15 +245,15 @@ fields: `receiver` (head identifier of the receiver expression), `arity`, and
 `binding_hint` (declared annotation, constructor name or import alias that produced a
 local). Resolution walks:
 
-1. lexical scopes outward (shadowing honored) → `exact` on a unique declaration;
+1. lexical scopes outward (shadowing honored) -> `exact` on a unique declaration;
 2. imports, resolved to files from the view inventory and manifests already lexed by
    `dctx-lex-cfg` (`tsconfig` paths, `go.mod`, `Cargo.toml`, `composer.json`,
-   `pyproject`, SwiftPM targets) → `exact`;
+   `pyproject`, SwiftPM targets) -> `exact`;
 3. the receiver's type by shallow, deterministic rules — `self`/`this`, constructor,
    annotation, field type, import alias, annotated return type of the last call in a
-   chain — then the method among that type's members and its declared supertypes →
+   chain — then the method among that type's members and its declared supertypes ->
    `typed`;
-4. a unique declaration in the view with a compatible kind → `name`;
+4. a unique declaration in the view with a compatible kind -> `name`;
 5. otherwise `guess` or unresolved.
 
 No unification, no cross-assignment inference, no generics. Anything deeper is the job
@@ -582,7 +582,7 @@ no daemon.
 <cache root>/v2/<root-id>/
   facts/<FactKey-prefix>/<FactKey>.seg   per-file fact segments; a changed file reparses one segment
   views/<generation>/view.seg            nodes, forward and reverse adjacency, postings, dictionary
-  views/<generation>/manifest.man        sorted path → (stamp, ObjectKey, FactKey)
+  views/<generation>/manifest.man        sorted path -> (stamp, ObjectKey, FactKey)
   current.ptr                            atomic pointer to the published generation
   answers/<session>.ledger               delta and dedup ledger (§12.3–12.4)
 ```
@@ -622,7 +622,7 @@ per-file rebuild: each process re-walks and re-hashes, and any change rebuilds f
 | Warm `find` / `neighbors` / `read`, small and medium corpora | ≤30 ms engine p95, ≤80 ms process | 0.03–0.26 s process (comparison 0.69–1.40 s) |
 | Warm `find` / `neighbors` / `read`, largest corpus (core, 3,190 files) | ≤0.8 s process, ≤150 MiB | 1.45 s, 370 MiB (comparison `callers` 0.83 s) |
 | First query after a one-line edit | ≤2× warm | ≈ cold (core 7.48 s against 1.45 s warm; django 2.70 s against 0.82 s) |
-| Cache per root after 10 edits | ≤1.5× one generation | 6× (158 MB → 946 MB after about five edits) |
+| Cache per root after 10 edits | ≤1.5× one generation | 6× (158 MB -> 946 MB after about five edits) |
 | Single-file reindex | ≤50 ms | n/a |
 | Correctness | Answers byte-identical to a cold rebuild | — |
 
@@ -656,14 +656,14 @@ revision is versioned and part of the view digest.
 ```text
 Does it read or write anything other than authorized source bytes, the dctx cache root
 or a caller-supplied sink?
-  no  → core: engine or adapter (first-party crate, std-only target)
-  yes → does it only transport answers the core already produced, deciding nothing about content?
-          yes → surface adapter (compiled in behind a feature: CLI, MCP, hook-file generator)
-          no  → plugin (out of process, brokered, consented, receipted)
+  no  -> core: engine or adapter (first-party crate, std-only target)
+  yes -> does it only transport answers the core already produced, deciding nothing about content?
+          yes -> surface adapter (compiled in behind a feature: CLI, MCP, hook-file generator)
+          no  -> plugin (out of process, brokered, consented, receipted)
 Does it need a socket, a subprocess or a foreign runtime (language server, compiler, model)?
-  yes → plugin; never core; never a default-on effect
+  yes -> plugin; never core; never a default-on effect
 Does it change selection, identity, freshness, ranking or budgets?
-  yes → refused as a plugin capability
+  yes -> refused as a plugin capability
 ```
 
 | Component | Placement |
@@ -882,7 +882,7 @@ this section names the row it must move.
 | Cold index, seven corpora: wall / peak RSS | 0.09–6.05 s / 8–567 MiB | 2.44–94.89 s / 181–2,111 MiB | `data/indexing.csv` |
 | Warm `find`: small and medium corpora / largest corpus (core) | 0.03–0.26 s / 1.45 s | 0.69–1.40 s / 1.65 s (`callers` 0.83 s) | `data/queries_warm.csv` |
 | First query after a one-line edit: core / django | 7.48 s / 2.70 s | 5.45 s / 11.30 s | `data/freshness.csv` |
-| Cache growth after about five edits (core) | 158 MB → 946 MB; `gc --dry-run` reclaimed 0 bytes | constant 65 MB | report §6 |
+| Cache growth after about five edits (core) | 158 MB -> 946 MB; `gc --dry-run` reclaimed 0 bytes | constant 65 MB | report §6 |
 | Text answers identical after an unrelated edit | Historical: 0 of 63 (`17dff0b`); 2026-11-06: 33 of 33 (`0495f5f`, three pinned local corpora, unrelated comment edits); JSON 33 of 33, also identical over five runs; paired-answer M7 = 1.0 | Historical: 59 of 70 (not rerun) | Historical: `data/stability.csv`; [new CSV](https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/stability.csv), [protocol and limits](https://www.dctx.internet.technology/docs/stability/) |
 | Budget cap honoured | 2,000-token cap never exceeded (worst answer 6,996 bytes); 35 of 84 small budgets fail with exit 1 | no cap; one answer 142,197 bytes | report §13 |
 | Install footprint | one 9,207,072-byte binary | 405,601,700 bytes of `node_modules` plus Node | report §3 |
@@ -907,7 +907,7 @@ because they touch `crates/dctx-template`, manifests and CI, not the index.
 |---|---|---|
 | **P0 Close the holes** (§4 item 3, §7, §11) | Wire reference resolution into the facade index; text pages carry content; provenance moves to an opt-in trailer; secret-shaped omit defaults | `neighbors --edge calls --dir in` non-empty on ≥ 120 of 140 targets; precision (`exact ∪ name`) ≥ 0.95; recall ≥ 0.88 on *rare* (comparison 0.93), ≥ 0.81 on *collision* (0.86), ≥ 0.35 on *hub* (0.42), ≥ 0.25 on *receiver* (0.56); zero wrong `exact`. Text answers identical after an unrelated edit ≥ 95 % (0 of 63); JSON identical over 5 runs. Task score ≥ 95 of 140 (69). The adversarial `.env` value absent from `pack` output; path listed |
 | **P1 Answer the questions agents ask** (§8, §10) | Bounded overview for `map` without a target, `p:` and directory targets; `grep`; `find` tokenization; small budgets degrade; omission counts in `precision` | Overview question 14 of 14 with ≤ 15,000 tokens over seven corpora (480,000); config-key ≥ 12 of 14 (0); concept ≥ 10 of 14 (0); every budgeted request returns a page (35 of 84 failed); task score ≥ 115 of 140 at ≤ 100,000 tokens (comparison 122 at 88,691); M8 ≥ 0.80 (0.48) |
-| **P2 Persistent incremental index** (§18–20) | Per-file fact segments keyed by `FactKey`; content-addressed generations; superseded same-root generations reclaimed at the next invocation; two-level freshness; lazy per-section loads; parallel cold build; per-file fact cap; `status` | First query after a one-line edit ≤ 2× warm on every corpus (core 7.48 s → ≤ 3.0 s; django 2.70 s → ≤ 1.7 s); cache per root ≤ 1.5× one generation after 10 edits (946 MB → ≤ 240 MB); `gc` reclaims superseded bytes; warm queries on core ≤ 0.8 s and ≤ 150 MiB (1.45 s / 370 MiB; comparison 0.83 s); cold core ≤ 5 s / ≤ 150 MiB (6.05 s / 567 MiB); cold time ≤ 0.5× comparison on every corpus; `status` ≤ 50 ms |
+| **P2 Persistent incremental index** (§18–20) | Per-file fact segments keyed by `FactKey`; content-addressed generations; superseded same-root generations reclaimed at the next invocation; two-level freshness; lazy per-section loads; parallel cold build; per-file fact cap; `status` | First query after a one-line edit ≤ 2× warm on every corpus (core 7.48 s -> ≤ 3.0 s; django 2.70 s -> ≤ 1.7 s); cache per root ≤ 1.5× one generation after 10 edits (946 MB -> ≤ 240 MB); `gc` reclaims superseded bytes; warm queries on core ≤ 0.8 s and ≤ 150 MiB (1.45 s / 370 MiB; comparison 0.83 s); cold core ≤ 5 s / ≤ 150 MiB (6.05 s / 567 MiB); cold time ≤ 0.5× comparison on every corpus; `status` ≤ 50 ms |
 | **P3 Binder** (§7.1) | `dctx-map-bind`: scope graph, per-language import resolution from lexed manifests, receiver-type rules, `typed` rung, edge corpus | Receiver recall ≥ 0.56, interface name-level ≥ 0.42, hub ≥ 0.42; `exact ∪ typed` precision ≥ 0.95; zero wrong `exact`; callees question ≥ 10 of 14 (2) |
 | **P4 Token economics** (§12) | Tiers T0–T3, view digests, `--since` deltas, session dedup, compression levels, planner, `dctx bench tokens`, agent seeding | M7 ≥ 0.9 across turns; on ≥ 30 accepted tasks per route: M2 −50 %, M1 −25 %, M3 −50 %, M4 unchanged; task tokens ≤ 0.8× comparison at M8 ≥ 0.85; M6 reported |
 | **E1 Organization control** (§14–17; parallel) | `POLICY` / `TENANT`, seven layers, `.dctxpol`, enrollment, explain, receipts | P9; one bundle demonstrably controls every mode; an unverifiable bundle refuses |

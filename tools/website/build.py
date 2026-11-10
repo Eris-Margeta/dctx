@@ -66,6 +66,7 @@ def removed_from(path: str) -> int:
 
 def build(out: Path, skip_og: bool = False) -> int:
     import llms
+    import glyphs
     import md
     import og
     import shell
@@ -80,13 +81,24 @@ def build(out: Path, skip_og: bool = False) -> int:
     route_of = {f: doc_path(s) for s, f, *_ in DOCS} | {f: p for p, f, *_ in POLICIES} | {"CHANGELOG.md": "/changelog/"}
     linker = md.Linker(route_of)
     routes = build_routes(NEWS)
+    # Register social assets before rendering the head so URLs contain their byte digest.
+    scene = og.scene_geometry()
+    # The editing shortcut must record the same inputs as a complete render.
+    for name in ("social.js", "social.css"):
+        read_bytes("tools/website/browser/" + name)
+    if skip_og:
+        social = {"/assets/og/" + f.name: f.read_bytes() for f in sorted((out / "assets/og").iterdir())}
+        social.update({"/" + rel: (out / rel).read_bytes() for rel in ("favicon-32.png", "apple-touch-icon.png", "assets/icon-192.png", "assets/icon-512.png")})
+    else:
+        social = og.all_images(routes, scene)
+    for url, content in social.items():
+        assets.urls[url] = url + "?v=" + hashlib.sha256(content).hexdigest()[:12]
     rendered = {}
     for r in routes:
         if r.kind == "doc":
             rendered[r.path] = md.render(r.source, linker)
     files: dict[str, bytes] = {}
     pages: dict[str, str] = {}
-    scene = og.scene_geometry()
     releases = misc.releases(linker)
     index_url = "/assets/search-index.json"
     doc_routes = [r for r in routes if r.kind == "doc" and r.group != "Policy"]
@@ -156,19 +168,13 @@ def build(out: Path, skip_og: bool = False) -> int:
             raise SystemExit(f"build: no page for {r.path}")
 
     for path, html in pages.items():
-        files[path.lstrip("/") + ("index.html" if path.endswith("/") else "")] = html.encode("utf-8")
+        pages[path] = glyphs.vectorize(html)
+        files[path.lstrip("/") + ("index.html" if path.endswith("/") else "")] = pages[path].encode("utf-8")
     for path, doc in rendered.items():
-        files[path.lstrip("/") + "index.md"] = doc.twin.encode("utf-8")
+        files[path.lstrip("/") + "index.md"] = glyphs.plain(doc.twin).encode("utf-8")
     for url, data in assets.files.items():
         files[url.lstrip("/")] = data
-    if skip_og:  # development only: reuse the images already in out/
-        for rel in ("favicon-32.png", "apple-touch-icon.png", "assets/icon-192.png", "assets/icon-512.png"):
-            files[rel] = (out / rel).read_bytes()
-        for f in sorted((out / "assets/og").iterdir()):
-            files["assets/og/" + f.name] = f.read_bytes()
-    else:
-        for url, data in og.all_images(routes, scene).items():
-            files[url.lstrip("/")] = data
+    files.update({url.lstrip("/"): content for url, content in social.items()})
     files["favicon.svg"] = (ICON.replace(' aria-hidden="true" focusable="false"', ' xmlns="http://www.w3.org/2000/svg"') + "\n").encode()
     files["llms.txt"] = llms.llms_txt(pages, routes).encode()
     files["llms-small.txt"] = llms.llms_small(pages, routes).encode()
@@ -186,6 +192,10 @@ def build(out: Path, skip_og: bool = False) -> int:
     files["opensearch.xml"] = llms.opensearch().encode()
     files["assets/search-index.json"] = llms.search_index(pages, routes).encode()
     files["assets/openapi.json"] = read_bytes("tools/playground/openapi.json")
+
+    for rel in files:
+        if rel.endswith((".txt", ".xml")):
+            files[rel] = glyphs.plain(files[rel].decode("utf-8")).encode("utf-8")
 
     # build.json: what was built from what. No clock: the source digest identifies the inputs.
     digest = hashlib.sha256("".join(f"{k}\0{v}\n" for k, v in sorted(READS.items())).encode()).hexdigest()

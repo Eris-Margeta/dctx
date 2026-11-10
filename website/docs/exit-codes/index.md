@@ -16,7 +16,7 @@ for `dctx map read`, with the same flags and exit codes.
 | 2 | usage: the arguments are wrong | an unknown command or flag; a missing target (`dctx context` with no TARGET); `--depth 9`; an empty `find` query; a stale `--cursor`; `m:../outside`; a non-UTF-8 argument; `cache purge` without `--root`/`--all` or `--yes`; a template that does not compile; a bare `dctx` whose stdin or stdout is not a terminal |
 | 3 | index error: the place, source, cache or index could not be opened, read, built or written | `--place /no/such/dir`; a corrupt or busy cache; a source over `DCTX_MAX_SOURCE_BYTES`; an `--output` file that cannot be written; `template build /no/such/file` (the message names the path) |
 
-Every failure prints two lines on stderr: `❌ Error: <what went wrong>` (prefixed with the command, as `map: …`), then `hint: <what to do next>`. No input should reach a Rust panic; `crates/dctx-cli/tests/cli_errors.rs` and `<repo>/scripts/checks/V1-5.zsh` run twelve bad inputs and assert the code, the message, the hint and the absence of `panicked`.
+Every failure prints two lines on stderr: `[no] Error: <what went wrong>` (prefixed with the command, as `map: …`), then `hint: <what to do next>`. No input should reach a Rust panic; `crates/dctx-cli/tests/cli_errors.rs` and `<repo>/scripts/checks/V1-5.zsh` run twelve bad inputs and assert the code, the message, the hint and the absence of `panicked`.
 
 ## Details
 

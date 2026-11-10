@@ -181,8 +181,8 @@ def build_routes(news: list[dict]) -> list[Route]:
     routes += [
         Route("/search/", "Search", "Search the dctx website.", "search", og="search", indexable=False),
         Route("/playground/offline/", "Playground offline", "The playground service is not reachable right now.", "page", "playground",
-              og="playground", indexable=False),
-        Route("/404.html", "Page not found", "This page does not exist on the dctx website.", "error", og="home", indexable=False),
+              og="playground-offline", indexable=False),
+        Route("/404.html", "Page not found", "This page does not exist on the dctx website.", "error", og="404", indexable=False),
     ]
     paths = [r.path for r in routes]
     if len(paths) != len(set(paths)):

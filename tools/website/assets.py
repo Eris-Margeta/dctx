@@ -1,8 +1,8 @@
 """Content-hashed static assets: fonts, CSS and JS from tools/website/src and tools/website/fonts.
 
 Each asset is published as /assets/<name>.<first 8 hex of sha256>.<ext>; pages reference it
-through Assets.url(logical name). Images keep stable URLs (OG cards, icons) and are registered
-with require() so check.py can prove each referenced file exists.
+through Assets.url(logical name). Social images use a byte-digest query parameter;
+require() registers their paths so check.py can prove each referenced file exists.
 """
 from __future__ import annotations
 

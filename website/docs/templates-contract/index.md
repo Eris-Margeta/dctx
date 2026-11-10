@@ -82,7 +82,7 @@ and corruption fuzzing before compiled IR is a release format.
 
 B2 owns v1 parity, v2 compile/load determinism, section/opcode rejection and
 positive controls; P1 authorization-before-render, P5 final budget, P6 frozen
-clock/reordered-input equality. Model compile→validated-plan→authorized-view→
+clock/reordered-input equality. Model compile->validated-plan->authorized-view->
 bounded-render transitions and policy-epoch revocation. Mutation removing the
 host intersection must fail a denied-content test. Mutation budgeting unescaped
 strings must fail a Unicode/JSON envelope property. Unsupported parser tests

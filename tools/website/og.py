@@ -1,6 +1,6 @@
-"""OG images, the hero poster and the favicons, drawn with Pillow from the captured demo data.
+"""Social images, the hero poster and favicons from the captured demo data.
 
-One seeded geometry (scene_geometry) is shared by the animated home GIF, the static PNGs, the
+One seeded geometry (scene_geometry) is shared by the Chrome-rendered social GIFs, the static PNGs, the
 in-page poster and the canvas animation (it is embedded in the home page as JSON), so every
 version shows the same files, nodes, edges and page lines: the real ones from demo.json.
 Deterministic: no clock, seeded LCG, no metadata chunks.
@@ -8,6 +8,11 @@ Deterministic: no clock, seeded LCG, no metadata chunks.
 from __future__ import annotations
 
 import io
+import base64
+import os
+import subprocess
+import tempfile
+from pathlib import Path
 import math
 import re
 
@@ -323,9 +328,9 @@ def png_bytes(img: Image.Image) -> bytes:
     return out.getvalue()
 
 
-def text_block(img: Image.Image, theme: dict, crumb: str, title: str, desc: str, width: int) -> None:
+def text_block(img: Image.Image, theme: dict, crumb: str, title: str, desc: str, width: int, height: int = H) -> None:
     draw = ImageDraw.Draw(img)
-    draw.text((64 * SS, 54 * SS), HOST + (f"  /  {crumb}" if crumb else ""), font=font("jetbrains-mono-400", 22 * SS),
+    draw.text((64 * SS, 44 * SS), HOST + (f"  /  {crumb}" if crumb else ""), font=font("jetbrains-mono-400", 22 * SS),
               fill=theme["muted"])
     size = 56
     for size in (56, 50, 44):
@@ -333,19 +338,19 @@ def text_block(img: Image.Image, theme: dict, crumb: str, title: str, desc: str,
         if len(lines) <= 2 or size == 44:
             break
     lines = lines[:3]
-    y = 130
+    y = 104
     for line in lines:
         draw.text((64 * SS, y * SS), line, font=font("geist-600", size * SS), fill=theme["ink"])
         y += round(size * 1.15)
     y += 14
-    for line in wrap(desc, font("geist-400", 28 * SS), width * SS)[:3]:
+    for line in wrap(desc, font("geist-400", 28 * SS), width * SS)[:5]:
         draw.text((64 * SS, y * SS), line, font=font("geist-400", 28 * SS), fill=theme["muted"])
-        y += 38
-    mark(draw, 64, 540, 40, theme)
-    draw.text((118 * SS, 548 * SS), f"dctx {VERSION}", font=font("jetbrains-mono-500", 22 * SS), fill=theme["ink"])
+        y += 34
+    mark(draw, 64, height - 90, 40, theme)
+    draw.text((118 * SS, (height - 82) * SS), f"dctx {VERSION}", font=font("jetbrains-mono-500", 22 * SS), fill=theme["ink"])
     tejl = font("geist-600", 26 * SS)
     tw = draw.textlength("TEJL", font=tejl)
-    draw.text((W * SS - 64 * SS - tw, 546 * SS), "TEJL", font=tejl, fill=theme["ink"])
+    draw.text((W * SS - 64 * SS - tw, (height - 84) * SS), "TEJL", font=tejl, fill=theme["ink"])
 
 
 def wrap(text: str, f: ImageFont.FreeTypeFont, width: float) -> list[str]:
@@ -374,15 +379,17 @@ def mark(draw: ImageDraw.ImageDraw, x: float, y: float, size: float, theme: dict
     draw.ellipse([X(16 - 2.6), Y(16 - 2.6), X(16 + 2.6), Y(16 + 2.6)], fill=(139, 92, 246))
 
 
-def og_png(theme_name: str, crumb: str, title: str, desc: str, seed: int, geo: dict | None = None) -> bytes:
+def og_png(theme_name: str, crumb: str, title: str, desc: str, seed: int, geo: dict | None = None, height: int = H) -> bytes:
     theme = THEMES[theme_name]
     img = background(theme, seed)
     if geo is not None:
         draw_scene(img, geo, theme, 13, box=(560, 70, 620, 326))
-        text_block(img, theme, crumb, title, desc, 500)
+        text_block(img, theme, crumb, title, desc, 470, height)
     else:
-        text_block(img, theme, crumb, title, desc, 1060)
-    return png_bytes(finish(img))
+        text_block(img, theme, crumb, title, desc, 1060, height)
+    # Recompose the footer for Twitter, then take its dedicated 1200x600 canvas.
+    img = img.crop((0, 0, W * SS, height * SS)).resize((W, height), Image.LANCZOS)
+    return png_bytes(img)
 
 
 def poster_png(theme_name: str, geo: dict) -> bytes:
@@ -393,25 +400,59 @@ def poster_png(theme_name: str, geo: dict) -> bytes:
     return png_bytes(finish(img))
 
 
-def home_gif(geo: dict, title: str, desc: str) -> bytes:
-    theme = THEMES["dark"]
-    base = background(theme, 7)
-    text_block(base, theme, "", title, desc, 500)
-    times = [13.0] + [0.6 + i * 0.5 for i in range(5)] + [3.2 + i * 0.4 for i in range(5)] + \
-            [5.2 + i * 0.6 for i in range(6)] + [9.0 + i * 0.5 for i in range(6)] + [13.0]
-    frames = []
-    for t in times:
-        img = base.copy()
-        draw_scene(img, geo, theme, t, box=(560, 70, 620, 326))
-        # loop progress along the bottom edge: it also keeps every frame distinct (GIF writers merge equal frames)
-        k = len(frames)
-        ImageDraw.Draw(img).rectangle([0, (H - 3) * SS, int(W * SS * (k + 1) / len(times)), H * SS], fill=theme["brand"])
-        frames.append(finish(img))
-    palette = frames[0].quantize(colors=128, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
-    q = [f.quantize(palette=palette, dither=Image.Dither.NONE) for f in frames]
-    out = io.BytesIO()
-    q[0].save(out, "GIF", save_all=True, append_images=q[1:], duration=100, loop=0, optimize=False, disposal=1)
-    return out.getvalue()
+def social_cards(routes, geo: dict, include: set[str] | None = None) -> dict[str, bytes]:
+    """Render parameter-driven Chrome frames, shared FFmpeg palette, gifsicle O3.
+
+    PNG fallback is decoded *after* GIF optimization, so frame zero equals it
+    pixel for pixel even with lossy GIF optimization. Temporary art never ships.
+    """
+    from playwright.sync_api import sync_playwright
+    files = {}
+    with tempfile.TemporaryDirectory(prefix="dctx-social-") as temp, sync_playwright() as p:
+        work = Path(temp)
+        for name in ("social.js", "social.css"):
+            (work / name).write_bytes(read_bytes("tools/website/browser/" + name))
+        (work / "index.html").write_text('<!doctype html><html><head><meta charset="utf-8">'
+            '<link rel="stylesheet" href="social.css"></head><body><canvas width="1200" height="630"></canvas>'
+            '<script src="social.js"></script></body></html>')
+        browser = p.chromium.launch(executable_path=os.environ.get("DCTX_CHROME"),
+            args=["--no-sandbox", "--force-color-profile=srgb", "--disable-gpu"])
+        page = browser.new_page(viewport={"width": W, "height": H}, device_scale_factor=1)
+        page.goto((work / "index.html").as_uri())
+        cdp = page.context.new_cdp_session(page)
+        seen = set()
+        for i, route in enumerate(routes):
+            if route.slug in seen or (include is not None and route.slug not in include):
+                continue
+            seen.add(route.slug)
+            crumb = "" if route.kind == "home" else route.path.strip("/").replace("/", " / ")
+            title = "Give AI the right code, not all of it." if route.kind == "home" else route.title
+            # The home hero's own heading and the route's actual meta copy.
+            desc = route.desc
+            base = og_png("dark", crumb, title, desc, seed=101 + i, geo=geo)
+            (work / "base.png").write_bytes(base)
+            page.evaluate("args => window.loadCard(args[0], args[1])", ["base.png?v=" + str(i), geo])
+            for frame in range(24):
+                page.evaluate("t => window.renderFrame(t)", frame / 8)
+                shot = cdp.send("Page.captureScreenshot", {"format": "png", "captureBeyondViewport": False, "optimizeForSpeed": True})
+                (work / f"frame-{frame:02d}.png").write_bytes(base64.b64decode(shot["data"]))
+            # Single palette across all 24 frames; fixed threading keeps encoding deterministic.
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-threads", "1", "-filter_complex_threads", "1",
+                "-framerate", "8", "-i", str(work / "frame-%02d.png"), "-filter_complex",
+                "[0:v]split[a][b];[a]palettegen=stats_mode=full[p];[b][p]paletteuse=dither=bayer:bayer_scale=3",
+                "-loop", "0", str(work / "raw.gif")], check=True, capture_output=True)
+            subprocess.run(["gifsicle", "-O3", "--lossy=40", str(work / "raw.gif"), "-o", str(work / "card.gif")],
+                           check=True, capture_output=True)
+            prefix = f"/assets/og/{route.slug}"
+            files[prefix + ".gif"] = (work / "card.gif").read_bytes()
+            with Image.open(work / "card.gif") as gif:
+                out = io.BytesIO()
+                gif.copy().save(out, "PNG", optimize=True)
+                files[prefix + ".png"] = out.getvalue()
+            files[prefix + ".twitter.png"] = og_png("dark", crumb, title, desc, 101 + i, geo, height=600)
+            print(f"social: {route.slug} ({len(files[prefix + '.gif']):,} GIF bytes)", flush=True)
+        browser.close()
+    return files
 
 
 def icon_png(size: int) -> bytes:
@@ -428,20 +469,7 @@ def icon_png(size: int) -> bytes:
 
 def all_images(routes, geo: dict) -> dict[str, bytes]:
     """Published path -> bytes for every OG image, the poster and the icons."""
-    files: dict[str, bytes] = {}
-    for i, route in enumerate(r for r in routes if r.kind != "error"):
-        slug = route.slug
-        if f"/assets/og/{slug}.dark.png" in files:
-            continue
-        crumb = "" if route.kind == "home" else route.path.strip("/").replace("/", " / ")
-        title = "Context, engineered." if route.kind == "home" else route.title
-        desc = route.desc if route.kind != "home" else "Deterministic, bounded code context for agents and chat. Offline."
-        geo_arg = geo if route.kind == "home" else None
-        for theme in ("dark", "light"):
-            files[f"/assets/og/{slug}.{theme}.png"] = og_png(theme, crumb, title, desc, seed=101 + i, geo=geo_arg)
-    # Owner 07.11: the classic pre-v2 card (2093ea4f website/assets/og.png) is the home share image.
-    files["/assets/og/home.png"] = (HERE / "data/og/home-classic.png").read_bytes()
-    files["/assets/og/home.gif"] = home_gif(geo, "Context, engineered.", "Deterministic, bounded code context for agents and chat. Offline.")
+    files = social_cards(routes, geo)
     for theme in ("dark", "light"):
         files[f"/assets/og/scene.{theme}.png"] = poster_png(theme, geo)
     for size, name in ((32, "/favicon-32.png"), (180, "/apple-touch-icon.png"), (192, "/assets/icon-192.png"), (512, "/assets/icon-512.png")):
@@ -450,12 +478,4 @@ def all_images(routes, geo: dict) -> dict[str, bytes]:
 
 
 if __name__ == "__main__":
-    import sys
-    geo = scene_geometry()
-    target = HERE / "og-preview"
-    target.mkdir(exist_ok=True)
-    (target / "home.dark.png").write_bytes(og_png("dark", "", "Context, engineered.", "Deterministic, bounded code context.", 101, geo))
-    (target / "scene.dark.png").write_bytes(poster_png("dark", geo))
-    (target / "scene.light.png").write_bytes(poster_png("light", geo))
-    (target / "home.gif").write_bytes(home_gif(geo, "Context, engineered.", "Deterministic, bounded code context."))
-    print("written", target, file=sys.stderr)
+    raise SystemExit("Run tools/website/build.py to generate the complete social image set.")

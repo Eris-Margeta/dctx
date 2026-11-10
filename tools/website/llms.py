@@ -316,7 +316,8 @@ def opensearch() -> str:
 
 
 def normalize(text: str) -> str:
-    return re.sub(r"\s+", " ", text).strip()
+    from glyphs import plain
+    return re.sub(r"\s+", " ", plain(text)).strip()
 
 
 def extract_page(page: str) -> dict:
@@ -326,6 +327,7 @@ def extract_page(page: str) -> dict:
     gate; inline tags and whitespace are handled exactly as in the search index.
     """
     main = page[page.index('<main id="main"'):page.index("</main>")]
+    main = re.sub(r'<span class="glyph-wrap" role="img" aria-label="([^"]*)">', lambda m: html.unescape(m[1]), main)
     main = re.sub(r"<(script|style|svg|nav|footer|header)\b.*?</\1>", "", main, flags=re.S)
     main = re.sub(r"<!--.*?-->", "", main, flags=re.S)
     heads = [html.unescape(re.sub(r"<[^>]+>", "", h)).replace("#", "").strip()

@@ -66,7 +66,7 @@ def status(f: dict) -> str:
     {tl}
    </div>
    <div class="status-more status-wide">{more}</div>
-   <details class="status-more status-narrow"><summary>Why, where it comes from, and the goal</summary>{more}</details>
+   <details class="status-more status-narrow"><summary><svg class="disclosure" width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true" focusable="false"><path d="m2 1 6 4-6 4z"/></svg>Why, where it comes from, and the goal</summary>{more}</details>
   </div>
  </div>
 </aside>"""
@@ -130,7 +130,7 @@ def body() -> str:
         ("Local only.", "No telemetry, no model calls, no network for pack and map.", "have **no telemetry**"),
     ]
     priv = '<ul class="checks">' + "".join(
-        f'<li><strong>{a}</strong> {b} {src("README.md", "README", line_of("README.md", n))}</li>' for a, b, n in privacy) + "</ul>"
+        f'<li><svg class="privacy-check" width="14" height="12" viewBox="0 0 14 12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="m1 5 4 4 7-7"/></svg><strong>{a}</strong> {b} {src("README.md", "README", line_of("README.md", n))}</li>' for a, b, n in privacy) + "</ul>"
     why = ' <a href="/why/">Why dctx exists, in plain words</a>.' if has_why() else ""
     release = f"{REPO}/releases/tag/v{VERSION}"
     html = f"""

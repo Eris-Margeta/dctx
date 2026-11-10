@@ -26,7 +26,7 @@ def _figure(key: str, label: str, takeaway: str, note: str, intro: str, frames: 
     attrs = "".join(f' data-{k}="{e(v)}"' for k, v in (data or {}).items())
     steps = "".join(f"<li>{f}</li>" for f in frames)
     return (f'<figure class="anim" data-anim="{key}"{attrs}>'
-            f'<div class="anim-view"><div class="anim-stage"><canvas aria-hidden="true"></canvas></div>'
+            f'<div class="anim-view"><div class="anim-stage"><canvas aria-hidden="true"></canvas><svg class="anim-vectors" width="520" height="300" viewBox="0 0 520 300" fill="none" stroke="currentColor" aria-hidden="true" focusable="false"></svg></div>'
             f'<div class="anim-bar"><span class="anim-step" data-step aria-hidden="true"></span>'
             f'<span class="anim-ctl" data-ctl hidden>'
             f'<button class="tbtn" type="button" data-pause aria-pressed="false"><span data-l>Pause</span>'

@@ -47,7 +47,7 @@ Users trust `dctx` with their entire codebases, including sensitive files like `
 * **Con:** No formal verification or tests
 * **Con:** Users cannot trust the system
 * **Con:** Template variables could be unsafe in the future
-* **Verdict:** ❌ Rejected - Privacy must be provable, not assumed
+* **Verdict:** [no] Rejected - Privacy must be provable, not assumed
 
 ### Option 2: Full Privacy Audit + Formal Guarantees (SELECTED)
 * **Pro:** Provable privacy through code analysis and tests
@@ -56,13 +56,13 @@ Users trust `dctx` with their entire codebases, including sensitive files like `
 * **Pro:** Performance optimizations (skip ignored folders)
 * **Pro:** Debug mode that doesn't compromise privacy
 * **Con:** Requires implementation work (2-3 hours)
-* **Verdict:** ✅ **SELECTED** - Only acceptable solution for sensitive codebases
+* **Verdict:** [yes] **SELECTED** - Only acceptable solution for sensitive codebases
 
 ### Option 3: Encryption-Based Approach
 * **Pro:** Could encrypt ignored file contents in memory
 * **Con:** Massive complexity, performance overhead
 * **Con:** Doesn't solve the problem (still reading files)
-* **Verdict:** ❌ Rejected - Overengineered, doesn't address root issue
+* **Verdict:** [no] Rejected - Overengineered, doesn't address root issue
 
 ---
 
@@ -78,9 +78,9 @@ We will implement a three-tier rule system with formal privacy guarantees:
 
 | Rule Type | Directory Tree Visibility | File Content Section | Recurse into Folders? | Read File into Memory? |
 |-----------|---------------------------|----------------------|----------------------|------------------------|
-| **IGNORE** (default) | ❌ Hidden | ❌ Hidden | ❌ NO (skip entirely) | ❌ **NEVER** |
-| **IGNORE** (`--debug-ignored`) | ✅ Shown with `[IGNORED]` marker | ❌ Hidden | ✅ YES (for diagnostics) | ❌ **NEVER** |
-| **OMIT** (always) | ✅ Shown (normal) | ⚠️ `[Content omitted by pattern rules]` | ✅ YES | ❌ **NEVER** |
+| **IGNORE** (default) | [no] Hidden | [no] Hidden | [no] NO (skip entirely) | [no] **NEVER** |
+| **IGNORE** (`--debug-ignored`) | [yes] Shown with `[IGNORED]` marker | [no] Hidden | [yes] YES (for diagnostics) | [no] **NEVER** |
+| **OMIT** (always) | [yes] Shown (normal) | [warning] `[Content omitted by pattern rules]` | [yes] YES | [no] **NEVER** |
 
 ---
 
@@ -176,14 +176,14 @@ files. `<repo>/scripts/checks/V1-1.zsh` reruns its canary checks with the switch
 
 ## Privacy Guarantees (Formal)
 
-### Guarantee 1: Ignored Files Never Enter Read Queue ✅
+### Guarantee 1: Ignored Files Never Enter Read Queue [yes]
 **Assertion:** Files matching ignore rules are excluded at tree construction time (`walker.rs:136-146`) via `should_ignore_item()` check. They never appear in the `DirContextTreeNode` tree, therefore never collected by `collect_file_paths()`, therefore never read by `populate_file_contents_parallel()`.
 
-**Verification:** ✅ PROVEN
-- ✅ Static code analysis completed (WO-052)
-- ✅ Unit test: `test_collect_file_paths_skips_ignored` - ignored file never in read queue
-- ✅ Unit test: `test_collect_file_paths_skips_ignored_subtree` - entire subtrees skipped
-- ✅ Privacy guarantee formally proven through test chain
+**Verification:** [yes] PROVEN
+- [yes] Static code analysis completed (WO-052)
+- [yes] Unit test: `test_collect_file_paths_skips_ignored` - ignored file never in read queue
+- [yes] Unit test: `test_collect_file_paths_skips_ignored_subtree` - entire subtrees skipped
+- [yes] Privacy guarantee formally proven through test chain
 
 ### Guarantee 2: Ignored Folders Skip Recursion
 **Assertion:** When a folder matches ignore rules, `walk_recursive()` uses `continue` (walker.rs:146) to skip the item entirely. The function is never called recursively on that folder's children.
@@ -193,27 +193,27 @@ files. `<repo>/scripts/checks/V1-1.zsh` reruns its canary checks with the switch
 - Without ignore: Same folder would take 5-10 seconds to scan
 - Debug mode exception: Recurses but still never reads files
 
-### Guarantee 3: Debug Mode Does Not Compromise Privacy ✅
+### Guarantee 3: Debug Mode Does Not Compromise Privacy [yes]
 **Assertion:** When `--debug-ignored` is active, the system recurses into ignored folders and shows them in the tree, but the files are marked with `is_ignored: true` flag. The `populate_file_contents_parallel()` function respects this flag and never calls `fs::read()` on ignored files.
 
-**Verification:** ✅ PROVEN
-- ✅ Test: `test_ignored_files_shown_with_marker` - `.env` appears in tree with [IGNORED]
-- ✅ Test: `test_ignored_files_never_have_content` - no content blocks for ignored files
-- ✅ Test: `test_collect_file_paths_skips_ignored` - ignored files never enter read queue
-- ✅ Privacy preserved even in debug mode (WO-051, WO-052, WO-053)
+**Verification:** [yes] PROVEN
+- [yes] Test: `test_ignored_files_shown_with_marker` - `.env` appears in tree with [IGNORED]
+- [yes] Test: `test_ignored_files_never_have_content` - no content blocks for ignored files
+- [yes] Test: `test_collect_file_paths_skips_ignored` - ignored files never enter read queue
+- [yes] Privacy preserved even in debug mode (WO-051, WO-052, WO-053)
 
-### Guarantee 4: Template Variables Cannot Trigger Unsafe Reads ✅
+### Guarantee 4: Template Variables Cannot Trigger Unsafe Reads [yes]
 **Assertion:** Template variables are classified by I/O requirement:
 - **Metadata-Only:** `{{{file_id}}}`, `{{{file_path}}}`, `{{{file_size}}}`, `{{{mod}}}` (safe - from `stat()`)
 - **Content-Requiring:** `{{{lines}}}`, `{{{content_preview}}}` (unsafe - requires `fs::read()`)
 
 For ignored/omitted files, content-requiring variables are never resolved due to `!node.is_ignored` guard preventing content block rendering.
 
-**Verification:** ✅ PROVEN
-- ✅ Test: `test_template_variable_safety_for_ignored_files` with 6 comprehensive assertions (WO-054)
-- ✅ Documentation: Module-level safety documentation in llm_formatter.rs
-- ✅ Documentation: Template Variable Safety section in DEVELOPER-GUIDE.md
-- ✅ Multi-layer defense prevents any code path from triggering reads on ignored files
+**Verification:** [yes] PROVEN
+- [yes] Test: `test_template_variable_safety_for_ignored_files` with 6 comprehensive assertions (WO-054)
+- [yes] Documentation: Module-level safety documentation in llm_formatter.rs
+- [yes] Documentation: Template Variable Safety section in DEVELOPER-GUIDE.md
+- [yes] Multi-layer defense prevents any code path from triggering reads on ignored files
 
 ---
 
@@ -244,54 +244,54 @@ For ignored/omitted files, content-requiring variables are never resolved due to
 
 ## Implementation (COMPLETED)
 
-### Phase 1: Data Structure Changes ✅ (WO-050)
+### Phase 1: Data Structure Changes [yes] (WO-050)
 **Completed:** 2026-02-02
 
-1. ✅ Added `is_ignored: bool` to `DirContextTreeNode` struct (datatypes.rs:15)
-2. ✅ Default: `false` (only set to `true` in debug mode)
-3. ✅ Propagates to all children of ignored folders in debug mode
-4. ✅ All 284 tests passing after change
+1. [yes] Added `is_ignored: bool` to `DirContextTreeNode` struct (datatypes.rs:15)
+2. [yes] Default: `false` (only set to `true` in debug mode)
+3. [yes] Propagates to all children of ignored folders in debug mode
+4. [yes] All 284 tests passing after change
 
 **Code Location:** `crates/dctx-core/src/datatypes.rs:15`
 
-### Phase 2: Walker Logic Enhancement ✅ (WO-051)
+### Phase 2: Walker Logic Enhancement [yes] (WO-051)
 **Completed:** 2026-02-02
 
-1. ✅ `walk_directory_structure()` and `walk_recursive()` accept `debug_ignored: bool` parameter
-2. ✅ Default behavior: Skip ignored items with `continue` (current behavior preserved)
-3. ✅ Debug behavior: Recurse into ignored folders, mark all nodes with `is_ignored: true`
-4. ✅ Added `mark_subtree_as_ignored()` helper function for recursive flag propagation
-5. ✅ Updated CLI main.rs to pass debug flag
-6. ✅ All 284 tests passing
+1. [yes] `walk_directory_structure()` and `walk_recursive()` accept `debug_ignored: bool` parameter
+2. [yes] Default behavior: Skip ignored items with `continue` (current behavior preserved)
+3. [yes] Debug behavior: Recurse into ignored folders, mark all nodes with `is_ignored: true`
+4. [yes] Added `mark_subtree_as_ignored()` helper function for recursive flag propagation
+5. [yes] Updated CLI main.rs to pass debug flag
+6. [yes] All 284 tests passing
 
 **Code Locations:**
 - `crates/dctx-core/src/walker.rs:95-150` - Enhanced walk_recursive()
 - `crates/dctx-core/src/walker.rs:mark_subtree_as_ignored()` - Helper function
 - `crates/dctx-cli/src/main.rs` - CLI integration
 
-### Phase 3: Privacy Enforcement in Collection ✅ (WO-052)
+### Phase 3: Privacy Enforcement in Collection [yes] (WO-052)
 **Completed:** 2026-02-02
 
-1. ✅ Updated `collect_file_paths()` to respect `is_ignored` flag and skip ignored files
-2. ✅ Added `test_collect_file_paths_skips_ignored` - proves ignored files never collected
-3. ✅ Added `test_collect_file_paths_skips_ignored_subtree` - proves entire subtrees skipped
-4. ✅ Privacy guarantee formally proven through test coverage
-5. ✅ All 286 tests passing (284 existing + 2 new privacy tests)
+1. [yes] Updated `collect_file_paths()` to respect `is_ignored` flag and skip ignored files
+2. [yes] Added `test_collect_file_paths_skips_ignored` - proves ignored files never collected
+3. [yes] Added `test_collect_file_paths_skips_ignored_subtree` - proves entire subtrees skipped
+4. [yes] Privacy guarantee formally proven through test coverage
+5. [yes] All 286 tests passing (284 existing + 2 new privacy tests)
 
 **Code Locations:**
 - `crates/dctx-core/src/walker.rs:180` - Collection filter
 - `crates/dctx-core/src/walker.rs::test_collect_file_paths_skips_ignored` - Privacy test 1
 - `crates/dctx-core/src/walker.rs::test_collect_file_paths_skips_ignored_subtree` - Privacy test 2
 
-### Phase 4: Formatter Respect for `is_ignored` Flag ✅ (WO-053)
+### Phase 4: Formatter Respect for `is_ignored` Flag [yes] (WO-053)
 **Completed:** 2026-02-02
 
-1. ✅ Directory tree rendering: Append `[IGNORED]` marker to ignored items
-2. ✅ Content section: Skip ignored items via `!node.is_ignored` guard (llm_formatter.rs:345)
-3. ✅ Diff section: Skip ignored items via `!node.is_ignored` guard (llm_formatter.rs:389)
-4. ✅ Added 3 comprehensive unit tests for ignored node handling
-5. ✅ All 289 core tests passing
-6. ✅ All 5 integration test suites passing
+1. [yes] Directory tree rendering: Append `[IGNORED]` marker to ignored items
+2. [yes] Content section: Skip ignored items via `!node.is_ignored` guard (llm_formatter.rs:345)
+3. [yes] Diff section: Skip ignored items via `!node.is_ignored` guard (llm_formatter.rs:389)
+4. [yes] Added 3 comprehensive unit tests for ignored node handling
+5. [yes] All 289 core tests passing
+6. [yes] All 5 integration test suites passing
 
 **Code Locations:**
 - `crates/dctx-core/src/llm_formatter.rs:345` - Content block guard
@@ -300,16 +300,16 @@ For ignored/omitted files, content-requiring variables are never resolved due to
 - `crates/dctx-core/src/llm_formatter.rs::test_ignored_files_never_have_content`
 - `crates/dctx-core/src/llm_formatter.rs::test_ignored_files_never_in_diff`
 
-### Phase 5: Template Variable Safety System ✅ (WO-054)
+### Phase 5: Template Variable Safety System [yes] (WO-054)
 **Completed:** 2026-02-02
 
-1. ✅ Added comprehensive module-level documentation explaining multi-layer defense strategy
-2. ✅ Documented variable classification (metadata-only vs content-requiring)
-3. ✅ Added inline safety comments at critical guard locations
-4. ✅ Created `test_template_variable_safety_for_ignored_files` with 6 comprehensive assertions
-5. ✅ Updated DEVELOPER-GUIDE.md with Template Variable Safety guidelines
-6. ✅ All 290 tests passing (289 existing + 1 new)
-7. ✅ All 5 integration test suites passing
+1. [yes] Added comprehensive module-level documentation explaining multi-layer defense strategy
+2. [yes] Documented variable classification (metadata-only vs content-requiring)
+3. [yes] Added inline safety comments at critical guard locations
+4. [yes] Created `test_template_variable_safety_for_ignored_files` with 6 comprehensive assertions
+5. [yes] Updated DEVELOPER-GUIDE.md with Template Variable Safety guidelines
+6. [yes] All 290 tests passing (289 existing + 1 new)
+7. [yes] All 5 integration test suites passing
 
 **Code Locations:**
 - `crates/dctx-core/src/llm_formatter.rs` - Module-level safety documentation
@@ -322,34 +322,34 @@ For ignored/omitted files, content-requiring variables are never resolved due to
 ## Consequences
 
 ### Positive
-✅ **Provable Privacy:** Users can verify ignored files are never read
-✅ **Performance Boost:** 50-100x faster for projects with large ignored folders
-✅ **Semantic Clarity:** IGNORE vs OMIT distinction is clear and enforced
-✅ **Debug Transparency:** Users can verify ignore rules without compromising privacy
-✅ **Template Safety:** Custom templates cannot accidentally leak ignored file contents
-✅ **Trust:** Enterprise users can confidently use `dctx` on classified codebases
+[yes] **Provable Privacy:** Users can verify ignored files are never read
+[yes] **Performance Boost:** 50-100x faster for projects with large ignored folders
+[yes] **Semantic Clarity:** IGNORE vs OMIT distinction is clear and enforced
+[yes] **Debug Transparency:** Users can verify ignore rules without compromising privacy
+[yes] **Template Safety:** Custom templates cannot accidentally leak ignored file contents
+[yes] **Trust:** Enterprise users can confidently use `dctx` on classified codebases
 
 ### Neutral
-⚙️ **Implementation Cost:** 2-3 hours of development work
-⚙️ **Test Overhead:** 4 new privacy tests, 2 performance benchmarks
-⚙️ **Documentation:** ADR, README security section, developer guide updates
+[settings] **Implementation Cost:** 2-3 hours of development work
+[settings] **Test Overhead:** 4 new privacy tests, 2 performance benchmarks
+[settings] **Documentation:** ADR, README security section, developer guide updates
 
 ### Negative
-❌ **API Change:** `walk_recursive()` signature changes (internal API only)
-❌ **Binary Size:** +1-2KB for additional logic (negligible)
-❌ **Complexity:** Template variable classification system adds minor complexity
+[no] **API Change:** `walk_recursive()` signature changes (internal API only)
+[no] **Binary Size:** +1-2KB for additional logic (negligible)
+[no] **Complexity:** Template variable classification system adds minor complexity
 
 ---
 
 ## Compliance & Validation
 
-### Privacy Compliance Checklist ✅ ALL COMPLETE
-- ✅ Ignored files never appear in `DirContextTreeNode` tree (default mode) - WO-051
-- ✅ Ignored folders never recursed (default mode) - WO-051
-- ✅ Debug mode shows ignored items but never reads them - WO-052, WO-053
-- ✅ `fs::read()` never called on ignored files - Proven via test chain WO-052
-- ✅ Template variables respect `is_ignored` flag - WO-054
-- ✅ No code path can trigger read on ignored files - Multi-layer defense verified
+### Privacy Compliance Checklist [yes] ALL COMPLETE
+- [yes] Ignored files never appear in `DirContextTreeNode` tree (default mode) - WO-051
+- [yes] Ignored folders never recursed (default mode) - WO-051
+- [yes] Debug mode shows ignored items but never reads them - WO-052, WO-053
+- [yes] `fs::read()` never called on ignored files - Proven via test chain WO-052
+- [yes] Template variables respect `is_ignored` flag - WO-054
+- [yes] No code path can trigger read on ignored files - Multi-layer defense verified
 
 ### Performance Validation Checklist
 - [ ] Ignored folder skip < 100ms for 50k files
@@ -357,11 +357,11 @@ For ignored/omitted files, content-requiring variables are never resolved due to
 - [ ] Memory usage proportional to non-ignored files only
 
 ### Documentation Checklist (IN PROGRESS - WO-055 through WO-059)
-- ✅ ADR-014 created and reviewed (WO-055)
-- ⏳ README.md updated with privacy guarantees (WO-057 - PENDING)
-- ✅ DEVELOPER-GUIDE.md explains implementation (WO-054)
-- ⏳ CLI `--help` documents `--debug-ignored` behavior (WO-056 - PENDING)
-- ⏳ User-facing docs explain IGNORE vs OMIT (WO-057 - PENDING)
+- [yes] ADR-014 created and reviewed (WO-055)
+- [pending] README.md updated with privacy guarantees (WO-057 - PENDING)
+- [yes] DEVELOPER-GUIDE.md explains implementation (WO-054)
+- [pending] CLI `--help` documents `--debug-ignored` behavior (WO-056 - PENDING)
+- [pending] User-facing docs explain IGNORE vs OMIT (WO-057 - PENDING)
 
 ---
 
@@ -390,16 +390,16 @@ This ADR was implemented through the following Work Orders:
 
 | WO | Date | Subject | Status |
 |----|------|---------|--------|
-| **WO-050** | 2026-02-02 | Data Structure Enhancement: Add is_ignored Flag | ✅ COMPLETE |
-| **WO-051** | 2026-02-02 | Walker Logic Enhancement: Debug Mode with Privacy | ✅ COMPLETE |
-| **WO-052** | 2026-02-02 | Privacy Enforcement in File Content Reading | ✅ COMPLETE |
-| **WO-053** | 2026-02-02 | Formatter Enhancement: Respect is_ignored Flag | ✅ COMPLETE |
-| **WO-054** | 2026-02-02 | Template Variable Safety Classification System | ✅ COMPLETE |
-| **WO-055** | 2026-02-02 | Creation of ADR-014 (this document) | ✅ COMPLETE |
-| **WO-056** | TBD | Update CLI help text with privacy guarantees | ⏳ PENDING |
-| **WO-057** | TBD | Update README.md security section | ⏳ PENDING |
-| **WO-058** | TBD | Create privacy test suite (4 tests minimum) | ⏳ PENDING |
-| **WO-059** | TBD | Create performance benchmark | ⏳ PENDING |
+| **WO-050** | 2026-02-02 | Data Structure Enhancement: Add is_ignored Flag | [yes] COMPLETE |
+| **WO-051** | 2026-02-02 | Walker Logic Enhancement: Debug Mode with Privacy | [yes] COMPLETE |
+| **WO-052** | 2026-02-02 | Privacy Enforcement in File Content Reading | [yes] COMPLETE |
+| **WO-053** | 2026-02-02 | Formatter Enhancement: Respect is_ignored Flag | [yes] COMPLETE |
+| **WO-054** | 2026-02-02 | Template Variable Safety Classification System | [yes] COMPLETE |
+| **WO-055** | 2026-02-02 | Creation of ADR-014 (this document) | [yes] COMPLETE |
+| **WO-056** | TBD | Update CLI help text with privacy guarantees | [pending] PENDING |
+| **WO-057** | TBD | Update README.md security section | [pending] PENDING |
+| **WO-058** | TBD | Create privacy test suite (4 tests minimum) | [pending] PENDING |
+| **WO-059** | TBD | Create performance benchmark | [pending] PENDING |
 
 **Current Status:** Core implementation complete. Documentation updates in progress.
 
@@ -416,11 +416,11 @@ This ADR was implemented through the following Work Orders:
 **Integration Tests:** 5/5 passing (Phase 5 test-integrity.sh)
 
 **Privacy Tests:**
-1. ✅ `test_collect_file_paths_skips_ignored` - Single ignored file never collected
-2. ✅ `test_collect_file_paths_skips_ignored_subtree` - Entire ignored subtree skipped
-3. ✅ `test_ignored_files_shown_with_marker` - Debug mode shows [IGNORED] marker
-4. ✅ `test_ignored_files_never_have_content` - No content blocks for ignored files
-5. ✅ `test_ignored_files_never_in_diff` - No diff blocks for ignored files
-6. ✅ `test_template_variable_safety_for_ignored_files` - Template safety with 6 assertions
+1. [yes] `test_collect_file_paths_skips_ignored` - Single ignored file never collected
+2. [yes] `test_collect_file_paths_skips_ignored_subtree` - Entire ignored subtree skipped
+3. [yes] `test_ignored_files_shown_with_marker` - Debug mode shows [IGNORED] marker
+4. [yes] `test_ignored_files_never_have_content` - No content blocks for ignored files
+5. [yes] `test_ignored_files_never_in_diff` - No diff blocks for ignored files
+6. [yes] `test_template_variable_safety_for_ignored_files` - Template safety with 6 assertions
 
-**Privacy Guarantee Status:** ✅ **FORMALLY PROVEN** through test chain and multi-layer defense
+**Privacy Guarantee Status:** [yes] **FORMALLY PROVEN** through test chain and multi-layer defense

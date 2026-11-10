@@ -121,6 +121,6 @@ def fmt(n: int) -> str:
     return f"{n:,}"
 
 
-ICON = ('<svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/>'
+ICON = ('<svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/>'
         '<path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/>'
         '<circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg>')

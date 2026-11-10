@@ -25,13 +25,13 @@ def block(r: dict) -> str:
     is_json = r["group"] in ("json", "mcp") or r["id"] == "export-json"
     if is_json and "scrubbed" not in r:
         shown = term(transcript(r, stdout=pretty(r["stdout"]), note="# pretty-printed; the raw bytes are below"), "kiosk")
-        raw = f'<details class="raw"><summary>Raw output ({fmt(r["bytes"])} bytes, as captured)</summary><pre>{highlight.highlight(r["stdout"].rstrip(chr(10)), "json")}</pre></details>'
+        raw = f'<details class="raw"><summary><svg class="disclosure" width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true" focusable="false"><path d="m2 1 6 4-6 4z"/></svg>Raw output ({fmt(r["bytes"])} bytes, as captured)</summary><pre>{highlight.highlight(r["stdout"].rstrip(chr(10)), "json")}</pre></details>'
     else:
         shown = term(transcript(r), "kiosk")
         raw = ""
     stdin = ""
     if r.get("stdin"):
-        stdin = f'<details class="raw"><summary>stdin ({len(r["stdin"].splitlines())} lines)</summary><pre>{highlight.highlight(r["stdin"].rstrip(chr(10)), "json")}</pre></details>'
+        stdin = f'<details class="raw"><summary><svg class="disclosure" width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true" focusable="false"><path d="m2 1 6 4-6 4z"/></svg>stdin ({len(r["stdin"].splitlines())} lines)</summary><pre>{highlight.highlight(r["stdin"].rstrip(chr(10)), "json")}</pre></details>'
     return (f'<section class="ex" id="{r["id"]}"><div class="ex-head"><h3><a href="#{r["id"]}">{e(command(r))}</a></h3>{badges(r)}</div>'
             f"{note}{stdin}{shown}{raw}</section>")
 

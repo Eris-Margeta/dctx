@@ -41,6 +41,7 @@
     var cmds = $$('.cmd', pre);
     if (block.classList.contains('term') && cmds.length) return cmds.map(function (c) { return c.textContent.replace(/^\$ /, ''); }).join('\n');
     var copy = pre.cloneNode(true); $$('.p', copy).forEach(function (p) { p.remove(); });
+    $$('.glyph-wrap', copy).forEach(function (icon) { icon.replaceWith(document.createTextNode(icon.getAttribute('aria-label'))); });
     return copy.textContent.replace(/\n$/, '');
   }
   $$('.hl, .code, .term').forEach(function (block) {

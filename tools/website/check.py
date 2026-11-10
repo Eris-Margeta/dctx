@@ -39,6 +39,7 @@ ROOT = Path(__file__).resolve().parents[2]
 HERE = ROOT / "tools/website"
 sys.path.insert(0, str(HERE))
 from llms import LLMS_LIMIT
+from glyphs import FORBIDDEN, plain as plain_glyphs
 
 ORIGIN = "https://www.dctx.internet.technology"
 HOST = urlsplit(ORIGIN).hostname
@@ -281,6 +282,7 @@ class Doc(HTMLParser):
         self.inline_scripts: list[str] = []
         self.problems: list[str] = []
         self.meta: list[dict] = []
+        self.in_head = False
         self.links: list[dict] = []
         self.scripts: list[str] = []
         self.images: list[dict] = []
@@ -305,10 +307,21 @@ class Doc(HTMLParser):
                 self.problems.append(f"{line}: inline event handler {k}")
             if k == "style":
                 self.problems.append(f"{line}: inline style attribute")
+        if tag == "head":
+            self.in_head = True
+        if tag == "svg":
+            for key, value in (("aria-hidden", "true"), ("focusable", "false")):
+                if a.get(key) != value:
+                    self.problems.append(f"{line}: svg needs {key}={value}")
+            if not a.get("width") or not a.get("height"):
+                self.problems.append(f"{line}: svg needs explicit width and height")
         if tag == "html":
             self.lang = a.get("lang")
         if tag == "meta":
-            self.meta.append(a)
+            if self.in_head:
+                self.meta.append(a)
+            elif (a.get("property") or a.get("name") or "").startswith(("og:", "twitter:")):
+                self.problems.append(f"{line}: social metadata must be in head")
             if a.get("name") == "viewport":
                 self.viewport = True
         if tag == "link":
@@ -342,6 +355,8 @@ class Doc(HTMLParser):
             self._buf, self._kind, self._line = [], "title", line
 
     def handle_endtag(self, tag):
+        if tag == "head":
+            self.in_head = False
         if tag == "a" and self._a is not None:
             line, label, text = self._a
             if not (label or text.strip()):
@@ -530,12 +545,126 @@ def llms_fresh(site: Path, errors: list[str], routes=None) -> None:
             errors.append(f"llms freshness: {name} facts differ from data/facts.json (version, release tag or date)")
 
 
+def forbidden_glyphs(site: Path, errors: list[str]) -> None:
+    """Scan the served text, including entity/JS/CSS escaped icons, before browsers decode it."""
+    for path in sorted(site.rglob("*")):
+        if path.suffix not in (".html", ".css", ".js", ".svg", ".json", ".md", ".txt", ".xml", ".webmanifest"):
+            continue
+        text = path.read_text(encoding="utf-8")
+        if path.suffix in (".html", ".svg"):
+            text = html.unescape(text)
+        elif path.suffix == ".js":
+            text = re.sub(r"\\u\{([0-9a-fA-F]{1,6})\}|\\u([0-9a-fA-F]{4})|\\x([0-9a-fA-F]{2})",
+                          lambda m: chr(int(next(g for g in m.groups() if g), 16)), text)
+            # JS can construct supplementary characters from UTF-16 surrogate pairs.
+            text = text.encode("utf-16", "surrogatepass").decode("utf-16", "surrogatepass")
+        elif path.suffix == ".css":
+            text = re.sub(r"\\([0-9a-fA-F]{1,6})\s?", lambda m: chr(int(m[1], 16)), text)
+        hits = sorted({ord(c) for c in FORBIDDEN.findall(text)})
+        if hits:
+            errors.append(f"{path.relative_to(site)}: forbidden glyphs " + ", ".join(f"U+{c:04X}" for c in hits))
+
+
+def check_social_head(label: str, meta: list[dict], site: Path, errors: list[str]) -> None:
+    """Keep each image's structured OG properties attached to that image, in order."""
+    images = []
+    for m in meta:
+        prop = m.get("property", "")
+        if prop == "og:image":
+            images.append({"url": m.get("content", "")})
+        elif prop.startswith("og:image:") and images:
+            key = prop.removeprefix("og:image:")
+            if key in images[-1]:
+                errors.append(f"{label}: duplicate {prop}")
+            images[-1][key] = m.get("content", "")
+    if len(images) != 2:
+        errors.append(f"{label}: need exactly two og:image groups (GIF, PNG)")
+    for group, mime, ext in zip(images, ("image/gif", "image/png"), (".gif", ".png")):
+        if (group.get("type"), group.get("width"), group.get("height")) != (mime, "1200", "630") or not group.get("alt"):
+            errors.append(f"{label}: OG {mime} needs type, 1200x630 and alt")
+        if not urlsplit(group["url"]).path.endswith(ext):
+            errors.append(f"{label}: og:image must list GIF first, PNG second")
+    names = {}
+    for m in meta:
+        if m.get("name", "").startswith("twitter:"):
+            if m["name"] in names:
+                errors.append(f"{label}: duplicate {m['name']}")
+            names[m["name"]] = m.get("content", "")
+    if names.get("twitter:card") != "summary_large_image" or not names.get("twitter:image:alt"):
+        errors.append(f"{label}: Twitter needs summary_large_image and image alt")
+    twitter = names.get("twitter:image", "")
+    if not urlsplit(twitter).path.endswith(".twitter.png") or twitter in [g["url"] for g in images]:
+        errors.append(f"{label}: Twitter needs its own static PNG composition")
+    if len(images) == 2:
+        stem = urlsplit(images[0]["url"]).path.removesuffix(".gif")
+        if urlsplit(images[1]["url"]).path != stem + ".png" or urlsplit(twitter).path != stem + ".twitter.png":
+            errors.append(f"{label}: GIF, fallback and Twitter must belong to the same page card")
+    for url in [g["url"] for g in images] + [twitter]:
+        parsed = urlsplit(url)
+        path = site / parsed.path.lstrip("/")
+        if parsed.scheme != "https" or parsed.netloc != HOST or not path.is_file():
+            errors.append(f"{label}: missing or noncanonical social asset {url}")
+        elif parsed.query != "v=" + hashlib.sha256(path.read_bytes()).hexdigest()[:12]:
+            errors.append(f"{label}: social image must be cache-busted by its bytes: {url}")
+
+
+def check_social_images(site: Path, docs: dict, errors: list[str], report: dict) -> None:
+    from PIL import Image, ImageChops, ImageStat
+    checked = set()
+    pngs = sorted(site.glob("assets/og/*.png"))
+    gifs = sorted(site.glob("assets/og/*.gif"))
+    for path in pngs:
+        with Image.open(path) as image:
+            size = (1200, 600) if path.name.endswith(".twitter.png") else (1200, 630)
+            if image.format != "PNG" or image.size != size:
+                errors.append(f"{path.name}: must be PNG {size}, got {image.format} {image.size}")
+        if path.stat().st_size > 200_000:
+            errors.append(f"{path.name}: PNG exceeds 200 KB")
+    for doc in docs.values():
+        for m in doc.meta:
+            if m.get("property") != "og:image":
+                continue
+            path = site / urlsplit(m.get("content", "")).path.lstrip("/")
+            if path.suffix != ".gif" or path in checked or not path.is_file():
+                continue
+            checked.add(path)
+            if path.stat().st_size >= 5_000_000:
+                errors.append(f"{path.name}: GIF must be under 5 MB")
+            with Image.open(path) as image:
+                if image.format != "GIF" or image.size != (1200, 630) or image.n_frames < 2 or image.info.get("loop") != 0:
+                    errors.append(f"{path.name}: need animated 1200x630 GIF with infinite loop")
+                frames, duration = [], 0
+                for i in range(image.n_frames):
+                    image.seek(i)
+                    duration += image.info.get("duration", 0)
+                    frames.append(image.convert("RGB"))
+                if not 2000 <= duration <= 4000:
+                    errors.append(f"{path.name}: loop is {duration} ms; expected 2-4 seconds")
+                fallback = path.with_suffix(".png")
+                if not fallback.is_file():
+                    errors.append(f"{path.name}: no PNG fallback")
+                else:
+                    with Image.open(fallback) as still:
+                        if frames[0].tobytes() != still.convert("RGB").tobytes():
+                            errors.append(f"{path.name}: frame 0 differs from PNG fallback")
+                differences = [sum(ImageStat.Stat(ImageChops.difference(a, b)).mean)
+                               for a, b in zip(frames, frames[1:] + frames[:1])]
+                if not any(differences):
+                    errors.append(f"{path.name}: animation has no motion")
+                elif differences[-1] > max(differences[:-1]) * 2:
+                    errors.append(f"{path.name}: discontinuity at the loop seam")
+    if checked != set(gifs):
+        errors.append("social GIFs must all be referenced by a page")
+    report["og"] = {"png": len(pngs), "gif": len(gifs), "largest_gif": max((f.stat().st_size for f in gifs), default=0),
+                    "largest_png": max((f.stat().st_size for f in pngs), default=0)}
+
+
 def check_site(site: Path, errors: list[str], report: dict) -> None:
-    from PIL import Image
     from pages.news_content import NEWS
     from routes import DOCS, POLICIES, build_routes
     version = (ROOT / "VERSION").read_text().strip()
     routes = build_routes(NEWS)
+    forbidden_glyphs(site, errors)
     kinds = {page_label(r.path): r.kind for r in routes}
     docs: dict[Path, Doc] = {}
     for path in sorted(site.rglob("*.html")):
@@ -574,11 +703,7 @@ def check_site(site: Path, errors: list[str], report: dict) -> None:
                 errors.append(f"{label}:{line}: invalid JSON-LD: {error}")
         metas = {(m.get("property") or m.get("name")): m.get("content") for m in d.meta}
         og_images = [m.get("content") for m in d.meta if m.get("property") == "og:image"]
-        if label == "index.html":
-            if og_images != [f"{ORIGIN}/assets/og/home.png"]:  # owner 07.11: the classic card only
-                errors.append("index.html: og:image must be the classic card /assets/og/home.png only")
-        elif len(og_images) != 2 or not og_images[0].endswith(".dark.png") or not og_images[1].endswith(".light.png"):
-            errors.append(f"{label}: og:image must be the dark then the light PNG")
+        check_social_head(label, d.meta, site, errors)
         for key in ("og:title", "og:description", "og:url", "og:image:alt", "twitter:card", "twitter:image", "twitter:image:alt", "description"):
             if not metas.get(key):
                 errors.append(f"{label}: no {key}")
@@ -679,26 +804,7 @@ def check_site(site: Path, errors: list[str], report: dict) -> None:
     for ref in referenced:
         if re.match(r"^/assets/[^/]+\.(css|js|woff2)$", ref) and not re.search(r"\.[0-9a-f]{8}\.", ref):
             errors.append(f"un-hashed asset referenced: {ref}")
-    pngs = sorted(site.glob("assets/og/*.png"))
-    for f in pngs:
-        with Image.open(f) as im:
-            if im.size != (1200, 630):
-                errors.append(f"{f.name}: {im.size} is not 1200x630")
-        if f.stat().st_size > 200_000:
-            errors.append(f"{f.name}: {f.stat().st_size:,} bytes > 200 KB")
-    for path, d in docs.items():
-        for m in d.meta:
-            if m.get("property") == "og:image" and m.get("content", "").endswith(".png"):
-                slug = Path(urlsplit(m["content"]).path).name.split(".")[0]
-                if not (site / f"assets/og/{slug}.dark.png").is_file() or not (site / f"assets/og/{slug}.light.png").is_file():
-                    errors.append(f"{path.relative_to(site)}: OG {slug} lacks a dark or light variant")
-    gif = site / "assets/og/home.gif"
-    with Image.open(gif) as im:
-        if im.size != (1200, 630) or im.n_frames != 24:
-            errors.append(f"home.gif: {im.size}, {im.n_frames} frames (want 1200x630, 24)")
-    if gif.stat().st_size > 1_500_000:
-        errors.append(f"home.gif is {gif.stat().st_size:,} bytes > 1.5 MB")
-    report["og"] = {"png": len(pngs), "gif_bytes": gif.stat().st_size, "largest_png": max(f.stat().st_size for f in pngs)}
+    check_social_images(site, docs, errors, report)
     llms_texts = {name: (site / name).read_text() for name in LLMS_LIMIT}
     llms_fresh(site, errors, routes)
     for name, text in llms_texts.items():
@@ -779,11 +885,11 @@ def check_twin(site: Path, twin: Path, source: str, full: str, errors: list[str]
         errors.append(f"missing Markdown twin {label}")
         return
     text = twin.read_text()
-    if md.strip_targets(text) != md.strip_targets((ROOT / source).read_text()):
+    if md.strip_targets(text) != md.strip_targets(plain_glyphs((ROOT / source).read_text())):
         errors.append(f"{label}: drifts from {source} beyond link targets")
     import llms
     tier = llms.tier("llms-full.txt")
-    if source not in tier["dropped"] + tier.get("altered", []) and (ROOT / source).read_text().rstrip("\n") not in full:
+    if source not in tier["dropped"] + tier.get("altered", []) and plain_glyphs((ROOT / source).read_text()).rstrip("\n") not in full:
         errors.append(f"llms-full.txt does not contain {source} (the dctx pack of the documents)")
     page = (twin.parent / "index.html").read_text()
     if f"/blob/main/{source}" not in page or f"/edit/main/{source}" not in page:

@@ -21,7 +21,7 @@
   }
 
   /* ---- drawing kit, in the 520 x 300 logical space ---- */
-  function kit(ctx) {
+  function kit(ctx, vectors) {
     var g = { ctx: ctx };
     g.font = function (s, w) { ctx.font = (w || 400) + ' ' + s + 'px "JetBrains Mono", ui-monospace, monospace'; };
     g.tx = function (s, x, y, col, a, size, w, al) {
@@ -46,13 +46,22 @@
     };
     g.dot = function (x, y, r, col, a) { if (a <= .01) return; ctx.globalAlpha = a; ctx.fillStyle = C[col]; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.fill(); };
     g.ring = function (x, y, r, col, a, lw) { if (a <= .01) return; ctx.globalAlpha = a; ctx.strokeStyle = C[col]; ctx.lineWidth = lw || 1.5; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.stroke(); };
-    g.check = function (x, y, s, col, a, p) { // a tick drawn along its stroke, p = 0..1
+    g.symbol = function (path, col, a, width) {
+      if (a <= .01) return;
+      var node = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      node.setAttribute('d', path); node.setAttribute('class', 'vector-' + col);
+      node.setAttribute('opacity', String(Math.min(1, a))); node.setAttribute('stroke-width', String(width || 1));
+      node.setAttribute('stroke-linecap', 'round'); node.setAttribute('stroke-linejoin', 'round'); vectors.appendChild(node);
+    };
+    g.arrow = function (x, y, col, a) {
+      g.symbol('M' + x + ' ' + (y + 4) + 'v-8m-3 3 3-3 3 3', col, a, 1);
+    };
+    g.check = function (x, y, s, col, a, p) {
       if (a <= .01 || p <= 0) return;
       var pts = [[x - s, y], [x - s * .35, y + s * .65], [x + s, y - s * .75]], l1 = .38, q = Math.min(1, p / l1);
-      ctx.globalAlpha = a; ctx.strokeStyle = C[col]; ctx.lineWidth = Math.max(1.5, s / 3.5); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); ctx.lineTo(lerp(pts[0][0], pts[1][0], q), lerp(pts[0][1], pts[1][1], q));
-      if (p > l1) { q = (p - l1) / (1 - l1); ctx.lineTo(lerp(pts[1][0], pts[2][0], q), lerp(pts[1][1], pts[2][1], q)); }
-      ctx.stroke();
+      var path = 'M' + pts[0][0] + ' ' + pts[0][1] + 'L' + lerp(pts[0][0], pts[1][0], q) + ' ' + lerp(pts[0][1], pts[1][1], q);
+      if (p > l1) { q = (p - l1) / (1 - l1); path += 'L' + lerp(pts[1][0], pts[2][0], q) + ' ' + lerp(pts[1][1], pts[2][1], q); }
+      g.symbol(path, col, a, Math.max(1.5, s / 3.5));
     };
     g.tag = function (s, x, y, col, a) { // a small outlined label, e.g. PLANNED
       if (a <= .01) return; g.font(7.5, 600); var w = ctx.measureText(s).width + 10;
@@ -91,8 +100,9 @@
         g.box(165, 170, 190, 16, { f: 'surface', fa: p3, s: 'signal', sa: p3, r: 8 });
         g.tx('same engine · different version', 260, 178.5, 'signal', p3, 8.5, 500, 'center');
       }
-      g.tx('↑ called by agents and MCP', 134, 202, 'ink', p4, 9, 400, 'center');
-      g.tx('↑ called by app code and CI', 386, 202, 'ink', p4, 9, 400, 'center');
+      [64, 312].forEach(function (x) { g.arrow(x, 200, 'ink', p4); });
+      g.tx('called by agents and MCP', 139, 202, 'ink', p4, 9, 400, 'center');
+      g.tx('called by app code and CI', 391, 202, 'ink', p4, 9, 400, 'center');
       g.tx('never falls back to PATH', 386, 215, 'muted', p4, 8.5, 400, 'center');
       if (p5 > 0) {
         g.box(24, 226, 472, 58, { f: 'surface-2', fa: p5, s: 'line', sa: p5, r: 5 });
@@ -329,7 +339,7 @@
   function Player(fig) {
     var S = SCENES[fig.getAttribute('data-anim')], cv = fig.querySelector('canvas'), ctx = cv && cv.getContext && cv.getContext('2d');
     if (!S || !ctx) return null;
-    var g = kit(ctx), stage = cv.parentNode, stepEl = fig.querySelector('[data-step]'), ctl = fig.querySelector('[data-ctl]');
+    var vectors = fig.querySelector('.anim-vectors'), g = kit(ctx, vectors), stage = cv.parentNode, stepEl = fig.querySelector('[data-step]'), ctl = fig.querySelector('[data-ctl]');
     var pb = fig.querySelector('[data-pause]'), pl = pb && pb.querySelector('[data-l]'), rb = fig.querySelector('[data-replay]');
     var N = Math.round(S.t * FPS), f = 0, paused = false, seen = !('IntersectionObserver' in window), raf = 0, sc = 1, DPR = 1, last = -1;
     function size() {
@@ -339,6 +349,7 @@
     }
     function render() {
       var t = f / FPS, i = 0;
+      vectors.replaceChildren();
       ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.clearRect(0, 0, cv.width, cv.height);
       ctx.setTransform(DPR * sc, 0, 0, DPR * sc, 0, 0); ctx.textBaseline = 'middle'; ctx.lineCap = 'round';
       S.draw(g, t, fig.dataset); ctx.globalAlpha = 1;

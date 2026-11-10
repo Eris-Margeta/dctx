@@ -9,7 +9,7 @@ Measured **2026-11-06 UTC** on Linux from commit
 |---|---:|---:|
 | Answers identical after unrelated edit | 33/33 | 33/33 |
 | Answers identical over five separate invocations | 33/33 | 33/33 |
-| Baseline → post-edit common-prefix ratio, minimum / mean | 1.0 / 1.0 | 1.0 / 1.0 |
+| Baseline -> post-edit common-prefix ratio, minimum / mean | 1.0 / 1.0 | 1.0 / 1.0 |
 | Consecutive same-request transitions, five per case | 165 | 165 |
 | Same-request M7, minimum / mean | 1.0 / 1.0 | 1.0 / 1.0 |
 | Consecutive changing-question transitions | 195 | 195 |

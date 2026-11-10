@@ -3,11 +3,14 @@
 # The dctx website generator
 
 `build.py` writes the static site into `website/`; `check.py` rebuilds it in isolation and fails on any
-difference or broken rule. No framework, no Node build, no network, no clock.
+difference or broken rule. No framework, no Node build, no network during generation, no clock. Social cards require headless Chromium, FFmpeg and gifsicle.
 
 ```sh
 python3 -m venv tools/website/.venv
 tools/website/.venv/bin/pip install -r tools/website/requirements.txt
+tools/website/.venv/bin/playwright install chromium
+# Install ffmpeg and gifsicle with the system package manager.
+# DCTX_CHROME=/path/to/chrome selects an already installed Chrome instead.
 cargo build --locked --release -p dctx-cli
 tools/website/.venv/bin/python tools/website/build.py
 DCTX_BIN=target/release/dctx-cli tools/website/.venv/bin/python tools/website/check.py
@@ -50,7 +53,7 @@ examples is handwritten. The Rust snippet comes from the workspace doctest in
 
 | Output | Source |
 |---|---|
-| `/docs/<slug>/`, `/security/`, `/trademark/`, `/maintenance/`, `/why/` (once `docs/WHY-DCTX.md` exists) | the repository Markdown, rendered at build time (`md.py`); `index.md` next to each page is the file itself with only link targets rewritten, and `check.py` fails if it drifts |
+| `/docs/<slug>/`, `/security/`, `/trademark/`, `/maintenance/`, `/why/` (once `docs/WHY-DCTX.md` exists) | the repository Markdown, rendered at build time (`md.py`); `index.md` next to each page is the file itself with link targets rewritten and decorative symbols spelled in ASCII, and `check.py` fails if it drifts |
 | `/cli/`, `/languages/`, `/examples/`, the home showcase | `data/demo.json`, recorded from the real binary by `capture.py` on `sample/`; `check.py` re-records and fails on drift |
 | `/templates/` | `crates/dctx-template/templates/*.dctx_template`, ADR-003 and the template captures |
 | `/benchmarks/`, the home facts | tables parsed from `docs/BENCHMARK-20261030.md`, the run 7 `aggregate.json` and the stability report (`data.py`) |
@@ -58,7 +61,7 @@ examples is handwritten. The Rust snippet comes from the workspace doctest in
 | `/changelog/` and its feed | `CHANGELOG.md` |
 | the home notice and path selector, `/start/` and its four persona pages, `/for-ai-evaluators/` | `data/facts.json` through `facts.py` (see below); persona runs are records from `data/demo.json` |
 | the home showcase (five ways to use dctx: chat, task, agent, MCP, library) | `pages/tour.py`: a plain-language step beside the real captured run of each (`data/demo.json`, long output cut with an exact `… N lines` marker); `src/hero.js` turns it into tabs that advance with motion on |
-| OG images, icons | `og.py` (Pillow), from the same scene geometry |
+| Social images, icons | `og.py` (Pillow + headless Chrome/CDP + FFmpeg + gifsicle), from the same captured scene geometry |
 | `llms-small.txt`, `llms.txt`, `llms-full.txt` | `llms.py`: facts from `data/facts.json`, every route with its HTML meta description, the shared search/page text extraction, and document captures from `data/llms.json` (see below) |
 | sitemap, feeds, robots, `security.txt`, `humans.txt`, manifest, OpenSearch, search index, `build.json` | `llms.py`, from the route table in `routes.py` |
 | syntax colours in every code block, terminal transcript, help text and template | `highlight.py`, an in-house highlighter run at build time (no library, no runtime script); `.t-*` classes coloured by the `--hl-*` tokens in `src/site.css` |
@@ -178,8 +181,34 @@ Isolated rebuild equals HEAD; capture drift; `--version` equals `VERSION`; deny-
 over `website/`, `tools/website/`, `tools/playground/`; one `h1`, no skipped heading levels, `alt` and
 `width`/`height` on images, no inline handlers or styles, one inline script (the theme script, by hash);
 internal links and fragments; external links only to the allowlist; JSON-LD types and the binding
-Person/Organization/SoftwareApplication values; OG images (1200×630, dark and light, the 24-frame GIF);
-the llms files (size limits, facts first, every facts and route-table URL resolving, capture and document drift, removed commands); Markdown twins against their sources; sitemap equals the
+Person/Organization/SoftwareApplication values; social cards (GIF then PNG at 1200×630, separate Twitter PNG at 1200×600, cache hashes, 2–4 second infinite loops and exact frame-zero fallback); vector SVG accessibility and forbidden Unicode glyphs (including HTML entities and JS/CSS escapes);
+the llms files (size limits, facts first, every facts and route-table URL resolving, capture and document drift, removed commands); Markdown twins against their sources with only link and symbol normalization; sitemap equals the
 indexable pages; feeds parse; `security.txt` expiry; hashed and referenced assets; CSS, JS, font and
 HTML budgets; WCAG contrast of the colour tokens in both themes (body text and links 7:1, secondary text and the nine syntax colours 4.5:1); nginx.conf headers; no legacy commands
 or rule files and no sales wording on hand-written pages.
+
+## Vector glyphs and social cards
+
+`glyphs.py` converts decorative symbols, including HTML entities, into inline SVGs
+using currentColor, explicit dimensions, aria-hidden and focusable=false. An adjacent
+accessible label preserves each symbol's meaning. Published Markdown and LLM text
+use readable ASCII equivalents (`->`, `[yes]`, `[no]`, `[pending]`, etc.); repository
+sources and recorded CLI captures stay byte-for-byte unchanged. New unmapped symbols
+fail generation rather than falling back to a platform font. Prose punctuation stays text.
+`check.py` scans every served text file, including encoded HTML, CSS and JS characters.
+
+For each unique page card, `og.py` extends the existing Pillow artwork with the
+captured hero graph. `browser/social.js` draws only when `renderFrame(seconds)` is
+called: 24 CDP frames at 8 fps make a seamless three-second loop. Subtle cyan signals
+follow the real graph edges; neither randomness nor wall-clock animation is involved.
+FFmpeg uses one `palettegen`/`paletteuse` palette for the entire loop, then gifsicle
+runs `-O3 --lossy=40`. The static fallback is decoded from the optimized GIF's first
+frame so its pixels match exactly. Twitter has its own 1200×600 composition with a
+repositioned footer. All image copy comes from page headings and meta descriptions.
+Error and offline pages also have their own page copy and image triplets.
+Every image reference carries `?v=<sha256 prefix>` calculated from its shipped bytes.
+
+The complete documented build regenerates these images; `--skip-og` is only a local
+editing shortcut after a full build. `check.py --working-tree` always performs an
+independent full rebuild, including Chrome rendering and both encoders. Temporary
+frames and browser profiles are deleted and never copied into the served tree.

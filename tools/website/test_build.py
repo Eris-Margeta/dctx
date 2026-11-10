@@ -286,8 +286,9 @@ class LlmsPipeline(unittest.TestCase):
             self.assertLess(text.index(about), text.index(facts), t["file"])
             self.assertLess(text.index(facts), text.index(table), t["file"])
             if t["file"] != "llms.txt":
-                self.assertIn(t["output"], text, t["file"])
-                self.assertLess(text.index(table), text.index(t["output"]), t["file"])
+                from glyphs import plain
+                self.assertIn(plain(t["output"]), text, t["file"])
+                self.assertLess(text.index(table), text.index(plain(t["output"])), t["file"])
             self.assertIn(f"Engine: dctx {self.cap['version']}.", text)
             self.assertIn(f"Docs commit: {self.cap['docs_commit']} ({self.cap['docs_date']})", text)
 
@@ -430,6 +431,93 @@ class LlmsPipeline(unittest.TestCase):
         b = capture.capture_llms(binary, version, self.cap)
         self.assertEqual(a, b)
         self.assertEqual(a, self.cap)
+
+
+class VectorAndSocialStandard(unittest.TestCase):
+    def test_forbidden_scan_rejects_literals_and_browser_escapes(self):
+        import check
+        cases = {"a.html": "<p>&rarr; &#x2705;</p>", "b.css": r'a::after{content:"\2192"}',
+                 "c.js": r'button.textContent="\u2192"', "d.js": r'x="\uD83D\uDE00"',
+                 "e.js": r'x="\u{1f600}"', "f.md": chr(0x2190)}
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name, content in cases.items():
+                (root / name).write_text(content)
+            errors = []
+            check.forbidden_glyphs(root, errors)
+            self.assertEqual(len(errors), len(cases), errors)
+            for path in root.iterdir():
+                path.unlink()
+            (root / "ok.html").write_text('<p>“Quotes” — prose · … ©</p>')
+            errors = []
+            check.forbidden_glyphs(root, errors)
+            self.assertEqual(errors, [])
+
+    def test_vector_conversion_keeps_punctuation_and_names_the_symbol(self):
+        import check
+        from glyphs import vectorize
+        result = vectorize('<p>Go &rarr; <code>' + chr(0x2705) + '</code> — … ©</p>')
+        self.assertNotRegex(result, check.FORBIDDEN)
+        self.assertEqual(result.count('<svg '), 2)
+        self.assertIn('aria-label="-&gt;"', result)
+        self.assertIn('stroke="currentColor"', result)
+        self.assertIn('width="16" height="16"', result)
+        self.assertIn('aria-hidden="true" focusable="false"', result)
+        self.assertIn(' — … ©', result)
+
+    def test_head_check_rejects_swapped_groups_missing_dimensions_and_shared_twitter(self):
+        import check
+        from assets import Assets
+        import shell
+        from routes import Route
+        import hashlib
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            assets = Assets()
+            for name in ("home.gif", "home.png", "home.twitter.png"):
+                path = root / "assets/og" / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(name.encode())
+                url = "/assets/og/" + name
+                assets.urls[url] = url + "?v=" + hashlib.sha256(path.read_bytes()).hexdigest()[:12]
+            og, twitter = shell.og_tags(Route("/", "Home", "Actual page copy", "home"), assets)
+            parser = check.Doc()
+            parser.feed('<head>' + og + '<meta name="twitter:card" content="summary_large_image">' + twitter + '</head>')
+            errors = []
+            check.check_social_head("test", parser.meta, root, errors)
+            self.assertEqual(errors, [])
+            for mutated in (parser.meta[5:10] + parser.meta[:5] + parser.meta[10:],
+                            [m for m in parser.meta if m.get("property") != "og:image:height"],
+                            [dict(m, content=assets.url('/assets/og/home.png')) if m.get('name') == 'twitter:image' else m
+                             for m in parser.meta]):
+                errors = []
+                check.check_social_head("test", mutated, root, errors)
+                self.assertTrue(errors)
+
+    def test_image_checks_reject_wrong_size_and_nonmatching_frame_zero(self):
+        import check
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            folder = root / 'assets/og'
+            folder.mkdir(parents=True)
+            first = Image.new('RGB', (1200, 630), 'black')
+            middle = first.copy()
+            middle.putpixel((600, 300), (255, 255, 255))
+            first.save(folder / 'test.gif', save_all=True, append_images=[middle], duration=1500, loop=0)
+            first.save(folder / 'test.png')
+            Image.new('RGB', (1200, 600)).save(folder / 'test.twitter.png')
+            doc = check.Doc()
+            doc.meta = [{'property': 'og:image', 'content': check.ORIGIN + '/assets/og/test.gif'}]
+            errors = []
+            check.check_social_images(root, {'test': doc}, errors, {})
+            self.assertEqual(errors, [])
+            Image.new('RGB', (1200, 630), 'red').save(folder / 'test.png')
+            Image.new('RGB', (1200, 630)).save(folder / 'test.twitter.png')
+            errors = []
+            check.check_social_images(root, {'test': doc}, errors, {})
+            self.assertTrue(any('frame 0 differs' in e for e in errors))
+            self.assertTrue(any('1200, 600' in e for e in errors))
 
 
 class FullCheck(unittest.TestCase):
