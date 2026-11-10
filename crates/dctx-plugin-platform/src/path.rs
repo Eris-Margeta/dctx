@@ -81,7 +81,9 @@ mod tests {
             let relative = format!("dir/{name}");
             prop_assert!(RelativePath::new(&traversal).is_err());
             prop_assert!(RelativePath::new(&absolute).is_err());
-            prop_assert!(RelativePath::new(&relative).is_ok());
+            // Windows device names (con, prn, aux, nul) are rejected on purpose.
+            let device = matches!(name.as_str(), "con" | "prn" | "aux" | "nul");
+            prop_assert_eq!(RelativePath::new(&relative).is_ok(), !device);
         }
     }
 }
