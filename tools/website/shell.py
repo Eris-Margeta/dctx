@@ -81,14 +81,14 @@ def footer() -> str:
 
 def og_tags(route: Route, assets) -> tuple[str, str]:
     """Animated OG, its exact first frame, and a separately composed 2:1 Twitter card."""
-    slug = route.slug
+    card = assets.social[route.slug]
     alt = f"dctx: {route.title}. {route.desc}"
-    images = [(f"/assets/og/{slug}.gif", "image/gif"), (f"/assets/og/{slug}.png", "image/png")]
+    images = [("/assets/og/" + card[kind]["file"], mime) for kind, mime in (("gif", "image/gif"), ("png", "image/png"))]
     tags = "".join(
         f'<meta property="og:image" content="{ORIGIN}{assets.url(u)}">\n<meta property="og:image:type" content="{t}">\n'
         f'<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n'
         f'<meta property="og:image:alt" content="{e(alt)}">\n' for u, t in images)
-    tw = f"/assets/og/{slug}.twitter.png"
+    tw = "/assets/og/" + card["twitter"]["file"]
     twitter = (f'<meta name="twitter:image" content="{ORIGIN}{assets.url(tw)}">\n'
                f'<meta name="twitter:image:alt" content="{e(alt)}">\n')
     for url in [u for u, _ in images] + [tw]:

@@ -34,6 +34,7 @@ class Assets:
         self.files: dict[str, bytes] = {}   # published path (with leading /) -> bytes
         self.urls: dict[str, str] = {}      # logical name -> published path
         self.required: set[str] = set()
+        self.social: dict = {}            # validated social manifest, keyed by card slug
 
     def add(self, logical: str, data: bytes) -> str:
         stem, _, ext = logical.rpartition(".")

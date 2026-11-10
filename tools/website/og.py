@@ -3,16 +3,12 @@
 One seeded geometry (scene_geometry) is shared by the Chrome-rendered social GIFs, the static PNGs, the
 in-page poster and the canvas animation (it is embedded in the home page as JSON), so every
 version shows the same files, nodes, edges and page lines: the real ones from demo.json.
-Deterministic: no clock, seeded LCG, no metadata chunks.
+Pillow artwork uses no clock, a seeded LCG and no metadata chunks. Social triplets
+are rendered locally by social.py and committed, so builds never depend on Chrome.
 """
 from __future__ import annotations
 
 import io
-import base64
-import os
-import subprocess
-import tempfile
-from pathlib import Path
 import math
 import re
 
@@ -400,60 +396,6 @@ def poster_png(theme_name: str, geo: dict) -> bytes:
     return png_bytes(finish(img))
 
 
-def social_cards(routes, geo: dict, include: set[str] | None = None) -> dict[str, bytes]:
-    """Render parameter-driven Chrome frames, shared FFmpeg palette, gifsicle O3.
-
-    PNG fallback is decoded *after* GIF optimization, so frame zero equals it
-    pixel for pixel even with lossy GIF optimization. Temporary art never ships.
-    """
-    from playwright.sync_api import sync_playwright
-    files = {}
-    with tempfile.TemporaryDirectory(prefix="dctx-social-") as temp, sync_playwright() as p:
-        work = Path(temp)
-        for name in ("social.js", "social.css"):
-            (work / name).write_bytes(read_bytes("tools/website/browser/" + name))
-        (work / "index.html").write_text('<!doctype html><html><head><meta charset="utf-8">'
-            '<link rel="stylesheet" href="social.css"></head><body><canvas width="1200" height="630"></canvas>'
-            '<script src="social.js"></script></body></html>')
-        browser = p.chromium.launch(executable_path=os.environ.get("DCTX_CHROME"),
-            args=["--no-sandbox", "--force-color-profile=srgb", "--disable-gpu"])
-        page = browser.new_page(viewport={"width": W, "height": H}, device_scale_factor=1)
-        page.goto((work / "index.html").as_uri())
-        cdp = page.context.new_cdp_session(page)
-        seen = set()
-        for i, route in enumerate(routes):
-            if route.slug in seen or (include is not None and route.slug not in include):
-                continue
-            seen.add(route.slug)
-            crumb = "" if route.kind == "home" else route.path.strip("/").replace("/", " / ")
-            title = "Give AI the right code, not all of it." if route.kind == "home" else route.title
-            # The home hero's own heading and the route's actual meta copy.
-            desc = route.desc
-            base = og_png("dark", crumb, title, desc, seed=101 + i, geo=geo)
-            (work / "base.png").write_bytes(base)
-            page.evaluate("args => window.loadCard(args[0], args[1])", ["base.png?v=" + str(i), geo])
-            for frame in range(24):
-                page.evaluate("t => window.renderFrame(t)", frame / 8)
-                shot = cdp.send("Page.captureScreenshot", {"format": "png", "captureBeyondViewport": False, "optimizeForSpeed": True})
-                (work / f"frame-{frame:02d}.png").write_bytes(base64.b64decode(shot["data"]))
-            # Single palette across all 24 frames; fixed threading keeps encoding deterministic.
-            subprocess.run(["ffmpeg", "-v", "error", "-y", "-threads", "1", "-filter_complex_threads", "1",
-                "-framerate", "8", "-i", str(work / "frame-%02d.png"), "-filter_complex",
-                "[0:v]split[a][b];[a]palettegen=stats_mode=full[p];[b][p]paletteuse=dither=bayer:bayer_scale=3",
-                "-loop", "0", str(work / "raw.gif")], check=True, capture_output=True)
-            subprocess.run(["gifsicle", "-O3", "--lossy=40", str(work / "raw.gif"), "-o", str(work / "card.gif")],
-                           check=True, capture_output=True)
-            prefix = f"/assets/og/{route.slug}"
-            files[prefix + ".gif"] = (work / "card.gif").read_bytes()
-            with Image.open(work / "card.gif") as gif:
-                out = io.BytesIO()
-                gif.copy().save(out, "PNG", optimize=True)
-                files[prefix + ".png"] = out.getvalue()
-            files[prefix + ".twitter.png"] = og_png("dark", crumb, title, desc, 101 + i, geo, height=600)
-            print(f"social: {route.slug} ({len(files[prefix + '.gif']):,} GIF bytes)", flush=True)
-        browser.close()
-    return files
-
 
 def icon_png(size: int) -> bytes:
     img = Image.new("RGBA", (size * SS * 4, size * SS * 4), (0, 0, 0, 0))
@@ -467,9 +409,9 @@ def icon_png(size: int) -> bytes:
     return out.getvalue()
 
 
-def all_images(routes, geo: dict) -> dict[str, bytes]:
-    """Published path -> bytes for every OG image, the poster and the icons."""
-    files = social_cards(routes, geo)
+def site_images(geo: dict) -> dict[str, bytes]:
+    """Pillow-only site posters and icons; social triplets are committed inputs."""
+    files = {}
     for theme in ("dark", "light"):
         files[f"/assets/og/scene.{theme}.png"] = poster_png(theme, geo)
     for size, name in ((32, "/favicon-32.png"), (180, "/apple-touch-icon.png"), (192, "/assets/icon-192.png"), (512, "/assets/icon-512.png")):
@@ -478,4 +420,4 @@ def all_images(routes, geo: dict) -> dict[str, bytes]:
 
 
 if __name__ == "__main__":
-    raise SystemExit("Run tools/website/build.py to generate the complete social image set.")
+    raise SystemExit("Run tools/website/social.py to generate social cards; build.py for site posters and icons.")

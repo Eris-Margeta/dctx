@@ -1,0 +1,3 @@
+# Local social rendering only; never needed by build.py, check.py or CI.
+-r requirements.txt
+playwright==1.48.0

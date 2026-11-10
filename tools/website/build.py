@@ -64,7 +64,7 @@ def removed_from(path: str) -> int:
     return 0
 
 
-def build(out: Path, skip_og: bool = False) -> int:
+def build(out: Path) -> int:
     import llms
     import glyphs
     import md
@@ -75,24 +75,30 @@ def build(out: Path, skip_og: bool = False) -> int:
     from pages import animations, benchmarks, docs, examples, home, misc, paths, playground, reference
     from pages.news_content import NEWS
     from routes import DOCS, POLICIES, build_routes, doc_path
+    from social_manifest import SocialStale, load_cards
 
+    routes = build_routes(NEWS)
+    scene = og.scene_geometry()
+    # Preflight all committed triplets before rendering pages or touching the output.
+    try:
+        manifest, social = load_cards(routes, scene)
+    except SocialStale as error:
+        print(f"build: {error}", file=sys.stderr)
+        return 1
     assets = Assets()
     assets.load()
+    assets.social = manifest
+    for entry in manifest.values():
+        for kind in ("gif", "png", "twitter"):
+            record = entry[kind]
+            url = "/assets/og/" + record["file"]
+            assets.urls[url] = url + "?v=" + record["sha256"][:12]
+    site_images = og.site_images(scene)
+    for url, content in site_images.items():
+        assets.urls[url] = url + "?v=" + hashlib.sha256(content).hexdigest()[:12]
+    social.update(site_images)
     route_of = {f: doc_path(s) for s, f, *_ in DOCS} | {f: p for p, f, *_ in POLICIES} | {"CHANGELOG.md": "/changelog/"}
     linker = md.Linker(route_of)
-    routes = build_routes(NEWS)
-    # Register social assets before rendering the head so URLs contain their byte digest.
-    scene = og.scene_geometry()
-    # The editing shortcut must record the same inputs as a complete render.
-    for name in ("social.js", "social.css"):
-        read_bytes("tools/website/browser/" + name)
-    if skip_og:
-        social = {"/assets/og/" + f.name: f.read_bytes() for f in sorted((out / "assets/og").iterdir())}
-        social.update({"/" + rel: (out / rel).read_bytes() for rel in ("favicon-32.png", "apple-touch-icon.png", "assets/icon-192.png", "assets/icon-512.png")})
-    else:
-        social = og.all_images(routes, scene)
-    for url, content in social.items():
-        assets.urls[url] = url + "?v=" + hashlib.sha256(content).hexdigest()[:12]
     rendered = {}
     for r in routes:
         if r.kind == "doc":
@@ -250,7 +256,7 @@ def main(argv: list[str]) -> int:
     except ImportError as error:
         print(f"build: {error}; install tools/website/requirements.txt (see tools/website/README.md)", file=sys.stderr)
         return 2
-    return build(out, skip_og="--skip-og" in argv)
+    return build(out)
 
 
 if __name__ == "__main__":

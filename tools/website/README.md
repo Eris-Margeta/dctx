@@ -3,14 +3,12 @@
 # The dctx website generator
 
 `build.py` writes the static site into `website/`; `check.py` rebuilds it in isolation and fails on any
-difference or broken rule. No framework, no Node build, no network during generation, no clock. Social cards require headless Chromium, FFmpeg and gifsicle.
+difference or broken rule. No framework, no Node build, no network during generation, no clock.
+Builds and checks copy committed social cards and need no browser or media encoders.
 
 ```sh
 python3 -m venv tools/website/.venv
 tools/website/.venv/bin/pip install -r tools/website/requirements.txt
-tools/website/.venv/bin/playwright install chromium
-# Install ffmpeg and gifsicle with the system package manager.
-# DCTX_CHROME=/path/to/chrome selects an already installed Chrome instead.
 cargo build --locked --release -p dctx-cli
 tools/website/.venv/bin/python tools/website/build.py
 DCTX_BIN=target/release/dctx-cli tools/website/.venv/bin/python tools/website/check.py
@@ -61,7 +59,8 @@ examples is handwritten. The Rust snippet comes from the workspace doctest in
 | `/changelog/` and its feed | `CHANGELOG.md` |
 | the home notice and path selector, `/start/` and its four persona pages, `/for-ai-evaluators/` | `data/facts.json` through `facts.py` (see below); persona runs are records from `data/demo.json` |
 | the home showcase (five ways to use dctx: chat, task, agent, MCP, library) | `pages/tour.py`: a plain-language step beside the real captured run of each (`data/demo.json`, long output cut with an exact `… N lines` marker); `src/hero.js` turns it into tabs that advance with motion on |
-| Social images, icons | `og.py` (Pillow + headless Chrome/CDP + FFmpeg + gifsicle), from the same captured scene geometry |
+| Social images | committed `website/assets/og/` triplets and `social-manifest.json`, rendered locally by `social.py` using `og.py` artwork, Chromium/CDP, FFmpeg and gifsicle |
+| Scene posters, icons | `og.py` (Pillow), from the same captured scene geometry |
 | `llms-small.txt`, `llms.txt`, `llms-full.txt` | `llms.py`: facts from `data/facts.json`, every route with its HTML meta description, the shared search/page text extraction, and document captures from `data/llms.json` (see below) |
 | sitemap, feeds, robots, `security.txt`, `humans.txt`, manifest, OpenSearch, search index, `build.json` | `llms.py`, from the route table in `routes.py` |
 | syntax colours in every code block, terminal transcript, help text and template | `highlight.py`, an in-house highlighter run at build time (no library, no runtime script); `.t-*` classes coloured by the `--hl-*` tokens in `src/site.css` |
@@ -159,6 +158,8 @@ blocks in the light theme, no text under 14 px, tables zebra-striped at a 3 % ti
 - `data/removed-paths.json`: hashed names of files the public repository does not contain, so links to them
   become plain text. Rewrite with `build.py --removed-from <list>`.
 - `website/assets/tejl-logo-off-black.svg` and `website/.gitignore`.
+- Social triplets in `website/assets/og/` and `tools/website/social-manifest.json`: generated locally
+  by `social.py`, then copied and validated by builds and checks.
 
 ## Loading
 
@@ -197,7 +198,7 @@ sources and recorded CLI captures stay byte-for-byte unchanged. New unmapped sym
 fail generation rather than falling back to a platform font. Prose punctuation stays text.
 `check.py` scans every served text file, including encoded HTML, CSS and JS characters.
 
-For each unique page card, `og.py` extends the existing Pillow artwork with the
+For each unique page card, `social.py` uses the Pillow artwork in `og.py` with the
 captured hero graph. `browser/social.js` draws only when `renderFrame(seconds)` is
 called: 24 CDP frames at 8 fps make a seamless three-second loop. Subtle cyan signals
 follow the real graph edges; neither randomness nor wall-clock animation is involved.
@@ -208,7 +209,29 @@ repositioned footer. All image copy comes from page headings and meta descriptio
 Error and offline pages also have their own page copy and image triplets.
 Every image reference carries `?v=<sha256 prefix>` calculated from its shipped bytes.
 
-The complete documented build regenerates these images; `--skip-og` is only a local
-editing shortcut after a full build. `check.py --working-tree` always performs an
-independent full rebuild, including Chrome rendering and both encoders. Temporary
-frames and browser profiles are deleted and never copied into the served tree.
+After changing page titles/descriptions or social art run `social.py`, commit the images and manifest.
+Install the rendering dependencies locally (they are excluded from CI's `requirements.txt`):
+
+```sh
+tools/website/.venv/bin/pip install -r tools/website/requirements-social.txt
+tools/website/.venv/bin/playwright install chromium
+# Install ffmpeg and gifsicle with the system package manager.
+# DCTX_CHROME=/path/to/chrome selects an already installed Chrome instead.
+tools/website/.venv/bin/python tools/website/social.py
+tools/website/.venv/bin/python tools/website/build.py
+```
+
+`social-manifest.json` records each slug's input digest and the file name, SHA-256 and byte
+size of its GIF, PNG and Twitter PNG. The input digest covers exactly the title, crumb,
+description, route-order seed, scene geometry and raw `og.py`, `browser/social.js` and
+`browser/social.css` bytes. Copy and geometry are canonical JSON (sorted keys, UTF-8,
+compact separators); it and each source are prefixed by their eight-byte big-endian length.
+The initial manifest records the existing D1110-GO triplets; their artwork is unchanged.
+
+`build.py` validates every card before writing any output, copies the committed bytes and
+uses the manifest's file names and hashes in the head tags. Missing or stale cards fail with
+`social images stale: run tools/website/social.py`. There is no rendering bypass.
+`check.py` independently validates manifest coverage, input digests, file hashes and sizes,
+then decodes images with Pillow to check dimensions, GIF budgets/animation and exact
+frame-zero fallback pixels. Neither build nor check imports Playwright or runs an encoder.
+Temporary rendering frames and browser profiles never enter the served tree.

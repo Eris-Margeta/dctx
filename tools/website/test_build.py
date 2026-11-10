@@ -474,6 +474,8 @@ class VectorAndSocialStandard(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             assets = Assets()
+            assets.social = {"home": {kind: {"file": "home" + suffix}
+                                      for kind, suffix in (("gif", ".gif"), ("png", ".png"), ("twitter", ".twitter.png"))}}
             for name in ("home.gif", "home.png", "home.twitter.png"):
                 path = root / "assets/og" / name
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -518,6 +520,87 @@ class VectorAndSocialStandard(unittest.TestCase):
             check.check_social_images(root, {'test': doc}, errors, {})
             self.assertTrue(any('frame 0 differs' in e for e in errors))
             self.assertTrue(any('1200, 600' in e for e in errors))
+
+
+class SocialManifest(unittest.TestCase):
+    def test_digest_binds_each_copy_geometry_and_source_input(self):
+        from social_manifest import card_inputs, inputs_sha256
+        from routes import Route
+        inputs = card_inputs([Route("/test/", "Title", "Description", "page")], {"nodes": []})["test"]
+        sources = (b"og source", b"js source", b"css source")
+        original = inputs_sha256(inputs, sources)
+        self.assertEqual(original, inputs_sha256(dict(reversed(list(inputs.items()))), sources))
+        for key in ("title", "crumb", "desc", "seed", "geo"):
+            changed = {**inputs, key: {"changed": True} if key == "geo" else 999 if key == "seed" else "changed"}
+            self.assertNotEqual(original, inputs_sha256(changed, sources), key)
+        for i in range(3):
+            changed = list(sources)
+            changed[i] += b"changed"
+            self.assertNotEqual(original, inputs_sha256(inputs, tuple(changed)))
+        self.assertNotEqual(inputs_sha256(inputs, (b"ab", b"c", b"d")),
+                            inputs_sha256(inputs, (b"a", b"bc", b"d")))
+
+    def test_manifest_rejects_missing_slug_stale_copy_and_corrupted_files(self):
+        import json
+        from social_manifest import KINDS, SocialStale, card_inputs, file_record, inputs_sha256, load_cards
+        from routes import Route
+        routes = [Route("/test/", "Title", "Description", "page")]
+        geo = {"nodes": []}
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            manifest = folder / "manifest.json"
+            entry = {"inputs_sha256": inputs_sha256(card_inputs(routes, geo)["test"])}
+            for kind, suffix in KINDS:
+                name = "test" + suffix
+                content = kind.encode()
+                (folder / name).write_bytes(content)
+                entry[kind] = file_record(name, content)
+            def load(value):
+                manifest.write_text(json.dumps(value))
+                return load_cards(routes, geo, manifest_path=manifest, folder=folder)
+            self.assertEqual(len(load({"test": entry})[1]), 3)
+            with self.assertRaisesRegex(SocialStale, "social images stale: run tools/website/social.py"):
+                load({})
+            with self.assertRaisesRegex(SocialStale, "inputs digest differs"):
+                load({"test": {**entry, "inputs_sha256": "stale"}})
+            for kind, suffix in KINDS:
+                for field, value in (("sha256", "0" * 64), ("bytes", entry[kind]["bytes"] + 1), ("file", "../escape")):
+                    with self.assertRaises(SocialStale, msg=f"{kind}.{field}"):
+                        load({"test": {**entry, kind: {**entry[kind], field: value}}})
+            (folder / "test.gif").write_bytes(b"corrupt")
+            with self.assertRaisesRegex(SocialStale, "file sha256 or byte size differs"):
+                load({"test": entry})
+            (folder / "test.gif").unlink()
+            with self.assertRaises(SocialStale):
+                load({"test": entry})
+
+    def test_stale_description_fails_before_writing_output(self):
+        import shutil
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            shutil.copytree(HERE, root / "tools/website", ignore=shutil.ignore_patterns(".venv", "__pycache__"))
+            shutil.copyfile(ROOT / "VERSION", root / "VERSION")
+            # Preserve optional documents that affect the card set and seed order.
+            for name in ("START.md", "WHY-DCTX.md"):
+                if (ROOT / "docs" / name).is_file():
+                    (root / "docs").mkdir(exist_ok=True)
+                    shutil.copyfile(ROOT / "docs" / name, root / "docs" / name)
+            routes = root / "tools/website/routes.py"
+            content = routes.read_text()
+            old = "Installation, quick start, map mode, language tiers and the CLI reference."
+            self.assertIn(old, content)
+            routes.write_text(content.replace(old, "Changed route description in scratch copy.", 1))
+            output = root / "output"
+            output.mkdir()
+            sentinel = output / "keep.txt"
+            sentinel.write_bytes(b"unchanged")
+            result = subprocess.run([sys.executable, str(root / "tools/website/build.py"), "--out", str(output)],
+                                    capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("social images stale: run tools/website/social.py", result.stderr)
+            self.assertIn("docs-readme: inputs digest differs", result.stderr)
+            self.assertEqual(list(output.iterdir()), [sentinel])
+            self.assertEqual(sentinel.read_bytes(), b"unchanged")
 
 
 class FullCheck(unittest.TestCase):

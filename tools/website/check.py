@@ -72,7 +72,7 @@ def tracked() -> list[str]:
 def rebuild(dest: Path) -> Path:
     for rel in tracked():
         parts = Path(rel).parts
-        if parts[0] == "website" and "/".join(parts[1:]) not in STATIC:
+        if parts[0] == "website" and "/".join(parts[1:]) not in STATIC and parts[1:3] != ("assets", "og"):
             continue
         if not (ROOT / rel).is_file():
             continue
@@ -659,6 +659,18 @@ def check_social_images(site: Path, docs: dict, errors: list[str], report: dict)
                     "largest_png": max((f.stat().st_size for f in pngs), default=0)}
 
 
+def check_social_manifest(site: Path, errors: list[str]) -> None:
+    from og import scene_geometry
+    from pages.news_content import NEWS
+    from routes import build_routes
+    from social_manifest import SocialStale, load_cards
+
+    try:
+        load_cards(build_routes(NEWS), scene_geometry(), folder=site / "assets/og")
+    except SocialStale as error:
+        errors.append(str(error))
+
+
 def check_site(site: Path, errors: list[str], report: dict) -> None:
     from pages.news_content import NEWS
     from routes import DOCS, POLICIES, build_routes
@@ -804,6 +816,7 @@ def check_site(site: Path, errors: list[str], report: dict) -> None:
     for ref in referenced:
         if re.match(r"^/assets/[^/]+\.(css|js|woff2)$", ref) and not re.search(r"\.[0-9a-f]{8}\.", ref):
             errors.append(f"un-hashed asset referenced: {ref}")
+    check_social_manifest(site, errors)
     check_social_images(site, docs, errors, report)
     llms_texts = {name: (site / name).read_text() for name in LLMS_LIMIT}
     llms_fresh(site, errors, routes)
