@@ -171,12 +171,14 @@ fn page(path: &std::path::Path, extra: &[&str]) -> Result<String, String> {
 
 fn touch(file: &std::path::Path, seconds: u64) {
     let when = std::time::UNIX_EPOCH + std::time::Duration::from_secs(seconds);
-    std::fs::File::options()
+    let handle = std::fs::File::options()
         .write(true)
         .open(file)
-        .expect("open")
+        .expect("open");
+    handle
         .set_times(std::fs::FileTimes::new().set_modified(when))
         .expect("touch");
+    drop(handle);
 }
 
 #[test]

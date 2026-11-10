@@ -1,23 +1,46 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Attribute-only, no-follow stat with the NTFS file index from the same handle.
 
-use std::fs::{File, Metadata};
+use std::fs::{File, Metadata, OpenOptions};
 use std::io;
 use std::os::windows::{fs::OpenOptionsExt, io::AsRawHandle};
 use std::path::Path;
+use std::time::Duration;
 
 use windows_sys::Win32::Storage::FileSystem::{
     BY_HANDLE_FILE_INFORMATION, FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT,
     FILE_READ_ATTRIBUTES, GetFileInformationByHandle,
 };
 
+/// Keep the caller's access/share/no-follow flags on every attempt. Only transient
+/// sharing and lock violations are retried; exhausted retries return the first error.
+fn open_with_retry(path: &Path, options: &OpenOptions) -> io::Result<File> {
+    let original = match options.open(path) {
+        Ok(file) => return Ok(file),
+        Err(error) if matches!(error.raw_os_error(), Some(32 | 33)) => error,
+        Err(error) => return Err(error),
+    };
+    // Five retries, 310 ms total backoff, with no delay on the usual success path.
+    for millis in [10, 20, 40, 80, 160] {
+        std::thread::sleep(Duration::from_millis(millis));
+        match options.open(path) {
+            Ok(file) => return Ok(file),
+            Err(error) if matches!(error.raw_os_error(), Some(32 | 33)) => {}
+            Err(_) => return Err(original),
+        }
+    }
+    Err(original)
+}
+
 pub(super) fn stat(path: &Path) -> io::Result<(Metadata, Option<u64>)> {
     // READ_ATTRIBUTES does not read content. BACKUP_SEMANTICS also permits a
     // directory; OPEN_REPARSE_POINT inspects a link rather than its target.
-    let file = File::options()
-        .access_mode(FILE_READ_ATTRIBUTES)
-        .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT)
-        .open(path)?;
+    let file = open_with_retry(
+        path,
+        File::options()
+            .access_mode(FILE_READ_ATTRIBUTES)
+            .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT),
+    )?;
     let meta = file.metadata()?;
     let mut info = BY_HANDLE_FILE_INFORMATION::default();
     // SAFETY: the file owns a valid handle throughout the call and `info` is a
@@ -33,6 +56,53 @@ pub(super) fn stat(path: &Path) -> io::Result<(Metadata, Option<u64>)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn content_open_retries_until_exclusive_handle_is_released() {
+        use std::io::Read;
+
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("source");
+        std::fs::write(&path, b"source bytes").unwrap();
+        let held = File::options()
+            .read(true)
+            .share_mode(0)
+            .open(&path)
+            .unwrap();
+        let release = std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(50));
+            drop(held);
+        });
+        let opened = open_content(&path);
+        release.join().unwrap();
+        let mut bytes = Vec::new();
+        opened.unwrap().read_to_end(&mut bytes).unwrap();
+        assert_eq!(bytes, b"source bytes");
+    }
+
+    #[test]
+    fn content_open_returns_original_sharing_error_after_bounded_retries() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("source");
+        std::fs::write(&path, b"source bytes").unwrap();
+        let held = File::options()
+            .read(true)
+            .share_mode(0)
+            .open(&path)
+            .unwrap();
+        let original = File::open(&path).unwrap_err();
+        assert_eq!(original.raw_os_error(), Some(32));
+
+        let start = std::time::Instant::now();
+        let error = open_content(&path).unwrap_err();
+        let elapsed = start.elapsed();
+        assert!(elapsed >= Duration::from_millis(310), "{elapsed:?}");
+        assert!(elapsed < Duration::from_secs(2), "{elapsed:?}");
+        assert_eq!(error.raw_os_error(), original.raw_os_error());
+        assert_eq!(error.kind(), original.kind());
+        assert_eq!(error.to_string(), original.to_string());
+        drop(held);
+    }
 
     #[test]
     fn file_index_tracks_the_file_across_names_and_changes_on_replacement() {
@@ -63,11 +133,13 @@ pub(super) fn pin_directories(path: &Path) -> io::Result<Vec<File>> {
         // Windows does not apply share-mode checks to attribute-only opens, so a guard with
         // FILE_READ_ATTRIBUTES alone would pin nothing. FILE_LIST_DIRECTORY reads names only,
         // never file content, and makes the denied write/delete sharing enforceable.
-        let file = File::options()
-            .access_mode(FILE_LIST_DIRECTORY | FILE_READ_ATTRIBUTES)
-            .share_mode(FILE_SHARE_READ)
-            .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT)
-            .open(directory)?;
+        let file = open_with_retry(
+            directory,
+            File::options()
+                .access_mode(FILE_LIST_DIRECTORY | FILE_READ_ATTRIBUTES)
+                .share_mode(FILE_SHARE_READ)
+                .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT),
+        )?;
         let meta = file.metadata()?;
         if !meta.is_dir() || meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
             return Err(io::Error::new(
@@ -83,10 +155,12 @@ pub(super) fn pin_directories(path: &Path) -> io::Result<Vec<File>> {
 pub(super) fn open_content(path: &Path) -> io::Result<File> {
     use std::os::windows::fs::MetadataExt;
     use windows_sys::Win32::Storage::FileSystem::FILE_ATTRIBUTE_REPARSE_POINT;
-    let file = File::options()
-        .read(true)
-        .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT)
-        .open(path)?;
+    let file = open_with_retry(
+        path,
+        File::options()
+            .read(true)
+            .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT),
+    )?;
     if file.metadata()?.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,

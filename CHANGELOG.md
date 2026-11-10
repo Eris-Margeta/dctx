@@ -14,6 +14,10 @@ and distribution plans below do not describe the current release.
 
 ## [Unreleased]
 
+### Fixed
+
+- Windows: a file briefly locked by another process (antivirus, indexer, editor) no longer fails the whole pack; dctx retries for up to ~0.3 s.
+
 ### Changed
 
 - Node wrapper is published as `@tejl/dctx` on npm; the unscoped name `dctx` was refused by the registry.
