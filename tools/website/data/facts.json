@@ -57,7 +57,7 @@
   {
    "name": "Python, Node and Go wrappers",
    "status": "Node on npm; Python and Go from CI",
-   "line": "Thin `dctx rpc` wrappers, built and tested in CI. Install Node with `npm install dctx`, which includes pinned `@tejl/dctx-<platform>` optional dependencies; use CI artifacts for Python and Go.",
+   "line": "Thin `dctx rpc` wrappers, built and tested in CI. Install Node with `npm install @tejl/dctx`, which includes pinned `@tejl/dctx-<platform>` optional dependencies; use CI artifacts for Python and Go.",
    "link": "/docs/modalities/#python-node-and-go-wrappers"
   }
  ],
@@ -308,7 +308,7 @@
    "name": "Agent builder embedding a library",
    "gets": "Stable ids and the exact source bytes inside your own app, from the same engine as the CLI.",
    "who": "You build an agent, editor or tool and want dctx inside it.",
-   "modality": "Project library with its own pinned binary. Install the Node wrapper with `npm install dctx`; use CI artifacts for Python and Go, embed the Rust facade from a tagged Git dependency, or run a pinned CLI binary and read its `--json` output.",
+   "modality": "Project library with its own pinned binary. Install the Node wrapper with `npm install @tejl/dctx`; use CI artifacts for Python and Go, embed the Rust facade from a tagged Git dependency, or run a pinned CLI binary and read its `--json` output.",
    "setup": [
     "Pin one version in your project, for example the Rust facade: `dctx = { git = \"https://github.com/Eris-Margeta/dctx\", tag = \"v1.3.1\" }`.",
     "Pass your own ignore rules: the library does not load `.gitignore` by itself; the host supplies selection policy, storage limits and the clock.",
@@ -359,7 +359,7 @@
  ],
  "install": {
   "system": "Download the archive for your OS from GitHub Releases, verify it against SHA256SUMS, extract it and put `dctx` on PATH. Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.",
-  "project": "Install the Node wrapper with `npm install dctx`, then run `npx dctx`. It pins the matching `@tejl/dctx-<platform>` optional dependency. Use CI artifacts for Python and Go, or embed the Rust facade from a tagged Git dependency."
+  "project": "Install the Node wrapper with `npm install @tejl/dctx`, then run `npx @tejl/dctx`. It pins the matching `@tejl/dctx-<platform>` optional dependency. Use CI artifacts for Python and Go, or embed the Rust facade from a tagged Git dependency."
  },
  "philosophy": "The binary is everything. One file holds the engine, the CLI and the MCP server; there is no service to run, no account and no model behind it. It works offline and makes zero network calls. The same tree and the same question give the same bytes, so answers can be compared, cached and trusted."
 }

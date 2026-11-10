@@ -73,7 +73,7 @@ of reproducibility on every platform.
 
 ## Verify npm packages
 
-When published, `dctx` is the Node.js shim and `@tejl/dctx-<platform>` packages
+From version 1.3.1, `@tejl/dctx` is the Node.js shim on npm and `@tejl/dctx-<platform>` packages
 contain the native binaries. The owner publishes these packages manually from a
 Mac using the GitHub release assets; CI does not publish them. **There is no npm
 provenance attestation.** The cosign signatures and GitHub build attestations
@@ -85,8 +85,8 @@ archive's checksum, and verify its build provenance using the sections above.
 `SHA256SUMS` lists archive hashes, not raw executable hashes: compare the npm
 binary with the executable extracted from that verified archive.
 
-For the Linux x64 example above, retain `TAG` and `ASSET`. When the npm packages
-are published, run in a fresh verification directory containing the authenticated
+For the Linux x64 example above, retain `TAG` and `ASSET`. For version 1.3.1
+or later, run in a fresh verification directory containing the authenticated
 release files. Set `INSTALLED_BINARY` to your project's installed native binary:
 
 ```sh
@@ -128,7 +128,7 @@ On macOS substitute `shasum -a 256` for `sha256sum`. On Windows extract the rele
 ZIP and npm tarball into separate directories, then compare the three executable
 hashes with `Get-FileHash -Algorithm SHA256` (or use Git Bash with `sha256sum` and
 `cmp`). This verifies native binary equality; it does not attest the npm package
-metadata or the `dctx` JavaScript shim.
+metadata or the `@tejl/dctx` JavaScript shim.
 
 ## Air-gap transfer and offline install
 

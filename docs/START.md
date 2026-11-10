@@ -71,7 +71,7 @@ Agent builder embedding a library: project library with its own pinned binary (P
 
 The [Python](../packages/python/README.md), [Node](../packaging/npm/dctx/README.md)
 and [Go](../packages/go/README.md) wrappers over `dctx rpc` are built and tested in
-CI. Install Node with `npm install dctx`, which includes a pinned
+CI. Install Node with `npm install @tejl/dctx`, which includes a pinned
 `@tejl/dctx-<platform>` optional dependency; use CI artifacts or a checkout for
 Python and Go as their READMEs describe. Alternatively, pin the
 [Rust facade](MODALITIES.md#rust-library-embed-the-facade) from tagged Git,

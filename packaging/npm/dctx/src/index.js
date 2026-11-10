@@ -64,7 +64,7 @@ class DctxClient {
       const pending = this.#pending[0];
       if (!pending || !reply || reply.id !== pending.id) throw new Error('dctx rpc: unexpected response id');
       if (reply.engine_version !== version) {
-        throw new Error(`dctx rpc: engine version ${reply.engine_version} does not match npm package ${version}. Set DCTX_BIN to dctx ${version} or reinstall dctx@${version} with optional dependencies.`);
+        throw new Error(`dctx rpc: engine version ${reply.engine_version} does not match npm package ${version}. Set DCTX_BIN to dctx ${version} or reinstall @tejl/dctx@${version} with optional dependencies.`);
       }
       const result = Object.hasOwn(reply, 'result');
       const error = Object.hasOwn(reply, 'error');

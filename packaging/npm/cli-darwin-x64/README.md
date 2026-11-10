@@ -2,9 +2,9 @@
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # @tejl/dctx-darwin-x64
 
-Native darwin-x64 binary for [dctx](https://www.npmjs.com/package/dctx).
-When published, install the `dctx` package to select your platform automatically.
+Native darwin-x64 binary for [@tejl/dctx](https://www.npmjs.com/package/@tejl/dctx).
+Install the `@tejl/dctx` package (available from 1.3.1) to select your platform automatically.
 
-Until then, install from [GitHub Releases](https://github.com/Eris-Margeta/dctx/releases).
+Alternatively, install from [GitHub Releases](https://github.com/Eris-Margeta/dctx/releases).
 See [npm binary verification](https://github.com/Eris-Margeta/dctx/blob/main/docs/VERIFYING.md#verify-npm-packages).
 There is no npm provenance attestation.

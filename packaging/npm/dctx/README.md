@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
-# dctx
+# @tejl/dctx
 
 **dctx is not yet stable and not enterprise-ready.** Until version 2.0, expect
 breaking changes often. Treat these npm packages as **not stable until 2.0**.
@@ -11,14 +11,16 @@ strings and returns engine envelopes without parsing or rendering their output.
 It includes the `dctx` CLI command, which verifies the engine handshake and then
 forwards CLI arguments, standard streams, exit status and signals.
 
-When published, install from npm (Node 18+):
+Available on npm from version 1.3.1. Install with Node 18+:
 
 ```sh
-npm install dctx
-npx dctx --version
+npm install @tejl/dctx
+npx @tejl/dctx --version
 ```
 
-The `dctx` package pins `@tejl/dctx-<os>-<arch>` optional dependencies, and npm
+For a global install, run `npm install -g @tejl/dctx`, then `dctx --version`.
+
+The `@tejl/dctx` package pins `@tejl/dctx-<os>-<arch>` optional dependencies, and npm
 installs the matching native platform package. If optional dependencies were
 omitted, install the package for your platform at the same version, for example
 `npm install "@tejl/dctx-linux-x64@<version>"`. Replace `<version>` in these
@@ -31,7 +33,7 @@ For checksum verification and the limits of npm provenance, see
 Install a CI tarball offline-safe, then point it at a verified release binary:
 
 ```sh
-npm install --omit=optional --ignore-scripts "./dctx-<version>.tgz"
+npm install --omit=optional --ignore-scripts "./tejl-dctx-<version>.tgz"
 # The matching archive from the GitHub release, checked against its SHA256SUMS.
 export DCTX_BIN=/absolute/path/to/dctx
 ```
@@ -44,14 +46,14 @@ tarballs without resolving optional dependencies from a registry, name the
 matching platform tarball explicitly:
 
 ```sh
-npm install --omit=optional --ignore-scripts "./dctx-<version>.tgz" "./tejl-dctx-linux-x64-<version>.tgz"
+npm install --omit=optional --ignore-scripts "./tejl-dctx-<version>.tgz" "./tejl-dctx-linux-x64-<version>.tgz"
 ```
 
 Registry installs normally include optional dependencies. For an offline project,
 keep `omit=optional` in its `.npmrc` so later installs also skip registry lookups.
 
 ```js
-import { connect } from 'dctx'; // In an ES module (.mjs)
+import { connect } from '@tejl/dctx'; // In an ES module (.mjs)
 
 const engine = await connect({ cwd: '/path/to/project' });
 try {
@@ -68,7 +70,7 @@ try {
 }
 ```
 
-CommonJS also exposes `const { connect } = require('dctx')`; use it inside an
+CommonJS also exposes `const { connect } = require('@tejl/dctx')`; use it inside an
 async function.
 
 `request(verb, args)` supports every verb in the

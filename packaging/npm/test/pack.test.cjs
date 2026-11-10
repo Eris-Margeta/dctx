@@ -16,6 +16,8 @@ test('build/pack contains exactly the runtime, declarations, licenses and docs; 
   assert.ifError(packed.error);
   assert.equal(packed.status, 0, packed.stderr);
   const [metadata] = JSON.parse(packed.stdout);
+  assert.equal(metadata.name, '@tejl/dctx');
+  assert.equal(metadata.filename, `tejl-dctx-${metadata.version}.tgz`);
   const expected = ['LICENSE', 'NOTICE', 'README.md', 'bin/dctx.js', 'package.json',
     'src/index.js', 'src/index.d.ts', 'src/resolve.js', 'src/protocol.d.ts'];
   assert.deepEqual(metadata.files.map((file) => file.path).sort(), expected.sort());
@@ -27,10 +29,12 @@ test('build/pack contains exactly the runtime, declarations, licenses and docs; 
   const unpacked = spawnSync('tar', ['-xzf', metadata.filename], { cwd, encoding: 'utf8' });
   assert.ifError(unpacked.error);
   assert.equal(unpacked.status, 0, unpacked.stderr);
-  const installed = path.join(cwd, 'node_modules/dctx');
+  const installed = path.join(cwd, 'node_modules/@tejl/dctx');
   fs.mkdirSync(path.dirname(installed), { recursive: true });
   fs.renameSync(path.join(cwd, 'package'), installed);
   const manifest = JSON.parse(fs.readFileSync(path.join(installed, 'package.json')));
+  assert.deepEqual(manifest.bin, { dctx: 'bin/dctx.js' });
+  assert.deepEqual(manifest.publishConfig, { access: 'public' });
   assert.equal(manifest.scripts, undefined, 'no install hooks or implicit downloads');
   // Local tarballs must install without resolving platform packages from a registry.
   assert.equal(manifest.optionalDependencies, undefined, 'no registry-resolved optional dependencies');
@@ -38,9 +42,9 @@ test('build/pack contains exactly the runtime, declarations, licenses and docs; 
   assert.deepEqual({ ...manifest, optionalDependencies: source.optionalDependencies }, source);
   const script = `
     const assert = require('node:assert/strict');
-    const cjs = require('dctx');
+    const cjs = require('@tejl/dctx');
     async function main() {
-      const esm = await import('dctx');
+      const esm = await import('@tejl/dctx');
       assert.equal(esm.connect, cjs.connect);
       const client = await cjs.connect({ binaryPath: process.execPath, cwd: process.cwd() });
       assert.equal((await client.request('languages')).result.output, '[]\\nλ\\u0000opaque\\n\\n');

@@ -126,7 +126,7 @@ test('optional package precedes cache; missing binaries give registry and offlin
   assert.throws(() => isolated.resolveBinary({ env }), (error) => {
     assert.ok(error.message.includes(cached));
     assert.ok(error.message.includes(`npm install @tejl/dctx-${process.platform}-${process.arch}@${version}`), error.message);
-    assert.ok(error.message.includes('npm install dctx normally includes it as an optional dependency.'));
+    assert.ok(error.message.includes('npm install @tejl/dctx normally includes it as an optional dependency.'));
     assert.ok(error.message.includes(`https://github.com/Eris-Margeta/dctx/releases/tag/v${version}`));
     assert.ok(error.message.includes('DCTX_BIN'));
     assert.ok(error.message.includes('SHA256SUMS'));

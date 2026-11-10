@@ -328,7 +328,7 @@ cat apps/dctx-desktop/LICENSE               # Apache-2.0 terms
 
 **Phase 13 (Node.js Bindings)**:
 - Add `bindings/dctx-node/` to workspace
-- Publish to npm as `dctx`
+- Publish to npm as `@tejl/dctx`
 - Apache-2.0
 
 **Phase 14+ (Other Bindings)**:

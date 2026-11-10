@@ -46,7 +46,7 @@ def two_scopes() -> str:
         ["One machine.",
          f"The system <code>dctx</code> on <code>PATH</code> (version {VERSION}) belongs to you and your agents; you decide when to upgrade it.",
          "A project vendors its own <code>dctx</code> inside <code>node_modules</code> or a virtualenv, pinned by its lockfile "
-         "and upgraded only when the project bumps it. The pip and npm packages are built in CI; registry publication is pending.",
+         "and upgraded only when the project bumps it. The Node wrapper is on npm as @tejl/dctx from 1.3.1; the pip package is built in CI, with registry publication pending.",
          "Both are the same engine at different versions.",
          "Interactive agents and MCP call the system binary; application code and CI call the project binary. "
          "A library never falls back to <code>PATH</code> silently.",

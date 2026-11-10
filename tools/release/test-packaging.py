@@ -49,9 +49,19 @@ class Packaging(unittest.TestCase):
             for package in sorted(packages.iterdir()):
                 manifest = json.loads((package / "package.json").read_text())
                 self.assertEqual(manifest["version"], "1.2.3")
+                expected_name = "@tejl/dctx" if package.name == "dctx" else f"@tejl/dctx-{package.name.removeprefix('cli-')}"
+                self.assertEqual(manifest["name"], expected_name)
+                self.assertEqual(manifest["publishConfig"], {"access": "public"})
+                if package.name == "dctx":
+                    self.assertEqual(manifest["bin"], {"dctx": "bin/dctx.js"})
+                    self.assertEqual(manifest["optionalDependencies"],
+                                     {f"@tejl/dctx-{p}": "1.2.3" for p in prepare_npm.PLATFORMS})
                 result = subprocess.run(["npm", "pack", "--dry-run", "--json", "--ignore-scripts"],
                                         cwd=package, capture_output=True, text=True, check=True)
-                contents = {f["path"] for f in json.loads(result.stdout)[0]["files"]}
+                metadata = json.loads(result.stdout)[0]
+                self.assertEqual(metadata["name"], expected_name)
+                self.assertEqual(metadata["filename"], f"{expected_name.removeprefix('@').replace('/', '-')}-1.2.3.tgz")
+                contents = {f["path"] for f in metadata["files"]}
                 self.assertTrue({"LICENSE", "NOTICE", "README.md", "package.json"} <= contents)
                 executable = "dctx.js" if package.name == "dctx" else "dctx.exe" if "win32" in package.name else "dctx"
                 self.assertIn(f"bin/{executable}", contents)
@@ -78,13 +88,30 @@ class Packaging(unittest.TestCase):
             result = subprocess.run(command, capture_output=True, text=True, env=env)
             self.assertEqual(result.returncode, 1)
             self.assertIn("npm install @tejl/dctx-linux-x64@1.2.3", result.stderr)
-            self.assertNotIn("dctx@", result.stderr)
+            self.assertIn("npm install @tejl/dctx normally includes it as an optional dependency.", result.stderr)
             # A damaged archive must be rejected before any output package is written.
             archive.write_bytes(b"corrupted")
             with self.assertRaisesRegex(ValueError, "checksum mismatch"):
                 prepare_npm.prepare("v1.2.3", artifacts, directory / "bad-packages")
             self.assertFalse((directory / "bad-packages").exists())
 
+    def test_npm_names_are_scoped_and_pinned(self):
+        # The registry refused the unscoped name "dctx" (too similar to existing packages), and
+        # publish order depends on these pins. Every package is @tejl/..., at one version.
+        npm = ROOT / "packaging/npm"
+        wrapper = json.loads((npm / "dctx/package.json").read_text())
+        platforms = sorted(npm.glob("cli-*/package.json"))
+        self.assertEqual(len(platforms), 5)
+        self.assertEqual(wrapper["name"], "@tejl/dctx")
+        self.assertEqual(wrapper["bin"], {"dctx": "bin/dctx.js"})
+        self.assertEqual(wrapper.get("publishConfig", {}).get("access"), "public")
+        pins = wrapper["optionalDependencies"]
+        for path in platforms:
+            package = json.loads(path.read_text())
+            self.assertTrue(package["name"].startswith("@tejl/dctx-"), path)
+            self.assertEqual(package["version"], wrapper["version"], path)
+            self.assertEqual(pins.get(package["name"]), wrapper["version"], path)
+        self.assertEqual(len(pins), 5)
 
 if __name__ == "__main__":
     unittest.main()

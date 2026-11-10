@@ -55,12 +55,12 @@ its commit/tag/push prompts. Publication starts when a maintainer pushes a `v*` 
    the input (`gh workflow run release.yml --ref vX.Y.Z -f tag=vX.Y.Z`); preflight
    rejects a different ref so certificate identities always bind the release tag.
    Afterward `npm-publish` checksums the released assets and publishes five
-   `@tejl/dctx-*` packages before `dctx`. It uses the npm token without an OIDC grant;
+   `@tejl/dctx-*` packages before `@tejl/dctx`. It uses the npm token without an OIDC grant;
    npm provenance is not emitted because OIDC is restricted to `sign`. The GitHub
    archives retain the documented cosign and GitHub attestation evidence.
    `crates-publish` publishes in dependency order and Cargo waits for indexing.
    Each registry job is skipped if its token is absent. Smoke-check
-   `npm exec --package=dctx -- dctx --version` and `cargo install dctx-cli --version X.Y.Z`
+   `npm exec --package=@tejl/dctx -- dctx --version` and `cargo install dctx-cli --version X.Y.Z`
    (the Cargo executable is `dctx-cli`; release archives/npm expose `dctx`).
 5. **Website:** pushes to main affecting website, website tooling, docs or CHANGELOG
    build with the pinned requirements in a Python venv, then run
@@ -82,7 +82,7 @@ tokens as repository secrets, the `DCTX_SITE_*` secrets in the `dctx-site` envir
 
 | Secret | Required credentials |
 | --- | --- |
-| `NPM_TOKEN` | npm granular publish token with write access to `dctx` and all five `@tejl/dctx-*` packages; allow CI publication with the account's 2FA policy. Verify access to the `tejl` npm organization before tagging. |
+| `NPM_TOKEN` | npm granular publish token with write access to `@tejl/dctx` and all five `@tejl/dctx-*` packages; allow CI publication with the account's 2FA policy. Verify access to the `tejl` npm organization before tagging. |
 | `CARGO_REGISTRY_TOKEN` | crates.io API token permitted to create/publish all 36 names printed by `tools/release/publish-crates.sh --list`. Check availability beyond just `dctx` and `dctx-cli`. |
 | `DCTX_SITE_SSH_KEY` | Dedicated OpenSSH private deploy key, no passphrase. The deploy administrator installs the public key with `restrict,command="rrsync -wo /srv/sites/dctx"`; that directory must be writable by the deploy account. |
 | `DCTX_SITE_HOST` | SSH destination `deploy-user@hostname` (port 22), without a path. |

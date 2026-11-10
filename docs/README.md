@@ -21,7 +21,7 @@ have no page link; specifications also include planned behavior.
 - [Agents](MODALITIES.md#choose-by-task): short tasks, repeated source reads and huge-tree scoping.
 - [MCP](guides/MCP.md): lean/default/custom profiles, client setup and startup cost.
 - ACP: **coming**.
-- [Libraries](MODALITIES.md#rust-library-embed-the-facade): Rust facade from Git; Node wrapper on npm as `dctx` with `@tejl/dctx-<platform>` native packages; Python and Go wrappers from CI.
+- [Libraries](MODALITIES.md#rust-library-embed-the-facade): Rust facade from Git; Node wrapper on npm as `@tejl/dctx` with `@tejl/dctx-<platform>` native packages; Python and Go wrappers from CI.
 - [CI and caching](MODALITIES.md#ci--prompt-cache-prefix-stability): fixed inputs, byte stability and measurement limits.
 - [Desktop](MODALITIES.md#desktop-app-tauri-preview-today): Tauri preview and planned GPUI rebuild.
 

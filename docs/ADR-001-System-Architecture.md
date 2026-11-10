@@ -48,7 +48,7 @@ Configuration follows a strict 3-Layer Override System. Rules are **extended/mer
     *   *Example:* A project can just set `OUTPUT_TXT_FILES = true` and inherit everything else from Global/Hardcoded rules.
 
 ### Library Mode (Conflict Resolution)
-*   **Context:** When `dctx` is installed as a library (e.g., `npm install dctx`) inside a project that typically uses the System CLI.
+*   **Context:** When `dctx` is installed as a library (e.g., `npm install @tejl/dctx`) inside a project that typically uses the System CLI.
 *   **Rule:** Library mode operates in **isolation**.
     *   It **IGNORES** Layer 2 (Global User Config) to ensure reproducible builds across different machines.
     *   It relies **ONLY** on Layer 1 (Hardcoded) and Layer 3 (Local Config provided in the package).

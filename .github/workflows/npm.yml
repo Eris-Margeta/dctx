@@ -42,7 +42,7 @@ jobs:
           export DCTX_TEST_BIN="$GITHUB_WORKSPACE/target/debug/dctx-cli"
           if [[ "$RUNNER_OS" == Windows ]]; then export DCTX_TEST_BIN="$DCTX_TEST_BIN.exe"; fi
           # npm supplies its JS entry point so pack works without a shell on Windows.
-          npm exec -- node --test packaging/npm/test/client.test.cjs packaging/npm/test/parity.test.cjs packaging/npm/test/pack.test.cjs
+          npm exec -- node --test packaging/npm/test/client.test.cjs packaging/npm/test/parity.test.cjs packaging/npm/test/pack.test.cjs packaging/npm/test/names.test.cjs
       - name: TypeScript consumer contract
         run: |
           npm install --prefix "$RUNNER_TEMP/dctx-types" --no-save --ignore-scripts --no-audit --no-fund typescript@5.9.3

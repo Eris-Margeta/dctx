@@ -38,7 +38,7 @@ What it is not:
 - CI and prompt cache (available): Deterministic pack and map output; tree lines carry no timestamps by default, so the prefix stays stable across a touch. https://www.dctx.internet.technology/docs/modalities/#ci--prompt-cache-prefix-stability
 - Rust library (available from Git): The `dctx` facade crate as a tagged Git dependency; crates.io publication pending. https://www.dctx.internet.technology/docs/modalities/#rust-library-embed-the-facade
 - Desktop app (preview): A Tauri preview you build from source; a GPUI rebuild is planned. https://www.dctx.internet.technology/docs/modalities/#desktop-app-tauri-preview-today
-- Python, Node and Go wrappers (Node on npm; Python and Go from CI): Thin `dctx rpc` wrappers, built and tested in CI. Install Node with `npm install dctx`, which includes pinned `@tejl/dctx-<platform>` optional dependencies; use CI artifacts for Python and Go. https://www.dctx.internet.technology/docs/modalities/#python-node-and-go-wrappers
+- Python, Node and Go wrappers (Node on npm; Python and Go from CI): Thin `dctx rpc` wrappers, built and tested in CI. Install Node with `npm install @tejl/dctx`, which includes pinned `@tejl/dctx-<platform>` optional dependencies; use CI artifacts for Python and Go. https://www.dctx.internet.technology/docs/modalities/#python-node-and-go-wrappers
 
 Two scopes, one binary:
 

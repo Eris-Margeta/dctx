@@ -85,7 +85,7 @@ STEPS = [
      "MCP works today over stdio; ACP is planned.", "/docs/modalities/#client-configuration", "Client setup", _mcp),
     ("lib", "Library", "Build it into your own tool",
      "Ask for `--json` and get structured records with the exact source. The Rust library works from Git "
-     "today; Python, Node and Go wrappers are built in CI, registry publication pending.",
+     "today; Node is on npm as @tejl/dctx from 1.3.1; use CI artifacts for Python and Go.",
      "/docs/modalities/#rust-library-embed-the-facade", "Embed the library", _library),
 ]
 

@@ -8,7 +8,7 @@
 - Engine: dctx 1.3.1. Document captures are the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs them and fails on any byte of drift. Read the pack at https://www.dctx.internet.technology/llms-full.txt.
 - Docs commit: cf3ddf9720040635b8ce515ec2ac9b1b6ae9c669 (2026-11-09T21:53:14+01:00), the last commit that changed one of the documents.
 - Command: `dctx pack . --include /docs/START.md --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md`
-- Document capture budget: 18,886 of 20,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
+- Document capture budget: 18,909 of 20,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
 
 **Facts**
 
@@ -38,7 +38,7 @@ What it is not:
 - CI and prompt cache (available): Deterministic pack and map output; tree lines carry no timestamps by default, so the prefix stays stable across a touch. https://www.dctx.internet.technology/docs/modalities/#ci--prompt-cache-prefix-stability
 - Rust library (available from Git): The `dctx` facade crate as a tagged Git dependency; crates.io publication pending. https://www.dctx.internet.technology/docs/modalities/#rust-library-embed-the-facade
 - Desktop app (preview): A Tauri preview you build from source; a GPUI rebuild is planned. https://www.dctx.internet.technology/docs/modalities/#desktop-app-tauri-preview-today
-- Python, Node and Go wrappers (Node on npm; Python and Go from CI): Thin `dctx rpc` wrappers, built and tested in CI. Install Node with `npm install dctx`, which includes pinned `@tejl/dctx-<platform>` optional dependencies; use CI artifacts for Python and Go. https://www.dctx.internet.technology/docs/modalities/#python-node-and-go-wrappers
+- Python, Node and Go wrappers (Node on npm; Python and Go from CI): Thin `dctx rpc` wrappers, built and tested in CI. Install Node with `npm install @tejl/dctx`, which includes pinned `@tejl/dctx-<platform>` optional dependencies; use CI artifacts for Python and Go. https://www.dctx.internet.technology/docs/modalities/#python-node-and-go-wrappers
 
 Two scopes, one binary:
 

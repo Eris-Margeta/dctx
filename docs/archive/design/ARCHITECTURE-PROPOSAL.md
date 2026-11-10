@@ -356,7 +356,7 @@ Recommendation: MIT for the Rust libraries, CLI, bindings and existing desktop c
 | `dctx` facade and required internal path crates | crates.io | Publish all crates in the facade's dependency closure with registry versions as well as local paths; undocumented internals remain non-stable. Zero-default-feature and enhanced closures are disclosed separately. |
 | `dctx-cli` | crates.io and signed/checksummed release binaries | One executable named `dctx`, per supported OS/architecture; strict and enhanced profiles clearly named. A standalone executable does not guarantee full static linkage on macOS/Windows. |
 | Python `dctx` | PyPI, name availability to be checked | PyO3 extension built with maturin; wheels for declared platform/Python matrix, source build documented. Link facade directly, release GIL for bounded work when valid, convert errors and cancellation faithfully. |
-| Node `dctx` or scoped package if unavailable | npm | napi-rs N-API module with platform artifacts and async worker integration; no runtime CLI download/spawn. Declare supported Node/N-API/platform matrix. |
+| Node `@tejl/dctx` | npm | napi-rs N-API module with platform artifacts and async worker integration; no runtime CLI download/spawn. Declare supported Node/N-API/platform matrix. |
 | `libdctx` + `dctx.h` | release archives and optional system packages later | `cdylib`/static library with explicit ABI version, opaque handles, lengths, allocator/free functions, error codes and thread-safety rules. |
 | Tauri desktop, then GPUI | desktop release channel | UI bundles use the same facade; engine version/capabilities visible. GPUI replaces presentation, not the engine, query format or cache policy. |
 

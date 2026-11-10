@@ -7,8 +7,8 @@ Each `cli-*` directory is an optional OS/CPU constrained package containing the
 native binary. Executables are generated and ignored by git. There are no
 installation hooks or binary downloads. The owner publishes manually from a Mac,
 using the GitHub release assets; CI does not publish npm packages.
-When published, `dctx` pins `@tejl/dctx-<platform>` optional dependencies.
-Then `npm install dctx` installs the shim and the matching native package.
+Available on npm from version 1.3.1, `@tejl/dctx` pins `@tejl/dctx-<platform>` optional dependencies.
+Then `npm install @tejl/dctx` installs the shim and the matching native package.
 See [the package API](dctx/README.md) for resolution and handshake behavior.
 See [npm verification](../../docs/VERIFYING.md#verify-npm-packages) for binary
 checksum checks. There is no npm provenance attestation.
@@ -52,10 +52,10 @@ python3 tools/release/test-packaging.py
 
 The preparation script verifies every archive before writing packages, sets
 versions from the tag, declares the five platform packages as optional
-dependencies of `dctx`, and copies LICENSE/NOTICE. These prepared packages are
+dependencies of `@tejl/dctx`, and copies LICENSE/NOTICE. These prepared packages are
 used for registry publication. To install them locally without resolving optional
 dependencies from a registry, name both tarballs explicitly:
-`npm install --omit=optional --ignore-scripts ./dctx-<version>.tgz ./tejl-dctx-<os>-<arch>-<version>.tgz`.
+`npm install --omit=optional --ignore-scripts ./tejl-dctx-<version>.tgz ./tejl-dctx-<os>-<arch>-<version>.tgz`.
 Archive names use full Cargo target triples. The Linux x64 packaging test exercises all six tarballs,
 checksum rejection, CLI argument forwarding, exit status and signals without
 publishing. The npm transport CI job requires no tokens.

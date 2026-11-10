@@ -67,9 +67,9 @@ a CycloneDX SBOM, build provenance and offline bundles; see
 dctx --version
 ```
 
-**Node wrapper — available on npm.** Run `npm install dctx` to install the
+**Node wrapper — available on npm from 1.3.1.** Run `npm install @tejl/dctx` to install the
 [Node wrapper](https://github.com/Eris-Margeta/dctx/blob/main/packaging/npm/dctx/README.md) and its matching pinned
-`@tejl/dctx-<platform>` native package, then `npx dctx --version` to check it.
+`@tejl/dctx-<platform>` native package, then `npx @tejl/dctx --version` to check it.
 The [Python](https://github.com/Eris-Margeta/dctx/blob/main/packages/python/README.md) and [Go](https://github.com/Eris-Margeta/dctx/blob/main/packages/go/README.md) wrappers
 over `dctx rpc` are built and tested in CI; use their CI artifacts. The
 [Rust facade](https://www.dctx.internet.technology/docs/modalities/#rust-library-embed-the-facade) is available from
@@ -203,7 +203,7 @@ pub struct Order {
 - [Agents, short tasks](https://www.dctx.internet.technology/docs/modalities/#short-agent-task-grep-can-be-enough): compare with grep plus narrow file reads first.
 - [Agents, long sessions and huge trees](https://www.dctx.internet.technology/docs/modalities/#huge-trees-scope-before-indexing): scope the root, find symbols and read exact source.
 - [MCP](https://github.com/Eris-Margeta/dctx/blob/main/docs/guides/MCP.md): use the lean profile to start; ACP is planned.
-- [Libraries](https://www.dctx.internet.technology/docs/modalities/#rust-library-embed-the-facade): embed the Rust facade today; install the [Node wrapper](https://github.com/Eris-Margeta/dctx/blob/main/packaging/npm/dctx/README.md) with `npm install dctx`, or use CI artifacts for the Python and Go wrappers.
+- [Libraries](https://www.dctx.internet.technology/docs/modalities/#rust-library-embed-the-facade): embed the Rust facade today; install the [Node wrapper](https://github.com/Eris-Margeta/dctx/blob/main/packaging/npm/dctx/README.md) with `npm install @tejl/dctx`, or use CI artifacts for the Python and Go wrappers.
 - [CI and prompt caching](https://www.dctx.internet.technology/docs/modalities/#ci--prompt-cache-prefix-stability): pin inputs and measure byte stability and provider cache behavior.
 - [Desktop](https://www.dctx.internet.technology/docs/modalities/#desktop-app-tauri-preview-today): build the Tauri 0.11 preview; the GPUI rebuild is planned.
 
@@ -324,7 +324,7 @@ load `.gitignore` automatically. Read the
 before embedding it. Python, Node and Go wrappers over `dctx rpc` live in
 [packages/python](https://github.com/Eris-Margeta/dctx/blob/main/packages/python/README.md), [packaging/npm](https://github.com/Eris-Margeta/dctx/blob/main/packaging/npm/dctx/README.md)
 and [packages/go](https://github.com/Eris-Margeta/dctx/blob/main/packages/go/README.md); they are built and tested in CI.
-Install the Node wrapper with `npm install dctx`; use CI artifacts for Python and Go.
+Install the Node wrapper with `npm install @tejl/dctx`; use CI artifacts for Python and Go.
 
 ## CLI Reference
 

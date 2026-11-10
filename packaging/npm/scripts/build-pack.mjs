@@ -18,6 +18,9 @@ function run(command, args, cwd = root) {
 }
 run(process.execPath, [resolve(dirname(fileURLToPath(import.meta.url)), 'generate-types.mjs'), '--check']);
 const manifest = JSON.parse(readFileSync(resolve(packageDir, 'package.json')));
+if (manifest.name !== '@tejl/dctx' || manifest.publishConfig?.access !== 'public') {
+  throw new Error('The Node wrapper must be published as public @tejl/dctx');
+}
 const engineManifest = readFileSync(resolve(root, 'crates/dctx-cli/Cargo.toml'), 'utf8');
 if (engineManifest.match(/^version\s*=\s*"([^"]+)"/m)?.[1] !== manifest.version) throw new Error('npm and engine versions differ');
 const platformDirectories = {

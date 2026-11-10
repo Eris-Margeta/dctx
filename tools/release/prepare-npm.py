@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fill npm packages from checksummed CLI release archives. No network access."""
+"""Fill @tejl/dctx and its platform packages from checksummed CLI archives. No network access."""
 import argparse
 import hashlib
 import json

@@ -71,7 +71,7 @@ function resolveBinary({ binaryPath, env = process.env, cwd = process.cwd() } = 
   }
   const install = Object.hasOwn(optionalDependencies, packageName)
     ? `Install the matching platform package in the same project: npm install ${packageName}@${version}. ` +
-      `npm install dctx normally includes it as an optional dependency. ` : '';
+      `npm install @tejl/dctx normally includes it as an optional dependency. ` : '';
   throw new Error(`dctx: no ${version} binary for ${platform}. ${install}` +
     `${install ? 'Or obtain' : 'Obtain'} dctx ${version} from https://github.com/Eris-Margeta/dctx/releases/tag/v${version}, ` +
     `verify its SHA256SUMS, and set DCTX_BIN to the executable's absolute path or place it at ${cached}` +

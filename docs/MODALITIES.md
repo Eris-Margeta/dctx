@@ -16,9 +16,9 @@ provider caching can change its billed cost. Count both calls and session tokens
 | MCP server | Included in the CLI; configure `dctx mcp /absolute/project` | Available now, stdio | Claude Code, Cursor and Codex tool calls on a scoped project |
 | Rust library (`dctx` facade) | Tagged Git dependency in the [library section](#rust-library-embed-the-facade) | Available from Git; crates.io publication pending | Embedding pack, map, templates and cache in Rust tools and editors |
 | Desktop app | [Build the Tauri app](../apps/dctx-desktop/README.md#quick-start) | Tauri 0.11 preview today; GPUI rebuild planned | Selecting projects and generating snapshots in a GUI |
-| Python, Node and Go wrappers | `npm install dctx` for Node; CI artifacts for Python and Go; see [language wrappers](#python-node-and-go-wrappers) | Node published on npm; all wrappers tested in CI | Calling the engine over `dctx rpc` from Python, Node or Go projects |
+| Python, Node and Go wrappers | `npm install @tejl/dctx` for Node; CI artifacts for Python and Go; see [language wrappers](#python-node-and-go-wrappers) | Node published on npm; all wrappers tested in CI | Calling the engine over `dctx rpc` from Python, Node or Go projects |
 
-The npm release publishes `dctx` with pinned `@tejl/dctx-<platform>` optional
+From version 1.3.1, the npm release publishes `@tejl/dctx` with pinned `@tejl/dctx-<platform>` optional
 dependencies. Python and Go wrappers are available as CI artifacts; the Rust
 facade is available as a tagged Git dependency. Native release archives remain
 available for system installation or an explicit `DCTX_BIN` path.
@@ -328,7 +328,7 @@ Thin wrappers over the versioned [`dctx rpc` protocol](protocol/README.md) live 
 `dctx` CLI command) and [packages/go](../packages/go/README.md). Each starts the
 native engine, passes CLI argument strings and returns the engine's bytes
 unchanged; CI checks byte parity with the CLI. Install the Node wrapper with
-`npm install dctx`; npm includes the matching pinned `@tejl/dctx-<platform>`
+`npm install @tejl/dctx`; npm includes the matching pinned `@tejl/dctx-<platform>`
 optional dependency. Install Python and Go wrappers from CI artifacts or a
 checkout, as each README describes, and point them at an engine
 from the [GitHub release archives](https://github.com/Eris-Margeta/dctx/releases)
