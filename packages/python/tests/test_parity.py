@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""The same fixed corpus and cases as crates/dctx-cli/tests/rpc.rs."""
+"""The Rust RPC parity corpus, extended to cover every advertised verb."""
 from __future__ import annotations
 
 import os
@@ -29,6 +29,13 @@ CASES = [
     ("grep", ("pub",)),
     ("hubs", ()),
     ("path", ("m:src/lib.rs", "s:src/lib.rs#ping")),
+    ("trace", ("s:src/lib.rs#ping", "s:src/lib.rs#ping")),
+    # The isolated ping has no directed path to its module or incoming callers.
+    ("trace", ("s:src/lib.rs#ping", "m:src/lib.rs", "--max-depth", "1",
+               "--max-paths", "1", "--max-bytes", "256")),
+    ("impact", ("s:src/lib.rs#ping",)),
+    ("impact", ("s:src/lib.rs#ping", "--max-depth", "1",
+                "--max-sites", "1", "--max-bytes", "256")),
     ("pack", ()),
     ("context", ("--for", "`ping`")),
     ("languages", ()),

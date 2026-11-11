@@ -36,6 +36,7 @@ and distribution plans below do not describe the current release.
 
 ### Fixed
 
+- Python, Go and npm bindings expose `trace` and `impact` with CLI byte parity, including bounded/no-path and empty-impact results.
 - Windows outside-index notices and `trace`/`impact` now normalize native separators and verbatim drive prefixes, keeping relative paths and `--also` hints slash-separated.
 - Map query bounds errors name the offending option, its value, the user-facing
   verb (including `grep`) and its allowed range; usage errors still exit 2.

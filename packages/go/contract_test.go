@@ -40,7 +40,7 @@ func TestGeneratedSchemaAndEngineVersion(t *testing.T) {
 	}
 	// Compile-time host API contract for every generated operation.
 	methods := reflect.TypeOf((*Client)(nil))
-	for _, name := range []string{"Pack", "Context", "Map", "Find", "Read", "Skeleton", "Explain", "Neighbors", "Grep", "Hubs", "Path", "Languages", "CacheStatus"} {
+	for _, name := range []string{"Pack", "Context", "Map", "Find", "Read", "Skeleton", "Explain", "Neighbors", "Grep", "Hubs", "Path", "Trace", "Impact", "Languages", "CacheStatus"} {
 		if _, ok := methods.MethodByName(name); !ok {
 			t.Errorf("missing operation %s", name)
 		}

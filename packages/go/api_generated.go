@@ -9,7 +9,7 @@ import (
 )
 
 const Version = "1.3.1"
-const schemaSHA256 = "f4a86edac9cc6384def06c896a7c731605b5a13582ffce4e07f4a8f9ae2fe54e"
+const schemaSHA256 = "8000c328ded19f1130886f3cd881dc9f143713bcd37841a70f1f03109ecf5ea3"
 
 // Verb is an engine operation. Arguments retain CLI spelling.
 type Verb string
@@ -27,6 +27,8 @@ const (
 	VerbGrep        Verb = "grep"
 	VerbHubs        Verb = "hubs"
 	VerbPath        Verb = "path"
+	VerbTrace       Verb = "trace"
+	VerbImpact      Verb = "impact"
 	VerbLanguages   Verb = "languages"
 	VerbCacheStatus Verb = "cache_status"
 )
@@ -118,6 +120,16 @@ func (c *Client) Hubs(ctx context.Context, args ...string) ([]byte, error) {
 // Path forwards arguments unchanged to the path engine operation.
 func (c *Client) Path(ctx context.Context, args ...string) ([]byte, error) {
 	return c.Call(ctx, VerbPath, args...)
+}
+
+// Trace forwards arguments unchanged to the trace engine operation.
+func (c *Client) Trace(ctx context.Context, args ...string) ([]byte, error) {
+	return c.Call(ctx, VerbTrace, args...)
+}
+
+// Impact forwards arguments unchanged to the impact engine operation.
+func (c *Client) Impact(ctx context.Context, args ...string) ([]byte, error) {
+	return c.Call(ctx, VerbImpact, args...)
 }
 
 // Languages forwards arguments unchanged to the languages engine operation.

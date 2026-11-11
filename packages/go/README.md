@@ -47,7 +47,8 @@ func main() {
 ```
 
 The generated methods are `Pack`, `Context`, `Map`, `Find`, `Read`, `Skeleton`,
-`Explain`, `Neighbors`, `Grep`, `Hubs`, `Path`, `Languages`, and `CacheStatus`.
+`Explain`, `Neighbors`, `Grep`, `Hubs`, `Path`, `Trace`, `Impact`, `Languages`, and
+`CacheStatus`.
 `Call(ctx, dctx.VerbFind, args...)` provides the same transport directly. `Hello`
 returns typed protocol metadata. Arguments pass individually without a shell;
 RPC supplies `--json`. Pass `"--for", "your task"` to `Context`. Budget flags,
@@ -138,9 +139,10 @@ committed RPC schema and `VERSION`. Generation has no dependencies or network
 access. Tests check the schema fingerprint, CLI manifest version, wrapper
 capabilities, discovery precedence, large opaque output, malformed envelopes,
 version mismatches, concurrent correlation, cancellation and shutdown. Real
-engine tests run the same sixteen operation cases as the Rust RPC suite, plus
-error parity. A missing engine fails locally. Only CI jobs without a binary may
-skip with an explicit message; the Go workflow requires a binary and forbids
+engine tests use the Rust RPC suite's corpus with twenty operation cases, including
+bounded/no-path `Trace` and empty `Impact` results, plus error parity. A missing
+engine fails locally. Only CI jobs without a binary may skip with an explicit
+message; the Go workflow requires a binary and forbids
 that skip. Linux tests both Go 1.23 and stable; macOS and Windows test stable.
 
 Release preparation consists of updating the engine version, regenerating and

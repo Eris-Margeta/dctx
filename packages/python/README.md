@@ -43,8 +43,8 @@ with Client("./my-project") as engine:
 
 Every operation accepts positional CLI argument strings, passed individually
 without a shell: `pack`, `context`, `map`, `find`, `read`, `skeleton`, `explain`,
-`neighbors`, `grep`, `hubs`, `path`, `languages`, `cache_status`. RPC supplies
-`--json` by default. `context` requires `--for TEXT`. `pack` output can include a
+`neighbors`, `grep`, `hubs`, `path`, `trace`, `impact`, `languages`, `cache_status`.
+RPC supplies `--json` by default. `context` requires `--for TEXT`. `pack` output can include a
 summary line after JSON: output is opaque bytes, not a Python object. Budgets,
 continuation cursors and paths go straight to the engine. `hello()` returns typed
 protocol metadata. Unknown envelope fields and added verbs are tolerated.
@@ -133,9 +133,10 @@ DCTX_TEST_BIN="$PWD/target/debug/dctx-cli" DCTX_REQUIRE_ENGINE_TESTS=1 \
   python -W error::ResourceWarning -m unittest discover -s packages/python/tests -v
 ```
 
-The tests use the same checked-in corpus and sixteen operation cases as the
-Rust RPC parity suite. They compare every verb's exact CLI stdout, error codes
-1/2/3 and pre-error stdout. They also check generated types against the schema,
+The tests use the Rust RPC parity suite's checked-in corpus with twenty operation
+cases, including bounded/no-path `trace` and empty `impact` results. They compare
+every verb's exact CLI stdout, error codes 1/2/3 and pre-error stdout. They also
+check generated types against the schema,
 wrapper boundaries, version mismatches, discovery precedence, malformed replies,
 threaded serialization, cancellation, reproducible wheel/sdist records, clean
 virtual-environment installation and a wrapper-only hard failure. Without

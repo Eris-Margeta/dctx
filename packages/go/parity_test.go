@@ -120,7 +120,7 @@ func realClient(t *testing.T) (*Client, string, string, []string) {
 
 func TestEveryVerbMatchesCLIBytes(t *testing.T) {
 	client, binary, repo, env := realClient(t)
-	// Same ordered sixteen-case corpus as crates/dctx-cli/tests/rpc.rs.
+	// Rust RPC parity corpus, extended to cover every advertised verb.
 	cases := []struct {
 		verb Verb
 		args []string
@@ -129,6 +129,11 @@ func TestEveryVerbMatchesCLIBytes(t *testing.T) {
 		{VerbMap, []string{"m:src/lib.rs"}}, {VerbRead, []string{"s:src/lib.rs#ping"}}, {VerbRead, []string{"m:src/lib.rs", "--lines", "1-2"}},
 		{VerbSkeleton, []string{"m:src/lib.rs"}}, {VerbExplain, []string{"s:src/lib.rs#ping"}}, {VerbNeighbors, []string{"s:src/lib.rs#ping"}},
 		{VerbGrep, []string{"pub"}}, {VerbHubs, nil}, {VerbPath, []string{"m:src/lib.rs", "s:src/lib.rs#ping"}},
+		{VerbTrace, []string{"s:src/lib.rs#ping", "s:src/lib.rs#ping"}},
+		// The isolated ping has no directed path to its module or incoming callers.
+		{VerbTrace, []string{"s:src/lib.rs#ping", "m:src/lib.rs", "--max-depth", "1", "--max-paths", "1", "--max-bytes", "256"}},
+		{VerbImpact, []string{"s:src/lib.rs#ping"}},
+		{VerbImpact, []string{"s:src/lib.rs#ping", "--max-depth", "1", "--max-sites", "1", "--max-bytes", "256"}},
 		{VerbPack, nil}, {VerbContext, []string{"--for", "`ping`"}}, {VerbLanguages, nil}, {VerbCacheStatus, nil},
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)

@@ -39,6 +39,11 @@ test('every schema verb preserves real CLI bytes, errors, ordering and shutdown'
     ['read', ['m:src/lib.rs', '--lines', '1-2']], ['skeleton', ['m:src/lib.rs']],
     ['explain', ['s:src/lib.rs#ping']], ['neighbors', ['s:src/lib.rs#ping']],
     ['grep', ['pub']], ['hubs', []], ['path', ['m:src/lib.rs', 's:src/lib.rs#ping']],
+    ['trace', ['s:src/lib.rs#ping', 's:src/lib.rs#ping']],
+    // The isolated ping has no directed path to its module or incoming callers.
+    ['trace', ['s:src/lib.rs#ping', 'm:src/lib.rs', '--max-depth', '1', '--max-paths', '1', '--max-bytes', '256']],
+    ['impact', ['s:src/lib.rs#ping']],
+    ['impact', ['s:src/lib.rs#ping', '--max-depth', '1', '--max-sites', '1', '--max-bytes', '256']],
     ['pack', []], ['context', ['--for', '`ping`']], ['languages', []], ['cache_status', []],
     // Failure codes, empty results, already-rendered output, explicit format and engine refusal.
     ['read', ['m:absent.rs']], ['find', ['']], ['find', ['ping', '--place', 'missing-directory']],
