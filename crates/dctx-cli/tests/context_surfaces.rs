@@ -163,7 +163,7 @@ fn mcp_existing_read_tool_returns_golden_context_and_session_references() {
             json!({"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"read","arguments":{"id":"--help","context":true,"json":true}}}),
         ],
     );
-    assert_eq!(replies[0]["result"]["tools"].as_array().unwrap().len(), 10);
+    assert_eq!(replies[0]["result"]["tools"].as_array().unwrap().len(), 12);
     assert_eq!(replies[1]["result"]["content"][0]["text"], GOLDEN);
     assert_eq!(replies[3]["result"]["content"][0]["text"], GOLDEN);
     assert_eq!(replies[4]["result"]["content"][0]["text"], TEXT);

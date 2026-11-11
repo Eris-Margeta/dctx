@@ -314,9 +314,44 @@ fn an_indexed_definition_does_not_report_a_duplicate_outside_name() {
     }
 }
 
+#[test]
+fn indexed_trace_and_impact_targets_do_not_report_outside_definitions() {
+    let f = Fixture::new();
+    fs::write(
+        f.path("app/main.py"),
+        "from lib.shared import shared_value\n\ndef shared_value():\n    return 1\n\ndef run():\n    return shared_value()\n",
+    )
+    .unwrap();
+    for args in [
+        vec!["trace", "run", "shared_value"],
+        vec!["trace", "s:main.py#run", "s:main.py#shared_value"],
+        vec!["trace", "shared_value", "run"],
+        vec!["trace", "s:main.py#shared_value", "s:main.py#run"],
+        vec!["trace", "shared_value", "missing"],
+        vec!["trace", "missing", "shared_value"],
+        vec!["impact", "shared_value"],
+        vec!["impact", "s:main.py#shared_value"],
+    ] {
+        for json in [false, true] {
+            let mut args = args.clone();
+            args.extend(["--place", "app"]);
+            if json {
+                args.push("--json");
+            }
+            let output = f.run(&args);
+            assert!(output.status.success(), "{args:?}: {output:?}");
+            let page = String::from_utf8(output.stdout).unwrap();
+            assert!(
+                !page.contains("defined_outside_index") && !page.contains("defined outside index"),
+                "{args:?}: {page}"
+            );
+        }
+    }
+}
+
 #[cfg(target_os = "linux")]
 #[test]
-fn indexed_reads_do_not_invoke_the_import_fallback() {
+fn indexed_verbs_do_not_invoke_the_import_fallback() {
     let f = Fixture::new();
     // The same name is defined inside and outside the index. A literal import
     // must not trigger an outside probe when its definition is already indexed.
@@ -356,7 +391,19 @@ fn indexed_reads_do_not_invoke_the_import_fallback() {
         eprintln!("ptrace unavailable; syscall regression requires tracing permission");
         return;
     }
-    for target in ["m:main.py", "s:main.py#shared_value"] {
+    for args in [
+        vec!["map", "read", "m:main.py"],
+        vec!["map", "read", "s:main.py#shared_value"],
+        vec!["map", "trace", "shared_value", "shared_value"],
+        vec![
+            "map",
+            "trace",
+            "s:main.py#shared_value",
+            "s:main.py#shared_value",
+        ],
+        vec!["map", "impact", "shared_value"],
+        vec!["map", "impact", "s:main.py#shared_value"],
+    ] {
         let output = Command::new("strace")
             .args([
                 "-f",
@@ -371,7 +418,8 @@ fn indexed_reads_do_not_invoke_the_import_fallback() {
             .arg(&trace)
             .arg("--")
             .arg(env!("CARGO_BIN_EXE_dctx-cli"))
-            .args(["map", "read", target, "--place", "app", "--json"])
+            .args(&args)
+            .args(["--place", "app", "--json"])
             .env_clear()
             .current_dir(f.temp.path())
             .env("HOME", f.path("home"))
@@ -392,14 +440,17 @@ fn indexed_reads_do_not_invoke_the_import_fallback() {
         let syscalls = fs::read_to_string(&trace).unwrap();
         assert!(
             !syscalls.contains("lib/shared.py"),
-            "outside fallback ran: {syscalls}"
+            "{args:?}: outside fallback ran: {syscalls}"
         );
-        assert!(
-            !syscalls
-                .lines()
-                .any(|line| line.contains("getdents64(") && line.contains("/unrelated")),
-            "unrelated directory enumerated: {syscalls}"
-        );
+        // Reads are file-scoped; graph answers require the complete index.
+        if args[1] == "read" {
+            assert!(
+                !syscalls
+                    .lines()
+                    .any(|line| line.contains("getdents64(") && line.contains("/unrelated")),
+                "unrelated directory enumerated: {syscalls}"
+            );
+        }
         let opens = syscalls
             .lines()
             .filter(|line| {
@@ -407,9 +458,11 @@ fn indexed_reads_do_not_invoke_the_import_fallback() {
                     && line.contains("main.py\"")
             })
             .count();
-        assert!(
-            (1..=3).contains(&opens),
-            "selected source opened {opens} times: {syscalls}"
-        );
+        if args[1] == "read" {
+            assert!(
+                (1..=3).contains(&opens),
+                "selected source opened {opens} times: {syscalls}"
+            );
+        }
     }
 }

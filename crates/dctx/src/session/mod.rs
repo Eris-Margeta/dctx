@@ -6,6 +6,7 @@
 //! Handles keep that lease alive. Dropping the last one allows collection.
 //! A plugin host is optional. The library default starts none and schedules no hook.
 
+mod answer_op;
 mod build;
 mod cache_op;
 mod dotted_op;
@@ -33,6 +34,7 @@ use dctx_core::selection::SelectionPolicy;
 use dctx_ports::{Cancellation, Clock, FactStore, Source};
 use dctx_template::{ContextPlan, HostCeiling};
 
+pub use answer_op::{AnswerLocation, ImpactAnswer, TraceAnswer};
 pub use build::SessionBuilder;
 pub use build::StoragePolicy;
 

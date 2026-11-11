@@ -65,7 +65,7 @@ fn main() {
                 .output(&args[2..])
                 .and_then(exit::CommandOutput::emit)
         }
-        Some("read") => {
+        Some("read" | "trace" | "impact") => {
             maybe_auto_clean(allow_auto_clean);
             map::run(&args[1..])
         }

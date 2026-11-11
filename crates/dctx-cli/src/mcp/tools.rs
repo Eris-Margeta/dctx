@@ -153,6 +153,35 @@ const TOOLS: &[Tool] = &[
         ],
     },
     Tool {
+        name: "trace",
+        help: "Shortest directed call/reference paths between symbols in one bounded answer.",
+        compact_help: "Trace shortest directed call/reference paths between symbols.",
+        positional: Some("from"),
+        second_positional: Some("to"),
+        props: &[
+            prop("from", "string", "Start symbol name or stable id"),
+            prop("to", "string", "End symbol name or stable id"),
+            prop("max_depth", "integer", "Maximum hops, 1..16; default 8"),
+            prop("max_paths", "integer", "Maximum shortest paths, 1..100; default 10"),
+            prop("max_bytes", "integer", "Maximum output bytes, 256..1048576; default 65536"),
+            prop("also", "array", "Additional read-only roots, at most sixteen"),
+        ],
+    },
+    Tool {
+        name: "impact",
+        help: "Direct reference/call sites and bounded transitive callers, grouped by file with counts.",
+        compact_help: "Find direct sites and transitive callers of a symbol, grouped by file.",
+        positional: Some("symbol"),
+        second_positional: None,
+        props: &[
+            prop("symbol", "string", "Symbol name or stable id"),
+            prop("max_depth", "integer", "Maximum caller depth, 1..16; default 8"),
+            prop("max_sites", "integer", "Maximum combined sites and callers, 1..10000; default 1000"),
+            prop("max_bytes", "integer", "Maximum output bytes, 256..1048576; default 65536"),
+            prop("also", "array", "Additional read-only roots, at most sixteen"),
+        ],
+    },
+    Tool {
         name: "export",
         help: "Whole graph as one deterministic document: graph JSON or a Mermaid flowchart.",
         compact_help: "Export the whole graph deterministically as JSON or Mermaid.",
@@ -167,7 +196,7 @@ const TOOLS: &[Tool] = &[
 /// Tool availability and description style, fixed for the lifetime of a server.
 #[derive(Debug, Default)]
 pub(super) enum Surface {
-    /// All ten tools, with full descriptions and schemas.
+    /// All twelve tools, with full descriptions and schemas.
     #[default]
     Full,
     /// A non-empty subset, exposed in canonical table order with compact descriptions.
@@ -216,6 +245,7 @@ fn accepted(tool: &Tool) -> Vec<&Prop> {
         .iter()
         .chain(COMMON.iter().filter(|extra| {
             !(own_names.contains(extra.name)
+                || matches!(tool.name, "trace" | "impact") && extra.name != "json"
                 || tool.name == "hubs" && extra.name == "cursor"
                 || tool.name == "export" && extra.name != "budget"
                 || tool.name == "skeleton" && extra.name != "budget" && extra.name != "json")
@@ -348,6 +378,12 @@ pub(super) fn to_args(name: &str, arguments: Option<&Json>) -> Result<Vec<String
             | ("string" | "array", Json::Str(text)) => out.extend([flag, text.clone()]),
             ("array", Json::Arr(items)) => {
                 let parts: Option<Vec<&str>> = items.iter().map(Json::as_str).collect();
+                if p.name == "also" {
+                    for part in parts.ok_or("also must be an array of strings")? {
+                        out.extend([flag.clone(), part.to_string()]);
+                    }
+                    continue;
+                }
                 out.extend([
                     flag,
                     parts
@@ -500,7 +536,7 @@ mod tests {
     }
 
     #[test]
-    fn all_ten_tools_are_registered() {
+    fn all_twelve_tools_are_registered() {
         let names: Vec<&str> = TOOLS.iter().map(|t| t.name).collect();
         assert_eq!(
             names,
@@ -514,6 +550,8 @@ mod tests {
                 "grep",
                 "skeleton",
                 "path",
+                "trace",
+                "impact",
                 "export"
             ]
         );

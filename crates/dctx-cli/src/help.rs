@@ -84,6 +84,8 @@ Usage: dctx <COMMAND> [OPTIONS]
        dctx rpc
        dctx mcp [PATH]
        dctx serve [--mcp] [PATH]
+       dctx trace <A> <B> [--max-depth N] [--max-paths N] [--max-bytes N] [--json]
+       dctx impact <SYMBOL> [--max-depth N] [--max-sites N] [--max-bytes N] [--json]
        dctx read <TARGET> [OPTIONS]
        dctx languages [--json|--markdown]
        dctx doctor [--json]

@@ -51,6 +51,16 @@ pub(super) fn text(verb: &str) -> Option<String> {
             "Shortest edge path (calls, imports, contains; at most 8 hops) between two nodes, or `no path`.",
             "dctx map path 's:src/main.rs#main' 's:src/lib.rs#run'",
         ),
+        "trace" => (
+            "trace <A> <B> [--max-depth 1..16] [--max-paths 1..100] [--max-bytes 256..1048576] [--json] [--place PATH] [--also DIR ...]",
+            "Shortest directed call/reference paths, in deterministic order; complete paths only. Defaults: depth 8, paths 10, bytes 65536.",
+            "dctx trace main run",
+        ),
+        "impact" => (
+            "impact <SYMBOL> [--max-depth 1..16] [--max-sites 1..10000] [--max-bytes 256..1048576] [--json] [--place PATH] [--also DIR ...]",
+            "Direct reference/call sites and bounded transitive callers, grouped by file with counts. Defaults: depth 8, sites 1000, bytes 65536.",
+            "dctx impact run",
+        ),
         "export" => (
             "export [--format json|mermaid] [--output PATH] [--place PATH] [--also DIR ...]",
             "The whole graph as one deterministic document. No TARGET, no token cap.",

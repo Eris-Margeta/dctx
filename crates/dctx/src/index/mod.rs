@@ -16,6 +16,7 @@ mod generic;
 mod grep;
 pub(crate) mod hubs;
 mod id_index;
+pub(crate) mod impact;
 mod key_rank;
 #[cfg(test)]
 mod languages_tests;

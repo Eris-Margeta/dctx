@@ -58,6 +58,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
     request.target = from;
     request.validate().map_err(|e| e.to_string())?;
     Ok(Options {
+        answer: None,
         request,
         format,
         place,

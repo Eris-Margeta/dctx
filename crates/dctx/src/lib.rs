@@ -41,7 +41,10 @@ pub use domain::{
 pub use languages::{Confidence, LANGUAGES, Language, Tier};
 pub use plugins::{Boundary, HookEffect, HookWarning, PluginHost};
 pub use ports::{Cache, Cancellation, Clock, FactStore, Source};
-pub use session::{Session, SessionBuilder, SnapshotHandle, StoragePolicy};
+pub use session::{
+    AnswerLocation, ImpactAnswer, Session, SessionBuilder, SnapshotHandle, StoragePolicy,
+    TraceAnswer,
+};
 
 #[cfg(feature = "fs")]
 pub use adapters::FsSource;

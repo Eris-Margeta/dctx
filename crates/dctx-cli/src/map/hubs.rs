@@ -45,6 +45,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
     }
     request.validate_as("hubs").map_err(|e| e.to_string())?;
     Ok(Options {
+        answer: None,
         request,
         format,
         place,
