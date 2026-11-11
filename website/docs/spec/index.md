@@ -95,6 +95,13 @@ Every token placed in a model's context is paid for three times:
 | **Cache misses** | Providers serve repeated prompt prefixes from a cache at a fraction of the price and latency. One changed byte early in a prompt invalidates everything after it | Byte-stable rendering, canonical order, stable ids, prefix-stable tiers |
 | **Attention dilution** | Answer quality falls as irrelevant tokens grow | Ranked, bounded answers; one span per read; no repeats within a session |
 
+dctx on its own does not save tokens by default. Savings belong to a harness or
+agent system that reuses byte-identical, prefix-stable context across long sessions
+over a large body of work, with control over every byte. No measured, citable
+savings figure for such a system exists yet; see the
+[philosophy](https://www.dctx.internet.technology/why/#savings-belong-to-the-system) and
+[whole-session benchmark](https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261111.md).
+
 dctx treats these as engineering constraints, not goals. A conforming implementation
 MUST satisfy the five **PPE** constraints:
 
@@ -927,7 +934,7 @@ closure. They do not introduce a paid edition or certify production readiness.
 | Not doing | Why |
 |---|---|
 | Embeddings or a vector index in the core | Non-deterministic, model-dependent, hides provenance (R2, R8) |
-| Calling a model from the engine | Breaks determinism; spends the tokens the tool exists to save |
+| Calling a model from the engine | Breaks determinism; adds model calls outside the context engine contract |
 | A daemon or file watcher | One binary, no runtime; a per-invocation stamp check meets 50 ms |
 | VCS in the core | Privacy and dependency reasons; everything needed is a plugin or dctx's own snapshot diff |
 | A second configuration language | Two policy engines diverge; DTS already compiles to a sealed IR |

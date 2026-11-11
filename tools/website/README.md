@@ -54,7 +54,7 @@ examples is handwritten. The Rust snippet comes from the workspace doctest in
 | `/docs/<slug>/`, `/security/`, `/trademark/`, `/maintenance/`, `/why/` (once `docs/WHY-DCTX.md` exists) | the repository Markdown, rendered at build time (`md.py`); `index.md` next to each page is the file itself with link targets rewritten and decorative symbols spelled in ASCII, and `check.py` fails if it drifts |
 | `/cli/`, `/languages/`, `/examples/`, the home showcase | `data/demo.json`, recorded from the real binary by `capture.py` on `sample/`; `check.py` re-records and fails on drift |
 | `/templates/` | `crates/dctx-template/templates/*.dctx_template`, ADR-003 and the template captures |
-| `/benchmarks/`, the home facts | tables parsed from `docs/BENCHMARK-20261030.md`, the run 7 `aggregate.json` and the stability report (`data.py`) |
+| `/benchmarks/`, the home facts | whole-session results from `docs/BENCHMARK-20261111.md`, historical tables parsed from `docs/BENCHMARK-20261030.md`, the run 7 `aggregate.json` and the stability report (`data.py`) |
 | `/how-it-works/` and the explainer animations | `pages/animations.py` (figures, captions, prose fallbacks) and `src/anim.js` (five deterministic canvas scenes, frame-counted, in the `home.js` and `how.js` bundles) |
 | `/changelog/` and its feed | `CHANGELOG.md` |
 | the home notice and path selector, `/start/` and its four persona pages, `/for-ai-evaluators/` | `data/facts.json` through `facts.py` (see below); persona runs are records from `data/demo.json` |
@@ -87,7 +87,7 @@ the measured numbers parsed by `data.py`; numbers are never typed into facts.jso
 | `modalities[]` | `name`, `status` (`available`, `available from Git`, `preview`, `publishing soon`, `planned`), `line`, `link` |
 | `scopes[]` | the system binary and the project binary, one line each |
 | `notice` | the advanced-user notice, verbatim (interim wording until the three-tool profile and receipts ship) |
-| `benchmarks` | `baseline`, `claims[]` with `status` (`being prepared`, `measured`, `historical`, `hypothesis`), `text`, `link` |
+| `benchmarks` | `baseline`, `claims[]` with `status` (`measured`, `historical`, `hypothesis`), `text`, `link` |
 | `removed` | `since`, `intro`, `items[]` with `was`, `use` and `patterns` (Python regexes that find the old command) |
 | `verify[]` | `what`, then `command` (shown as code) or `text`, and `link` |
 | `notice_status` | one line under the notice on the site: what is planned and what the interim wording uses |

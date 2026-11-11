@@ -12,6 +12,9 @@ RAW = "docs/research/bench-3way-20261030/"
 
 
 def benchmarks() -> tuple[str, list]:
+    session_source = "docs/BENCHMARK-20261111.md"
+    session_text = read(session_source).split("\n", 3)[3]
+    session_html, _, _ = to_html(session_text, session_source, Linker({}))
     r7 = data.run7()
     qline, qhead, qrows = data.table_after(data.BENCH, "Latest: run 5", "By question type, out of 14:")
     cline, chead, crows = data.table_after(data.BENCH, "Cold index (median wall s")
@@ -36,7 +39,8 @@ def benchmarks() -> tuple[str, list]:
     body = f"""<div class="wrap"><div class="page-head">{{{{crumbs}}}}<span class="eyebrow">Evidence</span><h1>Benchmarks</h1>
 <p class="lede">Compare dctx with grep plus file reads, then measure the whole agent session. Startup instructions, tool definitions and extra turns can outweigh smaller answers.</p></div>
 <h2 id="grep-read">Grep plus file reads</h2>
-<p>The headline baseline is grep plus reading files. A controlled benchmark against it, counting whole agent sessions (start-up context, every call, provider cache hits and accuracy), is being prepared and will be published with raw data. <a href="/docs/modalities/">Choosing how to use dctx</a> covers scope, cache limits and measured MCP definition bytes.</p>
+<p>Measured whole-session results, 11 November 2026. {src(session_source, "Full report and method")}</p>
+<div class="prose">{session_html}</div>
 <h2 id="history">Secondary historical evidence</h2>
 <div class="notice"><p>All other-tool tables below preserve the October research record. Their tokens are tool stdout estimates, not whole-session cost; scores measure gold facts in raw output without an agent model. The dctx team designed the 70-question protocol. The independent run selected repositories by seed and used language-server gold.</p></div>
 <h2 id="run7">Historical run 7: task-level protocol</h2>
@@ -61,7 +65,8 @@ def benchmarks() -> tuple[str, list]:
 {table(stab["head"], stab["rows"], numeric={1, 2}, caption=f'Build <code>0495f5f</code>, 6 November 2026, three pinned corpora, 11 query shapes each. {src(data.STAB, "REPORT.md", stab["line"])} &middot; <a href="/docs/stability/">full report</a>')}
 <h2 id="not-claimed">Not claimed</h2>
 <div class="prose">{notclaimed_html}</div>
-<h2 id="raw">Raw data</h2>
+<h2 id="raw">Historical raw data</h2>
+<p>The whole-session corpus and raw answers are private and cannot be published. The links below cover only the historical studies.</p>
 <ul><li><a href="{TREE}{RAW}">{RAW}</a>: questions, gold facts, scorer, raw results and scripts</li>
 <li><a href="/docs/benchmark/">The full write-up</a>, with every run and the method</li>
 <li><a href="/docs/benchmark-oct/">The earlier two-way study</a> (October 2026, before call edges)</li></ul>

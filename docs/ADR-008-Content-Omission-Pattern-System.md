@@ -28,7 +28,7 @@ The system needed a flexible, hierarchical pattern-based approach similar to `.d
 * **Extensibility**: Easy to add new hardcoded rules or override existing ones
 * **Backward Compatibility**: Existing `omit_svg_content` behavior must be preserved by default
 * **Performance**: No significant overhead compared to file exclusion
-* **Cleaner Context**: Automatic omission of common noisy files (lockfiles) to reduce token waste
+* **Cleaner Context**: Automatic omission of common noisy files (lockfiles) to keep selected output focused; this does not establish whole-session token savings
 
 ## 3. Considered Options
 

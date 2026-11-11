@@ -103,6 +103,20 @@ The [stability report](research/stability-20261105/REPORT.md) measured map answe
 
 The report states its limits too. It measures dctx's answers, not a provider's cache hits. It ran on Linux only. The layered design that would keep context prefix-stable across a whole conversation ([SPEC §12.1](SPEC.md#121-prefix-stable-tiers-target)) is still a target.
 
+### Savings belong to the system
+
+dctx on its own does not save tokens by default. In the
+[11 November benchmark](BENCHMARK-20261111.md), the dctx CLI arm used 5.01 % fewer
+median total tokens than grep plus file reads, far below the 25 % rule.
+
+Token savings come from systems that use dctx: a harness or agent system built
+around its cache-hit philosophy, reusing byte-identical, prefix-stable context
+across long sessions over a large body of work. In that system, dctx behaves
+like any sufficiently advanced caching mechanism, with one difference: you have
+complete control over every byte of the context. The system must keep and reuse
+that context to benefit. There is no measured, citable savings figure for such a
+system yet.
+
 ### An illustration of money and time
 
 *Made-up numbers, not any provider's prices.* Assume:
@@ -111,7 +125,7 @@ The report states its limits too. It measures dctx's answers, not a provider's c
 - normal input costs 10 units per 1,000 tokens, cached input 1 unit;
 - the cache holds between turns.
 
-If the context is byte-identical, turn one pays 200 units and the next nine pay 20 each: 380 units. If a timestamp near the top changes every turn, every turn pays 200: 2,000 units. The model also re-reads all 20,000 tokens every turn instead of reusing them, so each answer takes longer. Real ratios differ by provider; the mechanism is the same.
+If the context is byte-identical, turn one pays 200 units and the next nine pay 20 each: 380 units. If a timestamp near the top changes every turn, every turn pays 200: 2,000 units. The model also re-reads all 20,000 tokens every turn instead of reusing them, so each answer takes longer. The saving in this illustration belongs to the agent system that keeps the context stable and reuses it through the provider cache. dctx supplies controllable bytes; it does not produce that saving on its own. Real ratios differ by provider; the mechanism is the same.
 
 ### Other reasons determinism matters
 

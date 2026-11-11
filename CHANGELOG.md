@@ -16,6 +16,8 @@ and distribution plans below do not describe the current release.
 
 ### Added
 
+- Publish the first whole-session grep-versus-dctx benchmark: CLI median tokens -5.01 %, below the 25 % savings rule; both recall metrics and spread reported in [the study](docs/BENCHMARK-20261111.md).
+
 - `dctx agent-setup [--format claude|agents|plain]`: short, deterministic rules for
   choosing dctx or grep and using dctx from coding agents.
 - Windows CI reports warm per-call `dctx map find` p50/p95 latency over 50 separate

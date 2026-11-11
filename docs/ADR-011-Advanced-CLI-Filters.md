@@ -22,7 +22,7 @@ Additionally, with binary file detection added in v0.10.0, binary files were bei
 ## 2. Decision Drivers
 
 * **User Control**: Give users precise control over output content
-* **Token Efficiency**: Reduce token usage by filtering out irrelevant files
+* **Context Selection**: Exclude irrelevant files from tool output
 * **Flexibility**: Support multiple filter types that can be combined
 * **Usability**: Simple, intuitive flag-based interface
 * **Performance**: Filtering should be fast and not impact overall performance
@@ -156,7 +156,7 @@ struct SnapshotConfig {
 ## 5. Positive Consequences
 
 * ✅ **Precise Control**: Users can filter exactly what they need
-* ✅ **Token Savings**: Filtering irrelevant files saves significant tokens
+* ✅ **Bounded Context**: Filtering limits selected output; whole-session savings belong to a system that reuses stable context, not to dctx by default
 * ✅ **Flexible Combinations**: All filters work together logically
 * ✅ **State Preservation**: Binary state always contains full tree
 * ✅ **Performance**: Filtering is fast (tree cloning + filtering < 1ms)

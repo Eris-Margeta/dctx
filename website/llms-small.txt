@@ -1,6 +1,6 @@
 # dctx
 
-> dctx turns any folder into the smallest correct context for a task, offline, with byte-stable output that prompt caches can reuse. dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.
+> dctx turns any folder into the smallest correct context for a task, offline, with byte-stable output that prompt caches can reuse. dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.
 
 ## About this file
 
@@ -8,7 +8,7 @@
 - Engine: dctx 1.3.1. Document captures are the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs them and fails on any byte of drift. Read the pack at https://www.dctx.internet.technology/llms-full.txt.
 - Docs commit: b91176b2f3adac457d8566970346bddf7855cc9c (2026-11-11T10:45:25+01:00), the last commit that changed one of the documents.
 - Command: `dctx map map docs/START.md --depth 2`; `dctx map map docs/WHY-DCTX.md --depth 2`; `dctx map map README.md --depth 2`; `dctx map map docs/MODALITIES.md --depth 2`
-- Document capture budget: 1,008 of 2,500 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
+- Document capture budget: 1,027 of 2,500 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
 
 ## Facts
 
@@ -48,13 +48,13 @@ Two scopes, one binary:
 
 ### Before you start
 
-> dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.
+> dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.
 
 ### Benchmarks
 
 Baseline: grep plus reading files.
 
-- Being prepared: A whole-session benchmark against grep plus file reads (every model turn, startup and tool definitions counted) is being prepared and will be published with raw data. No session saving is claimed yet. https://www.dctx.internet.technology/docs/benchmark/
+- Measured: 11 November 2026: 20 questions, a private 13-crate Rust workspace, claude-sonnet-5-5, dctx 1.3.0, three repeats per arm. Median total tokens [min, max]: grep plus reads (A) 14,904,014 [14,604,149, 15,622,381]; warm dctx CLI (B) 14,157,974 [11,221,908, 15,613,375]; fresh-cache dctx MCP (C), startup/indexing measured, 15,922,125 [15,513,198, 16,700,029]. B versus A: -5.01 %. On this corpus and model dctx did not save 25 % tokens; the pre-registered rule was not met. Official strict citation recall medians [min, max], A/B/C: 10.10 % [10.10, 20.73] / 14.46 % [8.36, 22.65] / 13.41 % [12.02, 66.72]. Diagnostic file-level recall medians: 53.77 % / 71.70 % / 76.42 %; diagnostic, not a replacement metric. The claim is accuracy and bounded context, not token savings: B and C named more required files at about equal (B) or higher (C) token cost. C cost +6.8 % tokens and +30 % wall time. dctx on its own does not save tokens by default. Savings come from a harness or agent system reusing byte-identical, prefix-stable context across long sessions over a large body of work, with complete control over every byte. There is no measured, citable savings figure for such a system yet. One corpus, one model, no significance claim; corpus and raw answers private and cannot be published; dctx 1.3.0 is not current HEAD. Under ~200 files, use grep. https://www.dctx.internet.technology/benchmarks/#grep-read
 - Measured: Byte stability: the same query on unchanged code returns the same bytes; 33 of 33 text and JSON answers were byte-identical after unrelated edits (Linux only). https://www.dctx.internet.technology/docs/stability/
 - Historical: The October and November in-house numbers (run 7: 140 of 140 task questions, cold index and warm latency) measure tool output only, as estimated stdout tokens and raw fact coverage without a model; they are not agent completion rates or session costs. https://www.dctx.internet.technology/benchmarks/
 - Hypothesis: That a pack template changes model answer quality or cost is a hypothesis pending an A/B test; nothing on this site measures it. https://www.dctx.internet.technology/templates/
@@ -165,21 +165,22 @@ d:docs/START.md#4. Measure before changing anything	heading	L174-194
 d:docs/START.md#Responsibilities	heading	L195-215
 d:docs/START.md#Two scopes, one binary	heading	L216-241
 # dctx map
-d:docs/WHY-DCTX.md#Why dctx exists	heading	L3-145
+d:docs/WHY-DCTX.md#Why dctx exists	heading	L3-159
 d:docs/WHY-DCTX.md#The problem	heading	L7-14
 d:docs/WHY-DCTX.md#What dctx does	heading	L15-49
 d:docs/WHY-DCTX.md#Start with grep plus file reads	heading	L19-26
 d:docs/WHY-DCTX.md#A small worked example	heading	L27-49
 d:docs/WHY-DCTX.md#The philosophy	heading	L50-74
-d:docs/WHY-DCTX.md#Why byte-identical output matters	heading	L75-121
+d:docs/WHY-DCTX.md#Why byte-identical output matters	heading	L75-135
 d:docs/WHY-DCTX.md#Prompt caching, in plain words	heading	L77-84
 d:docs/WHY-DCTX.md#Prefix-stable, simply	heading	L85-99
 d:docs/WHY-DCTX.md#The evidence	heading	L100-105
-d:docs/WHY-DCTX.md#An illustration of money and time	heading	L106-115
-d:docs/WHY-DCTX.md#Other reasons determinism matters	heading	L116-121
-d:docs/WHY-DCTX.md#What dctx is not	heading	L122-129
-d:docs/WHY-DCTX.md#Where to go next	heading	L130-137
-d:docs/WHY-DCTX.md#Sources in this repository	heading	L138-145
+d:docs/WHY-DCTX.md#Savings belong to the system	heading	L106-119
+d:docs/WHY-DCTX.md#An illustration of money and time	heading	L120-129
+d:docs/WHY-DCTX.md#Other reasons determinism matters	heading	L130-135
+d:docs/WHY-DCTX.md#What dctx is not	heading	L136-143
+d:docs/WHY-DCTX.md#Where to go next	heading	L144-151
+d:docs/WHY-DCTX.md#Sources in this repository	heading	L152-159
 # dctx map
 d:README.md#Project status	heading	L52-59
 d:README.md#Installation	heading	L60-87
@@ -188,19 +189,19 @@ d:README.md#Pack a project	heading	L92-140
 d:README.md#Find a symbol, then read it	heading	L141-167
 d:README.md#Pack for a task	heading	L168-203
 d:README.md#Which mode?	heading	L204-213
-d:README.md#Measured, in the open	heading	L214-227
-d:README.md#Start and choose your path	heading	L228-241
-d:README.md#The core belief: prompt-processing efficiency	heading	L242-252
-d:README.md#Quick Start	heading	L253-268
-d:README.md#Map mode: context for agents	heading	L269-279
-d:README.md#From source	heading	L280-297
-d:README.md#Use as a library	heading	L298-332
-d:README.md#CLI Reference	heading	L333-467
-d:README.md#Language tiers	heading	L398-467
-d:README.md#Security & Privacy	heading	L468-501
-d:README.md#Open source and maintenance	heading	L502-509
-d:README.md#Where it comes from	heading	L510-514
-d:README.md#Contributing	heading	L515-525
+d:README.md#Measured, in the open	heading	L214-233
+d:README.md#Start and choose your path	heading	L234-247
+d:README.md#The core belief: prompt-processing efficiency	heading	L248-258
+d:README.md#Quick Start	heading	L259-274
+d:README.md#Map mode: context for agents	heading	L275-285
+d:README.md#From source	heading	L286-303
+d:README.md#Use as a library	heading	L304-338
+d:README.md#CLI Reference	heading	L339-473
+d:README.md#Language tiers	heading	L404-473
+d:README.md#Security & Privacy	heading	L474-507
+d:README.md#Open source and maintenance	heading	L508-515
+d:README.md#Where it comes from	heading	L516-520
+d:README.md#Contributing	heading	L521-531
 # dctx map
 d:docs/MODALITIES.md#Choosing how to use dctx	heading	L3-339
 d:docs/MODALITIES.md#Available surfaces and publication status	heading	L11-25

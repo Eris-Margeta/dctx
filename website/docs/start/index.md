@@ -12,7 +12,7 @@ Byte stability enables reuse, while provider cache rules determine actual hits.
 dctx has no embeddings, network, telemetry or agent loop in its pack/map/MCP
 workflows. It does not call a model or execute the task for you.
 
-> dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.
+> dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.
 
 ## Choose your path
 

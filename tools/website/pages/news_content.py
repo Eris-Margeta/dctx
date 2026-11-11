@@ -31,7 +31,7 @@ NEWS = [
         "body": f"""
 <p>Starting today, the dctx desktop app is free for everyone who uses it: a single developer, a ten-person studio or an engineering organisation of thousands. It stays that way.</p>
 <h2>Why we are doing this</h2>
-<p>dctx exists because of one belief: prompt-processing efficiency. Every token in front of a model is paid for three times, in prefill, in cache misses and in attention. The smaller, more exact and more stable the context, the better and cheaper every answer becomes.</p>
+<p>dctx exists because of one belief: prompt-processing efficiency. Every token in front of a model is paid for three times, in prefill, in cache misses and in attention. dctx supplies bounded, byte-stable context; it does not save tokens by default. Savings belong to a harness or agent system that reuses byte-identical, prefix-stable context across long sessions over a large body of work, with control over every byte. No measured savings figure exists for such a system yet.</p>
 <p>The desktop app is how people who do not live in a terminal reach that engine: designers, analysts, product managers and engineers who simply prefer a window. Charging for it put a toll at the front door of the very habit we want to spread. So we are removing the toll.</p>
 <blockquote>Efficient context should be the default for everyone who works with a model, not a premium feature.</blockquote>
 <h2>What you get</h2>

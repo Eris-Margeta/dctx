@@ -20,7 +20,7 @@
 <meta name="description" content="Grep plus file reads, whole-session accounting, byte stability and secondary historical measurements.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
-<meta name="dctx-build" content="400ef6209f27425eb8fac7bc7f4d0c7380c2d0d3fcba75d286ad710442871d2c">
+<meta name="dctx-build" content="ba5ba62bbf06040ec3e1eef141dc5999bb1ca0330c396bc4e8309339fd3698d3">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -201,37 +201,192 @@
 <div class="wrap"><div class="page-head"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/benchmarks/" aria-current="page">Benchmarks</a></li></ol></nav><span class="eyebrow">Evidence</span><h1>Benchmarks</h1>
 <p class="lede">Compare dctx with grep plus file reads, then measure the whole agent session. Startup instructions, tool definitions and extra turns can outweigh smaller answers.</p></div>
 <h2 id="grep-read">Grep plus file reads</h2>
-<p>The headline baseline is grep plus reading files. A controlled benchmark against it, counting whole agent sessions (start-up context, every call, provider cache hits and accuracy), is being prepared and will be published with raw data. <a href="/docs/modalities/">Choosing how to use dctx</a> covers scope, cache limits and measured MCP definition bytes.</p>
+<p>Measured whole-session results, 11 November 2026. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261111.md" title="Source: docs/BENCHMARK-20261111.md">Full report and method</a></p>
+<div class="prose"><p>Measured on 11.11.2026. <strong>NOT STABLE</strong>: dctx remains an advanced tool.
+On this corpus and model dctx did not save 25 % tokens. The pre-registered
+success rule was <strong>not met</strong>: CLI median total tokens were -5.01 % versus grep.
+The claim supported here is <strong>accuracy and bounded context</strong>, not token savings.</p>
+<h2 id="method">Method<a class="hd" href="#method" aria-label="Link to Method">#</a></h2>
+<ul>
+<li>Corpus: a private 13-crate Rust workspace; it is not public.</li>
+<li>Questions: 20, covering code location, call sites and multi-hop traces.</li>
+<li>Model: <code>claude-sonnet-5-5</code> via Claude CLI.</li>
+<li>dctx: 1.3.0 (<code>156e1bb</code>), not current HEAD.</li>
+<li>Three repeats per arm. Only tool exposure differs; prompt, model and question
+  order are identical. Blind grading uses opaque ids without arm labels.</li>
+</ul>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Arm</th>
+<th>Tools and cache conditions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>Read + Grep/Glob: grep plus file reads baseline</td>
+</tr>
+<tr>
+<td>B</td>
+<td>Read + Bash restricted to <code>dctx *</code>; index warm before measurement</td>
+</tr>
+<tr>
+<td>C</td>
+<td>Read + dctx MCP only; fresh cache, with start-up and indexing measured</td>
+</tr>
+</tbody>
+</table></div>
+<p>These are whole-session measurements, including conversation replay and provider
+cache usage, rather than estimates of tool stdout. The warm index in B excludes
+its preparation cost; C includes start-up and indexing. This difference limits
+direct comparisons between the two dctx modalities.</p>
+<h2 id="cost-and-turns">Cost and turns<a class="hd" href="#cost-and-turns" aria-label="Link to Cost and turns">#</a></h2>
+<p>Totals per arm cover all 20 questions; each cell is the median [min, max] of three runs.
+Total tokens = uncached input (including cache creation) + cached input + output.
+Each metric is summarized independently, so component medians need not sum to
+the median total. Turns are CLI <code>num_turns</code>, an assistant-turn proxy, not exact
+tool calls.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>A: grep plus reads</th>
+<th>B: dctx CLI</th>
+<th>C: dctx MCP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Total tokens</td>
+<td>14,904,014 [14,604,149, 15,622,381]</td>
+<td>14,157,974 [11,221,908, 15,613,375]</td>
+<td>15,922,125 [15,513,198, 16,700,029]</td>
+</tr>
+<tr>
+<td>Uncached input tokens</td>
+<td>286,289 [284,340, 290,043]</td>
+<td>250,479 [220,537, 258,313]</td>
+<td>256,015 [247,681, 256,302]</td>
+</tr>
+<tr>
+<td>Cached input tokens</td>
+<td>14,543,028 [14,241,089, 15,246,829]</td>
+<td>13,833,705 [10,939,641, 15,278,757]</td>
+<td>15,579,598 [15,190,063, 16,365,955]</td>
+</tr>
+<tr>
+<td>Output tokens</td>
+<td>78,720 [74,697, 85,509]</td>
+<td>73,790 [61,730, 76,305]</td>
+<td>77,772 [75,454, 86,512]</td>
+</tr>
+<tr>
+<td>Wall time (s)</td>
+<td>700.87 [697.78, 811.59]</td>
+<td>719.84 [628.75, 768.06]</td>
+<td>910.99 [899.31, 974.98]</td>
+</tr>
+<tr>
+<td>Turns (<code>num_turns</code>)</td>
+<td>172 [159, 175]</td>
+<td>130 [129, 137]</td>
+<td>239 [221, 240]</td>
+</tr>
+</tbody>
+</table></div>
+<p>B versus A median total tokens: <strong>-5.01 %</strong>. C versus A: <strong>+6.8 % tokens</strong>
+and <strong>+30 % wall time</strong>.</p>
+<h2 id="accuracy-both-metrics">Accuracy: both metrics<a class="hd" href="#accuracy-both-metrics" aria-label="Link to Accuracy: both metrics">#</a></h2>
+<p>The official metric is strict citation recall: exact repo-relative path and line,
+with a tolerance of +/-3 lines, against 574 required line references per run.
+The diagnostic metric is file-level recall: the required file named in full
+anywhere in the answer, against 106 file/question pairs per run.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>A: grep plus reads</th>
+<th>B: dctx CLI</th>
+<th>C: dctx MCP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Official strict citation recall, median [min, max]</td>
+<td>10.10 % [10.10, 20.73]</td>
+<td>14.46 % [8.36, 22.65]</td>
+<td>13.41 % [12.02, 66.72]</td>
+</tr>
+<tr>
+<td>Diagnostic file-level recall, median</td>
+<td>53.77 %</td>
+<td>71.70 %</td>
+<td>76.42 %</td>
+</tr>
+</tbody>
+</table></div>
+<p>A grader audit found no grader defect. Low strict recall comes from answers
+citing shorthand paths such as <code>store.rs:313</code>, and from line-level granularity:
+10 trace questions hold 82 % of required lines. File-level recall is a
+diagnostic, not a replacement metric. No file-level spread is supplied.</p>
+<h2 id="where-savings-would-come-from">Where savings would come from<a class="hd" href="#where-savings-would-come-from" aria-label="Link to Where savings would come from">#</a></h2>
+<p>dctx on its own does not save tokens by default. Token savings come from
+systems that use dctx: a harness or agent system built around its cache-hit
+philosophy, reusing byte-identical, prefix-stable context across long sessions
+over a large body of work. In that setting it behaves like any sufficiently
+advanced caching mechanism, with one difference: you have complete control
+over every byte of the context. The system must arrange that reuse; merely
+exposing dctx tools does not do it. There is no measured, citable savings figure
+for such a system yet. See <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/WHY-DCTX.md#savings-belong-to-the-system">the philosophy</a>.</p>
+<h2 id="verdict-and-limitations">Verdict and limitations<a class="hd" href="#verdict-and-limitations" aria-label="Link to Verdict and limitations">#</a></h2>
+<p>The pre-registered rule required B to save at least 25 % median total tokens
+<strong>and</strong> match or exceed A's recall. <strong>NOT MET on tokens (-5.01 %)</strong>, even though
+B's median official recall exceeded A's. On this corpus and model dctx did not
+save 25 % tokens.</p>
+<p>B and C named more of the required files than grep at about equal (B) or higher
+(C) token cost. This supports an accuracy and bounded context claim, not a
+whole-session token-savings claim. The bounded context behavior is described in
+<a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/MODALITIES.md">Choosing how to use dctx</a>; these results do not establish a
+general accuracy advantage.</p>
+<p>Limitations: one corpus, one model, three repeats, and no significance claim.
+The corpus and raw answers are private and cannot be published; these aggregate
+results cannot be independently reproduced from the public repository alone.
+dctx 1.3.0 is not current HEAD. The guidance <strong>Under ~200 files, use grep</strong> stays.</p>
+<p>The <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md">earlier measurement evidence</a> preserves the historical
+tool-output protocols separately from this whole-session study.</p></div>
 <h2 id="history">Secondary historical evidence</h2>
 <div class="notice"><p>All other-tool tables below preserve the October research record. Their tokens are tool stdout estimates, not whole-session cost; scores measure gold facts in raw output without an agent model. The dctx team designed the 70-question protocol. The independent run selected repositories by seed and used language-server gold.</p></div>
 <h2 id="run7">Historical run 7: task-level protocol</h2>
-<div class="table-wrap"><table><caption>70 questions, 354 gold facts, 31 October 2026. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L59" title="Source: docs/BENCHMARK-20261030.md">BENCHMARK-20261030.md</a></caption><thead><tr><th scope="col">Tool</th><th scope="col" class="num">Points /140</th><th scope="col" class="num">Gold facts /354</th><th scope="col" class="num">Tokens</th><th scope="col" class="num">Facts per 1k tokens</th></tr></thead><tbody><tr><td>dctx <code>53f8b6b</code></td><td class="num"><strong>140</strong> (run 6: 136)</td><td class="num"><strong>353</strong> (342)</td><td class="num"><strong>29,340</strong></td><td class="num"><strong>12.0</strong></td></tr><tr><td>Trail-Code 0.28.0</td><td class="num">122</td><td class="num">312</td><td class="num">88,923</td><td class="num">3.51</td></tr><tr><td>graphify 0.9.97, code-only</td><td class="num">96</td><td class="num">238</td><td class="num">197,203</td><td class="num">1.21</td></tr></tbody></table></div>
+<div class="table-wrap"><table><caption>70 questions, 354 gold facts, 31 October 2026. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L61" title="Source: docs/BENCHMARK-20261030.md">BENCHMARK-20261030.md</a></caption><thead><tr><th scope="col">Tool</th><th scope="col" class="num">Points /140</th><th scope="col" class="num">Gold facts /354</th><th scope="col" class="num">Tokens</th><th scope="col" class="num">Facts per 1k tokens</th></tr></thead><tbody><tr><td>dctx <code>53f8b6b</code></td><td class="num"><strong>140</strong> (run 6: 136)</td><td class="num"><strong>353</strong> (342)</td><td class="num"><strong>29,340</strong></td><td class="num"><strong>12.0</strong></td></tr><tr><td>Trail-Code 0.28.0</td><td class="num">122</td><td class="num">312</td><td class="num">88,923</td><td class="num">3.51</td></tr><tr><td>graphify 0.9.97, code-only</td><td class="num">96</td><td class="num">238</td><td class="num">197,203</td><td class="num">1.21</td></tr></tbody></table></div>
 <h2 id="question-types">By question type</h2>
-<p>Points out of 14 per type, from run 5 and task re-run 3 (dctx <code>a906884</code>), the last run with a per-type table; run 7 then scored every point on all ten types. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L65" title="Source: docs/BENCHMARK-20261030.md">run 7 note</a></p>
-<div class="table-wrap"><table><caption><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L96" title="Source: docs/BENCHMARK-20261030.md">BENCHMARK-20261030.md</a></caption><thead><tr><th scope="col">Type</th><th scope="col" class="num">dctx</th><th scope="col" class="num">Trail-Code</th><th scope="col" class="num">graphify</th></tr></thead><tbody><tr><td>definition and callers</td><td class="num"><strong>14</strong></td><td class="num">10</td><td class="num">10</td></tr><tr><td>impact</td><td class="num"><strong>14</strong></td><td class="num">13</td><td class="num">12</td></tr><tr><td>outline</td><td class="num"><strong>14</strong></td><td class="num"><strong>14</strong></td><td class="num">12</td></tr><tr><td>config key</td><td class="num"><strong>14</strong></td><td class="num"><strong>14</strong></td><td class="num">6</td></tr><tr><td>exports</td><td class="num"><strong>14</strong></td><td class="num"><strong>14</strong></td><td class="num"><strong>14</strong></td></tr><tr><td>source</td><td class="num"><strong>14</strong></td><td class="num">12</td><td class="num">0</td></tr><tr><td>callees</td><td class="num"><strong>10</strong></td><td class="num">8</td><td class="num">8</td></tr><tr><td>overview</td><td class="num"><strong>14</strong></td><td class="num">13</td><td class="num">11</td></tr><tr><td>collision</td><td class="num"><strong>14</strong></td><td class="num">12</td><td class="num">13</td></tr><tr><td>concept</td><td class="num"><strong>14</strong></td><td class="num">12</td><td class="num">10</td></tr></tbody></table></div>
+<p>Points out of 14 per type, from run 5 and task re-run 3 (dctx <code>a906884</code>), the last run with a per-type table; run 7 then scored every point on all ten types. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L67" title="Source: docs/BENCHMARK-20261030.md">run 7 note</a></p>
+<div class="table-wrap"><table><caption><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L98" title="Source: docs/BENCHMARK-20261030.md">BENCHMARK-20261030.md</a></caption><thead><tr><th scope="col">Type</th><th scope="col" class="num">dctx</th><th scope="col" class="num">Trail-Code</th><th scope="col" class="num">graphify</th></tr></thead><tbody><tr><td>definition and callers</td><td class="num"><strong>14</strong></td><td class="num">10</td><td class="num">10</td></tr><tr><td>impact</td><td class="num"><strong>14</strong></td><td class="num">13</td><td class="num">12</td></tr><tr><td>outline</td><td class="num"><strong>14</strong></td><td class="num"><strong>14</strong></td><td class="num">12</td></tr><tr><td>config key</td><td class="num"><strong>14</strong></td><td class="num"><strong>14</strong></td><td class="num">6</td></tr><tr><td>exports</td><td class="num"><strong>14</strong></td><td class="num"><strong>14</strong></td><td class="num"><strong>14</strong></td></tr><tr><td>source</td><td class="num"><strong>14</strong></td><td class="num">12</td><td class="num">0</td></tr><tr><td>callees</td><td class="num"><strong>10</strong></td><td class="num">8</td><td class="num">8</td></tr><tr><td>overview</td><td class="num"><strong>14</strong></td><td class="num">13</td><td class="num">11</td></tr><tr><td>collision</td><td class="num"><strong>14</strong></td><td class="num">12</td><td class="num">13</td></tr><tr><td>concept</td><td class="num"><strong>14</strong></td><td class="num">12</td><td class="num">10</td></tr></tbody></table></div>
 <h2 id="independent">Independent benchmark, 31 October 2026</h2>
 <div class="prose"><p>Seeded selection of 3 repos the tools never saw (zoxide, requests, gin), gold from language servers and repo history, published regardless of outcome. Tasks: dctx 22/28 points, 31/36 facts, 6.85 facts per 1k tokens (Trail-Code 19/28, graphify 14/28). Callers against LSP gold, first page: dctx P 0.730 / R 0.341, Trail-Code P 0.731 / R 0.313, graphify P 0.920 / R 0.264. Honest read: dctx leads on task answers and token efficiency; caller recall on unseen repos is far below the in-house corpus (0.851), so the caller floors above hold only for the curated corpora. Full table and raw JSON: <code>docs/research/bench-independent/results/20261031T191225Z/</code>.</p></div>
-<p class="note"><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L317" title="Source: docs/BENCHMARK-20261030.md">BENCHMARK-20261030.md</a></p>
+<p class="note"><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L321" title="Source: docs/BENCHMARK-20261030.md">BENCHMARK-20261030.md</a></p>
 <h2 id="cold-index">Cold index</h2>
 <div class="cols cols-2"><div>
 <p>Run 7 medians of three runs: dctx 0.13&ndash;1.20 s on 6 corpora, Trail-Code 1.04&ndash;52.83 s, graphify 4.59&ndash;59.56 s (5 corpora; no index on docs).</p>
 <div class="table-wrap"><table><caption><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/bench-3way-20261030/results/run7-53f8b6b/aggregate.json" title="Source: docs/research/bench-3way-20261030/results/run7-53f8b6b/aggregate.json">run7 aggregate.json</a></caption><thead><tr><th scope="col">corpus</th><th scope="col" class="num">dctx</th><th scope="col" class="num">Trail-Code</th><th scope="col" class="num">graphify</th></tr></thead><tbody><tr><td>flask</td><td class="num">0.13 s</td><td class="num">3.82 s</td><td class="num">8.02 s</td></tr><tr><td>ripgrep</td><td class="num">0.88 s</td><td class="num">3.21 s</td><td class="num">10.33 s</td></tr><tr><td>pocketbase</td><td class="num">0.93 s</td><td class="num">50.54 s</td><td class="num">59.56 s</td></tr><tr><td>trailcode</td><td class="num">1.20 s</td><td class="num">52.83 s</td><td class="num">45.55 s</td></tr><tr><td>mixed</td><td class="num">0.39 s</td><td class="num">3.97 s</td><td class="num">4.59 s</td></tr><tr><td>docs</td><td class="num">0.19 s</td><td class="num">1.04 s</td><td class="num">no index</td></tr></tbody></table></div>
 </div><div>
 <p>Run 1 (30 October), with peak memory and index size: median wall s, peak RSS of the largest process, index size.</p>
-<div class="table-wrap"><table><caption><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L240" title="Source: docs/BENCHMARK-20261030.md">BENCHMARK-20261030.md</a></caption><thead><tr><th scope="col">corpus</th><th scope="col">dctx</th><th scope="col">Trail-Code</th><th scope="col">graphify</th></tr></thead><tbody><tr><td>flask (Python)</td><td>0.16 s, 19 MB, 1.1 MB</td><td>4.17 s, 225 MB, 4.4 MB</td><td>8.13 s, 102 MB, 4.5 MB</td></tr><tr><td>ripgrep (Rust)</td><td>0.54 s, 25 MB, 2.2 MB</td><td>3.01 s, 303 MB, 8.4 MB</td><td>10.45 s, 93 MB, 8.6 MB</td></tr><tr><td>pocketbase (Go+JS)</td><td>0.91 s, 63 MB, 9.9 MB</td><td>50.63 s, 987 MB, 41.8 MB</td><td>58.96 s, 243 MB, 26.3 MB</td></tr><tr><td>trailcode (TS)</td><td>1.16 s, 90 MB, 14.8 MB</td><td>58.34 s, 1,020 MB, 41.1 MB</td><td>44.32 s, 394 MB, 11.9 MB</td></tr><tr><td>mixed (10 langs)</td><td>0.24 s, 74 MB, 2.8 MB</td><td>3.84 s, 470 MB, 12.8 MB</td><td>4.46 s, 74 MB, 2.2 MB</td></tr><tr><td>docs</td><td>0.18 s, 74 MB, 1.4 MB</td><td>1.17 s, 121 MB, 0.0 MB</td><td>failed: no index</td></tr></tbody></table></div>
+<div class="table-wrap"><table><caption><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L242" title="Source: docs/BENCHMARK-20261030.md">BENCHMARK-20261030.md</a></caption><thead><tr><th scope="col">corpus</th><th scope="col">dctx</th><th scope="col">Trail-Code</th><th scope="col">graphify</th></tr></thead><tbody><tr><td>flask (Python)</td><td>0.16 s, 19 MB, 1.1 MB</td><td>4.17 s, 225 MB, 4.4 MB</td><td>8.13 s, 102 MB, 4.5 MB</td></tr><tr><td>ripgrep (Rust)</td><td>0.54 s, 25 MB, 2.2 MB</td><td>3.01 s, 303 MB, 8.4 MB</td><td>10.45 s, 93 MB, 8.6 MB</td></tr><tr><td>pocketbase (Go+JS)</td><td>0.91 s, 63 MB, 9.9 MB</td><td>50.63 s, 987 MB, 41.8 MB</td><td>58.96 s, 243 MB, 26.3 MB</td></tr><tr><td>trailcode (TS)</td><td>1.16 s, 90 MB, 14.8 MB</td><td>58.34 s, 1,020 MB, 41.1 MB</td><td>44.32 s, 394 MB, 11.9 MB</td></tr><tr><td>mixed (10 langs)</td><td>0.24 s, 74 MB, 2.8 MB</td><td>3.84 s, 470 MB, 12.8 MB</td><td>4.46 s, 74 MB, 2.2 MB</td></tr><tr><td>docs</td><td>0.18 s, 74 MB, 1.4 MB</td><td>1.17 s, 121 MB, 0.0 MB</td><td>failed: no index</td></tr></tbody></table></div>
 </div></div>
 <h2 id="warm">Warm queries and answer size</h2>
-<div class="table-wrap"><table><caption>Run 1, median ms of 5 after one warm-up, including process start, and estimated tokens. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L261" title="Source: docs/BENCHMARK-20261030.md">BENCHMARK-20261030.md</a></caption><thead><tr><th scope="col">corpus</th><th scope="col">query</th><th scope="col">dctx</th><th scope="col">Trail-Code</th><th scope="col">graphify</th></tr></thead><tbody><tr><td>flask</td><td>search</td><td>81 ms, 218</td><td>1,066 ms, 262</td><td>564 ms, 1,845</td></tr><tr><td>flask</td><td>callers</td><td>47 ms, 479</td><td>988 ms, 136</td><td>381 ms, 32</td></tr><tr><td>flask</td><td>skeleton</td><td>44 ms, 866</td><td>991 ms, 852</td><td>514 ms, 474</td></tr><tr><td>flask</td><td>overview</td><td>45 ms, 491</td><td>1,009 ms, 1,122</td><td>7 ms, 5,930</td></tr><tr><td>pocketbase</td><td>search</td><td>213 ms, 259</td><td>1,573 ms, 358</td><td>1,393 ms, 97 (exit 3)</td></tr><tr><td>pocketbase</td><td>callers</td><td>214 ms, 464</td><td>1,195 ms, 175</td><td>777 ms, 24</td></tr><tr><td>pocketbase</td><td>overview</td><td>226 ms, 652</td><td>1,232 ms, 1,514</td><td>8 ms, 11,591</td></tr><tr><td>trailcode</td><td>callers</td><td>200 ms, 472</td><td>1,180 ms, 1,064</td><td>715 ms, 196</td></tr><tr><td>trailcode</td><td>overview</td><td>195 ms, 500</td><td>1,159 ms, 499</td><td>7 ms, 10,076</td></tr></tbody></table></div>
+<div class="table-wrap"><table><caption>Run 1, median ms of 5 after one warm-up, including process start, and estimated tokens. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L263" title="Source: docs/BENCHMARK-20261030.md">BENCHMARK-20261030.md</a></caption><thead><tr><th scope="col">corpus</th><th scope="col">query</th><th scope="col">dctx</th><th scope="col">Trail-Code</th><th scope="col">graphify</th></tr></thead><tbody><tr><td>flask</td><td>search</td><td>81 ms, 218</td><td>1,066 ms, 262</td><td>564 ms, 1,845</td></tr><tr><td>flask</td><td>callers</td><td>47 ms, 479</td><td>988 ms, 136</td><td>381 ms, 32</td></tr><tr><td>flask</td><td>skeleton</td><td>44 ms, 866</td><td>991 ms, 852</td><td>514 ms, 474</td></tr><tr><td>flask</td><td>overview</td><td>45 ms, 491</td><td>1,009 ms, 1,122</td><td>7 ms, 5,930</td></tr><tr><td>pocketbase</td><td>search</td><td>213 ms, 259</td><td>1,573 ms, 358</td><td>1,393 ms, 97 (exit 3)</td></tr><tr><td>pocketbase</td><td>callers</td><td>214 ms, 464</td><td>1,195 ms, 175</td><td>777 ms, 24</td></tr><tr><td>pocketbase</td><td>overview</td><td>226 ms, 652</td><td>1,232 ms, 1,514</td><td>8 ms, 11,591</td></tr><tr><td>trailcode</td><td>callers</td><td>200 ms, 472</td><td>1,180 ms, 1,064</td><td>715 ms, 196</td></tr><tr><td>trailcode</td><td>overview</td><td>195 ms, 500</td><td>1,159 ms, 499</td><td>7 ms, 10,076</td></tr></tbody></table></div>
 <h2 id="stability">Byte stability</h2>
 <div class="table-wrap"><table><caption>Build <code>0495f5f</code>, 6 November 2026, three pinned corpora, 11 query shapes each. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/REPORT.md#L8" title="Source: docs/research/stability-20261105/REPORT.md">REPORT.md</a> &middot; <a href="/docs/stability/">full report</a></caption><thead><tr><th scope="col">Measurement</th><th scope="col" class="num">Text</th><th scope="col" class="num">JSON</th></tr></thead><tbody><tr><td>Answers identical after unrelated edit</td><td class="num">33/33</td><td class="num">33/33</td></tr><tr><td>Answers identical over five separate invocations</td><td class="num">33/33</td><td class="num">33/33</td></tr><tr><td>Baseline <span class="glyph-wrap" role="img" aria-label="-&gt;"><svg class="glyph" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 12h18m-6-6 6 6-6 6"/></svg></span> post-edit common-prefix ratio, minimum / mean</td><td class="num">1.0 / 1.0</td><td class="num">1.0 / 1.0</td></tr><tr><td>Consecutive same-request transitions, five per case</td><td class="num">165</td><td class="num">165</td></tr><tr><td>Same-request M7, minimum / mean</td><td class="num">1.0 / 1.0</td><td class="num">1.0 / 1.0</td></tr><tr><td>Consecutive changing-question transitions</td><td class="num">195</td><td class="num">195</td></tr><tr><td>Changing-question M7, minimum / median / mean</td><td class="num">0.007795889 / 0.107142857 / 0.214830257</td><td class="num">0.008776458 / 0.067594433 / 0.182446794</td></tr><tr><td>Changing-question M7, total prefix bytes / total current bytes</td><td class="num">0.061846978</td><td class="num">0.079892615</td></tr></tbody></table></div>
 <h2 id="not-claimed">Not claimed</h2>
-<div class="prose"><ul>
-<li>Whole-session cost or task-level answer quality with a frozen model. Historical fact scores describe raw tool outputs only.</li>
+<div class="prose"><p>These exclusions apply to the historical tool-output protocols below the whole-session summary above.</p>
+<ul>
+<li>Whole-session cost or task-level answer quality from these historical protocols. Historical fact scores describe raw tool outputs only; the <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261111.md">11 November study</a> measures whole sessions with a frozen model.</li>
 <li>Anything about graphify's LLM semantic graph, or Trail-Code's learnings and LSP edges.</li>
-<li>SWE-bench or agent-run numbers.</li>
+<li>SWE-bench scores or agent-run numbers from these historical tool-output protocols.</li>
 <li>Equal language depth. dctx's 25 new formats are outline tier: symbols, not call edges.</li>
 </ul></div>
-<h2 id="raw">Raw data</h2>
+<h2 id="raw">Historical raw data</h2>
+<p>The whole-session corpus and raw answers are private and cannot be published. The links below cover only the historical studies.</p>
 <ul><li><a href="https://github.com/Eris-Margeta/dctx/tree/main/docs/research/bench-3way-20261030/">docs/research/bench-3way-20261030/</a>: questions, gold facts, scorer, raw results and scripts</li>
 <li><a href="/docs/benchmark/">The full write-up</a>, with every run and the method</li>
 <li><a href="/docs/benchmark-oct/">The earlier two-way study</a> (October 2026, before call edges)</li></ul>

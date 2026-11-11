@@ -66,14 +66,14 @@
   "Project binary (Node from npm; Python and Go from CI): a binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Application code and CI call this one; a library never silently falls back to PATH.",
   "Same engine, different owner. `dctx doctor` lists every binary in reach; verify each against SHA256SUMS and its cosign signature."
  ],
- "notice": "dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.",
+ "notice": "dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.",
  "benchmarks": {
   "baseline": "grep plus reading files",
   "claims": [
    {
-    "status": "being prepared",
-    "text": "A whole-session benchmark against grep plus file reads (every model turn, startup and tool definitions counted) is being prepared and will be published with raw data. No session saving is claimed yet.",
-    "link": "/docs/benchmark/"
+    "status": "measured",
+    "text": "11 November 2026: 20 questions, a private 13-crate Rust workspace, claude-sonnet-5-5, dctx 1.3.0, three repeats per arm. Median total tokens [min, max]: grep plus reads (A) 14,904,014 [14,604,149, 15,622,381]; warm dctx CLI (B) 14,157,974 [11,221,908, 15,613,375]; fresh-cache dctx MCP (C), startup/indexing measured, 15,922,125 [15,513,198, 16,700,029]. B versus A: -5.01 %. On this corpus and model dctx did not save 25 % tokens; the pre-registered rule was not met. Official strict citation recall medians [min, max], A/B/C: 10.10 % [10.10, 20.73] / 14.46 % [8.36, 22.65] / 13.41 % [12.02, 66.72]. Diagnostic file-level recall medians: 53.77 % / 71.70 % / 76.42 %; diagnostic, not a replacement metric. The claim is accuracy and bounded context, not token savings: B and C named more required files at about equal (B) or higher (C) token cost. C cost +6.8 % tokens and +30 % wall time. dctx on its own does not save tokens by default. Savings come from a harness or agent system reusing byte-identical, prefix-stable context across long sessions over a large body of work, with complete control over every byte. There is no measured, citable savings figure for such a system yet. One corpus, one model, no significance claim; corpus and raw answers private and cannot be published; dctx 1.3.0 is not current HEAD. Under ~200 files, use grep.",
+    "link": "/benchmarks/#grep-read"
    },
    {
     "status": "measured",

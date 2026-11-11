@@ -1,6 +1,6 @@
 # dctx
 
-> dctx turns any folder into the smallest correct context for a task, offline, with byte-stable output that prompt caches can reuse. dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.
+> dctx turns any folder into the smallest correct context for a task, offline, with byte-stable output that prompt caches can reuse. dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.
 
 **About this file**
 
@@ -8,7 +8,7 @@
 - Engine: dctx 1.3.1. Document captures are the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs them and fails on any byte of drift. Read the pack at https://www.dctx.internet.technology/llms-full.txt.
 - Docs commit: b91176b2f3adac457d8566970346bddf7855cc9c (2026-11-11T10:45:25+01:00), the last commit that changed one of the documents.
 - Command: `dctx pack . --include /docs/START.md --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md`
-- Document capture budget: 18,976 of 20,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
+- Document capture budget: 19,673 of 20,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
 
 **Facts**
 
@@ -48,13 +48,13 @@ Two scopes, one binary:
 
 **Before you start**
 
-> dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.
+> dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.
 
 **Benchmarks**
 
 Baseline: grep plus reading files.
 
-- Being prepared: A whole-session benchmark against grep plus file reads (every model turn, startup and tool definitions counted) is being prepared and will be published with raw data. No session saving is claimed yet. https://www.dctx.internet.technology/docs/benchmark/
+- Measured: 11 November 2026: 20 questions, a private 13-crate Rust workspace, claude-sonnet-5-5, dctx 1.3.0, three repeats per arm. Median total tokens [min, max]: grep plus reads (A) 14,904,014 [14,604,149, 15,622,381]; warm dctx CLI (B) 14,157,974 [11,221,908, 15,613,375]; fresh-cache dctx MCP (C), startup/indexing measured, 15,922,125 [15,513,198, 16,700,029]. B versus A: -5.01 %. On this corpus and model dctx did not save 25 % tokens; the pre-registered rule was not met. Official strict citation recall medians [min, max], A/B/C: 10.10 % [10.10, 20.73] / 14.46 % [8.36, 22.65] / 13.41 % [12.02, 66.72]. Diagnostic file-level recall medians: 53.77 % / 71.70 % / 76.42 %; diagnostic, not a replacement metric. The claim is accuracy and bounded context, not token savings: B and C named more required files at about equal (B) or higher (C) token cost. C cost +6.8 % tokens and +30 % wall time. dctx on its own does not save tokens by default. Savings come from a harness or agent system reusing byte-identical, prefix-stable context across long sessions over a large body of work, with complete control over every byte. There is no measured, citable savings figure for such a system yet. One corpus, one model, no significance claim; corpus and raw answers private and cannot be published; dctx 1.3.0 is not current HEAD. Under ~200 files, use grep. https://www.dctx.internet.technology/benchmarks/#grep-read
 - Measured: Byte stability: the same query on unchanged code returns the same bytes; 33 of 33 text and JSON answers were byte-identical after unrelated edits (Linux only). https://www.dctx.internet.technology/docs/stability/
 - Historical: The October and November in-house numbers (run 7: 140 of 140 task questions, cold index and warm latency) measure tool output only, as estimated stdout tokens and raw fact coverage without a model; they are not agent completion rates or session costs. https://www.dctx.internet.technology/benchmarks/
 - Hypothesis: That a pack template changes model answer quality or cost is a hypothesis pending an A/B test; nothing on this site measures it. https://www.dctx.internet.technology/templates/

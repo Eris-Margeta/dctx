@@ -92,8 +92,15 @@ def facts() -> tuple[str, int]:
 
 
 def bench_table() -> str:
-    return ('<p>The baseline is grep plus reading files. A controlled whole-session benchmark against it is being '
-            'prepared; see <a href="/benchmarks/">benchmarks</a> for what has been measured so far.</p>')
+    return ('<p>The baseline is grep plus reading files. The measured whole-session benchmark found '
+            'a -5.01 % change in median total tokens with warm dctx CLI; the 25 % savings rule was not met. '
+            'On this corpus and model dctx did not save 25 % tokens. The claim is accuracy and bounded context: '
+            'CLI and MCP named more required files at about equal or higher token cost. '
+            'dctx on its own does not save tokens by default. Savings come from a harness or agent system '
+            'that reuses byte-identical, prefix-stable context across long sessions over a large body of work, '
+            'with complete control over every byte. No measured savings figure exists for such a system yet. '
+            'See <a href="/why/#savings-belong-to-the-system">the caching philosophy</a> and '
+            '<a href="/benchmarks/#grep-read">both recall metrics, median and spread, and limitations</a>.</p>')
 
 
 ANIMATIONS = ("two_scopes", "calls_times_context", "prefix_stability", "giant_folder", "safe_path")

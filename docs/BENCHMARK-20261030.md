@@ -9,7 +9,9 @@ tool descriptions, conversation replay, model output and provider cache effects.
 
 ## Grep plus file reads
 
-The headline baseline is grep plus reading files. A controlled benchmark against it, counting whole agent sessions, is being prepared and will be published with raw data; no result is claimed here yet.
+The [11 November whole-session benchmark](BENCHMARK-20261111.md) measured grep plus reads against dctx CLI and MCP: CLI median total tokens -5.01 %; the pre-registered 25 % savings rule was not met.
+Official strict citation recall medians (A/B/C): 10.10 % / 14.46 % / 13.41 %; diagnostic file-level recall: 53.77 % / 71.70 % / 76.42 %. The claim is accuracy and bounded context, not token savings.
+On this corpus and model dctx did not save 25 % tokens; MCP cost +6.8 % tokens and +30 % wall time. The linked report gives median [min, max], methods and limitations; corpus and raw answers are private.
 
 ## Secondary historical evidence: other-tool protocols
 
@@ -293,9 +295,11 @@ All corpora and the edit-stability, network and coverage tables are in
 
 ## Not claimed
 
-- Whole-session cost or task-level answer quality with a frozen model. Historical fact scores describe raw tool outputs only.
+These exclusions apply to the historical tool-output protocols below the whole-session summary above.
+
+- Whole-session cost or task-level answer quality from these historical protocols. Historical fact scores describe raw tool outputs only; the [11 November study](BENCHMARK-20261111.md) measures whole sessions with a frozen model.
 - Anything about graphify's LLM semantic graph, or Trail-Code's learnings and LSP edges.
-- SWE-bench or agent-run numbers.
+- SWE-bench scores or agent-run numbers from these historical tool-output protocols.
 - Equal language depth. dctx's 25 new formats are outline tier: symbols, not call edges.
 
 ## Changes included in the October baseline
