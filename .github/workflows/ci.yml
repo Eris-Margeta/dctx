@@ -141,8 +141,13 @@ jobs:
       - name: Install network trace tool
         id: network_tool
         run: |
-          sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends strace
+          # hosted-runner apt mirror (azure.archive.ubuntu.com) has DNS outages: add a fallback mirror, then retry
+          if [ -f /etc/apt/apt-mirrors.txt ]; then echo 'http://archive.ubuntu.com/ubuntu/' | sudo tee -a /etc/apt/apt-mirrors.txt >/dev/null; fi
+          for attempt in 1 2 3 4 5; do
+            sudo apt-get update && sudo apt-get install --yes --no-install-recommends strace && break
+            if [ "$attempt" = 5 ]; then exit 1; fi
+            sleep 30
+          done
 
       - name: Release gates
         run: scripts/release-check.sh --quick "$GITHUB_WORKSPACE/target/release/dctx-cli"

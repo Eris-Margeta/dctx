@@ -67,8 +67,13 @@ jobs:
       - name: Install native musl compiler
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends musl-tools
+          # hosted-runner apt mirror (azure.archive.ubuntu.com) has DNS outages: add a fallback mirror, then retry
+          if [ -f /etc/apt/apt-mirrors.txt ]; then echo 'http://archive.ubuntu.com/ubuntu/' | sudo tee -a /etc/apt/apt-mirrors.txt >/dev/null; fi
+          for attempt in 1 2 3 4 5; do
+            sudo apt-get update && sudo apt-get install --yes --no-install-recommends musl-tools && break
+            if [ "$attempt" = 5 ]; then exit 1; fi
+            sleep 30
+          done
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           key: python-${{ matrix.target }}
