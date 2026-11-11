@@ -45,6 +45,7 @@ enum Destination {
 
 struct Plan {
     path: PathBuf,
+    also: Vec<PathBuf>,
     destination: Destination,
     /// Summary report encoding. `None` selects the source-bearing page.
     report_format: Option<u32>,
@@ -72,6 +73,7 @@ pub struct PackOutcome {
 fn flag_help() -> &'static str {
     "\
 Pack filters (ADR-011, ADR-009):
+  --also <dir>          Add a read-only root (repeatable); paths carry directory labels
   --ext <extensions>    Only files with these extensions (comma-separated)
   --binary              Include binary files (omitted by default)
   --empty               Only 0-byte files
@@ -365,7 +367,12 @@ fn facade_summary(plan: &Plan) -> Result<PackOutcome, Failure> {
     // (Windows directory guards deny write sharing), so it must be gone before `--output` is
     // renamed into place: the output may sit in the project or in any of its ancestors.
     let report = {
-        let mut session = host::open_dir(&plan.path).map_err(pack_io_failure)?;
+        let mut session = if plan.also.is_empty() {
+            host::open_dir(&plan.path)
+        } else {
+            host::open_mapped_roots(&plan.path, &plan.also).map(|v| v.0)
+        }
+        .map_err(pack_io_failure)?;
         session
             .pack(&request, &mut sink)
             .map_err(pack_facade_failure)?
@@ -399,10 +406,24 @@ fn source_markers(
     plan: &Plan,
     spool: Option<&mut spool::Spool>,
 ) -> Result<(dctx_template::MarkerNode, u64, dctx_template::LegacyOutput), Failure> {
-    let rules = host::project_rules(&plan.path).map_err(pack_io_failure)?;
+    let rules = if plan.also.is_empty() {
+        host::project_rules(&plan.path).map_err(pack_io_failure)?
+    } else {
+        dctx::RuleSources::default()
+    };
     let policy = rules.policy();
     let request = view_request(&plan.filters);
-    let inner = dctx::FsSource::open(&plan.path).map_err(pack_facade_failure)?;
+    let single;
+    let union;
+    let inner: &dyn dctx::Source = if plan.also.is_empty() {
+        single = dctx::FsSource::open(&plan.path).map_err(pack_facade_failure)?;
+        &single
+    } else {
+        union = host::union_source(&plan.path, &plan.also)
+            .map_err(pack_io_failure)?
+            .0;
+        &union
+    };
     let report_reads = std::env::var("DCTX_READ_REPORT").ok().as_deref() == Some("1");
     let hidden = spool.as_deref().and_then(spool::Spool::hidden).cloned();
     let frozen_parent = spool
@@ -469,6 +490,7 @@ fn facade_scan_limits() -> Result<PackLimits, Failure> {
 }
 
 fn parse(args: &[String]) -> Result<Plan, String> {
+    let (args, also) = host::also_arguments(args)?;
     if args.first().map(String::as_str) != Some("pack") {
         return Err("expected pack".to_string());
     }
@@ -580,6 +602,7 @@ fn parse(args: &[String]) -> Result<Plan, String> {
     };
     Ok(Plan {
         path,
+        also,
         destination,
         report_format: if json { Some(2) } else { None },
         filters,

@@ -11,6 +11,45 @@ dctx and this guide are Apache-2.0.
 For a tool client, see the [MCP server guide](MCP.md), including the opt-in lean
 profile and custom tool subsets.
 
+## Definitions outside the index
+
+For `find`, `neighbors`, `explain`, `read`, `grep` and `context`, a literal local
+import can explain a missing definition. When an eligible referenced file defines
+the requested or imported name, the page includes:
+
+```text
+defined outside index: ../lib/shared.py
+add it with --also ../lib
+```
+
+JSON adds `defined_outside_index`, an array of objects with `path` and `hint`.
+The notice does not turn a missing result into a successful indexed result.
+The fallback checks literal relative imports/includes, Rust path attributes and
+path dependencies, plus sibling Python `from` and Rust `use` targets. It searches
+only below the indexed directory's parent; it does not consult package managers,
+environment search paths or arbitrary sibling files. It uses the same ignore,
+omit and sensitive-file policy and refuses symlink components. Its limits are
+256 file attempts, 2 MiB of source bytes, 64 KiB per file, 2048 directory entries,
+16 directory levels and 100 ms. Results are sorted by displayed path. A bounded
+scan can miss definitions; this is a hint rather than semantic resolution.
+
+Add roots explicitly to query their definitions and source together:
+
+```sh
+dctx map find shared --place app --also lib
+dctx map read 's:lib/shared.py#shared' --place app --also lib
+dctx context shared --place app --also lib
+dctx pack app --also lib --for 'shared'
+```
+
+`--also DIR` is repeatable on every map verb, `pack` and `context`. Directories
+are relative to the invocation directory. With extra roots, all paths and IDs
+carry their root directory label, for example `s:app/main.py#run` and
+`s:lib/shared.py#shared`. Root labels must be distinct. Each root keeps its own
+selection rules and is read-only. The canonical, sorted root set keys the cache;
+changing the order of `--also` does not change identities or reuse another set's
+index. Without extra roots, existing IDs stay unchanged.
+
 ## Commands
 
 ```text

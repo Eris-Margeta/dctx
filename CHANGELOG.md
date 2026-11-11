@@ -14,6 +14,14 @@ and distribution plans below do not describe the current release.
 
 ## [Unreleased]
 
+### Added
+
+- Map and context pages report eligible definitions outside the index with a
+  relative path and an `--also` hint. A bounded local-import fallback respects
+  ignore, omit and sensitive-file rules and refuses symlinks.
+- Repeatable `--also DIR` on map verbs, pack and context joins read-only roots
+  with root-labeled IDs and a cache identity covering the complete root set.
+
 ### Fixed
 
 - Map query bounds errors name the offending option, its value, the user-facing

@@ -27,8 +27,13 @@ use dctx_core::ItemContext;
 
 mod cache;
 mod inventory;
+mod outside;
 mod policy;
+mod roots;
 mod rules;
+pub use outside::outside_notice;
+pub(crate) use roots::union_source;
+pub use roots::{also_arguments, open_mapped_roots};
 
 pub use cache::*;
 
@@ -132,9 +137,22 @@ pub fn reuse_report_enabled() -> bool {
 /// # Errors
 /// Returns invalid paths, source/rule failures, or a read above the 8 MiB source ceiling.
 pub fn read_included_file(place: &Path, relative: &str) -> Result<Option<Vec<u8>>, String> {
+    read_included_file_bounded(place, relative, 8 * 1024 * 1024)
+}
+
+fn read_included_file_bounded(
+    place: &Path,
+    relative: &str,
+    cap: u64,
+) -> Result<Option<Vec<u8>>, String> {
     use dctx_core::facts::ReadGrant;
     use dctx_core::ids::RelativePath;
     let path = RelativePath::parse(relative).map_err(|error| error.to_string())?;
+    if dctx_core::filter::has_git_segment(relative)
+        || dctx_core::filter::is_secret_shaped_name(path.name())
+    {
+        return Ok(None);
+    }
     let source = FsSource::open(place).map_err(|error| error.to_string())?;
     // Only rule files that can affect this path: its ancestors' and its own. Loading the whole
     // project's nested rules here walked every directory on each targeted read.
@@ -157,7 +175,7 @@ pub fn read_included_file(place: &Path, relative: &str) -> Result<Option<Vec<u8>
         return Ok(None);
     };
     source
-        .read(&grant, 8 * 1024 * 1024)
+        .read(&grant, cap)
         .map(Some)
         .map_err(|error| error.to_string())
 }
