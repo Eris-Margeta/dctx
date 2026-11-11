@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use dctx::context::{ContextSessions, NamedContextRequest};
 use dctx_cli::exit::{self, CommandOutput, Failure};
 
-const HELP: &str = "Usage: dctx context TARGET [TARGET ...] [--place PATH] [--budget N] [--json] [--session ID --dedupe]\nReturn minimal ranked context for a file, symbol name or stable node id.\nRepeated targets share a delivery session within this invocation. MCP/RPC retain sessions\nuntil the connection closes. --dedupe requires --session; new processes emit full chunks.\n";
+const HELP: &str = "Usage: dctx context TARGET [TARGET ...] [--place PATH] [--also DIR ...] [--budget N] [--json] [--session ID --dedupe]\nReturn minimal ranked context for a file, symbol name or stable node id.\nRepeated targets share a delivery session within this invocation. MCP/RPC retain sessions\nuntil the connection closes. --dedupe requires --session; new processes emit full chunks.\n";
 
 /// Connection-local engine delivery state. The adapter only parses and transports pages.
 #[derive(Default)]
@@ -27,9 +27,10 @@ impl Runtime {
                 failure: None,
             });
         }
-        let (place, requests) = parse(args).map_err(usage)?;
+        let (args, also) = dctx_cli::host::also_arguments(args).map_err(usage)?;
+        let (place, requests) = parse(&args).map_err(usage)?;
         // Validate every request before opening a source or emitting any page.
-        let (mut session, key) = dctx_cli::host::open_mapped(&place)
+        let (mut session, key) = dctx_cli::host::open_mapped_roots(&place, &also)
             .map_err(|message| Failure::index(message, "pass an existing --place PATH"))?;
         let handle = session
             .snapshot_reusable(&dctx::SnapshotRequest::strict(), &key)
@@ -42,7 +43,14 @@ impl Runtime {
                 .context(&mut session, &handle, request)
                 .map_err(facade)?;
             missing |= report.chunks.is_empty();
-            stdout.push_str(&report.text);
+            stdout.push_str(&dctx_cli::host::outside_notice(
+                &place,
+                &also,
+                &request.target,
+                report.text,
+                request.output_format == 2,
+                !report.chunks.is_empty(),
+            ));
         }
         *self.0.borrow_mut() = history;
         Ok(CommandOutput {
@@ -80,7 +88,7 @@ pub(crate) fn has_flag(args: &[String], flag: &str) -> bool {
         match word.as_str() {
             "--" => break,
             value if value == flag => return true,
-            "--place" | "--budget" | "--session" | "--for" => {
+            "--place" | "--also" | "--budget" | "--session" | "--for" => {
                 words.next();
             }
             _ => {}

@@ -20,10 +20,50 @@ pub(super) fn prepare(verb: QueryVerb, target: &str, place: &Path) -> Result<Str
         Ok(_) => Err(format!(
             "{relative} is a directory; pass a file path or a stable id"
         )),
+        Err(_) if !relative.contains('/') && !relative.contains('.') => Ok(relative.to_string()),
         Err(_) => Err(format!(
             "{relative} is not an existing file; pass a stable id or a place-relative file path"
         )),
     }
+}
+
+/// Prepares directory-labeled file targets for an explicit root union.
+pub(super) fn prepare_roots(
+    verb: QueryVerb,
+    target: &str,
+    place: &Path,
+    also: &[std::path::PathBuf],
+) -> Result<String, String> {
+    if also.is_empty() || verb == QueryVerb::Find || is_stable_target(target) {
+        return prepare(verb, target, place);
+    }
+    let relative = target.strip_prefix("./").unwrap_or(target);
+    if !is_relative_file(relative) {
+        return prepare(verb, target, place);
+    }
+    if place.join(relative).is_file() {
+        let canonical = place.canonicalize().map_err(|error| error.to_string())?;
+        let label = canonical
+            .file_name()
+            .and_then(|name| name.to_str())
+            .ok_or("invalid root label")?;
+        return Ok(format!("m:{label}/{relative}"));
+    }
+    if let Some((label, _)) = relative.split_once('/') {
+        if also
+            .iter()
+            .map(std::path::PathBuf::as_path)
+            .chain(std::iter::once(place))
+            .any(|root| {
+                root.canonicalize()
+                    .ok()
+                    .is_some_and(|root| root.file_name().is_some_and(|name| name == label))
+            })
+        {
+            return Ok(format!("m:{relative}"));
+        }
+    }
+    prepare(verb, target, place)
 }
 
 /// True for `@<6 hex>` and `<p|k|m|s|t|d>:<rest>` ids.

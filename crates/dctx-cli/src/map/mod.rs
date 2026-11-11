@@ -146,6 +146,8 @@ fn answer_with(
         }
     }
     let usage = |message: String| failure::usage(arguments, message);
+    let (arguments, also) = host::also_arguments(arguments).map_err(usage)?;
+    let arguments = arguments.as_slice();
     let mut options = args::parse(arguments).map_err(usage)?;
     if let Ok(focus) = std::env::var("DCTX_MAP_FOCUS") {
         options.request.focus = focus
@@ -170,15 +172,18 @@ fn answer_with(
         ));
     }
     if !options.hubs && options.export.is_none() {
-        options.request.target = target::prepare(
+        options.request.target = target::prepare_roots(
             options.request.verb,
             &options.request.target,
             &options.place,
+            &also,
         )
         .map_err(usage)?;
         if let Some(to) = options.to.take() {
-            options.to =
-                Some(target::prepare(options.request.verb, &to, &options.place).map_err(usage)?);
+            options.to = Some(
+                target::prepare_roots(options.request.verb, &to, &options.place, &also)
+                    .map_err(usage)?,
+            );
         }
         failure::targets(&options)?;
     }
@@ -197,15 +202,20 @@ fn answer_with(
     if options.skeleton {
         skeleton::retarget(&mut request, options.budget_set);
     }
-    let scope = if options.hubs || options.export.is_some() || options.to.is_some() {
-        None
-    } else {
-        request.source_scope()
-    };
+    let scope =
+        if !also.is_empty() || options.hubs || options.export.is_some() || options.to.is_some() {
+            None
+        } else {
+            request.source_scope()
+        };
     let profiling = profile_requested(options.profile);
     let host_start = profiling.then(std::time::Instant::now);
-    let (mut session, key) =
-        open(&options.place, scope).map_err(|message| failure::place(&options.place, &message))?;
+    let (mut session, key) = if also.is_empty() {
+        open(&options.place, scope)
+    } else {
+        host::open_mapped_roots(&options.place, &also)
+    }
+    .map_err(|message| failure::place(&options.place, &message))?;
     let host_elapsed = host_start.map(|start| start.elapsed());
     if profiling {
         session.enable_profile();
@@ -251,6 +261,19 @@ fn answer_with(
             .map(Answered::page)
             .map_err(failure::answer);
     }
+    if !matches!(request.verb, Verb::Find | Verb::Grep)
+        && !request.target.contains(':')
+        && !request.target.starts_with('@')
+    {
+        let mut find = MapRequest::new(Verb::Find);
+        find.query.clone_from(&request.target);
+        let found = session
+            .query(&handle, &find, &mut VecSink::new())
+            .map_err(|error| failure::snapshot(&error))?;
+        if let Some(record) = found.records.first() {
+            request.target.clone_from(&record.id);
+        }
+    }
     let mut sink = VecSink::new();
     let queried = if profiling {
         session.query_for_profile(&handle, &request, &mut sink)
@@ -278,10 +301,31 @@ fn answer_with(
         Some(IdentityOutcome::Gone { id }) => Some(failure::gone(id)),
         _ => None,
     };
-    Ok(Answered {
-        page: String::from_utf8_lossy(sink.as_bytes()).into_owned(),
-        missing,
-    })
+    let page = String::from_utf8_lossy(sink.as_bytes()).into_owned();
+    let indexed_definition = matches!(request.verb, Verb::Find | Verb::Grep)
+        && answer.records.iter().any(|record| {
+            record
+                .id
+                .rsplit_once('#')
+                .is_some_and(|(_, name)| name == options.request.target)
+        });
+    let page = if !indexed_definition
+        && matches!(
+            request.verb,
+            Verb::Find | Verb::Grep | Verb::Neighbors | Verb::Explain | Verb::Read
+        ) {
+        host::outside_notice(
+            &options.place,
+            &also,
+            &options.request.target,
+            page,
+            request.output_format == 2,
+            missing.is_none() && !matches!(request.verb, Verb::Find | Verb::Grep),
+        )
+    } else {
+        page
+    };
+    Ok(Answered { page, missing })
 }
 
 /// `--profile` or `DCTX_PROFILE=1`. Map switches are flags; this env matches `DCTX_REUSE_REPORT`.

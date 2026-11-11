@@ -43,6 +43,7 @@ pub(super) const HELP: &str = "Usage: dctx map <map|find|neighbors|explain|read|
                           in source order: id, kind, L<start>-<end>, signature.
                           A file path is read as m:<path>. Omitting TARGET does not scan.
   --json                  Facade JSON v2, including the precision label
+  --also DIR              Add a read-only root (repeatable); paths and ids carry directory labels
   --place PATH            Place or worktree root (default: current directory)
   --meta                  Restore the snapshot digest and generation in the text header and the snapshot, generation and age_s JSON fields.
                           Without it the answer bytes do not change across unrelated edits or time.

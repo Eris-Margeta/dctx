@@ -20,7 +20,13 @@ and distribution plans below do not describe the current release.
   choosing dctx or grep and using dctx from coding agents.
 - Windows CI reports warm per-call `dctx map find` p50/p95 latency over 50 separate
   process invocations on a fixed fixture, with raw samples uploaded as an artifact.
-  The measurement is informational and does not fail CI.
+  The measurement is informational and does not fail CI. First result (release
+  build, GitHub-hosted windows-2022, stable): p50 10.2 ms, p95 11.3 ms.
+- Map and context pages report eligible definitions outside the index with a
+  relative path and an `--also` hint. A bounded local-import fallback respects
+  ignore, omit and sensitive-file rules and refuses symlinks.
+- Repeatable `--also DIR` on map verbs, pack and context joins read-only roots
+  with root-labeled IDs and a cache identity covering the complete root set.
 
 ### Fixed
 

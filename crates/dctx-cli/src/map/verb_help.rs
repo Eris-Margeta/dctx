@@ -7,52 +7,52 @@
 pub(super) fn text(verb: &str) -> Option<String> {
     let (usage, about, example) = match verb {
         "map" => (
-            "map <TARGET> [--depth 1..3] [--limit N] [--cursor TOKEN] [--json] [--place PATH] [--meta]",
+            "map <TARGET> [--depth 1..3] [--limit N] [--cursor TOKEN] [--json] [--place PATH] [--also DIR ...] [--meta]",
             "Outline of a file (m:<path> or a place-relative path) or a symbol and what it contains.",
             "dctx map map src/lib.rs --depth 2",
         ),
         "find" => (
-            "find <QUERY> [--kind fn,type,doc] [--in PATH] [--limit 1..40] [--cursor TOKEN] [--json] [--place PATH] [--meta]",
+            "find <QUERY> [--kind fn,type,doc] [--in PATH] [--limit 1..40] [--cursor TOKEN] [--json] [--place PATH] [--also DIR ...] [--meta]",
             "Ranked symbols, modules, headings and config keys whose name or summary matches QUERY.",
             "dctx map find 'ignore rules' --json",
         ),
         "neighbors" => (
-            "neighbors <TARGET> [--dir in|out|both] [--edge calls,imports] [--depth 1..4] [--limit N] [--json] [--place PATH] [--meta]",
+            "neighbors <TARGET> [--dir in|out|both] [--edge calls,imports] [--depth 1..4] [--limit N] [--json] [--place PATH] [--also DIR ...] [--meta]",
             "Edges of one node: callers with --dir in --edge calls, callees with --dir out.",
             "dctx map neighbors 's:src/lib.rs#run' --dir in --edge calls",
         ),
         "explain" => (
-            "explain <TARGET> [--budget 1..1000] [--json] [--place PATH] [--meta]",
+            "explain <TARGET> [--budget 1..1000] [--json] [--place PATH] [--also DIR ...] [--meta]",
             "One node with its signature and summary, no body.",
             "dctx map explain 's:src/lib.rs#run'",
         ),
         "read" => (
-            "read <TARGET> [--lines A-B] [--full] [--budget TOKENS] [--cursor TOKEN] [--json] [--place PATH] [--meta]",
+            "read <TARGET> [--lines A-B] [--full] [--budget TOKENS] [--cursor TOKEN] [--json] [--place PATH] [--also DIR ...] [--meta]",
             "The verified source text of one node; a long node pages with --cursor.",
             "dctx map read 's:src/lib.rs#run' --lines 10-40",
         ),
         "skeleton" => (
-            "skeleton <FILE> [--budget TOKENS] [--json] [--place PATH] [--meta]",
+            "skeleton <FILE> [--budget TOKENS] [--json] [--place PATH] [--also DIR ...] [--meta]",
             "Declaration signatures of one file in source order, no bodies.",
             "dctx map skeleton src/lib.rs",
         ),
         "grep" => (
-            "grep <LITERAL> [-i] [--in PATH] [--limit N] [--json] [--place PATH] [--meta]",
+            "grep <LITERAL> [-i] [--in PATH] [--limit N] [--json] [--place PATH] [--also DIR ...] [--meta]",
             "Exhaustive literal search of indexed files, hits grouped by enclosing symbol.",
             "dctx map grep TODO --in src",
         ),
         "hubs" => (
-            "hubs [--limit 1..60] [--budget TOKENS] [--json] [--place PATH] [--meta]",
+            "hubs [--limit 1..60] [--budget TOKENS] [--json] [--place PATH] [--also DIR ...] [--meta]",
             "Most-called symbols and per-directory file and symbol counts. No TARGET.",
             "dctx map hubs --limit 10",
         ),
         "path" => (
-            "path <FROM> <TO> [--budget TOKENS] [--json] [--place PATH] [--meta]",
+            "path <FROM> <TO> [--budget TOKENS] [--json] [--place PATH] [--also DIR ...] [--meta]",
             "Shortest edge path (calls, imports, contains; at most 8 hops) between two nodes, or `no path`.",
             "dctx map path 's:src/main.rs#main' 's:src/lib.rs#run'",
         ),
         "export" => (
-            "export [--format json|mermaid] [--output PATH] [--place PATH]",
+            "export [--format json|mermaid] [--output PATH] [--place PATH] [--also DIR ...]",
             "The whole graph as one deterministic document. No TARGET, no token cap.",
             "dctx map export --format mermaid --output graph.mmd",
         ),

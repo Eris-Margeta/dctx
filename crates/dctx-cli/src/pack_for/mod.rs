@@ -42,9 +42,10 @@ pub(crate) fn output(args: &[String]) -> Result<crate::exit::CommandOutput, Fail
 /// The page, its status, and whether the text read as prose without identifiers.
 fn transaction(args: &[String]) -> Result<(crate::exit::CommandOutput, bool), Failure> {
     let plan = parse(args).map_err(|message| Failure::usage(message, HELP_HINT).within("pack"))?;
-    let (mut session, key) = crate::host::open_mapped(&plan.place).map_err(|message| {
-        Failure::index(message, "pass an existing project directory as PATH").within("pack")
-    })?;
+    let (mut session, key) =
+        crate::host::open_mapped_roots(&plan.place, &plan.also).map_err(|message| {
+            Failure::index(message, "pass an existing project directory as PATH").within("pack")
+        })?;
     let handle = session
         .snapshot_reusable(&dctx::SnapshotRequest::strict(), &key)
         .map_err(|error| exit::from_facade(&error, "dctx pack --help"))?;
@@ -83,12 +84,14 @@ fn transaction(args: &[String]) -> Result<(crate::exit::CommandOutput, bool), Fa
 #[derive(Debug, PartialEq, Eq)]
 struct Plan {
     place: PathBuf,
+    also: Vec<PathBuf>,
     text: String,
     budget: u32,
     json: bool,
 }
 
 fn parse(args: &[String]) -> Result<Plan, String> {
+    let (args, also) = crate::host::also_arguments(args)?;
     let mut place: Option<PathBuf> = None;
     let mut text: Option<String> = None;
     let mut budget: Option<u32> = None;
@@ -138,6 +141,7 @@ fn parse(args: &[String]) -> Result<Plan, String> {
         return Err("--for requires a non-empty task text".to_string());
     }
     Ok(Plan {
+        also,
         place: place.unwrap_or_else(|| PathBuf::from(".")),
         text,
         budget: budget.unwrap_or(DEFAULT_BUDGET),
@@ -176,6 +180,7 @@ mod tests {
             plan,
             Plan {
                 place: PathBuf::from("src"),
+                also: Vec::new(),
                 text: "- fix alpha_body".into(),
                 budget: 500,
                 json: false,
