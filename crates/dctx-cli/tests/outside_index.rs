@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Outside definitions, policy confinement and shared multi-root queries through the CLI.
 #![forbid(unsafe_code)]
+mod common;
 use std::{
     fs,
     path::PathBuf,
@@ -39,17 +40,15 @@ impl Fixture {
         self.temp.path().join(path)
     }
     fn run(&self, args: &[&str]) -> Output {
-        Command::new(env!("CARGO_BIN_EXE_dctx-cli"))
+        let mut command = Command::new(env!("CARGO_BIN_EXE_dctx-cli"));
+        command
             .env_clear()
             .current_dir(self.temp.path())
             .args(args)
-            .env("TMPDIR", self.path("tmp"))
-            .env("HOME", self.path("home"))
-            .env("XDG_CONFIG_HOME", self.path("config"))
             .env("DCTX_CACHE_DIR", self.path("cache"))
-            .env("DCTX_AUTO_CLEAN", "0")
-            .output()
-            .unwrap()
+            .env("DCTX_AUTO_CLEAN", "0");
+        common::isolated_dirs(&mut command, self.temp.path());
+        command.output().unwrap()
     }
     fn page(&self, args: &[&str]) -> String {
         let output = self.run(args);
