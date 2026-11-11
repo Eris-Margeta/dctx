@@ -550,11 +550,11 @@
     "map",
     "--help"
    ],
-   "stdout": "Usage: dctx map <map|find|neighbors|explain|read|skeleton|grep> <TARGET> [OPTIONS]\n       dctx map hubs [--limit N] [--json] [--place PATH] [--budget TOKENS] [--meta]\n         Most-called symbols (incoming calls and imports, 1..60 lines, default 20) and per-directory file and symbol counts. No TARGET.\n       dctx map path <FROM> <TO> [--json] [--place PATH] [--budget TOKENS] [--meta]\n         Shortest edge path (calls, imports, contains; either direction; at most 8 hops), one `edge:out|in<TAB>id<TAB>kind<TAB>path` line per hop, or `no path`.\n       dctx map export [--format json|mermaid] [--output PATH] [--place PATH]\n         The whole graph as one deterministic document (default json: nodes and edges; mermaid: a flowchart of calls and imports). No TARGET, no token cap; --output writes a file.\n  TARGET                  Required. map accepts a stable id or a place-relative file.\n                          skeleton takes a file (or m:<path>) and prints its declaration signatures, no bodies,\n                          in source order: id, kind, L<start>-<end>, signature.\n                          A file path is read as m:<path>. Omitting TARGET does not scan.\n  --json                  Facade JSON v2, including the precision label\n  --place PATH            Place or worktree root (default: current directory)\n  --meta                  Restore the snapshot digest and generation in the text header and the snapshot, generation and age_s JSON fields.\n                          Without it the answer bytes do not change across unrelated edits or time.\n  --profile               Stderr stage timings and the five slowest files. DCTX_PROFILE=1 is the same switch.\n  DCTX_MAX_SOURCE_BYTES   Env: total source bytes one scan may read, 1..17179869184 (default 1073741824 = 1 GiB).\n  DCTX_MAX_RECORDS        Env: files, symbols and edges one index may hold, 1..100000000 (default 1000000). A bigger place is refused while it is scanned.\n  DCTX_MAX_ENTRIES        Env: files and directories one scan may visit, 1..100000000 (default 100000).\n  DCTX_FRESHNESS          Env: strict_live hashes every file on a warm start; the default (stamp) trusts a file whose size, mtime and inode are unchanged and older than 2 s.\n  --budget TOKENS         Output tokens, 1..2000 (explain max: 1000).\n                          Read with no --budget uses the 2,000-token hard cap.\n  --depth N               Map: 1..3; neighbors: 1..4. Explain and read take no depth.\n  --limit N               Map, find and neighbors page size. Explain and read accept only 1.\n  --offset N              Refused. Pass the previous page's next value to --cursor.\n  --cursor TOKEN          Opaque continuation. A stale token is rejected.\n  --kind fn,type,doc      Find kinds\n  --in PATH               Find or grep within a relative path\n  grep LITERAL            Exhaustive literal search of indexed files, hits grouped by enclosing symbol\n  -i, --ignore-case       Grep: ASCII case-insensitive match\n  --edge calls,imports    Neighbor edge filter\n  --dir in|out|both       Neighbor direction\n  --lines A-B --full      Read those absolute source lines inside the node; full permits 400\n  --rev SHA               Refused: this build does not link git\nPrecision: structural declarations, imports, headings and conservative calls.\nNot exact semantic calls, type resolution or macro expansion.\nToken estimate ceil(2 * UTF-8 bytes / 7) is not a tokenizer guarantee.\nExample: dctx map find 'ignore rules' --json\nExample: dctx map map crates/dctx-cli/src/main.rs --depth 2\nExample: dctx map map m:crates/dctx-cli/src/main.rs --cursor '<next from the previous page>'\nEach verb's own page and example: dctx map <verb> --help\nExit codes: 0 ok, 1 no result (an id not in the index, a binary file), 2 usage, 3 index error; see docs/CLI-EXIT-CODES.md.\n",
+   "stdout": "Usage: dctx map <map|find|neighbors|explain|read|skeleton|grep> <TARGET> [OPTIONS]\n       dctx map hubs [--limit N] [--json] [--place PATH] [--budget TOKENS] [--meta]\n         Most-called symbols (incoming calls and imports, 1..60 lines, default 20) and per-directory file and symbol counts. No TARGET.\n       dctx map path <FROM> <TO> [--json] [--place PATH] [--budget TOKENS] [--meta]\n         Shortest edge path (calls, imports, contains; either direction; at most 8 hops), one `edge:out|in<TAB>id<TAB>kind<TAB>path` line per hop, or `no path`.\n       dctx map export [--format json|mermaid] [--output PATH] [--place PATH]\n         The whole graph as one deterministic document (default json: nodes and edges; mermaid: a flowchart of calls and imports). No TARGET, no token cap; --output writes a file.\n  TARGET                  Required. map accepts a stable id or a place-relative file.\n                          skeleton takes a file (or m:<path>) and prints its declaration signatures, no bodies,\n                          in source order: id, kind, L<start>-<end>, signature.\n                          A file path is read as m:<path>. Omitting TARGET does not scan.\n  --json                  Facade JSON v2, including the precision label\n  --also DIR              Add a read-only root (repeatable); paths and ids carry directory labels\n  --place PATH            Place or worktree root (default: current directory)\n  --meta                  Restore the snapshot digest and generation in the text header and the snapshot, generation and age_s JSON fields.\n                          Without it the answer bytes do not change across unrelated edits or time.\n  --profile               Stderr stage timings and the five slowest files. DCTX_PROFILE=1 is the same switch.\n  DCTX_MAX_SOURCE_BYTES   Env: total source bytes one scan may read, 1..17179869184 (default 1073741824 = 1 GiB).\n  DCTX_MAX_RECORDS        Env: files, symbols and edges one index may hold, 1..100000000 (default 1000000). A bigger place is refused while it is scanned.\n  DCTX_MAX_ENTRIES        Env: files and directories one scan may visit, 1..100000000 (default 100000).\n  DCTX_FRESHNESS          Env: strict_live hashes every file on a warm start; the default (stamp) trusts a file whose size, mtime and inode are unchanged and older than 2 s.\n  --budget TOKENS         Output tokens, 1..2000 (explain max: 1000).\n                          Read with no --budget uses the 2,000-token hard cap.\n  --depth N               Map: 1..3; neighbors: 1..4. Explain and read take no depth.\n  --limit N               Map, find and neighbors page size. Explain and read accept only 1.\n  --offset N              Refused. Pass the previous page's next value to --cursor.\n  --cursor TOKEN          Opaque continuation. A stale token is rejected.\n  --kind fn,type,doc      Find kinds\n  --in PATH               Find or grep within a relative path\n  grep LITERAL            Exhaustive literal search of indexed files, hits grouped by enclosing symbol\n  -i, --ignore-case       Grep: ASCII case-insensitive match\n  --edge calls,imports    Neighbor edge filter\n  --dir in|out|both       Neighbor direction\n  --lines A-B --full      Read those absolute source lines inside the node; full permits 400\n  --rev SHA               Refused: this build does not link git\nPrecision: structural declarations, imports, headings and conservative calls.\nNot exact semantic calls, type resolution or macro expansion.\nToken estimate ceil(2 * UTF-8 bytes / 7) is not a tokenizer guarantee.\nExample: dctx map find 'ignore rules' --json\nExample: dctx map map crates/dctx-cli/src/main.rs --depth 2\nExample: dctx map map m:crates/dctx-cli/src/main.rs --cursor '<next from the previous page>'\nEach verb's own page and example: dctx map <verb> --help\nExit codes: 0 ok, 1 no result (an id not in the index, a binary file), 2 usage, 3 index error; see docs/CLI-EXIT-CODES.md.\n",
    "stderr": "",
    "exit": 0,
-   "bytes": 3808,
-   "est_tokens": 1088
+   "bytes": 3906,
+   "est_tokens": 1116
   },
   {
    "id": "help-map",
@@ -565,11 +565,11 @@
     "map",
     "--help"
    ],
-   "stdout": "Usage: dctx map map <TARGET> [--depth 1..3] [--limit N] [--cursor TOKEN] [--json] [--place PATH] [--meta]\n  Outline of a file (m:<path> or a place-relative path) or a symbol and what it contains.\nExample: dctx map map src/lib.rs --depth 2\nEvery option and its bounds: dctx map --help\n",
+   "stdout": "Usage: dctx map map <TARGET> [--depth 1..3] [--limit N] [--cursor TOKEN] [--json] [--place PATH] [--also DIR ...] [--meta]\n  Outline of a file (m:<path> or a place-relative path) or a symbol and what it contains.\nExample: dctx map map src/lib.rs --depth 2\nEvery option and its bounds: dctx map --help\n",
    "stderr": "",
    "exit": 0,
-   "bytes": 284,
-   "est_tokens": 82
+   "bytes": 301,
+   "est_tokens": 86
   },
   {
    "id": "help-find",
@@ -580,11 +580,11 @@
     "find",
     "--help"
    ],
-   "stdout": "Usage: dctx map find <QUERY> [--kind fn,type,doc] [--in PATH] [--limit 1..40] [--cursor TOKEN] [--json] [--place PATH] [--meta]\n  Ranked symbols, modules, headings and config keys whose name or summary matches QUERY.\nExample: dctx map find 'ignore rules' --json\nEvery option and its bounds: dctx map --help\n",
+   "stdout": "Usage: dctx map find <QUERY> [--kind fn,type,doc] [--in PATH] [--limit 1..40] [--cursor TOKEN] [--json] [--place PATH] [--also DIR ...] [--meta]\n  Ranked symbols, modules, headings and config keys whose name or summary matches QUERY.\nExample: dctx map find 'ignore rules' --json\nEvery option and its bounds: dctx map --help\n",
    "stderr": "",
    "exit": 0,
-   "bytes": 307,
-   "est_tokens": 88
+   "bytes": 324,
+   "est_tokens": 93
   },
   {
    "id": "help-neighbors",
@@ -595,11 +595,11 @@
     "neighbors",
     "--help"
    ],
-   "stdout": "Usage: dctx map neighbors <TARGET> [--dir in|out|both] [--edge calls,imports] [--depth 1..4] [--limit N] [--json] [--place PATH] [--meta]\n  Edges of one node: callers with --dir in --edge calls, callees with --dir out.\nExample: dctx map neighbors 's:src/lib.rs#run' --dir in --edge calls\nEvery option and its bounds: dctx map --help\n",
+   "stdout": "Usage: dctx map neighbors <TARGET> [--dir in|out|both] [--edge calls,imports] [--depth 1..4] [--limit N] [--json] [--place PATH] [--also DIR ...] [--meta]\n  Edges of one node: callers with --dir in --edge calls, callees with --dir out.\nExample: dctx map neighbors 's:src/lib.rs#run' --dir in --edge calls\nEvery option and its bounds: dctx map --help\n",
    "stderr": "",
    "exit": 0,
-   "bytes": 333,
-   "est_tokens": 96
+   "bytes": 350,
+   "est_tokens": 100
   },
   {
    "id": "help-explain",
@@ -610,11 +610,11 @@
     "explain",
     "--help"
    ],
-   "stdout": "Usage: dctx map explain <TARGET> [--budget 1..1000] [--json] [--place PATH] [--meta]\n  One node with its signature and summary, no body.\nExample: dctx map explain 's:src/lib.rs#run'\nEvery option and its bounds: dctx map --help\n",
+   "stdout": "Usage: dctx map explain <TARGET> [--budget 1..1000] [--json] [--place PATH] [--also DIR ...] [--meta]\n  One node with its signature and summary, no body.\nExample: dctx map explain 's:src/lib.rs#run'\nEvery option and its bounds: dctx map --help\n",
    "stderr": "",
    "exit": 0,
-   "bytes": 227,
-   "est_tokens": 65
+   "bytes": 244,
+   "est_tokens": 70
   },
   {
    "id": "help-read",
@@ -625,11 +625,11 @@
     "read",
     "--help"
    ],
-   "stdout": "Usage: dctx map read <TARGET> [--lines A-B] [--full] [--budget TOKENS] [--cursor TOKEN] [--json] [--place PATH] [--meta]\n  The verified source text of one node; a long node pages with --cursor.\nExample: dctx map read 's:src/lib.rs#run' --lines 10-40\nEvery option and its bounds: dctx map --help\n",
+   "stdout": "Usage: dctx map read <TARGET> [--lines A-B] [--full] [--budget TOKENS] [--cursor TOKEN] [--json] [--place PATH] [--also DIR ...] [--meta]\n  The verified source text of one node; a long node pages with --cursor.\nExample: dctx map read 's:src/lib.rs#run' --lines 10-40\nEvery option and its bounds: dctx map --help\n",
    "stderr": "",
    "exit": 0,
-   "bytes": 295,
-   "est_tokens": 85
+   "bytes": 312,
+   "est_tokens": 90
   },
   {
    "id": "help-skeleton",
@@ -640,11 +640,11 @@
     "skeleton",
     "--help"
    ],
-   "stdout": "Usage: dctx map skeleton <FILE> [--budget TOKENS] [--json] [--place PATH] [--meta]\n  Declaration signatures of one file in source order, no bodies.\nExample: dctx map skeleton src/lib.rs\nEvery option and its bounds: dctx map --help\n",
+   "stdout": "Usage: dctx map skeleton <FILE> [--budget TOKENS] [--json] [--place PATH] [--also DIR ...] [--meta]\n  Declaration signatures of one file in source order, no bodies.\nExample: dctx map skeleton src/lib.rs\nEvery option and its bounds: dctx map --help\n",
    "stderr": "",
    "exit": 0,
-   "bytes": 231,
-   "est_tokens": 66
+   "bytes": 248,
+   "est_tokens": 71
   },
   {
    "id": "help-grep",
@@ -655,11 +655,11 @@
     "grep",
     "--help"
    ],
-   "stdout": "Usage: dctx map grep <LITERAL> [-i] [--in PATH] [--limit N] [--json] [--place PATH] [--meta]\n  Exhaustive literal search of indexed files, hits grouped by enclosing symbol.\nExample: dctx map grep TODO --in src\nEvery option and its bounds: dctx map --help\n",
+   "stdout": "Usage: dctx map grep <LITERAL> [-i] [--in PATH] [--limit N] [--json] [--place PATH] [--also DIR ...] [--meta]\n  Exhaustive literal search of indexed files, hits grouped by enclosing symbol.\nExample: dctx map grep TODO --in src\nEvery option and its bounds: dctx map --help\n",
    "stderr": "",
    "exit": 0,
-   "bytes": 255,
-   "est_tokens": 73
+   "bytes": 272,
+   "est_tokens": 78
   },
   {
    "id": "help-hubs",
@@ -670,11 +670,11 @@
     "hubs",
     "--help"
    ],
-   "stdout": "Usage: dctx map hubs [--limit 1..60] [--budget TOKENS] [--json] [--place PATH] [--meta]\n  Most-called symbols and per-directory file and symbol counts. No TARGET.\nExample: dctx map hubs --limit 10\nEvery option and its bounds: dctx map --help\n",
+   "stdout": "Usage: dctx map hubs [--limit 1..60] [--budget TOKENS] [--json] [--place PATH] [--also DIR ...] [--meta]\n  Most-called symbols and per-directory file and symbol counts. No TARGET.\nExample: dctx map hubs --limit 10\nEvery option and its bounds: dctx map --help\n",
    "stderr": "",
    "exit": 0,
-   "bytes": 242,
-   "est_tokens": 70
+   "bytes": 259,
+   "est_tokens": 74
   },
   {
    "id": "help-path",
@@ -685,11 +685,11 @@
     "path",
     "--help"
    ],
-   "stdout": "Usage: dctx map path <FROM> <TO> [--budget TOKENS] [--json] [--place PATH] [--meta]\n  Shortest edge path (calls, imports, contains; at most 8 hops) between two nodes, or `no path`.\nExample: dctx map path 's:src/main.rs#main' 's:src/lib.rs#run'\nEvery option and its bounds: dctx map --help\n",
+   "stdout": "Usage: dctx map path <FROM> <TO> [--budget TOKENS] [--json] [--place PATH] [--also DIR ...] [--meta]\n  Shortest edge path (calls, imports, contains; at most 8 hops) between two nodes, or `no path`.\nExample: dctx map path 's:src/main.rs#main' 's:src/lib.rs#run'\nEvery option and its bounds: dctx map --help\n",
    "stderr": "",
    "exit": 0,
-   "bytes": 289,
-   "est_tokens": 83
+   "bytes": 306,
+   "est_tokens": 88
   },
   {
    "id": "help-export",
@@ -700,11 +700,11 @@
     "export",
     "--help"
    ],
-   "stdout": "Usage: dctx map export [--format json|mermaid] [--output PATH] [--place PATH]\n  The whole graph as one deterministic document. No TARGET, no token cap.\nExample: dctx map export --format mermaid --output graph.mmd\nEvery option and its bounds: dctx map --help\n",
+   "stdout": "Usage: dctx map export [--format json|mermaid] [--output PATH] [--place PATH] [--also DIR ...]\n  The whole graph as one deterministic document. No TARGET, no token cap.\nExample: dctx map export --format mermaid --output graph.mmd\nEvery option and its bounds: dctx map --help\n",
    "stderr": "",
    "exit": 0,
-   "bytes": 258,
-   "est_tokens": 74
+   "bytes": 275,
+   "est_tokens": 79
   },
   {
    "id": "languages-help",
