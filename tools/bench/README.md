@@ -12,6 +12,22 @@ The separate [synthetic CI guard](PERF-CI.md) measures the actual dctx and catal
 binaries against a committed performance baseline, with an intentional refresh
 command. It does not invoke models or estimate whole-session savings.
 
+For informational Windows per-call latency (also runnable on Unix), build the
+release CLI and run:
+
+```sh
+cargo build --release --locked -p dctx-cli
+python3 tools/bench/map_find_latency.py --binary target/release/dctx-cli.exe \
+  --output target/map-find-latency.json
+```
+
+On Unix, omit `.exe`. The script creates a fixed two-function Rust fixture and
+an isolated cache beside the report, warms the index once, then measures 50
+separate `dctx map find latency_probe` processes, including startup and index
+freshness checks. It prints p50/p95 milliseconds using nearest-rank percentiles
+(samples 25 and 48 of 50) and saves every sample as JSON. The Windows CI test
+job uploads that report per toolchain; measurement and upload are non-failing.
+
 From the repo root (on Windows, use `python` if that is your interpreter name):
 
 ```sh

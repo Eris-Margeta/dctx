@@ -1,0 +1,12 @@
+# dctx rules for AGENTS.md
+
+- Use dctx for large repos, multi-hop traces, impact review, many agents sharing one index, or files over ~100 KB.
+- Under ~200 files or for a single literal lookup, use grep.
+- Choose dctx or grep for each question; never use both for the same question.
+- Find symbols: `dctx map find run` (reuse the returned stable IDs below).
+- Trace callers for impact review: `dctx map neighbors 's:src/lib.rs#run' --dir in --edge calls --depth 2`.
+- Read a definition: `dctx map read 's:src/lib.rs#run'`.
+- Outline a large file: `dctx map skeleton src/lib.rs`.
+- Get task context: `dctx pack --for 'fix run' --budget 3000` (estimated tokens).
+- MCP: use `dctx mcp --profile lean` for persistent tool access; CLI: run the commands above from a shell.
+- Pick MCP or CLI for a question; both use the same local index and query engine.

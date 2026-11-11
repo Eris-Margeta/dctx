@@ -3,6 +3,7 @@
 //! Plugin and map commands retain their explicit routes and facade sessions.
 #![forbid(unsafe_code)]
 
+mod agent_setup;
 mod context_cmd;
 mod map;
 mod mcp;
@@ -41,6 +42,7 @@ fn main() {
     }
     // Every command but plugin and git follows docs/CLI-EXIT-CODES.md.
     let result = match head {
+        Some("agent-setup") => agent_setup::run(&args[2..]),
         Some("doctor") => doctor::run(&args[2..]),
         Some("map") => {
             maybe_auto_clean(allow_auto_clean);

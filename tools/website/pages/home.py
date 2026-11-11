@@ -143,6 +143,7 @@ def body() -> str:
    <h1 id="hero-title">Give AI the right code, <span class="accent">not all of it.</span></h1>
    <div class="hero-copy">
     <p class="lede">dctx reads your project on your machine and hands an AI only the parts that matter, as one short page. Same project, same page, every time. No network, no telemetry.</p>
+    <p>Under ~200 files, use grep. dctx pays off on large repos, multi-hop questions and many agents sharing one index.</p>
     <div class="actions">
      <a class="btn btn-primary" href="#paths">Choose your path</a><a class="btn" href="/docs/">Read the docs</a><a class="btn" href="/playground/">Playground</a><a class="btn" href="{REPO}">GitHub</a>
     </div>

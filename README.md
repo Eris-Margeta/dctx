@@ -45,6 +45,10 @@
 
 ---
 
+Under ~200 files, use grep. dctx pays off on large repos, multi-hop questions and many agents sharing one index.
+
+Run `dctx agent-setup --format agents` (or `--format claude`) for short rules to paste into `AGENTS.md` or `CLAUDE.md`.
+
 ## Project status
 
 **dctx is not yet stable and not enterprise-ready.** It has been in development since January 2026. Until version 2.0, expect breaking changes often. AI providers keep changing how they optimize context on their side; dctx adapts to those changes quickly, but not in real time. Stability is the goal of 2.0, and the project is working toward it: we see an ultimate solution to this problem, and we are denoising it.

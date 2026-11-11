@@ -100,3 +100,19 @@ jobs:
               close_fds=True,
           ))
           PYTHON
+
+      - name: Windows map-find per-call latency (informational)
+        if: ${{ runner.os == 'Windows' }}
+        continue-on-error: true
+        run: |
+          cargo build --release --locked -p dctx-cli
+          python tools/bench/map_find_latency.py --binary target/release/dctx-cli.exe --output target/map-find-latency.json
+
+      - name: Upload Windows map-find latency samples
+        if: ${{ always() && runner.os == 'Windows' }}
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2 (GitHub API resolved)
+        with:
+          name: map-find-latency-${{ matrix.os }}-${{ matrix.toolchain }}
+          path: target/map-find-latency.json
+          if-no-files-found: warn

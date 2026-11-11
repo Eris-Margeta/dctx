@@ -87,6 +87,7 @@ Usage: dctx <COMMAND> [OPTIONS]
        dctx read <TARGET> [OPTIONS]
        dctx languages [--json|--markdown]
        dctx doctor [--json]
+       dctx agent-setup [--format claude|agents|plain]
        dctx cache status [--json] [--root PATH]
        dctx cache gc [--dry-run] [--root PATH] [--max-bytes N]
        dctx cache purge --root PATH [--dry-run] [--yes]
@@ -110,6 +111,7 @@ Cache purge requires `--root PATH` or `--all`, and `--yes` unless `--dry-run` is
 `dctx cache config` shows the persisted policy. `auto on|off` enables auto-clean, `--max-bytes` tightens the system cap, and `--ttl-days` sets idle overlay and preview lifetime.
 `dctx cache auto` prints the last auto-clean time, the bytes it reclaimed and the next due time.
 `dctx doctor` lists visible binaries, ownership scopes, SHA-256 checksums and cache sizes without changing the cache or using the network.
+`dctx agent-setup` prints concise rules to paste into CLAUDE.md or AGENTS.md (default: agents).
 pack, map, template, plugin and the TUI run one bounded auto-clean when it is due. They print nothing unless bytes were reclaimed.
 `--no-auto-clean` and `DCTX_AUTO_CLEAN=0` disable that slice. `DCTX_CACHE_DIR` selects the cache parent; indexes live in its engine-major.minor subdirectory.
 
