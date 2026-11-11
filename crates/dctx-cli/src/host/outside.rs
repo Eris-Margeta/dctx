@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Bounded literal import fallback. No ambient search paths or recursive sibling scan.
 use super::*;
-use std::collections::BTreeSet;
+use dctx::{Inventory, MapRequest, SnapshotHandle, VecSink, Verb};
+use dctx_core::datatypes::NodeType;
+use dctx_core::error::DctxError as CoreError;
+use dctx_core::facts::{EntryMeta, EntryStamp, ReadGrant, SourceEntry};
+use dctx_core::ids::RelativePath;
+use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 const MAX_FILES: usize = 256;
@@ -13,14 +19,10 @@ struct Scan {
     started: Instant,
     files: usize,
     bytes: usize,
-    entries: usize,
 }
 impl Scan {
     fn available(&self) -> bool {
-        self.files < MAX_FILES
-            && self.bytes < MAX_BYTES
-            && self.entries < 2048
-            && self.started.elapsed() < MAX_TIME
+        self.files < MAX_FILES && self.bytes < MAX_BYTES && self.started.elapsed() < MAX_TIME
     }
     fn read(&mut self, root: &Path, relative: &str) -> Option<String> {
         if !self.available() {
@@ -39,6 +41,162 @@ impl Scan {
     }
 }
 
+/// Literal imports captured from source bytes the engine already requested.
+/// The fallback has no inventory traversal and never reopens an indexed source.
+#[derive(Clone, Default)]
+pub struct Imports(Arc<Mutex<ImportFiles>>);
+#[derive(Default)]
+struct ImportFiles {
+    files: BTreeMap<String, BTreeSet<(PathBuf, Vec<String>)>>,
+    bytes: usize,
+}
+
+pub(super) struct ImportSource<S> {
+    pub source: S,
+    pub imports: Option<Imports>,
+    pub root: PathBuf,
+    pub prefix: String,
+}
+impl<S: Source> Source for ImportSource<S> {
+    fn inventory(&self) -> Option<Box<dyn Inventory + '_>> {
+        self.source.inventory()
+    }
+    fn invalidate_inventory(&self) {
+        self.source.invalidate_inventory();
+    }
+    fn root_kind(&self) -> Result<NodeType, CoreError> {
+        self.source.root_kind()
+    }
+    fn entries(&self, dir: &RelativePath) -> Result<Vec<SourceEntry>, CoreError> {
+        self.source.entries(dir)
+    }
+    fn kind(&self, path: &RelativePath) -> Result<NodeType, CoreError> {
+        self.source.kind(path)
+    }
+    fn metadata(&self, path: &RelativePath) -> Result<EntryMeta, CoreError> {
+        self.source.metadata(path)
+    }
+    fn stat(&self, path: &RelativePath) -> Result<(EntryMeta, Option<EntryStamp>), CoreError> {
+        self.source.stat(path)
+    }
+    fn read(&self, grant: &ReadGrant, cap: u64) -> Result<Vec<u8>, CoreError> {
+        let bytes = self.source.read(grant, cap)?;
+        let Some(observed) = &self.imports else {
+            return Ok(bytes);
+        };
+        if bytes.len() <= FILE_BYTES as usize && source_file(Path::new(grant.path().as_str())) {
+            if let (Ok(text), Ok(mut captured)) = (std::str::from_utf8(&bytes), observed.0.lock()) {
+                let relative = grant.path().as_str();
+                let path = format!("{}{relative}", self.prefix);
+                if !captured.files.contains_key(&path)
+                    && captured.files.len() < MAX_FILES
+                    && captured.bytes + bytes.len() <= MAX_BYTES
+                {
+                    let mut candidates = BTreeSet::new();
+                    imports(&self.root, &self.root.join(relative), text, &mut candidates);
+                    captured.bytes += bytes.len();
+                    captured.files.insert(path, candidates);
+                }
+            }
+        }
+        Ok(bytes)
+    }
+}
+
+impl Imports {
+    /// Selects missing imported names using metadata-only index queries.
+    #[must_use]
+    pub fn unresolved(
+        &self,
+        session: &mut Session,
+        handle: &SnapshotHandle,
+        path: Option<&str>,
+        scope: Option<&str>,
+    ) -> Vec<(PathBuf, Vec<String>)> {
+        let mut checked = BTreeMap::new();
+        self.candidates(path)
+            .into_iter()
+            .filter_map(|(path, names)| {
+                let names: Vec<_> = names
+                    .into_iter()
+                    .filter(|name| {
+                        let present = if let Some(present) = checked.get(name) {
+                            *present
+                        } else if checked.len() >= MAX_FILES {
+                            true
+                        } else {
+                            let present = indexed_name(session, handle, name, scope);
+                            checked.insert(name.clone(), present);
+                            present
+                        };
+                        !present
+                    })
+                    .collect();
+                (!names.is_empty()).then_some((path, names))
+            })
+            .collect()
+    }
+
+    /// Returns the captured imports of one resolved file, or all files for a missing name.
+    #[must_use]
+    pub fn candidates(&self, path: Option<&str>) -> Vec<(PathBuf, Vec<String>)> {
+        self.0.lock().map_or_else(
+            |_| Vec::new(),
+            |captured| {
+                captured
+                    .files
+                    .iter()
+                    .filter(|(file, _)| path.is_none_or(|path| path == file.as_str()))
+                    .flat_map(|(_, candidates)| candidates.iter().cloned())
+                    .take(MAX_FILES)
+                    .collect()
+            },
+        )
+    }
+}
+
+/// Tests only indexed definitions. Excluding text disables the engine's literal-read fallback.
+/// A scoped handle can check names in its selected file without expanding the snapshot.
+#[must_use]
+pub fn indexed_name(
+    session: &mut Session,
+    handle: &SnapshotHandle,
+    name: &str,
+    scope: Option<&str>,
+) -> bool {
+    let mut request = MapRequest::new(Verb::Find);
+    request.query = name.to_owned();
+    request.within = scope.map(str::to_owned);
+    request.kinds = [
+        "fn",
+        "method",
+        "struct",
+        "enum",
+        "trait",
+        "impl",
+        "const",
+        "type",
+        "class",
+        "interface",
+        "macro",
+        "heading",
+        "test",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect();
+    session
+        .query(handle, &request, &mut VecSink::new())
+        .map_or(true, |answer| {
+            answer.records.iter().any(|record| {
+                record
+                    .id
+                    .rsplit_once('#')
+                    .is_some_and(|(_, symbol)| symbol.split('~').next() == Some(name))
+            })
+        })
+}
+
 /// Appends outside definitions and actionable hints, or adds `defined_outside_index` in JSON.
 /// Only literal local imports below the place's parent are eligible; denied paths never appear.
 #[must_use]
@@ -48,7 +206,7 @@ pub fn outside_notice(
     target: &str,
     page: String,
     json: bool,
-    references: bool,
+    candidates: &[(PathBuf, Vec<String>)],
 ) -> String {
     let Ok(place) = fs::canonicalize(place) else {
         return page;
@@ -60,10 +218,7 @@ pub fn outside_notice(
         started: Instant::now(),
         files: 0,
         bytes: 0,
-        entries: 0,
     };
-    let mut candidates = BTreeSet::new();
-    imports(&place, &place, &mut scan, &mut candidates, 0);
     let indexed: Vec<_> = also
         .iter()
         .filter_map(|path| fs::canonicalize(path).ok())
@@ -80,11 +235,11 @@ pub fn outside_notice(
     };
     let policy = rules.policy();
     let mut notices = BTreeSet::new();
-    for (candidate, imported) in candidates {
+    for (candidate, names) in candidates {
         if !scan.available() {
             break;
         }
-        for candidate in variants(&candidate) {
+        for candidate in variants(candidate) {
             if !scan.available() {
                 break;
             }
@@ -115,8 +270,11 @@ pub fn outside_notice(
             let Some(text) = scan.read(boundary, relative) else {
                 continue;
             };
-            let matched = defines(&text, name)
-                || (references && imported.iter().any(|name| defines(&text, name)));
+            let matched = if name.is_empty() {
+                names.iter().any(|name| defines(&text, name))
+            } else {
+                defines(&text, name)
+            };
             if !matched {
                 continue;
             }
@@ -172,112 +330,63 @@ fn sibling_policy(boundary: &Path, relative: &str, scan: &mut Scan) -> bool {
     safe_components(&boundary.join(label), rest, &policy)
 }
 
-fn imports(
-    root: &Path,
-    dir: &Path,
-    scan: &mut Scan,
-    out: &mut BTreeSet<(PathBuf, Vec<String>)>,
-    depth: usize,
-) {
-    if depth > 16 || !scan.available() {
-        return;
-    }
-    let Ok(entries) = fs::read_dir(dir) else {
+fn imports(root: &Path, path: &Path, text: &str, out: &mut BTreeSet<(PathBuf, Vec<String>)>) {
+    let Some(dir) = path.parent() else {
         return;
     };
-    let remaining = 2048 - scan.entries;
-    let mut entries = entries
-        .take(remaining + 1)
-        .filter_map(Result::ok)
-        .collect::<Vec<_>>();
-    if entries.len() > remaining {
-        return;
-    }
-    entries.sort_by_key(std::fs::DirEntry::file_name);
-    let relative_dir = dir
-        .strip_prefix(root)
-        .ok()
-        .and_then(Path::to_str)
-        .unwrap_or("");
-    let scope = format!("{relative_dir}/__outside_probe__");
-    let scope = scope.trim_start_matches('/');
-    let Ok(rules) = rules::project_rules_scoped(root, Some(scope)) else {
-        return;
-    };
-    let policy = rules.policy();
-    for entry in entries {
-        scan.entries += 1;
-        if !scan.available() {
-            break;
+    for line in text.lines() {
+        if out.len() >= MAX_FILES {
+            return;
         }
-        let path = entry.path();
-        let Ok(relative) = path.strip_prefix(root) else {
-            continue;
-        };
-        let Some(relative) = relative.to_str() else {
-            continue;
-        };
-        if !safe_components(root, relative, &policy) {
+        let line = line.trim();
+        if !import_line(line) {
             continue;
         }
-        let Ok(kind) = entry.file_type() else {
-            continue;
+        let names_line = if line.starts_with("from ") {
+            line.split_once(" import ").map_or("", |(_, names)| names)
+        } else if line.starts_with("import ") || line.starts_with("export ") {
+            line.split(" from ").next().unwrap_or(line)
+        } else {
+            line.rsplit("::").next().unwrap_or(line)
         };
-        if kind.is_dir() {
-            imports(root, &path, scan, out, depth + 1);
-            continue;
-        }
-        if !kind.is_file() || !source_file(&path) {
-            continue;
-        }
-        let Some(text) = scan.read(root, relative) else {
-            continue;
-        };
-        for line in text.lines() {
-            if out.len() >= MAX_FILES || !scan.available() {
-                return;
-            }
-            let line = line.trim();
-            if !import_line(line) {
-                continue;
-            }
-            let names = line
-                .split(|c: char| !c.is_alphanumeric() && c != '_')
-                .filter(|s| !s.is_empty())
-                .take(128)
-                .map(str::to_owned)
-                .collect::<Vec<_>>();
-            for quote in ['\'', '"'] {
-                let mut parts = line.split(quote).skip(1);
-                while let Some(literal) = parts.next() {
-                    if out.len() >= MAX_FILES {
-                        return;
-                    }
-                    if literal.len() <= 4096
-                        && (literal.starts_with('.') || Path::new(literal).is_absolute())
-                        && !literal.contains(['\0', '\n', '\r'])
-                    {
-                        out.insert((dir.join(literal), names.clone()));
-                    }
-                    parts.next();
+        let names = names_line
+            .split(|c: char| !c.is_alphanumeric() && c != '_')
+            .filter(|s| {
+                !s.is_empty() && !matches!(*s, "import" | "export" | "from" | "use" | "pub" | "as")
+            })
+            .take(128)
+            .map(str::to_owned)
+            .collect::<Vec<_>>();
+        for quote in ['\'', '"'] {
+            let mut parts = line.split(quote).skip(1);
+            while let Some(literal) = parts.next() {
+                if out.len() >= MAX_FILES {
+                    return;
                 }
-            }
-            if let Some(module) = line
-                .strip_prefix("from ")
-                .and_then(|rest| rest.split_whitespace().next())
-            {
-                let module = module.trim_start_matches('.').replace('.', "/");
-                if !module.is_empty() {
-                    out.insert((root.parent().unwrap_or(root).join(module), names.clone()));
+                if literal.len() <= 4096
+                    && (literal.starts_with('.') || Path::new(literal).is_absolute())
+                    && !literal.contains(['\0', '\n', '\r'])
+                {
+                    out.insert((dir.join(literal), names.clone()));
                 }
+                parts.next();
             }
-            if let Some(module) = line
-                .strip_prefix("use ")
-                .and_then(|rest| rest.split("::").next())
-            {
-                if !matches!(module, "crate" | "self" | "super" | "std" | "core") {
-                    out.insert((root.parent().unwrap_or(root).join(module), names));
-                }
+        }
+        if let Some(module) = line
+            .strip_prefix("from ")
+            .and_then(|rest| rest.split_whitespace().next())
+        {
+            let module = module.trim_start_matches('.').replace('.', "/");
+            if !module.is_empty() {
+                out.insert((root.parent().unwrap_or(root).join(module), names.clone()));
+            }
+        }
+        if let Some(module) = line
+            .strip_prefix("use ")
+            .and_then(|rest| rest.split("::").next())
+        {
+            if !matches!(module, "crate" | "self" | "super" | "std" | "core") {
+                out.insert((root.parent().unwrap_or(root).join(module), names));
             }
         }
     }
@@ -378,7 +487,10 @@ fn safe_components(root: &Path, relative: &str, policy: &SelectionPolicy) -> boo
         let Ok(meta) = fs::symlink_metadata(&path) else {
             return false;
         };
-        if meta.file_type().is_symlink() || (!meta.is_file() && !meta.is_dir()) {
+        if meta.file_type().is_symlink()
+            || (!meta.is_file() && !meta.is_dir())
+            || (shown == relative.as_str() && !meta.is_file())
+        {
             return false;
         }
         if meta.is_dir()

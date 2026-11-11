@@ -30,8 +30,10 @@ impl Runtime {
         let (args, also) = dctx_cli::host::also_arguments(args).map_err(usage)?;
         let (place, requests) = parse(&args).map_err(usage)?;
         // Validate every request before opening a source or emitting any page.
-        let (mut session, key) = dctx_cli::host::open_mapped_roots(&place, &also)
-            .map_err(|message| Failure::index(message, "pass an existing --place PATH"))?;
+        let imports = dctx_cli::host::Imports::default();
+        let (mut session, key) =
+            dctx_cli::host::open_notice_query(&place, &also, None, &imports)
+                .map_err(|message| Failure::index(message, "pass an existing --place PATH"))?;
         let handle = session
             .snapshot_reusable(&dctx::SnapshotRequest::strict(), &key)
             .map_err(facade)?;
@@ -43,14 +45,29 @@ impl Runtime {
                 .context(&mut session, &handle, request)
                 .map_err(facade)?;
             missing |= report.chunks.is_empty();
-            stdout.push_str(&dctx_cli::host::outside_notice(
-                &place,
-                &also,
-                &request.target,
-                report.text,
-                request.output_format == 2,
-                !report.chunks.is_empty(),
-            ));
+            let found = !report.chunks.is_empty();
+            let candidates = if found {
+                let path = report
+                    .target
+                    .split_once(':')
+                    .map(|(_, rest)| rest.split('#').next().unwrap_or(rest));
+                imports.unresolved(&mut session, &handle, path, None)
+            } else {
+                imports.candidates(None)
+            };
+            let text = if candidates.is_empty() {
+                report.text
+            } else {
+                dctx_cli::host::outside_notice(
+                    &place,
+                    &also,
+                    if found { "" } else { &request.target },
+                    report.text,
+                    request.output_format == 2,
+                    &candidates,
+                )
+            };
+            stdout.push_str(&text);
         }
         *self.0.borrow_mut() = history;
         Ok(CommandOutput {

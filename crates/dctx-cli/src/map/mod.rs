@@ -34,7 +34,7 @@ pub(crate) fn run(arguments: &[String]) -> Result<(), Failure> {
 /// Shared CLI/RPC output, preserving the page and the no-result exit code.
 pub(crate) fn output(arguments: &[String]) -> Result<exit::CommandOutput, Failure> {
     let mut bytes = Vec::new();
-    let answered = answer_with(arguments, host::open_mapped_query, &mut bytes)
+    let answered = answer_with(arguments, host::open_notice_query, &mut bytes)
         .map_err(|failure| failure.within("map"))?;
     bytes.extend_from_slice(answered.page.as_bytes());
     Ok(exit::CommandOutput {
@@ -49,7 +49,7 @@ pub(crate) fn write_output(
     output: &mut dyn std::io::Write,
 ) -> Result<(), Failure> {
     let mut tracked = exit::TrackedWriter::new(output);
-    let answered = answer_with(arguments, host::open_mapped_query, &mut tracked);
+    let answered = answer_with(arguments, host::open_notice_query, &mut tracked);
     if let Some(error) = tracked.take_error() {
         return Err(exit::write_failure(error));
     }
@@ -69,7 +69,7 @@ pub(crate) fn write_page(
     arguments: &[String],
     output: &mut dyn std::io::Write,
 ) -> Result<(), String> {
-    let answered = answer_with(arguments, host::open_mapped_query, output).map_err(|failure| {
+    let answered = answer_with(arguments, host::open_notice_query, output).map_err(|failure| {
         if failure.hint.is_empty() {
             failure.message
         } else {
@@ -93,18 +93,28 @@ fn execute_with(
     open: impl FnOnce(&std::path::Path, Option<&str>) -> Result<(dctx::Session, String), String>,
 ) -> Result<String, String> {
     let mut bytes = Vec::new();
-    answer_with(arguments, open, &mut bytes)
-        .map(|answered| {
-            bytes.extend_from_slice(answered.page.as_bytes());
-            String::from_utf8_lossy(&bytes).into_owned()
-        })
-        .map_err(|failure| {
-            if failure.hint.is_empty() {
-                failure.message
+    answer_with(
+        arguments,
+        |place, also, scope, _| {
+            if also.is_empty() {
+                open(place, scope)
             } else {
-                format!("{}\nhint: {}", failure.message, failure.hint)
+                host::open_mapped_roots(place, also)
             }
-        })
+        },
+        &mut bytes,
+    )
+    .map(|answered| {
+        bytes.extend_from_slice(answered.page.as_bytes());
+        String::from_utf8_lossy(&bytes).into_owned()
+    })
+    .map_err(|failure| {
+        if failure.hint.is_empty() {
+            failure.message
+        } else {
+            format!("{}\nhint: {}", failure.message, failure.hint)
+        }
+    })
 }
 
 /// One answered map verb: the page, and the exit-1 failure that follows a `gone` page.
@@ -131,7 +141,12 @@ impl Answered {
 )]
 fn answer_with(
     arguments: &[String],
-    open: impl FnOnce(&std::path::Path, Option<&str>) -> Result<(dctx::Session, String), String>,
+    open: impl FnOnce(
+        &std::path::Path,
+        &[std::path::PathBuf],
+        Option<&str>,
+        &host::Imports,
+    ) -> Result<(dctx::Session, String), String>,
     output: &mut dyn std::io::Write,
 ) -> Result<Answered, Failure> {
     if arguments.is_empty() || arguments == ["--help"] || arguments == ["-h"] {
@@ -206,16 +221,13 @@ fn answer_with(
         if !also.is_empty() || options.hubs || options.export.is_some() || options.to.is_some() {
             None
         } else {
-            request.source_scope()
+            request.source_scope().map(str::to_owned)
         };
     let profiling = profile_requested(options.profile);
     let host_start = profiling.then(std::time::Instant::now);
-    let (mut session, key) = if also.is_empty() {
-        open(&options.place, scope)
-    } else {
-        host::open_mapped_roots(&options.place, &also)
-    }
-    .map_err(|message| failure::place(&options.place, &message))?;
+    let imports = host::Imports::default();
+    let (mut session, key) = open(&options.place, &also, scope.as_deref(), &imports)
+        .map_err(|message| failure::place(&options.place, &message))?;
     let host_elapsed = host_start.map(|start| start.elapsed());
     if profiling {
         session.enable_profile();
@@ -302,25 +314,56 @@ fn answer_with(
         _ => None,
     };
     let page = String::from_utf8_lossy(sink.as_bytes()).into_owned();
-    let indexed_definition = matches!(request.verb, Verb::Find | Verb::Grep)
-        && answer.records.iter().any(|record| {
-            record
-                .id
-                .rsplit_once('#')
-                .is_some_and(|(_, name)| name == options.request.target)
-        });
-    let page = if !indexed_definition
-        && matches!(
-            request.verb,
-            Verb::Find | Verb::Grep | Verb::Neighbors | Verb::Explain | Verb::Read
-        ) {
+    let search = matches!(request.verb, Verb::Find | Verb::Grep);
+    let indexed_definition = if search {
+        host::indexed_name(
+            &mut session,
+            &handle,
+            &options.request.target,
+            scope.as_deref(),
+        )
+    } else {
+        !matches!(answer.outcome, Some(IdentityOutcome::Gone { .. }))
+    };
+    let notice_verb = matches!(
+        request.verb,
+        Verb::Find | Verb::Grep | Verb::Neighbors | Verb::Explain | Verb::Read
+    );
+    let candidates = if !notice_verb {
+        Vec::new()
+    } else if indexed_definition {
+        // Only unresolved imported names can need an outside definition. Reuse the
+        // source bytes already read for the snapshot/read; never reopen the target.
+        if search {
+            Vec::new()
+        } else {
+            let path = if matches!(request.verb, Verb::Read | Verb::Explain) {
+                answer.records.first().map(|record| record.path.as_str())
+            } else {
+                request
+                    .target
+                    .split_once(':')
+                    .map(|(_, rest)| rest.split('#').next().unwrap_or(rest))
+            };
+            path.map_or_else(Vec::new, |path| {
+                imports.unresolved(&mut session, &handle, Some(path), scope.as_deref())
+            })
+        }
+    } else {
+        imports.candidates(None)
+    };
+    let page = if !candidates.is_empty() {
         host::outside_notice(
             &options.place,
             &also,
-            &options.request.target,
+            if indexed_definition {
+                ""
+            } else {
+                &options.request.target
+            },
             page,
             request.output_format == 2,
-            missing.is_none() && !matches!(request.verb, Verb::Find | Verb::Grep),
+            &candidates,
         )
     } else {
         page
