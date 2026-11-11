@@ -210,5 +210,8 @@ jobs:
   deploy-site:
     needs: [npm, go, python, performance, fuzz]
     if: ${{ !failure() && !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    permissions:
+      contents: read
+      actions: read
     uses: ./.github/workflows/deploy-site.yml
     secrets: inherit
