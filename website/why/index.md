@@ -106,8 +106,8 @@ The report states its limits too. It measures dctx's answers, not a provider's c
 ### Savings belong to the system
 
 dctx on its own does not save tokens by default. In the
-[11 November benchmark](https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261111.md), CLI median total tokens were
--5.01 % versus grep, below the 25 % rule.
+[11 November benchmark](https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261111.md), the dctx CLI arm used 5.01 % fewer
+median total tokens than grep plus file reads, far below the 25 % rule.
 
 Token savings come from systems that use dctx: a harness or agent system built
 around its cache-hit philosophy, reusing byte-identical, prefix-stable context
