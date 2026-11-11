@@ -1,0 +1,78 @@
+{
+  "branch": "main",
+  "expected": "cccccccccccccccccccccccccccccccccccccccc",
+  "responses": [
+    {
+      "endpoint": "repos/{owner}/{repo}/actions/runs",
+      "fields": {
+        "branch": "main",
+        "per_page": "100"
+      },
+      "pages": [
+        {
+          "total_count": 2,
+          "workflow_runs": [
+            {
+              "id": 401,
+              "name": "Deploy website",
+              "path": ".github/workflows/deploy-site.yml",
+              "head_branch": "main",
+              "head_sha": "cccccccccccccccccccccccccccccccccccccccc",
+              "status": "completed",
+              "conclusion": "success"
+            },
+            {
+              "id": 400,
+              "name": "CI",
+              "path": ".github/workflows/ci.yml",
+              "head_branch": "main",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "completed",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "endpoint": "repos/{owner}/{repo}/actions/runs/401/jobs",
+      "fields": {
+        "filter": "latest",
+        "per_page": "100"
+      },
+      "pages": [
+        {
+          "total_count": 1,
+          "jobs": [
+            {
+              "id": 4010,
+              "name": "deploy",
+              "status": "completed",
+              "conclusion": "success",
+              "steps": [
+                {
+                  "name": "Check optional deployment credentials",
+                  "number": 1,
+                  "status": "completed",
+                  "conclusion": "success"
+                },
+                {
+                  "name": "Collect the built site",
+                  "number": 2,
+                  "status": "completed",
+                  "conclusion": "success"
+                },
+                {
+                  "name": "Deploy to website via restricted rsync",
+                  "number": 3,
+                  "status": "completed",
+                  "conclusion": "success"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "branch": "main",
+  "expected": "",
+  "responses": [
+    {
+      "endpoint": "repos/{owner}/{repo}/actions/runs",
+      "fields": {
+        "branch": "main",
+        "per_page": "100"
+      },
+      "pages": [
+        {
+          "total_count": 2,
+          "workflow_runs": [
+            {
+              "id": 701,
+              "name": "CI",
+              "path": ".github/workflows/ci.yml",
+              "head_branch": "main",
+              "head_sha": "dddddddddddddddddddddddddddddddddddddddd",
+              "status": "completed",
+              "conclusion": "success"
+            },
+            {
+              "id": 700,
+              "name": "Deploy website",
+              "path": ".github/workflows/deploy-site.yml",
+              "head_branch": "main",
+              "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "status": "completed",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "endpoint": "repos/{owner}/{repo}/actions/runs/701/jobs",
+      "fields": {
+        "filter": "latest",
+        "per_page": "100"
+      },
+      "error": 1
+    }
+  ]
+}

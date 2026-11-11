@@ -115,7 +115,9 @@ jobs:
         run: python3 -m unittest discover -s tools/release -p 'test_supply_chain.py' -v
 
       - name: Workflow validation
-        run: bash tools/release/lint-workflows.sh
+        run: |
+          python3 ci/deploy-baseline-test.py
+          bash tools/release/lint-workflows.sh
 
       - name: Release build
         id: release_build

@@ -1,0 +1,14 @@
+{
+  "branch": "main",
+  "expected": "",
+  "responses": [
+    {
+      "endpoint": "repos/{owner}/{repo}/actions/runs",
+      "fields": {
+        "branch": "main",
+        "per_page": "100"
+      },
+      "error": 1
+    }
+  ]
+}

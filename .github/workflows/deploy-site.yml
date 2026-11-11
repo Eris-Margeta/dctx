@@ -26,11 +26,12 @@ jobs:
         id: changed
         env:
           GH_TOKEN: ${{ github.token }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           # Only skip when a known successful baseline proves no website changes.
           changed=true
           if [ "$GITHUB_EVENT_NAME" != workflow_dispatch ]; then
-            baseline=$(gh run list --workflow deploy-site.yml --branch main --status success -L 1 --json headSha --jq '.[0].headSha // empty') || baseline=
+            baseline=$(python3 ci/deploy-baseline.py "$DEFAULT_BRANCH") || baseline=
             if [ -n "$baseline" ] && git merge-base --is-ancestor "$baseline" HEAD 2>/dev/null; then
               if paths=$(git diff --name-only "$baseline" HEAD); then
                 if ! grep -qE '^(website|tools/website|docs)/|^CHANGELOG\.md$|^\.github/workflows/deploy-site\.yml$' <<< "$paths"; then

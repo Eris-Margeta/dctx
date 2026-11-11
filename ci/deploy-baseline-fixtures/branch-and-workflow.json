@@ -1,0 +1,87 @@
+{
+  "branch": "trunk",
+  "expected": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "responses": [
+    {
+      "endpoint": "repos/{owner}/{repo}/actions/runs",
+      "fields": {
+        "branch": "trunk",
+        "per_page": "100"
+      },
+      "pages": [
+        {
+          "total_count": 3,
+          "workflow_runs": [
+            {
+              "id": 603,
+              "name": "CI",
+              "path": ".github/workflows/ci.yml",
+              "head_branch": "feature",
+              "head_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "status": "completed",
+              "conclusion": "success"
+            },
+            {
+              "id": 602,
+              "name": "Deploy website",
+              "path": ".github/workflows/tests.yml",
+              "head_branch": "trunk",
+              "head_sha": "ffffffffffffffffffffffffffffffffffffffff",
+              "status": "completed",
+              "conclusion": "success"
+            },
+            {
+              "id": 601,
+              "name": "CI",
+              "path": ".github/workflows/ci.yml",
+              "head_branch": "trunk",
+              "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "status": "completed",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "endpoint": "repos/{owner}/{repo}/actions/runs/601/jobs",
+      "fields": {
+        "filter": "latest",
+        "per_page": "100"
+      },
+      "pages": [
+        {
+          "total_count": 1,
+          "jobs": [
+            {
+              "id": 6010,
+              "name": "deploy-site / deploy",
+              "status": "completed",
+              "conclusion": "success",
+              "steps": [
+                {
+                  "name": "Check optional deployment credentials",
+                  "number": 1,
+                  "status": "completed",
+                  "conclusion": "success"
+                },
+                {
+                  "name": "Collect the built site",
+                  "number": 2,
+                  "status": "completed",
+                  "conclusion": "success"
+                },
+                {
+                  "name": "Deploy to website via restricted rsync",
+                  "number": 3,
+                  "status": "completed",
+                  "conclusion": "success"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
