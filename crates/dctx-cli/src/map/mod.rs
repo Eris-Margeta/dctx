@@ -5,6 +5,7 @@
 //! The command reuses a verified generation from the shared cache root.
 //! It does not write inside the scanned project. A bad target is refused before the scan.
 
+mod answer_verbs;
 mod args;
 mod export_verb;
 mod failure;
@@ -202,12 +203,16 @@ fn answer_with(
     if options.skeleton {
         skeleton::retarget(&mut request, options.budget_set);
     }
-    let scope =
-        if !also.is_empty() || options.hubs || options.export.is_some() || options.to.is_some() {
-            None
-        } else {
-            request.source_scope()
-        };
+    let scope = if !also.is_empty()
+        || options.hubs
+        || options.export.is_some()
+        || options.to.is_some()
+        || options.answer.is_some()
+    {
+        None
+    } else {
+        request.source_scope()
+    };
     let profiling = profile_requested(options.profile);
     let host_start = profiling.then(std::time::Instant::now);
     let (mut session, key) = if also.is_empty() {
@@ -255,6 +260,11 @@ fn answer_with(
     if options.export.is_some() {
         export_verb::write(&mut session, &handle, &options, output).map_err(failure::answer)?;
         return Ok(Answered::page(String::new()));
+    }
+    if options.answer.is_some() {
+        return answer_verbs::answer(&mut session, &handle, &options, &also)
+            .map(Answered::page)
+            .map_err(failure::answer);
     }
     if options.to.is_some() {
         return path_verb::answer(&mut session, &handle, &options)

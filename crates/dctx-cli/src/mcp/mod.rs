@@ -19,7 +19,7 @@ const MAX_LINE_BYTES: u64 = 1024 * 1024;
 
 const DEFAULT_PROTOCOL: &str = "2025-06-18";
 /// Usage text for `dctx mcp --help`.
-const HELP: &str = "Usage: dctx mcp [--profile default|lean|three | --tools NAME,...] [PATH]\n  Serve map verbs as MCP tools over stdio; one JSON-RPC 2.0 message per line.\n  Default: map, find, neighbors, explain, read, hubs, grep, skeleton, path, export.\n  --profile lean: find and read, with compact descriptions and all parameters.\n  --profile three: map, find and read, with compact descriptions and all parameters.\n  --tools NAME,...: expose only the named tools, with compact descriptions.\n  Select either --profile or --tools, once. Tools run in PATH (default: current directory).\n  Use -- before a PATH starting with '-'. Restart the server to change tools.\nExample: dctx mcp ~/src/project\n          dctx mcp --profile lean ~/src/project\n          dctx mcp --tools find,read,grep ~/src/project\n";
+const HELP: &str = "Usage: dctx mcp [--profile default|lean|three | --tools NAME,...] [PATH]\n  Serve map verbs as MCP tools over stdio; one JSON-RPC 2.0 message per line.\n  Default: map, find, neighbors, explain, read, hubs, grep, skeleton, path, trace, impact, export.\n  --profile lean: find and read, with compact descriptions and all parameters.\n  --profile three: map, find and read, with compact descriptions and all parameters.\n  --tools NAME,...: expose only the named tools, with compact descriptions.\n  Select either --profile or --tools, once. Tools run in PATH (default: current directory).\n  Use -- before a PATH starting with '-'. Restart the server to change tools.\nExample: dctx mcp ~/src/project\n          dctx mcp --profile lean ~/src/project\n          dctx mcp --tools find,read,grep ~/src/project\n";
 
 /// Validate all arguments before changing directory or starting the protocol.
 fn options(args: &[String]) -> Result<(Option<String>, Surface), Failure> {
@@ -414,7 +414,7 @@ mod tests {
             |n: usize, key: &str| replies[n].get("result").and_then(|r| r.get(key)).cloned();
         assert_eq!(result(0, "protocolVersion"), Some(Json::str("2024-11-05")));
         assert_eq!(replies[1].get("id"), Some(&Json::str("a")));
-        assert!(matches!(result(2, "tools"), Some(Json::Arr(tools)) if tools.len() == 10));
+        assert!(matches!(result(2, "tools"), Some(Json::Arr(tools)) if tools.len() == 12));
         let text = |n: usize| match result(n, "content") {
             Some(Json::Arr(items)) => items[0]
                 .get("text")
@@ -453,6 +453,8 @@ mod tests {
                     "grep",
                     "skeleton",
                     "path",
+                    "trace",
+                    "impact",
                     "export",
                 ],
             ),
@@ -469,6 +471,8 @@ mod tests {
                     "grep",
                     "skeleton",
                     "path",
+                    "trace",
+                    "impact",
                     "export",
                 ],
             ),

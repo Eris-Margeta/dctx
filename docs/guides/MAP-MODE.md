@@ -13,7 +13,7 @@ profile and custom tool subsets.
 
 ## Definitions outside the index
 
-For `find`, `neighbors`, `explain`, `read`, `grep` and `context`, a literal local
+For `find`, `neighbors`, `explain`, `read`, `grep`, `trace`, `impact` and `context`, a literal local
 import can explain a missing definition. When an eligible referenced file defines
 the requested or imported name, the page includes:
 
@@ -56,6 +56,8 @@ index. Without extra roots, existing IDs stay unchanged.
 dctx map <map|find|neighbors|explain|read|skeleton|grep> <TARGET> [OPTIONS]
 dctx map hubs [--limit N] [--json] [--place PATH] [--budget TOKENS] [--meta]
 dctx map path <FROM> <TO> [--json] [--place PATH] [--budget TOKENS] [--meta]
+dctx trace <A> <B> [--max-depth N] [--max-paths N] [--max-bytes N] [--json]
+dctx impact <SYMBOL> [--max-depth N] [--max-sites N] [--max-bytes N] [--json]
 dctx map export [--format json|mermaid] [--output PATH] [--place PATH]
 ```
 
@@ -70,6 +72,8 @@ dctx map export [--format json|mermaid] [--output PATH] [--place PATH]
 | `grep LITERAL` | Exhaustive literal search of indexed files, hits grouped by enclosing symbol. |
 | `hubs` | Most-called symbols and per-directory file and symbol counts. No TARGET. |
 | `path FROM TO` | Shortest edge path (calls, imports, contains; either direction; at most 8 hops), or `no path`. |
+| `trace A B` | Shortest directed call/reference paths between two symbols in one bounded answer. |
+| `impact SYMBOL` | Direct reference/call sites and transitive callers, grouped by file with counts. |
 | `export` | The whole graph as one deterministic JSON or Mermaid document; no token cap. |
 
 Copy node IDs from results: `m:sample.py` names a module and
@@ -109,6 +113,87 @@ The parser also accepts these `--kind` values: `method`, `struct`, `enum`,
 `uses-type`, `tests`, `documents`, `reexports`.
 
 The token estimate is `ceil(2 * UTF-8 bytes / 7)`, not a tokenizer guarantee.
+
+## Trace: how A reaches B
+
+```sh
+dctx trace main dispatch --max-depth 8 --max-paths 10
+dctx trace 's:src/main.rs#main' 's:src/router.rs#dispatch' --json
+```
+
+`trace` follows directed call and import/reference edges in the indexed graph.
+It returns the shortest paths, ordered by each hop's file, declaration line and
+stable ID. Container edges do not create shortcuts. Every text line is one
+complete path:
+
+```text
+chain.py:1 start -> chain.py:4 middle -> chain.py:7 branch -> chain.py:10 leaf
+```
+
+Names must match one indexed symbol exactly; use stable IDs when a name is
+ambiguous. Missing endpoints and disconnected symbols return `no path within
+bounds`. A depth cutoff, excess shortest paths or a byte cutoff adds a
+`truncated:` line. A path is retained whole or dropped whole.
+
+| Option | Default | Allowed range |
+| --- | --- | --- |
+| `--max-depth N` (`--depth N`) | 8 | 1..=16 hops |
+| `--max-paths N` | 10 | 1..=100 shortest paths |
+| `--max-bytes N` | 65536 | 256..=1048576 UTF-8 bytes |
+
+`--json` emits an object with `v: 2`, `verb: "trace"`, `paths` (arrays of
+locations), `counts.paths`, `bounds` and `truncated`. A location contains `id`,
+`file`, `line`, `symbol` and `depth` (zero for trace hops). Counts describe the
+returned paths. An empty result has `paths: []`.
+
+## Impact: what depends on a symbol
+
+```sh
+dctx impact dispatch --max-depth 4
+dctx impact 's:src/router.rs#dispatch' --max-sites 1000 --json
+```
+
+`impact` lists direct identifier references and call lines, then distinct
+transitive callers through the same directed graph. Each direct line carries
+its innermost enclosing symbol. References are scanned from verified indexed
+source, with comments and string literals masked and declaration names skipped;
+import aliases are included. Indexed references are still returned when the
+definition is outside the index, alongside the eligible outside-index notice.
+Like the existing graph, these are conservative
+structural matches, without semantic name or type resolution. Repeated uses on
+one source line in one enclosing symbol count as one site.
+
+Output is grouped by file in lexical order, with direct sites in source order
+and transitive callers in declaration order. Each group and the page report
+returned direct-site and transitive-caller counts. Callers have their shortest
+caller depth; cycles do not repeat a caller. A `truncated:` line reports a depth,
+record or byte cutoff. Direct sites take priority when the record or byte cap
+requires a smaller answer.
+
+| Option | Default | Allowed range |
+| --- | --- | --- |
+| `--max-depth N` (`--depth N`) | 8 | 1..=16 caller hops |
+| `--max-sites N` | 1000 | 1..=10000 combined direct sites and transitive callers |
+| `--max-bytes N` | 65536 | 256..=1048576 UTF-8 bytes |
+
+`--json` emits `v: 2`, `verb: "impact"`, `files`, `counts`, `bounds` and
+`truncated`. Each file group contains `file`, `direct`, `callers` and `counts`;
+locations use the same fields as trace, with direct `depth: 1` and transitive
+`depth >= 2`. Page counts contain `files`, `direct_sites` and
+`transitive_callers`; group counts contain the latter two. Empty results have
+`files: []` and zero counts.
+
+Both verbs also accept `dctx map trace` / `dctx map impact`, `--place PATH` and
+repeatable `--also DIR`. They share the deny list, root labels, cache identity,
+and outside-index notice resolution described above. Notices count towards the
+byte cap; a cap too small for mandatory metadata and notices is refused.
+Neither verb uses `--budget` or cursors. Bounds errors name the verb, option,
+value and allowed range and exit 2. Index/source scan ceilings still apply.
+
+MCP's default tool set exposes `trace` (`from`, `to`) and `impact` (`symbol`),
+with `max_depth`, `max_paths` / `max_sites`, `max_bytes`, `also` (an array of
+read-only roots) and `json`. They can also be selected with `--tools trace,impact`.
+Engine RPC advertises the same verb names and returns their exact JSON pages.
 
 ## Languages and precision
 

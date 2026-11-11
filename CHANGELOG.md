@@ -16,6 +16,11 @@ and distribution plans below do not describe the current release.
 
 ### Added
 
+- `dctx trace A B` returns bounded shortest directed call/reference paths, and
+  `dctx impact SYMBOL` returns direct sites plus transitive callers grouped by
+  file. Both support JSON, explicit depth/record/byte bounds, `--place`, `--also`,
+  outside-index notices, MCP tools and engine RPC.
+
 - `dctx agent-setup [--format claude|agents|plain]`: short, deterministic rules for
   choosing dctx or grep and using dctx from coding agents.
 - Windows CI reports warm per-call `dctx map find` p50/p95 latency over 50 separate

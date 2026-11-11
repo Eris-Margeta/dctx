@@ -7,6 +7,8 @@ use dctx_map_query::{AnswerBudget, Direction, EdgeKind, Format, Request, Verb};
 use std::path::PathBuf;
 
 pub(super) struct Options {
+    /// Bounds for one-call graph answers.
+    pub answer: Option<super::answer_verbs::Bounds>,
     pub request: Request,
     pub format: Format,
     pub place: PathBuf,
@@ -32,6 +34,8 @@ pub(super) struct Options {
     pub export: Option<super::export_verb::Export>,
 }
 pub(super) const HELP: &str = "Usage: dctx map <map|find|neighbors|explain|read|skeleton|grep> <TARGET> [OPTIONS]
+       dctx trace <A> <B> [--max-depth 1..16] [--max-paths 1..100] [--max-bytes 256..1048576] [--json]
+       dctx impact <SYMBOL> [--max-depth 1..16] [--max-sites 1..10000] [--max-bytes 256..1048576] [--json]
        dctx map hubs [--limit N] [--json] [--place PATH] [--budget TOKENS] [--meta]
          Most-called symbols (incoming calls and imports, 1..60 lines, default 20) and per-directory file and symbol counts. No TARGET.
        dctx map path <FROM> <TO> [--json] [--place PATH] [--budget TOKENS] [--meta]
@@ -92,6 +96,9 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
     }
     if args.first().map(String::as_str) == Some("export") {
         return super::export_verb::parse(args);
+    }
+    if matches!(args.first().map(String::as_str), Some("trace" | "impact")) {
+        return super::answer_verbs::parse(args);
     }
     let skeleton = args.first().map(String::as_str) == Some("skeleton");
     if args.first().map(String::as_str) == Some("path") {
@@ -260,6 +267,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
     let name = args.first().map_or("map", String::as_str);
     request.validate_as(name).map_err(|e| e.to_string())?;
     Ok(Options {
+        answer: None,
         request,
         format,
         place,

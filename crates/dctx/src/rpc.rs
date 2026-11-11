@@ -45,6 +45,10 @@ pub enum Verb {
     Hubs,
     /// `dctx map path`.
     Path,
+    /// `dctx trace`.
+    Trace,
+    /// `dctx impact`.
+    Impact,
     /// `dctx languages`.
     Languages,
     /// `dctx cache status`.
@@ -53,7 +57,7 @@ pub enum Verb {
 
 impl Verb {
     /// Complete advertised verb list, including the handshake.
-    pub const ALL: [Self; 14] = [
+    pub const ALL: [Self; 16] = [
         Self::Hello,
         Self::Pack,
         Self::Context,
@@ -66,6 +70,8 @@ impl Verb {
         Self::Grep,
         Self::Hubs,
         Self::Path,
+        Self::Trace,
+        Self::Impact,
         Self::Languages,
         Self::CacheStatus,
     ];
@@ -86,6 +92,8 @@ impl Verb {
             Self::Grep => "grep",
             Self::Hubs => "hubs",
             Self::Path => "path",
+            Self::Trace => "trace",
+            Self::Impact => "impact",
             Self::Languages => "languages",
             Self::CacheStatus => "cache_status",
         }

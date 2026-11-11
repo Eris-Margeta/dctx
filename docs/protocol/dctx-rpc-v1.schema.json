@@ -289,6 +289,20 @@
           ]
         },
         {
+          "description": "`dctx trace`.",
+          "type": "string",
+          "enum": [
+            "trace"
+          ]
+        },
+        {
+          "description": "`dctx impact`.",
+          "type": "string",
+          "enum": [
+            "impact"
+          ]
+        },
+        {
           "description": "`dctx languages`.",
           "type": "string",
           "enum": [
