@@ -6,7 +6,7 @@
 
 - This is llms-small.txt: the facts and the route table, with an outline of the start documents. The other entry points: https://www.dctx.internet.technology/llms.txt, https://www.dctx.internet.technology/llms-full.txt.
 - Engine: dctx 1.3.1. Document captures are the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs them and fails on any byte of drift. Read the pack at https://www.dctx.internet.technology/llms-full.txt.
-- Docs commit: f1071c88754e2141d3626e66111f6bc6ec4e3325 (2026-11-10T19:55:53+01:00), the last commit that changed one of the documents.
+- Docs commit: 7915813afb847ac41eec13ae9ac3f59181871f0f (2026-11-11T01:49:17+01:00), the last commit that changed one of the documents.
 - Command: `dctx map map docs/START.md --depth 2`; `dctx map map docs/WHY-DCTX.md --depth 2`; `dctx map map README.md --depth 2`; `dctx map map docs/MODALITIES.md --depth 2`
 - Document capture budget: 1,008 of 2,500 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
 
@@ -181,26 +181,26 @@ d:docs/WHY-DCTX.md#What dctx is not	heading	L122-129
 d:docs/WHY-DCTX.md#Where to go next	heading	L130-137
 d:docs/WHY-DCTX.md#Sources in this repository	heading	L138-145
 # dctx map
-d:README.md#Project status	heading	L48-55
-d:README.md#Installation	heading	L56-83
-d:README.md#What the output looks like	heading	L84-199
-d:README.md#Pack a project	heading	L88-136
-d:README.md#Find a symbol, then read it	heading	L137-163
-d:README.md#Pack for a task	heading	L164-199
-d:README.md#Which mode?	heading	L200-209
-d:README.md#Measured, in the open	heading	L210-223
-d:README.md#Start and choose your path	heading	L224-237
-d:README.md#The core belief: prompt-processing efficiency	heading	L238-248
-d:README.md#Quick Start	heading	L249-264
-d:README.md#Map mode: context for agents	heading	L265-275
-d:README.md#From source	heading	L276-293
-d:README.md#Use as a library	heading	L294-328
-d:README.md#CLI Reference	heading	L329-463
-d:README.md#Language tiers	heading	L394-463
-d:README.md#Security & Privacy	heading	L464-497
-d:README.md#Open source and maintenance	heading	L498-505
-d:README.md#Where it comes from	heading	L506-510
-d:README.md#Contributing	heading	L511-521
+d:README.md#Project status	heading	L52-59
+d:README.md#Installation	heading	L60-87
+d:README.md#What the output looks like	heading	L88-203
+d:README.md#Pack a project	heading	L92-140
+d:README.md#Find a symbol, then read it	heading	L141-167
+d:README.md#Pack for a task	heading	L168-203
+d:README.md#Which mode?	heading	L204-213
+d:README.md#Measured, in the open	heading	L214-227
+d:README.md#Start and choose your path	heading	L228-241
+d:README.md#The core belief: prompt-processing efficiency	heading	L242-252
+d:README.md#Quick Start	heading	L253-268
+d:README.md#Map mode: context for agents	heading	L269-279
+d:README.md#From source	heading	L280-297
+d:README.md#Use as a library	heading	L298-332
+d:README.md#CLI Reference	heading	L333-467
+d:README.md#Language tiers	heading	L398-467
+d:README.md#Security & Privacy	heading	L468-501
+d:README.md#Open source and maintenance	heading	L502-509
+d:README.md#Where it comes from	heading	L510-514
+d:README.md#Contributing	heading	L515-525
 # dctx map
 d:docs/MODALITIES.md#Choosing how to use dctx	heading	L3-339
 d:docs/MODALITIES.md#Available surfaces and publication status	heading	L11-25

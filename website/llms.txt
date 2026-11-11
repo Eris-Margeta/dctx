@@ -6,9 +6,9 @@
 
 - This is llms.txt: the facts and an index of every public HTML page. The other entry points: https://www.dctx.internet.technology/llms-small.txt, https://www.dctx.internet.technology/llms-full.txt.
 - Engine: dctx 1.3.1. Document captures are the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs them and fails on any byte of drift. Read the pack at https://www.dctx.internet.technology/llms-full.txt.
-- Docs commit: f1071c88754e2141d3626e66111f6bc6ec4e3325 (2026-11-10T19:55:53+01:00), the last commit that changed one of the documents.
+- Docs commit: 7915813afb847ac41eec13ae9ac3f59181871f0f (2026-11-11T01:49:17+01:00), the last commit that changed one of the documents.
 - Command: `dctx pack . --include /docs/START.md --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md`
-- Document capture budget: 18,909 of 20,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
+- Document capture budget: 18,976 of 20,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
 
 **Facts**
 
