@@ -251,6 +251,17 @@ fn place_also_and_outside_notices_use_the_shared_resolution_path() {
         outside.contains("defined outside index: ../shared/external.py"),
         "{outside}"
     );
+    assert_eq!(repo.run(&["trace", "caller", "external"]), outside);
+    let stable = repo.json(&[
+        "trace",
+        "s:caller.py#caller",
+        "s:external.py#external",
+        "--json",
+    ]);
+    assert_eq!(
+        stable["defined_outside_index"][0]["path"],
+        "../shared/external.py"
+    );
     let outside = repo.json(&["impact", "external", "--json"]);
     assert_eq!(outside["counts"]["direct_sites"], 2);
     assert_eq!(

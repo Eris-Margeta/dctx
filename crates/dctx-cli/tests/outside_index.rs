@@ -314,3 +314,156 @@ fn an_indexed_definition_does_not_report_a_duplicate_outside_name() {
         assert!(!page.contains("defined outside index"), "{page}");
     }
 }
+
+#[test]
+fn indexed_trace_and_impact_targets_do_not_report_outside_definitions() {
+    let f = Fixture::new();
+    fs::write(
+        f.path("app/main.py"),
+        "from lib.shared import shared_value\n\ndef shared_value():\n    return 1\n\ndef run():\n    return shared_value()\n",
+    )
+    .unwrap();
+    for args in [
+        vec!["trace", "run", "shared_value"],
+        vec!["trace", "s:main.py#run", "s:main.py#shared_value"],
+        vec!["trace", "shared_value", "run"],
+        vec!["trace", "s:main.py#shared_value", "s:main.py#run"],
+        vec!["trace", "shared_value", "missing"],
+        vec!["trace", "missing", "shared_value"],
+        vec!["impact", "shared_value"],
+        vec!["impact", "s:main.py#shared_value"],
+    ] {
+        for json in [false, true] {
+            let mut args = args.clone();
+            args.extend(["--place", "app"]);
+            if json {
+                args.push("--json");
+            }
+            let output = f.run(&args);
+            assert!(output.status.success(), "{args:?}: {output:?}");
+            let page = String::from_utf8(output.stdout).unwrap();
+            assert!(
+                !page.contains("defined_outside_index") && !page.contains("defined outside index"),
+                "{args:?}: {page}"
+            );
+        }
+    }
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn indexed_verbs_do_not_invoke_the_import_fallback() {
+    let f = Fixture::new();
+    // The same name is defined inside and outside the index. A literal import
+    // must not trigger an outside probe when its definition is already indexed.
+    fs::write(
+        f.path("app/main.py"),
+        "from lib.shared import shared_value\n\ndef shared_value():\n    return 1\n",
+    )
+    .unwrap();
+    fs::create_dir_all(f.path("app/unrelated/branch")).unwrap();
+    fs::write(
+        f.path("app/unrelated/branch/other.py"),
+        "def other(): pass\n",
+    )
+    .unwrap();
+    let prime = f.run(&["map", "find", "shared_value", "--place", "app"]);
+    assert!(prime.status.success());
+    let trace = f.path("trace");
+    let probe = Command::new("strace")
+        .args(["-o"])
+        .arg(&trace)
+        .args(["--", "/bin/true"])
+        .output();
+    let probe = match probe {
+        Ok(probe) => probe,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            eprintln!("strace unavailable; syscall regression requires Linux with strace");
+            return;
+        }
+        Err(error) => panic!("strace probe: {error}"),
+    };
+    if !probe.status.success() {
+        let error = String::from_utf8_lossy(&probe.stderr);
+        assert!(
+            error.contains("Operation not permitted") || error.contains("Permission denied"),
+            "{error}"
+        );
+        eprintln!("ptrace unavailable; syscall regression requires tracing permission");
+        return;
+    }
+    for args in [
+        vec!["map", "read", "m:main.py"],
+        vec!["map", "read", "s:main.py#shared_value"],
+        vec!["map", "trace", "shared_value", "shared_value"],
+        vec![
+            "map",
+            "trace",
+            "s:main.py#shared_value",
+            "s:main.py#shared_value",
+        ],
+        vec!["map", "impact", "shared_value"],
+        vec!["map", "impact", "s:main.py#shared_value"],
+    ] {
+        let output = Command::new("strace")
+            .args([
+                "-f",
+                "-qq",
+                "-yy",
+                "-s",
+                "4096",
+                "-e",
+                "trace=open,openat,openat2,getdents64",
+                "-o",
+            ])
+            .arg(&trace)
+            .arg("--")
+            .arg(env!("CARGO_BIN_EXE_dctx-cli"))
+            .args(&args)
+            .args(["--place", "app", "--json"])
+            .env_clear()
+            .current_dir(f.temp.path())
+            .env("HOME", f.path("home"))
+            .env("TMPDIR", f.path("tmp"))
+            .env("XDG_CONFIG_HOME", f.path("config"))
+            .env("DCTX_CACHE_DIR", f.path("cache"))
+            .env("DCTX_AUTO_CLEAN", "0")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(output.stderr.is_empty());
+        let page = String::from_utf8(output.stdout).unwrap();
+        assert!(!page.contains("defined_outside_index"), "{page}");
+        let syscalls = fs::read_to_string(&trace).unwrap();
+        assert!(
+            !syscalls.contains("lib/shared.py"),
+            "{args:?}: outside fallback ran: {syscalls}"
+        );
+        // Reads are file-scoped; graph answers require the complete index.
+        if args[1] == "read" {
+            assert!(
+                !syscalls
+                    .lines()
+                    .any(|line| line.contains("getdents64(") && line.contains("/unrelated")),
+                "unrelated directory enumerated: {syscalls}"
+            );
+        }
+        let opens = syscalls
+            .lines()
+            .filter(|line| {
+                (line.contains("open(") || line.contains("openat(") || line.contains("openat2("))
+                    && line.contains("main.py\"")
+            })
+            .count();
+        if args[1] == "read" {
+            assert!(
+                (1..=3).contains(&opens),
+                "selected source opened {opens} times: {syscalls}"
+            );
+        }
+    }
+}

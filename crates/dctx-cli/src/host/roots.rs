@@ -72,7 +72,7 @@ pub fn also_arguments(args: &[String]) -> Result<(Vec<String>, Vec<PathBuf>), St
 
 struct Root {
     label: String,
-    source: inventory::PreparedSource,
+    source: outside::ImportSource<inventory::PreparedSource>,
     policy: SelectionPolicy,
 }
 
@@ -189,6 +189,14 @@ pub fn open_mapped_roots(path: &Path, also: &[PathBuf]) -> Result<(Session, Stri
 }
 
 pub(crate) fn union_source(path: &Path, also: &[PathBuf]) -> Result<(Roots, String), String> {
+    union_source_with_imports(path, also, None)
+}
+
+fn union_source_with_imports(
+    path: &Path,
+    also: &[PathBuf],
+    imports: Option<&outside::Imports>,
+) -> Result<(Roots, String), String> {
     let mut paths = vec![fs::canonicalize(path).map_err(|e| e.to_string())?];
     for extra in also {
         paths.push(fs::canonicalize(extra).map_err(|e| e.to_string())?);
@@ -215,11 +223,62 @@ pub(crate) fn union_source(path: &Path, also: &[PathBuf]) -> Result<(Roots, Stri
             let _ = write!(key, "{byte:02x}");
         }
         key.push(';');
+        let prefix = format!("{label}/");
         roots.push(Root {
             label,
-            source,
+            source: outside::ImportSource {
+                source,
+                imports: imports.cloned(),
+                root: canonical,
+                prefix,
+            },
             policy: rules.policy(),
         });
     }
     Ok((Roots(roots), key))
+}
+
+/// Opens a query session while collecting literal imports from existing engine reads.
+/// # Errors
+/// Returns source, selection-rule, cache or session setup failures.
+pub fn open_notice_query(
+    path: &Path,
+    also: &[PathBuf],
+    scope: Option<&str>,
+    imports: &outside::Imports,
+) -> Result<(Session, String), String> {
+    if also.is_empty() {
+        let (source, label, canonical) = open_source(path)?;
+        let (source, rules) = rules::project_rules_inventory(path, source, scope)?;
+        let key = canonical.to_string_lossy().into_owned();
+        let source = outside::ImportSource {
+            source,
+            imports: Some(imports.clone()),
+            root: canonical,
+            prefix: String::new(),
+        };
+        notice_session(source, &label, key, rules, scope.is_none())
+    } else {
+        let (source, key) = union_source_with_imports(path, also, Some(imports))?;
+        notice_session(source, "roots", key, RuleSources::default(), true)
+    }
+}
+
+fn notice_session(
+    source: impl Source + Send + 'static,
+    label: &str,
+    key: String,
+    rules: RuleSources,
+    cached: bool,
+) -> Result<(Session, String), String> {
+    if cached {
+        if let Ok(cache) = cache_root_dir() {
+            if ensure_cache_dir(&cache).is_ok() {
+                let id = place_root_id(Path::new(&key))?;
+                return build_cached(source, label, &cache, id, rules)
+                    .map(|session| (session, key));
+            }
+        }
+    }
+    build(source, label, "default", rules).map(|session| (session, key))
 }

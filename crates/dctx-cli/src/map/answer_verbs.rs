@@ -2,7 +2,10 @@
 //! One-call bounded trace and impact pages, shared by CLI and tool transports.
 
 use super::args::Options;
-use dctx::{AnswerLocation, ImpactAnswer, Session, SnapshotHandle, TraceAnswer};
+use dctx::{
+    AnswerLocation, IdentityOutcome, ImpactAnswer, MapRequest, Session, SnapshotHandle,
+    TraceAnswer, VecSink, Verb,
+};
 use dctx_map_query::Format;
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
@@ -102,6 +105,7 @@ pub(super) fn answer(
     handle: &SnapshotHandle,
     options: &Options,
     also: &[std::path::PathBuf],
+    imports: &crate::host::Imports,
 ) -> Result<String, String> {
     let bounds = options.answer.as_ref().ok_or("missing answer bounds")?;
     let target = &options.request.target;
@@ -112,7 +116,7 @@ pub(super) fn answer(
             .trace_paths(handle, target, to, bounds.depth, bounds.paths)
             .map_err(|e| e.to_string())?;
         // Outside notices count towards the same byte cap. Probe once; trimming never rescans.
-        let notices = notices(options, also, &[target, to]);
+        let notices = notices(session, handle, options, also, imports, &[target, to])?;
         loop {
             let page = with_notices(render_trace(&answer, bounds, json), &notices, json)?;
             if page.len() <= bounds.bytes {
@@ -130,7 +134,7 @@ pub(super) fn answer(
         let answer = session
             .symbol_impact(handle, target, bounds.depth, bounds.sites)
             .map_err(|e| e.to_string())?;
-        let notices = notices(options, also, &[target]);
+        let notices = notices(session, handle, options, also, imports, &[target])?;
         let render =
             |keep| with_notices(render_impact(&answer, bounds, json, keep), &notices, json);
         let total = answer.direct.len() + answer.callers.len();
@@ -274,16 +278,57 @@ fn render_impact(answer: &ImpactAnswer, bounds: &Bounds, json_output: bool, keep
     page
 }
 
-fn notices(options: &Options, also: &[std::path::PathBuf], targets: &[&str]) -> Value {
+fn notices(
+    session: &mut Session,
+    handle: &SnapshotHandle,
+    options: &Options,
+    also: &[std::path::PathBuf],
+    imports: &crate::host::Imports,
+    targets: &[&str],
+) -> Result<Value, String> {
     let mut notices = Vec::new();
     for target in targets {
+        // Names use a metadata-only find; stable ids use explain so they are not
+        // mistaken for missing names. Neither probe reads source or invokes fallback.
+        let indexed = if target.contains(':') || target.starts_with('@') {
+            let mut request = MapRequest::new(Verb::Explain);
+            request.target = (*target).to_owned();
+            session
+                .query(handle, &request, &mut VecSink::new())
+                .map_or(true, |answer| {
+                    !matches!(answer.outcome, Some(IdentityOutcome::Gone { .. }))
+                })
+        } else {
+            crate::host::indexed_name(session, handle, target, None)
+        };
+        if indexed {
+            continue;
+        }
+        // A reusable generation need not read any source while answering trace.
+        // On a miss, reuse find's literal lookup to capture imports from the
+        // indexed reference sites before probing their outside definitions.
+        let mut find = MapRequest::new(Verb::Find);
+        find.query = target
+            .rsplit_once('#')
+            .map_or(*target, |(_, name)| name)
+            .split('~')
+            .next()
+            .unwrap_or(target)
+            .to_owned();
+        session
+            .query(handle, &find, &mut VecSink::new())
+            .map_err(|error| error.to_string())?;
+        let candidates = imports.candidates(None);
+        if candidates.is_empty() {
+            continue;
+        }
         let page = crate::host::outside_notice(
             &options.place,
             also,
             target,
             "{}".to_string(),
             true,
-            false,
+            &candidates,
         );
         if let Ok(value) = serde_json::from_str::<Value>(&page) {
             for notice in value["defined_outside_index"]
@@ -297,7 +342,7 @@ fn notices(options: &Options, also: &[std::path::PathBuf], targets: &[&str]) -> 
             }
         }
     }
-    Value::Array(notices)
+    Ok(Value::Array(notices))
 }
 
 fn with_notices(mut page: String, notices: &Value, json_output: bool) -> Result<String, String> {

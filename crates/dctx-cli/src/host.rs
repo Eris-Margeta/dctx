@@ -31,9 +31,9 @@ mod outside;
 mod policy;
 mod roots;
 mod rules;
-pub use outside::outside_notice;
+pub use outside::{indexed_name, outside_notice, Imports};
 pub(crate) use roots::union_source;
-pub use roots::{also_arguments, open_mapped_roots};
+pub use roots::{also_arguments, open_mapped_roots, open_notice_query};
 
 pub use cache::*;
 
