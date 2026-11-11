@@ -20,7 +20,7 @@
 <meta name="description" content="Every dctx command, flag, environment variable, exit code and MCP tool, captured from the dctx binary.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
-<meta name="dctx-build" content="a2f6c806a6cdf9ed1d86153b72a7cf87d765b4c8826d43ecb3f551a6f1c036b8">
+<meta name="dctx-build" content="581e42fa1505d23de0af80aae9d961229906d9bef2e37196a46f57e57ad63102">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -309,6 +309,7 @@ pub struct Order {
        <span class="t-f">dctx</span> read <span class="t-v">&lt;TARGET&gt;</span> [<span class="t-v">OPTIONS</span>]
        <span class="t-f">dctx</span> languages [<span class="t-a">--json</span>|<span class="t-a">--markdown</span>]
        <span class="t-f">dctx</span> doctor [<span class="t-a">--json</span>]
+       <span class="t-f">dctx</span> agent-setup [<span class="t-a">--format</span> claude|agents|plain]
        <span class="t-f">dctx</span> cache status [<span class="t-a">--json</span>] [<span class="t-a">--root</span> <span class="t-v">PATH</span>]
        <span class="t-f">dctx</span> cache gc [<span class="t-a">--dry-run</span>] [<span class="t-a">--root</span> <span class="t-v">PATH</span>] [<span class="t-a">--max-bytes</span> N]
        <span class="t-f">dctx</span> cache purge <span class="t-a">--root</span> <span class="t-v">PATH</span> [<span class="t-a">--dry-run</span>] [<span class="t-a">--yes</span>]
@@ -332,6 +333,7 @@ Cache purge requires <span class="t-s">`--root PATH`</span> or <span class="t-s"
 <span class="t-s">`dctx cache config`</span> shows the persisted policy. <span class="t-s">`auto on|off`</span> enables auto-clean, <span class="t-s">`--max-bytes`</span> tightens the system cap, and <span class="t-s">`--ttl-days`</span> sets idle overlay and preview lifetime.
 <span class="t-s">`dctx cache auto`</span> prints the last auto-clean time, the bytes it reclaimed and the next due time.
 <span class="t-s">`dctx doctor`</span> lists visible binaries, ownership scopes, <span class="t-v">SHA</span>-256 checksums and cache sizes without changing the cache or using the network.
+<span class="t-s">`dctx agent-setup`</span> prints concise rules to paste into <span class="t-v">CLAUDE</span>.md or <span class="t-v">AGENTS</span>.md (default: agents).
 pack, map, template, plugin and the <span class="t-v">TUI</span> run one bounded auto-clean when it is due. They print nothing unless bytes were reclaimed.
 <span class="t-s">`--no-auto-clean`</span> and <span class="t-s">`DCTX_AUTO_CLEAN=0`</span> disable that slice. <span class="t-s">`DCTX_CACHE_DIR`</span> selects the cache parent; indexes live in its engine-major.minor subdirectory.</code></pre></div></section><section class="help-sec" id="help-general-options"><h3>General Options</h3><div class="code"><div class="code-head"><span>verbatim</span><button class="copy" type="button" hidden>Copy</button></div><pre><code>  <span class="t-a">-h</span>, <span class="t-a">--help</span>            Show help
   <span class="t-a">-v</span>, <span class="t-a">--version</span>         Show version
