@@ -256,6 +256,11 @@ fn relative_imports_are_scanned_literally_and_large_targets_are_skipped() {
     let page = f.page(&["map", "find", "shared_value", "--place", "app", "--json"]);
     let json: serde_json::Value = serde_json::from_str(&page).unwrap();
     assert_eq!(json["defined_outside_index"].as_array().unwrap().len(), 1);
+    assert_eq!(json["defined_outside_index"][0]["path"], "../lib/shared.py");
+    assert_eq!(
+        json["defined_outside_index"][0]["hint"],
+        "add it with --also lib"
+    );
     fs::write(
         f.path("lib/shared.py"),
         format!(
@@ -265,6 +270,37 @@ fn relative_imports_are_scanned_literally_and_large_targets_are_skipped() {
     )
     .unwrap();
     let page = f.page(&["map", "find", "shared_value", "--place", "app", "--json"]);
+    assert!(!page.contains("defined_outside_index"), "{page}");
+}
+
+#[test]
+fn relative_import_parent_segments_keep_slash_paths_and_resolve_with_extra_roots() {
+    let f = Fixture::new();
+    fs::remove_file(f.path("app/main.py")).unwrap();
+    fs::create_dir(f.path("lib/nested")).unwrap();
+    fs::write(
+        f.path("app/main.ts"),
+        "import { shared_value } from '../lib/./nested/../shared';\n",
+    )
+    .unwrap();
+    let page = f.page(&["map", "find", "shared_value", "--place", "app", "--json"]);
+    let json: serde_json::Value = serde_json::from_str(&page).unwrap();
+    assert_eq!(json["defined_outside_index"][0]["path"], "../lib/shared.py");
+    assert_eq!(
+        json["defined_outside_index"][0]["hint"],
+        "add it with --also lib"
+    );
+    let page = f.page(&[
+        "map",
+        "find",
+        "shared_value",
+        "--place",
+        "app",
+        "--also",
+        "lib/./nested/..",
+        "--json",
+    ]);
+    assert!(page.contains("s:lib/shared.py#shared_value"), "{page}");
     assert!(!page.contains("defined_outside_index"), "{page}");
 }
 

@@ -255,6 +255,9 @@ pub fn outside_notice(
             let Some(relative) = relative.to_str() else {
                 continue;
             };
+            // Core paths and policy scopes use '/' even when strip_prefix returns '\\'.
+            let relative = relative.replace('\\', "/");
+            let relative = relative.as_str();
             if !safe_components(boundary, relative, &policy) {
                 continue;
             }
@@ -278,7 +281,7 @@ pub fn outside_notice(
             if !matched {
                 continue;
             }
-            let shown = format!("../{}", relative.replace('\\', "/"));
+            let shown = format!("../{relative}");
             let Some(parent) = candidate.parent() else {
                 continue;
             };
@@ -544,27 +547,53 @@ fn defines(text: &str, name: &str) -> bool {
 
 fn invocation_relative(path: &Path) -> Option<String> {
     let current = std::env::current_dir().ok()?;
-    let current = current.components().collect::<Vec<_>>();
-    let target = path.components().collect::<Vec<_>>();
+    relative_path(&current, path)
+}
+
+// Compare lexical components without canonicalizing the target: outside probes
+// must still refuse symlinks. Windows canonicalize adds a verbatim prefix that
+// current_dir need not have; neither that prefix nor native separators belong
+// in a repository-relative path or an --also hint.
+fn relative_path(from: &Path, to: &Path) -> Option<String> {
+    let components = |path: &Path| {
+        let portable = path.to_str()?.replace('\\', "/");
+        let portable = portable.strip_prefix("//?/").unwrap_or(&portable);
+        let portable = portable
+            .strip_prefix("UNC/")
+            .map_or_else(|| portable.to_owned(), |rest| format!("//{rest}"));
+        let windows = portable.as_bytes().get(1) == Some(&b':') || portable.starts_with("//");
+        let path = lexical(Path::new(&portable))?;
+        let parts = path
+            .components()
+            .map(|part| Some(part.as_os_str().to_str()?.replace('\\', "/")))
+            .collect::<Option<Vec<_>>>()?;
+        Some((windows, parts))
+    };
+    let (from_windows, current) = components(from)?;
+    let (to_windows, target) = components(to)?;
     let common = current
         .iter()
         .zip(&target)
-        .take_while(|(a, b)| a == b)
+        .take_while(|(a, b)| {
+            if from_windows && to_windows {
+                a.eq_ignore_ascii_case(b)
+            } else {
+                a == b
+            }
+        })
         .count();
     if common == 0 {
         return None;
     }
-    let mut relative = PathBuf::new();
-    for _ in common..current.len() {
-        relative.push("..");
-    }
-    for component in &target[common..] {
-        relative.push(component.as_os_str());
-    }
-    if relative.as_os_str().is_empty() {
-        relative.push(".");
-    }
-    Some(relative.to_str()?.replace('\\', "/"))
+    let relative = std::iter::repeat_n("..", current.len() - common)
+        .chain(target[common..].iter().map(String::as_str))
+        .collect::<Vec<_>>()
+        .join("/");
+    Some(if relative.is_empty() {
+        ".".into()
+    } else {
+        relative
+    })
 }
 
 fn shell_directory(directory: &str) -> String {
@@ -575,5 +604,40 @@ fn shell_directory(directory: &str) -> String {
         directory.to_string()
     } else {
         format!("'{}'", directory.replace('\'', "'\\''"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn relative_paths_normalize_windows_prefixes_separators_and_parents() {
+        for (from, to, expected) in [
+            (r"C:\x\y", r"\\?\C:\x\y", "."),
+            (r"\\?\C:\x\y", r"C:\x\y", "."),
+            (
+                r"C:\x\y",
+                r"\\?\C:\x\y/../lib\shared.py",
+                "../lib/shared.py",
+            ),
+            (
+                r"\\?\C:\x/y\.",
+                r"c:/X/y/../my lib\shared.py",
+                "../my lib/shared.py",
+            ),
+            ("/x/y", "/x/y/../lib/shared.py", "../lib/shared.py"),
+            ("/x/y", "/x/y/nested/./shared.py", "nested/shared.py"),
+        ] {
+            assert_eq!(
+                relative_path(Path::new(from), Path::new(to)).as_deref(),
+                Some(expected),
+                "{from} -> {to}"
+            );
+        }
+        assert_eq!(
+            relative_path(Path::new(r"C:\x\y"), Path::new(r"D:\x\y")),
+            None
+        );
     }
 }

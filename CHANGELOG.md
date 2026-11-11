@@ -36,6 +36,7 @@ and distribution plans below do not describe the current release.
 
 ### Fixed
 
+- Windows outside-index notices and `trace`/`impact` now normalize native separators and verbatim drive prefixes, keeping relative paths and `--also` hints slash-separated.
 - Map query bounds errors name the offending option, its value, the user-facing
   verb (including `grep`) and its allowed range; usage errors still exit 2.
 - Windows: a file briefly locked by another process (antivirus, indexer, editor) no longer fails the whole pack; dctx retries for up to ~0.3 s.
