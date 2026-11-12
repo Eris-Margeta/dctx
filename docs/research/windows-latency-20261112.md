@@ -73,3 +73,39 @@ cache and auto-clean settings before prioritizing a fix. A large subprocess wall
 minus phase sum suggests investigating startup/loader/exit overhead separately;
 a large `generation_open` suggests distinguishing ancestor opens, stats, hashing
 and cache traffic with OS tracing or the existing detailed map profile.
+
+## Scale fixture
+
+The one-file fixture from CI run 43241496123 measured 10.7 ms p50 on Windows,
+with median `config_and_root` 3,465 us and `generation_open` 2,096 us. It does
+not reproduce the tester's 2.7 s p50 on a 1,551-file repository.
+
+`tools/bench/map_find_latency.py --scale-files 1551` generates exactly 1,551
+small files in a deterministic order, cycling through `.rs`, `.py`, `.md` and
+`.json`. Files live four directory levels below the fixture root, with 20 files
+per leaf directory except the final partial group. Groups share base-four
+directory prefixes. The first Rust file contains the same `latency_probe`
+symbol as the default fixture; other files contain distinct numbered items.
+The JSON `fixture_shape` records `files`, `dirs` (including the fixture root),
+and `depth` (directory levels below that root). At 1,551 files these are 1,551,
+106 and 4 respectively. `--scale-files 0` remains the default one-file layout,
+with shape 1 file, 1 directory and depth 0.
+
+All generated source mtimes, including the default fixture's, are set ten
+seconds before generation starts, leaving at least five seconds of margin and
+avoiding the two-second racy window without sleeps. This supersedes the freshly
+written mtimes described for the earlier one-file benchmark above. Fixture and
+isolated cache/config preparation are outside measurement. One unmeasured
+map-find process builds the index, followed by 50 separate warm processes.
+Wall p50/p95, raw samples and opt-in phase medians keep the existing accounting.
+
+Windows CI runs both the default and scale fixtures and uploads separate JSON
+files in the existing per-matrix artifact. One existing Linux stable matrix
+entry runs the same scale fixture with `DCTX_TIMINGS=1` and uploads
+`map-find-latency-linux-scale`. Both platforms use release builds and the same
+cache/config isolation and disabled auto-clean. All steps remain informational
+with `continue-on-error`; no performance threshold changes. Compare wall and
+phase distributions side by side when CI artifacts are available. No scale
+results are recorded here yet; MAIN will add them from CI. The synthetic mix
+and tree shape approximate repository scale, not the tester's actual content
+or filesystem environment.

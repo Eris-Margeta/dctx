@@ -109,6 +109,7 @@ jobs:
         run: |
           cargo build --release --locked -p dctx-cli
           python tools/bench/map_find_latency.py --binary target/release/dctx-cli.exe --output target/map-find-latency.json
+          python tools/bench/map_find_latency.py --binary target/release/dctx-cli.exe --scale-files 1551 --output target/map-find-latency-scale.json
 
       - name: Upload Windows map-find latency samples
         if: ${{ always() && runner.os == 'Windows' }}
@@ -116,5 +117,25 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2 (GitHub API resolved)
         with:
           name: map-find-latency-${{ matrix.os }}-${{ matrix.toolchain }}
-          path: target/map-find-latency.json
+          path: |
+            target/map-find-latency.json
+            target/map-find-latency-scale.json
+          if-no-files-found: warn
+
+      - name: Linux map-find repository-scale latency (informational)
+        if: ${{ runner.os == 'Linux' && matrix.os == fromJSON(inputs.os)[0] && matrix.toolchain == 'stable' }}
+        continue-on-error: true
+        env:
+          DCTX_TIMINGS: '1'
+        run: |
+          cargo build --release --locked -p dctx-cli
+          python tools/bench/map_find_latency.py --binary target/release/dctx-cli --scale-files 1551 --output target/map-find-latency-linux-scale.json
+
+      - name: Upload Linux map-find scale latency samples
+        if: ${{ always() && runner.os == 'Linux' && matrix.os == fromJSON(inputs.os)[0] && matrix.toolchain == 'stable' }}
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2 (GitHub API resolved)
+        with:
+          name: map-find-latency-linux-scale
+          path: target/map-find-latency-linux-scale.json
           if-no-files-found: warn
