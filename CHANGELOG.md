@@ -46,6 +46,7 @@ and distribution plans below do not describe the current release.
 
 ### Changed
 
+- Measure shell versus MCP-default stdout sizes on 1,551 files; the [study](docs/research/bash-path-20261112.md) reports 260 calls, a negative default-size result, and exact shell bounds.
 - MCP discovery uses compact descriptions and advertises text/limit defaults.
   Map, hubs, trace and impact have smaller default answer bounds; explicit
   limits still override them. A bounded `pack` tool returns task definitions,
