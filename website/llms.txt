@@ -7,7 +7,7 @@
 - Publisher: TEJL - tvornica elektroničkih jedinica i logike. TEJL.com: https://tejl.com/; TEJL.hr: https://tejl.hr/.
 - This is llms.txt: the facts and an index of every public HTML page. The other entry points: https://www.dctx.internet.technology/llms-small.txt, https://www.dctx.internet.technology/llms-full.txt.
 - Engine: dctx 1.3.1. Document captures are the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs them and fails on any byte of drift. Read the pack at https://www.dctx.internet.technology/llms-full.txt.
-- Docs commit: 7b33a62218cef5d3e4fff4ec97ceba4201e3ec95 (2026-11-12T17:25:48+01:00), the last commit that changed one of the documents.
+- Docs commit: 5b0df07607ccc4600fdd253b1d1af75c02d2fc7d (2026-11-12T18:34:19+01:00), the last commit that changed one of the documents.
 - Command: `dctx pack . --include /docs/START.md --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md`
 - Document capture budget: 19,683 of 20,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
 
