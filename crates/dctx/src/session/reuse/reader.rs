@@ -88,7 +88,7 @@ impl<'a> Reader<'a> {
 
     /// Materializes the validated table in one owned buffer. Each node field
     /// shares this buffer and a range; no field borrows the retained byte slice.
-    pub(super) fn node_texts(&self) -> Vec<crate::index::NodeText> {
+    pub(super) fn node_texts(&self) -> crate::index::NodeTextTable {
         let mut buffer = String::with_capacity(self.strings.iter().map(|s| s.len()).sum());
         let mut ranges = Vec::with_capacity(self.strings.len());
         for value in &self.strings {
@@ -96,15 +96,15 @@ impl<'a> Reader<'a> {
             buffer.push_str(value);
             ranges.push(start..buffer.len());
         }
-        crate::index::NodeText::table(buffer, ranges)
+        crate::index::NodeTextTable::new(buffer, ranges)
     }
 
     pub(super) fn node_text(
         &mut self,
-        texts: &[crate::index::NodeText],
+        texts: &crate::index::NodeTextTable,
     ) -> Result<crate::index::NodeText, DctxError> {
         let id = self.u32()? as usize;
-        texts.get(id).cloned().ok_or(DctxError::CorruptIndex {
+        texts.get(id).ok_or(DctxError::CorruptIndex {
             reason: "generation string reference",
         })
     }
