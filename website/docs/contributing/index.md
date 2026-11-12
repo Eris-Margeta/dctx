@@ -20,6 +20,8 @@ what you tried and the relevant documentation link.
 
 ## CLI development setup
 
+CI tests use `DCTX_CI_RUST` from `tools/release/toolchain.env`; bump it intentionally each Rust release.
+
 Use a recent stable Rust toolchain with Cargo; the workspace includes Rust 2024
 crates. Clone the repository and run commands from its root:
 
