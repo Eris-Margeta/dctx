@@ -33,6 +33,7 @@ jobs:
       matrix:
         # Requested OS versions; see docs/TESTING.md for GitHub's macOS retirements.
         os: ${{ fromJSON(inputs.os) }}
+        # Keep matrix labels unchanged for required-check names.
         toolchain: [stable, msrv]
     defaults:
       run:
@@ -46,11 +47,13 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Resolve toolchain from Cargo.toml
+      - name: Resolve CI and MSRV toolchains
         id: toolchain
         env:
           CHANNEL: ${{ matrix.toolchain }}
         run: |
+          source tools/release/toolchain.env
+          export DCTX_CI_RUST
           python - <<'PYTHON'
           import os
           import tomllib
@@ -63,7 +66,7 @@ jobs:
               # Proposed floor: existing tests use Duration::from_mins (stable in 1.91).
               msrv = "1.91.0"
               print("::notice::No rust-version in Cargo.toml; testing proposed MSRV 1.91.0")
-          version = msrv if os.environ["CHANNEL"] == "msrv" else "stable"
+          version = msrv if os.environ["CHANNEL"] == "msrv" else os.environ["DCTX_CI_RUST"]
           with open(os.environ["GITHUB_OUTPUT"], "a") as output:
               print(f"version={version}", file=output)
           PYTHON

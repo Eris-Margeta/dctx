@@ -55,10 +55,11 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install stable toolchain
+      - name: Install pinned CI toolchain
         run: |
-          rustup toolchain install stable --profile minimal --component rustfmt --component clippy
-          rustup override set stable
+          source tools/release/toolchain.env
+          rustup toolchain install "$DCTX_CI_RUST" --profile minimal --component rustfmt --component clippy
+          rustup override set "$DCTX_CI_RUST"
           rustc --version --verbose
           cargo --version
 

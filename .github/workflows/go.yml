@@ -46,13 +46,17 @@ jobs:
           go-version: ${{ matrix.go }}
           cache: false
       - name: Install Rust toolchain
-        run: rustup toolchain install stable --profile minimal --no-self-update
+        run: |
+          source tools/release/toolchain.env
+          rustup toolchain install "$DCTX_CI_RUST" --profile minimal --no-self-update
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           key: go-${{ matrix.os }}
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - name: Build matching engine
-        run: cargo +stable build --locked -p dctx-cli
+        run: |
+          source tools/release/toolchain.env
+          cargo +"$DCTX_CI_RUST" build --locked -p dctx-cli
       - name: Check generated API and formatting
         working-directory: packages/go
         run: |
