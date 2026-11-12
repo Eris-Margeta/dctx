@@ -32,6 +32,7 @@ pub(super) fn project_rules_inventory(
     } else {
         required_ignore(config.map(|dir| dir.join("ignore")))?
     };
+    let _timing = dctx::timings::Span::begin(dctx::timings::Phase::GenerationOpen);
     let mut walk = RuleWalk::new(&source);
     let local_ignore = if index_ignored() {
         None

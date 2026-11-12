@@ -22,6 +22,34 @@ enum CliCommand {
 }
 
 fn main() {
+    if env::var_os("DCTX_TIMINGS").is_some_and(|value| value == "1") {
+        dctx::timings::enable();
+    }
+    run();
+    emit_timings();
+}
+
+fn emit_timings() {
+    if let Some(phases) = dctx::timings::take() {
+        use std::io::Write;
+        let phases: serde_json::Map<_, _> = phases
+            .into_iter()
+            .map(|(phase, micros)| (phase.to_owned(), serde_json::json!(micros)))
+            .collect();
+        let _ = writeln!(
+            std::io::stderr().lock(),
+            "{}",
+            serde_json::json!({"dctx_timings": phases})
+        );
+    }
+}
+
+fn exit_with(code: i32) -> ! {
+    emit_timings();
+    std::process::exit(code);
+}
+
+fn run() {
     exit_quietly_on_broken_pipe();
     let raw = match utf8_arguments(env::args_os()) {
         Ok(raw) => raw,
@@ -31,14 +59,14 @@ fn main() {
         .get(1)
         .is_some_and(|arg| arg == "--internal-plugin-worker")
     {
-        std::process::exit(i32::from(plugin::enter_worker(&raw[2..])));
+        exit_with(i32::from(plugin::enter_worker(&raw[2..])));
     }
     let allow_auto_clean = host::auto_clean_allowed(&raw);
     let args = host::without_auto_flag(raw);
     let head = args.get(1).map(String::as_str);
     if head.is_some_and(plugin::is_early) {
         maybe_auto_clean(allow_auto_clean);
-        std::process::exit(i32::from(plugin::enter(&args)));
+        exit_with(i32::from(plugin::enter(&args)));
     }
     // Every command but plugin and git follows docs/CLI-EXIT-CODES.md.
     let result = match head {
@@ -132,7 +160,7 @@ fn exit_quietly_on_broken_pipe() {
             .map(String::as_str)
             .or_else(|| payload.downcast_ref::<&str>().copied());
         if message.is_some_and(is_broken_stdout) {
-            std::process::exit(0);
+            exit_with(0);
         }
         default(info);
     }));
@@ -147,7 +175,7 @@ fn is_broken_stdout(message: &str) -> bool {
 /// Prints `failure` (message, then hint) on stderr and exits with its code.
 fn fail(failure: &Failure) -> ! {
     eprint!("{}", failure.render());
-    std::process::exit(failure.code);
+    exit_with(failure.code);
 }
 
 /// The process arguments as UTF-8. `env::args` panics on a non-UTF-8 argument; this refuses it with exit 2 instead.

@@ -31,6 +31,24 @@ def percentile(samples: list[float], fraction: float) -> float:
     return sorted(samples)[math.ceil(len(samples) * fraction) - 1]
 
 
+def phase_timings(stderr: bytes) -> dict[str, int]:
+    """Accept one timings object alongside any ordinary stderr diagnostics."""
+    reports = []
+    for line in stderr.splitlines():
+        try:
+            report = json.loads(line)
+        except (ValueError, UnicodeDecodeError):
+            continue
+        if isinstance(report, dict) and "dctx_timings" in report:
+            reports.append(report["dctx_timings"])
+    if len(reports) != 1 or not isinstance(reports[0], dict) or not reports[0]:
+        raise RuntimeError("expected exactly one nonempty dctx_timings object")
+    phases = reports[0]
+    if any(type(value) is not int or value < 0 for value in phases.values()):
+        raise RuntimeError("dctx_timings values must be nonnegative integer microseconds")
+    return phases
+
+
 def measure(binary: Path, root: Path) -> dict:
     place = root / "fixture"
     place.mkdir()
@@ -44,18 +62,30 @@ def measure(binary: Path, root: Path) -> dict:
     })
     command = [str(binary), "map", "find", SYMBOL, "--place", str(place)]
 
-    def query() -> None:
+    timings_enabled = env.get("DCTX_TIMINGS") == "1"
+
+    def query() -> bytes:
         result = subprocess.run(command, env=env, capture_output=True, check=True)
         if SYMBOL.encode() not in result.stdout:
             raise RuntimeError("map find did not return the fixture symbol")
+        return result.stderr
 
-    query()  # Build the index; excluded from the latency distribution.
+    warmup = query()  # Build the index; excluded from both distributions.
+    if timings_enabled:
+        phase_timings(warmup)
     samples = []
+    phases: dict[str, list[int]] = {}
     for _ in range(CALLS):
         start = time.perf_counter_ns()
-        query()
+        stderr = query()
         samples.append((time.perf_counter_ns() - start) / 1_000_000)
-    return {
+        if timings_enabled:
+            measured = phase_timings(stderr)
+            if phases and measured.keys() != phases.keys():
+                raise RuntimeError("dctx_timings phase names changed between calls")
+            for phase, micros in measured.items():
+                phases.setdefault(phase, []).append(micros)
+    report = {
         "schema": 1,
         "platform": platform.system(),
         "architecture": platform.machine(),
@@ -68,6 +98,11 @@ def measure(binary: Path, root: Path) -> dict:
         "p95_ms": percentile(samples, 0.95),
         "samples_ms": samples,
     }
+    if timings_enabled:
+        report["phase_medians_us"] = {
+            phase: percentile(values, 0.50) for phase, values in sorted(phases.items())
+        }
+    return report
 
 
 def main() -> None:
@@ -83,6 +118,10 @@ def main() -> None:
     args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(f"map find: N={CALLS} warm per-call latency (process startup included)")
     print(f"p50={report['p50_ms']:.3f} ms p95={report['p95_ms']:.3f} ms")
+    if "phase_medians_us" in report:
+        print("phase                         median (us)")
+        for phase, micros in report["phase_medians_us"].items():
+            print(f"{phase:<29} {micros:>11}")
 
 
 if __name__ == "__main__":

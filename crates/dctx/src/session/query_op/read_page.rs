@@ -303,6 +303,7 @@ pub(super) fn write_answer(
 }
 
 pub(super) fn encode_page(request: &MapRequest, place: &str, answer: &Answer) -> Vec<u8> {
+    let _timing = crate::timings::Span::begin(crate::timings::Phase::Render);
     if request.output_format == 1 {
         encode_text(place, answer, request.meta).into_bytes()
     } else {

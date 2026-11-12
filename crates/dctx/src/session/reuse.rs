@@ -89,10 +89,12 @@ impl Session {
         };
         drop(load);
         let decode = Elapsed::begin(Stage::ReuseDecode);
+        let timing = crate::timings::Span::begin(crate::timings::Phase::Decode);
         #[cfg(feature = "warm-index-cache")]
         let decoded = warm::decode(&bytes);
         #[cfg(not(feature = "warm-index-cache"))]
         let decoded = decode_generation(&bytes);
+        drop(timing);
         drop(decode);
         let Ok(decoded) = decoded else {
             return Ok(None);
