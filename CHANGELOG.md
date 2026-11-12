@@ -44,6 +44,13 @@ and distribution plans below do not describe the current release.
 
 ### Changed
 
+- MCP discovery uses compact descriptions and advertises text/limit defaults.
+  Map, hubs, trace and impact have smaller default answer bounds; explicit
+  limits still override them. A bounded `pack` tool returns task definitions,
+  callers/imports and source in one call. Tool names and opt-in JSON remain
+  compatible; byte budgets guard catalog and response size in tests. See the
+  [payload study](docs/research/mcp-cost-20261112.md).
+
 - Node wrapper is published as `@tejl/dctx` on npm; the unscoped name `dctx` was refused by the registry.
 
 - Clarify npm stability and binary verification, and guard every npm package manifest against install hooks.

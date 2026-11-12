@@ -313,11 +313,28 @@ fn tools_list_and_calls_and_rpc_match_cli_answers() {
     }
     assert_eq!(
         replies[1]["result"]["content"][0]["text"],
-        repo.run(&["trace", "start", "leaf", "--json"])
+        repo.run(&[
+            "trace",
+            "start",
+            "leaf",
+            "--json",
+            "--max-paths",
+            "5",
+            "--max-bytes",
+            "8192"
+        ])
     );
     assert_eq!(
         replies[2]["result"]["content"][0]["text"],
-        repo.run(&["impact", "leaf", "--json"])
+        repo.run(&[
+            "impact",
+            "leaf",
+            "--json",
+            "--max-sites",
+            "50",
+            "--max-bytes",
+            "8192"
+        ])
     );
     let rpc = repo.transport(
         &["rpc"],
