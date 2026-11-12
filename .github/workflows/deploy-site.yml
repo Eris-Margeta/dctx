@@ -22,25 +22,12 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Did this commit change the website?
+      - name: Has the website changed since the last successful run?
         id: changed
         env:
           GH_TOKEN: ${{ github.token }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          # Only skip when a known successful baseline proves no website changes.
-          changed=true
-          if [ "$GITHUB_EVENT_NAME" != workflow_dispatch ]; then
-            baseline=$(python3 ci/deploy-baseline.py "$DEFAULT_BRANCH") || baseline=
-            if [ -n "$baseline" ] && git merge-base --is-ancestor "$baseline" HEAD 2>/dev/null; then
-              if paths=$(git diff --name-only "$baseline" HEAD); then
-                if ! grep -qE '^(website|tools/website|docs)/|^CHANGELOG\.md$|^\.github/workflows/deploy-site\.yml$' <<< "$paths"; then
-                  changed=false
-                fi
-              fi
-            fi
-          fi
-          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+          python3 tools/ci/deploy_changed.py >> "$GITHUB_OUTPUT"
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0 (GitHub API resolved)
         if: steps.changed.outputs.changed == 'true'
         with:

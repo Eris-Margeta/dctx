@@ -103,25 +103,21 @@ class DeployBaseline(unittest.TestCase):
         ]):
             self.assertEqual(selector.baseline(fixture["branch"]), fixture["expected"])
 
-    def test_workflow_skips_after_ci_deploy_and_always_deploys_manually(self):
-        # Execute the real changed-path gate and selector, stubbing only GitHub
-        # and git. A stale manual-only baseline reports a website change here.
+    def test_workflow_skips_after_success_and_always_deploys_manually(self):
+        # Execute the workflow gate with its current selector, stubbing GitHub
+        # and git. The successful run must supply the full diff baseline.
         workflow = (ROOT.parent / ".github/workflows/deploy-site.yml").read_text()
         body = textwrap.dedent(re.search(
             r"        run: \|\n((?:          [^\n]*\n|\n)+)", workflow
         ).group(1))
-        fixture = json.loads((FIXTURES / "ci-success.json").read_text())
         temp_root = ROOT.parent / "target/deploy-baseline-tests"
         temp_root.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(dir=temp_root) as directory:
             temp = Path(directory)
-            for name, response in zip(("runs", "jobs"), fixture["responses"]):
-                (temp / f"{name}.json").write_text(json.dumps(response["pages"]))
             (temp / "gh").write_text('''#!/bin/sh
 case "$*" in
-  *"/301/jobs"*) cat "$FIXTURE_JOBS" ;;
-  *"actions/runs"*) cat "$FIXTURE_RUNS" ;;
-  "run list "*) echo "$STALE_SHA" ;;
+  "run list --workflow deploy-site.yml --status success --branch main -L 1 --json headSha")
+    printf '[{"headSha":"%s"}]\\n' "$DEPLOYED_SHA" ;;
   *) exit 1 ;;
 esac
 ''')
@@ -129,7 +125,7 @@ esac
 case "$1" in
   merge-base) exit 0 ;;
   diff)
-    if [ "$3" = "$DEPLOYED_SHA" ]; then echo crates/example.rs
+    if [ "$4" = "$DEPLOYED_SHA" ]; then echo crates/example.rs
     else echo docs/changed.md; fi ;;
   *) exit 1 ;;
 esac
@@ -137,9 +133,7 @@ esac
             for name in ("gh", "git"):
                 (temp / name).chmod(0o755)
             env = dict(os.environ, PATH=f"{temp}{os.pathsep}{os.environ['PATH']}",
-                       DEFAULT_BRANCH=fixture["branch"], DEPLOYED_SHA=fixture["expected"],
-                       STALE_SHA="b" * 40, FIXTURE_RUNS=str(temp / "runs.json"),
-                       FIXTURE_JOBS=str(temp / "jobs.json"), GITHUB_OUTPUT=str(temp / "output"))
+                       DEPLOYED_SHA="a" * 40, GITHUB_OUTPUT=str(temp / "output"))
             for event, expected in (("push", "false"), ("workflow_dispatch", "true")):
                 with self.subTest(event=event):
                     (temp / "output").write_text("")
