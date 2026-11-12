@@ -11,7 +11,7 @@ paths = ["crates/dctx-cli/src/mcp"]
 required = true
 rust_api = [
   "crate::exit::Failure", "crate::exit::USAGE", "crate::map::execute", "crate::mcp",
-  "crate::context_cmd::Runtime",
+  "crate::context_cmd::Runtime", "crate::pack_for::output",
 ]
 
 [[surface]]
