@@ -6,7 +6,7 @@
 
 mod concept;
 mod node_text;
-pub(crate) use node_text::NodeText;
+pub(crate) use node_text::{NodeText, NodeTextTable};
 mod decl_pair;
 pub(crate) mod dotted_key;
 pub(crate) mod export;
