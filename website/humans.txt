@@ -1,6 +1,6 @@
 /* TEAM */
 Founder: Eris Margeta
-Organisation: TEJL
+Organisation: TEJL - tvornica elektroničkih jedinica i logike
 Site: https://tejl.com/ and https://tejl.hr/
 
 /* SITE */

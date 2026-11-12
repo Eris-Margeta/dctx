@@ -14,7 +14,7 @@ import re
 
 from PIL import Image, ImageDraw, ImageFont
 
-from common import HERE, HOST, VERSION, demo, rec, read_bytes
+from common import HERE, HOST, PUBLISHER, VERSION, demo, rec, read_bytes
 
 W, H = 1200, 630
 SS = 2  # supersampling for anti-aliased lines
@@ -344,9 +344,10 @@ def text_block(img: Image.Image, theme: dict, crumb: str, title: str, desc: str,
         y += 34
     mark(draw, 64, height - 90, 40, theme)
     draw.text((118 * SS, (height - 82) * SS), f"dctx {VERSION}", font=font("jetbrains-mono-500", 22 * SS), fill=theme["ink"])
-    tejl = font("geist-600", 26 * SS)
-    tw = draw.textlength("TEJL", font=tejl)
-    draw.text((W * SS - 64 * SS - tw, (height - 84) * SS), "TEJL", font=tejl, fill=theme["ink"])
+    # The publisher subset includes Croatian č, absent from the site's Latin subset.
+    tejl = font("geist-publisher-600", 18 * SS)
+    tw = draw.textlength(PUBLISHER, font=tejl)
+    draw.text((W * SS - 64 * SS - tw, (height - 82) * SS), PUBLISHER, font=tejl, fill=theme["ink"])
 
 
 def wrap(text: str, f: ImageFont.FreeTypeFont, width: float) -> list[str]:

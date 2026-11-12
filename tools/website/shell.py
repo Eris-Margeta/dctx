@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 
-from common import (APP_ID, BLOB, CONTACT, ICON, LICENSE_URL, ORG_ID, ORIGIN, PERSON_ID, REPO, SITE_ID, VERSION, e)
+from common import (APP_ID, BLOB, CONTACT, ICON, LICENSE_URL, ORG_ID, ORIGIN, PERSON_ID, PUBLISHER, REPO, SITE_ID, VERSION, e)
 from routes import NAV, Route
 
 
@@ -67,11 +67,12 @@ def footer() -> str:
   </div>
   <div class="ftr-bottom">
    <div>
-    <p>&copy; 2025&ndash;2026 <a href="https://tejl.com/">Eris Margeta</a>. dctx is open source under Apache-2.0.</p>
+    <p>© 2026 {PUBLISHER}</p>
+    <p>dctx is open source under Apache-2.0.</p>
     <p>&ldquo;dctx&rdquo; and its logo are trademarks of Eris Margeta (<a href="/trademark/">trademark policy</a>). This site uses no cookies, analytics or third-party requests.</p>
    </div>
    <div class="credit">
-    <p>Published by TEJL<br><a href="https://tejl.com/">tejl.com</a> &middot; <a href="https://tejl.hr/">tejl.hr</a></p>
+    <p>Published by {PUBLISHER}<br><a href="https://tejl.com/">TEJL.com</a> &middot; <a href="https://tejl.hr/">TEJL&#46;hr</a></p>
     <a class="credit-logo" href="https://tejl.com/" aria-label="TEJL, publisher of dctx"><img src="/assets/tejl-logo-off-black.svg" width="818" height="422" alt="" loading="lazy" decoding="async"></a>
    </div>
   </div>
