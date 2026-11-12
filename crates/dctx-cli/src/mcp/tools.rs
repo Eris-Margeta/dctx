@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //! MCP tool names, input schemas, and the mapping from calls to CLI arguments.
-//! Ordinary calls use `map::execute`; read with context enabled uses the named-context CLI path.
+//! Ordinary calls use map verbs; context reads and task packs use their existing CLI paths.
 
 use super::json::Json;
 
@@ -14,14 +14,12 @@ struct Prop {
     help: &'static str,
 }
 
-/// One tool: a `dctx map` verb with an optional positional first argument (and optionally a second).
+/// One read-only CLI operation with up to two positional arguments.
 struct Tool {
-    /// Tool name, equal to the map verb.
+    /// Stable MCP tool name.
     name: &'static str,
     /// Description shown to the model.
     help: &'static str,
-    /// Shorter equivalent used by opt-in tool selections.
-    compact_help: &'static str,
     /// Property that becomes the first positional argument, if the verb has one.
     positional: Option<&'static str>,
     /// Property that becomes the second positional argument (used by `path` for `to`).
@@ -36,159 +34,153 @@ const fn prop(name: &'static str, ty: &'static str, help: &'static str) -> Prop 
 
 /// Properties every verb accepts (some verbs drop some of them).
 const COMMON: [Prop; 3] = [
-    prop("budget", "integer", "Output token budget, 1..2000"),
-    prop(
-        "cursor",
-        "string",
-        "The next token of an earlier page, to continue it",
-    ),
-    prop("json", "boolean", "Return facade JSON v2 instead of text"),
+    prop("budget", "integer", "Tokens, 1..2000."),
+    prop("cursor", "string", "Resume previous next."),
+    prop("json", "boolean", ""),
 ];
 
 const TOOLS: &[Tool] = &[
     Tool {
         name: "map",
-        help: "Structural map of a file, directory or node: its symbols and their relations.",
-        compact_help: "Map symbols and relations in a file, directory or node.",
+        help: "Map file/directory symbols and relations.",
         positional: Some("target"),
         second_positional: None,
         props: &[
-            prop("target", "string", "Stable id (m:, s:, ...) or a place-relative file path"),
-            prop("depth", "integer", "Levels to expand, 1..3"),
-            prop("limit", "integer", "Page size"),
+            prop("target", "string", "Node id or relative file path."),
+            prop("depth", "integer", "Levels, 1..3."),
+            prop("limit", "integer", ""),
         ],
     },
     Tool {
         name: "find",
-        help: "Find symbols, modules and docs by name or words.",
-        compact_help: "Find symbols, modules and docs by name/words.",
+        help: "Find definitions by name or words; use read context=true for source and callers.",
         positional: Some("query"),
         second_positional: None,
         props: &[
-            prop("query", "string", "Words or a name to look for"),
-            prop("kind", "array", "Kinds: fn, method, struct, enum, trait, impl, const, type, macro, class, interface, symbol, module, package, place, doc, test"),
-            prop("in", "string", "Only within this place-relative path"),
-            prop("limit", "integer", "Page size"),
+            prop("query", "string", ""),
+            prop("kind", "array", "fn, method, struct, enum, trait, impl, const, type, macro, class, interface, symbol, module, package, place, doc, test."),
+            prop("in", "string", ""),
+            prop("limit", "integer", ""),
         ],
     },
     Tool {
         name: "neighbors",
-        help: "Nodes connected to a node by calls or imports, up to 4 hops.",
-        compact_help: "Find connected nodes via calls/imports, up to 4 hops.",
+        help: "Follow calls/imports by node id; dir=in finds callers.",
         positional: Some("id"),
         second_positional: None,
         props: &[
-            prop("id", "string", "Stable node id from a find or map answer"),
-            prop("edge", "array", "Edge kinds, for example calls, imports"),
-            prop("dir", "string", "Direction: in, out or both"),
-            prop("depth", "integer", "Hops, 1..4"),
-            prop("limit", "integer", "Page size"),
+            prop("id", "string", "Node id from find/map."),
+            prop("edge", "array", ""),
+            prop("dir", "string", "in, out, both."),
+            prop("depth", "integer", "Hops, 1..4."),
+            prop("limit", "integer", ""),
         ],
     },
     Tool {
         name: "explain",
-        help: "Describe one node: its kind, place, signature and relations.",
-        compact_help: "Get a node's kind, place, signature and relations.",
+        help: "Show a node signature, location and relations.",
         positional: Some("id"),
         second_positional: None,
-        props: &[prop("id", "string", "Stable node id")],
+        props: &[prop("id", "string", "")],
     },
     Tool {
         name: "read",
-        help: "Read node source or absolute lines; set context=true for minimal ranked context of a file/symbol.",
-        compact_help: "Read node source/lines, or minimal file/symbol context with context=true.",
+        help: "Read source/lines. context=true locates a name/file and includes source plus callers/imports.",
         positional: Some("id"),
         second_positional: None,
         props: &[
-            prop("id", "string", "Stable node id; with context=true, also a file path or symbol name"),
-            prop("lines", "string", "Absolute source lines inside the node, as A-B"),
-            prop("full", "boolean", "Permit up to 400 lines"),
-            prop("context", "boolean", "Return minimal ranked context for this file/symbol instead of a source read"),
-            prop("session", "string", "Context delivery session id, scoped to this connection"),
-            prop("dedupe", "boolean", "Context only: reference chunks already delivered in this session"),
-            prop("budget", "integer", "Source budget 1..2000; context budget 100..100000 estimated tokens"),
+            prop("id", "string", "Node id; context also accepts names/files."),
+            prop("lines", "string", "Absolute lines A-B within the node."),
+            prop("full", "boolean", "Allow 400 lines."),
+            prop("context", "boolean", "Source + callers/imports."),
+            prop("session", "string", "Context session id."),
+            prop("dedupe", "boolean", "Reference prior session chunks."),
+            prop("budget", "integer", "Source 1..2000 (default 2000); context 100..100000 (default 3000)."),
         ],
     },
     Tool {
         name: "hubs",
-        help: "Most-called symbols and per-directory file and symbol counts of the place.",
-        compact_help: "List most-called symbols and file/symbol counts per directory.",
+        help: "Rank called symbols and count files/symbols by directory.",
         positional: None,
         second_positional: None,
-        props: &[prop("limit", "integer", "Hub lines, 1..60 (default 20)")],
+        props: &[prop("limit", "integer", "")],
     },
     Tool {
         name: "grep",
-        help: "Exhaustive literal search of indexed files, hits grouped by enclosing symbol.",
-        compact_help: "Search all indexed files literally; group hits by enclosing symbol.",
+        help: "Search indexed files literally, grouped by symbol.",
         positional: Some("query"),
         second_positional: None,
         props: &[
-            prop("query", "string", "The literal text to search for"),
-            prop("ignore_case", "boolean", "ASCII case-insensitive match"),
-            prop("in", "string", "Only within this place-relative path"),
-            prop("limit", "integer", "Page size"),
+            prop("query", "string", ""),
+            prop("ignore_case", "boolean", ""),
+            prop("in", "string", ""),
+            prop("limit", "integer", ""),
         ],
     },
     Tool {
         name: "skeleton",
-        help: "Skeleton of a file or directory: its symbols and their relations, without depth expansion.",
-        compact_help: "Outline file/directory symbols and relations without depth expansion.",
+        help: "List file/directory signatures without bodies.",
         positional: Some("target"),
         second_positional: None,
         props: &[
-            prop("target", "string", "Stable id (m:, s:, ...) or a place-relative file path"),
+            prop("target", "string", "Node id or relative file path."),
         ],
     },
     Tool {
         name: "path",
-        help: "Shortest edge path between two nodes (calls, imports, contains), at most 8 hops.",
-        compact_help: "Find shortest calls/imports/contains path between nodes, up to 8 hops.",
+        help: "Find a shortest undirected graph path (up to 8 hops).",
         positional: Some("from"),
         second_positional: Some("to"),
         props: &[
-            prop("from", "string", "Start node id (s:...) or place-relative file"),
-            prop("to", "string", "End node id (s:...) or place-relative file"),
-            prop("meta", "boolean", "Include hop metadata"),
+            prop("from", "string", ""),
+            prop("to", "string", ""),
+            prop("meta", "boolean", ""),
         ],
     },
     Tool {
         name: "trace",
-        help: "Shortest directed call/reference paths between symbols in one bounded answer.",
-        compact_help: "Trace shortest directed call/reference paths between symbols.",
+        help: "Trace shortest directed call/reference paths between names or ids.",
         positional: Some("from"),
         second_positional: Some("to"),
         props: &[
-            prop("from", "string", "Start symbol name or stable id"),
-            prop("to", "string", "End symbol name or stable id"),
-            prop("max_depth", "integer", "Maximum hops, 1..16; default 8"),
-            prop("max_paths", "integer", "Maximum shortest paths, 1..100; default 10"),
-            prop("max_bytes", "integer", "Maximum output bytes, 256..1048576; default 65536"),
-            prop("also", "array", "Additional read-only roots, at most sixteen"),
+            prop("from", "string", ""),
+            prop("to", "string", ""),
+            prop("max_depth", "integer", "Hops, 1..16."),
+            prop("max_paths", "integer", "Paths, 1..100."),
+            prop("max_bytes", "integer", "Output bytes, 256..1048576."),
+            prop("also", "array", "Read-only roots (up to 16)."),
         ],
     },
     Tool {
         name: "impact",
-        help: "Direct reference/call sites and bounded transitive callers, grouped by file with counts.",
-        compact_help: "Find direct sites and transitive callers of a symbol, grouped by file.",
+        help: "Find direct reference sites and transitive callers by name or id.",
         positional: Some("symbol"),
         second_positional: None,
         props: &[
-            prop("symbol", "string", "Symbol name or stable id"),
-            prop("max_depth", "integer", "Maximum caller depth, 1..16; default 8"),
-            prop("max_sites", "integer", "Maximum combined sites and callers, 1..10000; default 1000"),
-            prop("max_bytes", "integer", "Maximum output bytes, 256..1048576; default 65536"),
-            prop("also", "array", "Additional read-only roots, at most sixteen"),
+            prop("symbol", "string", ""),
+            prop("max_depth", "integer", "Caller depth, 1..16."),
+            prop("max_sites", "integer", "Sites/callers, 1..10000."),
+            prop("max_bytes", "integer", "Output bytes, 256..1048576."),
+            prop("also", "array", "Read-only roots (up to 16)."),
         ],
     },
     Tool {
         name: "export",
-        help: "Whole graph as one deterministic document: graph JSON or a Mermaid flowchart.",
-        compact_help: "Export the whole graph deterministically as JSON or Mermaid.",
+        help: "Export the whole graph as JSON or Mermaid (unbounded).",
         positional: None,
         second_positional: None,
         props: &[
-            prop("format", "string", "Output format: json or mermaid"),
+            prop("format", "string", "json or mermaid."),
+        ],
+    },
+    Tool {
+        name: "pack",
+        help: "Get task context: definitions, callers/imports and source in one bounded call.",
+        positional: Some("task"),
+        second_positional: None,
+        props: &[
+            prop("task", "string", ""),
+            prop("budget", "integer", "Tokens, 100..100000."),
         ],
     },
 ];
@@ -196,10 +188,10 @@ const TOOLS: &[Tool] = &[
 /// Tool availability and description style, fixed for the lifetime of a server.
 #[derive(Debug, Default)]
 pub(super) enum Surface {
-    /// All twelve tools, with full descriptions and schemas.
+    /// All tools, with compact descriptions and complete schemas.
     #[default]
     Full,
-    /// A non-empty subset, exposed in canonical table order with compact descriptions.
+    /// A non-empty subset, exposed in canonical table order.
     Selected(Vec<&'static str>),
 }
 
@@ -245,7 +237,7 @@ fn accepted(tool: &Tool) -> Vec<&Prop> {
         .iter()
         .chain(COMMON.iter().filter(|extra| {
             !(own_names.contains(extra.name)
-                || matches!(tool.name, "trace" | "impact") && extra.name != "json"
+                || matches!(tool.name, "trace" | "impact" | "pack") && extra.name != "json"
                 || tool.name == "hubs" && extra.name == "cursor"
                 || tool.name == "export" && extra.name != "budget"
                 || tool.name == "skeleton" && extra.name != "budget" && extra.name != "json")
@@ -253,14 +245,38 @@ fn accepted(tool: &Tool) -> Vec<&Prop> {
         .collect()
 }
 
+/// MCP-specific bounds; CLI users retain their existing defaults.
+fn default(tool: &str, property: &str) -> Option<u32> {
+    match (tool, property) {
+        ("map", "limit") => Some(20),
+        ("hubs", "limit") => Some(10),
+        ("trace" | "impact", "max_bytes") => Some(8192),
+        ("trace", "max_paths") => Some(5),
+        ("impact", "max_sites") => Some(50),
+        ("pack", "budget") => Some(2000),
+        _ => None,
+    }
+}
+
 fn schema_of(tool: &Tool) -> Json {
     let properties = accepted(tool)
         .into_iter()
         .map(|p| {
-            let mut members = vec![
-                ("type", Json::str(p.ty)),
-                ("description", Json::str(p.help)),
-            ];
+            let mut members = vec![("type", Json::str(p.ty))];
+            if !p.help.is_empty() {
+                members.push(("description", Json::str(p.help)));
+            }
+            if let Some(value) = default(tool.name, p.name).or(match (tool.name, p.name) {
+                ("find" | "grep", "limit") => Some(10),
+                ("neighbors", "limit") => Some(20),
+                ("trace" | "impact", "max_depth") => Some(8),
+                _ => None,
+            }) {
+                members.push(("default", Json::Num(value.to_string())));
+            }
+            if p.name == "json" {
+                members.push(("default", Json::Bool(false)));
+            }
             if p.ty == "array" {
                 members.insert(1, ("items", Json::obj(vec![("type", Json::str("string"))])));
             }
@@ -291,13 +307,9 @@ pub(super) fn list(surface: &Surface) -> Json {
         .iter()
         .filter(|tool| surface.contains(tool.name))
         .map(|tool| {
-            let help = match surface {
-                Surface::Full => tool.help,
-                Surface::Selected(_) => tool.compact_help,
-            };
             Json::obj(vec![
                 ("name", Json::str(tool.name)),
-                ("description", Json::str(help)),
+                ("description", Json::str(tool.help)),
                 ("inputSchema", schema_of(tool)),
             ])
         })
@@ -394,7 +406,21 @@ pub(super) fn to_args(name: &str, arguments: Option<&Json>) -> Result<Vec<String
             _ => return Err(format!("{} must be of type {}", p.name, p.ty)),
         }
     }
-    if !positionals.is_empty() {
+    // Defaults are shared by the schema and execution; explicit values always win.
+    for p in &known {
+        if !members
+            .iter()
+            .any(|(key, value)| key == p.name && !matches!(value, Json::Null))
+        {
+            if let Some(value) = default(name, p.name) {
+                out.extend([format!("--{}", p.name.replace('_', "-")), value.to_string()]);
+            }
+        }
+    }
+    if name == "pack" {
+        out.push("--for".into());
+        out.extend(positionals);
+    } else if !positionals.is_empty() {
         // Ids, queries and paths are literal values, including when they start with '-'.
         // Keep all options before the terminator so no positional value is reinterpreted as a flag.
         out.push("--".to_string());
@@ -430,7 +456,7 @@ mod tests {
             args("grep", r#"{"query":"x","ignore_case":true}"#).unwrap(),
             ["grep", "--ignore-case", "--", "x"]
         );
-        assert_eq!(args("hubs", "{}").unwrap(), ["hubs"]);
+        assert_eq!(args("hubs", "{}").unwrap(), ["hubs", "--limit", "10"]);
         assert_eq!(
             args("read", r#"{"id":"s:a#b","lines":"3-9"}"#).unwrap(),
             ["read", "--lines", "3-9", "--", "s:a#b"]
@@ -536,7 +562,34 @@ mod tests {
     }
 
     #[test]
-    fn all_twelve_tools_are_registered() {
+    fn mcp_defaults_apply_only_to_omitted_or_null_values() {
+        assert_eq!(
+            args("map", r#"{"target":"a.rs"}"#).unwrap(),
+            ["map", "--limit", "20", "--", "a.rs"]
+        );
+        assert_eq!(
+            args("map", r#"{"target":"a.rs","limit":null}"#).unwrap(),
+            ["map", "--limit", "20", "--", "a.rs"]
+        );
+        assert_eq!(
+            args("map", r#"{"target":"a.rs","limit":60}"#).unwrap(),
+            ["map", "--limit", "60", "--", "a.rs"]
+        );
+        assert_eq!(
+            args("pack", r#"{"task":"--place"}"#).unwrap(),
+            ["pack", "--budget", "2000", "--for", "--place"]
+        );
+        assert_eq!(
+            args("pack", r#"{"task":"beacon","budget":3000,"json":true}"#).unwrap(),
+            ["pack", "--budget", "3000", "--json", "--for", "beacon"]
+        );
+        assert!(args("pack", r#"{"task":"beacon","cursor":"x"}"#).is_err());
+        assert!(args("pack", r#"{"task":"beacon","place":"elsewhere"}"#).is_err());
+        assert!(args("pack", r#"{"task":"beacon","output":"dump"}"#).is_err());
+    }
+
+    #[test]
+    fn all_tools_are_registered() {
         let names: Vec<&str> = TOOLS.iter().map(|t| t.name).collect();
         assert_eq!(
             names,
@@ -552,13 +605,14 @@ mod tests {
                 "path",
                 "trace",
                 "impact",
-                "export"
+                "export",
+                "pack"
             ]
         );
     }
 
     #[test]
-    fn selections_keep_complete_schemas_and_shorten_only_descriptions() {
+    fn selections_keep_complete_schemas_and_compact_descriptions() {
         let Json::Arr(full) = list(&Surface::Full).get("tools").unwrap().clone() else {
             panic!("tools array");
         };
@@ -593,14 +647,7 @@ mod tests {
                     .find(|t| t.get("name") == tool.get("name"))
                     .unwrap();
                 assert_eq!(tool.get("inputSchema"), original.get("inputSchema"));
-                if matches!(surface, Surface::Full) {
-                    assert_eq!(tool, original);
-                } else {
-                    assert!(
-                        tool.get("description").unwrap().as_str().unwrap().len()
-                            < original.get("description").unwrap().as_str().unwrap().len()
-                    );
-                }
+                assert_eq!(tool, original);
             }
         }
     }

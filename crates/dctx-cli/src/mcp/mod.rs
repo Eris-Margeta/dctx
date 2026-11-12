@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //! `dctx mcp`: a stdio MCP server (JSON-RPC 2.0, one message per line) exposing the map verbs as tools.
-//! Each call uses its existing CLI path: map verbs use `map::write_page`, and read with context enabled uses named context.
+//! Each call uses its existing CLI path: map verbs use `map::write_page`, read with context enabled uses named context, and pack uses task context.
 //! Only JSON-RPC lines go to stdout; diagnostics stay on stderr. The server exits 0 at end of input.
 
 mod json;
@@ -19,7 +19,7 @@ const MAX_LINE_BYTES: u64 = 1024 * 1024;
 
 const DEFAULT_PROTOCOL: &str = "2025-06-18";
 /// Usage text for `dctx mcp --help`.
-const HELP: &str = "Usage: dctx mcp [--profile default|lean|three | --tools NAME,...] [PATH]\n  Serve map verbs as MCP tools over stdio; one JSON-RPC 2.0 message per line.\n  Default: map, find, neighbors, explain, read, hubs, grep, skeleton, path, trace, impact, export.\n  --profile lean: find and read, with compact descriptions and all parameters.\n  --profile three: map, find and read, with compact descriptions and all parameters.\n  --tools NAME,...: expose only the named tools, with compact descriptions.\n  Select either --profile or --tools, once. Tools run in PATH (default: current directory).\n  Use -- before a PATH starting with '-'. Restart the server to change tools.\nExample: dctx mcp ~/src/project\n          dctx mcp --profile lean ~/src/project\n          dctx mcp --tools find,read,grep ~/src/project\n";
+const HELP: &str = "Usage: dctx mcp [--profile default|lean|three | --tools NAME,...] [PATH]\n  Serve map verbs as MCP tools over stdio; one JSON-RPC 2.0 message per line.\n  Default: map, find, neighbors, explain, read, hubs, grep, skeleton, path, trace, impact, export, pack.\n  --profile lean: find and read, with compact descriptions and all parameters.\n  --profile three: map, find and read, with compact descriptions and all parameters.\n  --tools NAME,...: expose only the named tools, with compact descriptions.\n  Select either --profile or --tools, once. Tools run in PATH (default: current directory).\n  Use -- before a PATH starting with '-'. Restart the server to change tools.\nExample: dctx mcp ~/src/project\n          dctx mcp --profile lean ~/src/project\n          dctx mcp --tools find,read,grep ~/src/project\n";
 
 /// Validate all arguments before changing directory or starting the protocol.
 fn options(args: &[String]) -> Result<(Option<String>, Surface), Failure> {
@@ -81,7 +81,7 @@ pub(crate) fn run(args: &[String]) -> Result<(), Failure> {
         stdin.lock(),
         std::io::BufWriter::with_capacity(64 * 1024, stdout.lock()),
         &surface,
-        &|args, out| runtime.write_map(args, out),
+        &|args, out| execute(&runtime, args, out),
     )
     .or_else(|error| {
         if error.kind() == std::io::ErrorKind::BrokenPipe
@@ -94,6 +94,21 @@ pub(crate) fn run(args: &[String]) -> Result<(), Failure> {
             "stdin or stdout failed; restart the server from the MCP client",
         ))
     })
+}
+
+/// Keep pack on the bounded task-context route; raw filesystem packs are not exposed.
+fn execute(
+    runtime: &crate::context_cmd::Runtime,
+    args: &[String],
+    out: &mut dyn Write,
+) -> Result<(), String> {
+    if args.first().is_some_and(|arg| arg == "pack") {
+        let output = crate::pack_for::output(args).map_err(|failure| failure.render())?;
+        out.write_all(output.stdout.as_bytes())
+            .map_err(|error| error.to_string())
+    } else {
+        runtime.write_map(args, out)
+    }
 }
 
 /// Reads one message per line from `input` and writes replies to `output`, running tools through `exec`.
@@ -414,7 +429,7 @@ mod tests {
             |n: usize, key: &str| replies[n].get("result").and_then(|r| r.get(key)).cloned();
         assert_eq!(result(0, "protocolVersion"), Some(Json::str("2024-11-05")));
         assert_eq!(replies[1].get("id"), Some(&Json::str("a")));
-        assert!(matches!(result(2, "tools"), Some(Json::Arr(tools)) if tools.len() == 12));
+        assert!(matches!(result(2, "tools"), Some(Json::Arr(tools)) if tools.len() == 13));
         let text = |n: usize| match result(n, "content") {
             Some(Json::Arr(items)) => items[0]
                 .get("text")
@@ -456,6 +471,7 @@ mod tests {
                     "trace",
                     "impact",
                     "export",
+                    "pack",
                 ],
             ),
             (
@@ -474,6 +490,7 @@ mod tests {
                     "trace",
                     "impact",
                     "export",
+                    "pack",
                 ],
             ),
             (

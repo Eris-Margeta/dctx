@@ -167,7 +167,8 @@ fn sixteen_operations_are_byte_identical_across_transports() {
             .as_str()
             .unwrap_or_else(|| panic!("{verb}: {reply}"));
         assert_eq!(rpc_output.as_bytes(), cli.stdout, "CLI/RPC {verb}");
-        if exposed.iter().any(|tool| tool["name"] == verb) {
+        // Raw filesystem pack has no MCP equivalent; MCP pack accepts task context.
+        if !arguments.is_null() && exposed.iter().any(|tool| tool["name"] == verb) {
             arguments["json"] = json!(true);
             let reply = mcp.call(json!({"jsonrpc":"2.0","id":index,"method":"tools/call",
                 "params":{"name":verb,"arguments":arguments}}));
