@@ -494,10 +494,7 @@ fn segment_ok<F: StoreFs>(fs: &F, segment: &SegmentRef) -> Result<bool, StoreErr
     let Ok(digest) = segment_object_digest(&bytes) else {
         return Ok(false);
     };
-    if digest != segment.digest || decode(&bytes, segment.role).is_err() {
-        return Ok(false);
-    }
-    Ok(true)
+    Ok(!(digest != segment.digest || decode(&bytes, segment.role).is_err()))
 }
 
 pub(crate) fn manifest_bytes_ok(bytes: &[u8], expected: &[u8; 32]) -> Result<Manifest, StoreError> {

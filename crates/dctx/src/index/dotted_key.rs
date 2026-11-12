@@ -145,11 +145,7 @@ fn try_bracket_subscripts(line: &str, segments: &[&str]) -> bool {
     // Also check with a space between the bracket pairs
     let with_space_single = format!("['{a}'] ['{b}']");
     let with_space_double = format!("[\"{}\"][\"{}\"]", a, b);
-    if line.contains(&with_space_single) || line.contains(&with_space_double) {
-        return true;
-    }
-
-    false
+    line.contains(&with_space_single) || line.contains(&with_space_double)
 }
 
 fn try_attribute_form(line: &str, segments: &[&str]) -> bool {

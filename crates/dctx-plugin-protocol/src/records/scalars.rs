@@ -40,43 +40,63 @@ macro_rules! text_type {
 
 text_type!(
     /// Opaque host or plugin token (handles, sessions, receipts, preconditions).
-    Token, is_token, "invalid-token"
+    Token,
+    is_token,
+    "invalid-token"
 );
 text_type!(
     /// Session request ID: `h:` for host-sent and `p:` for plugin-sent requests.
-    RequestId, is_request_id, "invalid-request-id"
+    RequestId,
+    is_request_id,
+    "invalid-request-id"
 );
 text_type!(
     /// Lowercase `publisher/name` plugin ID.
-    PluginId, is_plugin_id, "invalid-plugin-id"
+    PluginId,
+    is_plugin_id,
+    "invalid-plugin-id"
 );
 text_type!(
     /// Lowercase identifier (`name`): APIs, config keys, reasons, diagnostic codes, phases.
-    Name, is_name, "invalid-name"
+    Name,
+    is_name,
+    "invalid-name"
 );
 text_type!(
     /// Output or resource role.
-    Role, is_role, "invalid-role"
+    Role,
+    is_role,
+    "invalid-role"
 );
 text_type!(
     /// Command alias that does not shadow a built-in command.
-    Alias, is_alias, "invalid-alias"
+    Alias,
+    is_alias,
+    "invalid-alias"
 );
 text_type!(
     /// `SemVer` 2.0 version string.
-    SemVer, is_semver, "invalid-semver"
+    SemVer,
+    is_semver,
+    "invalid-semver"
 );
 text_type!(
     /// `sha256:` followed by 64 lowercase hex digits.
-    Digest, is_digest, "invalid-digest"
+    Digest,
+    is_digest,
+    "invalid-digest"
 );
 text_type!(
     /// Literal project-relative resource path (never a glob or traversal).
-    ProjectPath, is_project_path, "invalid-path"
+    ProjectPath,
+    is_project_path,
+    "invalid-path"
 );
 text_type!(
     /// Bounded human text (at most 4096 UTF-8 bytes).
-    Text, is_text, "invalid-text"
+    Text,
+    is_text,
+    "invalid-text"
 );
 
 /// Which side sent a session request, from its ID prefix.

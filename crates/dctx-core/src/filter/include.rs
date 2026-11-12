@@ -77,11 +77,7 @@ impl FilterConfig {
     )]
     pub fn should_include_directory(&self, dir_name: &str) -> bool {
         // Hidden filter for directories
-        if self.only_hidden && !super::names::is_hidden(dir_name) {
-            return false;
-        }
-
-        true
+        !self.only_hidden || super::names::is_hidden(dir_name)
     }
 }
 
