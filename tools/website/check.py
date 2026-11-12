@@ -59,6 +59,80 @@ HTML_LIMIT = {"docs/spec/index.html": 450_000, "cli/index.html": 300_000, "docs/
 SALES = re.compile(r"(?i)free forever|(?<!not )enterprise|pricing|trusted by|world[- ]class|revolutionary|best[- ]in[- ]class")
 LEGACY_RULES = re.compile(r"(?i)\.legacyignore|\.dctxomitcontent|config/dctx/omitcontent")
 LEGACY_CALL = re.compile(r"dctx \.(?:\s+-[a-zA-Z]|[ \t]*$)", re.M)
+PUBLISHER = "TEJL - tvornica elektroničkih jedinica i logike"
+FORBIDDEN_PUBLISHER = re.compile(
+    r"\b(?:j\s*\.\s*)?d\s*\.\s*o\s*\.\s*o\b"
+    r"|\bTEJL\b[\s\S]{0,80}\bobrt\b|\bobrt\b[\s\S]{0,80}\bTEJL\b"
+    r"|\bTEJL\s+(?:Ltd|LLC|GmbH)\b"
+    r"|TEJL\s*[–—]\s*tvornica elektroničkih jedinica i logike",
+    re.I,
+)
+
+
+class Footer(HTMLParser):
+    """Keep the final footer, with decoded text and exact visible anchor labels."""
+
+    def __init__(self):
+        super().__init__()
+        self.footers = []
+        self.current = None
+        self.anchor = None
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "footer":
+            self.current = {"text": [], "links": [], "closed": False}
+            self.footers.append(self.current)
+        if tag == "a" and self.current is not None:
+            self.anchor = [dict(attrs).get("href"), []]
+
+    def handle_data(self, data):
+        if self.current is not None:
+            self.current["text"].append(data)
+        if self.anchor is not None:
+            self.anchor[1].append(data)
+
+    def handle_endtag(self, tag):
+        if tag == "a" and self.anchor is not None:
+            href, text = self.anchor
+            self.current["links"].append((href, "".join(text)))
+            self.anchor = None
+        if tag == "footer" and self.current is not None:
+            self.current["closed"] = True
+            self.current = None
+            self.anchor = None
+
+
+def publisher_credits(site: Path, errors: list[str]) -> None:
+    for path in sorted(site.rglob("*")):
+        if not path.is_file() or not (path.suffix in (".html", ".json", ".jsonld")
+                                     or path.match("llms*.txt") or path.name == "humans.txt"):
+            continue
+        label = path.relative_to(site).as_posix()
+        text = path.read_text(encoding="utf-8")
+        decoded = html.unescape(text)
+        if path.suffix in (".json", ".jsonld"):
+            decoded = json.dumps(json.loads(text), ensure_ascii=False)
+        if FORBIDDEN_PUBLISHER.search(decoded):
+            errors.append(f"{label}: forbidden publisher wording")
+        if re.search(r">\s*(?:tejl\.hr|TEJL)\s*</a\s*>", decoded):
+            errors.append(f"{label}: obsolete publisher link text")
+        if path.suffix != ".html":
+            continue
+        doc = Footer()
+        doc.feed(text)
+        doc.close()
+        if not doc.footers or not doc.footers[-1]["closed"]:
+            errors.append(f"{label}: missing complete final footer")
+            continue
+        footer = doc.footers[-1]
+        if f"© 2026 {PUBLISHER}" not in "".join(footer["text"]):
+            errors.append(f"{label}: final footer lacks the exact publisher copyright")
+        for href, name in (("https://tejl.com/", "TEJL.com"), ("https://tejl.hr/", "TEJL.hr")):
+            links = footer["links"]
+            if links.count((href, name)) != 1 or sum(text == name for _, text in links) != 1:
+                errors.append(f"{label}: final footer needs exactly one {name} link to {href}")
+            if any(target == href and text and text != name for target, text in links):
+                errors.append(f"{label}: incorrect publisher link text for {href}")
 
 
 def git(*args: str) -> bytes:
@@ -399,6 +473,8 @@ BINDING = {
 
 
 def check_ld(label: str, data, version: str, errors: list[str]) -> None:
+    if FORBIDDEN_PUBLISHER.search(json.dumps(data, ensure_ascii=False)):
+        errors.append(f"{label}: forbidden publisher wording in JSON-LD")
     graph = data.get("@graph") if isinstance(data, dict) else None
     if not isinstance(graph, list):
         errors.append(f"{label}: JSON-LD has no @graph")
@@ -423,12 +499,16 @@ def check_ld(label: str, data, version: str, errors: list[str]) -> None:
             if f not in node:
                 errors.append(f"{label}: JSON-LD {kind} lacks {f}")
         for k, want in BINDING.get(kind, {}).items():
+            if kind == "Organization" and k == "name" and node.get(k) in ("TEJL", PUBLISHER):
+                continue
             if node.get(k) != want:
                 errors.append(f"{label}: JSON-LD {kind}.{k} is {node.get(k)!r}, binding value {want!r}")
         if kind == "Person" and node.get("worksFor") != {"@id": ORIGIN + "/#organization"}:
             errors.append(f"{label}: Person.worksFor must be the Organization")
         if kind == "Organization" and node.get("founder") != {"@id": ORIGIN + "/#author"}:
             errors.append(f"{label}: Organization.founder must be the Person")
+        if kind == "Organization" and "legalName" in node and node["legalName"] not in ("TEJL", PUBLISHER):
+            errors.append(f"{label}: Organization.legalName must be TEJL or the exact publisher entity")
         if kind == "SoftwareApplication":
             if node.get("softwareVersion") != version:
                 errors.append(f"{label}: softwareVersion {node.get('softwareVersion')} != VERSION {version}")
@@ -677,6 +757,7 @@ def check_site(site: Path, errors: list[str], report: dict) -> None:
     version = (ROOT / "VERSION").read_text().strip()
     routes = build_routes(NEWS)
     forbidden_glyphs(site, errors)
+    publisher_credits(site, errors)
     kinds = {page_label(r.path): r.kind for r in routes}
     docs: dict[Path, Doc] = {}
     for path in sorted(site.rglob("*.html")):

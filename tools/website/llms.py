@@ -12,7 +12,7 @@ import re
 import sys
 
 import md
-from common import BLOB, CONTACT, ORIGIN, ROOT, TREE, VERSION, date_of, demo, e, read, rec
+from common import BLOB, CONTACT, ORIGIN, PUBLISHER, ROOT, TREE, VERSION, date_of, demo, e, read, rec
 from components import command
 from pages.news_content import NEWS
 
@@ -128,6 +128,7 @@ def about(name: str) -> str:
     others = ", ".join(f"{ORIGIN}/{n}" for n in TIER_LINE if n != name)
     cmds = "; ".join("`" + " ".join(c) + "`" for c in t["commands"])
     out = ["## About this file", "",
+           f"- Publisher: {PUBLISHER}. TEJL.com: https://tejl.com/; TEJL.hr: https://tejl.hr/.",
            f"- This is {name}: {TIER_LINE[name]}. The other entry points: {others}.",
            f"- Engine: dctx {cap['version']}. Document captures are the unedited output of the dctx binary on a copy of "
            f"the documents, recorded by {BLOB}tools/website/capture.py; the site check re-runs them and fails on any byte of drift. "
@@ -283,7 +284,7 @@ def security_txt() -> str:
 def humans_txt(updated: str) -> str:
     return f"""/* TEAM */
 Founder: Eris Margeta
-Organisation: TEJL
+Organisation: {PUBLISHER}
 Site: https://tejl.com/ and https://tejl.hr/
 
 /* SITE */

@@ -4,6 +4,7 @@
 
 ## About this file
 
+- Publisher: TEJL - tvornica elektroničkih jedinica i logike. TEJL.com: https://tejl.com/; TEJL.hr: https://tejl.hr/.
 - This is llms-small.txt: the facts and the route table, with an outline of the start documents. The other entry points: https://www.dctx.internet.technology/llms.txt, https://www.dctx.internet.technology/llms-full.txt.
 - Engine: dctx 1.3.1. Document captures are the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs them and fails on any byte of drift. Read the pack at https://www.dctx.internet.technology/llms-full.txt.
 - Docs commit: f8097171abe1ef02416eef1215b2d0fa82d6094c (2026-11-11T16:29:14+01:00), the last commit that changed one of the documents.

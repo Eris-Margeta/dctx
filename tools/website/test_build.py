@@ -45,6 +45,89 @@ class DeploymentCheck(unittest.TestCase):
                 git_mock.assert_not_called()
 
 
+class PublisherCredit(unittest.TestCase):
+    ENTITY = "TEJL - tvornica elektroničkih jedinica i logike"
+    FOOTER = (f'<footer><p>© 2026 {ENTITY}</p>'
+              '<a href="https://tejl.com/">TEJL.com</a>'
+              '<a href="https://tejl.hr/">TEJL.hr</a>'
+              '<a href="https://tejl.com/" aria-label="TEJL"><img alt=""></a></footer>')
+
+    def errors(self, text, name="index.html"):
+        import check
+        with tempfile.TemporaryDirectory() as tmp:
+            site = Path(tmp)
+            (site / name).write_text(text, encoding="utf-8")
+            errors = []
+            check.publisher_credits(site, errors)
+            return errors
+
+    def test_every_built_page_and_machine_file_has_valid_publisher_credit(self):
+        import check
+        site = ROOT / "website"
+        self.assertTrue(list(site.rglob("*.html")))
+        errors = []
+        check.publisher_credits(site, errors)
+        self.assertEqual(errors, [])
+        for path in site.rglob("*"):
+            if path.is_file():
+                with self.subTest(file=path.relative_to(site)):
+                    self.assertNotRegex(path.read_bytes(), rb"(?i)d\.o\.o|>tejl\.hr<|>TEJL</a>")
+        for name in ("humans.txt", "llms.txt", "llms-small.txt", "llms-full.txt"):
+            with self.subTest(file=name):
+                self.assertIn(self.ENTITY, (site / name).read_text())
+
+    def test_final_footer_requires_exact_copyright_and_links(self):
+        self.assertEqual(self.errors(self.FOOTER), [])
+        for broken in (
+            "<main>No footer</main>",
+            self.FOOTER.replace("</footer>", ""),
+            self.FOOTER + "<footer>Missing credit</footer>",
+            self.FOOTER.replace(self.ENTITY, "TEJL"),
+            self.FOOTER.replace("© 2026", "© 2025–2026"),
+            self.FOOTER.replace("TEJL.com</a>", "tejl.com</a>"),
+            self.FOOTER.replace("TEJL.hr</a>", "tejl.hr</a>"),
+            self.FOOTER.replace("https://tejl.hr/", "https://tejl.com/"),
+            self.FOOTER.replace("https://tejl.com/", "https://tejl.com"),
+            self.FOOTER.replace('<a href="https://tejl.hr/">TEJL.hr</a>', ""),
+            self.FOOTER.replace("</footer>", '<a href="https://tejl.com/">TEJL.com</a></footer>'),
+            self.FOOTER.replace("</footer>", '<a href="https://example.com/">TEJL.hr</a></footer>'),
+        ):
+            with self.subTest(html=broken):
+                self.assertTrue(self.errors(broken))
+        self.assertTrue(self.errors(self.FOOTER.replace(self.ENTITY, "TEJL") + self.ENTITY))
+        self.assertEqual(self.errors("<footer>Earlier footer</footer>" + self.FOOTER), [])
+
+    def test_forbidden_wording_is_rejected_in_html_and_machine_files(self):
+        import json
+        for wording in ("TEJL d.o.o.", "TEJL j.d.o.o.", "TEJL obrt", "obrt TEJL",
+                        "TEJL Ltd", "TEJL LLC", "TEJL GmbH",
+                        self.ENTITY.replace(" - ", " – "), self.ENTITY.replace(" - ", " — ")):
+            for name in ("index.html", "llms.txt", "llms-small.txt", "llms-full.txt", "humans.txt", "publisher.jsonld"):
+                with self.subTest(wording=wording, file=name):
+                    text = json.dumps({"name": wording}) if name.endswith(".jsonld") else self.FOOTER + wording
+                    self.assertTrue(self.errors(text, name))
+        self.assertTrue(self.errors(self.FOOTER + "TEJL d&#46;o&#46;o&#46;"))
+
+    def test_json_ld_organization_legal_name_is_checked_after_decoding(self):
+        import check
+        import json
+        import shell
+        graph = shell.base_graph()
+        for field in ("name", "legalName"):
+            for name in ("TEJL", self.ENTITY):
+                graph[0][field] = name
+                errors = []
+                check.check_ld("test", {"@graph": graph}, graph[-1]["softwareVersion"], errors)
+                self.assertEqual(errors, [])
+            for name in ("Other publisher", "TEJL d.o.o.", self.ENTITY.replace(" - ", " — ")):
+                graph[0][field] = name
+                errors = []
+                encoded = json.dumps({"@graph": graph}, ensure_ascii=True)
+                check.check_ld("test", json.loads(encoded), graph[-1]["softwareVersion"], errors)
+                self.assertTrue(errors)
+            graph[0][field] = "TEJL"
+
+
 class PageScripts(unittest.TestCase):
     class Page(HTMLParser):
         def __init__(self, html):
@@ -164,7 +247,7 @@ class Facts(unittest.TestCase):
         langs = data.languages()
         self.assertEqual((langs["total"], langs["tiers"]), (50, {"full": 36, "outline": 8, "docs": 6}))
         self.assertEqual(data.network_zero()[0], 0)
-        self.assertEqual(len(data.mcp_tools()), 10)
+        self.assertEqual(len(data.mcp_tools()), 12)
 
     def test_languages_capture_equals_readme(self):
         readme = (ROOT / "README.md").read_text()
