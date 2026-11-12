@@ -173,6 +173,11 @@ fn open_no_follow(path: &Path) -> Result<std::fs::File, CoreError> {
 
 #[cfg(not(unix))]
 impl Source for FsSource {
+    #[cfg(windows)]
+    fn inventory(&self) -> Option<Box<dyn dctx_ports::source::Inventory + '_>> {
+        Some(Box::new(windows::Walk::new(self)))
+    }
+
     fn root_kind(&self) -> Result<NodeType, CoreError> {
         let meta = std::fs::symlink_metadata(&self.root).map_err(map_io)?;
         if meta.is_dir() {

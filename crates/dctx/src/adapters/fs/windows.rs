@@ -12,6 +12,9 @@ use windows_sys::Win32::Storage::FileSystem::{
     FILE_READ_ATTRIBUTES, GetFileInformationByHandle,
 };
 
+mod inventory;
+pub(super) use inventory::Walk;
+
 /// Keep the caller's access/share/no-follow flags on every attempt. Only transient
 /// sharing and lock violations are retried; exhausted retries return the first error.
 fn open_with_retry(path: &Path, options: &OpenOptions) -> io::Result<File> {
@@ -51,6 +54,39 @@ pub(super) fn stat(path: &Path) -> io::Result<(Metadata, Option<u64>)> {
         .then(|| (u64::from(info.nFileIndexHigh) << 32) | u64::from(info.nFileIndexLow))
         .filter(|index| *index != 0);
     Ok((meta, inode))
+}
+
+/// Reuse directory-enumeration metadata, but confirm its identity and access
+/// through the same attribute handle as `stat`. A listing alone cannot certify
+/// either a file index or a per-file permission failure.
+fn stat_entry(entry: &std::fs::DirEntry) -> io::Result<(Metadata, Option<u64>)> {
+    use std::os::windows::fs::MetadataExt;
+
+    let meta = entry.metadata()?;
+    let path = entry.path();
+    let file = open_with_retry(
+        &path,
+        File::options()
+            .access_mode(FILE_READ_ATTRIBUTES)
+            .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT),
+    )?;
+    let mut info = BY_HANDLE_FILE_INFORMATION::default();
+    // SAFETY: `file` owns the borrowed handle; `info` is writable and correctly sized.
+    let found = unsafe { GetFileInformationByHandle(file.as_raw_handle(), &mut info) };
+    let modified = (u64::from(info.ftLastWriteTime.dwHighDateTime) << 32)
+        | u64::from(info.ftLastWriteTime.dwLowDateTime);
+    let size = (u64::from(info.nFileSizeHigh) << 32) | u64::from(info.nFileSizeLow);
+    if found == 0
+        || modified != meta.last_write_time()
+        || size != meta.file_size()
+        || info.dwFileAttributes != meta.file_attributes()
+    {
+        // A racing replacement/edit or a filesystem without this query uses
+        // the original live stat, including its missing-identity hash fallback.
+        return stat(&path);
+    }
+    let inode = (u64::from(info.nFileIndexHigh) << 32) | u64::from(info.nFileIndexLow);
+    Ok((meta, (inode != 0).then_some(inode)))
 }
 
 #[cfg(test)]
@@ -119,37 +155,69 @@ mod tests {
         assert_ne!(stat(&path).unwrap().1, first);
         assert!(stat(dir.path()).unwrap().0.is_dir());
     }
+
+    #[test]
+    fn enumeration_stat_matches_live_stat_and_rechecks_racing_metadata() {
+        use std::os::windows::fs::MetadataExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("source");
+        std::fs::write(&path, b"abc").unwrap();
+        let entry = std::fs::read_dir(dir.path())
+            .unwrap()
+            .next()
+            .unwrap()
+            .unwrap();
+        let (listed, listed_id) = stat_entry(&entry).unwrap();
+        let (live, live_id) = stat(&path).unwrap();
+        assert_eq!(listed_id, live_id);
+        assert_eq!(listed.file_size(), live.file_size());
+        assert_eq!(listed.last_write_time(), live.last_write_time());
+        // DirEntry retains its original metadata. A changed handle query must
+        // cause a fresh stat, rather than pairing the old size with a live ID.
+        std::fs::write(&path, b"longer replacement").unwrap();
+        let (changed, changed_id) = stat_entry(&entry).unwrap();
+        let (live, live_id) = stat(&path).unwrap();
+        assert_eq!(changed_id, live_id);
+        assert_eq!(changed.file_size(), live.file_size());
+        assert_eq!(changed.last_write_time(), live.last_write_time());
+    }
 }
 
 /// Keep every directory name stable until the operation completes.
 /// Write and delete sharing are denied to prevent reparse changes and replacement.
 pub(super) fn pin_directories(path: &Path) -> io::Result<Vec<File>> {
+    let mut guards = Vec::new();
+    for directory in path.ancestors().collect::<Vec<_>>().into_iter().rev() {
+        guards.push(pin_directory(directory)?);
+    }
+    Ok(guards)
+}
+
+/// The caller must already hold guards for every ancestor of `path`.
+fn pin_directory(path: &Path) -> io::Result<File> {
     use std::os::windows::fs::MetadataExt;
     use windows_sys::Win32::Storage::FileSystem::{
         FILE_ATTRIBUTE_REPARSE_POINT, FILE_LIST_DIRECTORY, FILE_SHARE_READ,
     };
-    let mut guards = Vec::new();
-    for directory in path.ancestors().collect::<Vec<_>>().into_iter().rev() {
-        // Windows does not apply share-mode checks to attribute-only opens, so a guard with
-        // FILE_READ_ATTRIBUTES alone would pin nothing. FILE_LIST_DIRECTORY reads names only,
-        // never file content, and makes the denied write/delete sharing enforceable.
-        let file = open_with_retry(
-            directory,
-            File::options()
-                .access_mode(FILE_LIST_DIRECTORY | FILE_READ_ATTRIBUTES)
-                .share_mode(FILE_SHARE_READ)
-                .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT),
-        )?;
-        let meta = file.metadata()?;
-        if !meta.is_dir() || meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
-            return Err(io::Error::new(
-                io::ErrorKind::PermissionDenied,
-                "source directory is a reparse point or not a directory",
-            ));
-        }
-        guards.push(file);
+    // Windows does not apply share-mode checks to attribute-only opens, so a guard with
+    // FILE_READ_ATTRIBUTES alone would pin nothing. FILE_LIST_DIRECTORY reads names only,
+    // never file content, and makes the denied write/delete sharing enforceable.
+    let file = open_with_retry(
+        path,
+        File::options()
+            .access_mode(FILE_LIST_DIRECTORY | FILE_READ_ATTRIBUTES)
+            .share_mode(FILE_SHARE_READ)
+            .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT),
+    )?;
+    let meta = file.metadata()?;
+    if !meta.is_dir() || meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+        return Err(io::Error::new(
+            io::ErrorKind::PermissionDenied,
+            "source directory is a reparse point or not a directory",
+        ));
     }
-    Ok(guards)
+    Ok(file)
 }
 
 pub(super) fn open_content(path: &Path) -> io::Result<File> {

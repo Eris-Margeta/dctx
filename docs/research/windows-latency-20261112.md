@@ -44,7 +44,8 @@ repository scale, and its first calls can exercise the two-second racy window.
 
 ## Concrete suspects from the path
 
-References are repository-relative `file:line` locations in this change.
+This table records the pre-fix investigation. References are repository-relative
+`file:line` locations from that original revision; the fix is described below.
 Windows effects listed here are hypotheses, not externally verified platform
 performance claims.
 
@@ -106,6 +107,130 @@ entry runs the same scale fixture with `DCTX_TIMINGS=1` and uploads
 cache/config isolation and disabled auto-clean. All steps remain informational
 with `continue-on-error`; no performance threshold changes. Compare wall and
 phase distributions side by side when CI artifacts are available. No scale
-results are recorded here yet; MAIN will add them from CI. The synthetic mix
-and tree shape approximate repository scale, not the tester's actual content
-or filesystem environment.
+results were available in the initial investigation; the measurements follow
+below. The synthetic mix and tree shape approximate repository scale, not the
+tester's actual content or filesystem environment.
+
+## Scale results
+
+CI run 43259066838 used release builds, one excluded warmup and 50 warm
+processes with `DCTX_TIMINGS=1`. These are the supplied artifacts under
+`.inputs/winlat2/`, before this fix. Wall medians include process startup;
+phase medians do not.
+
+| Platform/toolchain | Files | Wall p50 (ms) | `generation_open` median (us) |
+| --- | ---: | ---: | ---: |
+| Linux stable | 1,551 | 9.669 | 5,367 |
+| Windows stable | 1,551 | 287.285 | 276,760 |
+| Windows MSRV | 1,551 | 274.257 | 263,297 |
+| Windows stable | 1 | 10.114 | 1,926 |
+| Windows MSRV | 1 | 9.793 | 1,689 |
+
+The stable Windows scale delta is about 177 us per additional file; Linux's
+scale phase averages about 3.5 us per file. The external tester's real
+1,551-file repository measured about 2.7 s wall p50 on Windows. That is a
+different environment, not a measurement reproduced here.
+
+### Linux syscall baseline
+
+A local release build was warmed on the same 1,551-file/106-directory fixture.
+`strace -f -c` counted 1,656 `newfstatat` calls for a warm process. A second
+`strace -f -yy` trace attributed exactly 1,551 of them to source files and
+105 to child directory entries. Each source file incurred **one stat, zero
+content opens and zero content reads** during `generation_open`. These
+per-file counts are attributable to the phase by their call sites, rather
+than treating the whole-process syscall total as phase-local.
+
+The call chain is `host/rules.rs::project_rules_inventory` (inside its
+`GenerationOpen` span), `host/inventory.rs::RuleWalk::entries`,
+`adapters/fs/unix.rs::FsWalk::entries`, then `list_directory`'s
+`statat(..., SYMLINK_NOFOLLOW)`. `PreparedSource` replays those stats into
+`index/walk.rs::visit_file`; it does not stat each path a second time.
+`session/reuse/verify.rs::verify_files` finds matching settled stamps and
+skips hashing. The later snapshot span in `map/mod.rs` covers this reuse
+validation and retained-object I/O; retained decoding has its own `Decode`
+span. Cache/config/lease operations contribute other filesystem calls,
+but are not per source file.
+
+For recent/future mtimes, changed identities, missing identities, or
+`strict_live`, the existing digest fallback remains: `digest_matches_source`
+in `session/query_op/read_page.rs` calls `Source::read`. On Windows that
+read still checks ancestors, calls `symlink_metadata`, opens content without
+following reparse points and checks handle metadata. Cold construction also
+reads content. The settled warm fixture exercises none of those per-file
+fallback reads. The raw traces and timing reports are in the ignored
+`target/D1112-WINOPEN/` directory.
+
+The final local before/after runs were sequential, with compilation and cache
+preparation finished. Both used the required scale benchmark, release binaries,
+50 measured warm processes and `DCTX_TIMINGS=1`:
+
+| Linux local measurement | Before | After |
+| --- | ---: | ---: |
+| Wall p50 (ms) | 16.331 | 16.244 |
+| `generation_open` median (us) | 9,163 | 9,239 |
+| Source-file `newfstatat` calls | 1,551 | 1,551 |
+| Source-file opens / content reads | 0 / 0 | 0 / 0 |
+| Whole-process `newfstatat` calls | 1,656 | 1,656 |
+
+The Linux code path is unchanged; these timings are consistent with local
+measurement variation. `before.json` and the required `after.json`, plus the
+before/after `strace` summaries and detailed traces, are under
+`target/D1112-WINOPEN/`.
+
+## Fix
+
+Windows had no `Source::inventory` override. Its listing supplied names and
+kinds, after which every selected file's `FsSource::stat` called
+`reject_links`, `windows::pin_directories`, and `windows::stat`. For a leaf
+at depth four, each file reopened **every absolute root ancestor plus four
+repository directories**, checking handle metadata on each, before its own
+attribute open, `File::metadata` and `GetFileInformationByHandle`. Directory
+listings repeated that ancestor walk too. This code establishes repeated
+work; it does not establish how much antivirus contributes to its cost.
+
+The Windows inventory now keeps a DFS stack of guarded directories. The
+source already pins the absolute root chain; descending opens only the new
+child, and leaving a subtree releases its guards. The fixture needs 105
+child guards per traversal instead of thousands of repeated ancestor opens.
+The guards retain the same access, sharing, retry and reparse-point checks.
+No persistent directory-mtime shortcut or process-global metadata cache is
+introduced. Rule discovery and the engine reuse the existing one-use
+prepared inventory, as they already do on Linux.
+
+`DirEntry::file_type` and `DirEntry::metadata` supply enumeration data.
+For a file, `stat_entry` retains **one attribute open and one
+`GetFileInformationByHandle`** to preserve the old access check and obtain
+the file index. It replaces the separate `File::metadata` query with
+enumeration metadata, accepting it only when the handle query agrees on
+size, modification time and attributes. A mismatch or unsupported identity
+query uses the original stat. A failed file stat falls back after policy
+selection to the original per-file partial/error handling. Ordinary stats
+and content reads remain live.
+
+Removing the final per-file identity/access open would change semantics:
+enumeration metadata alone cannot distinguish a same-size/same-mtime file
+replacement, and a directory listing can succeed when file attributes are
+denied. The optimization removes the depth multiplier and redundant
+metadata queries while preserving these checks. The clock is sampled
+before enumeration, and the unchanged two-second settled-stamp rule still
+requires hashing for racy timestamps.
+
+`crates/dctx/tests/inventory_equiv.rs` compares the inventory path with a
+wrapper that disables it, using separate retained caches over the same
+source. It checks identical reuse verdicts and answer bytes for settled
+same-size edits, additions, deletions, renames, touches, inode replacements
+preserving size/mtime, future-mtime same-stamp edits, and permission errors.
+Windows cases additionally exercise a locked content file and denied file
+`READ_ATTRIBUTES`. Windows unit tests check cached enumeration metadata
+against live stats, a change after enumeration, and guard reuse/release.
+Existing staleness tests are unchanged. The Windows-specific cases can be
+cross-compiled here but require Windows to execute; no post-fix Windows
+latency measurement is claimed from this Linux host.
+
+Validation: `cargo test --offline --workspace` passed 2,599 tests with zero
+failures or ignored tests. The three new Linux differential tests also passed
+in isolation. `cargo clippy --offline --workspace --all-targets -- -D warnings`
+and `cargo fmt --check` exited successfully. The Windows dctx library and test
+targets passed cross-target clippy with warnings denied; those Windows-only
+test cases were compiled, not executed.
