@@ -55,6 +55,7 @@ pub(crate) fn write_output(
         return Err(exit::write_failure(error));
     }
     let answered = answered.map_err(|failure| failure.within("map"))?;
+    let _timing = dctx::timings::Span::begin(dctx::timings::Phase::Write);
     output
         .write_all(answered.page.as_bytes())
         .map_err(dctx_cli::exit::write_failure)?;
@@ -237,6 +238,7 @@ fn answer_with(
     if profiling {
         session.enable_profile();
     }
+    let generation_timing = dctx::timings::Span::begin(dctx::timings::Phase::GenerationOpen);
     let built = if scope.is_some() {
         session.snapshot_for_query(&SnapshotRequest::strict(), &request, &key)
     } else if profiling {
@@ -244,6 +246,7 @@ fn answer_with(
     } else {
         session.snapshot_reusable(&SnapshotRequest::strict(), &key)
     };
+    drop(generation_timing);
     let handle = match built {
         Ok(handle) => handle,
         Err(error) => {
@@ -319,6 +322,7 @@ fn answer_with(
             }
         }
     }
+    let _timing = dctx::timings::Span::begin(dctx::timings::Phase::Render);
     let missing = match &answer.outcome {
         Some(IdentityOutcome::Gone { id }) => Some(failure::gone(id)),
         _ => None,

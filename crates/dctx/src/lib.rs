@@ -23,6 +23,8 @@ mod ports;
 #[cfg(feature = "rpc")]
 pub mod rpc;
 mod session;
+#[doc(hidden)]
+pub mod timings;
 
 /// Facade crate version: the package version, so it moves with the workspace release.
 pub const FACADE_VERSION: &str = env!("CARGO_PKG_VERSION");

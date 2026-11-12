@@ -30,6 +30,7 @@ impl Session {
         request: &MapRequest,
         sink: &mut dyn BoundedSink,
     ) -> Result<Answer, DctxError> {
+        let _timing = crate::timings::Span::begin(crate::timings::Phase::Query);
         if !cfg!(feature = "map") {
             return Err(DctxError::unsupported("map"));
         }

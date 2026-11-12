@@ -16,6 +16,7 @@ and distribution plans below do not describe the current release.
 
 ### Added
 
+- Opt-in `DCTX_TIMINGS=1` emits map-find phase microseconds as stderr JSON, with phase medians in the Windows CI latency report.
 - Publish the first whole-session grep-versus-dctx benchmark: CLI median tokens -5.01 %, below the 25 % savings rule; both recall metrics and spread reported in [the study](docs/BENCHMARK-20261111.md).
 - `dctx trace A B` returns bounded shortest directed call/reference paths, and
   `dctx impact SYMBOL` returns direct sites plus transitive callers grouped by

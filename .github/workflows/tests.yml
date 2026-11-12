@@ -104,6 +104,8 @@ jobs:
       - name: Windows map-find per-call latency (informational)
         if: ${{ runner.os == 'Windows' }}
         continue-on-error: true
+        env:
+          DCTX_TIMINGS: '1'
         run: |
           cargo build --release --locked -p dctx-cli
           python tools/bench/map_find_latency.py --binary target/release/dctx-cli.exe --output target/map-find-latency.json
