@@ -98,7 +98,15 @@
   });
 
   var menu = document.querySelector('.menu');
-  if (menu) document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && menu.open) { menu.open = false; menu.querySelector('summary').focus(); } });
+  if (menu) {
+    var menuToggle = menu.querySelector('summary'), menuPanel = menu.querySelector('.menu-panel');
+    menuPanel.id = 'mobile-menu';
+    menuToggle.setAttribute('aria-controls', menuPanel.id);
+    function syncMenu() { menuToggle.setAttribute('aria-expanded', String(menu.open)); }
+    syncMenu();
+    menu.addEventListener('toggle', syncMenu);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && menu.open) { menu.open = false; menuToggle.focus(); } });
+  }
 
   /* Scroll-spy: one observer for all section headings, shared by the desktop/mobile TOCs and
      section lists. Page links in the documentation sidebar keep aria-current="page". */

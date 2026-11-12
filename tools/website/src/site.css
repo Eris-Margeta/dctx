@@ -101,9 +101,10 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
 .menu { position: relative; display: none; }
 .menu > summary { list-style: none; padding: 0; width: 32px; }
 .menu > summary::-webkit-details-marker { display: none; }
+.menu:not([open]) > .menu-panel { display: none; }
 .menu-panel { position: absolute; right: 0; top: 40px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); padding: 6px; min-width: 200px; }
 .menu-panel ul { flex-direction: column; }
-.menu-panel a { display: block; padding: 8px 10px; border-radius: 4px; color: var(--ink); text-decoration: none; font: 500 14px/1.2 var(--mono); }
+.menu-panel a { display: block; min-height: 40px; padding: 8px 10px; border-radius: 4px; color: var(--ink); text-decoration: none; font: 500 14px/1.2 var(--mono); }
 .menu-panel a:hover { background: var(--surface-2); }
 @media (max-width: 1080px) { .nav { display: none; } .menu { display: block; } }
 
