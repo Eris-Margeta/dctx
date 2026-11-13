@@ -1,0 +1,6 @@
+[
+  {"name": "Build", "kind": "Trait", "line": 1, "parent": null},
+  {"name": "Build::build", "kind": "Method", "line": 2, "parent": "Build"},
+  {"name": "Build::build::prepare", "kind": "Function", "line": 3, "parent": "Build::build"},
+  {"name": "Build::build::Scratch", "kind": "Struct", "line": 4, "parent": "Build::build"}
+]

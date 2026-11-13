@@ -1,0 +1,6 @@
+[
+  {"name": "Ring", "kind": "Struct", "line": 1, "parent": null},
+  {"name": "Ring<T,N>::impl", "kind": "Impl", "line": 2, "parent": null},
+  {"name": "Ring::SIZE", "kind": "Const", "line": 3, "parent": "Ring<T,N>::impl"},
+  {"name": "Ring::len", "kind": "Method", "line": 4, "parent": "Ring<T,N>::impl"}
+]

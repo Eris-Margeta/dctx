@@ -182,7 +182,26 @@ pub(crate) fn parse(line: &str) -> Option<Head> {
         _ => return None,
     };
     let name = words.name()?;
+    let kind = if kind == DeclarationKind::Trait {
+        words.skip_group("<", ">");
+        if words.eat("=") {
+            DeclarationKind::TraitAlias
+        } else {
+            kind
+        }
+    } else {
+        kind
+    };
     Some(item(kind, name))
+}
+
+/// Whether a declaration head starts an impl, including its optional modifiers.
+pub(crate) fn starts_impl(line: &str) -> bool {
+    let mut words = Words { rest: line };
+    while matches!(words.peek(), Some("default" | "unsafe" | "const")) {
+        words.next();
+    }
+    words.eat("impl")
 }
 
 /// `impl<G> Trait for Type where ... {`, cut at depth-0 `{`, `;` or `where`.

@@ -1,0 +1,5 @@
+[
+  {"name": "Bom", "kind": "Struct", "line": 1, "parent": null},
+  {"name": "Bom::impl", "kind": "Impl", "line": 2, "parent": null},
+  {"name": "Bom::read", "kind": "Method", "line": 3, "parent": "Bom::impl"}
+]
