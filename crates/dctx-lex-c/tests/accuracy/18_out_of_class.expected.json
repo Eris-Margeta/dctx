@@ -1,0 +1,9 @@
+[
+  {"name": "Meter", "kind": "struct", "line": 1, "parent": null},
+  {"name": "Meter::Meter", "kind": "method", "line": 2, "parent": "Meter"},
+  {"name": "Meter::dtor_Meter", "kind": "method", "line": 3, "parent": "Meter"},
+  {"name": "Meter::read", "kind": "method", "line": 4, "parent": "Meter"},
+  {"name": "Meter::Meter", "kind": "method", "line": 6, "parent": null},
+  {"name": "Meter::dtor_Meter", "kind": "method", "line": 7, "parent": null},
+  {"name": "Meter::read", "kind": "method", "line": 8, "parent": null}
+]

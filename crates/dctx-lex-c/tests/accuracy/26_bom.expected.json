@@ -1,0 +1,4 @@
+[
+  {"name": "BOM_LIMIT", "kind": "macro", "line": 1, "parent": null},
+  {"name": "bom_ready", "kind": "function", "line": 2, "parent": null}
+]

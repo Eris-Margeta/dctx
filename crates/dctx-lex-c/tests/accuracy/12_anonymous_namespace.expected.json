@@ -1,0 +1,5 @@
+[
+  {"name": "sequence", "kind": "untyped", "line": 2, "parent": null},
+  {"name": "reset", "kind": "function", "line": 3, "parent": null},
+  {"name": "public_count", "kind": "function", "line": 5, "parent": null}
+]

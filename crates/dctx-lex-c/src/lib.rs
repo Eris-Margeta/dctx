@@ -18,7 +18,7 @@ pub use domain::{
 /// Parser identity recorded with every fact key (PARSERS-v1 provenance).
 pub const PARSER_ID: &str = "dctx-lex-c";
 /// Bumped whenever extraction output can change for the same bytes.
-pub const PARSER_REVISION: u32 = 2;
+pub const PARSER_REVISION: u32 = 3;
 
 /// Bounded structural extractor. Stateless apart from its limits.
 ///
@@ -101,7 +101,7 @@ mod tests {
         assert!(lexer.extract("x.c", b"").is_ok());
         assert_eq!(lexer.extract("x.H", b"int x;").unwrap().dialect, Dialect::C);
         assert_eq!(PARSER_ID, "dctx-lex-c");
-        assert_eq!(PARSER_REVISION, 2);
+        assert_eq!(PARSER_REVISION, 3);
     }
 
     #[test]

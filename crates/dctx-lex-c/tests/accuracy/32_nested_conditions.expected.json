@@ -1,0 +1,5 @@
+[
+  {"name": "selected", "kind": "function", "line": 8, "parent": null},
+  {"name": "feature_on", "kind": "function", "line": 11, "parent": null},
+  {"name": "feature_off", "kind": "function", "line": 13, "parent": null}
+]

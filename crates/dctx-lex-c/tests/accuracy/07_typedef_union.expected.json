@@ -1,0 +1,6 @@
+[
+  {"name": "Payload", "kind": "type", "line": 1, "parent": null},
+  {"name": "Payload::number", "kind": "untyped", "line": 2, "parent": "Payload"},
+  {"name": "Payload::real", "kind": "untyped", "line": 3, "parent": "Payload"},
+  {"name": "PayloadValue", "kind": "type", "line": 1, "parent": null}
+]

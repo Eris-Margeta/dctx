@@ -138,6 +138,7 @@ pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
         lexer.run();
         (lexer.tokens, lexer.comments, lexer.problems)
     };
+    let tokens = preprocessor::active_tokens(&logical, tokens);
     let partner = pair(&logical, &map, &tokens, &mut problems, limits)?;
     problems.sort_by_key(|problem| problem.0);
     let diagnostics = problems
