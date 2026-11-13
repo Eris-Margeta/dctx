@@ -16,7 +16,7 @@ pub(crate) struct OwnedStrings {
 
 impl OwnedStrings {
     pub(crate) fn from_set(
-        set: BTreeSet<String>,
+        set: BTreeSet<&str>,
         limits: &DecoderLimits,
     ) -> Result<Self, SegmentError> {
         if offset_len(set.len())? > limits.max_records {
@@ -28,7 +28,7 @@ impl OwnedStrings {
             }
         }
         Ok(Self {
-            strings: set.into_iter().collect(),
+            strings: set.into_iter().map(str::to_owned).collect(),
         })
     }
 
