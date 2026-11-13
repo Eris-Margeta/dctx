@@ -70,7 +70,7 @@ def build(out: Path) -> int:
     import md
     import og
     import shell
-    from assets import Assets
+    from assets import Assets, favicon_ico
     from common import ICON, READS, ROOT, VERSION, date_of, read_bytes
     from pages import animations, benchmarks, docs, examples, home, misc, paths, playground, reference
     from pages.news_content import NEWS
@@ -181,6 +181,7 @@ def build(out: Path) -> int:
     for url, data in assets.files.items():
         files[url.lstrip("/")] = data
     files.update({url.lstrip("/"): content for url, content in social.items()})
+    files["favicon.ico"] = favicon_ico(site_images["/favicon-32.png"])
     files["favicon.svg"] = (ICON.replace(' aria-hidden="true" focusable="false"', ' xmlns="http://www.w3.org/2000/svg"') + "\n").encode()
     files["llms.txt"] = llms.llms_txt(pages, routes).encode()
     files["llms-small.txt"] = llms.llms_small(pages, routes).encode()
