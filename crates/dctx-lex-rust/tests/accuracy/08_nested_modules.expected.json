@@ -1,0 +1,8 @@
+[
+  {"name": "service", "kind": "Module", "line": 1, "parent": null},
+  {"name": "service::wire", "kind": "Module", "line": 2, "parent": "service"},
+  {"name": "service::wire::Frame", "kind": "Struct", "line": 3, "parent": "service::wire"},
+  {"name": "service::wire::decode", "kind": "Function", "line": 4, "parent": "service::wire"},
+  {"name": "service::helpers", "kind": "Module", "line": 6, "parent": "service"},
+  {"name": "service::helpers::LIMIT", "kind": "Const", "line": 7, "parent": "service::helpers"}
+]

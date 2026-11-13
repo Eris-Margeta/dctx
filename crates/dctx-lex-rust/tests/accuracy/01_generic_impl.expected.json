@@ -1,0 +1,6 @@
+[
+  {"name": "Cache", "kind": "Struct", "line": 1, "parent": null},
+  {"name": "Cache<K,V>::impl", "kind": "Impl", "line": 2, "parent": null},
+  {"name": "Cache::lookup", "kind": "Method", "line": 5, "parent": "Cache<K,V>::impl"},
+  {"name": "Cache::clear", "kind": "Method", "line": 6, "parent": "Cache<K,V>::impl"}
+]

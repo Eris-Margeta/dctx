@@ -1,0 +1,5 @@
+[
+  {"name": "type", "kind": "Module", "line": 1, "parent": null},
+  {"name": "type::match", "kind": "Struct", "line": 2, "parent": "type"},
+  {"name": "type::async", "kind": "Function", "line": 3, "parent": "type"}
+]

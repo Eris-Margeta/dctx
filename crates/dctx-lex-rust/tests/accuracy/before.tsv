@@ -1,0 +1,15 @@
+# Unmodified extractor at 54d0deff4fa6d65b051617d0a83325aa086989b7
+# kind expected emitted correct (exact name, kind, start line, parent; multiset)
+Const 15 15 15
+Enum 1 1 1
+Function 35 34 32
+Impl 11 10 10
+Macro 2 2 2
+Method 13 12 12
+Module 10 10 10
+Static 5 5 5
+Struct 15 15 15
+Trait 4 6 4
+TraitAlias 4 2 2
+TypeAlias 7 7 7
+Union 1 1 1

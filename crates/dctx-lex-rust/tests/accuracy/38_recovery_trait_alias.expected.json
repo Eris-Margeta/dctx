@@ -1,0 +1,4 @@
+[
+  {"name": "Transfer", "kind": "TraitAlias", "line": 1, "parent": null},
+  {"name": "Borrowable", "kind": "TraitAlias", "line": 2, "parent": null}
+]

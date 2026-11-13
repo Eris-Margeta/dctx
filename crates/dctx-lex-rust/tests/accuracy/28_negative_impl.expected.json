@@ -1,0 +1,6 @@
+[
+  {"name": "LocalOnly", "kind": "Struct", "line": 1, "parent": null},
+  {"name": "LocalOnly::impl<Send>", "kind": "Impl", "line": 2, "parent": null},
+  {"name": "Marker", "kind": "Trait", "line": 3, "parent": null},
+  {"name": "LocalOnly::impl<Marker>", "kind": "Impl", "line": 4, "parent": null}
+]

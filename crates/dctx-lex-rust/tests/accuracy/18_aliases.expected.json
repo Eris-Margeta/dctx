@@ -1,0 +1,5 @@
+[
+  {"name": "Result", "kind": "TypeAlias", "line": 1, "parent": null},
+  {"name": "Callback", "kind": "TypeAlias", "line": 2, "parent": null},
+  {"name": "Error", "kind": "Struct", "line": 3, "parent": null}
+]

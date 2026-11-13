@@ -1,0 +1,5 @@
+[
+  {"name": "Lending", "kind": "Trait", "line": 1, "parent": null},
+  {"name": "Lending::Item", "kind": "TypeAlias", "line": 2, "parent": "Lending"},
+  {"name": "Lending::lend", "kind": "Method", "line": 3, "parent": "Lending"}
+]

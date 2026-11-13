@@ -1,0 +1,7 @@
+[
+  {"name": "Store", "kind": "Trait", "line": 1, "parent": null},
+  {"name": "Store::Key", "kind": "TypeAlias", "line": 2, "parent": "Store"},
+  {"name": "Store::CAPACITY", "kind": "Const", "line": 3, "parent": "Store"},
+  {"name": "Store::get", "kind": "Method", "line": 4, "parent": "Store"},
+  {"name": "Store::empty", "kind": "Method", "line": 5, "parent": "Store"}
+]
