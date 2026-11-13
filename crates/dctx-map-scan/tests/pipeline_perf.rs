@@ -60,8 +60,11 @@ fn seeded_pipeline_matches_baseline_bytes_and_thread_counts() {
 }
 
 #[test]
-#[ignore = "creates 1k/10k/50k files and measures three complete passes per size"]
+// Heavy benchmark (1k/10k/50k files); runs only when DCTX_PERF_SIZE or DCTX_PERF=1 is set.
 fn seeded_pipeline_benchmark() {
+    if std::env::var_os("DCTX_PERF_SIZE").is_none() && std::env::var_os("DCTX_PERF").is_none() {
+        return;
+    }
     let selected = std::env::var("DCTX_PERF_SIZE")
         .ok()
         .map(|s| s.parse::<usize>().unwrap());
