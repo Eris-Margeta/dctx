@@ -14,6 +14,5 @@ python3 phase_fresh.py $ALL
 python3 phase_bound.py $ALL
 python3 phase_coverage.py $ALL
 python3 phase_net.py flask abort
-python3 phase_mcp.py flask abort src/flask/helpers.py
 python3 phase_init.py flask
 python3 phase_adversarial.py

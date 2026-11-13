@@ -14,7 +14,7 @@ Each of these costs you. Models read text as **tokens** (small chunks of text, r
 
 ## What dctx does
 
-dctx is a command-line tool that reads your project on your machine and answers precise questions about it: where a function is defined, what calls it, what its exact source is. Each answer fits a size budget and is built from whole pieces of syntax; a piece that is too long is marked as cut, with a way to get the rest. The same question about the same code gives the same bytes every time. An assistant can run the commands itself or call them through the built-in MCP server (`dctx mcp`; MCP is a standard way for AI tools to call other tools). dctx can also pack a whole project into one structured block for a chat.
+dctx is a command-line tool that reads your project on your machine and answers precise questions about it: where a function is defined, what calls it, what its exact source is. Each answer fits a size budget and is built from whole pieces of syntax; a piece that is too long is marked as cut, with a way to get the rest. The same question about the same code gives the same bytes every time. An assistant can run the commands through its shell tool. dctx can also pack a whole project into one structured block for a chat.
 
 ### Start with grep plus file reads
 
@@ -151,7 +151,7 @@ If the context is byte-identical, turn one pays 200 units and the next nine pay 
 
 ## Sources in this repository
 
-- [README.md](../README.md): core belief, map-mode budgets, MCP, `pack` tree lines, `--tree-stamps`, tested platform.
+- [README.md](../README.md): core belief, map-mode budgets, `pack` tree lines, `--tree-stamps`, tested platform.
 - [CHANGELOG.md](../CHANGELOG.md): 1.1.0 prefix-stable `pack` output, stability re-measurement.
 - [docs/SPEC.md](SPEC.md): §2 rules PPE-1 to PPE-5, §3 defects R1 and R7, §4 privacy and no network, §11 page formats, §12.1 tiers, §13 token estimate, §32 non-goals.
 - [docs/research/stability-20261105/REPORT.md](research/stability-20261105/REPORT.md): 33/33 results and limits.

@@ -11,7 +11,7 @@ and SPEC's non-goals. The transport crate is deleted, so the workspace's
 entries, CLI implementation, internal entry point, command, environment/config
 handling, auto-start, output interception, lifecycle tests, and guide are gone.
 Map, read, and both pack routes call their existing local implementations.
-CLI/MCP/RPC confinement coverage remains in the security tests.
+CLI/RPC confinement coverage remains in the security tests.
 
 The only edit under `crates/dctx-cli/src/host/` deletes the daemon-only
 `set_session_auto_clean` helper. Core session/index code and host open/rule code
@@ -75,7 +75,7 @@ all 40 non-help records retain identical stdout, stderr, exit status, and record
 metadata. The remaining help record differs only by deleting the command line
 and explanatory daemon line. The committed engine goldens were not modified. The workspace test
 `sixteen_operations_are_byte_identical_across_transports` also passed, along with
-the retained CLI/MCP/RPC symlink and traversal confinement test.
+the retained CLI/RPC symlink and traversal confinement test.
 
 `python3 target/card-smoke.py` passed against the release binary. It checks that
 `daemon status` and `--internal-daemon` return usage exit 2, help omits the daemon,

@@ -47,7 +47,7 @@ contract that defines them.
 - **Part VI — Extension**
   22. Core, surface or plugin: the decision procedure
   23. Plugin protocol and its v1.x extensions
-  24. Surfaces: CLI, library, MCP, agent hooks, bindings, desktop
+  24. Surfaces: CLI, library, agent hooks, bindings, desktop
   25. Blast radius
   26. Learnings
 - **Part VII — Assurance**
@@ -78,7 +78,6 @@ It is one engine for every way software is built today:
 | Copy-paste into a chat assistant | `dctx pack` (full / diff), templates, clipboard | Fewest bytes that still let a human and a model share one view; re-send only what changed |
 | Tab completion and IDE assistants | library facade (`crates/dctx`), bindings | Freshness in ≤50 ms, span reads in milliseconds, for the editor's own context budget |
 | Agents with a shell tool | `dctx map <verb>` | One line per record, copyable ids, bounded pages, always a next step |
-| Agents with a tool protocol | MCP surface (`dctx serve --mcp`) | The same records and budgets as the CLI, byte for byte; small tool schemas |
 | Software factories and CI | facade + organization policy + plugins | Deterministic bytes under one signed policy; receipts; no network unless granted |
 
 dctx is not a code search engine, not a vector store, not an IDE and not a model. It
@@ -146,7 +145,7 @@ runs (§28). A build that fails any row MUST NOT call itself dctx-conformant.
 | R3 | Staleness | Index built from old bytes, served as current | There is no incremental index and no stale flag. Every CLI process re-walks the tree and re-hashes the selected files; a persisted generation is reused only when every content digest still matches, and any change rebuilds the whole generation. Inside one session `read` re-hashes the bytes against the snapshot digest and refuses with `SourceChanged` when they differ. The CLI always takes strict snapshots, so `freshness.state` is always `"verified"` (the library reports `"metadata"` only for a `FreshnessMode::Metadata` request) | landed (re-verify on every process; no stale flag) |
 | R4 | Positional identity | Chunk ids that shift when a file is added | Path + qualified-name ids with ordinals; explicit `moved`, `gone`, `ambiguous` outcomes | landed |
 | R5 | Semantic drift | "Similar" but wrong code | Lexical ranking over split identifiers, exact-name boost, kind filters, then graph edges with explicit confidence | contract — lexical ranking landed; graph edges are **not emitted by the shipped CLI** (TC-F01); the resolver is landed in `crates/dctx-map-resolve` but not wired (§7); `typed` rung target |
-| R6 | Authority leak | Secrets, ignored and generated files reach the prompt | Selection precedes content: excluded files are never opened; policy rechecked at emission; plugins never receive excluded bytes | landed for map, pack and MCP: the strict secret-shaped deny of §4 item 3 has no override |
+| R6 | Authority leak | Secrets, ignored and generated files reach the prompt | Selection precedes content: excluded files are never opened; policy rechecked at emission; plugins never receive excluded bytes | landed for map and pack: the strict secret-shaped deny of §4 item 3 has no override |
 | R7 | Unbounded context | Top-k chunks of unknown size crowd out instructions | Hard per-verb caps; byte ceiling derived from tokens; envelope reserved first | landed for map verbs; the legacy tree (`dctx . -t`) and `pack` are unbounded (974 KB and 8.7 MB measured) and are not conformant surfaces |
 | R8 | Opaque provenance | The model cannot tell a fact from an inference | Every record carries parser and coverage; every edge carries confidence and source | landed for records; vacuous for edges until §7 lands |
 | R9 | Hidden tool cost | The retrieval tool's own output is not counted | M5 inside M2; `dctx bench tokens` (§28) | target |
@@ -172,7 +171,7 @@ public corpus, ranked candidates MAY arrive as a plugin overlay with provenance
    `_netrc`, `.npmrc`, `.pypirc`, `.pgpass`, `.htpasswd`, `.git-credentials`, `credentials`,
    `credentials.<data>`, `*.credentials.json` and `secrets.<data>` (data = json, yaml, yml,
    toml, ini, xml); ADR-014 "SENSITIVE" is the normative list. Such files appear in trees with
-   content omitted and are never read, hashed or indexed by pack, any map verb or the MCP tools.
+   content omitted and are never read, hashed or indexed by pack or any map verb.
    v1 has no override: no `--allow-sensitive` flag, and no local rule can negate the deny.
    Policy MAY later add named classes (`aws`, `gcp`, `ssh`, `jwt`). dctx never scans contents
    to decide. **Gate:** the adversarial corpus's planted `.env` value is
@@ -365,7 +364,7 @@ Two formats: the **text page** (default; one record per line; ids first) and **J
   so a JSON `find` fit 4 records where the text page fit 10);
 - canonical order (score desc, id asc; adjacency grouped by edge kind);
 - paths are root-relative with `/` separators on every OS;
-- the same request through CLI, library and MCP yields the same canonical page bytes.
+- the same request through CLI and library yields the same canonical page bytes.
 
 **Note (1.0.1, legacy source page).** The `dctx pack` / `dctx .` text page (the `[DCTX_LLM_CONTEXT_SNAPSHOT_V1]` envelope) follows the same no-timestamp rule by default: its tree and root lines carry the `ID` only, with no `MOD:` and no `SIZE:` (a size changes on every ordinary edit, and the tree precedes the file blocks), so a bare `touch` leaves the page byte-identical and an edit keeps the bytes before the edited file as a common prefix. `--tree-stamps=on` reproduces the 1.0.0 page with `MOD:<ms>` and `SIZE:` on every tree line; `{{{node.mod}}}` and `{{{node.size_part}}}` remain available to custom templates.
 
@@ -413,7 +412,7 @@ line with their digest.
 
 ### 12.4 Session deduplication (target)
 
-With `--session <id>` (implicit for an MCP session), a record already emitted in the
+With `--session <id>`, a record already emitted in the
 session renders as `=<id>` unless its digest changed or `--full` is given. Session
 ledgers are per user, ≤1 MiB, ≤24 h.
 
@@ -480,7 +479,7 @@ cache.max_bytes      = 1_073_741_824
 cache.root_ttl_days  = 14
 budget.map.max_tokens = 1500
 parsers.allow        = ["syn", "structural", "opaque"]
-agents.hosts.allow   = ["shell", "mcp"]
+agents.hosts.allow   = ["shell"]
 learnings.kinds      = ["decisions", "guardrails"]
 learnings.max_bytes  = 262_144
 
@@ -665,7 +664,7 @@ Does it read or write anything other than authorized source bytes, the dctx cach
 or a caller-supplied sink?
   no  -> core: engine or adapter (first-party crate, std-only target)
   yes -> does it only transport answers the core already produced, deciding nothing about content?
-          yes -> surface adapter (compiled in behind a feature: CLI, MCP, hook-file generator)
+          yes -> surface adapter (compiled in behind a feature: CLI, hook-file generator)
           no  -> plugin (out of process, brokered, consented, receipted)
 Does it need a socket, a subprocess or a foreign runtime (language server, compiler, model)?
   yes -> plugin; never core; never a default-on effect
@@ -678,7 +677,7 @@ Does it change selection, identity, freshness, ranking or budgets?
 | Ids, spans, budgets, selection, digest, DTS compiler, segment codec, resolver, binder | Pure core |
 | 13 lexer crates covering 15 language variants (Rust, JS, TS, TSX, Markdown, Python, Go, Java, C/C++, JSON/TOML/YAML, C#, Kotlin, Ruby, PHP, Swift); `syn` adapter | Core engine |
 | Filesystem source, cache, segment store | Adapters |
-| CLI, MCP server, agent-hook generator, statusline | Surfaces |
+| CLI, agent-hook generator, statusline | Surfaces |
 | Git (`.gitignore` protection, staging, `vcs.changes`) | First-party plugin (bundled) |
 | Language-server / SCIP edges | First-party plugin, edge overlay |
 | CI and pull-request comments | Plugin with the v2 network capability |
@@ -716,31 +715,14 @@ the batch variant for CI. Neither is a default; neither changes `FactKey`.
 ### 24.1 CLI
 
 One binary: `dctx` (pack, map, template, cache, plugin, policy, agent, learn, check,
-blast, serve). Interactive TUI when run without arguments.
+blast). Interactive TUI when run without arguments.
 
 ### 24.2 Library facade
 
 `crates/dctx` is the stable API for every surface (`docs/design/contracts/API-PORTS-v1.md`).
 Bindings for Python, Node and a C ABI wrap the facade; none re-implements an engine.
 
-### 24.3 MCP server
-
-`dctx mcp [PATH]` (also `dctx serve --mcp`) speaks JSON-RPC over stdio, one message
-per line. The default tools are `map`, `find`, `neighbors`, `explain`, `read`, `hubs`,
-`grep`, `skeleton`, `path` and `export`; each runs the corresponding `dctx map` verb.
-`--profile lean` exposes only `find` and `read`; `--profile three` exposes only
-`map`, `find` and `read`; `--tools NAME,...` selects a custom subset. Selected tools
-have shorter descriptions and retain complete input schemas.
-Unselected tools cannot be called. The default surface is unchanged.
-
-See the [MCP guide](https://github.com/Eris-Margeta/dctx/blob/main/docs/guides/MCP.md) for configuration, validation and startup response
-sizes. Measure whole agent sessions against grep plus reading files, including
-instructions, tool definitions and extra calls. Wire bytes and bytes/4 estimates
-alone do not establish total session token savings. Tool results use the CLI's code
-path and MUST NOT contain instructions to the agent, banners or requests to report
-savings.
-
-### 24.4 Agent hooks (target)
+### 24.3 Agent hooks (target)
 
 `dctx agent install <host> [--project]` renders, from the effective policy, the host's
 own configuration fragment: a statusline that runs `dctx map status`, a session-start
@@ -750,7 +732,7 @@ user-consented file write with a receipt, idempotent (marker line) and reversibl
 (`dctx agent uninstall`). Organization policy can allow, require or forbid hosts. No
 daemon, no watcher.
 
-### 24.5 Desktop
+### 24.4 Desktop
 
 The desktop app is **free, forever**. It is a surface over the same facade: snapshots,
 settings, recent projects, plugin management. It has no engine or cache behaviour of
@@ -897,7 +879,6 @@ this section names the row it must move.
 | Repository writes in map mode | none | `.gitignore` modified and `.ignore` added on every build | report §4 |
 | Gitignored secret with no `.git` present | excluded | indexed | report §10 |
 | Non-ignored `.env` in `pack` / `build` | **printed by `pack`** | never read | report §10 |
-| MCP | none | 6 tools; 3,515 bytes (about 1,005 tokens) of schema per session | report §3 |
 
 Where dctx answered, it was the terser tool; where it scored lower, the answers were
 empty or thin (no edges, id-only text pages, no bounded overview, no text search, no
@@ -919,7 +900,7 @@ because they touch `crates/dctx-template`, manifests and CI, not the index.
 | **P4 Token economics** (§12) | Tiers T0–T3, view digests, `--since` deltas, session dedup, compression levels, planner, `dctx bench tokens`, agent seeding | M7 ≥ 0.9 across turns; on ≥ 30 accepted tasks per route: M2 −50 %, M1 −25 %, M3 −50 %, M4 unchanged; task tokens ≤ 0.8× comparison at M8 ≥ 0.85; M6 reported |
 | **E1 Organization control** (§14–17; parallel) | `POLICY` / `TENANT`, seven layers, `.dctxpol`, enrollment, explain, receipts | P9; one bundle demonstrably controls every mode; an unverifiable bundle refuses |
 | **E2 Minimal build profile** (§27; parallel) | Removals in §27.2; `docs/DEPENDENCIES.md` with CI diff; truthful `--version`; version strings matching the actual release or development version | `cargo tree -e normal` for a minimal feature set lists only `dctx-*` crates and the Ed25519 verifier closure behind `trust`; the `strict` feature no longer implies `syn` |
-| **P5 Surfaces** (§24–26) | MCP, agent hooks, `blast`, learnings and `check`, `vcs.changes` | MCP pages byte-identical to CLI; tool definitions ≤ 600 tokens (comparison 1,005); hooks idempotent with receipts; `blast` ≤ 100 ms warm |
+| **P5 Surfaces** (§24–26) | Agent hooks, `blast`, learnings and `check`, `vcs.changes` | Hooks idempotent with receipts; `blast` ≤ 100 ms warm |
 | **P6 Overlays and D3** (§23.2, §27.2) | LSP and SCIP overlays; network capability; CI comment plugin; first-party Rust structural extractor replaces `syn` in the default build | Overlays never alter first-party facts; PP1–PP10 still modeled; `syn` removed only at corpus parity |
 
 P0 and P1 turn a 69-of-140 tool into a ≥ 115-of-140 tool with changes measured in days,
@@ -965,7 +946,7 @@ Summary of the design difference, independent of the measurements:
 |---|---|---|
 | Runtime | One Rust binary; std-only core; zero third-party crates in the tagged 0.25.0 `dctx-core`/CLI; 46 in the development line (§27) | Node.js package with an npm dependency tree (405.6 MB) |
 | Network | None in the core; no telemetry; 0 sockets in every audited run | Telemetry on by default (opt-out); daily update check not gated by the opt-out; writes `.gitignore`/`.ignore` on every build |
-| Agent interface | CLI verbs today; MCP and hooks are surfaces (§24) | MCP server, hooks, statusline |
+| Agent interface | CLI verbs today; hooks are planned surfaces (§24) | Hooks, statusline |
 | Call precision | Lexers and resolver landed; edges not emitted by the shipped CLI (P0); `typed` rung planned (§7.1) | Scope-aware resolution with receiver typing for several languages; optional language servers |
 | Measured | §31.0 | §31.0 |
 | Organization control | Signed seven-layer policy (§15–16) | Not specified |

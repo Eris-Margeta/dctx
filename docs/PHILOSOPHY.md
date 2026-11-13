@@ -2,7 +2,7 @@
 # The binary is everything
 
 The dctx binary is the single source of truth, even with chunked files. Every
-byte dctx emits is produced by the engine. CLI, MCP and language packages are
+byte dctx emits is produced by the engine. CLI and language packages are
 transports for engine operations. The Rust facade (`crates/dctx`) owns the
 operations and their policy, selection, ordering, budgets and rendering. A new
 surface must reuse those operations, not implement another answer pipeline.
@@ -22,9 +22,8 @@ engine produced. It cannot fetch, combine or reorder pages on its own authority.
 
 CI enforces this boundary through the existing workspace gates:
 
-- `crates/dctx-cli/tests/rpc.rs` compares exact bytes across RPC, CLI `--json`
-  and corresponding advertised MCP tools on a committed fixture. It checks all
-  protocol operations and preserves no-result output and CLI error codes.
+- `crates/dctx-cli/tests/rpc.rs` compares exact bytes across RPC and CLI `--json`
+  on a committed fixture. It checks all protocol operations and preserves no-result output and CLI error codes.
 - The same suite regenerates the schema from the facade Rust types and rejects
   a committed schema that differs by even one byte.
 - RPC unit tests enforce ordered execution, malformed/oversized-line recovery,
