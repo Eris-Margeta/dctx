@@ -39,13 +39,18 @@ fn nibble(byte: u8) -> Result<u8, StoreError> {
     }
 }
 
-/// Rejects absolute paths, `..`, empty components, backslash, and a `.git` component.
+/// Rejects absolute paths, dot/empty components, `.git`, and nonportable component bytes.
 pub(crate) fn check_rel(path: &str) -> Result<(), StoreError> {
     if path.is_empty() || path.len() > 512 || path.starts_with('/') || path.contains('\\') {
         return Err(StoreError::InvalidRequest { reason: "path" });
     }
     for part in path.split('/') {
-        if part.is_empty() || part == "." || part == ".." || part == ".git" {
+        if part.is_empty()
+            || matches!(part, "." | ".." | ".git")
+            || part.ends_with(['.', ' '])
+            || part.contains(':')
+            || part.chars().any(char::is_control)
+        {
             return Err(StoreError::InvalidRequest { reason: "path" });
         }
     }
@@ -53,7 +58,11 @@ pub(crate) fn check_rel(path: &str) -> Result<(), StoreError> {
 }
 
 pub(crate) fn check_root(root: &str) -> Result<(), StoreError> {
-    if root.is_empty() || root.len() > 64 || root == ".git" {
+    if root.is_empty()
+        || root.len() > 64
+        || matches!(root, "." | ".." | ".git")
+        || root.ends_with('.')
+    {
         return Err(StoreError::InvalidRequest { reason: "root" });
     }
     let ok = root
