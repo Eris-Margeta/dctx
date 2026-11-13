@@ -180,19 +180,27 @@ impl<'a> Parser<'a> {
             self.cur.i = start;
             return false;
         }
+        let mut valid = self.cur.i - digits == 1 || self.cur.src.as_bytes()[digits] != b'0';
         if self.cur.eat(b'.') {
+            let fraction = self.cur.i;
             while matches!(self.cur.byte(), Some(b'0'..=b'9')) {
                 self.cur.i += 1;
             }
+            valid &= self.cur.i > fraction;
         }
         if matches!(self.cur.byte(), Some(b'e' | b'E')) {
             self.cur.i += 1;
             if matches!(self.cur.byte(), Some(b'+' | b'-')) {
                 self.cur.i += 1;
             }
+            let exponent = self.cur.i;
             while matches!(self.cur.byte(), Some(b'0'..=b'9')) {
                 self.cur.i += 1;
             }
+            valid &= self.cur.i > exponent;
+        }
+        if !valid {
+            self.diagnose(start, DiagnosticReason::InvalidSyntax);
         }
         true
     }
