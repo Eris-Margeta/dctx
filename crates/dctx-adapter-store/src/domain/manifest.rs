@@ -132,6 +132,14 @@ pub(crate) fn decode_manifest(bytes: &[u8]) -> Result<Manifest, StoreError> {
             return Err(StoreError::CorruptIndex { reason: "manifest" });
         }
     }
+    if sections
+        .iter()
+        .any(|section| matches!(section.kind, 1 | 5) && section.record_count != 1)
+    {
+        return Err(StoreError::CorruptIndex {
+            reason: "manifest record count",
+        });
+    }
     let identity = payload(&sections, 1)?;
     let segment_bytes = payload(&sections, 2)?;
     let revision_bytes = payload(&sections, 5)?;
@@ -153,6 +161,14 @@ pub(crate) fn decode_manifest(bytes: &[u8]) -> Result<Manifest, StoreError> {
     }
     let mut cur = Cur::new(segment_bytes);
     let count = cur.u32()?;
+    if sections
+        .iter()
+        .any(|section| section.kind == 2 && section.record_count != u64::from(count))
+    {
+        return Err(StoreError::CorruptIndex {
+            reason: "manifest record count",
+        });
+    }
     let mut segments = Vec::new();
     let mut previous_digest = None;
     for _ in 0..count {
