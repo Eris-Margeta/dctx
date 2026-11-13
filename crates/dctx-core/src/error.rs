@@ -174,7 +174,12 @@ impl DctxError {
 impl fmt::Display for DctxError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::InvalidRequest { reason } => write!(f, "invalid request: {reason}"),
+            Self::InvalidRequest { reason } => {
+                write!(
+                    f,
+                    "invalid request: {reason}; correct the request to satisfy the named rule"
+                )
+            }
             Self::PolicyDenied => f.write_str("denied by selection policy"),
             Self::PolicyUnavailable => f.write_str("selection policy unavailable"),
             Self::UnsupportedCapability { capability } => {
@@ -185,7 +190,7 @@ impl fmt::Display for DctxError {
                 write!(f, "budget too small: needs at least {minimum_bytes} bytes")
             }
             Self::ResourceLimit { resource, limit } => {
-                write!(f, "resource limit exceeded: {resource:?} > {limit}")
+                write!(f, "resource limit exceeded: {resource:?} > {limit}; reduce the named resource or raise its cap within host policy")
             }
             Self::CacheLimit {
                 requested,
@@ -193,14 +198,18 @@ impl fmt::Display for DctxError {
             } => {
                 write!(
                     f,
-                    "cache limit: requested {requested} bytes, {available} available"
+                    "cache limit: requested {requested} bytes, {available} available; reduce the request to available bytes or abort unused reservations"
                 )
             }
             Self::Busy => f.write_str("busy"),
-            Self::Cancelled => f.write_str("cancelled"),
+            Self::Cancelled => f.write_str(
+                "cancelled; start a new operation with a fresh cancellation signal to retry",
+            ),
             Self::CorruptIndex { reason } => write!(f, "corrupt index: {reason}"),
             Self::SourceChanged => f.write_str("source changed during read"),
-            Self::SourceUnavailable => f.write_str("source unavailable"),
+            Self::SourceUnavailable => f.write_str(
+                "source unavailable; restore the source and refresh its inventory before retrying",
+            ),
             Self::Io { detail } => write!(f, "io: {detail}"),
         }
     }
@@ -237,6 +246,6 @@ mod tests {
             limit: 3,
         };
         assert_eq!(limit.code(), ErrorCode::ResourceLimit);
-        assert_eq!(limit.to_string(), "resource limit exceeded: Entries > 3");
+        assert_eq!(limit.to_string(), "resource limit exceeded: Entries > 3; reduce the named resource or raise its cap within host policy");
     }
 }

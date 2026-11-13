@@ -6,6 +6,12 @@
 use crate::error::{MAX_PLAN_BYTES, MAX_STRING_BYTES, TemplateError};
 
 pub(super) fn count(len: usize) -> Result<u32, TemplateError> {
+    if len > 100_000 {
+        return Err(TemplateError::Limit {
+            what: "count",
+            limit: 100_000,
+        });
+    }
     u32::try_from(len).map_err(|_| TemplateError::Limit {
         what: "count",
         limit: 100_000,

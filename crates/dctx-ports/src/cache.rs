@@ -9,11 +9,12 @@ use dctx_core::error::DctxError;
 
 /// Quota keeper for managed storage.
 pub trait Cache {
-    /// Admits `bytes` or refuses with `CacheLimit`.
+    /// Admits `bytes` or refuses with `CacheLimit`. Zero-byte reservations are valid.
     ///
     /// # Errors
     /// Returns `CacheLimit` if the requested bytes exceed the available quota,
-    /// or an adapter error if the reservation cannot be recorded.
+    /// or an adapter error if the reservation cannot be recorded. On `CacheLimit`,
+    /// reduce the request to the reported available bytes or release outstanding reservations.
     fn reserve(&mut self, bytes: u64) -> Result<Reservation, DctxError>;
 
     /// Settles a reservation with the bytes actually written (at most the reserved bytes).
@@ -23,6 +24,7 @@ pub trait Cache {
     /// reserved bytes, or an adapter error if settlement fails.
     fn commit(&mut self, reservation: Reservation, used_bytes: u64) -> Result<(), DctxError>;
 
-    /// Releases a reservation whose write did not happen.
+    /// Releases a reservation whose write did not happen. Unknown or already settled
+    /// reservations may be ignored by the adapter; callers should still settle only once.
     fn abort(&mut self, reservation: Reservation);
 }

@@ -3,6 +3,12 @@
 //! Implements ARCHITECTURE-PROPOSAL §2 and §7 row DX-B2, contracts/DTS-v2.md, and PLUGINS.md §3.5.
 //! Depends on dctx-core for decisions and token estimates, and on dctx-hash for SHA-256.
 //! No filesystem, process, network or plugin execution; callers use [`compile`], [`load`] and [`render_plan`].
+//!
+//! Compilation limits source and plan envelopes to 1 MiB, stored strings to 65,536 UTF-8 bytes,
+//! and render programs to 10,000 instructions. Host ceilings can narrow these limits.
+//! Compilation and rendering are deterministic for the same inputs and may run concurrently
+//! on shared immutable values. File bodies are opaque bytes, rendered with lossy UTF-8 decoding.
+//! Legacy marker APIs preserve caller tree order; [`render_plan`] sorts records canonically.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
