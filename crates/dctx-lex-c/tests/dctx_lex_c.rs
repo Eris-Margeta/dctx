@@ -214,7 +214,7 @@ fn xorshift(state: &mut u64) -> u64 {
 #[test]
 fn golden_c_fixture_extracts_includes_macros_and_calls() {
     assert_eq!(PARSER_ID, "dctx-lex-c");
-    assert_eq!(PARSER_REVISION, 1);
+    assert_eq!(PARSER_REVISION, 2);
     let facts = extract("basic.c", BASIC);
     assert_eq!(facts.dialect, Dialect::C);
     assert!(facts.diagnostics.is_empty(), "{:?}", facts.diagnostics);
