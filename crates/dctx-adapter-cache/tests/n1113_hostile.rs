@@ -397,6 +397,7 @@ fn object_and_ledger_adapters_preserve_bytes_under_repeat_and_concurrent_reads()
         "../escape",
         "objects/../escape",
         "a:b",
+        #[cfg(unix)]
         "a\\b",
         "a\0b",
     ] {
