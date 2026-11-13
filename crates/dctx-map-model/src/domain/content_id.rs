@@ -49,8 +49,8 @@ pub enum InvalidContentId {
 impl fmt::Display for InvalidContentId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
-            Self::UnsupportedIdentity => "unsupported content identity",
-            Self::MessageTooLong => "content is longer than the identity hasher accepts",
+            Self::UnsupportedIdentity => "unsupported content identity; use dctx:object:v1:sha256:<64 lowercase hex>:<canonical u64 byte length>",
+            Self::MessageTooLong => "content is longer than the identity hasher accepts; split the content before hashing",
         })
     }
 }
@@ -65,6 +65,7 @@ pub struct ContentId(dctx_hash::ContentDigest);
 
 impl ContentId {
     /// Hashes authorized file bytes with `dctx-hash` SHA-256.
+    /// Empty and invalid UTF-8 bytes are valid content; no text decoding occurs.
     ///
     /// # Errors
     /// Returns [`InvalidContentId::MessageTooLong`] when the input exceeds the SHA-256 length field.
@@ -112,7 +113,9 @@ impl ContentId {
         self.0.as_bytes()
     }
 
-    /// Restores a previously emitted identity. This does not hash the text.
+    /// Restores a previously emitted identity. This does not hash the text or
+    /// verify that the digest and declared byte length describe actual content.
+    /// Lengths are canonical decimal `u64` values, including zero.
     ///
     /// # Errors
     /// Returns [`InvalidContentId::UnsupportedIdentity`] for unsupported tags, malformed digest text or a noncanonical byte length.

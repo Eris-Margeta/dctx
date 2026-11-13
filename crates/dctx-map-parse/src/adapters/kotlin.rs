@@ -10,6 +10,10 @@ use dctx_map_model::{Completion as FileCompletion, Coverage};
 
 /// Copies a complete structural extraction. Diagnostics refuse the whole file.
 pub(super) fn parse_pure(path: &str, bytes: &[u8]) -> Result<ParsedFile, ParseError> {
+    super::facts::project_cr_lines(extract(path, bytes), bytes)
+}
+
+fn extract(path: &str, bytes: &[u8]) -> Result<ParsedFile, ParseError> {
     let lexed = KotlinLexer::default()
         .extract(path, bytes)
         .map_err(|error| map_error(path, &error))?;

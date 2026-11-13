@@ -14,6 +14,12 @@ PHP (`.php`, `.phtml`, `.inc`) to `dctx-lex-php`,
 and Swift (`.swift`) to `dctx-lex-swift`,
 case-insensitively. Other extensions produce a module with a first-comment
 summary and an opaque precision label. The caller performs scanning and file IO.
+All adapters, including the optional oracle and opaque fallback, accept at most
+8 MiB per file; Markdown accepts 32 MiB. The exact byte limit is accepted;
+larger files return `ParseError::TooLarge` before decoding or extraction. Split
+oversized files before retrying. Recognized fallback languages retain their
+`Language` tag while precision remains opaque. Source lines count LF bytes;
+CRLF counts once and a bare CR does not advance model coordinates.
 
 Each `ParsedFile` carries a precision label: coverage, completion and parser
 identity. That label is not edge confidence. Complete Rust is `syntax`.

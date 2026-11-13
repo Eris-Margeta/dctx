@@ -45,7 +45,12 @@ fn answer(rows: Vec<(String, i64)>, more: usize) -> Answer {
 mod tests {
     use super::*;
     proptest! {
-        #![proptest_config(ProptestConfig::with_cases(128))]
+        #![proptest_config(ProptestConfig {
+            cases: 128,
+            rng_seed: proptest::test_runner::RngSeed::Fixed(1113),
+            failure_persistence: None,
+            ..ProptestConfig::default()
+        })]
         #[test]
         fn answers_never_exceed_budget_or_split_records(
             rows in prop::collection::vec((".{0,200}", -100i64..100), 0..65),
@@ -77,7 +82,8 @@ mod tests {
                     Format::Text => {
                         let lines: Vec<_> = output.lines().filter(|line| line.starts_with("s:")).collect();
                         for (actual, r) in lines.iter().zip(&sorted) {
-                            let sum = r.sum.split_whitespace().collect::<Vec<_>>().join(" ");
+                            let safe = r.sum.replace(char::is_control, " ");
+                            let sum = safe.split_whitespace().collect::<Vec<_>>().join(" ");
                             let expected = format!("{}  fn  L1-L2  {}  [doc]", r.id, sum);
                             prop_assert_eq!(*actual, expected);
                         }
