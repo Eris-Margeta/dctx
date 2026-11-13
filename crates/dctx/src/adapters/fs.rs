@@ -29,9 +29,12 @@ use crate::domain::DctxError;
 #[cfg(windows)]
 #[allow(
     unsafe_code,
-    reason = "Windows file identity is unstable in std at MSRV; the private wrapper borrows an owned file handle for GetFileInformationByHandle."
+    reason = "Windows identity and ACL queries require private FFI wrappers borrowing owned file and token handles."
 )]
 mod windows;
+
+#[cfg(any(windows, test))]
+mod windows_retry;
 
 #[cfg(unix)]
 mod unix;
@@ -70,7 +73,7 @@ impl FsSource {
         }
         #[cfg(windows)]
         {
-            let guards = windows::pin_directories(&root)
+            let guards = windows::pin_source_root(&root)
                 .map_err(|error| DctxError::from_core(map_io(error)))?;
             Ok(Self {
                 root,
@@ -179,6 +182,8 @@ impl Source for FsSource {
     }
 
     fn root_kind(&self) -> Result<NodeType, CoreError> {
+        #[cfg(windows)]
+        let _guards = self.reject_links(&RelativePath::root(), true)?;
         let meta = std::fs::symlink_metadata(&self.root).map_err(map_io)?;
         if meta.is_dir() {
             Ok(NodeType::Directory)
