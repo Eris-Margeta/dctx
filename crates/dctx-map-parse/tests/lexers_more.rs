@@ -231,7 +231,11 @@ fn csharp_counts_precision_and_repeat() {
         "src/Sample.cs",
         CS,
         Language::CSharp,
-        "dctx-lex-cs:2",
+        &format!(
+            "{}:{}",
+            dctx_lex_cs::PARSER_ID,
+            dctx_lex_cs::PARSER_REVISION
+        ),
         &["src/Sample.cs", "Box"],
         &[(EdgeKind::Imports, "System")],
     );

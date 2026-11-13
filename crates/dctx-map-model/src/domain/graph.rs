@@ -80,6 +80,8 @@ vocabulary!(SummarySource, "Provenance shown with every summary.", {
 });
 
 /// Directed relation owned by the file that produced it.
+/// Construction and JSON decoding preserve the supplied fields. Call
+/// [`EdgeKind::permits`] to validate the relation's confidence before storage.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "wire-json", derive(serde::Serialize, serde::Deserialize))]
 pub struct Edge {
@@ -106,6 +108,8 @@ pub struct Summary {
 }
 
 /// Imported tier-one summary tied to an exact body fingerprint.
+/// Construction and decoding preserve text; [`Self::select`] validates it
+/// before serving it in place of a tier-zero summary.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "wire-json", derive(serde::Serialize, serde::Deserialize))]
 pub struct GeneratedSummary {
@@ -115,7 +119,9 @@ pub struct GeneratedSummary {
     pub text: String,
 }
 impl GeneratedSummary {
-    /// Serves valid current summaries, otherwise returns the tier-zero fallback.
+    /// Serves current summaries of 1..=100 Unicode scalars with nonblank text
+    /// and no control characters; otherwise returns the tier-zero fallback.
+    /// The fingerprint is compared exactly, without normalizing or hashing it.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
@@ -123,8 +129,8 @@ impl GeneratedSummary {
     pub fn select(&self, fingerprint: &str, fallback: &Summary) -> Summary {
         if self.fingerprint == fingerprint
             && self.text.chars().count() <= 100
-            && !self.text.contains(['\n', '\r'])
-            && !self.text.is_empty()
+            && !self.text.chars().any(char::is_control)
+            && !self.text.trim().is_empty()
         {
             Summary {
                 text: self.text.clone(),
@@ -137,6 +143,8 @@ impl GeneratedSummary {
 }
 
 /// Parser/storage node; locations are one-based inclusive line numbers.
+/// Fields and JSON decoding are unchecked records. Parser and storage
+/// boundaries validate paths, identity consistency and source coordinates.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "wire-json", derive(serde::Serialize, serde::Deserialize))]
 pub struct Node {

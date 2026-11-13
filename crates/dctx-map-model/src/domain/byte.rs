@@ -4,7 +4,7 @@
 //! Depends only on the standard library. Facts and the future wire adapter carry these values.
 //! Line numbers count `\n` and do not allocate.
 
-/// Maximum addressable byte in a span.
+/// Byte offset from the start of an input, including its exclusive end.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ByteOffset(u64);
 
@@ -68,10 +68,16 @@ pub enum InvalidByteSpan {
 impl std::fmt::Display for InvalidByteSpan {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
-            Self::Inverted => "byte span end is before start",
-            Self::OutOfRange => "byte span is outside the text",
-            Self::NotUtf8Boundary => "byte span is not on a utf-8 boundary",
-            Self::LineOverflow => "line number does not fit in u32",
+            Self::Inverted => "byte span end is before start; set end at or after start",
+            Self::OutOfRange => {
+                "byte span is outside the text; bound both endpoints by the text byte length"
+            }
+            Self::NotUtf8Boundary => {
+                "byte span is not on a UTF-8 boundary; move endpoints to character boundaries"
+            }
+            Self::LineOverflow => {
+                "line number does not fit in u32; split the input into smaller files"
+            }
         })
     }
 }
@@ -87,6 +93,8 @@ pub struct ByteSpan {
 
 impl ByteSpan {
     /// Builds `[start, end)`. The end is exclusive.
+    /// Only ordering is checked here. Use [`Self::on_utf8`] or
+    /// [`Self::lines_in`] to validate endpoints against actual text.
     ///
     /// # Errors
     /// Returns [`InvalidByteSpan::Inverted`] when `end` precedes `start`.
@@ -149,6 +157,9 @@ impl ByteSpan {
     }
 
     /// One-based inclusive line projection. Lines split on `\n`.
+    /// A nonempty span ends on the line containing its last byte, including
+    /// when that byte is part of a multibyte scalar. An empty span uses its
+    /// start line for both endpoints, including an empty line at EOF.
     ///
     /// # Errors
     /// Refuses out-of-range endpoints, endpoints inside UTF-8 scalars and projected line numbers that exceed `u32`.
@@ -172,7 +183,10 @@ impl ByteSpan {
 }
 
 fn line_number(text: &str, byte: usize) -> Result<u32, InvalidByteSpan> {
-    let newlines = text[..byte].bytes().filter(|value| *value == b'\n').count();
+    let newlines = text.as_bytes()[..byte]
+        .iter()
+        .filter(|value| **value == b'\n')
+        .count();
     let count = u32::try_from(newlines).map_err(|_| InvalidByteSpan::LineOverflow)?;
     count.checked_add(1).ok_or(InvalidByteSpan::LineOverflow)
 }

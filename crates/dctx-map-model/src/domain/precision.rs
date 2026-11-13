@@ -13,7 +13,7 @@ pub struct InvalidLabel;
 
 impl std::fmt::Display for InvalidLabel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("evidence label is empty, too long, or contains a control character")
+        f.write_str("invalid evidence label; supply nonblank text of at most 256 UTF-8 bytes without control characters")
     }
 }
 

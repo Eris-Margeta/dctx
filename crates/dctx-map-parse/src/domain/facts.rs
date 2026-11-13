@@ -244,6 +244,8 @@ impl Language {
     /// over the extension.
     /// Otherwise the text after the last `.` is folded and looked up in
     /// the supported extension table. A segment with no `.` is [`Language::Unknown`].
+    /// This classifies spelling only: it does not validate paths, access files
+    /// or impose a path-length limit. [`crate::Parser::parse`] validates paths.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
@@ -326,23 +328,31 @@ pub enum ParseError {
     /// The path or a generated item name cannot form a model identity.
     #[error(transparent)]
     InvalidId(#[from] dctx_map_model::InvalidId),
-    /// Supplied bytes are not UTF-8.
-    #[error(transparent)]
+    /// Supplied bytes are not UTF-8; decode or replace them before retrying.
+    #[error(
+        "invalid UTF-8: {0}; decode the file as UTF-8 or replace invalid bytes before retrying"
+    )]
     InvalidUtf8(#[from] std::str::Utf8Error),
     /// Source or fact counts exceed the parser coordinate space.
-    #[error("file exceeds parser coordinate limits")]
+    #[error(
+        "file exceeds parser byte or fact limits; split the file (maximum 8 MiB, or 32 MiB for Markdown) or reduce its item count before retrying"
+    )]
     TooLarge,
     /// Parser setup failed: an incompatible grammar or unavailable worker runtime.
-    #[error("parser unavailable: {0}")]
+    #[error(
+        "parser unavailable: {0}; use PureParser or install a compatible parser runtime and retry"
+    )]
     Grammar(String),
     /// Optional parser did not produce a tree.
-    #[error("tree-sitter did not produce a syntax tree")]
+    #[error("tree-sitter did not produce a syntax tree; retry with PureParser or reduce the input")]
     NoTree,
     /// A parser identity is not a valid evidence label.
     #[error(transparent)]
     Label(#[from] dctx_map_model::InvalidLabel),
     /// Source syntax contains an error or missing token.
-    #[error("invalid syntax in {path} at line {line}")]
+    #[error(
+        "invalid syntax in {path} at line {line}; correct the syntax or reduce unsupported nesting, then retry"
+    )]
     Syntax {
         /// File containing invalid syntax.
         path: String,

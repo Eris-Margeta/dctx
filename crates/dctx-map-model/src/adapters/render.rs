@@ -38,16 +38,16 @@ impl fmt::Display for RenderError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::BudgetTooSmall => {
-                f.write_str("budget cannot fit answer metadata and next command")
+                f.write_str("budget cannot fit answer metadata and next command; increase the budget or shorten metadata and the command")
             }
-            Self::MissingNext => f.write_str("answer requires an exact next command"),
-            Self::InvalidRecord => f.write_str("record violates source span or verb limits"),
-            Self::InvalidMetadata => f.write_str("invalid answer metadata"),
-            Self::CountOverflow => f.write_str("remaining record count overflow"),
+            Self::MissingNext => f.write_str("answer requires an exact next command; set Answer.next to a concrete continuation or recovery command"),
+            Self::InvalidRecord => f.write_str("record violates source span or verb limits; correct line spans, relation confidence, identity notices and per-verb record limits before retrying"),
+            Self::InvalidMetadata => f.write_str("invalid answer metadata; supply a nonblank place without whitespace or controls, a hex revision of at least seven bytes and a command without controls"),
+            Self::CountOverflow => f.write_str("remaining record count overflow; reduce Answer.more or the record count before retrying"),
             #[cfg(feature = "wire-json")]
-            Self::Json(error) => error.fmt(f),
+            Self::Json(error) => write!(f, "JSON serialization failed: {error}; correct the answer data and retry"),
             #[cfg(not(feature = "wire-json"))]
-            Self::WireJsonDisabled => f.write_str("json conversion requires the wire-json feature"),
+            Self::WireJsonDisabled => f.write_str("JSON conversion is disabled; enable the wire-json feature or request text output"),
         }
     }
 }
@@ -69,6 +69,12 @@ impl From<serde_json::Error> for RenderError {
 
 /// Renders an answer within the complete serialized byte budget.
 /// A cut retains a ranked prefix of whole records and counts every omitted record.
+/// Records rank by descending score, then ascending id; equal ids and scores
+/// use canonical JSON when enabled, otherwise their rendered text, to break ties.
+/// Text metadata collapses whitespace and control characters to spaces. Read
+/// bodies retain their exact source bytes, with a final newline if absent.
+/// Input strings and record counts have no fixed size ceiling; callers bound
+/// them before rendering. The byte budget limits output, not input memory.
 ///
 /// # Errors
 /// Refuses invalid metadata or records, missing continuation commands, count overflow and a budget too small for metadata; JSON output can also fail or be disabled.
@@ -173,7 +179,11 @@ fn validate(answer: &Answer) -> Result<(), RenderError> {
 }
 
 fn line(value: &str) -> String {
-    value.split_whitespace().collect::<Vec<_>>().join(" ")
+    value
+        .split(|c: char| c.is_whitespace() || c.is_control())
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 fn record_line(r: &Record) -> String {
@@ -330,6 +340,11 @@ fn ranked(answer: &Answer) -> Result<Vec<&Record>, RenderError> {
                 .score
                 .cmp(&left.score)
                 .then_with(|| left.id.cmp(&right.id))
+                .then_with(|| {
+                    // Ties must not inherit caller order when JSON is disabled.
+                    // Equal text keys produce identical bytes for this verb.
+                    text(answer, &[left], 0, false).cmp(&text(answer, &[right], 0, false))
+                })
         });
         Ok(records)
     }

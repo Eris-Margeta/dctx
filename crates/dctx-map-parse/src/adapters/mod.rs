@@ -212,7 +212,14 @@ impl Parser for TreeSitterParser {
 }
 
 fn prepare<'a>(path: &str, bytes: &'a [u8]) -> Result<&'a str, ParseError> {
-    if bytes.len() >= u32::MAX as usize {
+    // Apply the lexer ceilings to the opaque fallback and optional oracle too:
+    // neither path should fingerprint or build a tree for an unbounded file.
+    let limit = if Language::for_path(path) == Language::Markdown {
+        dctx_lex_md::Limits::default().max_bytes
+    } else {
+        dctx_lex_rust::Limits::default().max_bytes()
+    };
+    if bytes.len() > limit {
         return Err(ParseError::TooLarge);
     }
     let source = std::str::from_utf8(bytes)?;
@@ -226,7 +233,7 @@ pub(super) fn fallback(path: &str, source: &str) -> Result<ParsedFile, ParseErro
         Completion::Complete,
         "dctx-map-parse/opaque",
     )?;
-    Facts::new(path, source, Language::Unknown, precision)?.finish()
+    Facts::new(path, source, Language::for_path(path), precision)?.finish()
 }
 
 #[cfg(feature = "syntax-tree-sitter")]
