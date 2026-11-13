@@ -18,6 +18,16 @@ impl Scanner<'_> {
         self.pos += quote.len();
         let mut segment = start;
         while self.pos < self.src.len() {
+            let rest = &self.src.as_bytes()[self.pos..];
+            self.pos += rest
+                .iter()
+                .position(|byte| {
+                    matches!(byte, b'"' | b'\\') || (!multiline && matches!(byte, b'\n' | b'\r'))
+                })
+                .unwrap_or(rest.len());
+            if self.pos == self.src.len() {
+                break;
+            }
             if self.src[self.pos..].starts_with(&close) {
                 self.pos += close.len();
                 self.emit(segment, Kind::Str);

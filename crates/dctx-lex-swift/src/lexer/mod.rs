@@ -55,13 +55,9 @@ pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
         diagnostics: Vec::new(),
         line_starts: vec![0],
     };
-    output.line_starts.extend(
-        source
-            .bytes()
-            .enumerate()
-            .filter(|(_, b)| *b == b'\n')
-            .map(|(i, _)| i as u32 + 1),
-    );
+    output
+        .line_starts
+        .extend(source.match_indices('\n').map(|(i, _)| i as u32 + 1));
     output.partner.resize(output.tokens.len(), None);
     let mut stack = Vec::new();
     let mut conditions = Vec::new();

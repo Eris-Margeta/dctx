@@ -79,7 +79,13 @@ impl Scanner<'_> {
 
     fn line_comment(&mut self) {
         let start = self.pos;
-        while let Some(c) = self.logical_peek() {
+        while self.pos < self.src.len() {
+            let rest = &self.src.as_bytes()[self.pos..];
+            self.pos += rest
+                .iter()
+                .position(|byte| matches!(byte, b'\\' | b'\n'))
+                .unwrap_or(rest.len());
+            let Some(c) = self.logical_peek() else { break };
             if c == '\n' {
                 break;
             }
@@ -140,7 +146,13 @@ impl Scanner<'_> {
             return;
         }
         self.bump();
-        while let Some(c) = self.peek() {
+        while self.pos < self.src.len() {
+            let rest = &self.src.as_bytes()[self.pos..];
+            self.pos += rest
+                .iter()
+                .position(|byte| matches!(byte, b'"' | b'\\' | b'\n' | b'\r'))
+                .unwrap_or(rest.len());
+            let Some(c) = self.peek() else { break };
             if c == '\n' || c == '\r' {
                 self.problem(start, DiagnosticReason::UnterminatedString);
                 self.emit(Kind::Str, start);
