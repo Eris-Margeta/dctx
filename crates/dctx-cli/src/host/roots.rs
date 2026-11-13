@@ -7,6 +7,8 @@ use dctx_core::facts::{EntryMeta, EntryStamp, ReadGrant, SourceEntry};
 use dctx_core::ids::RelativePath;
 
 /// Removes repeatable root options before a command's own argument validation.
+/// Preserves root order and duplicate paths for the session's root validation.
+/// Values of other options and all words after `--` are left untouched.
 /// # Errors
 /// Refuses missing values and more than sixteen additional roots.
 pub fn also_arguments(args: &[String]) -> Result<(Vec<String>, Vec<PathBuf>), String> {
@@ -31,36 +33,7 @@ pub fn also_arguments(args: &[String]) -> Result<(Vec<String>, Vec<PathBuf>), St
         } else {
             words.push(arg.clone());
             // Opaque values must not be interpreted as root flags.
-            if matches!(
-                arg.as_str(),
-                "--place"
-                    | "--for"
-                    | "--budget"
-                    | "--session"
-                    | "--cursor"
-                    | "--in"
-                    | "--output"
-                    | "-o"
-                    | "--include"
-                    | "--exclude"
-                    | "--kind"
-                    | "--edge"
-                    | "--dir"
-                    | "--lines"
-                    | "--rev"
-                    | "--limit"
-                    | "--offset"
-                    | "--depth"
-                    | "--max-depth"
-                    | "--max-paths"
-                    | "--max-sites"
-                    | "--max-bytes"
-                    | "--format"
-                    | "--ext"
-                    | "--large"
-                    | "--small"
-                    | "--tree-stamps"
-            ) {
+            if takes_value(arg) {
                 if let Some(value) = args.next() {
                     words.push(value.clone());
                 }
@@ -68,6 +41,40 @@ pub fn also_arguments(args: &[String]) -> Result<(Vec<String>, Vec<PathBuf>), St
         }
     }
     Ok((words, roots))
+}
+
+/// Shared option boundaries for root extraction and global auto-clean flags.
+pub(super) fn takes_value(arg: &str) -> bool {
+    matches!(
+        arg,
+        "--place"
+            | "--for"
+            | "--budget"
+            | "--session"
+            | "--cursor"
+            | "--in"
+            | "--output"
+            | "-o"
+            | "--include"
+            | "--exclude"
+            | "--kind"
+            | "--edge"
+            | "--dir"
+            | "--lines"
+            | "--rev"
+            | "--limit"
+            | "--offset"
+            | "--depth"
+            | "--max-depth"
+            | "--max-paths"
+            | "--max-sites"
+            | "--max-bytes"
+            | "--format"
+            | "--ext"
+            | "--large"
+            | "--small"
+            | "--tree-stamps"
+    )
 }
 
 struct Root {

@@ -29,6 +29,10 @@ pub fn run(args: &[String]) -> Result<(), Failure> {
 }
 
 /// Compiles or lists and returns the report. `--output` is the only write.
+/// Arguments include the `template` command word. Each path option occurs at most
+/// once and takes a nonempty value; prefix a flag-like filename with `./`.
+/// Sources and compiled plans are limited to 1 MiB each. Listings visit at most
+/// 100,000 entries and return plans in path order, independent of directory order.
 /// # Errors
 /// Returns missing/unknown actions, invalid arguments (exit 2), or template filesystem failures (exit 3).
 pub fn execute(args: &[String]) -> Result<String, Failure> {
@@ -63,6 +67,17 @@ fn io_failure(action: &str, path: &Path, error: impl std::fmt::Display) -> Failu
     )
 }
 
+fn read_failure(path: &Path, error: std::io::Error) -> Failure {
+    if error.kind() == std::io::ErrorKind::FileTooLarge {
+        Failure::index(
+            format!("template {} exceeds the {MAX_TEMPLATE_BYTES}-byte limit", path.display()),
+            "reduce the template to at most 1 MiB; for a compiled plan, split its source and rebuild with `dctx template build SOURCE --output FILE`",
+        )
+    } else {
+        io_failure("read template", path, error)
+    }
+}
+
 fn build(args: &[String]) -> Result<String, Failure> {
     let mut source_path: Option<PathBuf> = None;
     let mut output: Option<PathBuf> = None;
@@ -73,6 +88,7 @@ fn build(args: &[String]) -> Result<String, Failure> {
                 index += 1;
                 let value = args
                     .get(index)
+                    .filter(|value| !value.is_empty() && !value.starts_with('-'))
                     .ok_or_else(|| usage("--output requires a path"))?;
                 if output.is_some() {
                     return Err(usage("template build accepts one --output path"));
@@ -94,7 +110,7 @@ fn build(args: &[String]) -> Result<String, Failure> {
     let source_path =
         source_path.ok_or_else(|| usage("template build requires a template path"))?;
     let bytes = host::read_explicit_file(&source_path, MAX_TEMPLATE_BYTES)
-        .map_err(|error| io_failure("read template", &source_path, error))?;
+        .map_err(|error| read_failure(&source_path, error))?;
     let source = String::from_utf8(bytes).map_err(|_| {
         Failure::usage(
             format!("template {} is not UTF-8 text", source_path.display()),
@@ -174,9 +190,13 @@ fn list(args: &[String]) -> Result<String, Failure> {
     while index < args.len() {
         match args[index].as_str() {
             "--dir" => {
+                if dir.is_some() {
+                    return Err(usage("template list accepts one --dir path"));
+                }
                 index += 1;
                 let value = args
                     .get(index)
+                    .filter(|value| !value.is_empty() && !value.starts_with('-'))
                     .ok_or_else(|| usage("--dir requires a path"))?;
                 dir = Some(PathBuf::from(value));
             }
@@ -196,7 +216,7 @@ fn list(args: &[String]) -> Result<String, Failure> {
     let dir = std::fs::canonicalize(&dir).map_err(|error| io_failure("read", &dir, error))?;
     let session = compiler()?;
     let entries = std::fs::read_dir(&dir).map_err(|error| io_failure("read", &dir, error))?;
-    let mut lines = Vec::new();
+    let mut paths = Vec::new();
     for (visited, entry) in entries.enumerate() {
         if visited >= MAX_TEMPLATE_ENTRIES {
             return Err(Failure::index(
@@ -212,9 +232,16 @@ fn list(args: &[String]) -> Result<String, Failure> {
         if !path.is_file() {
             continue;
         }
+        paths.push(path);
+    }
+    // Sort before reading so both successful output and the first I/O failure
+    // are reproducible when a directory was populated in a different order.
+    paths.sort();
+    let mut lines = Vec::new();
+    for path in paths {
         let bytes = StdFs
             .read_file_limited(&path, MAX_TEMPLATE_BYTES)
-            .map_err(|error| io_failure("read", &path, error))?;
+            .map_err(|error| read_failure(&path, error))?;
         match session.load_template(&bytes) {
             Ok(plan) => lines.push(format!(
                 "ok {} source_version={} digest={}",
@@ -222,7 +249,10 @@ fn list(args: &[String]) -> Result<String, Failure> {
                 plan.source_version,
                 hex(&plan.plan_digest)
             )),
-            Err(error) => lines.push(format!("refused {} {error}", path.display())),
+            Err(error) => lines.push(format!(
+                "refused {} {error}; rebuild this plan with `dctx template build SOURCE --output FILE`",
+                path.display()
+            )),
         }
     }
     if lines.is_empty() {
