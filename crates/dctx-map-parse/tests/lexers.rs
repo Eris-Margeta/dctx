@@ -196,7 +196,7 @@ fn go_fixture_counts_precision_and_repeat() {
 fn java_fixture_counts_precision_and_repeat() {
     let facts = PureParser.parse("src/Sample.java", JAVA).unwrap();
     assert_eq!(facts.language, Language::Java);
-    assert_structural(&facts, "dctx-lex-java:1");
+    assert_structural(&facts, "dctx-lex-java:2");
     assert_store_accepts(&facts, JAVA);
     assert_eq!(names(&facts), ["src/Sample.java", "Box", "Box::run"]);
     assert_eq!(facts.nodes.len(), 3);
