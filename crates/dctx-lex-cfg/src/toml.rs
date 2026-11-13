@@ -11,7 +11,7 @@ pub(crate) fn extract(path: &str, source: &str, limits: &Limits) -> Result<Lexed
         cur: Cur::new(source),
         draft: Draft::open(path, source, limits.max_facts, limits.max_depth)?,
         max_depth: limits.max_depth,
-        table: 0,
+        table: Some(0),
         table_depth: 0,
         arrays: BTreeMap::new(),
     };
@@ -23,7 +23,7 @@ struct Parser<'a> {
     cur: Cur<'a>,
     draft: Draft<'a>,
     max_depth: u32,
-    table: usize,
+    table: Option<usize>,
     table_depth: u32,
     arrays: BTreeMap<String, u32>,
 }
@@ -58,6 +58,10 @@ impl Parser<'_> {
         reason = "Pending comment text is transferred at grammar dispatch boundaries and is not reusable by the caller after that item is handled."
     )]
     fn header(&mut self, doc: Option<String>) -> Result<(), LexError> {
+        // A rejected header must not leave the previous table as the owner of
+        // subsequent assignments. Resume emission only after a valid header.
+        self.table = None;
+        self.table_depth = 0;
         let start = self.cur.i;
         if !self.cur.eat(b'[') {
             self.cur.consume_line();
@@ -81,6 +85,9 @@ impl Parser<'_> {
             self.cur.consume_line();
             return Ok(());
         }
+        self.table_depth = u32::try_from(segments.len())
+            .unwrap_or(u32::MAX)
+            .saturating_add(u32::from(array));
         let mut parent = 0usize;
         let mut depth = 0u32;
         let last = segments.len() - 1;
@@ -130,7 +137,7 @@ impl Parser<'_> {
             if let Some(text) = self.trailing() {
                 self.draft.set_doc(index, &text);
             }
-            self.table = index;
+            self.table = Some(index);
             self.table_depth = depth;
             self.draft.extend(index, self.cur.i);
         }
@@ -155,7 +162,13 @@ impl Parser<'_> {
             return Ok(());
         }
         self.skip_separator();
-        let mut parent = self.table;
+        let value_depth = self
+            .table_depth
+            .saturating_add(u32::try_from(segments.len()).unwrap_or(u32::MAX));
+        let Some(mut parent) = self.table else {
+            self.skip_value(value_depth)?;
+            return Ok(());
+        };
         let mut depth = self.table_depth;
         let last = segments.len() - 1;
         for segment in &segments[..last] {
@@ -165,7 +178,7 @@ impl Parser<'_> {
                 .put(parent, segment, Kind::Implicit, start, self.cur.i, depth)?
                 .index()
             else {
-                self.skip_value(depth)?;
+                self.skip_value(value_depth)?;
                 return Ok(());
             };
             parent = index;
@@ -328,15 +341,18 @@ impl Parser<'_> {
                 break;
             }
             self.skip_separator();
+            let value_depth =
+                depth.saturating_add(u32::try_from(segments.len()).unwrap_or(u32::MAX));
             let Some(owner) = parent else {
-                self.value(None, depth.saturating_add(1))?;
+                self.value(None, value_depth)?;
                 let _ = skip_hash_comments(&mut self.cur);
-                if self.cur.eat(b',') || self.cur.eat(b'}') {
-                    if self.cur.byte() == Some(b'}') {
-                        break;
-                    }
+                if self.cur.eat(b',') {
                     continue;
                 }
+                if self.cur.eat(b'}') {
+                    break;
+                }
+                self.diagnose(self.cur.i, DiagnosticReason::InvalidSyntax);
                 break;
             };
             let mut current = owner;
@@ -363,7 +379,7 @@ impl Parser<'_> {
                 current = index;
             }
             if skipped {
-                self.value(None, child_depth.saturating_add(1))?;
+                self.value(None, value_depth)?;
             } else {
                 child_depth += 1;
                 let container = matches!(self.cur.byte(), Some(b'{' | b'['));

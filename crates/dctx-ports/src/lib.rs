@@ -4,6 +4,12 @@
 //! Implements ARCHITECTURE-PROPOSAL §2 (`dctx-ports`) and contracts/API-PORTS-v1.md "Boundary ports".
 //! Depends only on dctx-core; imports no engine or adapter. Used by dctx-pack and future adapters.
 //! The core has no VCS port (decision 078): freshness comes from `Source` metadata and the own digest.
+//!
+//! Paths are validated by core identifier types; source file bodies are opaque bytes, including
+//! invalid UTF-8. In-memory sources have no content-size cap until [`Source::read`] applies one.
+//! [`memory::MemorySource`] and [`memory::CancelAfter`] use interior mutability and require
+//! external synchronization for shared use. [`memory::CancelFlag`] supports shared cancellation.
+//! Repeated reads are stable until mutation; spy logs and counters intentionally record each call.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]

@@ -12,6 +12,8 @@ pub struct RelativePath(String);
 impl RelativePath {
     /// Validates a bounded literal name. Unicode names are refused in this initial profile.
     /// The host separately rejects case-fold collisions across its resource declarations.
+    /// Accepts at most 4096 ASCII bytes, with nonempty components of at most 255 bytes.
+    /// This pure check performs no filesystem lookup and is safe to repeat concurrently.
     ///
     /// # Errors
     /// Returns an invalid-path error for empty, oversized, non-ASCII, reserved or ambiguous path components.

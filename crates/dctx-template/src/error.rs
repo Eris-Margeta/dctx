@@ -2,7 +2,7 @@
 //! Typed refusals for DTS parse, compile, load and render.
 //! Implements contracts/DTS-v2.md ("typed errors; no fallback rendering") and API error names.
 //! Depends on nothing. Used by every module in this crate and by callers of [`TemplateError`].
-//! Messages name the rule that failed and do not carry file contents.
+//! Messages name the rule that failed and the next corrective step, without file contents.
 
 use std::fmt;
 
@@ -170,13 +170,46 @@ impl fmt::Display for TemplateError {
             Self::UserDisabled { id } => write!(f, "plugin {id} is disabled by the user"),
             Self::UnknownField { plugin, field } => write!(f, "unknown field {field} on {plugin}"),
             Self::ReservedAlias { alias } => write!(f, "reserved alias {alias}"),
-        }
+        }?;
+        f.write_str(match self {
+            Self::MissingSection { .. } => "; add the required section",
+            Self::EmptySection { .. } => "; add a body to the section",
+            Self::UnresolvedVariable { .. } => "; define the variable before compiling",
+            Self::InvalidSyntax { .. } => {
+                "; correct the named field or source line and compile again"
+            }
+            Self::Cycle { .. } => "; remove a reference from the cycle",
+            Self::UnknownCapability { .. } => {
+                "; select a capability supported and granted by the host"
+            }
+            Self::BudgetAboveCeiling { .. } => "; lower the requested budget to the host ceiling",
+            Self::GrantExpansion { .. } => "; narrow the request to the host permissions",
+            Self::UnsupportedVersion { .. } => "; compile with a supported format version",
+            Self::UnknownOpcode { .. } | Self::UnknownSection { .. } => {
+                "; recompile with a compatible compiler"
+            }
+            Self::Corrupt { .. } | Self::DigestMismatch => {
+                "; recompile the original template and reload the complete plan"
+            }
+            Self::BudgetTooSmall { .. } => {
+                "; raise the output budget within the host ceiling or reduce the output"
+            }
+            Self::Limit { .. } => "; reduce the named count or size to the limit",
+            Self::Duplicate { .. } => "; keep one definition per name",
+            Self::UnresolvedRef { .. } => "; define the referenced item or correct its name",
+            Self::RequiredPluginMissing { .. } => {
+                "; install a compatible plugin or make it optional"
+            }
+            Self::UserDisabled { .. } => "; make the plugin optional or ask the user to enable it",
+            Self::UnknownField { .. } => "; use a field declared by the plugin manifest",
+            Self::ReservedAlias { .. } => "; choose an alias outside the built-in command names",
+        })
     }
 }
 
 impl std::error::Error for TemplateError {}
 
-/// V1 structural failure. Display text matches the dctx-core template errors.
+/// V1 structural failure, with the failed rule followed by a corrective step.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TemplateValidationError {
     /// A required section is absent.
@@ -199,7 +232,14 @@ impl fmt::Display for TemplateValidationError {
             Self::UnresolvedVariable(s) => write!(f, "Unresolved variable: {{{{{s}}}}}"),
             Self::InvalidSyntax(s) => write!(f, "Invalid syntax: {s}"),
             Self::Cycle(s) => write!(f, "Cyclic reference: {s}"),
-        }
+        }?;
+        f.write_str(match self {
+            Self::MissingSection(_) => "; add the required section",
+            Self::EmptySection(_) => "; add a body to the section",
+            Self::UnresolvedVariable(_) => "; define the variable before compiling",
+            Self::InvalidSyntax(_) => "; correct the source syntax and compile again",
+            Self::Cycle(_) => "; remove a reference from the cycle",
+        })
     }
 }
 
@@ -210,8 +250,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn unresolved_display_matches_v1_braces() {
+    fn unresolved_display_keeps_v1_braces_and_names_the_next_step() {
         let text = TemplateValidationError::UnresolvedVariable("name".to_string()).to_string();
-        assert_eq!(text, "Unresolved variable: {{name}}");
+        assert_eq!(
+            text,
+            "Unresolved variable: {{name}}; define the variable before compiling"
+        );
     }
 }

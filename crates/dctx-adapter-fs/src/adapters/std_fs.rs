@@ -11,6 +11,7 @@ use std::time::UNIX_EPOCH;
 use std::{fs, io, path::Path};
 
 /// Process filesystem. Reads refuse symlinks in every path component.
+/// Content reads accept up to 8 MiB; UTF-8 policy reads accept up to 1 MiB.
 /// Callers must resolve trusted directory boundaries before appending child paths;
 /// this adapter never canonicalizes a file or an in-tree directory.
 #[derive(Debug, Default, Clone, Copy)]
@@ -107,7 +108,10 @@ impl SourceFs for StdFs {
 
 #[cfg(unix)]
 fn unsafe_path() -> io::Error {
-    io::Error::new(io::ErrorKind::InvalidInput, "unsafe file path")
+    io::Error::new(
+        io::ErrorKind::InvalidInput,
+        "unsafe file path; use normal components without symlinks",
+    )
 }
 
 /// Handle-relative lookups: every directory is opened from its parent handle with
@@ -221,14 +225,22 @@ mod nofollow {
         reason = "Unix stat fields have different signedness and widths across targets."
     )]
     fn entry_meta(stat: &Stat) -> io::Result<EntryMeta> {
-        let before_epoch =
-            || io::Error::new(io::ErrorKind::InvalidData, "mtime before the unix epoch");
+        let before_epoch = || {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                "mtime before the unix epoch; correct the file timestamp and retry",
+            )
+        };
         let seconds = u128::try_from(stat.st_mtime).map_err(|_| before_epoch())?;
         let nanos = u128::try_from(stat.st_mtime_nsec).map_err(|_| before_epoch())?;
         Ok(EntryMeta {
             kind: kind_of(FileType::from_raw_mode(stat.st_mode)),
-            size: u64::try_from(stat.st_size)
-                .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "negative file size"))?,
+            size: u64::try_from(stat.st_size).map_err(|_| {
+                io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "negative file size; repair or replace the source file and retry",
+                )
+            })?,
             modified_ns: seconds * 1_000_000_000 + nanos,
             inode: Some(u64::try_from(stat.st_ino).unwrap_or(0)),
         })
@@ -271,7 +283,7 @@ mod pinned {
             if !meta.is_dir() || meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidInput,
-                    "unsafe rule directory",
+                    "unsafe rule directory; choose a real directory without reparse points",
                 ));
             }
             guards.push(guard);
@@ -300,7 +312,7 @@ fn read_bounded(path: &Path, cap: u64) -> io::Result<Vec<u8>> {
         if file.metadata()?.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
-                "reparse point file",
+                "reparse point file; choose a regular source file without reparse points",
             ));
         }
         (guards, file)
@@ -311,13 +323,13 @@ fn read_bounded(path: &Path, cap: u64) -> io::Result<Vec<u8>> {
     if !before.is_file() {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
-            "not a regular file",
+            "not a regular file; choose a regular source file",
         ));
     }
     if before.len() > cap {
         return Err(io::Error::new(
             io::ErrorKind::FileTooLarge,
-            "file exceeds byte limit",
+            "file exceeds byte limit; reduce the file size or choose a larger explicit byte cap",
         ));
     }
     let mut bytes = Vec::new();
@@ -328,7 +340,7 @@ fn read_bounded(path: &Path, cap: u64) -> io::Result<Vec<u8>> {
     if bytes.len() as u64 > cap {
         return Err(io::Error::new(
             io::ErrorKind::FileTooLarge,
-            "file exceeds byte limit",
+            "file exceeds byte limit; reduce the file size or choose a larger explicit byte cap",
         ));
     }
     if before.len() != after.len()
@@ -337,7 +349,7 @@ fn read_bounded(path: &Path, cap: u64) -> io::Result<Vec<u8>> {
     {
         return Err(io::Error::new(
             io::ErrorKind::InvalidData,
-            "file changed during read",
+            "file changed during read; retry after the file stops changing",
         ));
     }
     Ok(bytes)
@@ -363,7 +375,12 @@ fn modified_ns(meta: &fs::Metadata) -> io::Result<u128> {
     modified
         .duration_since(UNIX_EPOCH)
         .map(|duration| duration.as_nanos())
-        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "mtime before the unix epoch"))
+        .map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                "mtime before the unix epoch; correct the file timestamp and retry",
+            )
+        })
 }
 
 #[cfg(test)]

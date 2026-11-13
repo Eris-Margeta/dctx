@@ -42,6 +42,8 @@ pub struct PluginStatus {
 
 impl Registry {
     /// Admits one worker of the active version and takes a lease on its digest.
+    /// Each successful call takes another lease. A count of `u32::MAX` refuses further
+    /// workers without changing the registry; release finished worker leases to continue.
     /// # Errors
     /// Refuses missing/disabled/inactive plugins, required consent, untrusted or revoked versions, or stale revocation data.
     pub fn admit(
@@ -64,7 +66,12 @@ impl Registry {
         let version = admissible(record, &digest, trust)?;
         trust.check_freshness(now, freshness_ceiling)?;
         let version = version.version.clone();
-        *record.leases.entry(digest).or_insert(0) += 1;
+        let count = record.leases.entry(digest).or_insert(0);
+        *count = count
+            .checked_add(1)
+            .ok_or(DistributionError::LimitExceeded {
+                limit: u64::from(u32::MAX),
+            })?;
         Ok(Admission {
             id: id.clone(),
             digest,

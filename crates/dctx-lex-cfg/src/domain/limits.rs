@@ -11,7 +11,8 @@ pub struct Limits {
     pub max_bytes: usize,
     /// Deepest object, array, table or block nesting.
     pub max_depth: u32,
-    /// Most nodes plus references emitted for one file.
+    /// Most nodes (including the file node) plus references emitted for one file.
+    /// Containment edges do not consume this budget; zero refuses even empty input.
     pub max_facts: usize,
 }
 
@@ -77,16 +78,30 @@ pub enum LexError {
 impl fmt::Display for LexError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::UnsupportedDialect => f.write_str("path is not a configuration file"),
-            Self::InvalidId(error) => error.fmt(f),
-            Self::InvalidUtf8(error) => error.fmt(f),
+            Self::UnsupportedDialect => f.write_str(
+                "path is not a configuration file; use .json, .jsonc, .toml, .yaml or .yml",
+            ),
+            Self::InvalidId(error) => write!(
+                f,
+                "{error}; use a place-relative path and keys without control characters, # or ~"
+            ),
+            Self::InvalidUtf8(error) => write!(f, "{error}; re-encode the input as UTF-8"),
             Self::TooLarge { bytes, limit } => {
-                write!(f, "file of {bytes} bytes exceeds the {limit}-byte limit")
+                write!(
+                    f,
+                    "file of {bytes} bytes exceeds the {limit}-byte limit; split or reduce the file before extracting again"
+                )
             }
             Self::TooDeep { line, limit } => {
-                write!(f, "nesting deeper than {limit} at line {line}")
+                write!(
+                    f,
+                    "nesting deeper than {limit} at line {line}; reduce nesting before extracting again"
+                )
             }
-            Self::TooManyFacts { limit } => write!(f, "file yields more than {limit} facts"),
+            Self::TooManyFacts { limit } => write!(
+                f,
+                "file yields more than {limit} facts; split the configuration into smaller files"
+            ),
         }
     }
 }

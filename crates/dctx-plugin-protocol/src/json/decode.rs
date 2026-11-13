@@ -43,6 +43,9 @@ impl DecodeLimits {
 }
 
 /// Decodes exactly one JSON object from `bytes` under `limits`.
+/// Limits count source bytes, container depth (root = 1), and members across all objects.
+/// Numbers may span the full signed 64-bit range; record decoders enforce safe unsigned bounds.
+/// Use the supplied bounded profiles for untrusted inputs. Refusals contain no input bytes.
 /// # Errors
 /// Refuses invalid UTF-8/JSON, non-object roots, duplicate members, trailing data, or exceeded decode limits.
 pub fn decode_object(bytes: &[u8], limits: DecodeLimits) -> Result<Json, Refusal> {
@@ -218,6 +221,9 @@ impl Parser<'_> {
             return Err(Refusal::decode("invalid-number"));
         }
         let mut magnitude = i64::from(first - b'0');
+        if negative {
+            magnitude = -magnitude;
+        }
         if first == b'0' && matches!(self.peek(), Some(b'0'..=b'9')) {
             return Err(Refusal::decode("leading-zero"));
         }
@@ -225,7 +231,13 @@ impl Parser<'_> {
             self.pos += 1;
             magnitude = magnitude
                 .checked_mul(10)
-                .and_then(|value| value.checked_add(i64::from(digit - b'0')))
+                .and_then(|value| {
+                    if negative {
+                        value.checked_sub(i64::from(digit - b'0'))
+                    } else {
+                        value.checked_add(i64::from(digit - b'0'))
+                    }
+                })
                 .ok_or(Refusal::decode("integer-range"))?;
         }
         match self.peek() {
@@ -236,7 +248,7 @@ impl Parser<'_> {
         if negative && magnitude == 0 {
             return Err(Refusal::decode("negative-zero"));
         }
-        Ok(Json::Int(if negative { -magnitude } else { magnitude }))
+        Ok(Json::Int(magnitude))
     }
 
     fn string(&mut self) -> Result<String, Refusal> {

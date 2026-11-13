@@ -177,7 +177,7 @@ fn load(path: &str, source: &str) -> LexedFile {
 #[test]
 fn parser_identity_and_json_golden() {
     assert_eq!(PARSER_ID, "dctx-lex-cfg");
-    assert_eq!(PARSER_REVISION, 1);
+    assert_eq!(PARSER_REVISION, 2);
     let facts = load("basic.json", JSON);
     assert_eq!(facts.dialect, Dialect::Json);
     assert_eq!(facts.completion, Completion::Complete);

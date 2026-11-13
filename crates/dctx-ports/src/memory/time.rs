@@ -46,7 +46,9 @@ impl Cancellation for CancelFlag {
     }
 }
 
-/// Reports cancellation from the `(n + 1)`-th check on, counting every check.
+/// Reports cancellation after `n` successful checks, counting every check.
+/// Both [`Cancellation::is_cancelled`] and [`Cancellation::checkpoint`] consume a check;
+/// [`CancelAfter::checks`] only observes the count. This double is not thread-safe.
 #[derive(Debug)]
 pub struct CancelAfter {
     remaining: Cell<u64>,
@@ -54,7 +56,7 @@ pub struct CancelAfter {
 }
 
 impl CancelAfter {
-    /// Lets `n` checks pass, then cancels.
+    /// Lets `n` checks pass, then cancels permanently. Zero cancels at the first check.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the memory adapter API's existing caller lint behavior."

@@ -11,7 +11,7 @@ use dctx_core::error::DctxError;
 pub enum CacheError {
     /// `admitted + requested` would pass the hard cap or a root ceiling.
     #[error(
-        "cache limit: requested {requested} bytes, {available} available, {pinned} pinned, {pending} pending"
+        "cache limit: requested {requested} bytes, {available} available, {pinned} pinned, {pending} pending; release unused pins or reclaim cache space, then retry"
     )]
     CacheLimit {
         /// Bytes the caller tried to add.
@@ -24,46 +24,54 @@ pub enum CacheError {
         pending: u64,
     },
     /// The maintenance lock or the writer lock is already held.
-    #[error("busy")]
+    #[error("busy; retry after the current cache operation finishes")]
     Busy,
     /// The caller cancelled a maintenance slice.
-    #[error("cancelled")]
+    #[error("cancelled; start a new operation when ready")]
     Cancelled,
     /// The request does not match the lifecycle state.
-    #[error("invalid request: {reason}")]
+    #[error(
+        "invalid request: {reason}; correct the request or refresh the ledger state, then retry"
+    )]
     InvalidRequest {
         /// Static description of the violated rule.
         reason: &'static str,
     },
     /// A pointed-to generation failed validation or was quarantined.
-    #[error("corrupt index: {reason}")]
+    #[error(
+        "corrupt index: {reason}; rebuild the affected cache generation from authorized sources"
+    )]
     CorruptIndex {
         /// Static description of the failed check.
         reason: &'static str,
     },
     /// Revocation blocks serving this generation.
-    #[error("denied by selection policy")]
+    #[error(
+        "denied by selection policy; choose an authorized generation or review the selection rules"
+    )]
     PolicyDenied,
     /// The host reported that the volume cannot take another byte.
-    #[error("disk full")]
+    #[error("disk full; free space on the cache volume and retry")]
     DiskFull,
     /// The ledger file names a version this crate does not read.
-    #[error("unknown ledger version {found}")]
+    #[error("unknown ledger version {found}; use a compatible version of dctx to open this cache")]
     UnknownLedgerVersion {
         /// Version word from the file header.
         found: u32,
     },
     /// The ledger bytes failed magic, length, checksum or body checks.
-    #[error("corrupt ledger: {reason}")]
+    #[error("corrupt ledger: {reason}; restore a valid ledger backup or rebuild the managed cache")]
     CorruptLedger {
         /// Static description of the failed check.
         reason: &'static str,
     },
     /// A path left the cache root or named a symlink.
-    #[error("path escapes the cache root")]
+    #[error(
+        "path escapes the cache root; use a regular file beneath the cache root without symlink components"
+    )]
     OutsideCacheRoot,
     /// A filesystem call on the cache root failed.
-    #[error("ledger io: {reason}")]
+    #[error("ledger io: {reason}; check cache permissions and available space, then retry")]
     LedgerIo {
         /// Static description of the failed call.
         reason: &'static str,

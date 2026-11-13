@@ -28,6 +28,10 @@ impl<'a> Parser<'a> {
                     return Some(Cow::Borrowed(&src[start..index]));
                 }
                 b'\\' | b'\n' => break,
+                0..=0x1f => {
+                    self.diagnose(index, DiagnosticReason::InvalidSyntax);
+                    index += 1;
+                }
                 _ => index += 1,
             }
         }
@@ -104,10 +108,15 @@ impl<'a> Parser<'a> {
                     }
                     self.cur.i += 1;
                 }
+                0..=0x1f => {
+                    self.diagnose(self.cur.i, DiagnosticReason::InvalidSyntax);
+                    out.push(char::from(bytes[self.cur.i]));
+                    self.cur.i += 1;
+                }
                 _ => {
                     let run = self.cur.i;
                     let mut index = run + 1;
-                    while index < limit && !matches!(bytes[index], b'"' | b'\\' | b'\n') {
+                    while index < limit && !matches!(bytes[index], b'"' | b'\\' | 0..=0x1f) {
                         index += 1;
                     }
                     out.push_str(&self.cur.src[run..index]);
@@ -173,7 +182,10 @@ impl<'a> Parser<'a> {
                     }
                     self.cur.i += 1;
                 }
-                Some(_) => {
+                Some(byte) => {
+                    if byte < 0x20 {
+                        self.diagnose(self.cur.i, DiagnosticReason::InvalidSyntax);
+                    }
                     if let Some(ch) = self
                         .cur
                         .src

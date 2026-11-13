@@ -265,6 +265,8 @@ fn no_result(plan: &Plan, files: u64) -> Option<Failure> {
 }
 
 /// Captures the same pack output and status as the CLI without printing.
+/// Arguments include `pack`. Source pages refuse selected files above the 8 MiB
+/// per-file read limit instead of presenting their withheld contents as empty.
 /// # Errors
 /// Returns argument, source, scan, render or output failures.
 pub fn output(args: &[String]) -> Result<crate::exit::CommandOutput, Failure> {
@@ -296,10 +298,13 @@ pub fn output(args: &[String]) -> Result<crate::exit::CommandOutput, Failure> {
 }
 
 /// Runs pack and returns the page. Tests use this so stdout stays a projection.
+/// Arguments include `pack`; errors retain the recovery step as display text.
 /// # Errors
 /// Returns argument parsing, source/session, snapshot/rendering, or requested-format failures.
 pub fn execute(args: &[String]) -> Result<PackOutcome, String> {
-    execute_plan(&parse(args)?).map_err(|error| error.message)
+    let plan = parse(args)
+        .map_err(|message| format!("{message}; run `dctx pack --help` for flags and an example"))?;
+    execute_plan(&plan).map_err(|error| format!("{}; {}", error.message, error.hint))
 }
 
 /// Runs one parsed pack: the facade summary for `--json`, else the source page.
@@ -454,10 +459,42 @@ fn source_markers(
     }
     .map_err(|error| pack_facade_failure(DctxError::from_core(error)))?;
     let tree = narrow(scanned.tree, &plan.filters);
+    let withheld = scanned
+        .diagnostics
+        .iter()
+        .filter_map(|diagnostic| {
+            if let dctx_core::facts::Diagnostic::ContentWithheld { path, .. } = diagnostic {
+                Some(path.as_str())
+            } else {
+                None
+            }
+        })
+        .collect();
+    if let Some(path) = withheld_file(&tree, &withheld) {
+        return Err(Failure::index(
+            format!("file {path} exceeds the 8388608-byte pack read limit"),
+            "split the file into files of at most 8 MiB, or exclude it with --exclude PATTERN",
+        ));
+    }
     let files = file_count(&tree);
     let markers = into_legacy_markers(tree, &policy);
     let output = source_document(&plan.path, plan.tree_stamps).map_err(pack_io_failure)?;
     Ok((markers, files, output))
+}
+
+fn withheld_file<'a>(
+    node: &'a dctx_core::datatypes::DirContextTreeNode,
+    paths: &std::collections::BTreeSet<&str>,
+) -> Option<&'a str> {
+    if paths.is_empty() {
+        return None;
+    }
+    if paths.contains(node.relative_path.as_str()) {
+        return Some(&node.relative_path);
+    }
+    node.children
+        .iter()
+        .find_map(|child| withheld_file(child, paths))
 }
 
 fn view_request(filters: &Filters) -> PackRequest {
@@ -530,7 +567,7 @@ fn parse(args: &[String]) -> Result<Plan, String> {
                 let value = args
                     .get(index)
                     .ok_or_else(|| "--output requires a path".to_string())?;
-                if value.starts_with('-') {
+                if value.is_empty() || value.starts_with('-') {
                     return Err("--output requires a path".to_string());
                 }
                 if output.is_some() {

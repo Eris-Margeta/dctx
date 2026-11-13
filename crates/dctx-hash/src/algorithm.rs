@@ -11,6 +11,7 @@ use std::fmt;
 pub const IDENTITY_VERSION: u8 = 1;
 
 /// Content-identity algorithm. The numeric code is part of the stored identity.
+/// Names and codes are stable; unsupported codes have no fallback algorithm.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum IdentityAlgorithm {
     /// FIPS 180-4 SHA-256. Code [`IdentityAlgorithm::SHA256`].
@@ -30,6 +31,7 @@ impl IdentityAlgorithm {
     }
 
     /// Restores a tag. Any code other than [`IdentityAlgorithm::SHA256`] is refused.
+    /// Returns `None` for an unsupported code; select a supported algorithm before hashing.
     #[must_use]
     pub const fn from_code(code: u16) -> Option<Self> {
         match code {
@@ -51,6 +53,11 @@ impl IdentityAlgorithm {
 ///
 /// Equality includes the version, the algorithm, the digest, and the byte length.
 /// A future algorithm or layout is a different variant and cannot compare equal to SHA-256 v1.
+/// Formatting produces `v1:sha256:<64 lowercase hex digits>:<decimal byte length>`.
+/// The format contains no whitespace and is independent of locale.
+///
+/// This is identity metadata, not proof that the bytes or length were computed
+/// from a message. Use [`crate::Sha256::digest`] to compute an identity from bytes.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum ContentDigest {
     /// Identity format v1 for a FIPS 180-4 SHA-256 digest.
@@ -66,6 +73,8 @@ impl ContentDigest {
     /// Tags `bytes` as a SHA-256 v1 digest of `byte_length` message bytes.
     ///
     /// This does not hash anything. It rebuilds an identity that was already computed.
+    /// Every `u64` length is representable, including values above SHA-256's
+    /// message-size limit; callers must validate externally supplied metadata.
     #[must_use]
     pub const fn sha256(bytes: [u8; 32], byte_length: u64) -> Self {
         Self::Sha256V1 { bytes, byte_length }
@@ -102,6 +111,7 @@ impl ContentDigest {
     }
 
     /// Raw digest bytes. The algorithm tag is not included; use [`Self::algorithm`] for that.
+    /// The byte length is also separate; use the whole value for identity comparisons.
     #[must_use]
     pub const fn as_bytes(&self) -> &[u8; 32] {
         match self {

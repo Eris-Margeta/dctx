@@ -4,7 +4,12 @@
 //! Uses dctx-hash SHA-256; the walker and assembly call these.
 use dctx_hash::Sha256;
 
-/// SHA-256 hex of the body with whitespace runs collapsed and edges trimmed.
+/// SHA-256 hex of the body with Unicode whitespace runs collapsed to one ASCII
+/// space and edges trimmed. Empty or whitespace-only bodies hash the empty string.
+///
+/// This text helper accepts valid UTF-8 through `str` and applies no size limit.
+/// Repeated calls and calls from different threads produce the same 64 lowercase
+/// hexadecimal bytes. Normalization is textual, including inside string literals.
 #[allow(
     clippy::must_use_candidate,
     reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."

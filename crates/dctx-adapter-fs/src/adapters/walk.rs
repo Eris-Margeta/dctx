@@ -5,7 +5,7 @@
 
 use super::error::SourceError;
 use super::link::{LinkTarget, classify_link};
-use super::path::{component_name, join_rel};
+use super::path::{component_name, join_rel, split_relative};
 use super::read::{ReadAttempt, file_stamp, read_authorized};
 use crate::domain::{
     FileBody, FileHandlingDecision, FreshnessMode, ItemContext, SelectionPolicy, SourceFile,
@@ -85,9 +85,11 @@ fn push_children<F: SourceFs>(
     entries.sort_by(|left, right| right.name.cmp(&left.name));
     for entry in entries {
         let name = component_name(&entry.name, &frame.disk)?;
+        let relative = join_rel(&frame.relative, name);
+        split_relative(&relative)?;
         stack.push(Frame {
             disk: frame.disk.join(name),
-            relative: join_rel(&frame.relative, name),
+            relative,
             kind: entry.kind,
             parent,
         });

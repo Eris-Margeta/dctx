@@ -218,7 +218,7 @@ impl<F: StoreFs> SegmentStore<F> {
         }
         let current = newest(&self.fs, &request.root)?;
         match &current {
-            Some(closure) if request.generation != closure.generation.saturating_add(1) => {
+            Some(closure) if closure.generation.checked_add(1) != Some(request.generation) => {
                 return Err(StoreError::InvalidRequest {
                     reason: "generation",
                 });

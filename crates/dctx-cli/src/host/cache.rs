@@ -129,26 +129,60 @@ pub fn auto_clean_allowed(args: &[String]) -> bool {
 }
 
 /// Pure form of [`auto_clean_allowed`]. `env_value` of `"0"` disables the slice.
+/// Option values and words after `--` are opaque, even when equal to the flag.
 #[allow(
     clippy::must_use_candidate,
     reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
 )]
 pub fn auto_clean_enabled(args: &[String], env_value: Option<&str>) -> bool {
-    if args.iter().any(|arg| arg == "--no-auto-clean") {
+    if auto_flags(args).any(|is_flag| is_flag) {
         return false;
     }
     env_value != Some("0")
 }
 
 /// Drops `--no-auto-clean` so command parsers keep their existing flag sets.
+/// Preserves opaque option values and everything after `--`. Repeated calls are
+/// idempotent; the same option boundaries are used by [`auto_clean_enabled`].
 #[allow(
     clippy::must_use_candidate,
     reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
 )]
 pub fn without_auto_flag(args: Vec<String>) -> Vec<String> {
+    let flags: Vec<_> = auto_flags(&args).collect();
     args.into_iter()
-        .filter(|arg| arg != "--no-auto-clean")
+        .zip(flags)
+        .filter_map(|(arg, is_flag)| (!is_flag).then_some(arg))
         .collect()
+}
+
+fn auto_flags(args: &[String]) -> impl Iterator<Item = bool> + '_ {
+    let mut literal = false;
+    let mut value = false;
+    args.iter().map(move |arg| {
+        if literal || std::mem::take(&mut value) {
+            return false;
+        }
+        if arg == "--" {
+            literal = true;
+            return false;
+        }
+        value = super::roots::takes_value(arg)
+            || matches!(
+                arg.as_str(),
+                "--also"
+                    | "--root"
+                    | "--ttl-days"
+                    | "--url"
+                    | "--file"
+                    | "--id"
+                    | "--project"
+                    | "--version"
+                    | "--publisher-key"
+                    | "--artifact-digest"
+            );
+        arg == "--no-auto-clean"
+    })
 }
 
 /// Creates the cache root when it is missing. A symlink root is refused.

@@ -6,7 +6,7 @@
 
 use std::collections::BTreeSet;
 
-use dctx_plugin_protocol::{DecodeLimits, decode_object};
+use dctx_plugin_protocol::{DecodeLimits, Json, decode_object, to_canonical};
 
 use super::digest::{PayloadCheck, Sha256Hex};
 use super::fields::Closed;
@@ -148,6 +148,9 @@ impl OfflineBundle {
     }
 
     /// Builds container bytes; used by tests and release tooling fixtures, never by install.
+    /// Names are JSON-escaped, even when invalid. This infallible fixture writer does not
+    /// validate names, duplicates, entry count or table size; call [`Self::parse`] to validate.
+    /// Repeating the same ordered entries produces byte-identical output.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
@@ -157,22 +160,26 @@ impl OfflineBundle {
         reason = "This infallible fixture encoder retains the existing 32-bit wire length encoding; the parser independently enforces table limits."
     )]
     pub fn encode(entries: &[(&str, &[u8])]) -> Vec<u8> {
-        let rows: Vec<String> = entries
+        let rows = entries
             .iter()
             .map(|(name, bytes)| {
                 let digest = Sha256Hex::of(bytes)
                     .map(|d| d.to_string())
                     .unwrap_or_default();
-                format!(
-                    "{{\"name\":\"{name}\",\"bytes\":{},\"sha256\":\"{digest}\"}}",
-                    bytes.len()
-                )
+                Json::Object(vec![
+                    ("name".into(), Json::str(name)),
+                    ("bytes".into(), Json::uint(bytes.len() as u64)),
+                    ("sha256".into(), Json::str(&digest)),
+                ])
             })
             .collect();
-        let table = format!("{{\"schema\":1,\"entries\":[{}]}}", rows.join(","));
+        let table = to_canonical(&Json::Object(vec![
+            ("schema".into(), Json::Int(1)),
+            ("entries".into(), Json::Array(rows)),
+        ]));
         let mut out = MAGIC.to_vec();
         out.extend_from_slice(&(table.len() as u32).to_le_bytes());
-        out.extend_from_slice(table.as_bytes());
+        out.extend_from_slice(&table);
         for (_, bytes) in entries {
             out.extend_from_slice(bytes);
         }

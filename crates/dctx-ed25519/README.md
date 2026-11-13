@@ -60,7 +60,7 @@ claim** is made. Signature validation does not prove publisher trust.
 | I1 | Acceptance is `ed25519-dalek` 2.2.0 `verify_strict`: canonical `S`, non-small-order `A` and `R`, and the cofactorless equation. | RFC 8032 §7.1, the full Wycheproof corpus, cofactorless fixtures, signed-message properties. |
 | I2 | A point encoding dalek would reduce must still recompress to the same bytes. | Non-canonical coordinate and negative-zero fixtures. |
 | I3 | `S` is below `L` before `verify_strict`, so malleable scalars keep a distinct error. | Order-boundary and malleability fixtures. |
-| I4 | The public SHA-512 is chunk-invariant and encodes the 128-bit bit length in big endian. Messages must be shorter than 2^128 bits, as in FIPS 180-4. | NIST known answers including a million `a` bytes, padding splits, length carry, random sha2 differential tests. |
+| I4 | The public SHA-512 is chunk-invariant and encodes the 128-bit bit length in big endian. Messages must be shorter than 2^128 bits, as in FIPS 180-4; overflow panics before modifying the state. | NIST known answers including a million `a` bytes, padding splits, length carry, maximum/overflow counter tests, seeded sha2 differential tests. |
 | I5 | Each refusal path has a distinct [`VerificationError`](src/lib.rs) and a valid control. | Crate unit test plus the policy fixtures. |
 
 Field, scalar, and point arithmetic live in `ed25519-dalek`. This crate keeps
@@ -105,17 +105,25 @@ with this wrapper, skip invalid cases or quarantine mismatches.
 
 The suite includes all five RFC 8032 §7.1 vectors (including the 1023-byte message
 and pure Ed25519 signing of SHA-512(`abc`)), all Wycheproof cases, small-order and
-cofactorless fixtures, 128-case proptest checks of random signed messages/keys,
-random single-bit mutations of each input, arbitrary encodings/lengths and SHA-512
+cofactorless fixtures, 128-case proptest checks of seeded signed messages/keys,
+seeded single-bit mutations of each input, arbitrary encodings/lengths and SHA-512
 chunking. A deterministic sample additionally checks **every** bit of its key,
-signature and message. Proptest writes no regression files; reported failing
-seeds/cases must become reviewed fixtures before release.
+signature and message. Proptest uses a fixed ChaCha seed and writes no regression
+files; reported failing seeds/cases must become reviewed fixtures before release.
 
-Authorized validation runs only through the development-machine runner:
+`tests/n1113_hostile.rs` covers empty and one-byte inputs, every small-sample
+truncation, exact and overlong key/signature sizes, invalid UTF-8, duplicate and
+reordered byte sequences, repeated calls, concurrent verification and cloned
+hash states. Hashes are checked against `sha2`. Private counter tests exercise
+the SHA-512 length limit without allocating an enormous message. Error display
+messages include a next step and formatting failures propagate to the caller.
+
+Run the combined verification/hash gate twice with the same results:
 
 ```text
-cargo test -p dctx-ed25519 -p dctx-plugin-distribution
-cargo clippy -p dctx-ed25519 -- -D warnings
+cargo test -p dctx-ed25519 -p dctx-hash
+cargo clippy -p dctx-ed25519 -p dctx-hash --all-targets -- -D warnings
+cargo fmt -p dctx-ed25519 -p dctx-hash -- --check
 ```
 
 Passing these checks is reproducible test evidence, not an independent
