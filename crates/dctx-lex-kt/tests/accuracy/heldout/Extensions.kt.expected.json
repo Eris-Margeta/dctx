@@ -1,0 +1,7 @@
+[{"name":"firstOfType","kind":"fn","line":5,"parent":null},
+{"name":"flattenValues","kind":"fn","line":8,"parent":null},
+{"name":"secondOrNull","kind":"const","line":10,"parent":null},
+{"name":"lastChar","kind":"const","line":13,"parent":null},
+{"name":"clampTo","kind":"fn","line":19,"parent":null},
+{"name":"times","kind":"fn","line":21,"parent":null},
+{"name":"gcd","kind":"fn","line":24,"parent":null}]

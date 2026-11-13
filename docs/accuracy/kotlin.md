@@ -84,14 +84,42 @@ Before: 443 true positives, 8 false positives, 10 misses. After: 453, 0, 0.
   `constructor` keyword on its own line started at the parameter list instead
   of at its first annotation.
 
+## Held-out corpus
+
+After the fixes above, a second author wrote
+`crates/dctx-lex-kt/tests/accuracy/heldout/`: **10 more original files (9
+`.kt`, 1 `.kts`) with 170 hand-labelled symbols**, labelled with the same rules
+and written to mix constructs the way real files do: multi-line generic
+parameter lists with trailing commas, annotations spread over several lines,
+named and nested objects inside companions, enum entries with bodies and
+constructor arguments, sealed interfaces with `data object`, generic extension
+receivers, DSL builders, `where` clauses, `expect`/`actual`, `fun interface`,
+`value class`, delegation (`by`), labels, nested string templates and
+character literals containing braces, and context receivers. The test
+`d1113g_heldout_accuracy` scores it separately with the same thresholds and
+the same masking check.
+
+| corpus   | before P | before R | after P | after R |
+|----------|---------:|---------:|--------:|--------:|
+| held-out |   99.41% |   99.41% | 100.00% | 100.00% |
+
+Before: 169 true positives, 1 false positive, 1 miss. The one defect it found:
+
+- A declaration with context receivers (`context(Logger)` on the line before
+  `fun`) started at the `fun` keyword instead of at the `context(...)`
+  modifier, so its line was off by one. `context(...)` is now read as part of
+  the modifier list when a declaration follows it.
+
 ## Known limits
 
 - 100% on this corpus does not mean 100% on real projects. The corpus was
   written by the same people who fixed the extractor, so it is biased towards
   the constructs they thought of.
-- Not covered: context receivers/parameters, `when` subjects with declarations,
-  multiplatform source sets beyond `expect`/`actual`, generated code, very large
+- Not covered: multiplatform source sets beyond `expect`/`actual`, generated code, very large
   files, and deliberately malformed input (see the hostile-input tests instead).
+- A call to a function named `context(...)` directly before a local
+  declaration in a function body or script is read as a context-receiver
+  list, which moves that declaration's start line up.
 - Destructuring declarations and properties of anonymous objects declared inside
   function bodies are local and produce no symbols by design.
 - Call and reference resolution, signatures, end lines, summaries and
