@@ -55,10 +55,11 @@ pub fn run(args: &[String]) -> Result<(), Failure> {
 }
 
 /// Same as [`run`] for an explicit cache root. `None` uses [`host::cache_root_dir`].
+/// Arguments include `cache`; errors retain both the cause and the recovery hint.
 /// # Errors
 /// Returns command parsing, root/policy validation, ledger, maintenance, or filesystem failures as display text.
 pub fn run_in(args: &[String], root: Option<&Path>) -> Result<String, String> {
-    output_in(args, root).map_err(|failure| failure.message)
+    output_in(args, root).map_err(|failure| format!("{}; {}", failure.message, failure.hint))
 }
 
 /// Same as [`run_in`], keeping the exit code and hint of each failure.
@@ -106,6 +107,9 @@ fn io_failure(root: &Path, message: &str) -> Failure {
             "the cache ledger cannot be read; remove the cache directory {} to start an empty cache",
             root.display()
         )
+    } else if message.contains("corrupt cache policy") {
+        "remove policy.v1 from this cache directory to restore defaults, then run `dctx cache config`"
+            .to_string()
     } else {
         "check that the cache directory exists and is writable, or set DCTX_CACHE_DIR to another directory"
             .to_string()

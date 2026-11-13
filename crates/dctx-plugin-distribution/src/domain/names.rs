@@ -183,6 +183,13 @@ impl Version {
         let valid = numbers.len() == 3
             && numbers.iter().all(numeric)
             && pre.is_none_or(ident)
+            && pre.is_none_or(|pre| {
+                pre.split('.').all(|part| {
+                    !part.bytes().all(|b| b.is_ascii_digit())
+                        || part.len() == 1
+                        || !part.starts_with('0')
+                })
+            })
             && build.is_none_or(ident);
         if valid {
             Ok(Self(text.to_owned()))

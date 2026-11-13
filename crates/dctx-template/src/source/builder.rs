@@ -5,9 +5,9 @@
 
 use std::collections::{BTreeSet, HashMap};
 
-use crate::error::TemplateError;
+use crate::error::{MAX_PLAN_BYTES, TemplateError};
 use crate::model::Selection;
-use crate::v1::{Template, replace_vars};
+use crate::v1::{Template, replace_vars_bounded};
 
 use super::draft::{BudgetDraft, Draft, GroupDraft, IndexDraft, PluginDecl, ViewDraft};
 use super::fields::{
@@ -273,9 +273,9 @@ impl Builder {
         let tree = body_named(&partials, "TREE_ENTRY");
         let file = body_named(&partials, "FILE_BLOCK");
         let layout = body_named(&layouts, "main");
-        let template = crate::v1::finish(variables, &tree, &file, &layout);
-        let resolved_partials = resolve_bodies(&partials, &template);
-        let resolved_layouts = resolve_bodies(&layouts, &template);
+        let template = crate::v1::finish_bounded(variables, &tree, &file, &layout)?;
+        let resolved_partials = resolve_bodies(&partials, &template)?;
+        let resolved_layouts = resolve_bodies(&layouts, &template)?;
         Ok(Draft {
             selections,
             indexes,
@@ -298,9 +298,23 @@ fn body_named(items: &[(String, String)], name: &str) -> String {
         .unwrap_or_default()
 }
 
-fn resolve_bodies(items: &[(String, String)], template: &Template) -> Vec<(String, String)> {
+fn resolve_bodies(
+    items: &[(String, String)],
+    template: &Template,
+) -> Result<Vec<(String, String)>, TemplateError> {
+    let mut total_bytes = 0usize;
     items
         .iter()
-        .map(|(name, body)| (name.clone(), replace_vars(body, &template.variables)))
+        .map(|(name, body)| {
+            let resolved = replace_vars_bounded(body, &template.variables)?;
+            total_bytes = total_bytes.saturating_add(resolved.len());
+            if total_bytes > MAX_PLAN_BYTES as usize {
+                return Err(TemplateError::Limit {
+                    what: "variable expansion",
+                    limit: u64::from(MAX_PLAN_BYTES),
+                });
+            }
+            Ok((name.clone(), resolved))
+        })
         .collect()
 }

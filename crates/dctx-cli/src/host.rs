@@ -133,6 +133,9 @@ pub fn reuse_report_enabled() -> bool {
 }
 
 /// Reads an included file through the engine source for CLI preflight checks.
+/// Returns raw bytes, including non-UTF-8 content. `None` means selection rules
+/// denied the file; it does not mean an empty file. Paths are place-relative and
+/// cannot escape the source root. The inclusive content limit is 8 MiB.
 /// No bytes are returned for a path excluded by its own or an ancestor's policy.
 /// # Errors
 /// Returns invalid paths, source/rule failures, or a read above the 8 MiB source ceiling.
@@ -197,6 +200,8 @@ fn open_source(path: &Path) -> Result<(FsSource, String, PathBuf), String> {
 
 /// An explicitly selected file trusts its containing directory, but not its leaf.
 /// Resolve that directory once before using the strict, bounded filesystem reader.
+/// `cap` is inclusive and counts bytes, not characters. A zero cap accepts only
+/// an empty regular file. The result is not decoded or normalized as text.
 /// # Errors
 /// Refuses missing directories, symlink/non-regular leaves, changed or oversized files,
 /// and filesystem I/O failures.

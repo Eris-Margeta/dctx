@@ -63,6 +63,7 @@ pub struct KnownExport {
     /// Where it was found.
     pub place: OutputPlace,
     /// Caller label. Not opened, and not used as a search root.
+    /// Adoption accepts at most 4096 UTF-8 bytes so the record can be persisted.
     pub label: String,
     /// Size in bytes, as already measured by the caller.
     pub bytes: u64,
@@ -220,11 +221,17 @@ impl Lifecycle {
 
     /// Opts an already-classified candidate into the ownership manifest.
     /// # Errors
-    /// Refuses exports that do not match the known legacy format and identity.
+    /// Refuses exports that do not match the known legacy format and identity, or labels
+    /// above the ledger limit of 4096 UTF-8 bytes; shorten the label before retrying.
     pub fn adopt_legacy(&mut self, export: &KnownExport) -> Result<(), CacheError> {
         let identity = classify_export(export).map_err(|_| CacheError::InvalidRequest {
             reason: "export is not an owned legacy artifact",
         })?;
+        if !u32::try_from(export.label.len()).is_ok_and(|len| len <= super::ledger_io::TEXT_MAX) {
+            return Err(CacheError::InvalidRequest {
+                reason: "legacy label exceeds 4096 bytes; shorten the label and retry",
+            });
+        }
         self.exports.insert(
             export.label.clone(),
             AdoptedExport {

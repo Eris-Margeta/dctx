@@ -155,6 +155,73 @@ impl DistributionError {
     pub(crate) const fn malformed(document: Document, reason: &'static str) -> Self {
         Self::Malformed { document, reason }
     }
+
+    fn next_step(self) -> &'static str {
+        match self {
+            Self::Malformed {
+                document: Document::Registry,
+                ..
+            } => "restore registry metadata from a trusted saved copy",
+            Self::Malformed {
+                document: Document::Locator,
+                ..
+            }
+            | Self::Origin(_) => {
+                "choose a valid HTTPS locator and an origin permitted by installation policy"
+            }
+            Self::Malformed { .. } => "obtain a complete document matching the supported schema",
+            Self::Signature(_)
+            | Self::IntegrityFailure
+            | Self::SizeMismatch { .. }
+            | Self::SumsMismatch
+            | Self::ManifestDigestMismatch => {
+                "obtain a complete release whose signature, lengths and digests match trusted metadata"
+            }
+            Self::UnknownKey
+            | Self::UnknownPublisher
+            | Self::FingerprintMismatch
+            | Self::SignerChanged => {
+                "independently verify the publisher fingerprint before approving its key and identity"
+            }
+            Self::KeyRevoked | Self::ArtifactRevoked => {
+                "select a release with an unrevoked signer and artifact"
+            }
+            Self::IdentityMismatch => {
+                "select the intended plugin identity and its matching signed manifest"
+            }
+            Self::Downgrade { .. } => {
+                "select a newer release or explicitly approve an exact-digest rollback"
+            }
+            Self::Replay { .. } => "obtain a release with an unused signed release sequence",
+            Self::UnsupportedTarget | Self::TargetMismatch => {
+                "obtain a release for the configured host target"
+            }
+            Self::LimitExceeded { .. } => {
+                "reduce input size or live worker leases to the stated limit"
+            }
+            Self::Network(_) => "check the release locator and connection, then retry the download",
+            Self::Busy => {
+                "retry after the current install or activation releases its operation lock"
+            }
+            Self::Interrupted => "run installation recovery before retrying the operation",
+            Self::NotInstalled | Self::NotFound => {
+                "select an available release and install it first"
+            }
+            Self::NotActive => "activate an installed version first",
+            Self::Quarantined => "obtain a verified replacement release before enabling the plugin",
+            Self::Disabled => "explicitly enable the plugin with the required consent",
+            Self::ConsentRequired => {
+                "review and approve the exact artifact and its requested capabilities"
+            }
+            Self::ConfinementRequired => {
+                "use a qualified confinement provider before enabling the plugin"
+            }
+            Self::StaleRevocation { .. } => {
+                "refresh authenticated revocation state before retrying"
+            }
+            Self::Leased => "deactivate the version and end its worker leases before removing it",
+        }
+    }
 }
 
 impl From<VerificationError> for DistributionError {
@@ -205,7 +272,8 @@ impl fmt::Display for DistributionError {
                 f.write_str("revocation state was never refreshed")
             }
             other => write!(f, "{other:?}"),
-        }
+        }?;
+        write!(f, "; next: {}", self.next_step())
     }
 }
 
@@ -218,15 +286,21 @@ mod tests {
     #[test]
     fn display_never_needs_document_bytes() {
         let error = DistributionError::malformed(Document::Manifest, "unknown-field");
-        assert_eq!(error.to_string(), "malformed Manifest: unknown-field");
+        assert_eq!(
+            error.to_string(),
+            "malformed Manifest: unknown-field; next: obtain a complete document matching the supported schema"
+        );
         assert_eq!(
             DistributionError::Downgrade {
                 candidate: 1,
                 floor: 2
             }
             .to_string(),
-            "release sequence 1 is below accepted 2"
+            "release sequence 1 is below accepted 2; next: select a newer release or explicitly approve an exact-digest rollback"
         );
-        assert_eq!(DistributionError::Busy.to_string(), "Busy");
+        assert_eq!(
+            DistributionError::Busy.to_string(),
+            "Busy; next: retry after the current install or activation releases its operation lock"
+        );
     }
 }

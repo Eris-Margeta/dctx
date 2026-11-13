@@ -11,7 +11,8 @@ pub struct Limits {
     pub max_bytes: usize,
     /// Deepest bracket, template, JSX or type nesting.
     pub max_depth: u32,
-    /// Most nodes plus references emitted for one file.
+    /// Most nodes plus references emitted for one file, including the module node.
+    /// Zero refuses every file; containment edges do not consume this budget.
     pub max_facts: usize,
 }
 
@@ -77,16 +78,24 @@ pub enum LexError {
 impl fmt::Display for LexError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::UnsupportedDialect => f.write_str("path is not a JavaScript or TypeScript file"),
-            Self::InvalidId(error) => error.fmt(f),
-            Self::InvalidUtf8(error) => error.fmt(f),
+            Self::UnsupportedDialect => f.write_str(
+                "path is not a JavaScript or TypeScript file; use a supported extension such as .js or .ts",
+            ),
+            Self::InvalidId(error) => write!(
+                f,
+                "{error}; use a place-relative path and names without traversal or reserved identity characters"
+            ),
+            Self::InvalidUtf8(error) => write!(
+                f,
+                "{error}; decode or transcode the source to UTF-8 and retry"
+            ),
             Self::TooLarge { bytes, limit } => {
-                write!(f, "file of {bytes} bytes exceeds the {limit}-byte limit")
+                write!(f, "file of {bytes} bytes exceeds the {limit}-byte limit; split the file or reduce the input and retry")
             }
             Self::TooDeep { line, limit } => {
-                write!(f, "nesting deeper than {limit} at line {line}")
+                write!(f, "nesting deeper than {limit} at line {line}; reduce syntactic nesting and retry")
             }
-            Self::TooManyFacts { limit } => write!(f, "file yields more than {limit} facts"),
+            Self::TooManyFacts { limit } => write!(f, "file yields more than {limit} facts; split the file or increase max_facts up to Limits::CEILING and retry"),
         }
     }
 }

@@ -536,21 +536,23 @@ pub(super) fn ensure_dir(path: &Path) -> Result<(), CacheError> {
         Err(_) => return Err(CacheError::LedgerIo { reason: "metadata" }),
     }
     #[cfg(unix)]
-    {
+    let created = {
         use std::os::unix::fs::DirBuilderExt;
-        let mut builder = fs::DirBuilder::new();
-        builder.mode(0o700);
-        builder.create(path).map_err(|_| CacheError::LedgerIo {
-            reason: "create directory",
-        })?;
-    }
+        fs::DirBuilder::new().mode(0o700).create(path)
+    };
     #[cfg(not(unix))]
-    {
-        fs::create_dir(path).map_err(|_| CacheError::LedgerIo {
+    let created = fs::create_dir(path);
+    match created {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+            // Another publisher may have created it after our metadata check.
+            // Recheck ownership, permissions and symlink status before accepting it.
+            real_root(path).map(|_| ())
+        }
+        Err(_) => Err(CacheError::LedgerIo {
             reason: "create directory",
-        })?;
+        }),
     }
-    Ok(())
 }
 
 pub(super) fn write_exclusive(path: &Path, bytes: &[u8]) -> Result<(), CacheError> {

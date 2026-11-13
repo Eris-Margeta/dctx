@@ -20,9 +20,12 @@ pub use domain::{
 /// Parser identity recorded with every fact key (PARSERS-v1 provenance).
 pub const PARSER_ID: &str = "dctx-lex-cfg";
 /// Bumped whenever extraction output can change for the same bytes.
-pub const PARSER_REVISION: u32 = 1;
+pub const PARSER_REVISION: u32 = 2;
 
 /// Bounded structural extractor. Stateless apart from its limits.
+///
+/// Instances can be shared between threads. Repeated extraction of identical paths
+/// and bytes with the same limits returns identical facts in source order.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct CfgLexer {
     limits: Limits,
@@ -42,9 +45,16 @@ impl CfgLexer {
 
     /// Extracts facts from one place-relative path and its authorized bytes.
     ///
+    /// The final extension selects the dialect, case-insensitively. Malformed syntax
+    /// returns a [`Completion::Partial`] file with bounded diagnostics, rather than
+    /// a refusal. Empty input returns the file node. A leading UTF-8 BOM is skipped.
+    /// Check `completion` and `diagnostics` before relying on structural precision.
+    ///
     /// # Errors
     /// Refuses unsupported paths, invalid UTF-8 or model identities, and
-    /// input exceeding the byte, nesting or fact ceilings.
+    /// input exceeding the byte, nesting or fact ceilings. Path extension and byte
+    /// size are checked before UTF-8 decoding. Correct the path or encoding, or
+    /// reduce the file's size, nesting or fact count, then retry.
     pub fn extract(&self, path: &str, bytes: &[u8]) -> Result<LexedFile, LexError> {
         let dialect = Dialect::for_path(path).ok_or(LexError::UnsupportedDialect)?;
         if bytes.len() > self.limits.max_bytes {
@@ -53,14 +63,20 @@ impl CfgLexer {
                 limit: self.limits.max_bytes,
             });
         }
-        let source = std::str::from_utf8(bytes)?;
-        let source = source.strip_prefix('\u{feff}').unwrap_or(source);
-        match dialect {
+        let decoded = std::str::from_utf8(bytes)?;
+        let source = decoded.strip_prefix('\u{feff}').unwrap_or(decoded);
+        let mut file = match dialect {
             Dialect::Json => json::extract(path, source, false, &self.limits),
             Dialect::Jsonc => json::extract(path, source, true, &self.limits),
             Dialect::Toml => toml::extract(path, source, &self.limits),
             Dialect::Yaml => yaml::extract(path, source, &self.limits),
+        }?;
+        // Walkers index the BOM-free source; callers index the supplied bytes.
+        let prefix = u32::try_from(decoded.len() - source.len()).unwrap_or(0);
+        for diagnostic in &mut file.diagnostics {
+            diagnostic.byte += prefix;
         }
+        Ok(file)
     }
 }
 

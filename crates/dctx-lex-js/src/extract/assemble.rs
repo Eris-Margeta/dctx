@@ -54,6 +54,9 @@ impl Draft {
         max_facts: usize,
     ) -> Result<Self, LexError> {
         let id = StableId::new(NodeKind::Module, path, None, None)?;
+        if max_facts == 0 {
+            return Err(LexError::TooManyFacts { limit: 0 });
+        }
         let mut text = source.lines().find_map(first_comment).unwrap_or_default();
         if let Some(&(start, end)) = lexed.comments.first()
             && !lexed.hashbang

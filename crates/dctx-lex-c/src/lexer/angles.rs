@@ -4,6 +4,83 @@
 //! Depends only on token spellings; the lexer and the declarator scan use it.
 //! A `<` counts only when a closer matches it before `;`, `{`, or an outer `)`.
 
+use super::NONE;
+
+/// Cached lookahead within one statement region. Each region is scanned once,
+/// including unmatched `<` tokens, rather than rescanned for every candidate.
+#[derive(Default)]
+pub(crate) struct TemplateMatches {
+    start: usize,
+    closers: Vec<u32>,
+}
+
+impl TemplateMatches {
+    /// Macro redefinitions can change identifier spellings into braces.
+    pub(crate) fn clear(&mut self) {
+        self.closers.clear();
+    }
+
+    pub(crate) fn opens<'a>(
+        &mut self,
+        text: impl Fn(usize) -> &'a str,
+        len: usize,
+        end: usize,
+        lt: usize,
+    ) -> bool {
+        if lt >= len || lt >= end || text(lt) != "<" {
+            return false;
+        }
+        if lt < self.start || lt - self.start >= self.closers.len() {
+            self.fill(&text, len, lt);
+        }
+        (self.closers[lt - self.start] as usize) < end
+    }
+
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Token indexes fit u32 under the public 8 MiB input ceiling."
+    )]
+    fn fill<'a>(&mut self, text: impl Fn(usize) -> &'a str, len: usize, start: usize) {
+        self.start = start;
+        self.closers.clear();
+        let mut opens = Vec::new();
+        // Each group hides its angles from the enclosing group's candidates.
+        let mut bases = vec![0];
+        for index in start..len {
+            let spelling = text(index);
+            if bases.len() == 1 && matches!(spelling, ";" | "{" | ")" | "]" | "}") {
+                break;
+            }
+            self.closers.push(NONE);
+            let base = bases.last().copied().unwrap_or(0);
+            match spelling {
+                "<" => opens.push(index - start),
+                ">" | ">>" => {
+                    let count = if spelling == ">>" { 2 } else { 1 };
+                    for _ in 0..count {
+                        if opens.len() > base
+                            && let Some(open) = opens.pop()
+                        {
+                            self.closers[open] = index as u32;
+                        }
+                    }
+                }
+                "(" | "[" => bases.push(opens.len()),
+                "{" => {
+                    opens.truncate(base);
+                    bases.push(opens.len());
+                }
+                ";" => opens.truncate(base),
+                ")" | "]" | "}" => {
+                    opens.truncate(base);
+                    bases.pop();
+                }
+                _ => {}
+            }
+        }
+    }
+}
+
 /// Parenthesis depth and the template `<` opened at each parenthesis depth.
 #[derive(Debug, Clone)]
 pub(crate) struct AngleDepth {
@@ -89,11 +166,8 @@ impl AngleDepth {
 ///
 /// `>>` closes two open lists, or one list when the other `>` belongs outside.
 /// Nothing open means the `>>` is a shift. Parentheses hide angles inside them.
-pub(crate) fn opens_template_args<'a>(
-    text: impl Fn(usize) -> &'a str,
-    len: usize,
-    lt: usize,
-) -> bool {
+#[cfg(test)]
+fn opens_template_args<'a>(text: impl Fn(usize) -> &'a str, len: usize, lt: usize) -> bool {
     if lt >= len || text(lt) != "<" {
         return false;
     }
@@ -160,6 +234,34 @@ mod tests {
             }
         }
         Ok(high)
+    }
+
+    #[test]
+    fn cached_matches_agree_with_lookahead_for_all_short_token_sequences() {
+        const TOKENS: &[&str] = &["<", ">", ">>", "(", ")", "[", "]", "{", "}", ";", "x"];
+        for mut code in 0..TOKENS.len().pow(5) {
+            let mut tokens = [""; 5];
+            for token in &mut tokens {
+                *token = TOKENS[code % TOKENS.len()];
+                code /= TOKENS.len();
+            }
+            let mut matches = TemplateMatches::default();
+            for index in 0..tokens.len() {
+                // Cache a whole region, then query narrower ranges from it too.
+                assert_eq!(
+                    matches.opens(text(&tokens), tokens.len(), tokens.len(), index),
+                    opens_template_args(text(&tokens), tokens.len(), index),
+                    "{tokens:?} at {index}"
+                );
+                for end in index..tokens.len() {
+                    assert_eq!(
+                        matches.opens(text(&tokens), tokens.len(), end, index),
+                        opens_template_args(text(&tokens), end, index),
+                        "{tokens:?} at {index}, end {end}"
+                    );
+                }
+            }
+        }
     }
 
     #[test]

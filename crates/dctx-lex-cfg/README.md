@@ -29,3 +29,19 @@ No edge is invented; the only edges are `contains`.
 Keys containing `#`, `~` or a control character are abstained. Malformed
 input yields partial facts and a `Diagnostic`. Oversized input, nesting past
 `Limits`, and too many facts are typed `LexError`s with no facts.
+
+Check `completion` and `diagnostics` after every successful extraction. A successful
+call can contain partial facts; a refusal returns no facts. Diagnostics use byte
+offsets into the supplied input, including a leading UTF-8 BOM. Duplicate keys
+keep the first assignment. Correct the reported syntax, close an unfinished
+string/comment/collection, or remove the duplicate before extracting again.
+
+`CfgLexer` is stateless and can be shared between threads. The same path, bytes
+and limits produce the same facts and ordering. Limits can only narrow the
+8 MiB byte ceiling, depth 256 and 250,000 nodes plus references. The file node
+uses one fact; containment edges do not use additional facts. To address a limit
+refusal, reduce nesting or split the configuration into smaller files.
+
+`body_fingerprint` is a standalone helper without the extraction byte limit. It
+collapses all Unicode whitespace, including whitespace inside quoted values;
+it does not parse configuration syntax.

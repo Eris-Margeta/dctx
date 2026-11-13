@@ -190,9 +190,12 @@ impl Registry {
             .ok_or(DistributionError::NotInstalled)
     }
 
-    /// Adds a published version inactive; refuses downgrade and sequence replay. Idempotent per digest.
+    /// Adds a published version inactive; refuses downgrade and sequence replay.
+    /// Repeating a digest is idempotent only when its signed release metadata also matches;
+    /// an existing quarantine flag is retained and cannot be cleared by reinstalling.
     /// # Errors
-    /// Refuses release sequence downgrades or replayed sequences with a different artifact.
+    /// Refuses release sequence downgrades, replayed sequences with a different artifact,
+    /// or conflicting metadata for an installed digest. Obtain an unambiguous signed release.
     pub fn record_install(
         &mut self,
         id: &PluginId,
@@ -203,8 +206,17 @@ impl Registry {
             .plugins
             .entry(id.clone())
             .or_insert_with(|| PluginRecord::new(origin));
-        if record.version(&version.digest).is_some() {
-            return Ok(());
+        if let Some(known) = record.version(&version.digest) {
+            return if known.version == version.version
+                && known.release_sequence == version.release_sequence
+                && known.manifest_sha256 == version.manifest_sha256
+                && known.signer == version.signer
+                && known.capabilities == version.capabilities
+            {
+                Ok(())
+            } else {
+                Err(DistributionError::IntegrityFailure)
+            };
         }
         if version.release_sequence < record.high_water {
             return Err(DistributionError::Downgrade {
@@ -320,12 +332,20 @@ impl Registry {
     }
 
     /// Persists disable and returns the number of worker leases the caller must cancel and reap.
+    /// The disabled choice is recorded even if an unrepresentable aggregate lease count refuses.
     /// # Errors
-    /// Returns `NotInstalled` for an unknown plugin ID.
+    /// Returns `NotInstalled` for an unknown plugin ID or `LimitExceeded` for a lease-count
+    /// overflow. End worker leases before requesting an exact count again.
     pub fn disable(&mut self, id: &PluginId) -> Result<u32, DistributionError> {
         let record = self.record_mut(id)?;
         record.enablement = Enablement::Disabled;
-        Ok(record.leases.values().sum())
+        record.leases.values().try_fold(0_u32, |total, count| {
+            total
+                .checked_add(*count)
+                .ok_or(DistributionError::LimitExceeded {
+                    limit: u64::from(u32::MAX),
+                })
+        })
     }
 
     /// Marks a version as failed reverification.

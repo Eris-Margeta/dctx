@@ -58,10 +58,11 @@ impl MemorySource {
     }
 
     /// Adds (or replaces) a file and creates its parent directories.
+    /// Rejects directory collisions and file ancestors before changing the tree.
     ///
     /// # Errors
     /// Returns `InvalidRequest` if `path` is not a valid relative path or
-    /// names the root directory. Returns `ResourceLimit` if the path exceeds
+    /// names an existing directory, or has a file ancestor. Returns `ResourceLimit` if the path exceeds
     /// the core path-length limit.
     pub fn insert_file(
         &mut self,
@@ -72,33 +73,43 @@ impl MemorySource {
         let path = RelativePath::parse(path)?;
         if path.is_root() {
             return Err(DctxError::InvalidRequest {
-                reason: "the root is a directory",
+                reason: "the root is a directory; choose a non-root file path",
             });
         }
+        if self.dirs.contains_key(path.as_str()) {
+            return Err(DctxError::InvalidRequest {
+                reason: "path is a directory; choose a different file path",
+            });
+        }
+        self.check_directory_path(parent_of(path.as_str()))?;
         self.insert_parents(path.as_str());
         self.files
             .insert(path.as_str().to_string(), (bytes.to_vec(), modified));
         Ok(())
     }
 
-    /// Adds a directory (and its parents) with a modification time.
+    /// Adds or updates a directory (and its parents) with a modification time.
+    /// Rejects file collisions before changing the tree.
     ///
     /// # Errors
-    /// Returns `InvalidRequest` if `path` is not a valid relative path, or
+    /// Returns `InvalidRequest` if `path` is invalid or it or an ancestor is a file, or
     /// `ResourceLimit` if it exceeds the core path-length limit.
     pub fn insert_dir(&mut self, path: &str, modified: u64) -> Result<(), DctxError> {
         let path = RelativePath::parse(path)?;
+        self.check_directory_path(path.as_str())?;
         self.insert_parents(path.as_str());
         self.dirs.insert(path.as_str().to_string(), modified);
         Ok(())
     }
 
-    /// Makes reads of `path` fail with an IO error.
+    /// Makes reads of the exact `path` fail with an IO error. Repeated injection is harmless.
+    /// Paths are stored as given; this does not create files or validate names.
     pub fn fail_reads_of(&mut self, path: &str) {
         self.unreadable.insert(path.to_string());
     }
 
-    /// Makes listing of directory `path` fail with an IO error.
+    /// Makes listing of the exact directory `path` fail with an IO error.
+    /// Repeated injection is harmless and does not create or validate a directory.
     pub fn fail_listing_of(&mut self, path: &str) {
         self.unlistable.insert(path.to_string());
     }
@@ -132,8 +143,11 @@ impl MemorySource {
         })
     }
 
-    /// True if any call named `path` or a path below it.
+    /// True if any call named `path` or a path below it. The empty path covers the whole root.
     pub fn touched(&self, path: &str) -> bool {
+        if path.is_empty() {
+            return !self.calls.borrow().is_empty();
+        }
         let below = format!("{path}/");
         self.calls.borrow().iter().any(|call| match call {
             SourceCall::RootKind => false,
@@ -154,6 +168,18 @@ impl MemorySource {
             self.dirs.entry(path[..end].to_string()).or_insert(0);
             end += 1;
         }
+    }
+
+    fn check_directory_path(&self, mut path: &str) -> Result<(), DctxError> {
+        while !path.is_empty() {
+            if self.files.contains_key(path) {
+                return Err(DctxError::InvalidRequest {
+                    reason: "directory path contains a file; choose a different directory path",
+                });
+            }
+            path = parent_of(path);
+        }
+        Ok(())
     }
 
     fn record(&self, call: SourceCall) {
@@ -179,7 +205,9 @@ impl Source for MemorySource {
         let key = dir.as_str();
         self.record(SourceCall::Entries(key.to_string()));
         if self.unlistable.contains(key) {
-            return Err(DctxError::io("listing refused"));
+            return Err(DctxError::io(
+                "listing refused; use a fresh source without fail_listing_of or choose another directory",
+            ));
         }
         if !self.dirs.contains_key(key) {
             return Err(DctxError::SourceUnavailable);
@@ -231,7 +259,9 @@ impl Source for MemorySource {
         let key = grant.path().as_str();
         self.record(SourceCall::Read(key.to_string()));
         if self.unreadable.contains(key) {
-            return Err(DctxError::io("read refused"));
+            return Err(DctxError::io(
+                "read refused; use a fresh source without fail_reads_of or choose another file",
+            ));
         }
         let (bytes, _) = self.files.get(key).ok_or(DctxError::SourceUnavailable)?;
         if bytes.len() as u64 > max_bytes {

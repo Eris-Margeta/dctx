@@ -15,6 +15,7 @@ pub enum Dialect {
 
 impl Dialect {
     /// Selects C or C++ from the final extension. Other extensions are unsupported.
+    /// This lexical helper does not validate path identities or enforce a size limit.
     ///
     /// GCC treats the exact suffix `.C` as C++. `.c` and `.h` stay C.
     #[allow(

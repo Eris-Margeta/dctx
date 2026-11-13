@@ -80,8 +80,7 @@ pub(crate) fn capability_within(
                 && (!*reclaim || admitted("state:reclaim", catalog, denied))
                 && *max_bytes >= 1
                 && *max_bytes <= ceiling_state(catalog)
-                && !*source_content
-                || catalog_state_content(catalog)
+                && (!*source_content || catalog_state_content(catalog))
         }
     }
 }

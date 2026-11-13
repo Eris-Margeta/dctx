@@ -59,8 +59,7 @@ pub enum ErrorCode {
     Io,
 }
 
-/// A typed refusal or failure. Display messages include a suggested next step;
-/// callers should use [`Self::code`] for machine decisions, not parse the message.
+/// A typed refusal or failure.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DctxError {
     /// The request or a value in it is malformed.
@@ -114,8 +113,7 @@ pub enum DctxError {
     SourceChanged,
     /// The source root is missing or cannot be opened.
     SourceUnavailable,
-    /// An adapter IO failure. Use [`Self::io`] to bound the detail; callers
-    /// constructing this variant directly must enforce the limit themselves.
+    /// An adapter IO failure, with a bounded detail.
     Io {
         /// Truncated adapter message.
         detail: String,
@@ -124,7 +122,6 @@ pub enum DctxError {
 
 impl DctxError {
     /// Builds an [`DctxError::Io`] whose detail is cut to [`MAX_IO_DETAIL_BYTES`] at a char boundary.
-    /// The adapter must redact paths and sensitive contents before supplying detail.
     pub fn io(detail: impl fmt::Display) -> Self {
         let mut text = detail.to_string();
         if text.len() > MAX_IO_DETAIL_BYTES {
@@ -180,29 +177,20 @@ impl fmt::Display for DctxError {
             Self::InvalidRequest { reason } => {
                 write!(
                     f,
-                    "invalid request: {reason}; correct the request and retry"
+                    "invalid request: {reason}; correct the request to satisfy the named rule"
                 )
             }
-            Self::PolicyDenied => {
-                f.write_str("denied by selection policy; request an item allowed by the policy")
-            }
-            Self::PolicyUnavailable => {
-                f.write_str("selection policy unavailable; restore the policy and retry")
-            }
+            Self::PolicyDenied => f.write_str("denied by selection policy"),
+            Self::PolicyUnavailable => f.write_str("selection policy unavailable"),
             Self::UnsupportedCapability { capability } => {
-                write!(f, "unsupported capability: {capability}; use a build or session supporting this capability")
+                write!(f, "unsupported capability: {capability}")
             }
-            Self::UnsupportedVersion { found } => {
-                write!(
-                    f,
-                    "unsupported version {found}; use a build supporting this stored version"
-                )
-            }
+            Self::UnsupportedVersion { found } => write!(f, "unsupported version {found}"),
             Self::BudgetTooSmall { minimum_bytes } => {
-                write!(f, "budget too small: needs at least {minimum_bytes} bytes; increase the output budget and retry")
+                write!(f, "budget too small: needs at least {minimum_bytes} bytes")
             }
             Self::ResourceLimit { resource, limit } => {
-                write!(f, "resource limit exceeded: {resource:?} > {limit}; reduce the input or raise this limit and retry")
+                write!(f, "resource limit exceeded: {resource:?} > {limit}; reduce the named resource or raise its cap within host policy")
             }
             Self::CacheLimit {
                 requested,
@@ -210,29 +198,19 @@ impl fmt::Display for DctxError {
             } => {
                 write!(
                     f,
-                    "cache limit: requested {requested} bytes, {available} available; free cache space or reduce the request and retry"
+                    "cache limit: requested {requested} bytes, {available} available; reduce the request to available bytes or abort unused reservations"
                 )
             }
-            Self::Busy => f.write_str("busy; retry after the current writer finishes"),
-            Self::Cancelled => f.write_str("cancelled; submit a new request to resume work"),
-            Self::CorruptIndex { reason } => {
-                write!(
-                    f,
-                    "corrupt index: {reason}; rebuild the stored index from the source and retry"
-                )
-            }
-            Self::SourceChanged => {
-                f.write_str("source changed during read; retry with a stable source")
-            }
-            Self::SourceUnavailable => {
-                f.write_str("source unavailable; restore source access and retry")
-            }
-            Self::Io { detail } => {
-                write!(
-                    f,
-                    "io: {detail}; check source and storage access, then retry"
-                )
-            }
+            Self::Busy => f.write_str("busy"),
+            Self::Cancelled => f.write_str(
+                "cancelled; start a new operation with a fresh cancellation signal to retry",
+            ),
+            Self::CorruptIndex { reason } => write!(f, "corrupt index: {reason}"),
+            Self::SourceChanged => f.write_str("source changed during read"),
+            Self::SourceUnavailable => f.write_str(
+                "source unavailable; restore the source and refresh its inventory before retrying",
+            ),
+            Self::Io { detail } => write!(f, "io: {detail}"),
         }
     }
 }
@@ -268,9 +246,6 @@ mod tests {
             limit: 3,
         };
         assert_eq!(limit.code(), ErrorCode::ResourceLimit);
-        assert_eq!(
-            limit.to_string(),
-            "resource limit exceeded: Entries > 3; reduce the input or raise this limit and retry"
-        );
+        assert_eq!(limit.to_string(), "resource limit exceeded: Entries > 3; reduce the named resource or raise its cap within host policy");
     }
 }

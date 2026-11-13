@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Hand-written, zero-dependency JavaScript and TypeScript structural extractor.
+//! Hand-written JavaScript and TypeScript structural extractor.
 //! Implements decision 077, PARSERS-v1 (JavaScript/TypeScript rows) and SPEC-MAP-MODE 5–6.2.
 //! Depends on dctx-map-model facts and dctx-hash; never on tree-sitter.
 //! Emits the dctx-map-parse fact shape with a precision label on every fact.
@@ -18,9 +18,12 @@ pub use domain::{
 /// Parser identity recorded with every fact key (PARSERS-v1 provenance).
 pub const PARSER_ID: &str = "dctx-lex-js";
 /// Bumped whenever extraction output can change for the same bytes.
-pub const PARSER_REVISION: u32 = 1;
+pub const PARSER_REVISION: u32 = 2;
 
 /// Bounded structural extractor; stateless apart from its limits.
+///
+/// Share one instance across threads or reuse it across files: extraction keeps
+/// no mutable per-file state in the extractor.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct JsLexer {
     limits: Limits,
@@ -39,6 +42,12 @@ impl JsLexer {
     }
 
     /// Extracts facts from one place-relative path and its authorized bytes.
+    ///
+    /// The path is an identity only; this method performs no filesystem IO.
+    /// Bytes must be UTF-8. Limits are inclusive, and the fact budget includes
+    /// the module node even for empty input. Unsupported syntax returns partial
+    /// facts with diagnostics; a refusal returns no facts. Output preserves source
+    /// traversal order, including distinct identities for duplicate declarations.
     ///
     /// # Errors
     /// Refuses unsupported paths, invalid UTF-8 or model identities, and

@@ -248,6 +248,7 @@ pub struct KnownPlugin {
 
 impl KnownPlugin {
     /// Catalog row with no digests and an installed origin.
+    /// This constructor stores strings unchanged; compilation checks id and version grammar.
     pub fn named(id: impl Into<String>, version: impl Into<String>) -> Self {
         Self {
             id: id.into(),

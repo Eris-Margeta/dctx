@@ -21,18 +21,29 @@ pub use domain::{
 
 /// Extracts the Markdown structure of `bytes` with the default [`Limits`].
 ///
+/// Empty input returns an empty document with one line. Truncated Markdown is
+/// accepted as ordinary text or an unfinished block. Extraction is stateless and
+/// safe to call concurrently; identical bytes return identical source-ordered facts.
+///
 /// # Errors
 /// Returns a typed refusal for input over the byte or container-nesting limits,
-/// or for invalid UTF-8.
+/// or for invalid UTF-8. Reduce the input size or container nesting, or re-encode
+/// the input as UTF-8, then retry.
 pub fn extract(bytes: &[u8]) -> Result<Document, LexError> {
     extract_with(bytes, &Limits::default())
 }
 
 /// Extracts the Markdown structure of `bytes`, refusing input beyond `limits`.
 ///
+/// The byte limit is clamped to `u32::MAX - 1`; other limits are used as supplied.
+/// The byte limit is checked before UTF-8 decoding. Exceeding `max_brackets` makes
+/// additional open brackets literal text instead of refusing the document.
+/// Like [`extract`], this function is stateless and safe to call concurrently.
+///
 /// # Errors
 /// Returns a typed refusal for input over the byte or container-nesting limits,
-/// or for invalid UTF-8.
+/// or for invalid UTF-8. Reduce the input size or container nesting, or re-encode
+/// the input as UTF-8, then retry.
 pub fn extract_with(bytes: &[u8], limits: &Limits) -> Result<Document, LexError> {
     let max = limits.max_bytes.min(u32::MAX as usize - 1);
     if bytes.len() > max {

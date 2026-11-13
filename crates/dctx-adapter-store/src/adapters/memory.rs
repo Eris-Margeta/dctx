@@ -244,6 +244,7 @@ impl StoreFs for MemoryFs {
     }
 
     fn try_lock(&self, root: &str) -> Result<(), StoreError> {
+        crate::domain::check_root(root)?;
         let mut mem = self.lock();
         if !mem.os_lock {
             return Err(StoreError::UnsupportedDurability { capability: "lock" });
@@ -256,6 +257,7 @@ impl StoreFs for MemoryFs {
     }
 
     fn unlock(&self, root: &str) -> Result<(), StoreError> {
+        crate::domain::check_root(root)?;
         let mut mem = self.lock();
         if matches!(mem.locks.get(root), Some(LockKind::Stuck)) {
             return Ok(());

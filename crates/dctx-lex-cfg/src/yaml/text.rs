@@ -12,13 +12,19 @@ impl Parser<'_> {
         }
         self.cur.i += 1;
         let mut out = String::new();
+        // A confirmed closer remains ahead until this string ends. Reuse that
+        // result so a multiline scalar does not rescan its suffix at every break.
+        let mut closes_later = false;
         loop {
             match self.cur.byte() {
                 None => return self.bad_string(),
                 Some(b'\n' | b'\r') => {
                     // An unclosed quote stops at the break so later keys stay visible.
-                    if !self.quote_closes_later(quote) {
-                        return self.bad_string();
+                    if !closes_later {
+                        closes_later = self.quote_closes_later(quote);
+                        if !closes_later {
+                            return self.bad_string();
+                        }
                     }
                     self.fold_break(&mut out);
                 }
@@ -32,8 +38,11 @@ impl Parser<'_> {
                 }
                 Some(b'\\') if quote == b'"' => {
                     if self.escaped_break() {
-                        if !self.quote_closes_later(quote) {
-                            return self.bad_string();
+                        if !closes_later {
+                            closes_later = self.quote_closes_later(quote);
+                            if !closes_later {
+                                return self.bad_string();
+                            }
                         }
                         self.cur.i += 1;
                         self.consume_break();
@@ -43,16 +52,7 @@ impl Parser<'_> {
                         continue;
                     }
                     self.cur.i += 1;
-                    let Some(byte) = self.cur.bump() else {
-                        return self.bad_string();
-                    };
-                    out.push(match byte {
-                        b'n' => '\n',
-                        b't' => '\t',
-                        b'"' => '"',
-                        b'\\' => '\\',
-                        other => char::from(other),
-                    });
+                    out.push(self.escape()?);
                 }
                 Some(_) => {
                     let Some(ch) = self.cur.rest().chars().next() else {
@@ -64,6 +64,52 @@ impl Parser<'_> {
                 }
             }
         }
+    }
+    /// Decodes one YAML double-quoted escape without stepping inside UTF-8.
+    fn escape(&mut self) -> Option<char> {
+        let mut consumed = 1;
+        let value = match self.cur.byte() {
+            Some(b'0') => Some('\0'),
+            Some(b'a') => Some('\u{7}'),
+            Some(b'b') => Some('\u{8}'),
+            Some(b't' | b'\t') => Some('\t'),
+            Some(b'n') => Some('\n'),
+            Some(b'v') => Some('\u{b}'),
+            Some(b'f') => Some('\u{c}'),
+            Some(b'r') => Some('\r'),
+            Some(b'e') => Some('\u{1b}'),
+            Some(b' ') => Some(' '),
+            Some(b'"') => Some('"'),
+            Some(b'/') => Some('/'),
+            Some(b'\\') => Some('\\'),
+            Some(b'N') => Some('\u{85}'),
+            Some(b'_') => Some('\u{a0}'),
+            Some(b'L') => Some('\u{2028}'),
+            Some(b'P') => Some('\u{2029}'),
+            Some(marker @ (b'x' | b'u' | b'U')) => {
+                let width = match marker {
+                    b'x' => 2,
+                    b'u' => 4,
+                    _ => 8,
+                };
+                let start = self.cur.i + 1;
+                let hex = self.cur.slice(start, start + width);
+                if hex.len() == width && hex.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+                    consumed += width;
+                    u32::from_str_radix(hex, 16).ok().and_then(char::from_u32)
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        };
+        if value.is_some() {
+            self.cur.i += consumed;
+        } else {
+            self.broke = true;
+            self.diagnose(self.cur.i, DiagnosticReason::InvalidSyntax);
+        }
+        value
     }
     fn escaped_break(&self) -> bool {
         matches!(

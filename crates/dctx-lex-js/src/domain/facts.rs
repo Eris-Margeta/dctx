@@ -17,6 +17,7 @@ pub enum Dialect {
 
 impl Dialect {
     /// Selects a dialect case-insensitively; other extensions are unsupported.
+    /// This lexical helper does not validate path identities or enforce a size limit.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."

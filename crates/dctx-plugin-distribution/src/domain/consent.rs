@@ -23,10 +23,15 @@ pub struct CapabilitySet {
 
 impl CapabilitySet {
     /// Reads the manifest's closed `capabilities` object.
+    /// Caller-built trees undergo the same UTF-8 JSON, depth, byte and duplicate-key checks
+    /// as decoded input. Entries compare by canonical bytes, independent of member order.
     /// # Errors
     /// Refuses missing/extra capability sections, invalid capability objects, or duplicates.
     pub fn from_manifest(value: &Json) -> Result<Self, DistributionError> {
-        let object = Closed::new(value, Document::Manifest, &SECTIONS, &SECTIONS)?;
+        // This public entry also accepts caller-built trees, which have not passed the byte decoder.
+        let value = decode_object(&to_canonical(value), DecodeLimits::MANIFEST)
+            .map_err(|r| DistributionError::malformed(Document::Manifest, r.reason))?;
+        let object = Closed::new(&value, Document::Manifest, &SECTIONS, &SECTIONS)?;
         let mut entries = BTreeSet::new();
         for section in SECTIONS {
             for entry in object.array(section, 0, 256)? {
@@ -108,7 +113,9 @@ impl CapabilitySet {
             if !SECTIONS.contains(&section) {
                 return Err(refuse);
             }
-            entries.insert((section.to_owned(), to_canonical(item.object("entry")?)));
+            if !entries.insert((section.to_owned(), to_canonical(item.object("entry")?))) {
+                return Err(refuse);
+            }
         }
         Ok(Self { entries })
     }

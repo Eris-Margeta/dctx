@@ -13,7 +13,10 @@ pub struct Span {
 }
 
 impl Span {
-    /// The spanned source text.
+    /// The spanned source text, or `""` for an invalid range.
+    ///
+    /// Returns `""` when either endpoint is outside the source, splits a UTF-8
+    /// character, or when `start > end`. No allocation or validation error is returned.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
@@ -58,7 +61,10 @@ pub struct Heading {
 }
 
 impl Heading {
-    /// Section text after the heading block; its fingerprint identifies the section body.
+    /// Section range after the heading block; its fingerprint identifies the section body.
+    ///
+    /// Uses `span.end..section.end`. Extracted headings always produce a valid
+    /// range; [`Span::text`] safely handles inconsistent caller-constructed headings.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
@@ -140,6 +146,9 @@ pub struct Document {
 
 impl Document {
     /// Stable-id name of heading `index`: the slug plus `~ordinal` for duplicates.
+    ///
+    /// Returns `None` for any index outside [`Document::headings`]. Repeated titles
+    /// receive ordinals in source order, starting at one.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."

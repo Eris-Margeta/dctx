@@ -80,6 +80,12 @@ fn markdownish() -> impl Strategy<Value = String> {
 }
 
 proptest! {
+    #![proptest_config(ProptestConfig {
+        rng_seed: proptest::test_runner::RngSeed::Fixed(1113),
+        failure_persistence: None,
+        ..ProptestConfig::default()
+    })]
+
     #[test]
     fn arbitrary_bytes_never_panic(bytes in prop::collection::vec(any::<u8>(), 0..512)) {
         match extract(&bytes) {

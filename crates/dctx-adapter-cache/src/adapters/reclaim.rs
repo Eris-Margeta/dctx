@@ -56,7 +56,7 @@ enum Owner {
 
 fn probe(root: &Path, id: LeaseId) -> Owner {
     let path = root.join(lease_lock_name(id));
-    let Ok(file) = OpenOptions::new().read(true).open(&path) else {
+    let Ok(file) = open_lease(&path, false) else {
         return Owner::Unknown;
     };
     match file.try_lock() {
@@ -103,19 +103,11 @@ impl FsLedgerStore {
     /// Takes the proof-of-life lock for `lease`. Call it while the publish section is still open, so the file
     /// is locked before any other section can look for it.
     /// # Errors
-    /// Refuses a lock file that cannot be created or locked.
+    /// Refuses symlinks, non-regular or unsafe lock files, and creation/locking failures.
+    /// Keep the hold alive until the corresponding ledger lease has been released.
     pub fn hold_lease(&self, lease: LeaseId) -> Result<LeaseHold, CacheError> {
         let path = self.root.join(lease_lock_name(lease));
-        let mut options = OpenOptions::new();
-        options.read(true).write(true).create(true).truncate(false);
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::OpenOptionsExt;
-            options.mode(0o600);
-        }
-        let file = options.open(&path).map_err(|_| CacheError::LedgerIo {
-            reason: "lease lock",
-        })?;
+        let file = open_lease(&path, true)?;
         file.try_lock().map_err(|_| CacheError::LedgerIo {
             reason: "lease lock",
         })?;
@@ -151,4 +143,50 @@ impl FsLedgerStore {
         }
         self.store_locked(life)
     }
+}
+
+/// Opens liveness evidence without following links or blocking on special files.
+fn open_lease(path: &Path, create: bool) -> Result<File, CacheError> {
+    let mut options = OpenOptions::new();
+    options
+        .read(true)
+        .write(create)
+        .create(create)
+        .truncate(false);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options
+            .mode(0o600)
+            .custom_flags(super::no_follow() | rustix::fs::OFlags::NONBLOCK.bits() as i32);
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        options.custom_flags(0x0020_0000); // FILE_FLAG_OPEN_REPARSE_POINT
+    }
+    let file = options.open(path).map_err(|_| CacheError::LedgerIo {
+        reason: "lease lock",
+    })?;
+    let meta = file.metadata().map_err(|_| CacheError::LedgerIo {
+        reason: "lease lock metadata",
+    })?;
+    if !meta.is_file() {
+        return Err(CacheError::OutsideCacheRoot);
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        if meta.uid() != rustix::process::geteuid().as_raw() || meta.mode() & 0o022 != 0 {
+            return Err(CacheError::OutsideCacheRoot);
+        }
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        if meta.file_attributes() & 0x400 != 0 {
+            return Err(CacheError::OutsideCacheRoot);
+        }
+    }
+    Ok(file)
 }
