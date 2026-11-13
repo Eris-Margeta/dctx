@@ -70,7 +70,9 @@ pub fn run(arguments: &[String]) -> Result<(), Failure> {
             }
         }
     }
-    let context = Context::from_env().map_err(|error| Failure::new(1, error, ""))?;
+    let context = Context::from_env().map_err(|error| {
+        Failure::new(1, error, "change to an existing directory and run `dctx doctor` again; if the executable is missing, reinstall dctx")
+    })?;
     let binaries = inspect::binaries(&context, host::cache_base_dir(), probe_project);
     print!("{}", render::report(&binaries, json));
     Ok(())

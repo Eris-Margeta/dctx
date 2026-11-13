@@ -96,7 +96,7 @@ fn status(args: &[String]) -> Result<Command, String> {
     while index < args.len() {
         match args[index].as_str() {
             "--json" => json = flag_once(json, "--json")?,
-            "--root" => root = Some(value(args, &mut index, "--root")?),
+            "--root" => root = Some(root_value(args, &mut index, root.as_deref())?),
             other => return Err(format!("unknown status flag: {other}")),
         }
         index += 1;
@@ -114,7 +114,7 @@ fn gc(args: &[String]) -> Result<Command, String> {
         match args[index].as_str() {
             "--json" => json = flag_once(json, "--json")?,
             "--dry-run" => dry_run = flag_once(dry_run, "--dry-run")?,
-            "--root" => root = Some(value(args, &mut index, "--root")?),
+            "--root" => root = Some(root_value(args, &mut index, root.as_deref())?),
             "--max-bytes" => {
                 if max_bytes.is_some() {
                     return Err("--max-bytes was already set".to_string());
@@ -153,7 +153,7 @@ fn purge(args: &[String]) -> Result<Command, String> {
             "--dry-run" => dry_run = flag_once(dry_run, "--dry-run")?,
             "--yes" => yes = flag_once(yes, "--yes")?,
             "--all" => all = flag_once(all, "--all")?,
-            "--root" => root = Some(value(args, &mut index, "--root")?),
+            "--root" => root = Some(root_value(args, &mut index, root.as_deref())?),
             other => return Err(format!("unknown purge flag: {other}")),
         }
         index += 1;
@@ -244,12 +244,19 @@ fn flag_once(already: bool, name: &str) -> Result<bool, String> {
     }
 }
 
+fn root_value(args: &[String], index: &mut usize, already: Option<&str>) -> Result<String, String> {
+    if already.is_some() {
+        return Err("--root was already set; pass exactly one --root".to_string());
+    }
+    value(args, index, "--root")
+}
+
 fn value(args: &[String], index: &mut usize, name: &str) -> Result<String, String> {
     *index += 1;
     let value = args
         .get(*index)
         .ok_or_else(|| format!("{name} requires a value"))?;
-    if value.starts_with('-') {
+    if value.is_empty() || value.starts_with('-') {
         return Err(format!("{name} requires a value"));
     }
     Ok(value.clone())

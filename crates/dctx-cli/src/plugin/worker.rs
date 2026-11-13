@@ -37,7 +37,7 @@ pub fn enter(args: &[String]) -> u8 {
             1
         }
         Some(other) => {
-            eprintln!("unknown plugin worker: {other}");
+            eprintln!("unknown plugin worker: {other}; run `dctx plugin --help` for supported plugin commands");
             2
         }
         None => {
