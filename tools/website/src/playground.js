@@ -66,26 +66,6 @@
   [].slice.call(document.querySelectorAll('[data-cmd]')).forEach(function (b) {
     b.addEventListener('click', function () { cmd.value = b.getAttribute('data-cmd'); form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit')); });
   });
-  var tabs = [].slice.call(document.querySelectorAll('.tabs [role="tab"]'));
-  tabs.forEach(function (tab) {
-    tab.addEventListener('click', function () {
-      tabs.forEach(function (t) { var on = t === tab; t.setAttribute('aria-selected', String(on)); document.getElementById(t.getAttribute('aria-controls')).hidden = !on; });
-    });
-  });
-  var mcpBtn = document.getElementById('mcp-run'), mcpIn = document.getElementById('mcp-in');
-  if (mcpBtn) mcpBtn.addEventListener('click', function () {
-    var reqs;
-    try { reqs = mcpIn.value.split('\n').filter(function (l) { return l.trim(); }).map(function (l) { return JSON.parse(l); }); }
-    catch (e) { say('Each line must be one JSON-RPC message: ' + e.message, 'bad'); return; }
-    say('Running dctx mcp…');
-    var body; try { body = place({ requests: reqs }); } catch (e) { say(e.message, 'bad'); return; }
-    post('/api/v1/mcp', body).then(function (res) {
-      pre.innerHTML = '<span class="ln cmd"><span class="p">$ </span>dctx mcp .   # ' + reqs.length + ' request(s) on stdin</span>' +
-        res.responses.map(function (r) { return line('out', JSON.stringify(r, null, 1)); }).join('') +
-        (res.stderr ? line('err', res.stderr) : '') + line('meta', '# exit ' + res.exit + ' · ' + res.ms + ' ms');
-      title.textContent = 'dctx mcp'; say('Done.', 'good');
-    }, fail);
-  });
   fetch('/api/v1/health').then(function (r) { return r.ok ? r.json() : Promise.reject(); }).then(function (h) {
     say('Online: dctx ' + h.dctx + ' (' + h.sha + '), ' + h.samples + ' samples, ' + h.limits.requests_per_minute + ' runs per minute.', 'good');
   }, function () { offline.hidden = false; say('The playground service is offline. The recorded runs below were captured at build time.', 'bad'); });

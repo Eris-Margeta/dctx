@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use dctx::context::{ContextSessions, NamedContextRequest};
 use dctx_cli::exit::{self, CommandOutput, Failure};
 
-const HELP: &str = "Usage: dctx context TARGET [TARGET ...] [--place PATH] [--also DIR ...] [--budget N] [--json] [--session ID --dedupe]\nReturn minimal ranked context for a file, symbol name or stable node id.\nRepeated targets share a delivery session within this invocation. MCP/RPC retain sessions\nuntil the connection closes. --dedupe requires --session; new processes emit full chunks.\n";
+const HELP: &str = "Usage: dctx context TARGET [TARGET ...] [--place PATH] [--also DIR ...] [--budget N] [--json] [--session ID --dedupe]\nReturn minimal ranked context for a file, symbol name or stable node id.\nRepeated targets share a delivery session within this invocation. RPC retains sessions\nuntil the connection closes. --dedupe requires --session; new processes emit full chunks.\n";
 
 /// Connection-local engine delivery state. The adapter only parses and transports pages.
 #[derive(Default)]
@@ -79,22 +79,6 @@ impl Runtime {
                 )
             }),
         })
-    }
-
-    pub(crate) fn write_map(
-        &self,
-        args: &[String],
-        out: &mut dyn std::io::Write,
-    ) -> Result<(), String> {
-        if args.first().is_some_and(|arg| arg == "context") {
-            let output = self
-                .output(&args[1..])
-                .map_err(|failure| failure.render())?;
-            out.write_all(output.stdout.as_bytes())
-                .map_err(|error| error.to_string())
-        } else {
-            crate::map::write_page(args, out)
-        }
     }
 }
 

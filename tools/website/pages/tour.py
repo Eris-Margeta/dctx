@@ -1,4 +1,4 @@
-"""The home showcase: five ways to use dctx, each a plain-language step beside the real command and its output.
+"""The home showcase: four ways to use dctx, each a plain-language step beside the real command and its output.
 
 Every terminal line is captured data from data/demo.json (capture.py on sample/); long outputs are cut to
 excerpts with an exact "… N lines" marker, never retyped. The page carries every step and every panel in
@@ -47,21 +47,6 @@ def _agent() -> list[str]:
     return _lines(rec("find")) + ['<span class="ln gap"></span>'] + _lines(rec("read"))
 
 
-def _mcp() -> list[str]:
-    r = rec("mcp")
-    calls = r["stdin"].rstrip("\n").split("\n")
-    replies = r["stdout"].rstrip("\n").split("\n")
-    # Re-serialised with a space after each separator, so a phone wraps between tokens; same JSON values.
-    ask = highlight.lines(json.dumps(json.loads(calls[-1]), ensure_ascii=False, separators=(", ", ": ")), "json")[0]
-    answer = highlight.lines(json.dumps(json.loads(replies[-1]), ensure_ascii=False, separators=(", ", ": ")), "json")[0]
-    return [f'<span class="ln cmd">{command_html(r)}</span>',
-            f'<span class="ln out hdrl"># the agent calls find (stdin, line {len(calls)} of {len(calls)})</span>',
-            f'<span class="ln out in">{ask}</span>',
-            f'<span class="ln out hdrl"># dctx answers (stdout, reply {len(replies)} of {len(replies)})</span>',
-            f'<span class="ln out">{answer}</span>',
-            meta_line(r)]
-
-
 def _library() -> list[str]:
     r = rec("read-json")
     pretty = json.dumps(json.loads(r["stdout"]), ensure_ascii=False, indent=1) + "\n"
@@ -80,9 +65,6 @@ STEPS = [
     ("agent", "Agent", "Let an agent explore a big repo",
      "The agent searches by name, gets short stable ids back, then reads only the piece it asks for. "
      "Same question, same answer, every turn.", "/docs/map-mode/", "Map mode guide", _agent),
-    ("mcp", "MCP", "Plug into Claude Code, Cursor, Codex",
-     "Add one MCP server, `dctx mcp --profile lean`, and your agent gets two tools: find and read. "
-     "MCP works today over stdio; ACP is planned.", "/docs/modalities/#client-configuration", "Client setup", _mcp),
     ("lib", "Library", "Build it into your own tool",
      "Ask for `--json` and get structured records with the exact source. The Rust library works from Git "
      "today; Node is on npm as @tejl/dctx from 1.3.1; use CI artifacts for Python and Go.",
@@ -109,7 +91,7 @@ def tour() -> str:
             f'<pre>{body}</pre></div></div>')
     return f"""<div class="tour" data-tour>
  <div class="tour-side">
-  <p class="eyebrow tour-eyebrow" id="tour-h">Five ways to use it</p>
+  <p class="eyebrow tour-eyebrow" id="tour-h">Four ways to use it</p>
   <ol class="tour-steps" role="tablist" aria-labelledby="tour-h">{"".join(tabs)}</ol>
  </div>
  <div class="tour-screen">{"".join(panels)}</div>

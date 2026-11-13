@@ -146,43 +146,6 @@ fn rpc_context_is_golden_references_repeat_chunks_and_isolates_sessions() {
 }
 
 #[test]
-fn mcp_existing_read_tool_returns_golden_context_and_session_references() {
-    let temp = tempfile::tempdir().unwrap();
-    let call = |id, session| json!({"jsonrpc":"2.0","id":id,"method":"tools/call","params":{"name":"read","arguments":{"id":"ping","context":true,"budget":3000,"json":true,"session":session,"dedupe":true}}});
-    let replies = server(
-        temp.path(),
-        "mcp",
-        &[
-            json!({"jsonrpc":"2.0","id":0,"method":"tools/list"}),
-            call(1, "a"),
-            call(2, "a"),
-            call(3, "b"),
-            json!({"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"read","arguments":{"id":"ping","context":true}}}),
-            call(5, "--context"),
-            call(6, "--context"),
-            json!({"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"read","arguments":{"id":"--help","context":true,"json":true}}}),
-        ],
-    );
-    assert_eq!(replies[0]["result"]["tools"].as_array().unwrap().len(), 13);
-    assert_eq!(replies[1]["result"]["content"][0]["text"], GOLDEN);
-    assert_eq!(replies[3]["result"]["content"][0]["text"], GOLDEN);
-    assert_eq!(replies[4]["result"]["content"][0]["text"], TEXT);
-    assert_eq!(replies[5]["result"]["content"][0]["text"], GOLDEN);
-    let opaque_repeat: Value =
-        serde_json::from_str(replies[6]["result"]["content"][0]["text"].as_str().unwrap()).unwrap();
-    assert!(opaque_repeat["chunks"][0]["ref"].as_bool().unwrap());
-    let literal: Value =
-        serde_json::from_str(replies[7]["result"]["content"][0]["text"].as_str().unwrap()).unwrap();
-    assert_eq!(literal["target"], "--help");
-    assert_eq!(literal["chunks"], json!([]));
-    let full: Value =
-        serde_json::from_str(replies[1]["result"]["content"][0]["text"].as_str().unwrap()).unwrap();
-    let repeated: Value =
-        serde_json::from_str(replies[2]["result"]["content"][0]["text"].as_str().unwrap()).unwrap();
-    assert_reference(&full, &repeated);
-}
-
-#[test]
 fn invalid_context_options_are_usage_errors_and_missing_targets_emit_empty_pages() {
     let temp = tempfile::tempdir().unwrap();
     for args in [

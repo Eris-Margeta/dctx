@@ -6,9 +6,8 @@ mod common;
 
 use std::{
     fs,
-    io::Write as _,
     path::Path,
-    process::{Command, Output, Stdio},
+    process::{Command, Output},
 };
 
 use dctx_core::{
@@ -256,7 +255,7 @@ fn cli_pack_preserves_literal_source_and_the_original_reported_files() {
 }
 
 #[test]
-fn map_read_pack_for_and_mcp_rpc_keep_literal_source() {
+fn map_read_and_pack_for_keep_literal_source() {
     let state = tempfile::tempdir().expect("state");
     let place = state.path().join("repo");
     fs::create_dir(&place).expect("repo");
@@ -285,23 +284,4 @@ fn map_read_pack_for_and_mcp_rpc_keep_literal_source() {
         .output()
         .expect("pack for"));
     assert!(page.contains(BODY), "{page}");
-    for args in [vec!["mcp"], vec!["serve"], vec!["serve", "--mcp"]] {
-        let mut child = command(state.path(), &place)
-            .args(args)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .expect("MCP");
-        child.stdin.take().expect("stdin").write_all(b"{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"read\",\"arguments\":{\"id\":\"m:literal.rs\"}}}\n").expect("RPC request");
-        let reply = json(&ok(child.wait_with_output().expect("RPC response")));
-        let result = reply.get("result").expect("result");
-        assert!(result.get("isError").is_none(), "{reply:?}");
-        let content = result
-            .get("content")
-            .and_then(Json::as_array)
-            .expect("content");
-        let page = content[0].get("text").and_then(Json::as_str).expect("text");
-        assert!(page.contains(BODY), "{page}");
-    }
 }

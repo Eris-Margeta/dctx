@@ -26,7 +26,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
             continue;
         }
         match flag.as_str() {
-            // After `--` both ends are literal, even when they start with '-' (MCP always sends one).
+            // After `--` both ends are literal, even when they start with '-'.
             "--" => literal = true,
             "--json" => format = Format::Json,
             "--meta" => meta = true,

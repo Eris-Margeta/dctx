@@ -65,12 +65,11 @@ def render():
         "The [11 November whole-session benchmark](docs/BENCHMARK-20261111.md) measured 20 questions on a private "
         "13-crate Rust workspace with `claude-sonnet-5-5`, dctx 1.3.0 and three repeats per arm. "
         "Median total tokens [min, max]: grep plus reads 14,904,014 [14,604,149, 15,622,381]; "
-        "dctx CLI (warm index) 14,157,974 [11,221,908, 15,613,375]; "
-        "dctx MCP (fresh cache, startup/indexing measured) 15,922,125 [15,513,198, 16,700,029].",
+        "dctx CLI (warm index) 14,157,974 [11,221,908, 15,613,375].",
         "",
         "**On this corpus and model dctx did not save 25 % tokens.** CLI median tokens were -5.01 % versus grep; "
-        "the pre-registered success rule was not met. MCP cost +6.8 % tokens and +30 % wall time. "
-        "The claim is **accuracy and bounded context**, not token savings: CLI and MCP named more required files "
+        "the pre-registered success rule was not met. "
+        "The claim is **accuracy and bounded context**, not token savings: CLI named more required files "
         "at about equal or higher token cost.",
         "",
         "dctx on its own does not save tokens by default. Savings come from a harness or agent system "
@@ -80,15 +79,15 @@ def render():
         "[Why this matters](docs/WHY-DCTX.md#savings-belong-to-the-system).",
         "",
         "Official strict citation recall medians [min, max]: grep 10.10 % [10.10, 20.73], "
-        "CLI 14.46 % [8.36, 22.65], MCP 13.41 % [12.02, 66.72]. Diagnostic file-level recall medians: "
-        "53.77 %, 71.70 %, 76.42 %, respectively; this does not replace strict recall. "
+        "CLI 14.46 % [8.36, 22.65]. Diagnostic file-level recall medians: "
+        "53.77 % and 71.70 %, respectively; this does not replace strict recall. "
         "One corpus, one model, three repeats; no significance claim. Corpus and raw answers are private "
         "and cannot be published; dctx 1.3.0 is not current HEAD. **Under ~200 files, use grep.**",
         "",
         f"Historical cold indexing of six benchmark corpora took dctx {seconds(walls)} on one Linux x86_64 runner. "
         "This measures CLI wall time, not agent completion time or session cost.",
         "",
-        "[Choosing how to use dctx](docs/MODALITIES.md) covers scoping and MCP startup overhead. "
+        "[Choosing how to use dctx](docs/MODALITIES.md) covers scoping and CLI usage. "
         "[Measurement evidence](docs/BENCHMARK-20261030.md) describes what was measured (tool-output "
         "bytes and estimated tokens); other-tool protocols are retained only as secondary historical notes.",
     ]) + "\n"

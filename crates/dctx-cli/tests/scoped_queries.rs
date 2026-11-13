@@ -1,24 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The executable's CLI and MCP transports share direct query output and policy.
+//! Direct CLI queries preserve source scope and ignore policy.
 
-use std::io::Write;
-use std::process::{Command, Stdio};
-
-use dctx_plugin_protocol::{decode_object, DecodeLimits, Json};
-
-fn member<'a>(value: &'a Json, key: &str) -> &'a Json {
-    let Json::Object(fields) = value else {
-        panic!("object: {value:?}");
-    };
-    &fields
-        .iter()
-        .find(|(name, _)| name == key)
-        .expect("member")
-        .1
-}
+use std::process::Command;
 
 #[test]
-fn cli_and_mcp_read_identical_bytes_without_opening_an_unusable_cache_or_sibling_rules() {
+fn cli_reads_source_without_opening_an_unusable_cache_or_sibling_rules() {
     let fixture = tempfile::tempdir().expect("fixture");
     let place = fixture.path().join("place");
     std::fs::create_dir_all(place.join("src/nested")).expect("dirs");
@@ -58,31 +44,9 @@ fn cli_and_mcp_read_identical_bytes_without_opening_an_unusable_cache_or_sibling
         String::from_utf8_lossy(&cli.stderr)
     );
     assert!(cli.stderr.is_empty());
-    let mut child = command()
-        .arg("mcp")
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .expect("MCP");
-    child.stdin.take().expect("stdin").write_all(b"{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}\n{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"read\",\"arguments\":{\"id\":\"s:src/nested/kept.py#target\"}}}\n").expect("requests");
-    let output = child.wait_with_output().expect("response");
-    assert!(output.status.success());
-    assert!(output.stderr.is_empty());
-    let response = std::str::from_utf8(&output.stdout)
-        .expect("UTF8")
-        .lines()
-        .nth(1)
-        .expect("tool reply");
-    let response = decode_object(response.as_bytes(), DecodeLimits::WIRE).expect("JSON");
-    let result = member(&response, "result");
-    let Json::Array(content) = member(result, "content") else {
-        panic!("content array");
-    };
-    let Json::Str(text) = member(&content[0], "text") else {
-        panic!("text");
-    };
-    assert_eq!(text.as_bytes(), cli.stdout);
+    let source = String::from_utf8(cli.stdout).expect("UTF8");
+    assert!(source.contains("return 'needle'"), "{source}");
+    assert!(!source.contains("SECRET"), "{source}");
     for args in [
         vec!["map", "find", "needle", "--in", "src/nested"],
         vec!["map", "grep", "needle", "--in", "src/nested"],

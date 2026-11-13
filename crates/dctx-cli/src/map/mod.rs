@@ -66,23 +66,6 @@ pub(crate) fn write_output(
         .map_or(Ok(()), Err)
 }
 
-/// MCP transports the page, including a gone page, without a CLI status envelope.
-pub(crate) fn write_page(
-    arguments: &[String],
-    output: &mut dyn std::io::Write,
-) -> Result<(), String> {
-    let answered = answer_with(arguments, host::open_notice_query, output).map_err(|failure| {
-        if failure.hint.is_empty() {
-            failure.message
-        } else {
-            format!("{}\nhint: {}", failure.message, failure.hint)
-        }
-    })?;
-    output
-        .write_all(answered.page.as_bytes())
-        .map_err(|error| error.to_string())
-}
-
 /// Same as [`run`], returning the page instead of printing it. A `gone` page is a page here, not an error.
 #[cfg(test)]
 pub(crate) fn execute(arguments: &[String]) -> Result<String, String> {

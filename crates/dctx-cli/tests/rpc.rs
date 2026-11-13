@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Byte parity across real CLI, RPC and advertised MCP tools on the checked-in facade fixture.
+//! Byte parity across real CLI and RPC on the checked-in facade fixture.
 #![forbid(unsafe_code)]
 mod common;
 
@@ -86,64 +86,24 @@ fn sixteen_operations_are_byte_identical_across_transports() {
     let mut rpc = Server::new(command(temp.path(), &repo).arg("rpc"));
     let hello = rpc.call(json!({"id":"hello","verb":"hello"}));
     assert_eq!(hello["result"]["protocol_version"], "1.0.0");
-    let mut mcp = Server::new(command(temp.path(), &repo).arg("mcp"));
-    let tools = mcp.call(json!({"jsonrpc":"2.0","id":0,"method":"tools/list"}));
-    let exposed = tools["result"]["tools"].as_array().expect("tools");
     let cases = [
-        ("find", vec!["ping"], json!({"query":"ping"})),
-        (
-            "find",
-            vec!["not_present_zz"],
-            json!({"query":"not_present_zz"}),
-        ),
-        (
-            "find",
-            vec!["ping", "--limit", "1"],
-            json!({"query":"ping","limit":1}),
-        ),
-        (
-            "map",
-            vec!["m:src/lib.rs"],
-            json!({"target":"m:src/lib.rs"}),
-        ),
-        (
-            "read",
-            vec!["s:src/lib.rs#ping"],
-            json!({"id":"s:src/lib.rs#ping"}),
-        ),
-        (
-            "read",
-            vec!["m:src/lib.rs", "--lines", "1-2"],
-            json!({"id":"m:src/lib.rs","lines":"1-2"}),
-        ),
-        (
-            "skeleton",
-            vec!["m:src/lib.rs"],
-            json!({"target":"m:src/lib.rs"}),
-        ),
-        (
-            "explain",
-            vec!["s:src/lib.rs#ping"],
-            json!({"id":"s:src/lib.rs#ping"}),
-        ),
-        (
-            "neighbors",
-            vec!["s:src/lib.rs#ping"],
-            json!({"id":"s:src/lib.rs#ping"}),
-        ),
-        ("grep", vec!["pub"], json!({"query":"pub"})),
-        ("hubs", vec![], json!({})),
-        (
-            "path",
-            vec!["m:src/lib.rs", "s:src/lib.rs#ping"],
-            json!({"from":"m:src/lib.rs","to":"s:src/lib.rs#ping"}),
-        ),
-        ("pack", vec![], Value::Null),
-        ("context", vec!["--for", "`ping`"], Value::Null),
-        ("languages", vec![], Value::Null),
+        ("find", vec!["ping"]),
+        ("find", vec!["not_present_zz"]),
+        ("find", vec!["ping", "--limit", "1"]),
+        ("map", vec!["m:src/lib.rs"]),
+        ("read", vec!["s:src/lib.rs#ping"]),
+        ("read", vec!["m:src/lib.rs", "--lines", "1-2"]),
+        ("skeleton", vec!["m:src/lib.rs"]),
+        ("explain", vec!["s:src/lib.rs#ping"]),
+        ("neighbors", vec!["s:src/lib.rs#ping"]),
+        ("grep", vec!["pub"]),
+        ("hubs", vec![]),
+        ("path", vec!["m:src/lib.rs", "s:src/lib.rs#ping"]),
+        ("pack", vec![]),
+        ("context", vec!["--for", "`ping`"]),
+        ("languages", vec![]),
     ];
-    let mut mcp_comparisons = 0;
-    for (index, (verb, args, mut arguments)) in cases.into_iter().enumerate() {
+    for (index, (verb, args)) in cases.into_iter().enumerate() {
         let cli_args = match verb {
             "pack" | "context" => vec!["pack"],
             "languages" => vec!["languages"],
@@ -167,23 +127,7 @@ fn sixteen_operations_are_byte_identical_across_transports() {
             .as_str()
             .unwrap_or_else(|| panic!("{verb}: {reply}"));
         assert_eq!(rpc_output.as_bytes(), cli.stdout, "CLI/RPC {verb}");
-        // Raw filesystem pack has no MCP equivalent; MCP pack accepts task context.
-        if !arguments.is_null() && exposed.iter().any(|tool| tool["name"] == verb) {
-            arguments["json"] = json!(true);
-            let reply = mcp.call(json!({"jsonrpc":"2.0","id":index,"method":"tools/call",
-                "params":{"name":verb,"arguments":arguments}}));
-            assert_ne!(reply["result"]["isError"], true, "{verb}: {reply}");
-            let text = reply["result"]["content"][0]["text"]
-                .as_str()
-                .expect("MCP text");
-            assert_eq!(text.as_bytes(), cli.stdout, "CLI/MCP {verb}");
-            mcp_comparisons += 1;
-        }
     }
-    assert!(
-        mcp_comparisons > 0,
-        "MCP must expose at least one operation"
-    );
     // Cache status must observe the same ledger state after all snapshot operations.
     let cli = command(temp.path(), &repo)
         .args(["cache", "status", "--json"])
@@ -199,7 +143,6 @@ fn sixteen_operations_are_byte_identical_across_transports() {
         cli.stdout
     );
     rpc.finish();
-    mcp.finish();
 }
 
 #[test]

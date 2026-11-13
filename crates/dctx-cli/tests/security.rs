@@ -45,7 +45,7 @@ fn check(output: &Output) {
 }
 
 #[test]
-fn cli_mcp_and_rpc_do_not_return_symlink_or_traversal_targets() {
+fn cli_and_rpc_do_not_return_symlink_or_traversal_targets() {
     let fixture = Fixture(tempfile::tempdir().unwrap());
     let root = fixture.0.path().join("place");
     let outside = fixture.0.path().join("outside");
@@ -78,12 +78,10 @@ fn cli_mcp_and_rpc_do_not_return_symlink_or_traversal_targets() {
         }
     }
     let mut rpc = vec![json!({"id":0,"verb":"hello"})];
-    let mut mcp = Vec::new();
     for (id, target) in targets.into_iter().enumerate() {
         rpc.push(json!({"id":id+1,"verb":"read","args":[target]}));
-        mcp.push(json!({"jsonrpc":"2.0","id":id+1,"method":"tools/call","params":{"name":"read","arguments":{"id":target,"json":true}}}));
     }
-    for (verb, requests) in [("rpc", rpc), ("mcp", mcp)] {
+    for (verb, requests) in [("rpc", rpc)] {
         let output = fixture.server(verb, &requests);
         check(&output);
         assert!(output.status.success());

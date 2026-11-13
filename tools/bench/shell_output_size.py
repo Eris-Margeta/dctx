@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
-"""Compare CLI stdout sizes with CLI defaults and MCP-equivalent defaults.
+"""Measure CLI stdout sizes with default bounds.
 
 Uses the existing deterministic 1,551-file latency fixture, not the tester's
 private repository. Captures complete stdout without a shell/client truncator.
@@ -29,15 +29,7 @@ COMMANDS = (
     "map", "find", "neighbors", "explain", "read", "hubs", "grep",
     "skeleton", "path", "trace", "impact", "export", "pack",
 )
-MODES = ("cli_defaults", "mcp_defaults")
-# The MCP-specific overrides in mcp/tools.rs; all other defaults are shared.
-MCP_BOUNDS = {
-    "map": ("--limit", "20"),
-    "hubs": ("--limit", "10"),
-    "trace": ("--max-paths", "5", "--max-bytes", "8192"),
-    "impact": ("--max-sites", "50", "--max-bytes", "8192"),
-    "pack": ("--budget", "2000"),
-}
+MODES = ("cli_defaults",)
 
 
 def targets(place: Path) -> dict[str, tuple[str, str]]:
@@ -55,10 +47,9 @@ def targets(place: Path) -> dict[str, tuple[str, str]]:
 def arguments(command: str, mode: str, term: str,
               selected: dict[str, tuple[str, str]]) -> list[str]:
     file, node = selected[term]
-    bounds = list(MCP_BOUNDS.get(command, ())) if mode == "mcp_defaults" else []
     if command == "pack":
-        return ["pack", *bounds, "--for", f"`{term}`"]
-    args = ["map", command, *bounds]
+        return ["pack", "--for", f"`{term}`"]
+    args = ["map", command]
     if command in ("find", "grep"):
         return [*args, "--", term]
     if command in ("map", "skeleton"):
@@ -71,7 +62,7 @@ def arguments(command: str, mode: str, term: str,
     if command == "hubs":
         return args
     if command == "export":
-        return [*args, "--format", "json"]  # MCP requires an explicit format.
+        return [*args, "--format", "json"]
     return [*args, "--", node]
 
 

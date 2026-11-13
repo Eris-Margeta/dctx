@@ -247,7 +247,6 @@ class Facts(unittest.TestCase):
         langs = data.languages()
         self.assertEqual((langs["total"], langs["tiers"]), (50, {"full": 36, "outline": 8, "docs": 6}))
         self.assertEqual(data.network_zero()[0], 0)
-        self.assertEqual(len(data.mcp_tools()), 12)
 
     def test_languages_capture_equals_readme(self):
         readme = (ROOT / "README.md").read_text()
@@ -349,7 +348,7 @@ class LlmsPipeline(unittest.TestCase):
         self.assertTrue(facts["notice"].startswith("dctx is an advanced tool with several ways to use it. Used well, it cuts"))
         self.assertTrue(facts["notice"].endswith(" Measure before you change anything."))
         if "three-tool profile" not in facts["notice"]:  # interim wording until the profile and receipts ship
-            self.assertIn("follow the safe path: one project, the system binary, the lean MCP profile.", facts["notice"])
+            self.assertIn("follow the safe path: one project, the system binary, direct CLI commands.", facts["notice"])
         for item in facts["removed"]["items"]:
             for pattern in item["patterns"]:
                 re.compile(pattern)

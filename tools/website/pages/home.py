@@ -95,7 +95,7 @@ def bench_table() -> str:
     return ('<p>The baseline is grep plus reading files. The measured whole-session benchmark found '
             'a -5.01 % change in median total tokens with warm dctx CLI; the 25 % savings rule was not met. '
             'On this corpus and model dctx did not save 25 % tokens. The claim is accuracy and bounded context: '
-            'CLI and MCP named more required files at about equal or higher token cost. '
+            'CLI named more required files at about equal or higher token cost. '
             'dctx on its own does not save tokens by default. Savings come from a harness or agent system '
             'that reuses byte-identical, prefix-stable context across long sessions over a large body of work, '
             'with complete control over every byte. No measured savings figure exists for such a system yet. '
@@ -144,7 +144,7 @@ def body() -> str:
 <section class="hero" aria-labelledby="hero-title">
  <div class="wrap">
   <ul class="chips" aria-label="Project facts">
-   <li><a href="/changelog/#v{VERSION.replace('.', '-')}">dctx <b>{VERSION}</b></a></li><li>Apache-2.0</li><li>C/Rust</li><li><a href="/cli/#mcp"><b>{len(data.mcp_tools())}</b> MCP tools</a></li><li>no telemetry</li><li class="chip-status"><a href="#status">not yet stable &middot; pre-2.0</a></li>
+   <li><a href="/changelog/#v{VERSION.replace('.', '-')}">dctx <b>{VERSION}</b></a></li><li>Apache-2.0</li><li>C/Rust</li><li>no telemetry</li><li class="chip-status"><a href="#status">not yet stable &middot; pre-2.0</a></li>
   </ul>
   <div class="hero-grid">
    <h1 id="hero-title">Give AI the right code, <span class="accent">not all of it.</span></h1>

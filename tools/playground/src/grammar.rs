@@ -159,7 +159,6 @@ pub fn check(argv: &[String]) -> Result<(), String> {
             _ => Err("languages takes --json, --markdown or nothing".into()),
         },
         "--help" | "--version" if argv.len() == 1 => Ok(()),
-        "mcp" => Err("send MCP requests to POST /api/v1/mcp".into()),
         other if ["cache", "template", "plugin", "git"].contains(&other) => {
             Err(format!("{other} is not offered in the playground: it manages the local machine, not a place"))
         }
@@ -537,7 +536,6 @@ mod tests {
             "git status",
             ".",
             ". -d -c",
-            "mcp .",
             "rm -rf /",
             "pack /etc",
             "pack ../",

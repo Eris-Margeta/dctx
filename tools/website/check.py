@@ -47,8 +47,6 @@ STATIC = {".gitignore", "assets/tejl-logo-off-black.svg"}
 ALLOWED_EXTERNAL = ("https://github.com/Eris-Margeta", "https://github.com/sponsors/Eris-Margeta", "https://tejl.com",
                     "https://tejl.hr", "https://schema.org", "https://www.apache.org/", "https://keepachangelog.com",
                     "https://semver.org", "https://developercertificate.org", "https://docs.github.com/en/actions",
-                    "https://code.claude.com/docs/en/mcp", "https://cursor.com/docs/mcp",
-                    "https://developers.openai.com/codex/mcp/",
                     "mailto:info@tejl.com", "mailto:eris.margeta@gmail.com")
 # First visit, cache empty. The reference sites measured 8 requests / 372 KB (rural) and 40 requests /
 # 396 KB (internet.technology) on their home pages; these budgets match or beat both.

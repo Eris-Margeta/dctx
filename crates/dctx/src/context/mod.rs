@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Engine-owned context selection, content identities, rendering, and delivery sessions.
-//! Named targets share one implementation across CLI, MCP, RPC, and library callers.
+//! Named targets share one implementation across CLI, RPC, and library callers.
 mod chunks;
 mod named;
 mod page;
@@ -334,7 +334,7 @@ mod tests {
                     "# p find\n",
                     "s:src/rpc/tests.rs#session\tfn\n",
                     "s:tests/fixtures/a.swift#Session\tclass\n",
-                    "s:src/mcp.rs#tests::Session\tstruct\n",
+                    "s:src/transport.rs#tests::Session\tstruct\n",
                     "d:docs/SPEC.md#Session dedupe\theading\n",
                     "s:src/session.rs#Session\tstruct\n",
                 )
@@ -354,7 +354,7 @@ mod tests {
             [
                 "s:src/session.rs#Session\tstruct",
                 "s:tests/fixtures/a.swift#Session\tclass",
-                "s:src/mcp.rs#tests::Session\tstruct",
+                "s:src/transport.rs#tests::Session\tstruct",
             ]
         );
         assert!(report.text.contains("## read s:src/session.rs#Session\n"));
@@ -384,7 +384,7 @@ mod tests {
             "s:py/conftest.py#f",
             "s:web/a.test.ts#f",
             "s:web/__tests__/a.ts#f",
-            "s:src/mcp/mod.rs#tests::session",
+            "s:src/transport/mod.rs#tests::session",
         ] {
             assert!(is_test(id), "{id}");
         }

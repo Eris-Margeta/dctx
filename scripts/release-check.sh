@@ -147,10 +147,8 @@ NET=(
   "map map lib/util.py" "map find helper" "map neighbors s:lib/util.py#helper --dir in --edge calls"
   "map explain s:lib/util.py#helper" "map read s:lib/util.py#helper" "map skeleton lib/util.py"
   "map grep helper" "map hubs" "map path s:app/main.py#main s:lib/util.py#double" "map export --format json"
-  "pack ." "cache status --json" "mcp ."
+  "pack ." "cache status --json"
 )
-MCP_IN='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}
-{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
 if ! command -v strace >/dev/null 2>&1; then
   skip network "strace is not installed (apt install strace), the zero-network gate did not run"
 elif ! strace -f -qq -e trace=execve,%network -o /dev/null true 2>/dev/null; then
@@ -160,7 +158,7 @@ else
   for c in "${NET[@]}"; do
     n=$((n + 1)); log=$WORK/net-$n.log
     read -r -a words <<< "$c"
-    (cd "$FX" && printf '%s\n' "$MCP_IN" | DCTX_CACHE_DIR=$WORK/cache-net-$n ${TO[@]+"${TO[@]}"} strace -f -qq -e trace=execve,%network -o "$log" "$BIN" "${words[@]}" > /dev/null 2>&1)
+    (cd "$FX" && DCTX_CACHE_DIR=$WORK/cache-net-$n ${TO[@]+"${TO[@]}"} strace -f -qq -e trace=execve,%network -o "$log" "$BIN" "${words[@]}" > /dev/null 2>&1)
     rc=$?
     if [ ! -s "$log" ]; then echo "  $c: no strace log (rc $rc)"; hits="$hits [$c: not traced]"; continue; fi
     count=$(grep -E '(connect|sendto|sendmsg)\(' "$log" | grep -c 'AF_INET')

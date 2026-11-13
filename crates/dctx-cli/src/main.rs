@@ -6,7 +6,6 @@
 mod agent_setup;
 mod context_cmd;
 mod map;
-mod mcp;
 mod pack_for;
 mod plugin;
 mod rpc;
@@ -76,17 +75,8 @@ fn run() {
             maybe_auto_clean(allow_auto_clean);
             map::run(&args[2..])
         }
-        // The MCP server answers on stdout in JSON-RPC lines only, so it never auto-cleans.
+        // RPC answers on stdout in protocol lines only, so it never auto-cleans.
         Some("rpc") => rpc::run(&args[2..]).map_err(|failure| failure.within("rpc")),
-        Some("mcp") => mcp::run(&args[2..]).map_err(|failure| failure.within("mcp")),
-        Some("serve") => {
-            let words: Vec<_> = args[2..]
-                .iter()
-                .filter(|word| word.as_str() != "--mcp")
-                .cloned()
-                .collect();
-            mcp::run(&words).map_err(|failure| failure.within("serve"))
-        }
         Some("context") => {
             maybe_auto_clean(allow_auto_clean);
             context_cmd::Runtime::default()

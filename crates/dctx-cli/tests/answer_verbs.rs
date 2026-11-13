@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! One-call answers use the same engine bytes through CLI, MCP and engine RPC.
+//! One-call answers use the same engine bytes through CLI and engine RPC.
 mod common;
 
 use serde_json::{json, Value};
@@ -295,47 +295,8 @@ fn place_also_and_outside_notices_use_the_shared_resolution_path() {
 }
 
 #[test]
-fn tools_list_and_calls_and_rpc_match_cli_answers() {
+fn rpc_matches_cli_answers() {
     let repo = Fixture::new();
-    let replies = repo.transport(&["mcp"], &[
-        json!({"jsonrpc":"2.0","id":1,"method":"tools/list"}),
-        json!({"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"trace","arguments":{"from":"start","to":"leaf","json":true}}}),
-        json!({"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"impact","arguments":{"symbol":"leaf","json":true}}}),
-    ]);
-    let tools = replies[0]["result"]["tools"].as_array().unwrap();
-    for name in ["trace", "impact"] {
-        let tool = tools.iter().find(|tool| tool["name"] == name).unwrap();
-        assert_eq!(
-            tool["inputSchema"]["properties"]["max_depth"]["type"],
-            "integer"
-        );
-        assert_eq!(tool["inputSchema"]["additionalProperties"], false);
-    }
-    assert_eq!(
-        replies[1]["result"]["content"][0]["text"],
-        repo.run(&[
-            "trace",
-            "start",
-            "leaf",
-            "--json",
-            "--max-paths",
-            "5",
-            "--max-bytes",
-            "8192"
-        ])
-    );
-    assert_eq!(
-        replies[2]["result"]["content"][0]["text"],
-        repo.run(&[
-            "impact",
-            "leaf",
-            "--json",
-            "--max-sites",
-            "50",
-            "--max-bytes",
-            "8192"
-        ])
-    );
     let rpc = repo.transport(
         &["rpc"],
         &[

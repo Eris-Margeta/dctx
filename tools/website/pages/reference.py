@@ -34,23 +34,15 @@ def cli() -> tuple[str, list]:
     env_rows = [[f"<code>{v}</code>", e(text, quote=False).replace("`", ""), f'<code>dctx {"map --help" if rid == "map-help" else "--help"}</code>']
                 for v, text, rid in env]
     exit_line, exit_head, exit_rows = data.md_tables(read("docs/CLI-EXIT-CODES.md"))[0]
-    tools = data.mcp_tools()
-    tool_rows = []
-    for t in tools:
-        props = t["inputSchema"].get("properties", {})
-        req = set(t["inputSchema"].get("required", []))
-        params = "<br>".join(f'<code>{e(k)}</code>{"*" if k in req else ""} <span class="muted">{e(v.get("type", ""))}</span> {e(v.get("description", ""))}'
-                             for k, v in props.items())
-        tool_rows.append([f"<code>{e(t['name'])}</code>", e(t["description"]), params])
     token_line = next(l for l in rec("help")["stdout"].split("\n") if l.startswith("token estimate:"))
     nav += [("map-help", "dctx map --help")] + [(v, v) for v in VERBS] + [("languages", "languages"), ("env", "environment"),
-                                                                              ("exit-codes", "exit codes"), ("mcp", "MCP tools"), ("tokens", "token estimate")]
+                                                                              ("exit-codes", "exit codes"), ("tokens", "token estimate")]
     nav_html = '<ul class="toc-row">' + "".join(f'<li><a href="#{i}">{e(t)}</a></li>' for i, t in nav) + "</ul>"
     langs = data.languages()
     body = f"""<div class="wrap"><div class="page-head">{{{{crumbs}}}}<span class="eyebrow">Reference</span><h1>CLI reference</h1>
 <p class="lede">Captured from <code>dctx {VERSION}</code> when this site was built; a check fails the build when the binary prints anything else. Help text is shown verbatim, so it is the CLI's own wording, including the legacy snapshot options it still lists.</p></div>
 {output_examples()}
-<p><a href="/docs/modalities/">Usage modes and MCP client configuration</a> &middot;
+<p><a href="/docs/modalities/">Usage modes</a> &middot;
 <a href="/docs/readme/#use-as-a-library">Rust library and publication status</a></p>
 {nav_html}
 <h2 id="dctx-help">dctx --help</h2>
@@ -66,9 +58,6 @@ def cli() -> tuple[str, list]:
 {table(["Variable", "Help text", "Printed by"], env_rows, raw=True)}
 <h2 id="exit-codes">Exit codes</h2>
 {table(exit_head, exit_rows, caption=src("docs/CLI-EXIT-CODES.md", "CLI-EXIT-CODES.md", exit_line) + ' &middot; <a href="' + doc_path("exit-codes") + '">full contract</a>')}
-<h2 id="mcp">MCP tools</h2>
-<p><code>dctx mcp</code> answers <code>tools/list</code> with {len(tools)} tools (captured over stdio; <code>*</code> marks a required argument). <a href="/examples/#mcp">The full exchange</a>.</p>
-{table(["Tool", "Description", "Arguments"], tool_rows, raw=True)}
 <h2 id="tokens">Token estimate</h2>
 <p>Every byte and token count on this site uses the estimate dctx itself prints:</p>
 {pre(token_line)}
@@ -76,7 +65,7 @@ def cli() -> tuple[str, list]:
     url = ORIGIN + "/cli/"
     article = {"@type": "TechArticle", "@id": url + "#article", "headline": "dctx CLI reference", "url": url, "inLanguage": "en",
                "about": {"@id": APP_ID}, "author": {"@id": PERSON_ID}, "publisher": {"@id": ORG_ID},
-               "mainEntityOfPage": {"@id": url + "#webpage"}, "description": "Every dctx command, flag, environment variable, exit code and MCP tool."}
+               "mainEntityOfPage": {"@id": url + "#webpage"}, "description": "Every dctx command, flag, environment variable, and exit code."}
     return body, [article]
 
 

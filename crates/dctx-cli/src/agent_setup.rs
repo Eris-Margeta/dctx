@@ -14,8 +14,7 @@ const RULES: &str = "\
 - Read a definition: `dctx map read 's:src/lib.rs#run'`.
 - Outline a large file: `dctx map skeleton src/lib.rs`.
 - Get task context: `dctx pack --for 'fix run' --budget 3000` (estimated tokens).
-- MCP: use `dctx mcp --profile lean` for persistent tool access; CLI: run the commands above from a shell.
-- Pick MCP or CLI for a question; both use the same local index and query engine.
+- Run these commands directly from a shell or an agent's shell tool.
 ";
 
 pub(super) fn run(args: &[String]) -> Result<(), Failure> {

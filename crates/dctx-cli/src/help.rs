@@ -82,8 +82,6 @@ Usage: dctx <COMMAND> [OPTIONS]
        dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path|export> [--json]
        dctx context TARGET [--place PATH] [--budget N] [--json] [--session ID --dedupe]
        dctx rpc
-       dctx mcp [PATH]
-       dctx serve [--mcp] [PATH]
        dctx trace <A> <B> [--max-depth N] [--max-paths N] [--max-bytes N] [--json]
        dctx impact <SYMBOL> [--max-depth N] [--max-sites N] [--max-bytes N] [--json]
        dctx read <TARGET> [OPTIONS]
@@ -103,8 +101,7 @@ Usage: dctx <COMMAND> [OPTIONS]
 
 `dctx languages` lists every supported language with its tier: full (symbols and call edges), outline (symbols only) or docs (sections).
 `dctx rpc` serves the versioned engine protocol for language packages (send hello first; docs/protocol/README.md).
-`dctx mcp` serves the map verbs as MCP tools over stdio (JSON-RPC 2.0, one message per line) for Claude Code, Cursor and Codex.
-`dctx serve` and `dctx serve --mcp` use that same server; `dctx read` uses `dctx map read`.
+`dctx read` uses `dctx map read`.
 Explicit `dctx pack` writes stdout, the clipboard, or `--output`. It does not create a project text file.
 `dctx pack --for <TEXT>` prints task context for an agent card instead: map find, neighbors and read of the names in TEXT, cut to `--budget` estimated tokens (default 3000).
 `dctx plugin list` and `dctx --help` do not create a project `.dctx/` directory or start a plugin.

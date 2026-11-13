@@ -50,7 +50,7 @@ pub(crate) fn write_with<T>(
     match fs::rename(&staged.path, path) {
         Ok(()) => staged.committed = true,
         // ERROR_SHARING_VIOLATION: an open dctx session (here or in another process, such as an
-        // MCP server) pins its root and every ancestor against renames. Copy in place instead.
+        // persistent caller) pins its root and every ancestor against renames. Copy in place instead.
         #[cfg(windows)]
         Err(error) if error.raw_os_error() == Some(32) => copy_in_place(&staged.path, path)?,
         Err(error) => return Err(error),
