@@ -1,0 +1,5 @@
+[
+  {"name": "Comparator", "kind": "type", "line": 1, "parent": null},
+  {"name": "Cleanup", "kind": "type", "line": 2, "parent": null},
+  {"name": "compare_items", "kind": "untyped", "line": 3, "parent": null}
+]

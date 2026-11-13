@@ -1,0 +1,4 @@
+[
+  {"name": "schema", "kind": "untyped", "line": 1, "parent": null},
+  {"name": "load_schema", "kind": "function", "line": 6, "parent": null}
+]

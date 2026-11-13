@@ -191,6 +191,7 @@ pub fn expand_alias(ids: &[StableId], query: &str) -> AliasExpansion {
 
 /// Body groups that are not a single disappeared-to-added move.
 /// Empty fingerprints and unique pairs are omitted. `detect_moves` keeps the pairs.
+/// Duplicate copies of one identity count once, as they do in move detection.
 #[allow(
     clippy::must_use_candidate,
     reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
@@ -235,6 +236,7 @@ fn group(nodes: &[Node], retained: &BTreeSet<&StableId>) -> BTreeMap<Print, Vec<
     }
     for ids in groups.values_mut() {
         ids.sort();
+        ids.dedup();
     }
     groups
 }

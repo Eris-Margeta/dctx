@@ -7,6 +7,9 @@ use dctx_map_model::adapters::{RenderError, render as model_render};
 use std::fmt::Write as _;
 
 /// Renders complete records and an exact continuation in the selected format.
+/// Repeated calls with identical arguments produce byte-identical output.
+/// Oversized read bodies are shortened at whole lines; their declared spans must
+/// contain the body. Remaining-result counts are checked rather than wrapped.
 ///
 /// # Errors
 /// Propagates invalid-answer, continuation, byte-budget and JSON rendering errors.
@@ -15,6 +18,7 @@ pub fn render_answer(answer: &Answer, request: &Request, format: Format) -> Resu
 }
 
 /// Renders with an explicit place retained in every continuation command.
+/// The place is shell-quoted. It must contain no control characters.
 ///
 /// # Errors
 /// Propagates invalid-answer, continuation, byte-budget and JSON rendering errors.
@@ -34,7 +38,10 @@ pub fn render_answer_at(
     let total = page.records.len();
     for keep in (0..=total).rev() {
         page.records.truncate(keep);
-        page.more = answer.more + total - keep;
+        page.more = answer
+            .more
+            .checked_add(total - keep)
+            .ok_or(RenderError::CountOverflow)?;
         if page.more > 0 {
             page.next = if keep == 0 {
                 let mut next = request.clone();
@@ -142,6 +149,12 @@ fn read_page(
         .unwrap_or("")
         .split_inclusive('\n')
         .collect();
+    if original.l[0] == 0
+        || original.l[1] < original.l[0]
+        || lines.len() as u64 > u64::from(original.l[1] - original.l[0]) + 1
+    {
+        return Err(RenderError::InvalidRecord.into());
+    }
     let maximum = if request.full { 400 } else { 120 };
     if lines.len() <= maximum {
         let output = render(page, request.budget, format, place)?;
@@ -158,7 +171,7 @@ fn read_page(
             let mut next = request.clone();
             next.lines = Some([
                 start,
-                (original.l[1] - tail as u32).min(start + maximum as u32 - 1),
+                (original.l[1] - tail as u32).min(start.saturating_add(maximum as u32 - 1)),
             ]);
             page.next = next.command(0);
             page.more = 1;

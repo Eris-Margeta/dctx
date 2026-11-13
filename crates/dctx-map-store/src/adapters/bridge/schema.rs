@@ -5,10 +5,12 @@
 //! Existing map tables are left in place. `user_version` stays 1.
 
 use crate::domain::{HARD_CAP_BYTES, Result, StoreError};
-use rusqlite::Connection;
+use rusqlite::{Connection, TransactionBehavior};
 
 pub(crate) fn ensure(connection: &mut Connection) -> Result<()> {
-    let transaction = connection.transaction()?;
+    // Reserve the writer before reading schema state: concurrent opens must not
+    // deadlock while upgrading deferred transactions to insert the ledger row.
+    let transaction = connection.transaction_with_behavior(TransactionBehavior::Immediate)?;
     transaction.execute_batch(
         "CREATE TABLE IF NOT EXISTS bridge_ledger (
             id INTEGER PRIMARY KEY CHECK (id = 1),

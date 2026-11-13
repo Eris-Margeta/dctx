@@ -1,0 +1,5 @@
+[
+  {"name": "api", "kind": "untyped", "line": 1, "parent": null},
+  {"name": "api::v2", "kind": "untyped", "line": 2, "parent": "api"},
+  {"name": "api::v2::version", "kind": "function", "line": 3, "parent": "api::v2"}
+]

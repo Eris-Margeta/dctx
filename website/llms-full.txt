@@ -8102,7 +8102,7 @@ Pack dctx --version exit 0 23 bytes ~7 est. tokens kiosk $ dctx --version dctx 1
 { "src" : "s:src/util.rs#greet" , "edge" : "calls" , "dst" : "s:src/util.rs#title_case" , "confidence" : "name" },
 { "src" : "s:tools/report.py#main" , "edge" : "calls" , "dst" : "s:tools/report.py#read_orders" , "confidence" : "name" },
 { "src" : "s:web/app.ts#renderGreeting" , "edge" : "calls" , "dst" : "s:web/format.ts#formatName" , "confidence" : "name" },
-{ "src" : "s:web/app.ts#renderReceipt" , "edge" : "calls" , "dst" : "s:web/format.ts#formatPrice" , "confidence" : "name" }]} Errors and exit codes dctx map read m:nope.rs exit 1 28 bytes ~8 est. tokens An id that is not in the index: the gone page on stdout, exit 1, two lines on stderr. kiosk $ dctx map read m:nope.rs # kiosk read gone m:nope.rs [no] Error: map: m:nope.rs is not in the index hint: the file may be missing, ignored, sensitive or renamed; list current ids with `dctx map find <name>` # exit 1 · 28 bytes · ~8 est. tokens dctx map read m:.env exit 1 25 bytes ~8 est. tokens A sensitive file is not in the index at all. kiosk $ dctx map read m:.env # kiosk read gone m:.env [no] Error: map: m:.env is not in the index hint: the file may be missing, ignored, sensitive or renamed; list current ids with `dctx map find <name>` # exit 1 · 25 bytes · ~8 est. tokens dctx map find '' exit 2 0 bytes ~0 est. tokens An empty query is a usage error, exit 2. kiosk $ dctx map find '' [no] Error: map: this verb requires a target hint: pass a non-empty name or phrase, for example: dctx map find alpha # exit 2 · 0 bytes · ~0 est. tokens
+{ "src" : "s:web/app.ts#renderReceipt" , "edge" : "calls" , "dst" : "s:web/format.ts#formatPrice" , "confidence" : "name" }]} Errors and exit codes dctx map read m:nope.rs exit 1 28 bytes ~8 est. tokens An id that is not in the index: the gone page on stdout, exit 1, two lines on stderr. kiosk $ dctx map read m:nope.rs # kiosk read gone m:nope.rs [no] Error: map: m:nope.rs is not in the index hint: the file may be missing, ignored, sensitive or renamed; list current ids with `dctx map find <name>` # exit 1 · 28 bytes · ~8 est. tokens dctx map read m:.env exit 1 25 bytes ~8 est. tokens A sensitive file is not in the index at all. kiosk $ dctx map read m:.env # kiosk read gone m:.env [no] Error: map: m:.env is not in the index hint: the file may be missing, ignored, sensitive or renamed; list current ids with `dctx map find <name>` # exit 1 · 25 bytes · ~8 est. tokens dctx map find '' exit 2 0 bytes ~0 est. tokens An empty query is a usage error, exit 2. kiosk $ dctx map find '' [no] Error: map: this verb requires a target; next: correct the request or source input and retry; use dctx map --help for options hint: pass a non-empty name or phrase, for example: dctx map find alpha # exit 2 · 0 bytes · ~0 est. tokens
 
 ---
 url: https://www.dctx.internet.technology/templates/
@@ -9973,7 +9973,7 @@ exit 2, 0 bytes, ~0 est. tokens
 stderr:
 
 ```text
-[no] Error: map: this verb requires a target
+[no] Error: map: this verb requires a target; next: correct the request or source input and retry; use dctx map --help for options
 hint: pass a non-empty name or phrase, for example: dctx map find alpha
 ```
 

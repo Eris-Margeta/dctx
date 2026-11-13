@@ -1,0 +1,12 @@
+# Measured on 54d0deff4fa6d65b051617d0a83325aa086989b7, parser revision 2
+# 38 files; 125 labels; kind TP FP FN
+class 2 0 0
+const 6 0 0
+enum 2 0 0
+function 21 5 4
+macro 5 1 1
+method 22 0 5
+struct 15 1 0
+type 7 2 2
+untyped 26 8 7
+overall 106 17 19

@@ -9,6 +9,8 @@ use dctx_map_model::{Node, NodeKind, StableId, Summary, SummarySource};
 use std::collections::{BTreeMap, BTreeSet};
 
 /// Builds resolver facts for one layout. The same payload can be placed twice.
+/// Retained payloads are revalidated, including their map key, because callers
+/// can construct or mutate [`SharedFact`] fields directly. No input is mutated.
 ///
 /// # Errors
 /// Refuses invalid or duplicate placements, missing retained facts or symbols, invalid materialized identities and duplicate-symbol ordinals above `u32::MAX`.
@@ -30,6 +32,10 @@ pub fn materialize(
         let shared = retained
             .get(&placement.key)
             .ok_or_else(|| ResolveError::MissingFact(placement.path.clone()))?;
+        if shared.key != placement.key {
+            return Err(ResolveError::ConflictingFact);
+        }
+        shared.validate()?;
         files.push(place(shared, placement)?);
     }
     Ok(files)
@@ -81,6 +87,7 @@ fn place(shared: &SharedFact, placement: &Placement) -> Result<Facts, ResolveErr
         });
     }
     references.sort();
+    references.dedup();
     Ok(Facts {
         path: placement.path.clone(),
         package: placement.package.clone(),

@@ -82,25 +82,29 @@ pub struct SearchHit {
 #[derive(Debug, thiserror::Error)]
 pub enum StoreError {
     /// SQLite operation failed.
-    #[error(transparent)]
+    #[error(
+        "database operation failed: {0}; next: check database access and any FTS expression, then retry"
+    )]
     Sqlite(#[from] rusqlite::Error),
     /// Stored model payload is invalid.
-    #[error(transparent)]
+    #[error("invalid stored payload: {0}; next: rebuild the index from source")]
     Payload(#[from] serde_json::Error),
     /// Existing schema cannot be read; caller must rebuild the index.
-    #[error("schema {0} requires index rebuild")]
+    #[error("schema {0} requires index rebuild; next: rebuild the index from source")]
     RebuildRequired(i64),
     /// Facts violate file ownership or fingerprint rules.
-    #[error("invalid file facts: {0}")]
+    #[error("invalid file facts: {0}; next: correct the file facts and retry reindex")]
     InvalidFacts(&'static str),
     /// Persisted identity is invalid.
-    #[error(transparent)]
+    #[error("{0}; next: rebuild the index with valid stable ids")]
     InvalidId(#[from] dctx_map_model::InvalidId),
     /// A stored bridge object failed validation.
-    #[error("corrupt index: {0}")]
+    #[error("corrupt index: {0}; next: preserve this database and rebuild the index from source")]
     Corrupt(&'static str),
     /// The comparison cache cannot admit the requested bytes.
-    #[error("cache limit requested {requested} available {available}")]
+    #[error(
+        "cache limit requested {requested} available {available}; next: release unused roots or raise the cache cap, then retry"
+    )]
     CacheLimit {
         /// Bytes requested.
         requested: u64,
@@ -108,10 +112,12 @@ pub enum StoreError {
         available: u64,
     },
     /// A fact identity or root label is not acceptable.
-    #[error("invalid identity: {0}")]
+    #[error("invalid identity: {0}; next: correct the identity or numeric bound and retry")]
     InvalidKey(&'static str),
     /// The same `FactKey` was stored with a different payload.
-    #[error("retained fact payload conflict")]
+    #[error(
+        "retained fact payload conflict; next: correct the payload or use a new extraction contract"
+    )]
     FactConflict,
 }
 
