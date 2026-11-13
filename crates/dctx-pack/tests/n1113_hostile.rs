@@ -1187,17 +1187,84 @@ fn pack_duplicate_items_are_idempotent() {
 }
 
 #[test]
-#[cfg(any())] // known defect, test disabled until fixed: legacy decoder accepts data bytes outside all declared file ranges
 fn decoder_rejects_unclaimed_leading_data() {
     let mut bytes = encoded(&file("a", b"x"));
     // File offset follows header, kind, name length, one-byte name and timestamp.
     bytes[28..36].copy_from_slice(&1u64.to_le_bytes());
     bytes.insert(44, b'?');
     for mode in MODES {
-        assert!(matches!(
-            decode_legacy(&bytes, mode, LegacyLimits::default()),
-            Err(LegacyError::TrailingBytes)
-        ));
+        let error = decode_legacy(&bytes, mode, LegacyLimits::default()).unwrap_err();
+        assert!(matches!(error, LegacyError::CorruptData { offset: 0 }));
+        assert_eq!(
+            error.to_string(),
+            "corrupt legacy data at data section offset 0"
+        );
+    }
+}
+
+#[test]
+fn decoder_requires_exact_data_coverage_in_both_modes() {
+    let mut root = tree(b"abc");
+    root.children.push(file("b.txt", b"de"));
+    let original = encoded(&root);
+    // Directory metadata (15 bytes), then the first file record (32 bytes).
+    let second_offset = 16 + 15 + 32 + 1 + 2 + 5 + 8;
+    for (offset, size, expected) in [(4u64, 1u64, 3), (2, 3, 2), (0, 5, 0)] {
+        let mut bytes = original.clone();
+        bytes[second_offset..second_offset + 8].copy_from_slice(&offset.to_le_bytes());
+        bytes[second_offset + 8..second_offset + 16].copy_from_slice(&size.to_le_bytes());
+        for mode in MODES {
+            assert!(matches!(
+                decode_legacy(&bytes, mode, LegacyLimits::default()),
+                Err(LegacyError::CorruptData { offset }) if offset == expected
+            ));
+        }
+    }
+    let mut trailing = original.clone();
+    trailing.push(b'?');
+    let mut no_files = encoded(&node(NodeType::Directory, ""));
+    no_files.push(b'?');
+    let mut empty_file = encoded(&file("empty", b""));
+    empty_file.push(b'?');
+    for (bytes, expected) in [(&trailing, 5), (&no_files, 0), (&empty_file, 0)] {
+        for mode in MODES {
+            assert!(matches!(
+                decode_legacy(bytes, mode, LegacyLimits::default()),
+                Err(LegacyError::CorruptData { offset }) if offset == expected
+            ));
+        }
+    }
+}
+
+#[test]
+fn decoder_accepts_reordered_ranges_and_empty_files() {
+    let mut root = tree(b"abc");
+    root.children.push(file("empty", b""));
+    root.children.push(file("b.txt", b"de"));
+    let mut bytes = encoded(&root);
+    // Swap the two nonempty bodies' ranges without changing metadata order.
+    let first_offset = 16 + 15 + 1 + 2 + 5 + 8;
+    let empty_offset = first_offset + 32;
+    let last_offset = empty_offset + 32;
+    bytes[first_offset..first_offset + 8].copy_from_slice(&2u64.to_le_bytes());
+    bytes[empty_offset..empty_offset + 8].copy_from_slice(&3u64.to_le_bytes());
+    bytes[last_offset..last_offset + 8].copy_from_slice(&0u64.to_le_bytes());
+    for mode in MODES {
+        let decoded = decode_legacy(&bytes, mode, LegacyLimits::default()).unwrap();
+        if mode == LegacyBodies::Include {
+            assert_eq!(
+                decoded.root.children[0].file_content.as_deref(),
+                Some(&b"cde"[..])
+            );
+            assert_eq!(
+                decoded.root.children[1].file_content.as_deref(),
+                Some(&b""[..])
+            );
+            assert_eq!(
+                decoded.root.children[2].file_content.as_deref(),
+                Some(&b"ab"[..])
+            );
+        }
     }
 }
 
