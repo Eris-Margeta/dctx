@@ -61,7 +61,7 @@ existing `deny.toml` licence policy, the website (including release-binary captu
 drift), playground tests, and the release gates with `strace`. These checks require
 no exclusive self-hosted facility, so they replace the former self-hosted job.
 The quality job also runs cargo-audit, the release supply-chain script tests,
-workflow validation and CLI/MCP/RPC golden byte parity. Its steps run in order and
+workflow validation and CLI/RPC golden byte parity. Its steps run in order and
 the first failing step stops the job and the chain.
 All actions use full commit SHAs; caches are separated by OS/toolchain/job and
 saved only on `main`. Workflow permissions are `contents: read`; newer PR runs

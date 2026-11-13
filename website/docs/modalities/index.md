@@ -13,7 +13,6 @@ provider caching can change its billed cost. Count both calls and session tokens
 | Modality | Install | Status | Best for |
 |---|---|---|---|
 | CLI / interactive terminal | [Prebuilt archives](https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.1), or [build from source](https://www.dctx.internet.technology/docs/readme/#from-source) | Available now; crates.io publication pending | One-off chat (`pack --clipboard`), shell agents, scripts and CI; run `dctx` for the terminal menu |
-| MCP server | Included in the CLI; configure `dctx mcp /absolute/project` | Available now, stdio | Claude Code, Cursor and Codex tool calls on a scoped project |
 | Rust library (`dctx` facade) | Tagged Git dependency in the [library section](#rust-library-embed-the-facade) | Available from Git; crates.io publication pending | Embedding pack, map, templates and cache in Rust tools and editors |
 | Desktop app | [Build the Tauri app](https://github.com/Eris-Margeta/dctx/blob/main/apps/dctx-desktop/README.md#quick-start) | Tauri 0.11 preview today; GPUI rebuild planned | Selecting projects and generating snapshots in a GUI |
 | Python, Node and Go wrappers | `npm install @tejl/dctx` for Node; CI artifacts for Python and Go; see [language wrappers](#python-node-and-go-wrappers) | Node published on npm; all wrappers tested in CI | Calling the engine over `dctx rpc` from Python, Node or Go projects |
@@ -31,7 +30,6 @@ available for system installation or an explicit `DCTX_BIN` path.
 | Short agent task | Grep, then read the matching file or lines | Add dctx only if a focused query saves enough work to cover setup and extra turns |
 | Long agent session / big files | `find` -> `read --json`, with `skeleton` for orientation | The needed file is already small or a grep plus narrow read gives the same answer |
 | Huge tree, monorepo, data or Markdown corpus | Run from a relevant subfolder; apply ignore rules before scanning | You need an unscoped index of 100 GB+ or expect a budget flag to reduce the scan |
-| MCP client | `dctx mcp .` in a scoped root | Tool definitions and extra model turns outweigh focused-read savings |
 | CI / repeated prompt prefix | Deterministic `pack` or scoped map output saved as an artifact | You expect dctx alone to guarantee provider cache hits |
 
 ## Human, one-off: pack to clipboard
@@ -65,10 +63,8 @@ sed -n '130,170p' crates/dctx/src/session/mod.rs
 
 Choose the line range from the search result; reading a narrow range is an
 honest baseline alongside whole-file reads. If a symbol read is useful, call
-`dctx map find Session` through the existing shell. Loading an MCP server
-adds tool descriptions to starting context; installing verbose agent
-instructions can add more. Do not add that setup for a tiny edit unless you
-measure a benefit.
+`dctx map find Session` through the existing shell. Verbose agent instructions
+add starting context; measure their cost before adding them for a tiny edit.
 
 ```sh
 cd crates/dctx-lex-go
@@ -161,97 +157,6 @@ cache cap. A different absolute `DCTX_CACHE_DIR` selects a separate cache
 location, not a larger cap. Do not use dctx on the whole huge tree if narrowing
 would exclude facts your task requires; use grep and direct reads across the
 needed directories, or query several explicit scopes and account for extra calls.
-
-## MCP server: convenient tools with startup context
-
-Configure your MCP client to launch this process in the selected project root:
-
-```sh
-dctx mcp .
-```
-
-### Client configuration
-
-Install the CLI archive first. Replace both absolute paths below with your
-executable and the project to index (on Windows, use `dctx.exe` and JSON-escaped
-paths). An explicit project path avoids relying on the client's working directory.
-For a source build, point `command` at `target/release/dctx-cli`.
-
-[Claude Code](https://code.claude.com/docs/en/mcp) (`.mcp.json` at the project root)
-and [Cursor](https://cursor.com/docs/mcp) (`.cursor/mcp.json`) use this JSON:
-
-```json
-{
-  "mcpServers": {
-    "dctx": {
-      "type": "stdio",
-      "command": "/absolute/path/to/dctx",
-      "args": ["mcp", "/absolute/path/to/project"]
-    }
-  }
-}
-```
-
-[Codex](https://developers.openai.com/codex/mcp/) uses `~/.codex/config.toml`
-(or `.codex/config.toml` in a trusted project):
-
-```toml
-[mcp_servers.dctx]
-command = "/absolute/path/to/dctx"
-args = ["mcp", "/absolute/path/to/project"]
-```
-
-
-### Tools and startup cost
-
-It exposes ten tools: `map`, `find`, `neighbors`, `explain`, `read`, `skeleton`,
-`grep`, `hubs`, `path`, `export`. These are query tools, not a pack or cache-admin
-interface. Export emits the whole graph without the normal answer-token cap.
-Both text and JSON `read` answers include verified source bytes. Set the MCP
-`read` argument `"json": true` for structured output with `source_utf8`, equivalent
-to the CLI's `--json`.
-
-| Payload | Exact UTF-8 bytes | Estimated tokens |
-|---|---|---|
-| Complete `tools/list` response, request ID `2`, without trailing LF | 6,135 | 1,753 |
-| Same response including one LF | 6,136 | — |
-| Compact `result.tools` array alone (definitions and schemas) | 6,091 | 1,741 |
-
-The [captured response](https://github.com/Eris-Margeta/dctx/blob/main/docs/assets/mcp-tools-list-1.2.0.json) includes its trailing LF.
-Token estimates use `ceil(2 × bytes / 7)`, the CLI's byte heuristic, **not an
-actual model tokenizer**. Clients may transform schemas, add wrappers or defer
-loading tools, so this is the definition payload's estimated startup cost, not
-the client's exact input-token count.
-
-Reproduce from the project root (with `dctx` on PATH):
-
-```sh
-python3 - <<'PYCODE'
-import json
-import subprocess
-
-requests = [
-    {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
-        "protocolVersion": "2025-06-18", "capabilities": {},
-        "clientInfo": {"name": "dctx-modality-measurement", "version": "1"}}},
-    {"jsonrpc": "2.0", "method": "notifications/initialized"},
-    {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
-]
-wire = "".join(json.dumps(r, separators=(",", ":")) + "\n" for r in requests)
-reply = subprocess.run(["dctx", "mcp", "."], input=wire.encode(),
-                       stdout=subprocess.PIPE, check=True).stdout
-line = next(x for x in reply.splitlines() if json.loads(x).get("id") == 2)
-definitions = json.dumps(json.loads(line)["result"]["tools"],
-                         ensure_ascii=False, separators=(",", ":")).encode()
-for name, payload in [("response without LF", line), ("tools array", definitions)]:
-    print(name, len(payload), "bytes;", (2 * len(payload) + 6) // 7, "est. tokens")
-PYCODE
-```
-
-Do not enable MCP solely to save output tokens on a short task. Prefer existing
-shell access when it avoids adding definitions; use MCP when the client's tool
-workflow makes repeated focused queries useful. Compare total session usage
-under the same client and model, including definition loading and extra turns.
 
 ## CI / prompt-cache prefix stability
 

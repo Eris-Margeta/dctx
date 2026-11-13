@@ -68,10 +68,8 @@ paths, preselected evidence, a prepared answer, or a hidden helper search.
 Keep common system instructions and tools identical. Give each arm neutral,
 equally useful tool guidance. Include dctx's additional instructions and schemas
 in its billed input; do not hide them behind an assumed equal start-up cost.
-Shell integration and MCP integration are separate modalities: a shell comparison
-can expose dctx through the existing shell, while MCP may add tool schemas.
-Preserve the agent's real schema-discovery behavior and measure it. Equal tool
-capabilities do not imply equal serialized context size.
+Expose dctx through the agent's existing shell. Measure any additional
+instructions rather than assuming equal serialized context size.
 
 Report each modality separately:
 
@@ -80,9 +78,8 @@ Report each modality separately:
 | Short on-demand lookup | Grep/read or dctx map/find/read for one answer | Full start-up, exploration, final answer and failures |
 | Long interactive session | Several related questions over big files in one conversation | Growing/reused history, retries, compactions and final answers |
 | Pack for chat | Grep/read supplies evidence or dctx pack supplies a snapshot/diff | Preparation, all supplied evidence, repeated turns and edits |
-| MCP versus shell | Same task through the declared integration | Actual schemas, discovery, process start and tool round trips |
 
-Do not mix pack, map, MCP, or full/diff context into one unnamed “dctx” score.
+Do not mix pack, map, or full/diff context into one unnamed “dctx” score.
 The template experiment below covers static pack-style presentation only.
 
 ### Scenarios and scale controls

@@ -12,13 +12,13 @@ python3 tools/engine-contract/parity.py target/debug/dctx-cli
 python3 tools/engine-contract/warm_read.py target/debug/dctx-cli
 ```
 
-`wrapper-api.toml` is the reviewed import allowlist. MCP and RPC share the CLI
-crate's manifest, but their source directories may only reference the listed
+`wrapper-api.toml` is the reviewed import allowlist. RPC shares the CLI
+crate's manifest, but its source directory may only reference the listed
 application entry points and wire types. Grouped imports, aliases, reexports,
 fully qualified paths and Cargo dependency renames are checked. Binding and npm
 package trees are discovered recursively, including future package additions;
 bindings may not link engine crates. New standalone transport crates matching
-`dctx-mcp*` or `dctx-rpc*` are covered too. Add other wrapper locations to the
+`dctx-rpc*` are covered too. Add other wrapper locations to the
 policy before shipping them. This conservative source lint supplements Rust
 visibility and review; it does not prove the semantics of arbitrary wrapper code.
 
@@ -37,7 +37,7 @@ CI installs `strace` using its existing trace-tool step.
 
 `goldens/cases.json` is the transport-neutral corpus. Its checked-in `.golden`
 files contain unmodified CLI engine stdout, including final newlines. The
-harness compares those bytes independently against CLI, MCP and RPC, decoding
+harness compares those bytes independently against CLI and RPC, decoding
 only their protocol envelopes. No JSON canonicalization, trimming or sorting
 is permitted. The initial cases cover line reads and empty search results;
 the existing Rust `tests/rpc.rs` suite covers the broader operation/error matrix.
@@ -54,7 +54,7 @@ python3 tools/engine-contract/parity.py target/debug/dctx-cli \
 
 An adapter exports `output(context, case) -> bytes`. `context` supplies the
 absolute engine binary, fixture directory, isolated environment and a bounded
-subprocess runner. The case supplies CLI arguments and RPC/MCP requests. Start
+subprocess runner. The case supplies CLI arguments and RPC requests. Start
 the actual package with this engine and environment, decode its envelope and
 return the untouched operation bytes. Register package adapters in CI as they
 ship; every registered adapter must pass every case. Duplicate surface names

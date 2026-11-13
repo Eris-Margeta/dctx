@@ -8,8 +8,7 @@ The current CLI uses the shared dctx facade. Older storage and Git-based designs
 in [SPEC-MAP-MODE](../SPEC-MAP-MODE.md) are not the current CLI contract.
 dctx and this guide are Apache-2.0.
 
-For a tool client, see the [MCP server guide](MCP.md), including the opt-in lean
-profile and custom tool subsets.
+For an agent using a shell, see the [agent snippet](AGENTS-SNIPPET.md).
 
 ## Definitions outside the index
 
@@ -190,10 +189,7 @@ byte cap; a cap too small for mandatory metadata and notices is refused.
 Neither verb uses `--budget` or cursors. Bounds errors name the verb, option,
 value and allowed range and exit 2. Index/source scan ceilings still apply.
 
-MCP's default tool set exposes `trace` (`from`, `to`) and `impact` (`symbol`),
-with `max_depth`, `max_paths` / `max_sites`, `max_bytes`, `also` (an array of
-read-only roots) and `json`. They can also be selected with `--tools trace,impact`.
-Engine RPC advertises the same verb names and returns their exact JSON pages.
+Engine RPC advertises `trace` and `impact` and returns their exact JSON pages.
 
 ## Languages and precision
 

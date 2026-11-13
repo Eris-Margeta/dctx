@@ -64,7 +64,7 @@ v2 context page with `verb: "context"`, `text` (the whole budgeted text page) an
 output continues to use the same engine selection and renderer.
 
 Named context returns ranked content-addressed chunks and supports opt-in delivery
-sessions. See [named context and chunk IDs](../CONTEXT.md) for the shared CLI, MCP,
+sessions. See [named context and chunk IDs](../CONTEXT.md) for the shared CLI
 and RPC contract, including final encoded budgets and reference lifetimes.
 
 Errors return `error: {"code":2,"message":"...","hint":"...","output":""}`.
@@ -73,8 +73,7 @@ usage or protocol refusal, and 3 means index/source/I/O failure. `cache_status`
 uses the same codes as `dctx cache status`.
 Clients branch on the numeric code, never diagnostic prose. `error.output` holds
 any stdout emitted before failure: a gone page or an empty context pack is not
-lost. MCP treats a gone page as an ordinary tool result, as documented in the CLI
-contract; its page bytes still match `error.output`.
+lost.
 
 Every line produces one reply. A blank line, malformed JSON, invalid UTF-8,
 unknown verb, missing id, invalid arguments or oversized frame returns a usage
@@ -113,8 +112,7 @@ cargo run -p dctx-cli --example rpc_schema > docs/protocol/dctx-rpc-v1.schema.js
 
 The regular workspace test gate byte-compares the committed schema with its
 regeneration. It also compares sixteen fixed-corpus operation outputs against
-the CLI and every corresponding advertised MCP tool, tests CLI error/status
+the CLI, tests CLI error/status
 parity, and tests framing, ordering, handshake, unknown fields, cancellation
-semantics and malformed-line recovery. The MCP tool list is discovered at test
-time so the lean profile can evolve independently. These checks run in the
+semantics and malformed-line recovery. These checks run in the
 existing CI workspace test job on each supported OS/toolchain.

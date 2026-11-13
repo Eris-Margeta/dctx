@@ -76,7 +76,7 @@ def changelog(linker) -> str:
     return f"""<div class="wrap"><div class="page-head">{{{{crumbs}}}}<span class="eyebrow">Changelog</span><h1>Changelog</h1>
 <p class="lede">Every release, including known issues we have measured and not yet fixed. Generated from <a href="{BLOB}CHANGELOG.md">CHANGELOG.md</a>; also an <a href="/changelog/feed.xml">Atom feed</a>.</p>
 <nav aria-label="Releases"><ul class="toc-row">{"".join(toc)}</ul></nav></div>
-<div class="prose">{"".join(parts)}</div></div>"""
+<!-- release-history:start --><div class="prose">{"".join(parts)}</div><!-- release-history:end --></div>"""
 
 
 def news_index() -> str:

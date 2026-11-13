@@ -2,7 +2,7 @@
 # Security model
 
 This document describes implementation boundaries and regression evidence for the
-current engine and its CLI, stdio MCP, and stdio RPC. It is not a security
+current engine and its CLI and stdio RPC. It is not a security
 certification. See [SECURITY.md](../SECURITY.md) for reporting.
 
 ## Trust and assets
@@ -23,7 +23,7 @@ policy; `Source` implementations supplied by a caller are responsible for their
 own filesystem confinement.
 
 Transport surfaces dispatch engine operations. They do not grant access to a
-root the engine has not opened. MCP exposes its existing tool set; RPC framing
+root the engine has not opened. RPC framing
 does not constitute remote authentication or an Internet service.
 
 ## Paths, links, and races
@@ -79,7 +79,7 @@ Evidence:
   and listings through links, sparse files, and FIFOs.
 - `crates/dctx/tests/hostile_walk.rs` covers invalid UTF-8 names and source, control
   characters, and backslash names while retaining a readable positive control.
-- `crates/dctx-cli/tests/security.rs` exercises CLI, MCP, and RPC with outside
+- `crates/dctx-cli/tests/security.rs` exercises CLI and RPC with outside
   file/directory symlinks and parent traversal, alongside an authorized read.
   Windows-only tests cover directory pinning and junction refusal.
 - `dctx-adapter-fs` freshness tests inject a stat/read race and same-stamp byte edit;
@@ -107,8 +107,6 @@ above the active engine ceiling.
 | CLI nested rule loading | 257 levels for rule-file lookup (recursion guard 256), 100,000 visited entries, 8 MiB of accumulated rewritten local rules |
 | Query pages | Verb hard caps: at most 2,000 estimated tokens (1,000 for explain); smaller requested/host budgets intersect these |
 | Read page | At most 400 source lines, also subject to encoded output budget |
-| MCP input | 1 MiB per line including LF; an oversized line emits a parse error and closes the session after reading at most cap + 1 bytes |
-| MCP JSON nesting | 64 parser levels |
 | CLI RPC input | 1 MiB per line excluding LF; oversized frames are discarded and refused |
 
 The environment ceiling overrides are trusted deployment settings. Raising them
@@ -126,9 +124,8 @@ before accepting a document. This does not authorize unpacking arbitrary archive
 or extracting paths onto disk.
 
 Evidence includes the sparse-file and bounded-listing filesystem tests, operation
-limit tests, `source_ceiling` tests (including shell-like invalid strings), MCP
-oversized/invalid-UTF-8 frame tests and JSON-depth tests, RPC oversized-frame tests,
-and `crates/dctx-pack/tests/legacy_import.rs` tests for malicious
+limit tests, `source_ceiling` tests (including shell-like invalid strings),
+RPC oversized-frame tests, and `crates/dctx-pack/tests/legacy_import.rs` tests for malicious
 lengths/counts/offsets and a 10,000-level depth bomb.
 
 ## Cache isolation
@@ -166,7 +163,7 @@ by group or others, ancestors pass the checks above, and the root is tightened t
 through a no-follow handle. Store subdirectories are created 0700. Windows store
 privacy depends on deployment ACLs.
 
-Stdio MCP/RPC inherit the launching process's authorization and have no
+Stdio RPC inherits the launching process's authorization and has no
 separate authentication layer.
 
 ## Pack output markers
