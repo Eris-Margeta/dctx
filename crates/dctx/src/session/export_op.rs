@@ -125,7 +125,7 @@ mod tests {
         let error = CheckedWriter::new(&mut client, cancel.as_ref())
             .write_all(b"page")
             .unwrap_err();
-        assert_eq!(error.to_string(), "cancelled");
+        assert_eq!(error.to_string(), "cancelled; submit a new request to resume work");
         assert_eq!(client.calls, 1);
     }
 

@@ -612,7 +612,7 @@ fn compact_strings_preserve_heading_ids_edges_and_exports() {
     let cache = dir.path().join("cache");
     std::fs::create_dir(&cache).expect("cache");
     let mut source = MemorySource::new();
-    let heading = "Repeated heading Ω ~1";
+    let heading = "Repeated heading Ω 1";
     for path in ["a.md", "b.md"] {
         source
             .insert_file(
