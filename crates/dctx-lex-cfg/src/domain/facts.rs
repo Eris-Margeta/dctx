@@ -18,7 +18,10 @@ pub enum Dialect {
 }
 
 impl Dialect {
-    /// Selects a dialect from the final extension. Other extensions are unsupported.
+    /// Selects a dialect from the final extension, case-insensitively.
+    ///
+    /// Returns `None` for missing or unsupported extensions. This only selects a
+    /// dialect; [`crate::CfgLexer::extract`] separately validates the path identity.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
@@ -81,17 +84,18 @@ pub struct RawReference {
 /// Why a span could not be extracted with full structure.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DiagnosticReason {
-    /// A block comment has no closing `*/`.
+    /// A block comment has no closing `*/`. Close the comment and extract again.
     UnterminatedComment = 0,
-    /// A quoted string is not closed.
+    /// A quoted string is not closed. Add its closing quote and extract again.
     UnterminatedString = 1,
-    /// A bracket, brace or flow collection is not closed.
+    /// A bracket, brace or flow collection is not closed. Add the matching closer.
     UnbalancedBracket = 2,
-    /// A span is not valid configuration syntax.
+    /// A span is not valid configuration syntax. Correct the syntax at the diagnostic.
     InvalidSyntax = 3,
-    /// The same key is assigned again. The first assignment is kept.
+    /// The same key is assigned again. The first assignment is kept; remove or rename duplicates.
     DuplicateKey = 4,
-    /// A key cannot form a stable id. That key is abstained.
+    /// A key cannot form a stable id. That key is abstained; use a nonempty key of
+    /// at most 512 bytes without control characters, `#` or `~`.
     UnsupportedName = 5,
 }
 
@@ -100,7 +104,7 @@ pub enum DiagnosticReason {
 pub struct Diagnostic {
     /// One-based line of the problem.
     pub line: u32,
-    /// Byte offset of the problem.
+    /// Byte offset of the problem in the original input, including any UTF-8 BOM.
     pub byte: u32,
     /// Problem category.
     pub reason: DiagnosticReason,
