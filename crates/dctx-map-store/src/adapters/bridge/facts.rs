@@ -6,7 +6,7 @@
 
 use super::ledger;
 use crate::domain::{FactKey, Result, Retain, StoreError, plain_label};
-use rusqlite::{Connection, OptionalExtension, params};
+use rusqlite::{Connection, OptionalExtension, TransactionBehavior, params};
 
 pub(crate) fn retain(
     connection: &mut Connection,
@@ -21,7 +21,7 @@ pub(crate) fn retain(
     key.check()?;
     let charge = ledger::charge(payload.len())?;
     let key_text = key.to_string();
-    let transaction = connection.transaction()?;
+    let transaction = connection.transaction_with_behavior(TransactionBehavior::Immediate)?;
     let (now, _) = ledger::touch(&transaction, now_ms)?;
     let now_i = clock(now)?;
     let existing: Option<Vec<u8>> = transaction
@@ -75,7 +75,7 @@ pub(crate) fn retained(
     plain_label(namespace)?;
     key.check()?;
     let key_text = key.to_string();
-    let transaction = connection.transaction()?;
+    let transaction = connection.transaction_with_behavior(TransactionBehavior::Immediate)?;
     let (now, _) = ledger::touch(&transaction, now_ms)?;
     ledger::reclaim(&transaction, now, None)?;
     let payload: Option<Vec<u8>> = transaction
@@ -103,7 +103,7 @@ pub(crate) fn release_root(
 ) -> Result<()> {
     plain_label(namespace)?;
     plain_label(root)?;
-    let transaction = connection.transaction()?;
+    let transaction = connection.transaction_with_behavior(TransactionBehavior::Immediate)?;
     let (now, _) = ledger::touch(&transaction, now_ms)?;
     transaction.execute(
         "DELETE FROM blob_refs WHERE namespace = ?1 AND root_id = ?2",

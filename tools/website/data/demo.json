@@ -481,7 +481,7 @@
     ""
    ],
    "stdout": "",
-   "stderr": "❌ Error: map: this verb requires a target\nhint: pass a non-empty name or phrase, for example: dctx map find alpha\n",
+   "stderr": "❌ Error: map: this verb requires a target; next: correct the request or source input and retry; use dctx map --help for options\nhint: pass a non-empty name or phrase, for example: dctx map find alpha\n",
    "exit": 2,
    "bytes": 0,
    "est_tokens": 0,
