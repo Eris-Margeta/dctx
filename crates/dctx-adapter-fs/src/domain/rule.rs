@@ -50,6 +50,8 @@ impl Rule {
 
 /// Parses one rule line. Blank lines and comments are `None`.
 /// `[` is a literal byte, matching the existing plain matcher.
+/// `*` and `?` match within a component; `**/` matches zero or more directories.
+/// A trailing `/*` without earlier wildcards selects the entire path prefix.
 #[allow(
     clippy::must_use_candidate,
     reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
@@ -98,7 +100,7 @@ fn classify(text: &str) -> Pattern {
             return Pattern::Suffix(rest.to_string());
         }
         if let Some(rest) = text.strip_suffix("/*")
-            && !rest.contains('*')
+            && !rest.contains(['*', '?'])
         {
             return Pattern::Prefix(format!("{rest}/"));
         }

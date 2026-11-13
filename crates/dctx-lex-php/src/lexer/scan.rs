@@ -38,7 +38,10 @@ pub(super) fn scan(src: &str, out: &mut Lexed, limits: &Limits) -> Result<(), Le
             continue;
         } else if rest.starts_with("//") || (b == b'#' && !rest.starts_with("#[")) {
             i += if b == b'#' { 1 } else { 2 };
-            while i < bytes.len() && bytes[i] != b'\n' && !src[i..].starts_with("?>") {
+            while i < bytes.len()
+                && !matches!(bytes[i], b'\r' | b'\n')
+                && !src[i..].starts_with("?>")
+            {
                 i += src[i..].chars().next().map_or(1, char::len_utf8);
             }
             out.comments.push((start, i));

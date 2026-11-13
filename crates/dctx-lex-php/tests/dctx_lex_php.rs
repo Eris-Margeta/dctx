@@ -377,7 +377,7 @@ fn typed_refusals_have_positive_controls() {
         Err(LexError::TooManyFacts { .. })
     ));
     assert_eq!(PARSER_ID, "dctx-lex-php");
-    assert_eq!(PARSER_REVISION, 1);
+    assert_eq!(PARSER_REVISION, 2);
     assert_eq!(body_fingerprint(" a\n b "), body_fingerprint("a b"));
 }
 

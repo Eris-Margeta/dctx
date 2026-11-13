@@ -96,7 +96,7 @@ fn checked_parse(path: &str, source: &[u8]) -> ParsedFile {
     assert_eq!(facts.language, Language::Kotlin);
     assert_eq!(facts.precision.coverage().as_str(), "structural");
     assert_eq!(facts.precision.completion().as_str(), "complete");
-    assert_eq!(facts.precision.parser().as_str(), "dctx-lex-kt:2");
+    assert_eq!(facts.precision.parser().as_str(), "dctx-lex-kt:3");
     let repeated = PureParser.parse(path, source).unwrap();
     assert_store_accepts(&repeated, source);
     assert_eq!(facts, repeated);

@@ -204,7 +204,7 @@ fn xorshift(state: &mut u64) -> u64 {
 #[test]
 fn golden_basic_extracts_structure_and_abstains_from_metaprogramming() {
     assert_eq!(PARSER_ID, "dctx-lex-rb");
-    assert_eq!(PARSER_REVISION, 1);
+    assert_eq!(PARSER_REVISION, 2);
     let facts = extract("basic.rb", BASIC);
     assert_eq!(facts.dialect, Dialect::Ruby);
     assert!(facts.diagnostics.is_empty(), "{:?}", facts.diagnostics);

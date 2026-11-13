@@ -9,6 +9,11 @@ use crate::compress::{compress, encode_state};
 use crate::error::HashError;
 
 /// Streaming SHA-256. `Copy` because the state is a fixed-size block, not a buffer on the heap.
+///
+/// Messages may contain arbitrary bytes, including invalid UTF-8. Updates append
+/// bytes in order without normalization or deduplication. The total message must
+/// contain at most `u64::MAX / 8` bytes. Copies are independent snapshots and can
+/// be extended or finalized on separate threads.
 #[derive(Clone, Copy, Debug)]
 pub struct Sha256 {
     state: [u32; 8],
@@ -25,6 +30,7 @@ impl Default for Sha256 {
 
 impl Sha256 {
     /// Starts a new SHA-256 computation (FIPS 180-4 §5.3.3).
+    /// Equivalent to [`Self::default`]; finalizing immediately hashes the empty message.
     #[must_use]
     pub const fn new() -> Self {
         Self {
@@ -46,9 +52,12 @@ impl Sha256 {
 
     /// Absorbs `data`. On [`HashError::MessageTooLong`] the hasher is unchanged.
     ///
+    /// Empty updates are no-ops. Splitting the same message across updates does
+    /// not change the digest; repeating a nonempty update appends those bytes again.
+    ///
     /// # Errors
     /// Returns [`HashError::MessageTooLong`] if the total message would exceed
-    /// the SHA-256 limit of `u64::MAX / 8` bytes.
+    /// the SHA-256 limit of `u64::MAX / 8` bytes. Hash fewer bytes in each message.
     pub fn update(&mut self, mut data: &[u8]) -> Result<(), HashError> {
         let additional = u64::try_from(data.len()).map_err(|_| HashError::MessageTooLong)?;
         let total = checked_message_len(self.bytes, additional)?;
@@ -76,6 +85,9 @@ impl Sha256 {
     }
 
     /// Pads the message and returns the algorithm-tagged digest (FIPS 180-4 §5.1.1 and §5.2.1).
+    ///
+    /// Because the state is [`Copy`], this finalizes a snapshot: the original can
+    /// still be updated or finalized again with byte-identical output.
     #[must_use]
     pub fn finalize(mut self) -> ContentDigest {
         let bit_len = bit_length(self.bytes);
@@ -98,7 +110,17 @@ impl Sha256 {
     ///
     /// # Errors
     /// Returns [`HashError::MessageTooLong`] if `data` exceeds the SHA-256
-    /// limit of `u64::MAX / 8` bytes.
+    /// limit of `u64::MAX / 8` bytes. Hash fewer bytes in each message.
+    ///
+    /// # Examples
+    /// ```
+    /// use dctx_hash::Sha256;
+    /// let mut hash = Sha256::new();
+    /// hash.update(b"a")?;
+    /// hash.update(b"bc")?;
+    /// assert_eq!(hash.finalize(), Sha256::digest(b"abc")?);
+    /// # Ok::<(), dctx_hash::HashError>(())
+    /// ```
     pub fn digest(data: &[u8]) -> Result<ContentDigest, HashError> {
         let mut hasher = Self::new();
         hasher.update(data)?;
@@ -227,14 +249,6 @@ mod tests {
             Err(HashError::MessageTooLong)
         );
         assert!(Sha256::digest(b"abc").is_ok());
-        let mut hasher = Sha256::new();
-        hasher.update(b"abc").unwrap();
-        let before = hasher;
-        assert_eq!(
-            checked_message_len(u64::MAX, 1),
-            Err(HashError::MessageTooLong)
-        );
-        assert_eq!(hasher.finalize(), before.finalize());
     }
 
     #[test]
@@ -243,6 +257,29 @@ mod tests {
         assert_copy::<Sha256>();
         assert!(core::mem::size_of::<Sha256>() <= 128);
         assert_eq!(bit_length(1), 8);
-        assert_eq!(bit_length(u64::MAX / 8), (u64::MAX / 8).wrapping_mul(8));
+        assert_eq!(bit_length(u64::MAX / 8), u64::MAX - 7);
+    }
+
+    #[test]
+    fn maximum_length_is_accepted_and_overflow_leaves_state_unchanged() {
+        // Exercise the actual update guard without allocating an enormous message.
+        let mut hasher = Sha256::new();
+        hasher.bytes = u64::MAX / 8 - 1;
+        hasher.buf_len = 62;
+        hasher.update(&[0xff]).unwrap();
+        assert_eq!(hasher.bytes, u64::MAX / 8);
+        assert_eq!(hasher.buf_len, 63);
+        hasher.update(&[]).unwrap();
+        let before = hasher;
+        for data in [&[0][..], &[0; 2], &[0; 64], &[0; 65]] {
+            assert_eq!(hasher.update(data), Err(HashError::MessageTooLong));
+            assert_eq!(hasher.bytes, before.bytes);
+            assert_eq!(hasher.buf_len, before.buf_len);
+            assert_eq!(hasher.buf, before.buf);
+            assert_eq!(hasher.state, before.state);
+            assert_eq!(hasher.finalize(), before.finalize());
+        }
+        hasher.update(&[]).unwrap();
+        assert_eq!(hasher.finalize(), before.finalize());
     }
 }

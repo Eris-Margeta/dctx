@@ -104,7 +104,12 @@ fn check(source: &str, facts: &Extraction) {
 }
 
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(256))]
+    #![proptest_config(ProptestConfig {
+        cases: 256,
+        rng_seed: proptest::test_runner::RngSeed::Fixed(1113),
+        failure_persistence: None,
+        ..ProptestConfig::default()
+    })]
 
     #[test]
     fn arbitrary_bytes_never_panic(bytes in proptest::collection::vec(any::<u8>(), 0..512)) {

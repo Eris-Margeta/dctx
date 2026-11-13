@@ -60,7 +60,7 @@ fn fact_sections(
     for fact in input.facts {
         facts.push(compile_fact(fact, &dict)?);
     }
-    facts.sort_by_key(|left| facts::encode_key(&left.key));
+    facts.sort_by(|left, right| facts::cmp_key(&left.key, &right.key));
     let postings = compile_postings(
         SegmentRole::Fact,
         input.terms,
@@ -388,15 +388,15 @@ fn resolve_doc(
     Ok(id)
 }
 
-fn remember(
-    set: &mut BTreeSet<String>,
-    value: &str,
+fn remember<'a>(
+    set: &mut BTreeSet<&'a str>,
+    value: &'a str,
     limits: &DecoderLimits,
 ) -> Result<(), SegmentError> {
     if usize::try_from(limits.max_string_bytes).is_ok_and(|max| value.len() > max) {
         return Err(SegmentError::Limit("string"));
     }
-    set.insert(value.to_owned());
+    set.insert(value);
     if u64::try_from(set.len()).unwrap_or(u64::MAX) > limits.max_records {
         return Err(SegmentError::Limit("records"));
     }

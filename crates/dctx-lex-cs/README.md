@@ -5,7 +5,7 @@ deterministic `LexedFile` facts. The extension match is case-insensitive.
 Other extensions are `UnsupportedDialect`. The caller performs scanning and
 file IO; this crate does not read the disk, the environment, or git.
 
-`PARSER_ID` is `dctx-lex-cs` and `PARSER_REVISION` is `1`. Every node
+`PARSER_ID` is `dctx-lex-cs` and `PARSER_REVISION` is `3`. Every node
 carries a `body_fingerprint`: SHA-256 of the body with whitespace runs
 collapsed, from `dctx-hash`. A declaration with braces fingerprints that
 brace span. A field with `=` fingerprints the initializer. Anything else

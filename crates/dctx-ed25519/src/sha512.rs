@@ -19,6 +19,9 @@ pub(crate) const INITIAL: [u64; 8] = [
 /// Allocation-free SHA-512 state for messages shorter than 2^128 bits.
 ///
 /// This is the ordinary SHA-512 digest, not an Ed25519ph interface.
+/// Messages are arbitrary bytes; there is no text decoding or normalization.
+/// Clones are independent snapshots and may be updated on separate threads.
+/// At most `u128::MAX / 8` message bytes may be appended to one state.
 #[derive(Clone)]
 pub struct Sha512 {
     state: [u64; 8],
@@ -35,6 +38,7 @@ impl Default for Sha512 {
 
 impl Sha512 {
     /// Creates an empty SHA-512 state.
+    /// Equivalent to [`Self::default`]; finalizing immediately hashes the empty message.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the public constructor's existing caller lint behavior."
@@ -49,8 +53,17 @@ impl Sha512 {
     }
 
     /// Appends bytes; empty updates are allowed and chunking does not affect the digest.
+    ///
+    /// Repeating a nonempty update appends those bytes again, in order.
+    ///
+    /// # Panics
+    /// Panics before changing the state if the cumulative message would exceed
+    /// `u128::MAX / 8` bytes (the FIPS 180-4 limit of fewer than 2^128 bits).
+    /// Hash fewer bytes per message to stay within this limit.
     pub fn update(&mut self, mut bytes: &[u8]) {
-        self.bits = self.bits.wrapping_add((bytes.len() as u128) * 8);
+        self.bits = self.bits.checked_add((bytes.len() as u128) * 8).expect(
+            "SHA-512 message must be shorter than 2^128 bits; hash fewer bytes per message",
+        );
         if self.used != 0 {
             let take = (128 - self.used).min(bytes.len());
             self.buffer[self.used..self.used + take].copy_from_slice(&bytes[..take]);
@@ -71,6 +84,8 @@ impl Sha512 {
     }
 
     /// Consumes the state, adds FIPS padding and returns 64 digest bytes.
+    /// Clone the state first to finalize a snapshot while keeping the original
+    /// available for further updates. Repeated snapshots produce identical bytes.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the consuming digest API's existing caller lint behavior."
@@ -92,6 +107,19 @@ impl Sha512 {
     }
 
     /// Hashes a message in one call.
+    /// Equivalent to [`Self::new`], [`Self::update`] and [`Self::finalize`],
+    /// including for empty input and arbitrary binary data.
+    ///
+    /// # Examples
+    /// ```
+    /// use dctx_ed25519::Sha512;
+    /// let mut hash = Sha512::new();
+    /// hash.update(b"a");
+    /// let mut fork = hash.clone();
+    /// fork.update(b"bc");
+    /// assert_eq!(fork.finalize(), Sha512::digest(b"abc"));
+    /// assert_eq!(hash.finalize(), Sha512::digest(b"a"));
+    /// ```
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the one-shot digest API's existing caller lint behavior."
@@ -157,5 +185,34 @@ mod tests {
         hash.bits = u128::from(u64::MAX) - 7;
         hash.update(&[0]);
         assert_eq!(hash.bits, 1u128 << 64);
+    }
+
+    #[test]
+    fn maximum_length_is_accepted_and_overflow_leaves_state_unchanged() {
+        // Inject only the unreachable-in-practice length; never forge a huge slice.
+        let mut hash = Sha512::new();
+        hash.bits = u128::MAX - 15;
+        hash.used = 126;
+        hash.update(&[0xff]);
+        assert_eq!(hash.bits, u128::MAX - 7);
+        assert_eq!(hash.used, 127);
+        hash.update(&[]);
+        let before = hash.clone();
+
+        let overflow = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            hash.update(&[0]);
+        }));
+        let panic = overflow.expect_err("overlong SHA-512 input must not wrap");
+        let message = panic
+            .downcast_ref::<&str>()
+            .copied()
+            .or_else(|| panic.downcast_ref::<String>().map(String::as_str))
+            .unwrap();
+        assert!(message.contains("hash fewer bytes"));
+        assert_eq!(hash.bits, before.bits);
+        assert_eq!(hash.used, before.used);
+        assert_eq!(hash.buffer, before.buffer);
+        assert_eq!(hash.state, before.state);
+        assert_eq!(hash.finalize(), before.finalize());
     }
 }

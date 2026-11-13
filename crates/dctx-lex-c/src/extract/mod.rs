@@ -13,8 +13,9 @@ use declarations_types::{Draft, DraftRef};
 use crate::domain::{
     DiagnosticReason, Dialect, LexError, LexedFile, Limits, Precision, body_fingerprint,
 };
-use crate::lexer::{AngleDepth, Comment, Kind, Lexed, NONE, Token, opens_template_args, slice};
+use crate::lexer::{AngleDepth, Comment, Kind, Lexed, NONE, TemplateMatches, Token, slice};
 use dctx_map_model::{EdgeKind, Node, NodeKind, StableId, Summary, SummarySource, SymbolKind};
+use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet};
 
 /// Extracts facts from an already-lexed C or C++ file.
@@ -42,6 +43,7 @@ pub(crate) fn extract(
         cond: 0,
         cond_open: Vec::new(),
         max_depth: limits.max_depth,
+        templates: RefCell::new(TemplateMatches::default()),
     };
     let root = Scope::file();
     walker.walk(0, walker.toks.len(), &root);
@@ -123,6 +125,7 @@ pub(crate) struct Walker<'a> {
     pub(crate) cond: u32,
     cond_open: Vec<u32>,
     pub(crate) max_depth: u32,
+    pub(crate) templates: RefCell<TemplateMatches>,
 }
 
 impl<'a> Walker<'a> {
@@ -368,13 +371,13 @@ impl<'a> Walker<'a> {
 
     pub(crate) fn skip_angles(&self, lt: usize, end: usize) -> Option<usize> {
         let end = end.min(self.toks.len());
-        if !opens_template_args(|index| self.text(index), end, lt) {
+        if !self.opens_template(lt, end) {
             return None;
         }
         let mut angles = AngleDepth::new();
         for index in lt..end {
             let spelling = self.text(index);
-            let opens = spelling == "<" && opens_template_args(|at| self.text(at), end, index);
+            let opens = spelling == "<" && self.opens_template(index, end);
             let before = angles.depth();
             angles.observe(spelling, opens);
             if before > 0 && angles.at_statement_level() {
@@ -385,6 +388,12 @@ impl<'a> Walker<'a> {
             }
         }
         None
+    }
+
+    pub(crate) fn opens_template(&self, index: usize, end: usize) -> bool {
+        self.templates
+            .borrow_mut()
+            .opens(|at| self.text(at), self.toks.len(), end, index)
     }
 
     pub(crate) fn find_lt_back(&self, gt: usize) -> Option<usize> {

@@ -268,7 +268,7 @@ fn real_facts(path: &str) -> ParsedFile {
     assert_eq!(facts.language, Language::Ruby);
     assert_eq!(facts.precision.coverage().as_str(), "structural");
     assert_eq!(facts.precision.completion().as_str(), "complete");
-    assert_eq!(facts.precision.parser().as_str(), "dctx-lex-rb:1");
+    assert_eq!(facts.precision.parser().as_str(), "dctx-lex-rb:2");
     assert_eq!(facts.nodes.len(), 2);
     assert_eq!(facts.nodes[0].kind, NodeKind::Module);
     assert_eq!(facts.nodes[0].name, path);
@@ -284,7 +284,7 @@ fn real_facts(path: &str) -> ParsedFile {
 fn fixture_facts(path: &str) -> ParsedFile {
     let facts = PureParser.parse(path, RUBY).expect(path);
     assert_eq!(facts.language, Language::Ruby);
-    assert_eq!(facts.precision.parser().as_str(), "dctx-lex-rb:1");
+    assert_eq!(facts.precision.parser().as_str(), "dctx-lex-rb:2");
     assert_eq!(facts.nodes[0].name, path);
     assert_eq!(facts.edges.len(), 3);
     facts

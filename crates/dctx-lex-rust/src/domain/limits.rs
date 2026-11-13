@@ -23,7 +23,8 @@ impl Limits {
         max_records: 200_000,
     };
 
-    /// Limits clamped to [`Limits::CEILING`].
+    /// Inclusive limits clamped to [`Limits::CEILING`], with zero preserved.
+    /// A zero byte limit accepts empty input; a zero nesting limit accepts no tokens.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the existing public API's caller lint behavior for the limits constructor."
@@ -55,6 +56,7 @@ impl Limits {
     }
 
     /// Largest number of declarations, imports and references together.
+    /// Zero retains no records; overflow yields partial facts rather than an error.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the existing public API's caller lint behavior for the limits accessor."
@@ -74,7 +76,9 @@ impl Default for Limits {
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum Refusal {
     /// Input exceeds the byte limit; nothing was read.
-    #[error("input of {bytes} bytes exceeds the {limit}-byte limit")]
+    #[error(
+        "input of {bytes} bytes exceeds the {limit}-byte limit; split the file or reduce the input and retry"
+    )]
     TooLarge {
         /// Input length.
         bytes: usize,
@@ -82,13 +86,15 @@ pub enum Refusal {
         limit: usize,
     },
     /// Input is not UTF-8.
-    #[error("input is not UTF-8 after byte {valid_up_to}")]
+    #[error(
+        "input is not UTF-8 after byte {valid_up_to}; decode or transcode the source to UTF-8 and retry"
+    )]
     InvalidUtf8 {
         /// Length of the valid prefix.
         valid_up_to: usize,
     },
     /// Nesting cost exceeds the limit; syn was not run.
-    #[error("nesting exceeds {limit} at line {line}")]
+    #[error("nesting exceeds {limit} at line {line}; reduce syntactic nesting and retry")]
     TooDeep {
         /// First line where the limit was crossed.
         line: u32,
@@ -96,19 +102,25 @@ pub enum Refusal {
         limit: u32,
     },
     /// Unterminated literal, comment or delimiter.
-    #[error("unlexable input at line {line}")]
+    #[error(
+        "unlexable input at line {line}; repair invalid tokens and close literals, comments and delimiters, then retry"
+    )]
     Lex {
         /// Reported line, 1-based; 0 when unknown.
         line: u32,
     },
     /// Tokens do not form a supported Rust file.
-    #[error("unsupported or invalid syntax at line {line}")]
+    #[error(
+        "unsupported or invalid syntax at line {line}; repair Rust syntax at the reported line and retry"
+    )]
     Syntax {
         /// First error line, 1-based.
         line: u32,
     },
     /// The record limit was reached; later facts were dropped.
-    #[error("more than {limit} records")]
+    #[error(
+        "more than {limit} records; split the file or increase max_records up to Limits::CEILING and retry"
+    )]
     TooManyRecords {
         /// Applied limit.
         limit: usize,
@@ -145,7 +157,7 @@ mod tests {
         let refusal = Refusal::TooLarge { bytes: 9, limit: 8 };
         assert_eq!(
             refusal.to_string(),
-            "input of 9 bytes exceeds the 8-byte limit"
+            "input of 9 bytes exceeds the 8-byte limit; split the file or reduce the input and retry"
         );
     }
 }

@@ -20,6 +20,7 @@ use std::{fs, io, path::PathBuf};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceOptions {
     /// Directory that holds plain `ignore` and `omitcontent` files, when the caller wants them.
+    /// Each rule file must be UTF-8 and at most 1 MiB when using [`StdFs`].
     pub global_dir: Option<PathBuf>,
     /// Ignored paths stay closed and may be listed as metadata only.
     pub debug_ignored: bool,
@@ -102,7 +103,8 @@ impl<F: SourceFs> FsSource<F> {
         &self.fs
     }
 
-    /// Lists visible files. Excluded paths are not opened. Escapes fail the inventory.
+    /// Lists visible files in relative-path order. Excluded paths are not opened.
+    /// Escapes and relative paths above 4096 UTF-8 bytes fail the inventory.
     ///
     /// # Errors
     /// Returns filesystem, invalid-path or confinement errors encountered while walking visible entries.
@@ -111,6 +113,8 @@ impl<F: SourceFs> FsSource<F> {
     }
 
     /// Reads one included file. A race returns [`SourceError::Stale`] and no bytes.
+    /// `relative` must contain normal `/`-separated components within 4096 UTF-8 bytes.
+    /// Binary content is accepted; [`StdFs`] bounds the file at 8 MiB.
     ///
     /// # Errors
     /// Refuses missing, excluded or escaping paths; propagates IO errors and reports a stale identity without returning bytes.

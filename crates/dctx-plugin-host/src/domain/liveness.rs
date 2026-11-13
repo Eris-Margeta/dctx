@@ -151,10 +151,19 @@ impl LivenessFeed {
         }
     }
 
+    /// Removes a refused request without treating the refusal as useful progress.
+    pub(crate) fn broker_refused(&mut self, id: &RequestId) {
+        self.broker.remove(id);
+    }
+
     /// Registers a host-known live dependency.
+    /// Repeating a registration preserves its state, including a terminal resolved/dead state.
     /// # Errors
     /// Refuses when the tracked-dependency limit is reached.
     pub fn register_dependency(&mut self, dependency: Token) -> Result<(), HostRefusal> {
+        if self.dependencies.contains_key(&dependency) {
+            return Ok(());
+        }
         if self.dependencies.len() >= MAX_TRACKED {
             return Err(HostRefusal::limit("too-many-dependencies"));
         }
@@ -163,8 +172,13 @@ impl LivenessFeed {
     }
 
     /// `ResolveDependency`: resolved is useful progress; dead is stall evidence.
+    /// Only the first settlement of a pending dependency counts. Repeated, contradictory,
+    /// and unknown settlements do not create progress; register a new token for new work.
     pub fn settle_dependency(&mut self, dependency: &Token, alive: bool, now: u64) {
         if let Some(state) = self.dependencies.get_mut(dependency) {
+            if *state != Dependency::Pending {
+                return;
+            }
             *state = if alive {
                 Dependency::Resolved
             } else {

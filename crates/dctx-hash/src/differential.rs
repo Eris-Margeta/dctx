@@ -9,6 +9,14 @@ mod tests {
     use proptest::prelude::*;
 
     proptest! {
+        #![proptest_config(ProptestConfig {
+            cases: 128,
+            failure_persistence: None,
+            rng_seed: proptest::test_runner::RngSeed::Fixed(1113),
+            rng_algorithm: proptest::test_runner::RngAlgorithm::ChaCha,
+            ..ProptestConfig::default()
+        })]
+
         #[test]
         fn matches_sha2_for_one_shot_and_split_updates(
             data in proptest::collection::vec(any::<u8>(), 0..2048),

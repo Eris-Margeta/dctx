@@ -5,7 +5,7 @@
 //! Out-of-line `Type::name` definitions stay methods of the enclosing scope.
 use super::{Item, Region, Scope, Walker};
 use crate::domain::DiagnosticReason;
-use crate::lexer::{AngleDepth, Kind, keyword, opens_template_args};
+use crate::lexer::{AngleDepth, Kind, keyword};
 use dctx_map_model::SymbolKind;
 
 pub(crate) struct FoundFn {
@@ -470,7 +470,7 @@ impl Walker<'_> {
 
     fn observe_nest(&self, index: usize, end: usize, nest: &mut AngleDepth) {
         let spelling = self.text(index);
-        let opens = spelling == "<" && opens_template_args(|at| self.text(at), end, index);
+        let opens = spelling == "<" && self.opens_template(index, end);
         nest.observe(spelling, opens);
     }
 }

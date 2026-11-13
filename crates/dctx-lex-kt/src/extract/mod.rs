@@ -136,7 +136,7 @@ impl Draft {
     )]
     fn new(path: &str, source: &str, lexed: &Lexed, max_facts: usize) -> Result<Self, LexError> {
         let id = StableId::new(NodeKind::Module, path, None, None)?;
-        let lines = source.bytes().filter(|byte| *byte == b'\n').count() as u32 + 1;
+        let lines = lexed.line(source.len() as u32);
         let summary = match leading_kdoc(source, lexed) {
             Some(text) => Summary {
                 text,

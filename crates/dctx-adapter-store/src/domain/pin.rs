@@ -5,6 +5,7 @@
 //! The handle names digests. It does not borrow the store.
 
 use crate::SegmentRole;
+use std::sync::Arc;
 
 /// One segment inside a pin.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -37,10 +38,12 @@ impl PinnedSegment {
     }
 }
 
-/// Short lease on one generation. Release it with [`crate::SegmentStore::release`].
+/// Short lease on one generation, valid only in the store instance that acquired it.
+/// Release it with [`crate::SegmentStore::release`]; another store cannot use this handle.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Pin {
     pub(crate) id: u64,
+    pub(crate) token: Arc<()>,
     pub(crate) root: String,
     pub(crate) generation: u64,
     pub(crate) manifest: [u8; 32],

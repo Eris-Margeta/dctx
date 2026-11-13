@@ -65,13 +65,11 @@ pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
         diagnostics: Vec::new(),
         lines: vec![0],
     };
-    result.lines.extend(
-        source
-            .bytes()
-            .enumerate()
-            .filter(|(_, b)| *b == b'\n')
-            .map(|(i, _)| i + 1),
-    );
+    for (index, &byte) in source.as_bytes().iter().enumerate() {
+        if byte == b'\n' || (byte == b'\r' && source.as_bytes().get(index + 1) != Some(&b'\n')) {
+            result.lines.push(index + 1);
+        }
+    }
     scan::scan(source, &mut result, limits)?;
     result.partner.resize(result.tokens.len(), None);
     let mut stack: Vec<usize> = Vec::new();

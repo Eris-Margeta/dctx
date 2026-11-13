@@ -179,11 +179,23 @@ impl fmt::Display for Refusal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} at {} ({}): {}",
+            "{} at {} ({}): {}; next: {}",
             self.code.as_str(),
             self.stage.as_str(),
             self.predicate.as_str(),
-            self.reason
+            self.reason,
+            match self.stage {
+                Stage::Frame =>
+                    "start a fresh stream with a nonempty frame within the negotiated cap and valid UTF-8 JSON",
+                Stage::Decode =>
+                    "send one bounded JSON object with unique keys and valid integer and string spellings",
+                Stage::Schema =>
+                    "send the supported record shape with all required fields within their bounds",
+                Stage::Semantic =>
+                    "correct the named cross-field rule before sending the message again",
+                Stage::Session =>
+                    "check negotiation, request ownership and lifecycle state before sending a new message",
+            }
         )
     }
 }
@@ -200,7 +212,7 @@ mod tests {
         let refusal = Refusal::decode("duplicate-key");
         assert_eq!(
             refusal.to_string(),
-            "InvalidMessage at decode (W-JSON): duplicate-key"
+            "InvalidMessage at decode (W-JSON): duplicate-key; next: send one bounded JSON object with unique keys and valid integer and string spellings"
         );
     }
 }
