@@ -25,9 +25,16 @@ pub(super) fn quoted(
         let Some(&(delimiter, expression)) = frames.last() else {
             break;
         };
+        if !expression && !matches!(bytes[i], b'\\' | b'$' | b'{') && bytes[i] != delimiter {
+            i += plain_chunk(src, i, &['\\', char::from(delimiter), '$', '{']);
+            continue;
+        }
         let b = bytes[i];
         if b == b'\\' && !expression {
-            i = (i + 2).min(bytes.len());
+            i += 1;
+            if i < bytes.len() {
+                i += src[i..].chars().next().map_or(1, char::len_utf8);
+            }
             continue;
         }
         if expression {
@@ -152,4 +159,26 @@ fn broken(end: usize) -> Literal {
         kind: Kind::DynamicString,
         problem: Some(DiagnosticReason::UnterminatedHeredoc),
     }
+}
+
+// Bound each search window so repeated escapes cannot cause quadratic rescans.
+// ASCII delimiters never cut a UTF-8 code point.
+fn plain_chunk(source: &str, start: usize, specials: &[char]) -> usize {
+    let bytes = &source.as_bytes()[start..];
+    if let Some(end) = bytes[..bytes.len().min(32)]
+        .iter()
+        .position(|&byte| specials.contains(&char::from(byte)))
+    {
+        return end.max(1);
+    }
+    let mut end = (start + 4096).min(source.len());
+    while !source.is_char_boundary(end) {
+        end -= 1;
+    }
+    let mut rest = &source[start..end];
+    for &special in specials {
+        let end = rest.find(special).unwrap_or(rest.len());
+        rest = &rest[..end];
+    }
+    rest.len().max(1)
 }

@@ -171,7 +171,9 @@ impl Lx<'_> {
     }
 
     fn at_bol(&self) -> bool {
-        self.i == 0 || self.b.get(self.i.wrapping_sub(1)) == Some(&b'\n')
+        self.i == 0
+            || (self.i == '\u{feff}'.len_utf8() && self.src.starts_with('\u{feff}'))
+            || self.b.get(self.i.wrapping_sub(1)) == Some(&b'\n')
     }
 
     fn byte_at(&self, index: usize) -> Option<u8> {

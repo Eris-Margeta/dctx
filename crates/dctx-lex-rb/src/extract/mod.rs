@@ -118,7 +118,7 @@ impl<'a> Walker<'a> {
         if limits.max_facts == 0 {
             return Err(LexError::TooManyFacts { limit: 0 });
         }
-        let lines = file_lines(source);
+        let lines = lexed.line(u32::try_from(source.len()).unwrap_or(u32::MAX));
         let (summary, source_kind) = file_summary(path, source, lexed);
         let module = Node {
             id: StableId::new(NodeKind::Module, path, None, None)?,
@@ -412,14 +412,6 @@ pub(super) fn qualify(scope: &Scope, name: &str) -> String {
     } else {
         format!("{}::{name}", scope.name)
     }
-}
-
-fn file_lines(source: &str) -> u32 {
-    let newlines = source.bytes().filter(|byte| *byte == b'\n').count();
-    u32::try_from(newlines)
-        .unwrap_or(u32::MAX)
-        .saturating_add(1)
-        .max(1)
 }
 
 fn file_summary(path: &str, source: &str, lexed: &Lexed) -> (String, SummarySource) {
