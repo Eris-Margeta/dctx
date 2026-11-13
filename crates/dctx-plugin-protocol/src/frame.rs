@@ -42,6 +42,7 @@ pub fn encode_frame(body: &[u8], cap: u32) -> Result<Vec<u8>, Refusal> {
 #[derive(Debug)]
 pub struct FrameDecoder {
     cap: u32,
+    negotiated: bool,
     prefix: [u8; 4],
     prefix_len: usize,
     expected: usize,
@@ -64,6 +65,7 @@ impl FrameDecoder {
     pub fn new() -> Self {
         Self {
             cap: BOOTSTRAP_FRAME_CAP,
+            negotiated: false,
             prefix: [0; 4],
             prefix_len: 0,
             expected: 0,
@@ -82,13 +84,31 @@ impl FrameDecoder {
     }
 
     /// Applies a negotiated cap; it may be lowered or set once from bootstrap, never above 1 MiB.
+    /// A refused setting leaves the old cap intact. Repeating the current cap succeeds.
+    ///
+    /// ```
+    /// use dctx_plugin_protocol::{FrameDecoder, MAX_FRAME_CAP};
+    /// let mut decoder = FrameDecoder::new();
+    /// decoder.set_cap(MAX_FRAME_CAP).unwrap();
+    /// decoder.set_cap(1024).unwrap();
+    /// assert!(decoder.set_cap(2048).is_err());
+    /// assert_eq!(decoder.cap(), 1024);
+    /// ```
     /// # Errors
-    /// Refuses zero or a cap above `MAX_FRAME_CAP`.
+    /// Refuses zero, a cap above `MAX_FRAME_CAP`, a later increase, or a buffered body above the new cap.
+    /// Apply negotiation between frames; after the first setting, only lower the cap.
     pub fn set_cap(&mut self, cap: u32) -> Result<(), Refusal> {
         if cap == 0 || cap > MAX_FRAME_CAP {
             return Err(too_large());
         }
+        if self.negotiated && cap > self.cap {
+            return Err(Refusal::frame("frame-cap-raised"));
+        }
+        if self.expected > cap as usize {
+            return Err(too_large());
+        }
         self.cap = cap;
+        self.negotiated = true;
         Ok(())
     }
 
@@ -167,6 +187,9 @@ impl FrameDecoder {
     /// # Errors
     /// Propagates framing refusals from `Self::push`, including an already desynchronized stream.
     pub fn push_all(&mut self, mut input: &[u8]) -> Result<Vec<Vec<u8>>, Refusal> {
+        if self.poisoned {
+            return Err(Refusal::frame("stream-desynchronized"));
+        }
         let mut bodies = Vec::new();
         while !input.is_empty() {
             let (used, body) = self.push(input)?;

@@ -241,6 +241,7 @@ fn parse_artifact(value: &Json) -> Result<Artifact, DistributionError> {
 
 fn check_unique(artifacts: &[Artifact]) -> Result<(), DistributionError> {
     let mut targets = BTreeSet::new();
+    let mut release_names = std::collections::BTreeMap::new();
     for artifact in artifacts {
         if !targets.insert(artifact.target) {
             return Err(DistributionError::malformed(
@@ -251,6 +252,15 @@ fn check_unique(artifacts: &[Artifact]) -> Result<(), DistributionError> {
         let mut names = BTreeSet::new();
         for payload in artifact.payloads() {
             let folded = payload.file.folded();
+            if release_names
+                .insert(folded.clone(), payload)
+                .is_some_and(|known| known != payload)
+            {
+                return Err(DistributionError::malformed(
+                    Document::Manifest,
+                    "conflicting-file",
+                ));
+            }
             if RELEASE_FILES
                 .iter()
                 .any(|reserved| reserved.eq_ignore_ascii_case(&folded))
