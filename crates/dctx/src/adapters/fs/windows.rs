@@ -5,50 +5,51 @@ use std::fs::{File, Metadata, OpenOptions};
 use std::io;
 use std::os::windows::{fs::OpenOptionsExt, io::AsRawHandle};
 use std::path::Path;
-use std::time::Duration;
 
 use windows_sys::Win32::Storage::FileSystem::{
     BY_HANDLE_FILE_INFORMATION, FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT,
-    FILE_READ_ATTRIBUTES, GetFileInformationByHandle,
+    FILE_READ_ATTRIBUTES, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE,
+    GetFileInformationByHandle, READ_CONTROL,
 };
 
 mod inventory;
+mod security;
 pub(super) use inventory::Walk;
 
-/// Keep the caller's access/share/no-follow flags on every attempt. Only transient
-/// sharing and lock violations are retried; exhausted retries return the first error.
+/// Retry transient Windows sharing conflicts without changing access or sharing flags.
 fn open_with_retry(path: &Path, options: &OpenOptions) -> io::Result<File> {
-    let original = match options.open(path) {
-        Ok(file) => return Ok(file),
-        Err(error) if matches!(error.raw_os_error(), Some(32 | 33)) => error,
-        Err(error) => return Err(error),
-    };
-    // Five retries, 310 ms total backoff, with no delay on the usual success path.
-    for millis in [10, 20, 40, 80, 160] {
-        std::thread::sleep(Duration::from_millis(millis));
-        match options.open(path) {
-            Ok(file) => return Ok(file),
-            Err(error) if matches!(error.raw_os_error(), Some(32 | 33)) => {}
-            Err(_) => return Err(original),
-        }
-    }
-    Err(original)
+    super::windows_retry::retry(|| options.open(path), std::thread::sleep)
 }
 
-pub(super) fn stat(path: &Path) -> io::Result<(Metadata, Option<u64>)> {
-    // READ_ATTRIBUTES does not read content. BACKUP_SEMANTICS also permits a
-    // directory; OPEN_REPARSE_POINT inspects a link rather than its target.
+fn open_attributes(path: &Path) -> io::Result<File> {
+    // Attribute queries must coexist with writers and renames. BACKUP_SEMANTICS
+    // permits directories; OPEN_REPARSE_POINT keeps the query on the named object.
     let file = open_with_retry(
         path,
         File::options()
-            .access_mode(FILE_READ_ATTRIBUTES)
+            .access_mode(FILE_READ_ATTRIBUTES | READ_CONTROL)
+            .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE)
             .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT),
     )?;
+    // A successful CreateFile can inherit READ_ATTRIBUTES from parent listing
+    // permission. Check this object's DACL before trusting any enumeration data.
+    security::check_read_attributes(&file)?;
+    Ok(file)
+}
+
+pub(super) fn stat(path: &Path) -> io::Result<(Metadata, Option<u64>)> {
+    let file = open_attributes(path)?;
     let meta = file.metadata()?;
     let mut info = BY_HANDLE_FILE_INFORMATION::default();
     // SAFETY: the file owns a valid handle throughout the call and `info` is a
     // properly aligned, writable structure of the required size. No pointer escapes.
     let found = unsafe { GetFileInformationByHandle(file.as_raw_handle(), &mut info) };
+    if found == 0 {
+        let error = io::Error::last_os_error();
+        if error.kind() == io::ErrorKind::PermissionDenied {
+            return Err(error);
+        }
+    }
     // Filesystems without a usable identity fall back to hashing, never a fake inode.
     let inode = (found != 0)
         .then(|| (u64::from(info.nFileIndexHigh) << 32) | u64::from(info.nFileIndexLow))
@@ -64,15 +65,18 @@ fn stat_entry(entry: &std::fs::DirEntry) -> io::Result<(Metadata, Option<u64>)> 
 
     let meta = entry.metadata()?;
     let path = entry.path();
-    let file = open_with_retry(
-        &path,
-        File::options()
-            .access_mode(FILE_READ_ATTRIBUTES)
-            .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT),
-    )?;
+    let file = open_attributes(&path)?;
     let mut info = BY_HANDLE_FILE_INFORMATION::default();
     // SAFETY: `file` owns the borrowed handle; `info` is writable and correctly sized.
     let found = unsafe { GetFileInformationByHandle(file.as_raw_handle(), &mut info) };
+    if found == 0 {
+        let error = io::Error::last_os_error();
+        // An ACL denial is authoritative; do not substitute cached enumeration
+        // metadata or retry through another metadata API that can bypass it.
+        if error.kind() == io::ErrorKind::PermissionDenied {
+            return Err(error);
+        }
+    }
     let modified = (u64::from(info.ftLastWriteTime.dwHighDateTime) << 32)
         | u64::from(info.ftLastWriteTime.dwLowDateTime);
     let size = (u64::from(info.nFileSizeHigh) << 32) | u64::from(info.nFileSizeLow);
@@ -94,7 +98,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn content_open_retries_until_exclusive_handle_is_released() {
+    fn content_open_preserves_exclusive_handle_failure_and_recovers_after_release() {
         use std::io::Read;
 
         let dir = tempfile::tempdir().unwrap();
@@ -105,39 +109,18 @@ mod tests {
             .share_mode(0)
             .open(&path)
             .unwrap();
-        let release = std::thread::spawn(move || {
-            std::thread::sleep(Duration::from_millis(50));
-            drop(held);
-        });
-        let opened = open_content(&path);
-        release.join().unwrap();
-        let mut bytes = Vec::new();
-        opened.unwrap().read_to_end(&mut bytes).unwrap();
-        assert_eq!(bytes, b"source bytes");
-    }
-
-    #[test]
-    fn content_open_returns_original_sharing_error_after_bounded_retries() {
-        let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("source");
-        std::fs::write(&path, b"source bytes").unwrap();
-        let held = File::options()
-            .read(true)
-            .share_mode(0)
-            .open(&path)
-            .unwrap();
         let original = File::open(&path).unwrap_err();
-        assert_eq!(original.raw_os_error(), Some(32));
-
-        let start = std::time::Instant::now();
         let error = open_content(&path).unwrap_err();
-        let elapsed = start.elapsed();
-        assert!(elapsed >= Duration::from_millis(310), "{elapsed:?}");
-        assert!(elapsed < Duration::from_secs(2), "{elapsed:?}");
-        assert_eq!(error.raw_os_error(), original.raw_os_error());
+        assert_eq!(error.raw_os_error(), Some(32));
         assert_eq!(error.kind(), original.kind());
         assert_eq!(error.to_string(), original.to_string());
         drop(held);
+        let mut bytes = Vec::new();
+        open_content(&path)
+            .unwrap()
+            .read_to_end(&mut bytes)
+            .unwrap();
+        assert_eq!(bytes, b"source bytes");
     }
 
     #[test]
@@ -194,11 +177,32 @@ pub(super) fn pin_directories(path: &Path) -> io::Result<Vec<File>> {
     Ok(guards)
 }
 
+/// Source-lifetime guards keep names stable but let released children be renamed.
+pub(super) fn pin_source_root(path: &Path) -> io::Result<Vec<File>> {
+    let strict = pin_directories(path)?;
+    // Acquire the entire chain before relaxing write sharing: each pinned child
+    // keeps its parent nonempty, so Windows cannot turn that parent into a junction.
+    // The root itself may be empty, so every operation must strictly repin/check it.
+    let guards = path
+        .ancestors()
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .map(|directory| pin_directory_shared(directory, FILE_SHARE_READ | FILE_SHARE_WRITE))
+        .collect();
+    drop(strict);
+    guards
+}
+
 /// The caller must already hold guards for every ancestor of `path`.
 fn pin_directory(path: &Path) -> io::Result<File> {
+    pin_directory_shared(path, FILE_SHARE_READ)
+}
+
+fn pin_directory_shared(path: &Path, sharing: u32) -> io::Result<File> {
     use std::os::windows::fs::MetadataExt;
     use windows_sys::Win32::Storage::FileSystem::{
-        FILE_ATTRIBUTE_REPARSE_POINT, FILE_LIST_DIRECTORY, FILE_SHARE_READ,
+        FILE_ATTRIBUTE_REPARSE_POINT, FILE_LIST_DIRECTORY,
     };
     // Windows does not apply share-mode checks to attribute-only opens, so a guard with
     // FILE_READ_ATTRIBUTES alone would pin nothing. FILE_LIST_DIRECTORY reads names only,
@@ -207,7 +211,7 @@ fn pin_directory(path: &Path) -> io::Result<File> {
         path,
         File::options()
             .access_mode(FILE_LIST_DIRECTORY | FILE_READ_ATTRIBUTES)
-            .share_mode(FILE_SHARE_READ)
+            .share_mode(sharing)
             .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT),
     )?;
     let meta = file.metadata()?;
@@ -260,6 +264,30 @@ mod security_tests {
         drop(guards);
         drop(writer().unwrap());
         std::fs::rename(&root, &moved).unwrap();
+    }
+
+    #[test]
+    fn source_guards_allow_child_mutations_but_keep_the_root_name_pinned() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("root");
+        std::fs::create_dir_all(root.join("child")).unwrap();
+        let guards = pin_source_root(&root).unwrap();
+        std::fs::rename(root.join("child"), root.join("moved")).unwrap();
+        std::fs::remove_dir(root.join("moved")).unwrap();
+        assert!(std::fs::rename(&root, temp.path().join("replaced")).is_err());
+        let writer = || {
+            File::options()
+                .write(true)
+                .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT)
+                .open(&root)
+        };
+        drop(writer().unwrap());
+        let operation = pin_directory(&root).unwrap();
+        assert_eq!(writer().unwrap_err().raw_os_error(), Some(32));
+        drop(operation);
+        drop(writer().unwrap());
+        drop(guards);
+        std::fs::rename(&root, temp.path().join("released")).unwrap();
     }
 
     #[test]
