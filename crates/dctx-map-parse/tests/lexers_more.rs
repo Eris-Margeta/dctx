@@ -175,7 +175,7 @@ fn c_and_cpp_counts_precision_and_repeat() {
             &path,
             C,
             Language::C,
-            "dctx-lex-c:1",
+            "dctx-lex-c:2",
             &[&path, "run"],
             &[
                 (EdgeKind::Imports, "box.h"),
@@ -198,7 +198,7 @@ fn toml_and_yaml_counts_precision_and_repeat() {
             path,
             source,
             Language::Config,
-            "dctx-lex-cfg:1",
+            "dctx-lex-cfg:2",
             &[path, "package", "package.name"],
             &[],
         );
@@ -218,7 +218,7 @@ fn json_and_jsonc_route_to_the_config_lexer() {
             path,
             source,
             Language::Config,
-            "dctx-lex-cfg:1",
+            "dctx-lex-cfg:2",
             &[path, "name"],
             &[],
         );
