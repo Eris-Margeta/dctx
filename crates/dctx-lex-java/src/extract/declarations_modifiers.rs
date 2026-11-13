@@ -195,7 +195,8 @@ impl Walker<'_> {
         paren: usize,
         end: usize,
     ) -> (usize, Option<usize>) {
-        let mut cursor = close.map_or(paren + 1, |index| index + 1);
+        let after_params = close.map_or(paren + 1, |index| index + 1);
+        let mut cursor = self.after_brackets(after_params, end);
         if !self.is_word(cursor, "throws") {
             return (cursor.min(end), None);
         }

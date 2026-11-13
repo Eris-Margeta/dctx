@@ -1,0 +1,50 @@
+[
+  {
+    "name": "Holder",
+    "kind": "class",
+    "line": 1,
+    "parent": null
+  },
+  {
+    "name": "Holder::value",
+    "kind": "method",
+    "line": 2,
+    "parent": "Holder"
+  },
+  {
+    "name": "Holder::Nested",
+    "kind": "class",
+    "line": 3,
+    "parent": "Holder"
+  },
+  {
+    "name": "Holder::Nested::item",
+    "kind": "const",
+    "line": 3,
+    "parent": "Holder::Nested"
+  },
+  {
+    "name": "Instances",
+    "kind": "class",
+    "line": 5,
+    "parent": null
+  },
+  {
+    "name": "Instances::value",
+    "kind": "const",
+    "line": 6,
+    "parent": "Instances"
+  },
+  {
+    "name": "Instances::value::new Holder.Nested",
+    "kind": "class",
+    "line": 6,
+    "parent": "Instances::value"
+  },
+  {
+    "name": "Instances::value::new Holder.Nested::read",
+    "kind": "method",
+    "line": 7,
+    "parent": "Instances::value::new Holder.Nested"
+  }
+]

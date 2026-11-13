@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Selection",
+    "kind": "class",
+    "line": 1,
+    "parent": null
+  },
+  {
+    "name": "Selection::choose",
+    "kind": "method",
+    "line": 2,
+    "parent": "Selection"
+  },
+  {
+    "name": "Selection::choose::Zero",
+    "kind": "class",
+    "line": 4,
+    "parent": "Selection::choose"
+  },
+  {
+    "name": "Selection::choose::Zero::code",
+    "kind": "method",
+    "line": 4,
+    "parent": "Selection::choose::Zero"
+  }
+]

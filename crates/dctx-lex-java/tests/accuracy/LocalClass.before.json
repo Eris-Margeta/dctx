@@ -1,0 +1,4 @@
+[{"name":"Job","kind":"class","line":1,"parent":null},
+{"name":"Job::prepare","kind":"method","line":2,"parent":"Job"},
+{"name":"Job::prepare::Step","kind":"class","line":3,"parent":"Job::prepare"},
+{"name":"Job::prepare::Step::run","kind":"method","line":4,"parent":"Job::prepare::Step"}]

@@ -1,0 +1,38 @@
+[
+  {
+    "name": "Level",
+    "kind": "enum",
+    "line": 1,
+    "parent": null
+  },
+  {
+    "name": "Level::LOW",
+    "kind": "const",
+    "line": 2,
+    "parent": "Level"
+  },
+  {
+    "name": "Level::HIGH",
+    "kind": "const",
+    "line": 2,
+    "parent": "Level"
+  },
+  {
+    "name": "Level::weight",
+    "kind": "const",
+    "line": 3,
+    "parent": "Level"
+  },
+  {
+    "name": "Level::Level",
+    "kind": "method",
+    "line": 4,
+    "parent": "Level"
+  },
+  {
+    "name": "Level::weight",
+    "kind": "method",
+    "line": 5,
+    "parent": "Level"
+  }
+]

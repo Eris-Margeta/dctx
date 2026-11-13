@@ -142,6 +142,9 @@ impl Walker<'_> {
         if self.is_punct(cursor, "<") {
             cursor = self.skip_angles(cursor, end);
         }
+        while cursor < end && self.is_annotation(cursor) {
+            cursor = self.skip_annotation_tokens(cursor, end);
+        }
         if !self.ok() || !self.word(cursor) {
             return None;
         }

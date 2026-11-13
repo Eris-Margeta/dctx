@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Factory",
+    "kind": "class",
+    "line": 1,
+    "parent": null
+  },
+  {
+    "name": "Factory::Factory",
+    "kind": "method",
+    "line": 2,
+    "parent": "Factory"
+  },
+  {
+    "name": "Factory::identity",
+    "kind": "method",
+    "line": 3,
+    "parent": "Factory"
+  },
+  {
+    "name": "Factory::update",
+    "kind": "method",
+    "line": 4,
+    "parent": "Factory"
+  },
+  {
+    "name": "Factory::query",
+    "kind": "method",
+    "line": 5,
+    "parent": "Factory"
+  }
+]

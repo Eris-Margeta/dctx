@@ -1,0 +1,10 @@
+[{"name":"Registry","kind":"class","line":1,"parent":null},
+{"name":"Registry::Entry","kind":"class","line":2,"parent":"Registry"},
+{"name":"Registry::Entry::key","kind":"const","line":3,"parent":"Registry::Entry"},
+{"name":"Registry::Factory","kind":"interface","line":5,"parent":"Registry"},
+{"name":"Registry::Factory::create","kind":"method","line":5,"parent":"Registry::Factory"},
+{"name":"Registry::State","kind":"enum","line":6,"parent":"Registry"},
+{"name":"Registry::State::READY","kind":"const","line":6,"parent":"Registry::State"},
+{"name":"Registry::State::CLOSED","kind":"const","line":6,"parent":"Registry::State"},
+{"name":"Registry::Id","kind":"struct","line":7,"parent":"Registry"},
+{"name":"Registry::Id::value","kind":"const","line":7,"parent":"Registry::Id"}]

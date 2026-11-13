@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Ledger",
+    "kind": "class",
+    "line": 1,
+    "parent": null
+  },
+  {
+    "name": "Ledger::total",
+    "kind": "method",
+    "line": 2,
+    "parent": "Ledger"
+  },
+  {
+    "name": "Ledger::total::Line",
+    "kind": "struct",
+    "line": 3,
+    "parent": "Ledger::total"
+  },
+  {
+    "name": "Ledger::total::Line::amount",
+    "kind": "const",
+    "line": 3,
+    "parent": "Ledger::total::Line"
+  }
+]
