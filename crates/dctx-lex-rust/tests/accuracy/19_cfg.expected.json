@@ -1,0 +1,6 @@
+[
+  {"name": "connect", "kind": "Function", "line": 2, "parent": null},
+  {"name": "connect", "kind": "Function", "line": 4, "parent": null},
+  {"name": "disabled", "kind": "Module", "line": 6, "parent": null},
+  {"name": "disabled::Hidden", "kind": "Struct", "line": 7, "parent": "disabled"}
+]

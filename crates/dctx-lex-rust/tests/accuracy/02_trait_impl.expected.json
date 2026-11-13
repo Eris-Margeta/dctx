@@ -1,0 +1,5 @@
+[
+  {"name": "Wrapper", "kind": "Struct", "line": 1, "parent": null},
+  {"name": "Wrapper<T>::impl<AsRef<T>>", "kind": "Impl", "line": 2, "parent": null},
+  {"name": "Wrapper::as_ref", "kind": "Method", "line": 5, "parent": "Wrapper<T>::impl<AsRef<T>>"}
+]

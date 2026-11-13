@@ -1,0 +1,7 @@
+[
+  {"name": "fetch", "kind": "Function", "line": 1, "parent": null},
+  {"name": "width", "kind": "Function", "line": 2, "parent": null},
+  {"name": "unchecked", "kind": "Function", "line": 3, "parent": null},
+  {"name": "callback", "kind": "Function", "line": 4, "parent": null},
+  {"name": "raw", "kind": "Function", "line": 5, "parent": null}
+]

@@ -1,0 +1,5 @@
+[
+  {"name": "QUERY", "kind": "Const", "line": 1, "parent": null},
+  {"name": "TEMPLATE", "kind": "Const", "line": 5, "parent": null},
+  {"name": "execute", "kind": "Function", "line": 9, "parent": null}
+]

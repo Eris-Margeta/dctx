@@ -1,0 +1,5 @@
+[
+  {"name": "acquire", "kind": "Function", "line": 2, "parent": null},
+  {"name": "COUNTER", "kind": "Static", "line": 3, "parent": null},
+  {"name": "Handle", "kind": "TypeAlias", "line": 4, "parent": null}
+]
