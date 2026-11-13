@@ -15,12 +15,12 @@
 
 ### What dctx is
 
-dctx is an open-source (Apache-2.0) Rust context engine for AI-assisted coding: one local binary that packs a project into one structured block, or answers bounded, byte-stable symbol queries (find, read, neighbors, skeleton) as CLI output or MCP tools.
+dctx is an open-source (Apache-2.0) Rust context engine for AI-assisted coding: one local binary that packs a project into one structured block, or answers bounded, byte-stable symbol queries (find, read, neighbors, skeleton) as CLI output.
 
 What it is not:
 
 - No RAG: no embeddings, no vector search, and the engine never calls a model.
-- No network: pack, map, cache and mcp make no network calls; the release check counts socket calls under strace and fails on any.
+- No network: pack, map and cache make no network calls; the release check counts socket calls under strace and fails on any.
 - No telemetry, not even opt-out.
 - No agent loop: dctx answers one command at a time; the agent or the human decides what to ask next.
 
@@ -34,7 +34,6 @@ What it is not:
 ### Modalities
 
 - CLI (available): `dctx pack PATH` for one structured block (clipboard, file or stdout); `dctx map find|read|neighbors|skeleton|...` for bounded symbol answers. https://www.dctx.internet.technology/cli/
-- MCP server (available): `dctx mcp PATH` over stdio for Claude Code, Cursor and Codex; `--profile lean` exposes only find and read. https://www.dctx.internet.technology/docs/modalities/#mcp-server-convenient-tools-with-startup-context
 - Task context (available): `dctx pack --for TEXT --budget N`: find, neighbors and read of the names in TEXT, cut to an estimated-token budget. https://www.dctx.internet.technology/docs/map-mode/
 - CI and prompt cache (available): Deterministic pack and map output; tree lines carry no timestamps by default, so the prefix stays stable across a touch. https://www.dctx.internet.technology/docs/modalities/#ci--prompt-cache-prefix-stability
 - Rust library (available from Git): The `dctx` facade crate as a tagged Git dependency; crates.io publication pending. https://www.dctx.internet.technology/docs/modalities/#rust-library-embed-the-facade
@@ -43,19 +42,19 @@ What it is not:
 
 Two scopes, one binary:
 
-- System binary: the `dctx` on PATH belongs to you and your agents, and you upgrade it. Interactive agents and MCP call this one.
+- System binary: the `dctx` on PATH belongs to you and your agents, and you upgrade it. Interactive agents call this one.
 - Project binary (Node from npm; Python and Go from CI): a binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Application code and CI call this one; a library never silently falls back to PATH.
 - Same engine, different owner. `dctx doctor` lists every binary in reach; verify each against SHA256SUMS and its cosign signature.
 
 ### Before you start
 
-> dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.
+> dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, direct CLI commands. Measure before you change anything.
 
 ### Benchmarks
 
 Baseline: grep plus reading files.
 
-- Measured: 11 November 2026: 20 questions, a private 13-crate Rust workspace, claude-sonnet-5-5, dctx 1.3.0, three repeats per arm. Median total tokens [min, max]: grep plus reads (A) 14,904,014 [14,604,149, 15,622,381]; warm dctx CLI (B) 14,157,974 [11,221,908, 15,613,375]; fresh-cache dctx MCP (C), startup/indexing measured, 15,922,125 [15,513,198, 16,700,029]. B versus A: -5.01 %. On this corpus and model dctx did not save 25 % tokens; the pre-registered rule was not met. Official strict citation recall medians [min, max], A/B/C: 10.10 % [10.10, 20.73] / 14.46 % [8.36, 22.65] / 13.41 % [12.02, 66.72]. Diagnostic file-level recall medians: 53.77 % / 71.70 % / 76.42 %; diagnostic, not a replacement metric. The claim is accuracy and bounded context, not token savings: B and C named more required files at about equal (B) or higher (C) token cost. C cost +6.8 % tokens and +30 % wall time. dctx on its own does not save tokens by default. Savings come from a harness or agent system reusing byte-identical, prefix-stable context across long sessions over a large body of work, with complete control over every byte. There is no measured, citable savings figure for such a system yet. One corpus, one model, no significance claim; corpus and raw answers private and cannot be published; dctx 1.3.0 is not current HEAD. Under ~200 files, use grep. https://www.dctx.internet.technology/benchmarks/#grep-read
+- Measured: 11 November 2026: 20 questions, a private 13-crate Rust workspace, claude-sonnet-5-5, dctx 1.3.0, three repeats per arm. Median total tokens [min, max]: grep plus reads 14,904,014 [14,604,149, 15,622,381]; dctx CLI (warm index) 14,157,974 [11,221,908, 15,613,375]. CLI median tokens were -5.01 % versus grep. On this corpus and model dctx did not save 25 % tokens; the pre-registered rule was not met. Official strict citation recall medians [min, max]: grep 10.10 % [10.10, 20.73]; CLI 14.46 % [8.36, 22.65]. Diagnostic file-level recall medians: 53.77 % and 71.70 %, respectively; diagnostic, not a replacement metric. The claim is accuracy and bounded context, not token savings. dctx on its own does not save tokens by default. Savings depend on a harness or agent system reusing byte-identical, prefix-stable context across long sessions; there is no measured, citable savings figure for such a system yet. One corpus, one model, no significance claim; corpus and raw answers private and cannot be published; dctx 1.3.0 is not current HEAD. Under ~200 files, use grep. https://www.dctx.internet.technology/benchmarks/#grep-read
 - Measured: Byte stability: the same query on unchanged code returns the same bytes; 33 of 33 text and JSON answers were byte-identical after unrelated edits (Linux only). https://www.dctx.internet.technology/docs/stability/
 - Historical: The October and November in-house numbers (run 7: 140 of 140 task questions, cold index and warm latency) measure tool output only, as estimated stdout tokens and raw fact coverage without a model; they are not agent completion rates or session costs. https://www.dctx.internet.technology/benchmarks/
 - Hypothesis: That a pack template changes model answer quality or cost is a hypothesis pending an A/B test; nothing on this site measures it. https://www.dctx.internet.technology/templates/
@@ -99,7 +98,7 @@ These existed before 1.2.0 and no longer work. A transcript that uses them descr
 - [Why dctx](https://www.dctx.internet.technology/why/): Why dctx exists, its philosophy, and why byte-identical output keeps the prompt cache hitting.
 - [README](https://www.dctx.internet.technology/docs/readme/): Installation, quick start, map mode, language tiers and the CLI reference.
 - [What dctx is](https://www.dctx.internet.technology/docs/start/): The claim and its limits, the advanced-user notice, choose your path, the safe path in ten minutes, responsibilities and the two scopes.
-- [Choosing how to use dctx](https://www.dctx.internet.technology/docs/modalities/): Clipboard, grep plus reads, long sessions, huge trees, MCP startup cost and CI.
+- [Choosing how to use dctx](https://www.dctx.internet.technology/docs/modalities/): Clipboard, grep plus reads, long sessions, huge trees, CLI usage and CI.
 - [Map mode guide](https://www.dctx.internet.technology/docs/map-mode/): Every map verb with examples, budgets, ids and precision labels.
 - [Agent snippet](https://www.dctx.internet.technology/docs/agents/): The AGENTS.md section that tells coding agents to ask dctx first.
 - [Plugins guide](https://www.dctx.internet.technology/docs/plugins/): The plugin boundary, capabilities, consent and current limits.
@@ -108,12 +107,12 @@ These existed before 1.2.0 and no longer work. A transcript that uses them descr
 - [Language coverage (ADR-018)](https://www.dctx.internet.technology/docs/language-coverage/): The three tiers and how a language enters one.
 - [Template contract (DTS v2)](https://www.dctx.internet.technology/docs/templates-contract/): DTS source v2 and the compiled plan IR v1.
 - [Templating engine (ADR-003)](https://www.dctx.internet.technology/docs/templating/): Markers, ahead-of-time compilation, the two rendering passes and the data variables.
-- [CLI exit codes](https://www.dctx.internet.technology/docs/exit-codes/): The exit-code contract for map, pack, mcp and languages.
+- [CLI exit codes](https://www.dctx.internet.technology/docs/exit-codes/): The exit-code contract for map, pack and languages.
 - [How dctx works](https://www.dctx.internet.technology/how-it-works/): Five short animations: two scopes of one binary, calls times context, prefix stability, the giant folder and the safe path for new users.
 
 ### CLI
 
-- [CLI reference](https://www.dctx.internet.technology/cli/): Every dctx command, flag, environment variable, exit code and MCP tool, captured from the dctx binary.
+- [CLI reference](https://www.dctx.internet.technology/cli/): Every dctx command, flag, environment variable, and exit code, captured from the dctx binary.
 - [Languages](https://www.dctx.internet.technology/languages/): The 50 language families dctx indexes, by tier: full, outline and docs.
 
 ### Examples

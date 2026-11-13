@@ -1,0 +1,13 @@
+D1113-QASITE CHECK
+Generator: 45 pages, 239 files; independent rebuild agrees with generated website files.
+Playwright: 4 tests passed.
+Mobile: 45/45 HTML pages (42 sitemap URLs plus 3 non-indexable pages), viewport 390x844.
+JavaScript on and off, disclosures closed and open, and body clipping disabled: every scrollWidth is 390px.
+Template contract: 390px. AI evaluators: 390px.
+Desktop: stylesheet differs only by the mobile media rule; computed styles and geometry agree at 1440px on both reported pages.
+Favicon: HTTP 200; valid ICO with 16px and 32px entries; 32px pixels match the generated PNG.
+Existing scroll-spy, version offer, reload and dismiss checks passed.
+Screenshots: both reported pages at 390px and 1440px.
+Website checker: failed with 6 existing content/metadata errors; see website-check.txt.
+MCP-removal page-text inputs, README, CHANGELOG and docs were not edited.
+No commits made.

@@ -1,0 +1,277 @@
+{
+  "sitemapPages": 42,
+  "totalPages": 45,
+  "viewport": 390,
+  "results": [
+    {
+      "route": "/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/docs/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/start/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/start/giant-folder/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/start/many-projects/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/start/library/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/start/team/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/for-ai-evaluators/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/why/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/docs/readme/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/docs/start/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/docs/modalities/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/docs/map-mode/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/docs/agents/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/docs/plugins/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/docs/spec/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/docs/privacy/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/docs/language-coverage/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/docs/templates-contract/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/docs/templating/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/docs/crate-map/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/docs/exit-codes/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/docs/benchmark/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/docs/stability/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/docs/benchmark-oct/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/docs/releasing/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/docs/contributing/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/cli/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/languages/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/examples/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/templates/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/playground/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/benchmarks/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/changelog/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/news/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/news/dctx-1-1/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/news/desktop-free-forever/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/news/specification-and-benchmark/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/security/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/trademark/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/maintenance/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/how-it-works/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/404.html",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/playground/offline/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    },
+    {
+      "route": "/search/",
+      "initial": 390,
+      "open": 390,
+      "unclipped": 390
+    }
+  ]
+}

@@ -12,7 +12,7 @@
   if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
   if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
 })();</script>
-<link rel="stylesheet" href="/assets/site.26ea97c0.css">
+<link rel="stylesheet" href="/assets/site.a25acb15.css">
 <link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
@@ -20,7 +20,7 @@
 <meta name="description" content="You roll dctx out to a team or a fleet of machines. Setup, first command, what to expect and the pitfall to avoid.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
-<meta name="dctx-build" content="c02d47d48ed42ea1c0878ab905d29ada93b4a8bfc4b6844205cfa1be14028ed4">
+<meta name="dctx-build" content="ae393d65b1e9b6d0ad715365e5ac86557333ab30607ff808759326ebc7f4420c">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -194,7 +194,7 @@
 <p class="note">A real run on the <a href="/examples/">kiosk sample project</a>, recorded from the release binary by <code>capture.py</code>:</p><div class="term "><div class="term-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="title">~/kiosk  ·  dctx 1.3.1</span></div><div class="scroll"><pre><span class="ln cmd"><span class="p">$ </span><span class="t-f">dctx</span> <span class="t-a">--version</span></span><span class="ln out">dctx 1.3.1 (&lt;git sha&gt;)</span><span class="ln meta"># <b>exit 0</b> &middot; 23 bytes &middot; ~7 est. tokens</span></pre></div></div></section>
 <section class="sec" aria-labelledby="pit-h"><h2 id="pit-h">The pitfall</h2><div class="callout callout-warn"><p class="callout-text">Mixing project and system versions without checking. Run <code>dctx doctor</code> to list every binary in reach, and check <code>dctx --version</code> on PATH and the version each project pins, as part of onboarding.</p></div></section>
 <section class="sec" aria-labelledby="next-h"><h2 id="next-h">Read next</h2><p><a href="/docs/privacy/">Privacy guarantees</a> &middot; <a href="/security/">Security policy</a> &middot; <a href="/start/#responsibilities">Who is responsible for what</a></p>
-<p>Other paths:</p><ul class="inline-list"><li><a href="/start/giant-folder/">One giant folder</a></li><li><a href="/start/many-projects/">Many smaller projects</a></li><li><a href="/start/library/">Agent builder embedding a library</a></li></ul><div class="callout" role="note"><p class="callout-text">dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.</p><p class="callout-sub">Status: Receipts are planned. The safe path uses the lean MCP profile, <code>dctx mcp --profile lean</code>.</p></div></section>
+<p>Other paths:</p><ul class="inline-list"><li><a href="/start/giant-folder/">One giant folder</a></li><li><a href="/start/many-projects/">Many smaller projects</a></li><li><a href="/start/library/">Agent builder embedding a library</a></li></ul><div class="callout" role="note"><p class="callout-text">dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, direct CLI commands. Measure before you change anything.</p><p class="callout-sub">Status: Receipts are planned. The safe path uses CLI commands from a shell or an agent's shell tool.</p></div></section>
 </div>
 </main>
 <footer class="ftr">

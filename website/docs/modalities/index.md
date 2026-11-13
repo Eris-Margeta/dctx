@@ -177,8 +177,8 @@ executable and the project to index (on Windows, use `dctx.exe` and JSON-escaped
 paths). An explicit project path avoids relying on the client's working directory.
 For a source build, point `command` at `target/release/dctx-cli`.
 
-[Claude Code](https://code.claude.com/docs/en/mcp) (`.mcp.json` at the project root)
-and [Cursor](https://cursor.com/docs/mcp) (`.cursor/mcp.json`) use this JSON:
+Claude Code (`.mcp.json` at the project root)
+and Cursor (`.cursor/mcp.json`) use this JSON:
 
 ```json
 {
@@ -192,7 +192,7 @@ and [Cursor](https://cursor.com/docs/mcp) (`.cursor/mcp.json`) use this JSON:
 }
 ```
 
-[Codex](https://developers.openai.com/codex/mcp/) uses `~/.codex/config.toml`
+Codex uses `~/.codex/config.toml`
 (or `.codex/config.toml` in a trusted project):
 
 ```toml

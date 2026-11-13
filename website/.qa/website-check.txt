@@ -1,0 +1,15 @@
+- llms drift: CHANGELOG.md changed since data/llms.json was captured; run capture.py --llms
+- llms drift: data/llms.json names docs commit 94de7cc7d750, git says ba007935b794; commit the documents, then run capture.py --llms
+- facts.json: notice is not verbatim in README.md
+- facts.json: notice is not verbatim in docs/START.md
+- README drift: README.md generated blocks differ; run python3 scripts/render_readme.py
+- dates.json: CHANGELOG.md is 2026-11-12T19:54:09+01:00, git says 2026-11-13T01:53:08+01:00; run build.py --refresh-dates
+WARN: capture drift NOT checked (--no-capture)
+WARN: llms capture drift NOT checked (no binary or --no-capture)
+WARN: DENY-LIST NOT CHECKED: set DCTX_DENY_LIST to the publish deny-list file
+Checked 239 files, 45 HTML pages, 22 Markdown twins against their sources.
+Home first load: 7 requests, 224,934 bytes, largest index.html (72,819 bytes).
+Sizes: {'css': 46287, 'js_sources': 50609, 'largest_bundle': 39556, 'hero_js': 3274, 'term_js': 3137}. OG: {'png': 92, 'gif': 45, 'largest_gif': 174905, 'largest_png': 195687}. llms.txt 16019 bytes, llms-full.txt 827,858 bytes.
+Contrast: light ink/bg 17.63, light muted/bg 6.74, light brand-text/bg 7.16, light ink/surface 18.31, light ink/surface-2 16.13, light muted/surface 7.00, light muted/surface-2 6.17, light 9 syntax colours >= 4.5, dark ink/bg 17.16, dark muted/bg 9.56, dark brand-text/bg 8.84, dark ink/surface 16.36, dark ink/surface-2 15.53, dark muted/surface 9.12, dark muted/surface-2 8.66, dark 9 syntax colours >= 4.5.
+deny-list hits: not checked
+FAIL: 6 errors

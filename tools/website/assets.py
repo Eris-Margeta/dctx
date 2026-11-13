@@ -8,7 +8,10 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import io
 import re
+
+from PIL import Image
 
 from common import read_bytes
 
@@ -27,6 +30,14 @@ def minify_css(css: str) -> str:
     css = re.sub(r"\s*([{};])\s*", r"\1", css)
     css = re.sub(r";}", "}", css)
     return css.strip() + "\n"
+
+
+def favicon_ico(png: bytes) -> bytes:
+    """Encode the generated 32px favicon for browsers requesting the root ICO."""
+    out = io.BytesIO()
+    with Image.open(io.BytesIO(png)) as icon:
+        icon.save(out, format="ICO", sizes=[(16, 16), (32, 32)])
+    return out.getvalue()
 
 
 class Assets:

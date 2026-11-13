@@ -43,6 +43,8 @@
 *, *::before, *::after { box-sizing: border-box; }
 html { font-size: 18px; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-padding-top: calc(var(--hdr) + 12px); }
 @media (max-width: 599px) { html { font-size: 17px; } }
+/* Long prose tokens and raw URLs must fit the mobile measure; pre keeps its own scroller. */
+@media (max-width: 599px) { main { overflow-wrap: anywhere; } }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 400 1rem/1.6 var(--sans); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; overflow-x: hidden; }
 img, svg, canvas { display: block; max-width: 100%; }
 a { color: var(--brand-text); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); }

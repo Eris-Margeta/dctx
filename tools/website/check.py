@@ -949,7 +949,7 @@ def check_site(site: Path, errors: list[str], report: dict) -> None:
     robots = (site / "robots.txt").read_text()
     if f"Sitemap: {ORIGIN}/sitemap.xml" not in robots or "Disallow: /" in robots:
         errors.append("robots.txt: wrong Sitemap line or a Disallow")
-    for f in ("humans.txt", "build.json", "manifest.webmanifest", "opensearch.xml", "favicon.svg", "favicon-32.png",
+    for f in ("humans.txt", "build.json", "manifest.webmanifest", "opensearch.xml", "favicon.svg", "favicon-32.png", "favicon.ico",
               "apple-touch-icon.png", "assets/search-index.json", "assets/openapi.json", "llms-small.txt", "llms-full.txt"):
         if not (site / f).is_file():
             errors.append(f"missing {f}")
