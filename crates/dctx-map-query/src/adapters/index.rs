@@ -42,6 +42,7 @@ pub struct IndexReport {
 }
 
 /// Stateful query index with a segment journal and a sqlite comparison store.
+/// Own a separate instance per thread; shared adapters do not implement `Sync`.
 pub struct Index {
     pub(crate) store: Option<SqliteStore>,
     pub(crate) disk: Option<SqliteStore>,
@@ -117,6 +118,7 @@ impl Index {
     }
 
     /// Stops the next refresh or query on this index.
+    /// Cancellation is permanent for this instance; create a new index to resume work.
     pub fn cancel(&self) {
         self.cancel_flag.cancel();
     }

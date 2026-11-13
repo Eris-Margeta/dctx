@@ -46,14 +46,15 @@ pub fn accounted_bytes(payload_len: u64) -> Option<u64> {
 /// Soft watermark and eviction target for `hard_cap`, using the stage-0 ratios.
 ///
 /// Soft is `floor(3/4 · cap)` (1.5/2). Target is `floor(3/5 · cap)` (1.2/2).
+/// Both ratios are exact over the full `u64` domain without intermediate overflow.
 #[allow(
     clippy::must_use_candidate,
     reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
 )]
 pub fn cache_limits(hard_cap: u64) -> (u64, u64) {
     (
-        hard_cap.saturating_mul(3) / 4,
-        hard_cap.saturating_mul(3) / 5,
+        (hard_cap / 4) * 3 + (hard_cap % 4) * 3 / 4,
+        (hard_cap / 5) * 3 + (hard_cap % 5) * 3 / 5,
     )
 }
 

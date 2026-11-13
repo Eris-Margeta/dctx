@@ -10,30 +10,45 @@ mod write;
 
 use crate::{
     MapStore,
-    domain::{FactKey, File, FileFacts, MaintainReport, Result, Retain, SearchHit},
+    domain::{FactKey, File, FileFacts, MaintainReport, Result, Retain, SearchHit, StoreError},
 };
 use dctx_core::error::DctxError;
 use dctx_core::facts::PackSnapshot;
 use dctx_core::ids::ViewKey;
 use dctx_ports::FactStore;
-use rusqlite::{Connection, OptionalExtension, params};
+use rusqlite::{Connection, OptionalExtension, TransactionBehavior, params};
 use std::path::Path;
 
 /// Versioned SQLite map database and comparison bridge.
 ///
 /// Map verbs keep the v1 graph tables. Pack snapshots and content-addressed fact
 /// blobs live beside them. The clock is injected through [`Self::set_clock`].
+/// Separate connections may be owned by concurrent threads; one connection is
+/// not `Sync`. Pack publication permits at most 100,000 nodes/digests and depth
+/// 128 (root depth zero). A rejected publication preserves the previous snapshot.
+///
+/// For [`FactStore`] failures, release unused roots or raise the cap after
+/// [`DctxError::CacheLimit`]; rebuild from source after [`DctxError::CorruptIndex`]
+/// or [`DctxError::UnsupportedVersion`]; correct keys after [`DctxError::InvalidRequest`].
 pub struct SqliteStore {
     pub(super) connection: Connection,
     now_ms: u64,
 }
 
 impl SqliteStore {
-    /// Opens a caller-selected database, creating its schema if absent.
+    /// Opens a caller-selected database, creating its schema if absent or empty.
+    /// A nonempty file shorter than SQLite's header is refused without modifying it.
     ///
     /// # Errors
     /// Returns database-open, schema initialization or comparison-bridge migration errors.
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
+        let path = path.as_ref();
+        // SQLite treats a file shorter than its 100-byte header as an empty database.
+        // Only an actually empty file may be initialized without discarding caller bytes.
+        if std::fs::metadata(path).is_ok_and(|metadata| metadata.len() != 0 && metadata.len() < 100)
+        {
+            return Err(StoreError::Corrupt("truncated SQLite header"));
+        }
         Self::from_connection(Connection::open(path)?)
     }
 
@@ -55,6 +70,8 @@ impl SqliteStore {
     }
 
     /// Sets the clock used by publish, retain and cleaning. Time is never read from the OS.
+    /// Values above `i64::MAX` cause the next clock-consuming operation to refuse.
+    /// Set a supported value before retrying; a backward clock does not expire data.
     pub fn set_clock(&mut self, now_ms: u64) {
         self.now_ms = now_ms;
     }
@@ -84,6 +101,8 @@ impl SqliteStore {
     }
 
     /// Lowers or raises the hard cap, then runs the cleaner at the stored clock.
+    /// Accepts `0..=i64::MAX` bytes. Referenced facts survive cleaning even when
+    /// they exceed a lowered cap; further admission may return [`StoreError::CacheLimit`].
     ///
     /// # Errors
     /// Returns a database, accounting or cache-cleaning error.
@@ -156,7 +175,9 @@ impl FactStore for SqliteStore {
 impl MapStore for SqliteStore {
     fn reindex(&mut self, facts: &FileFacts) -> Result<()> {
         write::validate(facts)?;
-        let transaction = self.connection.transaction()?;
+        let transaction = self
+            .connection
+            .transaction_with_behavior(TransactionBehavior::Immediate)?;
         write::remove(&transaction, &facts.file.path)?;
         write::insert(&transaction, facts)?;
         transaction.commit()?;
@@ -164,7 +185,9 @@ impl MapStore for SqliteStore {
     }
 
     fn prune(&mut self, live_paths: &[&str]) -> Result<usize> {
-        let transaction = self.connection.transaction()?;
+        let transaction = self
+            .connection
+            .transaction_with_behavior(TransactionBehavior::Immediate)?;
         let paths = {
             let mut statement = transaction.prepare("SELECT path FROM files ORDER BY path")?;
             statement

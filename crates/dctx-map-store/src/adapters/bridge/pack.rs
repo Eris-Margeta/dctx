@@ -12,7 +12,7 @@ use dctx_core::facts::{ContentDigests, PackSnapshot};
 use dctx_core::ids::{Timestamp, ViewKey};
 use dctx_core::version::Version;
 use dctx_hash::ContentDigest;
-use rusqlite::{Connection, OptionalExtension, params};
+use rusqlite::{Connection, OptionalExtension, TransactionBehavior, params};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 
@@ -40,7 +40,7 @@ pub(crate) fn publish(
     view_label(view.as_str())?;
     let payload = encode(snapshot)?;
     let bytes = ledger::charge(payload.len())?;
-    let transaction = connection.transaction()?;
+    let transaction = connection.transaction_with_behavior(TransactionBehavior::Immediate)?;
     let (now, _) = ledger::touch(&transaction, now_ms)?;
     let previous: Option<(i64, i64)> = transaction
         .query_row(
@@ -435,7 +435,7 @@ pub(super) fn migrate(connection: &mut Connection) -> Result<()> {
         return Ok(());
     }
     connection.pragma_update(None, "secure_delete", "ON")?;
-    let transaction = connection.transaction()?;
+    let transaction = connection.transaction_with_behavior(TransactionBehavior::Immediate)?;
     for view in views {
         // Bound migration memory to one historical payload. Any bad row rolls back every update.
         let old: Vec<u8> = transaction.query_row(
