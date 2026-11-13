@@ -21,6 +21,7 @@ use dctx_pack::{
     PackRequest, Scan, ScanOptions,
 };
 use dctx_ports::memory::{CancelFlag, FixedClock, MemoryCache, MemoryFactStore, MemorySource};
+use dctx_ports::FactStore;
 use dctx_ports::Source;
 use std::collections::BTreeMap;
 use std::io::{self, Write};
