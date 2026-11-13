@@ -7,6 +7,13 @@ use rusqlite::{Transaction, params};
 use std::collections::BTreeSet;
 
 pub(super) fn validate(facts: &FileFacts) -> Result<()> {
+    dctx_map_model::StableId::new(
+        dctx_map_model::NodeKind::Module,
+        &facts.file.path,
+        None,
+        None,
+    )
+    .map_err(|_| StoreError::InvalidFacts("file path must be a canonical relative path"))?;
     let mut ids = BTreeSet::new();
     for node in &facts.nodes {
         let identity_path =

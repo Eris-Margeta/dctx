@@ -1,0 +1,5 @@
+[
+  {"name": "Record", "kind": "struct", "line": 1, "parent": null},
+  {"name": "Record::key", "kind": "untyped", "line": 2, "parent": "Record"},
+  {"name": "Record::label", "kind": "untyped", "line": 3, "parent": "Record"}
+]

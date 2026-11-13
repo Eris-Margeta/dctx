@@ -1,0 +1,5 @@
+[
+  {"name": "Buffer", "kind": "class", "line": 1, "parent": null},
+  {"name": "Buffer::data", "kind": "untyped", "line": 4, "parent": "Buffer"},
+  {"name": "Buffer::get", "kind": "method", "line": 5, "parent": "Buffer"}
+]

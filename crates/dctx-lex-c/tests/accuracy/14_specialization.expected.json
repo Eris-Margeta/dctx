@@ -1,0 +1,8 @@
+[
+  {"name": "Codec", "kind": "struct", "line": 1, "parent": null},
+  {"name": "Codec::encode", "kind": "method", "line": 1, "parent": "Codec"},
+  {"name": "Codec", "kind": "struct", "line": 2, "parent": null},
+  {"name": "Codec::encode", "kind": "method", "line": 2, "parent": "Codec"},
+  {"name": "Codec", "kind": "struct", "line": 3, "parent": null},
+  {"name": "Codec::encode", "kind": "method", "line": 3, "parent": "Codec"}
+]

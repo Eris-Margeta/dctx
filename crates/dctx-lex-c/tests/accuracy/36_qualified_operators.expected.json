@@ -1,0 +1,7 @@
+[
+  {"name": "Number", "kind": "struct", "line": 1, "parent": null},
+  {"name": "Number::operator+", "kind": "method", "line": 2, "parent": "Number"},
+  {"name": "Number::operator bool", "kind": "method", "line": 3, "parent": "Number"},
+  {"name": "Number::operator+", "kind": "method", "line": 5, "parent": null},
+  {"name": "Number::operator bool", "kind": "method", "line": 6, "parent": null}
+]

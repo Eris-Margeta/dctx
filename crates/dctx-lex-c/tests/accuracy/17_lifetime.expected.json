@@ -1,0 +1,7 @@
+[
+  {"name": "Session", "kind": "struct", "line": 1, "parent": null},
+  {"name": "Session::Session", "kind": "method", "line": 2, "parent": "Session"},
+  {"name": "Session::Session", "kind": "method", "line": 3, "parent": "Session"},
+  {"name": "Session::dtor_Session", "kind": "method", "line": 4, "parent": "Session"},
+  {"name": "Session::Session", "kind": "method", "line": 5, "parent": "Session"}
+]

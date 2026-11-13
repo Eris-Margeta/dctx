@@ -1,0 +1,8 @@
+[
+  {"name": "storage", "kind": "untyped", "line": 1, "parent": null},
+  {"name": "storage::detail", "kind": "untyped", "line": 2, "parent": "storage"},
+  {"name": "storage::detail::Cursor", "kind": "struct", "line": 3, "parent": "storage::detail"},
+  {"name": "storage::detail::Cursor::offset", "kind": "untyped", "line": 3, "parent": "storage::detail::Cursor"},
+  {"name": "storage::wire", "kind": "untyped", "line": 6, "parent": null},
+  {"name": "storage::wire::flush", "kind": "function", "line": 7, "parent": "storage::wire"}
+]
