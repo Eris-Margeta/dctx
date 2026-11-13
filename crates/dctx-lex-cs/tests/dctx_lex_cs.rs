@@ -51,7 +51,7 @@ fn basic_fixture_matches_the_golden_facts() {
     assert_eq!(facts.dialect, Dialect::CSharp);
     assert_eq!(facts.path, "src/App.cs");
     assert_eq!(dctx_lex_cs::PARSER_ID, "dctx-lex-cs");
-    assert_eq!(dctx_lex_cs::PARSER_REVISION, 2);
+    assert_eq!(dctx_lex_cs::PARSER_REVISION, 3);
     let module = &facts.nodes[0];
     assert_eq!(module.fact.kind.as_str(), "module");
     assert_eq!(module.fact.id.as_str(), "m:src/App.cs");

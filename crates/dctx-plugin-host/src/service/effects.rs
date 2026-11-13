@@ -238,7 +238,13 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
         execute: impl FnOnce(&mut Self) -> Ran,
     ) -> Result<(Token, Option<FileIdentity>), HostRefusal> {
         self.budget.charge(&[(Dimension::Actions, 1)])?;
-        let receipt = self.ledger.reserve()?;
+        let receipt = match self.ledger.reserve() {
+            Ok(receipt) => receipt,
+            Err(refusal) => {
+                self.budget.release(Dimension::Actions, 1);
+                return Err(refusal);
+            }
+        };
         let mut intent = self.record(
             AuditKind::Intent,
             method,

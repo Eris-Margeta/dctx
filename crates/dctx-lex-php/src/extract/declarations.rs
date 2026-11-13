@@ -21,7 +21,7 @@ impl Walker<'_> {
             loop {
                 if self.is(i, "#[") {
                     i = self.attributes(i, end, &scope)?;
-                } else if modifier(self.text(i)) {
+                } else if self.kind(i) == Some(Kind::Ident) && modifier(self.text(i)) {
                     if self.is(i, "private") || self.is(i, "protected") {
                         public = false;
                     }
@@ -34,7 +34,11 @@ impl Walker<'_> {
                 self.problem(first, DiagnosticReason::Unrecognized);
                 break;
             }
-            let word = self.text(i).to_ascii_lowercase();
+            let word = if matches!(self.kind(i), Some(Kind::Ident | Kind::Punct)) {
+                self.text(i).to_ascii_lowercase()
+            } else {
+                String::new()
+            };
             i = match word.as_str() {
                 "namespace" if !self.is(i + 1, "\\") && !scope.executable => {
                     self.namespace(first, i, end, &mut scope)?

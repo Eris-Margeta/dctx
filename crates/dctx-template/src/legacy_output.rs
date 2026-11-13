@@ -94,6 +94,9 @@ impl LegacyOutput {
 
 /// Renders a legacy snapshot, including its version signature and optional file blocks.
 /// The template already contains runtime variables; all bytes and decisions are injected.
+/// Caller tree order is preserved. For large output, use [`crate::write_legacy_snapshot`]
+/// to avoid retaining the entire expanded document, or [`Template::legacy_snapshot_within`]
+/// to enforce an output budget.
 #[allow(
     clippy::must_use_candidate,
     reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
@@ -173,8 +176,10 @@ impl FileMode<'_> {
 impl Template {
     /// Renders a legacy snapshot when the page and its file-block expansion fit in `limit`.
     ///
-    /// The expansion is measured first. A larger page returns [`TemplateError::BudgetTooSmall`]
-    /// with the exact byte length and does not allocate that expansion.
+    /// Expansions above the internal 16 MiB measurement threshold are measured as compressed
+    /// pieces before rendering; smaller expansions may be materialized while checking the limit.
+    /// A page exceeding `limit` returns [`TemplateError::BudgetTooSmall`]. Intermediate tree and
+    /// file components must also fit, even if the layout omits them.
     ///
     /// # Errors
     /// Returns a budget or size-overflow error when the page or an intermediate expansion exceeds its ceiling.
@@ -216,8 +221,10 @@ impl Template {
 
     /// Renders a legacy diff when the page and its changed file blocks fit in `limit`.
     ///
-    /// File blocks are measured first. A larger page returns [`TemplateError::BudgetTooSmall`]
-    /// with the exact byte length and does not allocate that expansion.
+    /// Expansions above the internal 16 MiB measurement threshold are measured as compressed
+    /// pieces before rendering; smaller expansions may be materialized while checking the limit.
+    /// A page exceeding `limit` returns [`TemplateError::BudgetTooSmall`]. Intermediate tree and
+    /// file components must also fit, even if absent from the final document.
     ///
     /// # Errors
     /// Returns a budget or size-overflow error when the page or an intermediate expansion exceeds its ceiling.

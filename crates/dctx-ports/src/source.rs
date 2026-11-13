@@ -97,7 +97,9 @@ pub trait Source {
     ///
     /// # Errors
     /// Returns `ResourceLimit` if the content exceeds `max_bytes`, or an
-    /// adapter error if the granted file is unavailable or cannot be read.
+    /// adapter error if the granted file is unavailable or cannot be read. On `ResourceLimit`,
+    /// raise the read cap within host policy or omit the body; for an unavailable path,
+    /// refresh the inventory before retrying.
     fn read(&self, grant: &ReadGrant, max_bytes: u64) -> Result<Vec<u8>, DctxError>;
 }
 

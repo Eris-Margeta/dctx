@@ -18,7 +18,18 @@ use dctx_hash::Sha256;
     reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
 )]
 pub fn body_fingerprint(body: &str) -> String {
-    let normalized = body.split_whitespace().collect::<Vec<_>>().join(" ");
+    let normalized = if body.is_ascii()
+        && ![b'\t', b'\n', b'\r', 0x0b, 0x0c]
+            .iter()
+            .any(|byte| body.as_bytes().contains(byte))
+    {
+        body.split(' ')
+            .filter(|part| !part.is_empty())
+            .collect::<Vec<_>>()
+            .join(" ")
+    } else {
+        body.split_whitespace().collect::<Vec<_>>().join(" ")
+    };
     let mut hex = String::with_capacity(64);
     if let Ok(digest) = Sha256::digest(normalized.as_bytes()) {
         for byte in digest.as_bytes() {

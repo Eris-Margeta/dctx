@@ -191,12 +191,22 @@ fn switching_places_keeps_both_generations_warm_in_one_bounded_cache() {
 #[test]
 fn a_second_process_reuses_until_the_bytes_change() {
     let repo = Repository::new();
+    // Same-stamp edits require the digest policy, regardless of how long earlier
+    // subprocesses took. Stamp mode deliberately trusts sufficiently old mtimes.
+    let run = |args: &[&str]| {
+        let output = repo.output_env(args, &[("DCTX_FRESHNESS", "strict_live")]);
+        assert!(output.status.success(), "{args:?}: {output:?}");
+        (
+            String::from_utf8(output.stdout).expect("stdout"),
+            String::from_utf8(output.stderr).expect("stderr"),
+        )
+    };
     let source = repo.repo().join("item.rs");
     fs::write(&source, b"fn kept() {}\n").expect("source");
     let place = repo.repo().to_string_lossy().into_owned();
     let args = ["map", "find", "kept", "--json", "--place", place.as_str()];
 
-    let (cold, cold_err) = repo.run(&args);
+    let (cold, cold_err) = run(&args);
     assert!(cold_err.contains("generation built"), "{cold_err}");
     assert!(!cold_err.contains("generation reused"), "{cold_err}");
     let cold_reads = count_line(&cold_err, "content_reads");
@@ -205,7 +215,7 @@ fn a_second_process_reuses_until_the_bytes_change() {
     assert!(cold.contains("s:item.rs#kept"), "{cold}");
     let cold_records = records(&cold).to_string();
 
-    let (warm, warm_err) = repo.run(&args);
+    let (warm, warm_err) = run(&args);
     assert!(warm_err.contains("generation reused"), "{warm_err}");
     let warm_reads = count_line(&warm_err, "content_reads");
     assert!(
@@ -239,7 +249,7 @@ fn a_second_process_reuses_until_the_bytes_change() {
     assert_eq!(after.modified().expect("restored"), stamp);
 
     let lost_args = ["map", "find", "lost", "--json", "--place", place.as_str()];
-    let (rebuilt, rebuilt_err) = repo.run(&lost_args);
+    let (rebuilt, rebuilt_err) = run(&lost_args);
     assert!(rebuilt_err.contains("generation built"), "{rebuilt_err}");
     assert!(!rebuilt_err.contains("generation reused"), "{rebuilt_err}");
     assert!(rebuilt.contains("s:item.rs#lost"), "{rebuilt}");

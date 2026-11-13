@@ -83,6 +83,7 @@ impl Walker<'_> {
     }
 
     pub(crate) fn directive(&mut self, index: usize, scope: &Scope) -> usize {
+        self.templates.get_mut().clear();
         let text = self.text(index).to_string();
         let at = self.start_of(index);
         match classify(&text) {

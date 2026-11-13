@@ -113,9 +113,7 @@ pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
     let mut line_starts = vec![0];
     line_starts.extend(
         source
-            .bytes()
-            .enumerate()
-            .filter(|(_, byte)| *byte == b'\n')
+            .match_indices('\n')
             .map(|(index, _)| index as u32 + 1),
     );
     let mut lexer = scan::Lexer::new(source);

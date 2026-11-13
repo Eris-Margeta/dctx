@@ -36,22 +36,32 @@ pub enum Unsupported {
 #[derive(Debug, thiserror::Error)]
 pub enum PlatformError {
     /// A required guarantee is unavailable; there is no fallback.
-    #[error("unsupported platform guarantee: {0:?}")]
+    #[error(
+        "unsupported platform guarantee: {0:?}; next: use a qualified provider for this operation"
+    )]
     Unsupported(Unsupported),
     /// The requested path is not a canonical literal relative resource.
-    #[error("invalid relative resource")]
+    #[error(
+        "invalid relative resource; next: supply a bounded canonical relative name without traversal or reserved components"
+    )]
     InvalidPath,
     /// The checked object or bytes changed.
-    #[error("resource identity conflict")]
+    #[error("resource identity conflict; next: reauthorize the current object identity and digest")]
     Conflict,
     /// The admitted byte bound was exceeded.
-    #[error("resource limit exceeded")]
+    #[error(
+        "resource limit exceeded; next: reduce the requested byte range or entry parameters to their documented bounds"
+    )]
     ResourceLimit,
     /// The object is missing or cannot be safely opened.
-    #[error("resource unavailable")]
+    #[error(
+        "resource unavailable; next: check the authorized root and resource name before retrying"
+    )]
     Unavailable,
     /// A local IO operation failed; callers must not expose its raw diagnostics.
-    #[error("platform IO failure")]
+    #[error(
+        "platform IO failure; next: check local resource availability and retry from a newly authorized handle"
+    )]
     Io,
 }
 

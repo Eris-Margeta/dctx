@@ -45,6 +45,9 @@ pub struct AnswerRecord {
 }
 
 /// Renders `view_name` for `records`. The answer is sorted, capped, and free of denied bytes.
+/// At most 100,000 input records are accepted. Duplicate records remain separate records;
+/// ordering is canonical across paths, metadata and content, independent of caller order.
+/// Invalid UTF-8 bodies use replacement characters, whose encoded bytes count toward the budget.
 ///
 /// # Errors
 /// Refuses missing views/references, unavailable capabilities, exceeded ceilings, invalid render instructions or a budget too small for the answer.
@@ -61,6 +64,7 @@ pub fn render_plan(
             limit: MAX_WALK as u64,
         });
     }
+    crate::opcode::validate_program(&plan.render)?;
     let view = plan
         .views
         .iter()

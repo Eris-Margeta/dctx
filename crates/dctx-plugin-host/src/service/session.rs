@@ -63,6 +63,7 @@ impl<A: AuditPort, F: FilePort, R: RecipePort, P: ProcessPort> HostSession<A, F,
     }
 
     /// Serves the oldest queued request, if any.
+    /// Both success and refusal remove its liveness wait; only success counts as useful progress.
     pub fn serve_next(&mut self, now: u64) -> Option<(RequestId, Result<Reply, HostRefusal>)> {
         let (id, request) = self.queue.pop()?;
         let result = if self.supervisor.admits() {
@@ -76,6 +77,8 @@ impl<A: AuditPort, F: FilePort, R: RecipePort, P: ProcessPort> HostSession<A, F,
         };
         if result.is_ok() {
             self.supervisor.broker_completed(&id, now);
+        } else {
+            self.supervisor.broker_refused(&id);
         }
         Some((id, result))
     }

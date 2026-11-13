@@ -6,7 +6,7 @@
 
 use std::collections::HashMap;
 
-use crate::error::{MAX_STRING_BYTES, TemplateError};
+use crate::error::{MAX_INSTRUCTIONS, MAX_STRING_BYTES, TemplateError};
 use crate::model::{Inst, NamedCode, OP_DATA, OP_MAX, OP_PARTIAL, OP_TEXT, RenderProgram};
 
 /// Field ids stored in [`OP_DATA`] arguments.
@@ -70,6 +70,12 @@ pub fn instruction_ok(
 
 /// Rejects any opcode outside 1..=[`OP_MAX`] and any dangling index.
 pub fn validate_program(program: &RenderProgram) -> Result<(), TemplateError> {
+    if program.instruction_count() > MAX_INSTRUCTIONS as usize {
+        return Err(TemplateError::Limit {
+            what: "instructions",
+            limit: u64::from(MAX_INSTRUCTIONS),
+        });
+    }
     for code in program.partials.iter().chain(program.layouts.iter()) {
         for inst in &code.instructions {
             if inst.opcode == 0 || inst.opcode > OP_MAX {

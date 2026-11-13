@@ -195,7 +195,8 @@ impl Ledger {
 
     /// `Receipts.Request`: record the durable intent under `receipt`.
     /// # Errors
-    /// Refuses an action key that already has an intent.
+    /// Refuses an existing action key or a full ledger. Reuse the existing receipt or increase
+    /// the host retention capacity; archiving preserves keys and does not free capacity.
     pub fn intent(
         &mut self,
         key: ActionKey,
@@ -204,6 +205,9 @@ impl Ledger {
     ) -> Result<(), HostRefusal> {
         if self.entries.contains_key(&key) {
             return Err(HostRefusal::conflict("intent-exists"));
+        }
+        if self.entries.len() >= self.capacity {
+            return Err(HostRefusal::limit("ledger-full"));
         }
         self.entries.insert(
             key,

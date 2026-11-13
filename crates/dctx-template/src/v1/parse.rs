@@ -6,9 +6,10 @@
 
 use std::collections::{HashMap, HashSet};
 
-use crate::error::TemplateValidationError;
+use crate::error::{MAX_PLAN_BYTES, MAX_STRING_BYTES, TemplateError, TemplateValidationError};
 
-/// A parsed v1 template. Variables are already resolved; partials and layout are not.
+/// A parsed v1 template. Valid variables are resolved; partials and layout are not.
+/// Call [`Template::validate`] before rendering to reject retained invalid variable definitions.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Template {
     /// Resolved configuration variables.
@@ -25,11 +26,40 @@ pub struct Template {
 
 impl Template {
     /// Parses v1 source. Unknown headers do not change the current section.
+    /// Repeated variables keep the last value; repeated sections append their bodies.
+    /// Substitution uses lexical key order in two passes, and cycles are recorded before expansion.
+    /// This legacy API has no source-size cap. Variable expansion is bounded to 65,536 bytes
+    /// per value and 1 MiB in total; on overflow raw values are retained and [`Template::validate`]
+    /// reports an invalid-syntax error. Use [`crate::compile`] for bounded source admission.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
     )]
     pub fn parse(raw: &str) -> Self {
+        let template = Self::parse_unresolved(raw);
+        if variable_bytes(&template.variables).is_err() {
+            return template;
+        }
+        finish_bounded(
+            template.variables.clone(),
+            &template.partial_tree_entry,
+            &template.partial_file_block,
+            &template.layout,
+        )
+        .unwrap_or(template)
+    }
+
+    pub(crate) fn parse_bounded(raw: &str) -> Result<Self, TemplateError> {
+        let template = Self::parse_unresolved(raw);
+        finish_bounded(
+            template.variables,
+            &template.partial_tree_entry,
+            &template.partial_file_block,
+            &template.layout,
+        )
+    }
+
+    fn parse_unresolved(raw: &str) -> Self {
         let mut variables = HashMap::new();
         let mut partial_tree = String::new();
         let mut partial_file = String::new();
@@ -73,15 +103,23 @@ impl Template {
             }
         }
 
-        finish(variables, &partial_tree, &partial_file, &layout)
+        Self {
+            variables,
+            partial_tree_entry: partial_tree.trim().to_string(),
+            partial_file_block: partial_file.trim().to_string(),
+            layout: layout.trim().to_string(),
+            cycles: Vec::new(),
+        }
     }
 
-    /// Inserts a runtime variable such as `project`.
+    /// Inserts or replaces a runtime variable such as `project`, without expanding its value.
+    /// Existing resolved values and recorded cycles are unchanged; parse again to resolve new dependencies.
     pub fn insert_variable(&mut self, key: &str, value: &str) {
         self.variables.insert(key.to_string(), value.to_string());
     }
 
-    /// Reports empty layouts, unresolved `{{var}}` references and variable cycles.
+    /// Reports empty layouts, unresolved `{{var}}` references and recorded variable cycles.
+    /// Runtime `{{{field}}}` placeholders are left to rendering. No expressions are evaluated.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
@@ -96,6 +134,13 @@ impl Template {
         for name in &self.cycles {
             errors.push(TemplateValidationError::Cycle(name.clone()));
         }
+        if self.cycles.is_empty() {
+            let expansion = variable_bytes(&self.variables)
+                .and_then(|_| finish_bounded(self.variables.clone(), "", "", "").map(|_| ()));
+            if let Err(error) = expansion {
+                errors.push(TemplateValidationError::InvalidSyntax(error.to_string()));
+            }
+        }
         collect_unresolved(&self.partial_tree_entry, &self.variables, &mut errors);
         collect_unresolved(&self.partial_file_block, &self.variables, &mut errors);
         collect_unresolved(&self.layout, &self.variables, &mut errors);
@@ -103,47 +148,129 @@ impl Template {
     }
 }
 
-pub(crate) fn finish(
+pub(crate) fn finish_bounded(
     mut variables: HashMap<String, String>,
     partial_tree: &str,
     partial_file: &str,
     layout: &str,
-) -> Template {
-    let raw = variables.clone();
-    for _ in 0..2 {
-        let keys: Vec<String> = variables.keys().cloned().collect();
+) -> Result<Template, TemplateError> {
+    let mut variable_bytes = variable_bytes(&variables)?;
+    let cycles = find_cycles(&variables);
+    for _ in 0..if cycles.is_empty() { 2 } else { 0 } {
+        let mut keys: Vec<_> = variables.keys().cloned().collect();
+        keys.sort();
         for key in keys {
-            let Some(val) = variables.get(&key).cloned() else {
-                continue;
-            };
-            let resolved = replace_vars(&val, &variables);
-            variables.insert(key, resolved);
+            if let Some(value) = variables.get(&key) {
+                let resolved = replace_vars_with_limit(value, &variables, MAX_STRING_BYTES)?;
+                variable_bytes = variable_bytes - value.len() + resolved.len();
+                if variable_bytes > MAX_PLAN_BYTES as usize {
+                    return Err(TemplateError::Limit {
+                        what: "variable expansion",
+                        limit: u64::from(MAX_PLAN_BYTES),
+                    });
+                }
+                variables.insert(key, resolved);
+            }
         }
     }
-    Template {
+    Ok(Template {
         variables,
         partial_tree_entry: partial_tree.trim().to_string(),
         partial_file_block: partial_file.trim().to_string(),
         layout: layout.trim().to_string(),
-        cycles: find_cycles(&raw),
-    }
+        cycles,
+    })
 }
 
-/// Replaces `{{key}}` using `HashMap` iteration order, matching the v1 renderer.
+fn variable_bytes(variables: &HashMap<String, String>) -> Result<usize, TemplateError> {
+    // Choose the same refusal regardless of hash-map iteration order when both caps fail.
+    if variables
+        .iter()
+        .any(|(key, value)| key.len() > MAX_STRING_BYTES || value.len() > MAX_STRING_BYTES)
+    {
+        return Err(TemplateError::Limit {
+            what: "variable expansion",
+            limit: MAX_STRING_BYTES as u64,
+        });
+    }
+    let mut total = 0usize;
+    for (key, value) in variables {
+        total = total.saturating_add(key.len()).saturating_add(value.len());
+    }
+    if total > MAX_PLAN_BYTES as usize {
+        return Err(TemplateError::Limit {
+            what: "variable expansion",
+            limit: u64::from(MAX_PLAN_BYTES),
+        });
+    }
+    Ok(total)
+}
+
+pub(crate) fn replace_vars_bounded(
+    text: &str,
+    vars: &HashMap<String, String>,
+) -> Result<String, TemplateError> {
+    replace_vars_with_limit(text, vars, MAX_PLAN_BYTES as usize)
+}
+
+fn replace_vars_with_limit(
+    text: &str,
+    vars: &HashMap<String, String>,
+    limit: usize,
+) -> Result<String, TemplateError> {
+    let too_large = || TemplateError::Limit {
+        what: "variable expansion",
+        limit: limit as u64,
+    };
+    if text.len() > limit {
+        return Err(too_large());
+    }
+    let mut result = text.to_string();
+    if !result.contains("{{") {
+        return Ok(result);
+    }
+    let mut entries: Vec<_> = vars.iter().collect();
+    entries.sort_by_key(|(key, _)| *key);
+    for (key, value) in entries {
+        let pattern = format!("{{{{{key}}}}}");
+        let mut size = 0usize;
+        for (part, substitute) in variable_parts(&result) {
+            let count = if substitute {
+                part.matches(&pattern).count()
+            } else {
+                0
+            };
+            let len = (part.len() - count * pattern.len())
+                .saturating_add(count.saturating_mul(value.len()));
+            size = size.saturating_add(len);
+            if size > limit {
+                return Err(too_large());
+            }
+        }
+        result = replace_variable(&result, &pattern, value);
+    }
+    Ok(result)
+}
+
+/// Replaces `{{key}}` in lexical key order. Triple-braced runtime fields remain literal.
+/// Each key is applied once; inserted references to later keys resolve in the same pass.
+/// This compatibility helper has no output-size cap; use [`crate::compile`] for untrusted source.
 #[allow(
     clippy::must_use_candidate,
     reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
 )]
 #[allow(
     clippy::implicit_hasher,
-    reason = "Keep the public v1 HashMap signature and its documented default-hasher iteration contract; generalizing it would change the API."
+    reason = "Keep the public v1 HashMap signature; substitution sorts keys independently of the hasher."
 )]
 pub fn replace_vars(text: &str, vars: &HashMap<String, String>) -> String {
     let mut result = text.to_string();
     if !result.contains("{{") {
         return result;
     }
-    for (key, val) in vars {
+    let mut entries: Vec<_> = vars.iter().collect();
+    entries.sort_by_key(|(key, _)| *key);
+    for (key, val) in entries {
         let pattern = format!("{{{{{key}}}}}");
         result = replace_variable(&result, &pattern, val);
     }
@@ -154,20 +281,30 @@ pub fn replace_vars(text: &str, vars: &HashMap<String, String>) -> String {
 // particularly `{{{project}}}` after the caller supplies the project name.
 fn replace_variable(text: &str, pattern: &str, value: &str) -> String {
     let mut output = String::new();
-    let mut rest = text;
-    while let Some(start) = rest.find("{{{") {
-        output.push_str(&rest[..start].replace(pattern, value));
-        rest = &rest[start..];
-        let Some(end) = rest.find("}}}") else {
-            output.push_str(rest);
-            return output;
-        };
-        let end = end + 3;
-        output.push_str(&rest[..end]);
-        rest = &rest[end..];
+    for (part, substitute) in variable_parts(text) {
+        if substitute {
+            output.push_str(&part.replace(pattern, value));
+        } else {
+            output.push_str(part);
+        }
     }
-    output.push_str(&rest.replace(pattern, value));
     output
+}
+
+fn variable_parts(mut text: &str) -> impl Iterator<Item = (&str, bool)> {
+    std::iter::from_fn(move || {
+        if text.is_empty() {
+            return None;
+        }
+        let (end, substitute) = match text.find("{{{") {
+            Some(0) => (text.find("}}}").map_or(text.len(), |end| end + 3), false),
+            Some(start) => (start, true),
+            None => (text.len(), true),
+        };
+        let (part, rest) = text.split_at(end);
+        text = rest;
+        Some((part, substitute))
+    })
 }
 
 fn collect_unresolved(

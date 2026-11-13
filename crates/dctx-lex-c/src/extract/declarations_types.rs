@@ -235,6 +235,9 @@ impl Draft {
     )]
     pub(super) fn new(path: &str, source: &str, max_facts: usize) -> Result<Self, LexError> {
         let id = StableId::new(NodeKind::Module, path, None, None)?;
+        if max_facts == 0 {
+            return Err(LexError::TooManyFacts { limit: 0 });
+        }
         let lines = source.bytes().filter(|byte| *byte == b'\n').count() as u32 + 1;
         let module = Node {
             id,

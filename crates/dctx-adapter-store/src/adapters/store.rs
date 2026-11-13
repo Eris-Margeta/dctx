@@ -6,7 +6,7 @@
 
 use std::collections::{BTreeSet, HashSet};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Mutex, MutexGuard, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use crate::domain::{
     DurabilityMode, EMERGENCY_METADATA, MAX_ACQUIRE, Manifest, POINTER_LEN, Pin, PinnedSegment,
@@ -18,6 +18,7 @@ use dctx_map_segment::{decode, segment_object_digest};
 
 pub(crate) struct Lease {
     pub id: u64,
+    pub token: Arc<()>,
     pub root: String,
     pub generation: u64,
     pub manifest: [u8; 32],
@@ -28,6 +29,7 @@ impl Clone for Lease {
     fn clone(&self) -> Self {
         Self {
             id: self.id,
+            token: Arc::clone(&self.token),
             root: self.root.clone(),
             generation: self.generation,
             manifest: self.manifest,
@@ -230,7 +232,13 @@ impl<F: StoreFs> SegmentStore<F> {
                 continue;
             }
             let id = coord.next_pin;
-            coord.next_pin = coord.next_pin.saturating_add(1);
+            coord.next_pin = coord
+                .next_pin
+                .checked_add(1)
+                .ok_or(StoreError::InvalidRequest {
+                    reason: "pin id space exhausted; reopen the store before acquiring another pin",
+                })?;
+            let token = Arc::new(());
             let segments: Vec<PinnedSegment> = observed
                 .segments
                 .iter()
@@ -238,6 +246,7 @@ impl<F: StoreFs> SegmentStore<F> {
                 .collect();
             coord.leases.push(Lease {
                 id,
+                token: Arc::clone(&token),
                 root: root.to_string(),
                 generation: observed.generation,
                 manifest: observed.manifest,
@@ -245,6 +254,7 @@ impl<F: StoreFs> SegmentStore<F> {
             });
             return Ok(Pin {
                 id,
+                token,
                 root: root.to_string(),
                 generation: observed.generation,
                 manifest: observed.manifest,
@@ -257,7 +267,7 @@ impl<F: StoreFs> SegmentStore<F> {
     /// Drops a pin. A second release is [`StoreError::InvalidRequest`].
     ///
     /// # Errors
-    /// Refuses a crashed store or a pin without an active lease.
+    /// Refuses a crashed store or a pin without an active lease in this store instance.
     #[allow(
         clippy::needless_pass_by_value,
         reason = "Releasing a pin consumes the public lease token so callers cannot accidentally reuse it without an explicit clone."
@@ -266,7 +276,9 @@ impl<F: StoreFs> SegmentStore<F> {
         self.ensure_live()?;
         let mut coord = self.coord();
         let before = coord.leases.len();
-        coord.leases.retain(|lease| lease.id != pin.id);
+        coord
+            .leases
+            .retain(|lease| lease.id != pin.id || !Arc::ptr_eq(&lease.token, &pin.token));
         if coord.leases.len() == before {
             return Err(StoreError::InvalidRequest { reason: "pin" });
         }
@@ -276,9 +288,17 @@ impl<F: StoreFs> SegmentStore<F> {
     /// Reads one segment named by `pin`. The bytes are checked against the digest and the codec.
     ///
     /// # Errors
-    /// Refuses a crashed store, a digest outside the pin or corrupt segment data; propagates bounded-read failures.
+    /// Refuses a crashed store, a foreign pin, a digest outside the pin or corrupt segment data; propagates bounded-read failures.
     pub fn read_segment(&self, pin: &Pin, digest: &[u8; 32]) -> Result<Vec<u8>, StoreError> {
         self.ensure_live()?;
+        if !self
+            .coord()
+            .leases
+            .iter()
+            .any(|lease| lease.id == pin.id && Arc::ptr_eq(&lease.token, &pin.token))
+        {
+            return Err(StoreError::InvalidRequest { reason: "pin" });
+        }
         let role = pin
             .role_of(digest)
             .ok_or(StoreError::InvalidRequest { reason: "pin" })?;
@@ -504,4 +524,34 @@ pub(crate) fn manifest_bytes_ok(bytes: &[u8], expected: &[u8; 32]) -> Result<Man
         return Err(StoreError::CorruptIndex { reason: "manifest" });
     }
     Ok(manifest)
+}
+
+#[cfg(test)]
+mod n1113_hostile {
+    use super::*;
+    use crate::{MemoryFs, PublishRequest, Revisions};
+
+    #[test]
+    fn exhausted_pin_cursor_refuses_without_issuing_duplicate_ids() {
+        let store = SegmentStore::open(MemoryFs::posix(), StoreOptions::capped(8192)).unwrap();
+        store
+            .publish(PublishRequest {
+                root: "main".into(),
+                generation: 1,
+                snapshot: [0; 32],
+                view: [0; 32],
+                policy_epoch: 0,
+                segments: Vec::new(),
+                revisions: Revisions::structural(),
+            })
+            .unwrap();
+        store.coord().next_pin = u64::MAX;
+        for _ in 0..2 {
+            assert!(matches!(
+                store.pin("main"),
+                Err(StoreError::InvalidRequest { .. })
+            ));
+            assert!(store.coord().leases.is_empty());
+        }
+    }
 }

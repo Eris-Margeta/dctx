@@ -217,7 +217,7 @@ impl Lx<'_> {
             if byte == b'\\' {
                 self.i += 1;
                 if self.i < self.b.len() {
-                    self.i += 1;
+                    self.advance_char();
                 }
                 continue;
             }
@@ -247,11 +247,10 @@ impl Lx<'_> {
                 }
                 continue;
             }
-            if byte == b'\n' || byte < 0x80 {
-                self.i += 1;
-            } else {
-                self.advance_char();
-            }
+            let close = char::from(close);
+            let open = if paired { char::from(open) } else { close };
+            let hash = if interp { '#' } else { close };
+            self.i += plain_chunk(self.src, self.i, &['\\', close, open, hash]);
         }
         self.problem(start, DiagnosticReason::UnterminatedString);
         self.depth = self.depth.saturating_sub(nest);
@@ -301,6 +300,28 @@ fn ident_end(src: &str, start: usize) -> usize {
             .take_while(|ch| ch.is_ascii_alphanumeric() || *ch == '_' || !ch.is_ascii())
             .map(char::len_utf8)
             .sum::<usize>()
+}
+
+// Bound each search window so repeated escapes cannot cause quadratic rescans.
+// ASCII delimiters never cut a UTF-8 code point.
+fn plain_chunk(source: &str, start: usize, specials: &[char]) -> usize {
+    let bytes = &source.as_bytes()[start..];
+    if let Some(end) = bytes[..bytes.len().min(32)]
+        .iter()
+        .position(|&byte| specials.contains(&char::from(byte)))
+    {
+        return end.max(1);
+    }
+    let mut end = (start + 4096).min(source.len());
+    while !source.is_char_boundary(end) {
+        end -= 1;
+    }
+    let mut rest = &source[start..end];
+    for &special in specials {
+        let end = rest.find(special).unwrap_or(rest.len());
+        rest = &rest[..end];
+    }
+    rest.len().max(1)
 }
 
 #[cfg(test)]

@@ -71,6 +71,8 @@ pub fn load_policy(root: &Path) -> Result<CachePolicy, String> {
 }
 
 /// Shows the policy, or stores a tightened one. A show does not create the file.
+/// Supplied byte caps and TTL days must be positive, just as for `cache config`.
+/// Day-to-millisecond conversion saturates at `u64::MAX`.
 /// # Errors
 /// Returns policy loading/validation, cap application, ledger, or policy persistence failures.
 pub fn configure(
@@ -79,6 +81,12 @@ pub fn configure(
     max_bytes: Option<u64>,
     ttl_days: Option<u64>,
 ) -> Result<CachePolicy, String> {
+    if max_bytes == Some(0) || ttl_days == Some(0) {
+        return Err(
+            "cache policy values must be positive; pass max_bytes and ttl_days of at least 1"
+                .into(),
+        );
+    }
     let mut policy = load_policy(root)?;
     if auto.is_none() && max_bytes.is_none() && ttl_days.is_none() {
         return Ok(policy);

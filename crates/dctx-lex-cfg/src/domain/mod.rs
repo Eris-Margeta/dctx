@@ -11,7 +11,11 @@ pub use facts::{
 };
 pub use limits::{LexError, Limits};
 
-/// SHA-256 hex of the body with whitespace runs collapsed and edges trimmed.
+/// SHA-256 lowercase hex of the body with whitespace runs collapsed and edges trimmed.
+///
+/// Normalization follows [`str::split_whitespace`], including Unicode whitespace,
+/// regardless of configuration quoting. Empty or whitespace-only input hashes as
+/// the empty string. This standalone helper has no extraction byte limit.
 #[allow(
     clippy::must_use_candidate,
     reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."

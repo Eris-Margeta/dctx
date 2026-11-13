@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Property tests against ed25519-dalek strict verification and sha2.
-//! Tests random signed messages, bit mutations, arbitrary encodings and hashes.
+//! Tests seeded signed messages, bit mutations, arbitrary encodings and hashes.
 //! Every disagreement fails; test seeds are synthetic and never production keys.
 
 #![forbid(unsafe_code)]
@@ -14,7 +14,13 @@ use proptest::prelude::*;
 use sha2::Digest;
 
 proptest! {
-    #![proptest_config(ProptestConfig { cases: 128, failure_persistence: None, ..ProptestConfig::default() })]
+    #![proptest_config(ProptestConfig {
+        cases: 128,
+        failure_persistence: None,
+        rng_seed: proptest::test_runner::RngSeed::Fixed(1113),
+        rng_algorithm: proptest::test_runner::RngAlgorithm::ChaCha,
+        ..ProptestConfig::default()
+    })]
 
     #[test]
     fn random_signatures_and_single_bit_mutations(

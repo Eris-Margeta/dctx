@@ -6,7 +6,7 @@
 use crate::error::CacheError;
 
 const COUNT_MAX: u32 = 100_000;
-const TEXT_MAX: u32 = 4_096;
+pub(super) const TEXT_MAX: u32 = 4_096;
 
 pub(super) fn corrupt(reason: &'static str) -> CacheError {
     CacheError::CorruptLedger { reason }

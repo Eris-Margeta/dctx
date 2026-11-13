@@ -116,6 +116,12 @@ impl<P: ProcessPort> Supervisor<P> {
         }
     }
 
+    pub(crate) fn broker_refused(&mut self, id: &RequestId) {
+        if let Some(feed) = self.feed.as_mut() {
+            feed.broker_refused(id);
+        }
+    }
+
     /// Registers a host-known dependency.
     /// # Errors
     /// Refuses a missing active liveness feed or exhausted tracked-dependency capacity.

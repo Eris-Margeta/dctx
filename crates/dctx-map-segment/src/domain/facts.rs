@@ -113,6 +113,37 @@ pub(crate) fn write_digest(out: &mut Vec<u8>, digest: &[u8; 32]) {
     push_bytes(out, digest);
 }
 
+/// Compare canonical wire keys without allocating a serialization per comparison.
+/// Framing/schema bytes are constant. Integer order is lexicographic *little
+/// endian bytes*, deliberately not numeric order (e.g. 256 sorts before 1).
+pub(crate) fn cmp_key(left: &FactKey, right: &FactKey) -> std::cmp::Ordering {
+    left.digest
+        .cmp(&right.digest)
+        .then_with(|| {
+            left.byte_length
+                .to_le_bytes()
+                .cmp(&right.byte_length.to_le_bytes())
+        })
+        .then_with(|| {
+            left.language
+                .code()
+                .to_le_bytes()
+                .cmp(&right.language.code().to_le_bytes())
+        })
+        .then_with(|| left.dialect.to_le_bytes().cmp(&right.dialect.to_le_bytes()))
+        .then_with(|| {
+            left.parser_id
+                .to_le_bytes()
+                .cmp(&right.parser_id.to_le_bytes())
+        })
+        .then_with(|| {
+            left.parser_revision
+                .to_le_bytes()
+                .cmp(&right.parser_revision.to_le_bytes())
+        })
+        .then_with(|| left.extraction_plan.cmp(&right.extraction_plan))
+}
+
 pub(crate) fn encode_key(key: &FactKey) -> Vec<u8> {
     let mut out = Vec::new();
     write_object_key(&mut out, &key.digest, key.byte_length);
@@ -219,6 +250,57 @@ pub(crate) fn validate_fact<S: AsRef<str>>(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    proptest::proptest! {
+        #[test]
+        fn key_comparison_matches_wire_bytes(
+            bytes in proptest::array::uniform32(proptest::num::u8::ANY),
+            lengths in proptest::array::uniform2(proptest::num::u64::ANY),
+            ids in proptest::array::uniform6(proptest::num::u32::ANY),
+            field in 0usize..7,
+        ) {
+            let left = FactKey {
+                digest: bytes, byte_length: lengths[0], language: Language::Rust,
+                dialect: ids[0], parser_id: ids[1], parser_revision: ids[2],
+                extraction_plan: bytes,
+            };
+            let mut right = left;
+            match field {
+                0 => right.digest[0] = right.digest[0].wrapping_add(1),
+                1 => right.byte_length = lengths[1],
+                2 => right.language = Language::TypeScript,
+                3 => right.dialect = ids[3],
+                4 => right.parser_id = ids[4],
+                5 => right.parser_revision = ids[5],
+                _ => right.extraction_plan[0] = right.extraction_plan[0].wrapping_add(1),
+            }
+            proptest::prop_assert_eq!(cmp_key(&left, &right), encode_key(&left).cmp(&encode_key(&right)));
+            proptest::prop_assert_eq!(cmp_key(&right, &left), encode_key(&right).cmp(&encode_key(&left)));
+            proptest::prop_assert_eq!(cmp_key(&left, &left), std::cmp::Ordering::Equal);
+        }
+    }
+
+    #[test]
+    fn key_comparison_preserves_little_endian_order() {
+        let left = FactKey {
+            digest: [0; 32],
+            byte_length: 256,
+            language: Language::Rust,
+            dialect: 0,
+            parser_id: 0,
+            parser_revision: 0,
+            extraction_plan: [0; 32],
+        };
+        let right = FactKey {
+            byte_length: 1,
+            ..left
+        };
+        assert_eq!(cmp_key(&left, &right), std::cmp::Ordering::Less);
+        assert_eq!(
+            cmp_key(&left, &right),
+            encode_key(&left).cmp(&encode_key(&right))
+        );
+    }
 
     #[test]
     fn fact_key_is_one_hundred_bytes_and_spans_must_fit() {

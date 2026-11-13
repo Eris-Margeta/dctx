@@ -90,7 +90,8 @@ impl ResourceLimits {
         }
     }
 
-    /// Every field is at most `ceiling`.
+    /// Checks that every field is at most `ceiling`, including zero and maximum integer values.
+    /// This comparison does not check schema minimums; compilation admits those separately.
     ///
     /// # Errors
     /// Returns a budget-above-ceiling error for the first resource field that exceeds the corresponding ceiling.
