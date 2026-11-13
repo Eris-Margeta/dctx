@@ -109,9 +109,9 @@ impl Scanner<'_> {
 
     fn preproc(&mut self) {
         let start = self.pos;
-        while self.pos < self.src.len() && self.byte() != b'\n' {
-            self.bump();
-        }
+        self.pos += self.src[self.pos..]
+            .find('\n')
+            .unwrap_or(self.src.len() - self.pos);
         self.push(Kind::Preproc, start);
         if self.byte() == b'\n' {
             self.pos += 1;
@@ -126,9 +126,9 @@ impl Scanner<'_> {
     fn line_comment(&mut self) {
         let start = self.pos;
         let doc = self.starts("///") && !self.starts("////");
-        while self.pos < self.src.len() && self.byte() != b'\n' {
-            self.bump();
-        }
+        self.pos += self.src[self.pos..]
+            .find('\n')
+            .unwrap_or(self.src.len() - self.pos);
         self.comments.push(Comment {
             start: start as u32,
             end: self.pos as u32,
@@ -185,13 +185,25 @@ impl Scanner<'_> {
             }
         }
         if bytes.get(i) != Some(&b'"') {
-            return false;
+            if dollars == 0 {
+                return false;
+            }
+            // This run cannot begin a string. Consume it once, leaving a
+            // following @identifier available to the ordinary scanner.
+            let start = self.pos;
+            self.pos = if bytes[start] == b'$' {
+                start + dollars
+            } else {
+                i
+            };
+            self.push(Kind::Punct, start);
+            return true;
         }
-        let quote_at = i;
-        while bytes.get(i) == Some(&b'"') {
-            i += 1;
-        }
-        let quotes = i - quote_at;
+        let quotes = bytes[i..]
+            .iter()
+            .position(|byte| *byte != b'"')
+            .unwrap_or(bytes.len() - i);
+        i += quotes;
         let start = self.pos;
         self.pos = i;
         self.line_start = false;
@@ -212,10 +224,13 @@ impl Scanner<'_> {
             if dollars > 0 && self.try_hole(dollars) {
                 continue;
             }
+            let before = self.pos;
             if self.raw_closer(quotes) {
                 return;
             }
-            self.bump();
+            if self.pos == before {
+                self.bump();
+            }
         }
         self.problems
             .push((start as u32, DiagnosticReason::UnterminatedString));
@@ -227,6 +242,9 @@ impl Scanner<'_> {
     fn raw_closer(&mut self, quotes: usize) -> bool {
         let run = self.count(b'"');
         if run < quotes {
+            // A short run is all literal content. Counting it again at each
+            // quote would make an almost-matching delimiter quadratic.
+            self.pos += run;
             return false;
         }
         if run == quotes
@@ -235,6 +253,7 @@ impl Scanner<'_> {
                 .next()
                 .is_some_and(is_ident_start)
         {
+            self.pos += run;
             return false;
         }
         self.pos += quotes;
@@ -247,6 +266,18 @@ impl Scanner<'_> {
     )]
     fn quoted_body(&mut self, start: usize, verbatim: bool, dollars: usize) {
         while self.pos < self.src.len() && self.too_deep_at.is_none() {
+            let rest = &self.src.as_bytes()[self.pos..];
+            self.pos += rest
+                .iter()
+                .position(|byte| {
+                    *byte == b'"'
+                        || (!verbatim && matches!(byte, b'\\' | b'\n'))
+                        || (dollars > 0 && *byte == b'{')
+                })
+                .unwrap_or(rest.len());
+            if self.pos == self.src.len() {
+                break;
+            }
             if dollars > 0 && self.try_hole(dollars) {
                 continue;
             }
@@ -478,10 +509,10 @@ impl Scanner<'_> {
     }
 
     fn count(&self, byte: u8) -> usize {
-        self.src.as_bytes()[self.pos..]
-            .iter()
-            .take_while(|item| **item == byte)
-            .count()
+        let rest = &self.src.as_bytes()[self.pos..];
+        rest.iter()
+            .position(|item| *item != byte)
+            .unwrap_or(rest.len())
     }
 
     fn starts(&self, text: &str) -> bool {

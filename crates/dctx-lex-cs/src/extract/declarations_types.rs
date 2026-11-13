@@ -201,12 +201,9 @@ impl Walker<'_> {
                 );
             }
             index = name_end;
-            if self.is(index, "<")
-                && let Some(close) = self.close_angle(index, end)
-            {
-                self.uses_from(index + 1, close, scope, skip);
-                index = close + 1;
-            }
+            // Continue through angle punctuation in the same loop. Recursing
+            // after searching for every closer is quadratic and exhausts the
+            // call stack on deeply nested generic arguments.
         }
     }
 

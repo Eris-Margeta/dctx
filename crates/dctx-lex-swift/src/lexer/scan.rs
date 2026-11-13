@@ -99,7 +99,9 @@ impl<'a> Scanner<'a> {
                 continue;
             }
             if ch == '#' {
-                self.pos += 1;
+                // A hash run without a quote is one unsupported directive;
+                // probing each remaining suffix would be quadratic.
+                self.pos += hashes;
                 self.word();
                 self.emit(start, Kind::Directive);
                 continue;
