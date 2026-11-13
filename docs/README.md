@@ -11,7 +11,7 @@ have no page link; specifications also include planned behavior.
 
 - [What dctx is](START.md): the claim, current limits and advanced-user notice.
 - [Choose your path](START.md#choose-your-path): giant folders, small projects, library builders and team admins.
-- [Safe path in ten minutes](START.md#safe-path-in-ten-minutes): release archive, one project, lean MCP and measurement.
+- [Safe path in ten minutes](START.md#safe-path-in-ten-minutes): release archive, one project, CLI commands and measurement.
 - [Responsibilities](START.md#responsibilities): what the engine supplies and what the caller owns.
 - [Runnable quickstart](../examples/README.md): a small pack and map workflow.
 
@@ -19,7 +19,6 @@ have no page link; specifications also include planned behavior.
 
 - [CLI](MODALITIES.md#human-one-off-pack-to-clipboard): terminal, clipboard and shell workflows.
 - [Agents](MODALITIES.md#choose-by-task): short tasks, repeated source reads and huge-tree scoping.
-- [MCP](guides/MCP.md): lean/default/custom profiles, client setup and startup cost.
 - ACP: **coming**.
 - [Libraries](MODALITIES.md#rust-library-embed-the-facade): Rust facade from Git; Node wrapper on npm as `@tejl/dctx` with `@tejl/dctx-<platform>` native packages; Python and Go wrappers from CI.
 - [CI and caching](MODALITIES.md#ci--prompt-cache-prefix-stability): fixed inputs, byte stability and measurement limits.
@@ -44,7 +43,7 @@ have no page link; specifications also include planned behavior.
 ## Reference
 
 - [Commands](../README.md#cli-reference) and [map command guide](guides/MAP-MODE.md): run `dctx --help` for the complete current CLI.
-- Engine rpc protocol: **coming**; MCP's shipped stdio protocol is documented in the [MCP guide](guides/MCP.md).
+- [Engine RPC protocol](protocol/README.md): the versioned stdio protocol for language wrappers.
 - Policy file reference: **coming**; current [ignore semantics](ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md) and [planned policy lattice](SPEC.md#part-iv--policy) are separate contracts.
 - [Exit codes](CLI-EXIT-CODES.md): deterministic outcomes for scripts and clients.
 - [Templates](design/contracts/DTS-v2.md): ContextPlan and rendering contract.

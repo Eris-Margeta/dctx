@@ -437,6 +437,29 @@ class LlmsPipeline(unittest.TestCase):
         self.assertIn("[Documents](#documents)", text)
         self.assertIn("Rendered details & text.", text)
 
+    def test_release_history_stays_on_changelog(self):
+        from routes import Route, llms_tiers
+        route = Route("/changelog/", "Changelog", "Release history", "changelog", source="CHANGELOG.md")
+        page = ('<meta name="description" content="Release history">'
+                '<main id="main"><h1>Changelog</h1><p>Read release notes here.</p>'
+                '<!-- release-history:start --><div class="prose">'
+                '<h2>Retired command</h2><p>Historical setup instructions.</p></div>'
+                '<!-- release-history:end --></main>')
+        full = self.llms.llms_full({route.path: page}, [route])
+        index = self.llms.search_index({route.path: page}, [route])
+        feed = self.llms.changelog_feed([{
+            "name": "1.0.0", "slug": "v1-0-0", "date": "2026-01-01",
+            "html": "<p>Historical setup instructions.</p>",
+        }])
+        for text in (full, index, feed):
+            self.assertNotIn("Historical setup instructions", text)
+            self.assertNotIn("Retired command", text)
+            self.assertIn("/changelog/", text)
+        self.assertIn("Read release notes here.", full)
+        self.assertIn("/changelog/#v1-0-0", feed)
+        for _, _, _, files in llms_tiers():
+            self.assertNotIn("CHANGELOG.md", files)
+
     def test_budget_shortens_only_supplemental_generated_listings(self):
         from routes import Route
         route = Route("/", "Home", "Description", "home")

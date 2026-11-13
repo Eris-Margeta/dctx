@@ -2,11 +2,9 @@
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # CLI exit codes
 
-`dctx map`, `dctx pack`, `dctx context`, `dctx doctor`, `dctx rpc`, `dctx mcp`, `dctx languages`, `dctx cache`, `dctx template`, a bare `dctx` without a terminal, an unknown command and a non-UTF-8 argument follow one contract:
-
-`dctx serve [PATH]` and `dctx serve --mcp [PATH]` are aliases for `dctx mcp [PATH]`.
-They use the current directory when PATH is omitted, including a directory named
-`fixtures`; tools index paths relative to that directory. `dctx read` is an alias
+`dctx map`, `dctx pack`, `dctx context`, `dctx doctor`, `dctx rpc`, `dctx languages`, `dctx cache`, `dctx template`, a bare `dctx` without a terminal, an unknown command and a non-UTF-8 argument follow one contract:
+Pack and map use the current directory unless a project root is specified,
+including a directory named `fixtures`; paths are relative to that root. `dctx read` is an alias
 for `dctx map read`, with the same flags and exit codes.
 
 | Code | Meaning | Examples |
@@ -20,13 +18,12 @@ Every failure prints two lines on stderr: `❌ Error: <what went wrong>` (prefix
 
 ## Details
 
-- An id the index does not hold is a facade outcome (`gone`), not an error. `dctx map` prints the `gone` page on stdout, then exits 1 with the hint. `dctx mcp` returns the same page to the client as a normal tool result.
+- An id the index does not hold is a facade outcome (`gone`), not an error. `dctx map` prints the `gone` page on stdout, then exits 1 with the hint.
 - An empty `find` or `grep` page is an answer and exits 0. Exit 1 is for a named target that is not there.
 - A binary target is detected before the scan: a NUL byte in the first 8 KiB of the file named by `map`, `skeleton`, `explain` or `read` (path or `m:` id). `neighbors` and `path` still accept such a module, since source files can import it.
 - `dctx pack` exits 1 only when no view filter is set (`--ext`, `--include`, `--exclude`, `--binary`, `--empty`, `--non-empty`, `--large`, `--small`, `--hidden`, `--debug-ignored`). A filter that matches nothing still prints an empty page and exits 0. The page (stdout) and the `pack bytes=…` status line (stderr) are printed before the exit-1 message. `pack` exit 3 covers source, scan, render and output failures.
 - A reader that closes stdout early (`dctx pack . | head -1`) ends the run with exit 0 and no message, as `cat` does; every other failure keeps its code.
 - `dctx pack --for <TEXT>` exits 1 when no name in TEXT matched the index (the page is printed first), 2 for a bad flag or a `--budget` outside 100..100000 (or `--budget` without `--for`), and 3 when PATH is not a directory or the index fails.
-- `dctx mcp [--profile default|lean|three | --tools NAME,...] [PATH]` exits 3 when PATH cannot be entered and 2 for invalid arguments (including unknown tool names/profiles). See the [MCP guide](guides/MCP.md). Once serving, a failed tool call goes back to the client as a result with `isError: true`; unknown or unselected tools return JSON-RPC `-32602`. The server exits 0 at end of input.
 - A facade refusal of the query (`InvalidRequest`, `BudgetTooSmall`, `StaleContinuation`, `Stale`, `UnsupportedCapability`, `UnsupportedVersion`) is 2; `PolicyDenied` and `PolicyUnavailable` are 1; every other facade error, and every error of the snapshot build, is 3. The mapping is `dctx_cli::exit::from_facade`.
 - `map hubs`, `map path` and `map export` report their facade errors as text: an `unknown id` end of `map path` is 1, anything else 3.
 - `dctx context` with no TARGET is 2; `dctx context --help` prints usage and exits 0. A TARGET that names nothing prints its empty page, then exits 1.

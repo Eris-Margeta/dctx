@@ -4,13 +4,13 @@ The dctx engine produces every output byte. A package wrapper only transports re
 
 | Caller | Binary | Owner and version policy |
 | --- | --- | --- |
-| Humans, interactive agents and MCP clients | System `dctx` | The human and their agents manage the installation on PATH. Configure MCP with its absolute executable path when PATH may be shadowed. |
+| Humans and interactive agents | System `dctx` | The human and their agents manage the installation on PATH. Invoke dctx with its absolute executable path when PATH may be shadowed. |
 | Application code and CI | Project `dctx` | The project's package manager installs and pins the engine within its virtualenv, `node_modules`, or project Cargo install root. |
 | A caller configured with `DCTX_BIN` | Explicit executable | The caller chooses that exact path and is responsible for its version. |
 
 A pip/npm/Cargo library invokes its own installed, version-pinned engine by absolute path. A library never silently falls back to PATH. A missing or unusable project engine is an installation error. An explicit engine override must be deliberate and validated by the calling library. `DCTX_BIN` is diagnostic input to the CLI; it does not make an already-running CLI forward commands elsewhere.
 
-Activating a virtualenv or adding `node_modules/.bin` to PATH can shadow a system installation. Interactive agents and MCP should keep using the human's chosen system executable. Application code and CI should keep using their pinned project executable. These are ownership scopes of the same engine, not separate implementations.
+Activating a virtualenv or adding `node_modules/.bin` to PATH can shadow a system installation. Interactive agents should keep using the human's chosen system executable. Application code and CI should keep using their pinned project executable. These are ownership scopes of the same engine, not separate implementations.
 
 ## Inspect installations
 

@@ -20,12 +20,10 @@ The claim supported here is **accuracy and bounded context**, not token savings.
 |---|---|
 | A | Read + Grep/Glob: grep plus file reads baseline |
 | B | Read + Bash restricted to `dctx *`; index warm before measurement |
-| C | Read + dctx MCP only; fresh cache, with start-up and indexing measured |
 
 These are whole-session measurements, including conversation replay and provider
 cache usage, rather than estimates of tool stdout. The warm index in B excludes
-its preparation cost; C includes start-up and indexing. This difference limits
-direct comparisons between the two dctx modalities.
+its preparation cost; these results do not measure cold indexing.
 
 ## Cost and turns
 
@@ -35,17 +33,16 @@ Each metric is summarized independently, so component medians need not sum to
 the median total. Turns are CLI `num_turns`, an assistant-turn proxy, not exact
 tool calls.
 
-| Metric | A: grep plus reads | B: dctx CLI | C: dctx MCP |
-|---|---|---|---|
-| Total tokens | 14,904,014 [14,604,149, 15,622,381] | 14,157,974 [11,221,908, 15,613,375] | 15,922,125 [15,513,198, 16,700,029] |
-| Uncached input tokens | 286,289 [284,340, 290,043] | 250,479 [220,537, 258,313] | 256,015 [247,681, 256,302] |
-| Cached input tokens | 14,543,028 [14,241,089, 15,246,829] | 13,833,705 [10,939,641, 15,278,757] | 15,579,598 [15,190,063, 16,365,955] |
-| Output tokens | 78,720 [74,697, 85,509] | 73,790 [61,730, 76,305] | 77,772 [75,454, 86,512] |
-| Wall time (s) | 700.87 [697.78, 811.59] | 719.84 [628.75, 768.06] | 910.99 [899.31, 974.98] |
-| Turns (`num_turns`) | 172 [159, 175] | 130 [129, 137] | 239 [221, 240] |
+| Metric | A: grep plus reads | B: dctx CLI |
+|---|---|---|
+| Total tokens | 14,904,014 [14,604,149, 15,622,381] | 14,157,974 [11,221,908, 15,613,375] |
+| Uncached input tokens | 286,289 [284,340, 290,043] | 250,479 [220,537, 258,313] |
+| Cached input tokens | 14,543,028 [14,241,089, 15,246,829] | 13,833,705 [10,939,641, 15,278,757] |
+| Output tokens | 78,720 [74,697, 85,509] | 73,790 [61,730, 76,305] |
+| Wall time (s) | 700.87 [697.78, 811.59] | 719.84 [628.75, 768.06] |
+| Turns (`num_turns`) | 172 [159, 175] | 130 [129, 137] |
 
-B versus A median total tokens: **-5.01 %**. C versus A: **+6.8 % tokens**
-and **+30 % wall time**.
+B versus A median total tokens: **-5.01 %**.
 
 ## Accuracy: both metrics
 
@@ -54,10 +51,10 @@ with a tolerance of +/-3 lines, against 574 required line references per run.
 The diagnostic metric is file-level recall: the required file named in full
 anywhere in the answer, against 106 file/question pairs per run.
 
-| Metric | A: grep plus reads | B: dctx CLI | C: dctx MCP |
-|---|---|---|---|
-| Official strict citation recall, median [min, max] | 10.10 % [10.10, 20.73] | 14.46 % [8.36, 22.65] | 13.41 % [12.02, 66.72] |
-| Diagnostic file-level recall, median | 53.77 % | 71.70 % | 76.42 % |
+| Metric | A: grep plus reads | B: dctx CLI |
+|---|---|---|
+| Official strict citation recall, median [min, max] | 10.10 % [10.10, 20.73] | 14.46 % [8.36, 22.65] |
+| Diagnostic file-level recall, median | 53.77 % | 71.70 % |
 
 A grader audit found no grader defect. Low strict recall comes from answers
 citing shorthand paths such as `store.rs:313`, and from line-level granularity:
@@ -82,9 +79,8 @@ The pre-registered rule required B to save at least 25 % median total tokens
 B's median official recall exceeded A's. On this corpus and model dctx did not
 save 25 % tokens.
 
-B and C named more of the required files than grep at about equal (B) or higher
-(C) token cost. This supports an accuracy and bounded context claim, not a
-whole-session token-savings claim. The bounded context behavior is described in
+B named more of the required files than grep at about equal token cost.
+This supports an accuracy and bounded context claim, not a whole-session token-savings claim. The bounded context behavior is described in
 [Choosing how to use dctx](MODALITIES.md); these results do not establish a
 general accuracy advantage.
 

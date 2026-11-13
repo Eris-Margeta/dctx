@@ -5,7 +5,7 @@
 `dctx-play` runs the real `dctx` binary for the playground at <https://www.dctx.internet.technology/playground/>.
 It is a separate Cargo package (excluded from the workspace), standard library only.
 
-- **API** (`/api/v1`, same origin, no CORS): `GET health`, `GET samples`, `POST run`, `POST mcp`,
+- **API** (`/api/v1`, same origin, no CORS): `GET health`, `GET samples`, `POST run`,
   `POST run-form` (the no-JavaScript form, answered with HTML), `GET metrics.json`, `GET openapi.json`.
   The full contract is [`openapi.json`](openapi.json).
 - **Grammar** (`src/grammar.rs`): the first word is `pack`, `map` or `languages`; map verbs and flags are
@@ -28,7 +28,7 @@ cargo test                       # unit tests and HTTP tests against a stand-in 
 ./build-dist.sh                  # dist/: static musl binaries, samples, runtime Dockerfile
 dist/bin/dctx-play --listen 127.0.0.1:8080 --samples dist/samples --dctx "$PWD/dist/bin/dctx" \
   --work /tmp/dctx-play --nproc 0  # outside a container RLIMIT_NPROC counts all your processes
-./smoke.sh http://127.0.0.1:8080 # real dctx: recorded bytes, files, MCP, form, 400/413/429
+./smoke.sh http://127.0.0.1:8080 # real dctx: recorded bytes, files, form, 400/413/429
 ```
 
 `RLIMIT_NPROC` counts every process and thread of the user. In the container (uid 61802, a uid no other container on the host uses: the count is host-wide) that is the

@@ -141,8 +141,7 @@ We will implement a three-tier rule system with formal privacy guarantees:
 - The file stays listed by name (pack tree, map inventory) with its content omitted, and is never read.
 - Applies whether or not the file is git-tracked, to every surface: `pack` (all view filters, including
   `--include`, `--ext`, `--hidden` and `--debug-ignored`), every `dctx map` verb (map, find, read, explain,
-  skeleton, grep, neighbors, hubs, path, export; by stable id or by raw path; with or without `--in`) and the
-  `dctx mcp` tools, which run the same code path.
+  skeleton, grep, neighbors, hubs, path, export; by stable id or by raw path; with or without `--in`).
 - Enforced in the map policy (`PolicyView::decide`), again before any map read (`Session::read_verified`),
   in map grep, in the pack scan (`dctx-pack` snapshot) and in the `dctx-map-query` source adapter.
 - **No override.** v1 has no `--allow-sensitive` flag, and repository or global rule files cannot

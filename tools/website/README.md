@@ -56,9 +56,9 @@ examples is handwritten. The Rust snippet comes from the workspace doctest in
 | `/templates/` | `crates/dctx-template/templates/*.dctx_template`, ADR-003 and the template captures |
 | `/benchmarks/`, the home facts | whole-session results from `docs/BENCHMARK-20261111.md`, historical tables parsed from `docs/BENCHMARK-20261030.md`, the run 7 `aggregate.json` and the stability report (`data.py`) |
 | `/how-it-works/` and the explainer animations | `pages/animations.py` (figures, captions, prose fallbacks) and `src/anim.js` (five deterministic canvas scenes, frame-counted, in the `home.js` and `how.js` bundles) |
-| `/changelog/` and its feed | `CHANGELOG.md` |
+| `/changelog/` and its feed | `CHANGELOG.md`; the feed links to release notes without copying historical commands |
 | the home notice and path selector, `/start/` and its four persona pages, `/for-ai-evaluators/` | `data/facts.json` through `facts.py` (see below); persona runs are records from `data/demo.json` |
-| the home showcase (five ways to use dctx: chat, task, agent, MCP, library) | `pages/tour.py`: a plain-language step beside the real captured run of each (`data/demo.json`, long output cut with an exact `… N lines` marker); `src/hero.js` turns it into tabs that advance with motion on |
+| the home showcase (four ways to use dctx: chat, task, agent, library) | `pages/tour.py`: a plain-language step beside the real captured run of each (`data/demo.json`, long output cut with an exact `… N lines` marker); `src/hero.js` turns it into tabs that advance with motion on |
 | Social images | committed `website/assets/og/` triplets and `social-manifest.json`, rendered locally by `social.py` using `og.py` artwork, Chromium/CDP, FFmpeg and gifsicle |
 | Scene posters, icons | `og.py` (Pillow), from the same captured scene geometry |
 | `llms-small.txt`, `llms.txt`, `llms-full.txt` | `llms.py`: facts from `data/facts.json`, every route with its HTML meta description, the shared search/page text extraction, and document captures from `data/llms.json` (see below) |
@@ -86,13 +86,13 @@ the measured numbers parsed by `data.py`; numbers are never typed into facts.jso
 | `verify_download` | `available`, `command`, `planned`, `link`: how to check a download today (SHA256SUMS) and what is planned (signatures) |
 | `modalities[]` | `name`, `status` (`available`, `available from Git`, `preview`, `publishing soon`, `planned`), `line`, `link` |
 | `scopes[]` | the system binary and the project binary, one line each |
-| `notice` | the advanced-user notice, verbatim (interim wording until the three-tool profile and receipts ship) |
+| `notice` | the advanced-user notice, verbatim |
 | `benchmarks` | `baseline`, `claims[]` with `status` (`measured`, `historical`, `hypothesis`), `text`, `link` |
 | `removed` | `since`, `intro`, `items[]` with `was`, `use` and `patterns` (Python regexes that find the old command) |
 | `verify[]` | `what`, then `command` (shown as code) or `text`, and `link` |
 | `notice_status` | one line under the notice on the site: what is planned and what the interim wording uses |
 | `safe_path[]` | `[step, line]` pairs for /start/ |
-| `ways[]` | the home modalities grid (usage patterns: CLI, agents short and long session, MCP and ACP, libraries, CI): `name`, `line`, `status`, `link` |
+| `ways[]` | the home modalities grid (usage patterns: CLI, agents short and long session, libraries, CI): `name`, `line`, `status`, `link` |
 | `responsibilities` | `head` and four `rows` of level / dctx provides / you are responsible for, planned items marked |
 | `personas[]` | the four choose-your-path pages: `id` (the path /start/ID/), `name`, `who`, `gets` (what you get, one plain line), `modality`, `setup[]`, `first_command`, `expect`, `record` (a `data/demo.json` id shown as the real run), `pitfall`, `links[]` |
 | `install` | `system` and `project` text for the home install block |
@@ -104,9 +104,10 @@ in the canonical wording); change a status only when the release has it.
 Each llms file starts with an H1 and blockquote summary, capture provenance, the facts block and
 sections linking every public HTML route with its meta description. `llms.txt` is the page index;
 `llms-small.txt` also adds `dctx map map FILE --depth 2` of the start documents.
-`llms-full.txt` retains the document pack (documents, policies, changelog and built-in templates),
+`llms-full.txt` retains the document pack (documents, policies and built-in templates),
 then includes every HTML page under its absolute URL and title, in route-table order. `extract_page()`
-is shared with the search index. For packed documents, a link identifies the document and only rendered
+is shared with the search index. Release history is confined to the changelog page; the discovery
+files include its description and link, without copying its historical commands. For packed documents, a link identifies the document and only rendered
 lines absent verbatim from the pack are added, so formatting changes and page details remain readable
 without copying the same prose twice. Search, offline and error pages are included too.
 

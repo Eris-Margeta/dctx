@@ -7,9 +7,9 @@
     },
     "inputs_sha256": "178e63d6aa79edfbb1766582a045ad68f3502fc0bafec598dad7d8e65bacd53e",
     "png": {
-      "bytes": 132295,
+      "bytes": 132307,
       "file": "404.png",
-      "sha256": "a355142622b7b5792dd1d418347a488ea4cb0a215c74c37789dc30c9f506a382"
+      "sha256": "70868c48ae278bb81ea629eef2cd1e9da65ea8a035659f2b8f7bb9a8a3138b57"
     },
     "twitter": {
       "bytes": 104279,
@@ -199,9 +199,9 @@
   },
   "docs-language-coverage": {
     "gif": {
-      "bytes": 145170,
+      "bytes": 145171,
       "file": "docs-language-coverage.gif",
-      "sha256": "469caf835a4d3b2efe2598fe8b89448c88c9f3c713eb96ef237864d3d9b1768b"
+      "sha256": "e06d82e11c2eb7b60f792c36e146600bc9422b58125ae7dcd407e8918ceda5c6"
     },
     "inputs_sha256": "7bbca73fb3c9b5c19288311b5319bd355b0d0ad76484cfc5d99d65cd799414fa",
     "png": {
@@ -313,9 +313,9 @@
     },
     "inputs_sha256": "4f6b2f448711f10f1717a6934784f9eca7bd782ccab83cc00b8565f4ebf9f9dd",
     "png": {
-      "bytes": 178509,
+      "bytes": 178521,
       "file": "docs-releasing.png",
-      "sha256": "79d311787ff97cd3910956eafedd3c8e71685d08f42ff202cda7636d98b4478d"
+      "sha256": "ea3f13a965d33b0178581a2c3151e3844ac107579e50df1008377a8c0f8260b0"
     },
     "twitter": {
       "bytes": 117216,
@@ -379,9 +379,9 @@
   },
   "docs-templates-contract": {
     "gif": {
-      "bytes": 138100,
+      "bytes": 138101,
       "file": "docs-templates-contract.gif",
-      "sha256": "7661d6bad28065bede99b62216e9716b20f9fa9098b36e1de8bccdf79c649d15"
+      "sha256": "404b175b000f75f376d01cc415607f83d29f2d0453a7771d1cdbbeb8ba132e03"
     },
     "inputs_sha256": "c534c68d7e8d9783d7560e1f7907283ae89d8deacf20d51aff9b88a78f3a43a7",
     "png": {
@@ -588,9 +588,9 @@
       "sha256": "32435de8fa5d24fbc2550e6bfbf3528f4cc0b9dc8c5778f2f8db8f43631fbd1d"
     },
     "twitter": {
-      "bytes": 117346,
+      "bytes": 117358,
       "file": "news-desktop-free-forever.twitter.png",
-      "sha256": "5b488347f797f592b97bb3b14c96e7f8b5929fcc5f446a98b33967b47bfcb2dc"
+      "sha256": "c71c63eee65668f974a46de1c99ca5a08f0eb0c6b193e9afbbede09bd27eb9bf"
     }
   },
   "news-specification-and-benchmark": {
@@ -655,9 +655,9 @@
     },
     "inputs_sha256": "67ea856d20ab9fd5a8afa5d20547c565a2399c831b89a326cdc3c0c1e48173fa",
     "png": {
-      "bytes": 140733,
+      "bytes": 140745,
       "file": "search.png",
-      "sha256": "949cc0e8624bf8da8e9a946d9e3026613516ee069cedb80cda82c18171e49060"
+      "sha256": "5f1605f51860f5663fbd7cda126fd5bf99035a17dbdd7c5d0f17459862620e99"
     },
     "twitter": {
       "bytes": 87048,

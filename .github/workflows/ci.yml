@@ -124,7 +124,7 @@ jobs:
         id: release_build
         run: cargo build --release --locked -p dctx-cli
 
-      - name: CLI, MCP and RPC golden byte parity
+      - name: CLI and RPC golden byte parity
         run: python3 tools/engine-contract/parity.py target/release/dctx-cli
 
       - name: Website dependencies (isolated venv)

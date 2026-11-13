@@ -12,7 +12,7 @@
   if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
   if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
 })();</script>
-<link rel="stylesheet" href="/assets/site.a25acb15.css">
+<link rel="stylesheet" href="/assets/site.26ea97c0.css">
 <link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
@@ -20,7 +20,7 @@
 <meta name="description" content="Clipboard, grep plus reads, long sessions, huge trees, CLI usage and CI.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
-<meta name="dctx-build" content="ae393d65b1e9b6d0ad715365e5ac86557333ab30607ff808759326ebc7f4420c">
+<meta name="dctx-build" content="459bb9ee9527074a04503c63c2feb4909ca2534600c35c4590711183e8a9b7c0">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -192,7 +192,7 @@
    "mainEntityOfPage": {
     "@id": "https://www.dctx.internet.technology/docs/modalities/#webpage"
    },
-   "wordCount": 2115,
+   "wordCount": 1735,
    "encoding": {
     "@type": "MediaObject",
     "contentUrl": "https://www.dctx.internet.technology/docs/modalities/index.md",
@@ -219,7 +219,7 @@
  </div>
 </header>
 <main id="main">
-<div class="wrap docs-grid"><aside class="sidebar" aria-label="Documentation"><p class="side-h"><a href="/docs/">All documents</a></p><p class="side-h">Start</p><ul><li><a href="/docs/start/">What dctx is</a></li><li><a href="/start/">Choose your path</a></li><li><a href="/docs/start/#safe-path-in-ten-minutes">Safe path in ten minutes</a></li><li><a href="/why/">Why dctx</a></li><li><a href="/docs/readme/">README and quick start</a></li></ul><p class="side-h">Modalities</p><ul><li><a href="/docs/modalities/" aria-current="page">Choosing how to use dctx</a></li><li><a href="/docs/map-mode/">CLI and agents: map mode</a></li><li><a href="/docs/agents/">Agent snippet</a></li><li><a href="/docs/modalities/#rust-library-embed-the-facade">Libraries</a></li><li><a href="/docs/modalities/#ci--prompt-cache-prefix-stability">CI and caching</a></li><li><a href="/docs/plugins/">Plugins guide</a></li></ul><p class="side-h">Scopes</p><ul><li><a href="/start/#two-scopes">Two scopes, one binary</a></li><li><a href="/start/#responsibilities">Who is responsible for what</a></li></ul><p class="side-h">Engine</p><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/docs/privacy/">Privacy guarantees</a></li><li><a href="/docs/modalities/#huge-trees-scope-before-indexing">Cache and limits</a></li><li><a href="/docs/language-coverage/">Language coverage (ADR-018)</a></li><li><a href="/docs/templates-contract/">Template contract (DTS v2)</a></li><li><a href="/docs/templating/">Templating engine (ADR-003)</a></li><li><a href="/docs/crate-map/">Crate map</a></li></ul><p class="side-h">Reference</p><ul><li><a href="/cli/">CLI reference</a></li><li><a href="/docs/exit-codes/">CLI exit codes</a></li><li><a href="/languages/">Languages</a></li><li><a href="/templates/">Templates</a></li><li><a href="/examples/">Examples</a></li></ul><p class="side-h">Trust</p><ul><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/docs/benchmark/">Measurement evidence</a></li><li><a href="/docs/stability/">Byte-stability report</a></li><li><a href="/docs/benchmark-oct/">Earlier two-way study</a></li><li><a href="/why/#the-philosophy">Philosophy</a></li><li><a href="/security/">Security policy</a></li><li><a href="/docs/releasing/">Releasing</a></li><li><a href="/docs/contributing/">Contributing</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="/maintenance/">Maintenance</a></li></ul><p class="side-h">For AI evaluators</p><ul><li><a href="/for-ai-evaluators/">Facts and verification</a></li><li><a href="/llms.txt">llms.txt</a></li></ul></aside><article class="prose"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/docs/modalities/" aria-current="page">Choosing how to use dctx</a></li></ol></nav><h1 id="choosing-how-to-use-dctx">Choosing how to use dctx</h1><p class="doc-meta"><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/MODALITIES.md">View source</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/edit/main/docs/MODALITIES.md">Edit on GitHub</a> &middot; <a href="/docs/modalities/index.md" type="text/markdown">Markdown</a> &middot; <code>docs/MODALITIES.md</code> &middot; 2,115 words &middot; updated <time datetime="2026-11-10">10 November 2026</time></p><details class="toc-m"><summary><svg class="disclosure" width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true" focusable="false"><path d="m2 1 6 4-6 4z"/></svg>On this page</summary><ul><li><a href="#available-surfaces-and-publication-status">Available surfaces and publication status</a></li><li><a href="#choose-by-task">Choose by task</a></li><li><a href="#human-one-off-pack-to-clipboard">Human, one-off: pack to clipboard</a></li><li><a href="#short-agent-task-grep-can-be-enough">Short agent task: grep can be enough</a></li><li><a href="#huge-trees-scope-before-indexing">Huge trees: scope before indexing</a></li><li><a href="#mcp-server-convenient-tools-with-startup-context">MCP server: convenient tools with startup context</a></li><li><a href="#ci--prompt-cache-prefix-stability">CI / prompt-cache prefix stability</a></li><li><a href="#rust-library-embed-the-facade">Rust library: embed the facade</a></li><li><a href="#desktop-app-tauri-preview-today">Desktop app: Tauri preview today</a></li><li><a href="#python-node-and-go-wrappers">Python, Node and Go wrappers</a></li></ul></details>
+<div class="wrap docs-grid"><aside class="sidebar" aria-label="Documentation"><p class="side-h"><a href="/docs/">All documents</a></p><p class="side-h">Start</p><ul><li><a href="/docs/start/">What dctx is</a></li><li><a href="/start/">Choose your path</a></li><li><a href="/docs/start/#safe-path-in-ten-minutes">Safe path in ten minutes</a></li><li><a href="/why/">Why dctx</a></li><li><a href="/docs/readme/">README and quick start</a></li></ul><p class="side-h">Modalities</p><ul><li><a href="/docs/modalities/" aria-current="page">Choosing how to use dctx</a></li><li><a href="/docs/map-mode/">CLI and agents: map mode</a></li><li><a href="/docs/agents/">Agent snippet</a></li><li><a href="/docs/modalities/#rust-library-embed-the-facade">Libraries</a></li><li><a href="/docs/modalities/#ci--prompt-cache-prefix-stability">CI and caching</a></li><li><a href="/docs/plugins/">Plugins guide</a></li></ul><p class="side-h">Scopes</p><ul><li><a href="/start/#two-scopes">Two scopes, one binary</a></li><li><a href="/start/#responsibilities">Who is responsible for what</a></li></ul><p class="side-h">Engine</p><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/docs/privacy/">Privacy guarantees</a></li><li><a href="/docs/modalities/#huge-trees-scope-before-indexing">Cache and limits</a></li><li><a href="/docs/language-coverage/">Language coverage (ADR-018)</a></li><li><a href="/docs/templates-contract/">Template contract (DTS v2)</a></li><li><a href="/docs/templating/">Templating engine (ADR-003)</a></li><li><a href="/docs/crate-map/">Crate map</a></li></ul><p class="side-h">Reference</p><ul><li><a href="/cli/">CLI reference</a></li><li><a href="/docs/exit-codes/">CLI exit codes</a></li><li><a href="/languages/">Languages</a></li><li><a href="/templates/">Templates</a></li><li><a href="/examples/">Examples</a></li></ul><p class="side-h">Trust</p><ul><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/docs/benchmark/">Measurement evidence</a></li><li><a href="/docs/stability/">Byte-stability report</a></li><li><a href="/docs/benchmark-oct/">Earlier two-way study</a></li><li><a href="/why/#the-philosophy">Philosophy</a></li><li><a href="/security/">Security policy</a></li><li><a href="/docs/releasing/">Releasing</a></li><li><a href="/docs/contributing/">Contributing</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="/maintenance/">Maintenance</a></li></ul><p class="side-h">For AI evaluators</p><ul><li><a href="/for-ai-evaluators/">Facts and verification</a></li><li><a href="/llms.txt">llms.txt</a></li></ul></aside><article class="prose"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/docs/modalities/" aria-current="page">Choosing how to use dctx</a></li></ol></nav><h1 id="choosing-how-to-use-dctx">Choosing how to use dctx</h1><p class="doc-meta"><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/MODALITIES.md">View source</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/edit/main/docs/MODALITIES.md">Edit on GitHub</a> &middot; <a href="/docs/modalities/index.md" type="text/markdown">Markdown</a> &middot; <code>docs/MODALITIES.md</code> &middot; 1,735 words &middot; updated <time datetime="2026-11-10">10 November 2026</time></p><details class="toc-m"><summary><svg class="disclosure" width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true" focusable="false"><path d="m2 1 6 4-6 4z"/></svg>On this page</summary><ul><li><a href="#available-surfaces-and-publication-status">Available surfaces and publication status</a></li><li><a href="#choose-by-task">Choose by task</a></li><li><a href="#human-one-off-pack-to-clipboard">Human, one-off: pack to clipboard</a></li><li><a href="#short-agent-task-grep-can-be-enough">Short agent task: grep can be enough</a></li><li><a href="#huge-trees-scope-before-indexing">Huge trees: scope before indexing</a></li><li><a href="#ci--prompt-cache-prefix-stability">CI / prompt-cache prefix stability</a></li><li><a href="#rust-library-embed-the-facade">Rust library: embed the facade</a></li><li><a href="#desktop-app-tauri-preview-today">Desktop app: Tauri preview today</a></li><li><a href="#python-node-and-go-wrappers">Python, Node and Go wrappers</a></li></ul></details>
 <p>Compare dctx with <strong>grep plus reading files</strong>, and choose by the work you need to
 do. Smaller tool output is useful, but total agent cost also includes startup
 instructions, tool definitions, conversation history and the number of model
@@ -241,12 +241,6 @@ provider caching can change its billed cost. Count both calls and session tokens
 <td><a href="https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.1">Prebuilt archives</a>, or <a href="/docs/readme/#from-source">build from source</a></td>
 <td>Available now; crates.io publication pending</td>
 <td>One-off chat (<code>pack --clipboard</code>), shell agents, scripts and CI; run <code>dctx</code> for the terminal menu</td>
-</tr>
-<tr>
-<td>MCP server</td>
-<td>Included in the CLI; configure <code>dctx mcp /absolute/project</code></td>
-<td>Available now, stdio</td>
-<td>Claude Code, Cursor and Codex tool calls on a scoped project</td>
 </tr>
 <tr>
 <td>Rust library (<code>dctx</code> facade)</td>
@@ -303,11 +297,6 @@ available for system installation or an explicit <code>DCTX_BIN</code> path.</p>
 <td>You need an unscoped index of 100 GB+ or expect a budget flag to reduce the scan</td>
 </tr>
 <tr>
-<td>MCP client</td>
-<td><code>dctx mcp .</code> in a scoped root</td>
-<td>Tool definitions and extra model turns outweigh focused-read savings</td>
-</tr>
-<tr>
 <td>CI / repeated prompt prefix</td>
 <td>Deterministic <code>pack</code> or scoped map output saved as an artifact</td>
 <td>You expect dctx alone to guarantee provider cache hits</td>
@@ -330,10 +319,8 @@ pack filters, not map index limits. Inspect the content before sharing it.</p>
 <span class="t-f">sed</span> <span class="t-a">-n</span> <span class="t-s">'130,170p'</span> crates/dctx/src/session/mod.rs</code></pre></div>
 <p>Choose the line range from the search result; reading a narrow range is an
 honest baseline alongside whole-file reads. If a symbol read is useful, call
-<code>dctx map find Session</code> through the existing shell. Loading an MCP server
-adds tool descriptions to starting context; installing verbose agent
-instructions can add more. Do not add that setup for a tiny edit unless you
-measure a benefit.</p>
+<code>dctx map find Session</code> through the existing shell. Verbose agent instructions
+add starting context; measure their cost before adding them for a tiny edit.</p>
 <div class="hl" data-lang="shell"><pre><code><span class="t-f">cd</span> crates/dctx-lex-go
 <span class="t-f">dctx</span> map find Add <span class="t-a">--budget</span> 500 <span class="t-a">--limit</span> 5
 <span class="t-f">dctx</span> map read <span class="t-s">'s:tests/fixtures/basic.go#Add'</span> <span class="t-a">--json</span>
@@ -422,93 +409,6 @@ cache cap. A different absolute <code>DCTX_CACHE_DIR</code> selects a separate c
 location, not a larger cap. Do not use dctx on the whole huge tree if narrowing
 would exclude facts your task requires; use grep and direct reads across the
 needed directories, or query several explicit scopes and account for extra calls.</p>
-<h2 id="mcp-server-convenient-tools-with-startup-context">MCP server: convenient tools with startup context<a class="hd" href="#mcp-server-convenient-tools-with-startup-context" aria-label="Link to MCP server: convenient tools with startup context">#</a></h2>
-<p>Configure your MCP client to launch this process in the selected project root:</p>
-<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> mcp .</code></pre></div>
-<h3 id="client-configuration">Client configuration<a class="hd" href="#client-configuration" aria-label="Link to Client configuration">#</a></h3>
-<p>Install the CLI archive first. Replace both absolute paths below with your
-executable and the project to index (on Windows, use <code>dctx.exe</code> and JSON-escaped
-paths). An explicit project path avoids relying on the client's working directory.
-For a source build, point <code>command</code> at <code>target/release/dctx-cli</code>.</p>
-<p><span class="unlinked">Claude Code</span> (<code>.mcp.json</code> at the project root)
-and <span class="unlinked">Cursor</span> (<code>.cursor/mcp.json</code>) use this JSON:</p>
-<div class="hl" data-lang="json"><pre><code>{
-  <span class="t-a">"mcpServers"</span>: {
-    <span class="t-a">"dctx"</span>: {
-      <span class="t-a">"type"</span>: <span class="t-s">"stdio"</span>,
-      <span class="t-a">"command"</span>: <span class="t-s">"/absolute/path/to/dctx"</span>,
-      <span class="t-a">"args"</span>: [<span class="t-s">"mcp"</span>, <span class="t-s">"/absolute/path/to/project"</span>]
-    }
-  }
-}</code></pre></div>
-<p><span class="unlinked">Codex</span> uses <code>~/.codex/config.toml</code>
-(or <code>.codex/config.toml</code> in a trusted project):</p>
-<div class="hl" data-lang="toml"><pre><code><span class="t-t">[mcp_servers.dctx]</span>
-<span class="t-a">command</span> = <span class="t-s">"/absolute/path/to/dctx"</span>
-<span class="t-a">args</span> = [<span class="t-s">"mcp"</span>, <span class="t-s">"/absolute/path/to/project"</span>]</code></pre></div>
-<h3 id="tools-and-startup-cost">Tools and startup cost<a class="hd" href="#tools-and-startup-cost" aria-label="Link to Tools and startup cost">#</a></h3>
-<p>It exposes ten tools: <code>map</code>, <code>find</code>, <code>neighbors</code>, <code>explain</code>, <code>read</code>, <code>skeleton</code>,
-<code>grep</code>, <code>hubs</code>, <code>path</code>, <code>export</code>. These are query tools, not a pack or cache-admin
-interface. Export emits the whole graph without the normal answer-token cap.
-Both text and JSON <code>read</code> answers include verified source bytes. Set the MCP
-<code>read</code> argument <code>"json": true</code> for structured output with <code>source_utf8</code>, equivalent
-to the CLI's <code>--json</code>.</p>
-<div class="table-wrap"><table>
-<thead>
-<tr>
-<th>Payload</th>
-<th>Exact UTF-8 bytes</th>
-<th>Estimated tokens</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Complete <code>tools/list</code> response, request ID <code>2</code>, without trailing LF</td>
-<td>6,135</td>
-<td>1,753</td>
-</tr>
-<tr>
-<td>Same response including one LF</td>
-<td>6,136</td>
-<td>—</td>
-</tr>
-<tr>
-<td>Compact <code>result.tools</code> array alone (definitions and schemas)</td>
-<td>6,091</td>
-<td>1,741</td>
-</tr>
-</tbody>
-</table></div>
-<p>The <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/assets/mcp-tools-list-1.2.0.json">captured response</a> includes its trailing LF.
-Token estimates use <code>ceil(2 × bytes / 7)</code>, the CLI's byte heuristic, <strong>not an
-actual model tokenizer</strong>. Clients may transform schemas, add wrappers or defer
-loading tools, so this is the definition payload's estimated startup cost, not
-the client's exact input-token count.</p>
-<p>Reproduce from the project root (with <code>dctx</code> on PATH):</p>
-<div class="hl" data-lang="shell"><pre><code><span class="t-f">python3</span> - <span class="t-k">&lt;</span><span class="t-k">&lt;</span><span class="t-s">'PYCODE'</span>
-<span class="t-f">import</span> json
-<span class="t-f">import</span> subprocess
-
-<span class="t-f">requests</span> = [
-    <span class="t-f">{"jsonrpc":</span> <span class="t-s">"2.0"</span>, <span class="t-s">"id"</span>: 1, <span class="t-s">"method"</span>: <span class="t-s">"initialize"</span>, <span class="t-s">"params"</span>: {
-        <span class="t-s">"protocolVersion"</span>: <span class="t-s">"2025-06-18"</span>, <span class="t-s">"capabilities"</span>: {},
-        <span class="t-s">"clientInfo"</span>: {"name": <span class="t-s">"dctx-modality-measurement"</span>, <span class="t-s">"version"</span>: <span class="t-s">"1"</span>}}},
-    <span class="t-f">{"jsonrpc":</span> <span class="t-s">"2.0"</span>, <span class="t-s">"method"</span>: <span class="t-s">"notifications/initialized"</span>},
-    <span class="t-f">{"jsonrpc":</span> <span class="t-s">"2.0"</span>, <span class="t-s">"id"</span>: 2, <span class="t-s">"method"</span>: <span class="t-s">"tools/list"</span>},
-<span class="t-f">]</span>
-<span class="t-f">wire</span> = <span class="t-s">""</span>.join(json.dumps(r, separators=(",", <span class="t-s">":"</span>)) + <span class="t-s">"\n"</span> for r in requests)
-<span class="t-f">reply</span> = subprocess.run(["dctx", <span class="t-s">"mcp"</span>, <span class="t-s">"."</span>], input=wire.encode(),
-                       <span class="t-v">stdout</span>=<span class="t-s">subprocess.PIPE,</span> <span class="t-v">check</span>=<span class="t-s">True).stdout</span>
-<span class="t-f">line</span> = next(x for x in reply.splitlines() if json.loads(x).get("id") == 2)
-<span class="t-f">definitions</span> = json.dumps(json.loads(line)["result"]["tools"],
-                         <span class="t-v">ensure_ascii</span>=<span class="t-s">False,</span> <span class="t-v">separators</span>=<span class="t-s">(",",</span> <span class="t-s">":"</span>)).encode()
-<span class="t-k">for</span> <span class="t-f">name,</span> payload in [("response without LF", line), ("tools array", definitions)]:
-    <span class="t-f">print(name,</span> len(payload), <span class="t-s">"bytes;"</span>, (2 * len(payload) + 6) // 7, <span class="t-s">"est. tokens"</span>)
-<span class="t-f">PYCODE</span></code></pre></div>
-<p>Do not enable MCP solely to save output tokens on a short task. Prefer existing
-shell access when it avoids adding definitions; use MCP when the client's tool
-workflow makes repeated focused queries useful. Compare total session usage
-under the same client and model, including definition loading and extra turns.</p>
 <h2 id="ci--prompt-cache-prefix-stability">CI / prompt-cache prefix stability<a class="hd" href="#ci--prompt-cache-prefix-stability" aria-label="Link to CI / prompt-cache prefix stability">#</a></h2>
 <p>Save deterministic output from a fixed selection as a build artifact:</p>
 <div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> pack . <span class="t-a">--output</span> context.txt
@@ -569,7 +469,7 @@ from the <a href="https://github.com/Eris-Margeta/dctx/releases">GitHub release 
 that has <code>dctx rpc</code>. Their arguments carry full CLI authority, so never pass
 untrusted values as <code>--place</code>, <code>--output</code> or dash-leading arguments.</p>
 <p>Without a wrapper, any language can invoke the CLI as a subprocess and consume
-<code>--json</code> map answers. Use the Rust facade when you need an in-process engine.</p><nav class="pager" aria-label="Previous and next"><a class="prev" href="/docs/start/" rel="prev"><span>Previous</span>What dctx is</a><a class="next" href="/docs/map-mode/" rel="next"><span>Next</span>Map mode guide</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#available-surfaces-and-publication-status">Available surfaces and publication status</a></li><li class="l2"><a href="#choose-by-task">Choose by task</a></li><li class="l2"><a href="#human-one-off-pack-to-clipboard">Human, one-off: pack to clipboard</a></li><li class="l2"><a href="#short-agent-task-grep-can-be-enough">Short agent task: grep can be enough</a></li><li class="l2"><a href="#huge-trees-scope-before-indexing">Huge trees: scope before indexing</a></li><li class="l2"><a href="#mcp-server-convenient-tools-with-startup-context">MCP server: convenient tools with startup context</a></li><li class="l3"><a href="#client-configuration">Client configuration</a></li><li class="l3"><a href="#tools-and-startup-cost">Tools and startup cost</a></li><li class="l2"><a href="#ci--prompt-cache-prefix-stability">CI / prompt-cache prefix stability</a></li><li class="l2"><a href="#rust-library-embed-the-facade">Rust library: embed the facade</a></li><li class="l2"><a href="#desktop-app-tauri-preview-today">Desktop app: Tauri preview today</a></li><li class="l2"><a href="#python-node-and-go-wrappers">Python, Node and Go wrappers</a></li></ul></nav></div>
+<code>--json</code> map answers. Use the Rust facade when you need an in-process engine.</p><nav class="pager" aria-label="Previous and next"><a class="prev" href="/docs/start/" rel="prev"><span>Previous</span>What dctx is</a><a class="next" href="/docs/map-mode/" rel="next"><span>Next</span>Map mode guide</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#available-surfaces-and-publication-status">Available surfaces and publication status</a></li><li class="l2"><a href="#choose-by-task">Choose by task</a></li><li class="l2"><a href="#human-one-off-pack-to-clipboard">Human, one-off: pack to clipboard</a></li><li class="l2"><a href="#short-agent-task-grep-can-be-enough">Short agent task: grep can be enough</a></li><li class="l2"><a href="#huge-trees-scope-before-indexing">Huge trees: scope before indexing</a></li><li class="l2"><a href="#ci--prompt-cache-prefix-stability">CI / prompt-cache prefix stability</a></li><li class="l2"><a href="#rust-library-embed-the-facade">Rust library: embed the facade</a></li><li class="l2"><a href="#desktop-app-tauri-preview-today">Desktop app: Tauri preview today</a></li><li class="l2"><a href="#python-node-and-go-wrappers">Python, Node and Go wrappers</a></li></ul></nav></div>
 </main>
 <footer class="ftr">
  <div class="wrap">

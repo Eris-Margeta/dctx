@@ -1,6 +1,6 @@
 # dctx
 
-> dctx turns any folder into the smallest correct context for a task, offline, with byte-stable output that prompt caches can reuse. dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.
+> dctx turns any folder into the smallest correct context for a task, offline, with byte-stable output that prompt caches can reuse. dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, direct CLI commands. Measure before you change anything.
 
 ## About this file
 
@@ -9,7 +9,7 @@
 - Engine: dctx 1.3.1. Document captures are the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs them and fails on any byte of drift. Read the pack at https://www.dctx.internet.technology/llms-full.txt.
 - Docs commit: 94de7cc7d75014c3a677ad4d2164f3543633b957 (2026-11-13T00:29:55+01:00), the last commit that changed one of the documents.
 - Command: `dctx map map docs/START.md --depth 2`; `dctx map map docs/WHY-DCTX.md --depth 2`; `dctx map map README.md --depth 2`; `dctx map map docs/MODALITIES.md --depth 2`
-- Document capture budget: 1,027 of 2,500 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
+- Document capture budget: 969 of 2,500 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
 
 ## Facts
 
@@ -151,19 +151,19 @@ These existed before 1.2.0 and no longer work. A transcript that uses them descr
 
 ```text
 # dctx map
-d:docs/START.md#What dctx is	heading	L3-241
-d:docs/START.md#Choose your path	heading	L17-114
+d:docs/START.md#What dctx is	heading	L3-229
+d:docs/START.md#Choose your path	heading	L17-112
 d:docs/START.md#One giant folder	heading	L27-45
-d:docs/START.md#Many small projects	heading	L46-67
-d:docs/START.md#Agent builder embedding a library	heading	L68-93
-d:docs/START.md#Team / enterprise admin	heading	L94-114
-d:docs/START.md#Safe path in ten minutes	heading	L115-194
-d:docs/START.md#1. Install the system binary	heading	L117-137
-d:docs/START.md#2. Choose one project and inspect one answer	heading	L138-151
-d:docs/START.md#3. Configure the lean MCP profile	heading	L152-173
-d:docs/START.md#4. Measure before changing anything	heading	L174-194
-d:docs/START.md#Responsibilities	heading	L195-215
-d:docs/START.md#Two scopes, one binary	heading	L216-241
+d:docs/START.md#Many small projects	heading	L46-66
+d:docs/START.md#Agent builder embedding a library	heading	L67-91
+d:docs/START.md#Team / enterprise admin	heading	L92-112
+d:docs/START.md#Safe path in ten minutes	heading	L113-183
+d:docs/START.md#1. Install the system binary	heading	L115-135
+d:docs/START.md#2. Choose one project and inspect one answer	heading	L136-149
+d:docs/START.md#3. Use the CLI from your shell or agent	heading	L150-162
+d:docs/START.md#4. Measure before changing anything	heading	L163-183
+d:docs/START.md#Responsibilities	heading	L184-203
+d:docs/START.md#Two scopes, one binary	heading	L204-229
 # dctx map
 d:docs/WHY-DCTX.md#Why dctx exists	heading	L3-159
 d:docs/WHY-DCTX.md#The problem	heading	L7-14
@@ -188,32 +188,29 @@ d:README.md#What the output looks like	heading	L88-203
 d:README.md#Pack a project	heading	L92-140
 d:README.md#Find a symbol, then read it	heading	L141-167
 d:README.md#Pack for a task	heading	L168-203
-d:README.md#Which mode?	heading	L204-213
-d:README.md#Measured, in the open	heading	L214-233
-d:README.md#Start and choose your path	heading	L234-247
-d:README.md#The core belief: prompt-processing efficiency	heading	L248-258
-d:README.md#Quick Start	heading	L259-274
-d:README.md#Map mode: context for agents	heading	L275-285
-d:README.md#From source	heading	L286-303
-d:README.md#Use as a library	heading	L304-338
-d:README.md#CLI Reference	heading	L339-473
-d:README.md#Language tiers	heading	L404-473
-d:README.md#Security & Privacy	heading	L474-507
-d:README.md#Open source and maintenance	heading	L508-515
-d:README.md#Where it comes from	heading	L516-520
-d:README.md#Contributing	heading	L521-531
+d:README.md#Which mode?	heading	L204-212
+d:README.md#Measured, in the open	heading	L213-232
+d:README.md#Start and choose your path	heading	L233-246
+d:README.md#The core belief: prompt-processing efficiency	heading	L247-257
+d:README.md#Quick Start	heading	L258-272
+d:README.md#Map mode: context for agents	heading	L273-283
+d:README.md#From source	heading	L284-301
+d:README.md#Use as a library	heading	L302-336
+d:README.md#CLI Reference	heading	L337-468
+d:README.md#Language tiers	heading	L399-468
+d:README.md#Security & Privacy	heading	L469-502
+d:README.md#Open source and maintenance	heading	L503-510
+d:README.md#Where it comes from	heading	L511-515
+d:README.md#Contributing	heading	L516-526
 # dctx map
-d:docs/MODALITIES.md#Choosing how to use dctx	heading	L3-339
-d:docs/MODALITIES.md#Available surfaces and publication status	heading	L11-25
-d:docs/MODALITIES.md#Choose by task	heading	L26-36
-d:docs/MODALITIES.md#Human, one-off: pack to clipboard	heading	L37-56
-d:docs/MODALITIES.md#Short agent task: grep can be enough	heading	L57-85
-d:docs/MODALITIES.md#Huge trees: scope before indexing	heading	L86-164
-d:docs/MODALITIES.md#MCP server: convenient tools with startup context	heading	L165-255
-d:docs/MODALITIES.md#Client configuration	heading	L173-204
-d:docs/MODALITIES.md#Tools and startup cost	heading	L205-255
-d:docs/MODALITIES.md#CI / prompt-cache prefix stability	heading	L256-279
-d:docs/MODALITIES.md#Rust library: embed the facade	heading	L280-314
-d:docs/MODALITIES.md#Desktop app: Tauri preview today	heading	L315-322
-d:docs/MODALITIES.md#Python, Node and Go wrappers	heading	L323-339
+d:docs/MODALITIES.md#Choosing how to use dctx	heading	L3-244
+d:docs/MODALITIES.md#Available surfaces and publication status	heading	L11-24
+d:docs/MODALITIES.md#Choose by task	heading	L25-34
+d:docs/MODALITIES.md#Human, one-off: pack to clipboard	heading	L35-54
+d:docs/MODALITIES.md#Short agent task: grep can be enough	heading	L55-81
+d:docs/MODALITIES.md#Huge trees: scope before indexing	heading	L82-160
+d:docs/MODALITIES.md#CI / prompt-cache prefix stability	heading	L161-184
+d:docs/MODALITIES.md#Rust library: embed the facade	heading	L185-219
+d:docs/MODALITIES.md#Desktop app: Tauri preview today	heading	L220-227
+d:docs/MODALITIES.md#Python, Node and Go wrappers	heading	L228-244
 ```
