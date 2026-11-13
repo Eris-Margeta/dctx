@@ -3,13 +3,15 @@
 //! Implements extension, size, empty, hidden and binary filters for pack output.
 //! Depends on [`super`] and [`super::names`]; pure over names and sizes.
 //! Used by the legacy walker's `filter_tree` and by dctx-cli.
-//! Hidden names are excluded unless `only_hidden` asks for them.
+//! Hidden names are admitted normally; `only_hidden` restricts the result to them.
 
 use super::FilterConfig;
 use std::path::Path;
 
 impl FilterConfig {
-    /// Check if a file should be included based on all active filters
+    /// Tests all active filters with inclusive byte bounds. Contradictory filters
+    /// (such as both empty and non-empty) admit no files. `file_name` is a basename;
+    /// the path argument is retained for compatibility and is not read.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."

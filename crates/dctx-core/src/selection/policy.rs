@@ -50,16 +50,19 @@ pub struct LayerCounts {
 }
 
 impl LayerCounts {
-    /// Total rules across all layers.
+    /// Total rules across all layers, saturating at `usize::MAX` for supplied counts.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
     )]
     pub fn total(&self) -> usize {
-        self.hardcoded + self.global + self.local
+        self.hardcoded
+            .saturating_add(self.global)
+            .saturating_add(self.local)
     }
 
-    /// The layer the rule at `index` belongs to.
+    /// The layer the rule at `index` belongs to. Indices beyond the counts are local.
+    /// Boundaries are compared without overflowing even for caller-supplied counts.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
@@ -67,7 +70,7 @@ impl LayerCounts {
     pub fn source_of(&self, index: usize) -> RuleSource {
         if index < self.hardcoded {
             RuleSource::Hardcoded
-        } else if index < self.hardcoded + self.global {
+        } else if index - self.hardcoded < self.global {
             RuleSource::Global
         } else {
             RuleSource::Local
@@ -90,6 +93,8 @@ pub struct RuleTexts<'a> {
 }
 
 /// Ordered ignore and omit rule sets with their layer bookkeeping.
+/// [`Self::default`] is empty; use [`Self::from_texts`] to include built-in rules.
+/// Immutable policies can be shared across threads; evaluation has no global state.
 #[derive(Debug, Clone, Default)]
 pub struct SelectionPolicy {
     compiled_ignore: CompiledRules,

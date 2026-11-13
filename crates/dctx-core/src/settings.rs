@@ -74,7 +74,9 @@ impl Default for AppConfig {
     }
 }
 
-/// Parses a whole `config.toml` text over the defaults.
+/// Parses a whole `config.toml` text over the defaults; later valid values win.
+/// This is a line parser, not a general TOML decoder: sections and unknown keys
+/// are ignored, and values may have single or double quotes.
 #[allow(
     clippy::must_use_candidate,
     reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
@@ -87,7 +89,8 @@ pub fn parse_config(text: &str) -> AppConfig {
     config
 }
 
-/// Applies one `key = value` line to `config`. Comments, blanks and unknown keys are ignored.
+/// Applies one `key = value` line to `config`. Comments, blanks, unknown keys and
+/// invalid boolean or numeric values leave the existing preference unchanged.
 pub fn parse_config_line(line: &str, config: &mut AppConfig) {
     let line = line.trim();
     if line.is_empty() || line.starts_with('#') {
@@ -99,8 +102,12 @@ pub fn parse_config_line(line: &str, config: &mut AppConfig) {
         let val = val.trim().trim_matches('"').trim_matches('\'');
 
         match key {
-            "output_mode" => config.text_output_enabled = val != "binary",
-            "text_output_enabled" => config.text_output_enabled = val == "true",
+            "output_mode" => match val {
+                "binary" => config.text_output_enabled = false,
+                "text" | "both" => config.text_output_enabled = true,
+                _ => {}
+            },
+            "text_output_enabled" => set_flag(val, &mut config.text_output_enabled),
             "max_diff_files" => {
                 if let Ok(num) = val.parse::<u32>() {
                     config.max_diff_files = num;
@@ -114,6 +121,7 @@ pub fn parse_config_line(line: &str, config: &mut AppConfig) {
                 set_flag(val, &mut config.text_output_mode_generates_diff_files);
             }
             "omit_svg_content" => set_flag(val, &mut config.omit_svg_content),
+            "debug_verbose" => set_flag(val, &mut config.debug_verbose),
             _ => {}
         }
     }

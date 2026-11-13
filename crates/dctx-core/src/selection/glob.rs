@@ -4,11 +4,15 @@
 //! Depends on nothing; pure byte matching with no IO.
 //! Used by [`super::rule`] for pure ignore and omit rule matching.
 
+use std::collections::BTreeSet;
+
 /// Matches `text` against a glob `pattern`.
 ///
 /// `**` matches zero or more path segments (including `/`), `*` matches within one
 /// segment, `?` matches one non-`/` byte and every other byte matches itself.
-/// The search allocates a backtracking stack only when a wildcard branches.
+/// A following `/` in `**/` may also be skipped, allowing zero directories.
+/// Inputs are raw bytes; `?` consumes one byte, including a byte of invalid UTF-8.
+/// Revisited wildcard states are skipped to avoid exponential backtracking.
 #[allow(
     clippy::must_use_candidate,
     reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
@@ -31,29 +35,32 @@ pub fn glob_match(pattern: &[u8], text: &[u8]) -> bool {
         }
     }
     // Deterministic literal and '?' runs need no backtracking allocation.
-    // Keep the historical wildcard branches (including '**/' semantics) exact.
     let mut stack = Vec::new();
+    let mut visited = BTreeSet::new();
     let mut next = Some((pattern, text));
     while let Some((mut pat, mut txt)) = next.take().or_else(|| stack.pop()) {
         while !pat.is_empty() {
-            if pat.starts_with(b"**") {
-                if pat.len() == 2 {
+            if pat[0] == b'*' {
+                if !visited.insert((pat.len(), txt.len())) {
+                    break;
+                }
+                let double = pat.starts_with(b"**");
+                if double && pat.len() == 2 {
                     return true;
                 }
-                if pat[2] == b'/' {
-                    stack.push((&pat[3..], txt));
-                    if !txt.is_empty() {
-                        next = Some((pat, &txt[1..]));
+                let skip = if double {
+                    if pat.get(2) == Some(&b'/') {
+                        3
+                    } else {
+                        2
                     }
-                }
-                break;
-            } else if pat[0] == b'*' {
-                let rest = &pat[1..];
-                for i in 0..=txt.len() {
-                    if i < txt.len() && txt[i] == b'/' {
-                        break;
-                    }
-                    stack.push((rest, &txt[i..]));
+                } else {
+                    1
+                };
+                // Skipping '*' is valid even when the text starts with '/'.
+                stack.push((&pat[skip..], txt));
+                if !txt.is_empty() && (double || txt[0] != b'/') {
+                    next = Some((pat, &txt[1..]));
                 }
                 break;
             } else if !txt.is_empty()
@@ -233,14 +240,19 @@ mod equivalence {
                     if !txt.is_empty() {
                         stack.push((pat, &txt[1..]));
                     }
+                } else {
+                    stack.push((&pat[2..], txt));
+                    if !txt.is_empty() {
+                        stack.push((pat, &txt[1..]));
+                    }
                 }
             } else if pat[0] == b'*' {
                 let rest = &pat[1..];
                 for i in 0..=txt.len() {
+                    stack.push((rest, &txt[i..]));
                     if i < txt.len() && txt[i] == b'/' {
                         break;
                     }
-                    stack.push((rest, &txt[i..]));
                 }
             } else if pat[0] == b'?' {
                 if !txt.is_empty() && txt[0] != b'/' {

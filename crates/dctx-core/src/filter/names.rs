@@ -39,7 +39,8 @@ const SSH_KEYS: &[&str] = &["id_rsa", "id_dsa", "id_ecdsa", "id_ed25519"];
 /// `id_rsa`, `id_dsa`, `id_ecdsa`, `id_ed25519` (and `_`/`-` suffixed variants); `credentials`, `credentials.<data>`,
 /// `*.credentials.json`, `secrets.<data>` (data = json, yaml, yml, toml, ini, xml); `.netrc`, `_netrc`, `.npmrc`,
 /// `.pypirc`, `.pgpass`, `.htpasswd` and `.git-credentials`.
-/// The match is ASCII case-insensitive and looks at the final path component only.
+/// The match is ASCII case-insensitive. Pass the final path component as `name`;
+/// this function does not split or validate paths.
 #[must_use]
 pub fn is_secret_shaped_name(name: &str) -> bool {
     let lower = name.to_ascii_lowercase();
