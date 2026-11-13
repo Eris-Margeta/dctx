@@ -1,0 +1,10 @@
+[{"name":"lastChar","kind":"const","line":3,"parent":null},
+{"name":"lastChar","kind":"const","line":6,"parent":null},
+{"name":"penultimate","kind":"const","line":12,"parent":null},
+{"name":"Box","kind":"class","line":15,"parent":null},
+{"name":"Box::Box","kind":"method","line":15,"parent":"Box"},
+{"name":"Box::width","kind":"const","line":15,"parent":"Box"},
+{"name":"Box::height","kind":"const","line":15,"parent":"Box"},
+{"name":"area","kind":"const","line":17,"parent":null},
+{"name":"Units","kind":"class","line":19,"parent":null},
+{"name":"Units::kb","kind":"const","line":20,"parent":"Units"}]

@@ -1,0 +1,8 @@
+[{"name":"MAX_RETRIES","kind":"const","line":3,"parent":null},
+{"name":"DEFAULT_NAME","kind":"const","line":5,"parent":null},
+{"name":"counter","kind":"const","line":7,"parent":null},
+{"name":"session","kind":"const","line":9,"parent":null},
+{"name":"lazyConfig","kind":"const","line":11,"parent":null},
+{"name":"observed","kind":"const","line":15,"parent":null},
+{"name":"computed","kind":"const","line":19,"parent":null},
+{"name":"PUBLIC_FIELD","kind":"const","line":22,"parent":null}]

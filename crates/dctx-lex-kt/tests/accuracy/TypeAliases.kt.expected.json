@@ -1,0 +1,7 @@
+[{"name":"Callback","kind":"type","line":3,"parent":null},
+{"name":"StringMap","kind":"type","line":5,"parent":null},
+{"name":"Matrix","kind":"type","line":7,"parent":null},
+{"name":"Predicate","kind":"type","line":9,"parent":null},
+{"name":"Node","kind":"class","line":12,"parent":null},
+{"name":"Node::children","kind":"method","line":13,"parent":"Node"},
+{"name":"accept","kind":"fn","line":16,"parent":null}]

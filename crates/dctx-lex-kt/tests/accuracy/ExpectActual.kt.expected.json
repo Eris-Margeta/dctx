@@ -1,0 +1,10 @@
+[{"name":"PlatformFile","kind":"class","line":3,"parent":null},
+{"name":"PlatformFile::PlatformFile","kind":"method","line":3,"parent":"PlatformFile"},
+{"name":"PlatformFile::path","kind":"const","line":4,"parent":"PlatformFile"},
+{"name":"PlatformFile::read","kind":"method","line":5,"parent":"PlatformFile"},
+{"name":"currentTimeMillis","kind":"fn","line":8,"parent":null},
+{"name":"Clock","kind":"class","line":10,"parent":null},
+{"name":"Clock::now","kind":"method","line":11,"parent":"Clock"},
+{"name":"nativeHash","kind":"fn","line":14,"parent":null},
+{"name":"gcd","kind":"fn","line":16,"parent":null},
+{"name":"fast","kind":"fn","line":18,"parent":null}]

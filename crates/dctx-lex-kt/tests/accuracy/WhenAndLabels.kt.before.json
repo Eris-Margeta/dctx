@@ -1,0 +1,6 @@
+[{"name":"firstEven","kind":"fn","line":3,"parent":null},
+{"name":"kind","kind":"fn","line":13,"parent":null},
+{"name":"Machine","kind":"class","line":20,"parent":null},
+{"name":"Machine::state","kind":"const","line":21,"parent":"Machine"},
+{"name":"Machine::step","kind":"method","line":23,"parent":"Machine"},
+{"name":"after","kind":"fn","line":29,"parent":null}]

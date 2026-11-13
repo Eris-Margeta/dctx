@@ -1,0 +1,2 @@
+# Exact bytes: CRLF and BOM fixtures and the SHA-256 manifest must not be normalized.
+* -text

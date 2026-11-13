@@ -1,0 +1,8 @@
+[{"name":"isPalindrome","kind":"fn","line":3,"parent":null},
+{"name":"secondOrNull","kind":"fn","line":5,"parent":null},
+{"name":"appendLineIndented","kind":"fn","line":7,"parent":null},
+{"name":"orZero","kind":"fn","line":10,"parent":null},
+{"name":"Formatter","kind":"class","line":12,"parent":null},
+{"name":"Formatter::bold","kind":"method","line":13,"parent":"Formatter"},
+{"name":"Formatter::render","kind":"method","line":15,"parent":"Formatter"},
+{"name":"totals","kind":"fn","line":18,"parent":null}]

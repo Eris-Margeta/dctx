@@ -1,0 +1,12 @@
+[{"name":"Hidden","kind":"class","line":3,"parent":null},
+{"name":"Hidden::helper","kind":"method","line":4,"parent":"Hidden"},
+{"name":"Module","kind":"class","line":7,"parent":null},
+{"name":"Module::SECRET","kind":"const","line":8,"parent":"Module"},
+{"name":"Module::expose","kind":"method","line":10,"parent":"Module"},
+{"name":"Base","kind":"class","line":13,"parent":null},
+{"name":"Base::Base","kind":"method","line":13,"parent":"Base"},
+{"name":"Base::hook","kind":"method","line":14,"parent":"Base"},
+{"name":"Base::toString","kind":"method","line":15,"parent":"Base"},
+{"name":"Derived","kind":"class","line":18,"parent":null},
+{"name":"Derived::hook","kind":"method","line":19,"parent":"Derived"},
+{"name":"fileLocal","kind":"fn","line":22,"parent":null}]

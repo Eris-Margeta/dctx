@@ -189,6 +189,15 @@ impl Walker<'_> {
         {
             return true;
         }
+        // `T::class` is a class literal and `object : T {}` / `object {}` without
+        // `companion` is an anonymous object expression: both stay inside the
+        // expression instead of starting a declaration.
+        if index > 0 && self.is(index - 1, "::") {
+            return false;
+        }
+        if self.anon_object_expr(index) {
+            return false;
+        }
         self.ident(index)
             && matches!(
                 self.text(index),
@@ -203,6 +212,13 @@ impl Walker<'_> {
                     | "val"
                     | "var"
             )
+    }
+
+    pub(crate) fn anon_object_expr(&self, index: usize) -> bool {
+        self.is(index, "object")
+            && !self.is_decl_name(index + 1)
+            && !(index > 0 && self.is(index - 1, "companion"))
+            && (self.is(index + 1, ":") || self.is(index + 1, "{"))
     }
 
     pub(crate) fn type_tail(&self, start: usize, end: usize) -> (usize, u32) {

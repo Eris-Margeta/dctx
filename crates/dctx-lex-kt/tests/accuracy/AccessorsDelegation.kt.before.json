@@ -1,0 +1,10 @@
+[{"name":"Logger","kind":"interface","line":3,"parent":null},
+{"name":"Logger::log","kind":"method","line":4,"parent":"Logger"},
+{"name":"ConsoleLogger","kind":"class","line":7,"parent":null},
+{"name":"ConsoleLogger::log","kind":"method","line":8,"parent":"ConsoleLogger"},
+{"name":"Service","kind":"class","line":11,"parent":null},
+{"name":"Service::Service","kind":"method","line":11,"parent":"Service"},
+{"name":"Service::state","kind":"const","line":12,"parent":"Service"},
+{"name":"Service::isIdle","kind":"const","line":18,"parent":"Service"},
+{"name":"Service::retries","kind":"const","line":23,"parent":"Service"},
+{"name":"Service::start","kind":"method","line":25,"parent":"Service"}]

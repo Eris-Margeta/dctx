@@ -1,0 +1,4 @@
+[{"name":"BomStart","kind":"class","line":3,"parent":null},
+{"name":"BomStart::ok","kind":"const","line":5,"parent":"BomStart"},
+{"name":"bomHelper","kind":"fn","line":8,"parent":null},
+{"name":"BomSingleton","kind":"class","line":10,"parent":null}]

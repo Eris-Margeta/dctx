@@ -1,0 +1,9 @@
+[{"name":"fetchUser","kind":"fn","line":5,"parent":null},
+{"name":"Repository","kind":"class","line":10,"parent":null},
+{"name":"Repository::Repository","kind":"method","line":10,"parent":"Repository"},
+{"name":"Repository::api","kind":"const","line":10,"parent":"Repository"},
+{"name":"Repository::load","kind":"method","line":11,"parent":"Repository"},
+{"name":"Repository::retry","kind":"method","line":13,"parent":"Repository"},
+{"name":"Api","kind":"interface","line":19,"parent":null},
+{"name":"Api::get","kind":"method","line":20,"parent":"Api"},
+{"name":"loader","kind":"const","line":23,"parent":null}]
