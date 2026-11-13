@@ -8,6 +8,20 @@ use dctx_core::datatypes::DirContextTreeNode;
 use dctx_core::diff::{compare_trees, DiffReport};
 use dctx_core::facts::PackSnapshot;
 use dctx_core::version::{version_after_diff, Version};
+use std::collections::BTreeMap;
+
+/// Canonical pack identity: the last child at each relative path wins, including
+/// its entire subtree. Retained children are sorted by path at every level.
+pub(crate) fn deduplicate_tree(tree: &mut DirContextTreeNode) {
+    let mut children = BTreeMap::new();
+    for child in std::mem::take(&mut tree.children) {
+        children.insert(child.relative_path.clone(), child);
+    }
+    tree.children = children.into_values().collect();
+    for child in &mut tree.children {
+        deduplicate_tree(child);
+    }
+}
 
 /// The change between two snapshots and the version the new one gets.
 #[derive(Debug)]
@@ -21,15 +35,25 @@ pub struct VersionedDiff {
 }
 
 /// Diffs `tree` against `previous` and decides the new version.
+/// Duplicate paths use the last child and its subtree on both sides.
 pub fn diff_against(
     previous: Option<&PackSnapshot>,
     tree: &DirContextTreeNode,
     max_diff_files: u32,
 ) -> VersionedDiff {
-    let report = match previous {
-        Some(old) => compare_trees(Some(old.tree()), tree),
+    let mut report = match previous {
+        Some(old) => {
+            let mut old_tree = old.tree().clone();
+            let mut new_tree = tree.clone();
+            deduplicate_tree(&mut old_tree);
+            deduplicate_tree(&mut new_tree);
+            compare_trees(Some(&old_tree), &new_tree)
+        }
         None => DiffReport::default(),
     };
+    report
+        .entries
+        .sort_by(|a, b| a.relative_path.cmp(&b.relative_path));
     let (version, major_reset) =
         version_after_diff(previous.map(PackSnapshot::version), &report, max_diff_files);
     VersionedDiff {
