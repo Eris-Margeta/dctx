@@ -97,6 +97,11 @@ pub enum LegacyError {
     InvalidOffset,
     /// Bytes remain outside all declared content ranges.
     TrailingBytes,
+    /// A data byte is unclaimed or claimed by multiple file ranges.
+    CorruptData {
+        /// First offending byte offset relative to the data section.
+        offset: usize,
+    },
     /// A fact tree has children on a file or a body on a directory.
     InvalidTree,
     /// The caller's sink refused a write; partial output may have been written.
@@ -117,6 +122,12 @@ impl fmt::Display for LegacyError {
             Self::Overflow => formatter.write_str("legacy size arithmetic overflow"),
             Self::InvalidOffset => formatter.write_str("legacy offset outside data section"),
             Self::TrailingBytes => formatter.write_str("trailing legacy data"),
+            Self::CorruptData { offset } => {
+                write!(
+                    formatter,
+                    "corrupt legacy data at data section offset {offset}"
+                )
+            }
             Self::InvalidTree => formatter.write_str("invalid legacy fact tree"),
             Self::Sink(error) => write!(formatter, "legacy sink: {error}"),
         }
