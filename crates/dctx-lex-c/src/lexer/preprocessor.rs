@@ -153,7 +153,7 @@ fn raw_end(bytes: &[u8], index: usize) -> Option<usize> {
         && bytes[pos] != b'('
         && bytes[pos] != b'\n'
         && bytes[pos] != b'"'
-        && pos - delim_at <= 16
+        && pos - delim_at < 16
     {
         pos += 1;
     }

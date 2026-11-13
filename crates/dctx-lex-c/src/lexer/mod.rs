@@ -11,7 +11,7 @@ mod scan;
 use crate::domain::{Diagnostic, DiagnosticReason, LexError, Limits};
 use std::collections::BTreeMap;
 
-pub(crate) use angles::{AngleDepth, opens_template_args};
+pub(crate) use angles::{AngleDepth, TemplateMatches};
 pub(crate) use preprocessor::{Dir, classify, define_attribute, define_brace, hidden_include};
 
 /// Token category. Keywords stay [`Kind::Ident`] and are compared by text.
@@ -237,6 +237,7 @@ fn pair(
     // Only a `<` that a template closer matches counts. Comparisons and `>>`
     // shifts stay at depth zero so a long function is not `TooDeep`.
     let mut angles = AngleDepth::new();
+    let mut templates = TemplateMatches::default();
     let mut braces: BTreeMap<String, bool> = BTreeMap::new();
     // `#if` / `#else` branches share the outer brace stack. Each branch restores
     // the snapshot so duplicated braces are alternatives, not extras.
@@ -247,6 +248,7 @@ fn pair(
             let text = slice(source, token.start, token.end);
             match classify(text) {
                 Dir::Define(Some(def)) => {
+                    templates.clear();
                     if let Some(open) = define_brace(text) {
                         braces.insert(def.name, open);
                     } else {
@@ -254,6 +256,7 @@ fn pair(
                     }
                 }
                 Dir::Undef(name) => {
+                    templates.clear();
                     braces.remove(&name);
                 }
                 Dir::Open => conds.push((stack.clone(), angles.clone())),
@@ -273,11 +276,12 @@ fn pair(
         }
         let spelling = token_spelling(source, &token, &braces);
         let opens = spelling == "<"
-            && opens_template_args(
+            && templates.opens(
                 |at| match tokens.get(at) {
                     Some(next) => token_spelling(source, next, &braces),
                     None => "",
                 },
+                tokens.len(),
                 tokens.len(),
                 index,
             );

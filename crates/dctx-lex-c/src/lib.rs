@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Hand-written, zero-dependency C and C++ structural extractor.
+//! Hand-written C and C++ structural extractor.
 //! Implements decision 077, PARSERS-v1 and SPEC-MAP-MODE 5–6.2 for C and C++ source.
 //! Depends on dctx-map-model facts and dctx-hash; never on tree-sitter or git.
 //! Emits the dctx-map-parse fact shape with a precision label on every fact.
@@ -18,9 +18,12 @@ pub use domain::{
 /// Parser identity recorded with every fact key (PARSERS-v1 provenance).
 pub const PARSER_ID: &str = "dctx-lex-c";
 /// Bumped whenever extraction output can change for the same bytes.
-pub const PARSER_REVISION: u32 = 1;
+pub const PARSER_REVISION: u32 = 2;
 
 /// Bounded structural extractor. Stateless apart from its limits.
+///
+/// Share one instance across threads or reuse it across files: extraction keeps
+/// no mutable per-file state in the extractor.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct CLexer {
     limits: Limits,
@@ -39,6 +42,12 @@ impl CLexer {
     }
 
     /// Extracts facts from one place-relative path and its authorized bytes.
+    ///
+    /// The path is an identity only; this method performs no filesystem IO.
+    /// Bytes must be UTF-8. Limits are inclusive, and the fact budget includes
+    /// the module node even for empty input. Unsupported syntax returns partial
+    /// facts with diagnostics; a refusal returns no facts. Output preserves source
+    /// traversal order, including distinct identities for duplicate declarations.
     ///
     /// Refuses a bad path, an unsupported extension, invalid UTF-8, or input past
     /// the byte, depth, or fact ceilings. Malformed source still returns facts
@@ -92,7 +101,7 @@ mod tests {
         assert!(lexer.extract("x.c", b"").is_ok());
         assert_eq!(lexer.extract("x.H", b"int x;").unwrap().dialect, Dialect::C);
         assert_eq!(PARSER_ID, "dctx-lex-c");
-        assert_eq!(PARSER_REVISION, 1);
+        assert_eq!(PARSER_REVISION, 2);
     }
 
     #[test]

@@ -157,17 +157,24 @@ impl Walker<'_> {
         self.declare(j, end, scope, decl).or(Some(j))
     }
 
-    pub fn declare(&mut self, i: usize, end: usize, scope: &Scope, decl: Decl) -> Option<usize> {
-        let next_word = self.ident(i + 1) && !self.nl(i + 1);
+    pub fn declare(
+        &mut self,
+        mut i: usize,
+        end: usize,
+        scope: &Scope,
+        mut decl: Decl,
+    ) -> Option<usize> {
+        // Malformed files can repeat this modifier without adding bracket depth.
+        // Scan the prefix iteratively so it cannot exhaust the caller's stack.
+        while self.ts && self.is(i, "declare") && self.ident(i + 1) && !self.nl(i + 1) {
+            decl = Decl {
+                public: false,
+                anchor: None,
+                ..decl
+            };
+            i += 1;
+        }
         match self.text(i) {
-            "declare" if self.ts && next_word => {
-                let decl = Decl {
-                    public: false,
-                    anchor: None,
-                    ..decl
-                };
-                self.declare(i + 1, end, scope, decl)
-            }
             "async" if self.is(i + 1, "function") && !self.nl(i + 1) => {
                 self.function_declaration(i, end, scope, decl)
             }
