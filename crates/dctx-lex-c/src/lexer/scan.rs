@@ -29,7 +29,7 @@ impl<'a> Lexer<'a> {
         Self {
             src,
             b: src.as_bytes(),
-            pos: 0,
+            pos: if src.starts_with('\u{feff}') { 3 } else { 0 },
             line_token: false,
             tokens: Vec::new(),
             comments: Vec::new(),

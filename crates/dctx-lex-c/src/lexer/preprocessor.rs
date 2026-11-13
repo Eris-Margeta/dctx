@@ -284,9 +284,122 @@ fn ident_at(rest: &str) -> Option<&str> {
     Some(&rest[..end])
 }
 
+/// A branch can be ruled out only by a literal condition. Unknown expressions
+/// retain both alternatives; this is deliberately not a macro evaluator.
+struct Conditional {
+    outer_active: bool,
+    active: bool,
+    may_reach: bool,
+}
+
+/// Remove certainly inactive tokens before bracket pairing, preserving offsets
+/// and conditional directives so the walker can still diagnose unbalanced `#if`.
+pub(super) fn active_tokens(source: &str, tokens: Vec<super::Token>) -> Vec<super::Token> {
+    let mut stack = Vec::<Conditional>::new();
+    let mut kept = Vec::with_capacity(tokens.len());
+    for token in tokens {
+        let active = stack.last().is_none_or(|branch| branch.active);
+        if token.kind != super::Kind::Directive {
+            if active {
+                kept.push(token);
+            }
+            continue;
+        }
+        let text = super::slice(source, token.start, token.end);
+        let cleaned = scrub(text);
+        let (keyword, rest) = split_keyword(&cleaned);
+        match keyword {
+            "if" | "ifdef" | "ifndef" => {
+                let condition = if keyword == "if" {
+                    literal_condition(rest)
+                } else {
+                    None
+                };
+                stack.push(Conditional {
+                    outer_active: active,
+                    active: active && condition != Some(false),
+                    may_reach: condition != Some(true),
+                });
+            }
+            "else" | "elif" | "elifdef" | "elifndef" => {
+                if let Some(branch) = stack.last_mut() {
+                    let condition = match keyword {
+                        "else" => Some(true),
+                        "elif" => literal_condition(rest),
+                        _ => None,
+                    };
+                    branch.active =
+                        branch.outer_active && branch.may_reach && condition != Some(false);
+                    branch.may_reach &= condition != Some(true);
+                }
+            }
+            "endif" => {
+                stack.pop();
+            }
+            _ if !active => continue,
+            _ => {}
+        }
+        kept.push(token);
+    }
+    kept
+}
+
+fn literal_condition(mut text: &str) -> Option<bool> {
+    text = text.trim();
+    while let Some(inner) = text
+        .strip_prefix('(')
+        .and_then(|rest| rest.strip_suffix(')'))
+    {
+        text = inner.trim();
+    }
+    match text {
+        "0" => Some(false),
+        "1" => Some(true),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn literal_branches_are_filtered_before_brackets_and_macro_definitions() {
+        let source = b"#if (0) /* disabled */\nstruct Ghost { {\n#define HIDDEN 1\n#if FEATURE\nint nested;\n#endif\n#elif 1\nint selected;\n#else\nint rejected;\n#endif\nint HIDDEN;\n";
+        let facts = crate::CLexer::default()
+            .extract("branches.c", source)
+            .unwrap();
+        assert!(facts.diagnostics.is_empty(), "{:?}", facts.diagnostics);
+        let names: Vec<_> = facts
+            .nodes
+            .iter()
+            .skip(1)
+            .map(|node| node.fact.name.as_str())
+            .collect();
+        assert_eq!(names, ["selected", "HIDDEN"]);
+    }
+
+    #[test]
+    fn unknown_conditions_retain_alternatives_but_not_literal_false_branches() {
+        let source = b"#if FEATURE\nint a;\n#elif 0\nint rejected;\n#else\nint b;\n#endif\n#if 1\nint c;\n#else\nint rejected_again;\n#endif\n";
+        let facts = crate::CLexer::default()
+            .extract("alternatives.c", source)
+            .unwrap();
+        let names: Vec<_> = facts
+            .nodes
+            .iter()
+            .skip(1)
+            .map(|node| node.fact.name.as_str())
+            .collect();
+        assert_eq!(names, ["a", "b", "c"]);
+        assert!(
+            facts
+                .nodes
+                .iter()
+                .skip(1)
+                .all(|node| node.precision == crate::Precision::Convention)
+        );
+    }
 
     #[test]
     fn include_define_and_macro_paths_are_classified() {

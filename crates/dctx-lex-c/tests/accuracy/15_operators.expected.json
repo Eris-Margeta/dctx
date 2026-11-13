@@ -1,0 +1,8 @@
+[
+  {"name": "Counter", "kind": "struct", "line": 1, "parent": null},
+  {"name": "Counter::operator+", "kind": "method", "line": 2, "parent": "Counter"},
+  {"name": "Counter::operator==", "kind": "method", "line": 3, "parent": "Counter"},
+  {"name": "Counter::operator()", "kind": "method", "line": 4, "parent": "Counter"},
+  {"name": "Counter::operator[]", "kind": "method", "line": 5, "parent": "Counter"},
+  {"name": "Counter::operator++", "kind": "method", "line": 6, "parent": "Counter"}
+]

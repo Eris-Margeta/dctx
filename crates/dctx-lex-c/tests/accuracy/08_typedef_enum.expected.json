@@ -1,0 +1,7 @@
+[
+  {"name": "Status", "kind": "enum", "line": 1, "parent": null},
+  {"name": "Status::STATUS_IDLE", "kind": "const", "line": 2, "parent": "Status"},
+  {"name": "Status::STATUS_BUSY", "kind": "const", "line": 3, "parent": "Status"},
+  {"name": "Status::STATUS_ERROR", "kind": "const", "line": 4, "parent": "Status"},
+  {"name": "StatusCode", "kind": "type", "line": 1, "parent": null}
+]
