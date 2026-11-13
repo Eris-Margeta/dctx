@@ -64,7 +64,7 @@ impl Lx<'_> {
             if self.at_newline() {
                 self.consume_nl();
             } else {
-                self.bump();
+                self.i += plain_chunk(self.src, self.i, &['\\', quote, '\r', '\n']);
             }
         }
     }
@@ -495,4 +495,26 @@ fn prefix_flags(prefix: &str) -> Prefix {
         formatted,
         doc: !formatted && !bytes && matches!(lower.as_str(), "r" | "u"),
     }
+}
+
+// Bound each search window so repeated escapes cannot cause quadratic rescans.
+// ASCII delimiters never cut a UTF-8 code point.
+fn plain_chunk(source: &str, start: usize, specials: &[char]) -> usize {
+    let bytes = &source.as_bytes()[start..];
+    if let Some(end) = bytes[..bytes.len().min(32)]
+        .iter()
+        .position(|&byte| specials.contains(&char::from(byte)))
+    {
+        return end.max(1);
+    }
+    let mut end = (start + 4096).min(source.len());
+    while !source.is_char_boundary(end) {
+        end -= 1;
+    }
+    let mut rest = &source[start..end];
+    for &special in specials {
+        let end = rest.find(special).unwrap_or(rest.len());
+        rest = &rest[..end];
+    }
+    rest.len().max(1)
 }

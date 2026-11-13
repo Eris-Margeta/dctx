@@ -115,7 +115,7 @@ impl<'a> Lexer<'a> {
             return Ok(());
         }
         let byte = self.b[self.pos];
-        if byte == b'\n' {
+        if matches!(byte, b'\r' | b'\n') {
             self.on_newline();
             return Ok(());
         }
@@ -165,6 +165,10 @@ impl<'a> Lexer<'a> {
         Ok(())
     }
 
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "Source offsets fit u32 under the public 8 MiB input ceiling."
+    )]
     fn scan_annotation(&mut self, max_depth: u32) -> Result<(), u32> {
         let start = self.pos;
         self.pos += 1;
@@ -173,6 +177,7 @@ impl<'a> Lexer<'a> {
         self.scan_ann_name();
         self.skip_space();
         if self.pos < self.b.len() && self.b[self.pos] == b'(' {
+            let max_depth = max_depth.checked_sub(1).ok_or(self.pos as u32)?;
             let base = self.groups;
             self.step(max_depth)?;
             while self.pos < self.b.len() && self.groups > base {
@@ -221,13 +226,13 @@ impl<'a> Lexer<'a> {
         let mut chunk = self.pos;
         let mut emitted = false;
         loop {
-            if self.pos >= self.b.len() || (!raw && self.b[self.pos] == b'\n') {
+            if self.pos >= self.b.len() || (!raw && matches!(self.b[self.pos], b'\r' | b'\n')) {
                 self.fail_string(start, raw, emitted);
                 return Ok(());
             }
             if !raw && self.b[self.pos] == b'\\' {
                 self.pos += 1;
-                if self.pos < self.b.len() && self.b[self.pos] != b'\n' {
+                if self.pos < self.b.len() && !matches!(self.b[self.pos], b'\r' | b'\n') {
                     self.bump();
                 }
                 continue;
@@ -262,7 +267,7 @@ impl<'a> Lexer<'a> {
                 chunk = self.pos;
                 continue;
             }
-            self.bump();
+            self.pos += plain_chunk(self.src, self.pos, &['"', '$', '\\', '\r', '\n']);
         }
     }
 
@@ -280,7 +285,7 @@ impl<'a> Lexer<'a> {
             if self.pos >= self.b.len() {
                 break;
             }
-            if self.b[self.pos] == b'\n' {
+            if matches!(self.b[self.pos], b'\r' | b'\n') {
                 self.on_newline();
                 continue;
             }
@@ -310,7 +315,7 @@ impl<'a> Lexer<'a> {
                 continue;
             }
             let before = self.pos;
-            self.step(max_depth)?;
+            self.step(max_depth - depth)?;
             if self.pos == before {
                 self.bump();
             }
@@ -367,10 +372,12 @@ impl<'a> Lexer<'a> {
                         self.pos += 1;
                     }
                 }
-            } else if self.pos < self.b.len() && self.b[self.pos] != b'\n' {
+            } else if self.pos < self.b.len() && !matches!(self.b[self.pos], b'\r' | b'\n') {
                 self.bump();
             }
-        } else if self.pos < self.b.len() && self.b[self.pos] != b'\'' && self.b[self.pos] != b'\n'
+        } else if self.pos < self.b.len()
+            && self.b[self.pos] != b'\''
+            && !matches!(self.b[self.pos], b'\r' | b'\n')
         {
             self.bump();
         }
@@ -391,7 +398,10 @@ impl<'a> Lexer<'a> {
     fn scan_ticks(&mut self) {
         let start = self.pos;
         self.pos += 1;
-        while self.pos < self.b.len() && self.b[self.pos] != b'`' && self.b[self.pos] != b'\n' {
+        while self.pos < self.b.len()
+            && self.b[self.pos] != b'`'
+            && !matches!(self.b[self.pos], b'\r' | b'\n')
+        {
             self.bump();
         }
         if self.pos < self.b.len() && self.b[self.pos] == b'`' {
@@ -460,11 +470,14 @@ impl<'a> Lexer<'a> {
         }
         let start = self.pos;
         self.pos += 2;
-        while self.pos < self.b.len() && self.b[self.pos] != b'\n' {
+        while self.pos < self.b.len() && !matches!(self.b[self.pos], b'\r' | b'\n') {
             self.bump();
         }
         let end = self.pos;
         if self.pos < self.b.len() {
+            if self.b[self.pos] == b'\r' && self.b.get(self.pos + 1) == Some(&b'\n') {
+                self.pos += 1;
+            }
             self.pos += 1;
         }
         self.comments.push(Comment {
@@ -522,7 +535,7 @@ impl<'a> Lexer<'a> {
         let mut i = start + 2;
         let mut depth = 1u32;
         while i < self.b.len() && depth > 0 {
-            if self.b[i] == b'\n' {
+            if matches!(self.b[i], b'\r' | b'\n') {
                 return true;
             }
             if self.b[i] == b'/' && self.b.get(i + 1) == Some(&b'*') {
@@ -547,6 +560,28 @@ pub(super) fn starts_ident(ch: char) -> bool {
 
 pub(super) fn continues_ident(ch: char) -> bool {
     ch == '_' || ch.is_alphanumeric()
+}
+
+// Bound each search window so repeated escapes cannot cause quadratic rescans.
+// ASCII delimiters never cut a UTF-8 code point.
+fn plain_chunk(source: &str, start: usize, specials: &[char]) -> usize {
+    let bytes = &source.as_bytes()[start..];
+    if let Some(end) = bytes[..bytes.len().min(32)]
+        .iter()
+        .position(|&byte| specials.contains(&char::from(byte)))
+    {
+        return end.max(1);
+    }
+    let mut end = (start + 4096).min(source.len());
+    while !source.is_char_boundary(end) {
+        end -= 1;
+    }
+    let mut rest = &source[start..end];
+    for &special in specials {
+        let end = rest.find(special).unwrap_or(rest.len());
+        rest = &rest[..end];
+    }
+    rest.len().max(1)
 }
 
 #[cfg(test)]

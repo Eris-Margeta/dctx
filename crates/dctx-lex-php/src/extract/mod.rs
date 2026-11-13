@@ -56,7 +56,7 @@ pub(crate) fn extract(
         kind: NodeKind::Module,
         symbol_kind: None,
         path: path.to_string(),
-        lines: [1, src.lines().count().max(1) as u32],
+        lines: [1, lexed.line(src.len().saturating_sub(1))],
         name: path.to_string(),
         signature: String::new(),
         fingerprint: body_fingerprint(src),

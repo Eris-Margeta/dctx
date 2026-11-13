@@ -129,13 +129,11 @@ const KEYWORDS: &[&str] = &[
 )]
 pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
     let mut line_starts = vec![0];
-    line_starts.extend(
-        source
-            .bytes()
-            .enumerate()
-            .filter(|(_, byte)| *byte == b'\n')
-            .map(|(index, _)| index as u32 + 1),
-    );
+    for (index, &byte) in source.as_bytes().iter().enumerate() {
+        if byte == b'\n' || (byte == b'\r' && source.as_bytes().get(index + 1) != Some(&b'\n')) {
+            line_starts.push(index as u32 + 1);
+        }
+    }
     let mut lexer = scan::Lexer::new(source);
     lexer
         .run(limits.max_depth)
@@ -323,6 +321,9 @@ impl scan::Lexer<'_> {
             self.push_semi(self.pos);
         }
         self.insert = false;
+        if self.b[self.pos] == b'\r' && self.b.get(self.pos + 1) == Some(&b'\n') {
+            self.pos += 1;
+        }
         self.pos += 1;
     }
 
@@ -336,7 +337,7 @@ impl scan::Lexer<'_> {
             }
             if byte == b'/' && self.b.get(index + 1) == Some(&b'/') {
                 index += 2;
-                while index < self.b.len() && self.b[index] != b'\n' {
+                while index < self.b.len() && !matches!(self.b[index], b'\r' | b'\n') {
                     index += 1;
                 }
                 continue;
@@ -370,14 +371,14 @@ impl scan::Lexer<'_> {
 
     fn shebang(&mut self) {
         if self.b.starts_with(b"#!") {
-            while self.pos < self.b.len() && self.b[self.pos] != b'\n' {
+            while self.pos < self.b.len() && !matches!(self.b[self.pos], b'\r' | b'\n') {
                 self.pos += 1;
             }
         }
     }
 
     fn skip_space(&mut self) {
-        while self.pos < self.b.len() && matches!(self.b[self.pos], b' ' | b'\t' | b'\r') {
+        while self.pos < self.b.len() && matches!(self.b[self.pos], b' ' | b'\t') {
             self.pos += 1;
         }
     }
@@ -385,7 +386,7 @@ impl scan::Lexer<'_> {
     fn skip_gap(&mut self) {
         loop {
             self.skip_space();
-            if self.pos < self.b.len() && self.b[self.pos] == b'\n' {
+            if self.pos < self.b.len() && matches!(self.b[self.pos], b'\r' | b'\n') {
                 self.pos += 1;
                 continue;
             }
@@ -549,7 +550,13 @@ fn gap_ok(src: &str, from: u32, to: u32) -> bool {
     let Some(gap) = src.get(from as usize..to as usize) else {
         return false;
     };
-    gap.bytes().filter(|&byte| byte == b'\n').count() <= 1
+    gap.bytes()
+        .enumerate()
+        .filter(|&(index, byte)| {
+            byte == b'\n' || (byte == b'\r' && gap.as_bytes().get(index + 1) != Some(&b'\n'))
+        })
+        .count()
+        <= 1
         && gap
             .bytes()
             .all(|byte| matches!(byte, b' ' | b'\t' | b'\r' | b'\n'))
