@@ -91,12 +91,14 @@ impl Authority {
     }
 
     /// `Authority.Consent`: an explicit host-side approval replaces a ceiling; the epoch advances.
+    /// Epoch exhaustion permanently halts admission; create a newly bound session to continue.
     pub fn approve(&mut self, layer: Layer, ceiling: Vec<Capability>) {
         *self.layer_mut(layer) = ceiling;
         self.refresh(ModelAction::AuthorityConsent, true);
     }
 
     /// `Authority.Narrow`: intersect a ceiling with `ceiling`; the epoch advances.
+    /// Epoch exhaustion permanently halts admission instead of reusing a stale policy epoch.
     pub fn narrow(&mut self, layer: Layer, ceiling: &[Capability]) {
         let narrowed = crate::domain::grant::intersect_sets(self.layer_mut(layer), ceiling);
         *self.layer_mut(layer) = narrowed;
@@ -104,6 +106,7 @@ impl Authority {
     }
 
     /// `Authority.ChangeSelection`: install a new selection snapshot; the epoch advances.
+    /// Epoch exhaustion permanently halts admission instead of reusing a stale policy epoch.
     pub fn change_selection(&mut self, selection: Selection) {
         self.selection = selection;
         self.refresh(ModelAction::AuthorityChangeSelection, true);
@@ -257,7 +260,12 @@ impl Authority {
     fn refresh(&mut self, action: ModelAction, bump: bool) {
         self.effective = self.layers.effective(&self.selection);
         if bump {
-            self.epoch = self.epoch.saturating_add(1);
+            if let Some(epoch) = self.epoch.checked_add(1) {
+                self.epoch = epoch;
+            } else {
+                // A reused epoch could authorize an admission made before this policy change.
+                self.halt();
+            }
         }
         self.trace.push(action);
     }

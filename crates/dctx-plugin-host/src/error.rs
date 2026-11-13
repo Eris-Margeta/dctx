@@ -128,10 +128,54 @@ impl fmt::Display for HostRefusal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} at {}: {}",
+            "{} at {}: {}; next: {}",
             self.code.as_str(),
             self.phase.as_str(),
-            self.reason
+            self.reason,
+            if self.effect_state != EffectState::None {
+                "reconcile the linked receipt with trusted effect evidence before taking another action"
+            } else {
+                match self.code {
+                    ErrorCode::AuditUnavailable => "restore durable audit storage before retrying",
+                    ErrorCode::ResourceLimit => {
+                        "release live resources or reduce work to the admitted quota"
+                    }
+                    ErrorCode::Conflict => {
+                        "refresh the resource precondition and check the action receipt"
+                    }
+                    ErrorCode::Denied | ErrorCode::ConsentRequired => {
+                        "obtain current consent for the requested resource"
+                    }
+                    ErrorCode::UnsupportedPlatform => {
+                        "use a qualified confinement provider before launching"
+                    }
+                    ErrorCode::UnsupportedVersion | ErrorCode::UnsupportedCapability => {
+                        "select a compatible plugin and supported operation"
+                    }
+                    ErrorCode::IntegrityFailure => {
+                        "reverify the artifact against trusted release metadata"
+                    }
+                    ErrorCode::Busy => "finish the active invocation before starting another",
+                    ErrorCode::Cancelled | ErrorCode::Stalled | ErrorCode::PluginExited => {
+                        "finish cancellation and reap the worker before starting a fresh session"
+                    }
+                    ErrorCode::ExternalProgramMissing => {
+                        "install the registered program required by this recipe"
+                    }
+                    ErrorCode::ExternalProgramFailed => {
+                        "inspect the recipe status and refresh its resource precondition"
+                    }
+                    ErrorCode::EffectUnknown => {
+                        "obtain trusted effect evidence and reconcile the action receipt"
+                    }
+                    ErrorCode::InvalidConfig => {
+                        "correct the hook plan or configuration before initialization"
+                    }
+                    ErrorCode::InvalidMessage => {
+                        "send a valid request in the required lifecycle phase"
+                    }
+                }
+            }
         )
     }
 }
@@ -154,7 +198,7 @@ mod tests {
         assert!(!HostRefusal::denied("not-granted").retryable());
         assert_eq!(
             HostRefusal::denied("not-granted").to_string(),
-            "Denied at broker: not-granted"
+            "Denied at broker: not-granted; next: obtain current consent for the requested resource"
         );
     }
 }

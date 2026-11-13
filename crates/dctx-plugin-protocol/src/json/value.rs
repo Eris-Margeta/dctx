@@ -2,7 +2,8 @@
 //! JSON value tree produced by the strict decoder and consumed by record codecs.
 //! Implements the value layer of plugin-api wire.md §Bytes and semantics.md S-BOUNDS.
 //! Depends on nothing; used by `json::decode`, `json::encode`, `json::fields` and records.
-//! Objects keep member order and never contain a duplicate key; numbers are integers only.
+//! Decoded objects keep member order and have unique keys; numbers are integers only.
+//! Callers constructing variants directly must uphold the documented string/object invariants.
 
 /// Largest integer the contract admits (2^53 - 1).
 pub const MAX_SAFE_INTEGER: u64 = 9_007_199_254_740_991;
@@ -35,6 +36,7 @@ impl Json {
     }
 
     /// Builds an integer from an already bounded unsigned value.
+    /// Values above `i64::MAX` clamp to `i64::MAX`; validate application bounds before calling.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
