@@ -444,7 +444,10 @@ fn filesystem_source_entry_points_recheck_paths_and_preserve_exact_bytes() {
         FileSource::new(dir.path()).unwrap(),
         FileSource::strict(dir.path()).unwrap(),
     ] {
-        assert_eq!(source.root(), dir.path());
+        assert_eq!(
+            std::fs::canonicalize(source.root()).unwrap(),
+            std::fs::canonicalize(dir.path()).unwrap()
+        );
         for bad in ["", "../x", "/x", "a\\b", "a:b", "a\0b", ".git/HEAD"] {
             assert!(source.read(bad).is_err(), "{bad:?}");
         }
