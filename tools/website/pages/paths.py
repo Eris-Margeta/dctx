@@ -30,7 +30,6 @@ def notice(heading_id: str | None = None, level: int = 2, title: str | None = No
 WAYS = [
     ("CLI pack", "dctx pack .", "CLI"),
     ("Map mode for agents", "dctx map find greet", "Agents, long session"),
-    ("MCP server", "dctx mcp --profile lean", "MCP and ACP"),
     ("Library and wrappers", "Rust · Python · Node · Go", "Libraries"),
 ]
 

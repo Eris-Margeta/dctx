@@ -32,7 +32,7 @@ class Route:
 # Groups follow the design review (R3, section 2): Start, Modalities, Scopes, Engine, Reference, Trust.
 DOCS = [
     ("readme", "README.md", "README", "Start", "Installation, quick start, map mode, language tiers and the CLI reference."),
-    ("modalities", "docs/MODALITIES.md", "Choosing how to use dctx", "Modalities", "Clipboard, grep plus reads, long sessions, huge trees, MCP startup cost and CI."),
+    ("modalities", "docs/MODALITIES.md", "Choosing how to use dctx", "Modalities", "Clipboard, grep plus reads, long sessions, huge trees, CLI usage and CI."),
     ("map-mode", "docs/guides/MAP-MODE.md", "Map mode guide", "Modalities", "Every map verb with examples, budgets, ids and precision labels."),
     ("agents", "docs/guides/AGENTS-SNIPPET.md", "Agent snippet", "Modalities", "The AGENTS.md section that tells coding agents to ask dctx first."),
     ("plugins", "docs/guides/PLUGINS.md", "Plugins guide", "Modalities", "The plugin boundary, capabilities, consent and current limits."),
@@ -42,7 +42,7 @@ DOCS = [
     ("templates-contract", "docs/design/contracts/DTS-v2.md", "Template contract (DTS v2)", "Engine", "DTS source v2 and the compiled plan IR v1."),
     ("templating", "docs/ADR-003-Templating-Engine.md", "Templating engine (ADR-003)", "Engine", "Markers, ahead-of-time compilation, the two rendering passes and the data variables."),
     ("crate-map", "docs/CRATE-MAP.md", "Crate map", "Engine", "How the Rust workspace is organised."),
-    ("exit-codes", "docs/CLI-EXIT-CODES.md", "CLI exit codes", "Reference", "The exit-code contract for map, pack, mcp and languages."),
+    ("exit-codes", "docs/CLI-EXIT-CODES.md", "CLI exit codes", "Reference", "The exit-code contract for map, pack and languages."),
     ("benchmark", "docs/BENCHMARK-20261030.md", "Measurement evidence", "Trust", "Grep plus file reads first; whole-session scope and secondary historical protocols."),
     ("stability", "docs/research/stability-20261105/REPORT.md", "Byte-stability report", "Trust", "Protocol, raw answers and limits of the 33/33 measurement."),
     ("benchmark-oct", "docs/research/trail-code-2026-10/REPORT.md", "Earlier two-way study", "Trust", "October 2026, before call edges: the benchmark that set the roadmap."),
@@ -118,7 +118,6 @@ def doc_nav() -> list[tuple[str, list[tuple[str, str]]]]:
         ("Start", [d("start"), ("Choose your path", "/start/"), d("start", "Safe path in ten minutes", "#safe-path-in-ten-minutes"),
                    d("why"), d("readme", "README and quick start")]),
         ("Modalities", [d("modalities"), d("map-mode", "CLI and agents: map mode"), d("agents"),
-                        d("modalities", "MCP", "#mcp-server-convenient-tools-with-startup-context"),
                         d("modalities", "Libraries", "#rust-library-embed-the-facade"),
                         d("modalities", "CI and caching", "#ci--prompt-cache-prefix-stability"), d("plugins")]),
         ("Scopes", [("Two scopes, one binary", "/start/#two-scopes"), ("Who is responsible for what", "/start/#responsibilities")]),
@@ -154,7 +153,7 @@ def build_routes(news: list[dict]) -> list[Route]:
         routes.append(Route(doc_path(slug), title, line, "doc", "docs", source=file, group=group, og=f"docs-{slug}",
                             llms=LLMS_SECTION.get(slug, "Docs")))
     routes += [
-        Route("/cli/", "CLI reference", "Every dctx command, flag, environment variable, exit code and MCP tool, captured from the dctx binary.",
+        Route("/cli/", "CLI reference", "Every dctx command, flag, environment variable, and exit code, captured from the dctx binary.",
               "page", "cli", og="cli", llms="CLI"),
         Route("/languages/", "Languages", "The 50 language families dctx indexes, by tier: full, outline and docs.",
               "page", "cli", og="languages", llms="CLI"),

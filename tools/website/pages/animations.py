@@ -48,7 +48,7 @@ def two_scopes() -> str:
          "A project vendors its own <code>dctx</code> inside <code>node_modules</code> or a virtualenv, pinned by its lockfile "
          "and upgraded only when the project bumps it. The Node wrapper is on npm as @tejl/dctx from 1.3.1; the pip package is built in CI, with registry publication pending.",
          "Both are the same engine at different versions.",
-         "Interactive agents and MCP call the system binary; application code and CI call the project binary. "
+         "Interactive agents call the system binary; application code and CI call the project binary. "
          "A library never falls back to <code>PATH</code> silently.",
          "<code>dctx doctor</code> lists every <code>dctx</code> visible from the current folder with its version, build commit, "
          "scope and SHA-256. Verify prebuilt archives against <code>SHA256SUMS</code> and their cosign signatures."],
@@ -97,7 +97,7 @@ def giant_folder() -> str:
          "Two shards match the task: <code>repos/billing</code> and <code>repos/shared-ui</code>.",
          "Only those two get symbol indexes; the rest of the tree is never indexed or copied.",
          "A bounded page, inside the budget and in a stable order, comes out of the two shards.",
-         "What works today: start dctx on the sub-folder the task names (for example <code>dctx mcp ~/data/repos/billing</code>), "
+         "What works today: start dctx on the sub-folder the task names (for example <code>dctx map find invoice --place repos/billing</code>), "
          "with ignore rules for the rest."])
 
 
@@ -109,14 +109,14 @@ def safe_path() -> str:
     return _figure(
         "safe_path", "the safe path", "Measure before you change anything.",
         f"The safe path for a new user, with commands that exist in dctx {VERSION}. Receipts are planned.",
-        "If you are new, follow the safe path: one project, the system binary, the lean MCP profile. "
+        "If you are new, follow the safe path: one project, the system binary, direct CLI commands. "
         "Measure before you change anything. Step by step:",
         ["A new user with one agent and one repository.",
          'Install the system binary: download the archive for your platform from GitHub Releases, check it with '
          '<code>sha256sum -c SHA256SUMS --ignore-missing</code>, then run <code>dctx --version</code>.',
          "Pick one project, not your home folder or a huge tree. The system binary serves it; nothing is installed per project.",
-         "Connect the lean MCP profile: <code>dctx mcp --profile lean /abs/path/to/app</code> exposes two tools, find and read, "
-         "with compact descriptions, so fewer tool definitions ride along in every turn.",
+         "Run <code>dctx map find NAME</code> from the project root, then read a result with <code>dctx read ID</code>, "
+         "using the shell or an agent's shell tool.",
          f"Make the first call, for example <code>dctx pack . --for &#x27;{e(query)}&#x27; --budget {budget}</code>, and read its last "
          f"line: <code>{e(end)}</code> on the sample project.",
          "Measure: per task, count the calls, the start-up tokens and the total input, and compare with grep and file reads "

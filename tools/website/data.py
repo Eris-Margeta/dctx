@@ -157,16 +157,6 @@ def env_vars() -> list[tuple[str, str, str]]:
     return out
 
 
-def mcp_tools() -> list[dict]:
-    out = rec("mcp")["stdout"].split("\n")
-    for line in out:
-        if line.strip():
-            msg = json.loads(line)
-            if msg.get("id") == 2:
-                return msg["result"]["tools"]
-    raise SystemExit("data.py: no tools/list answer in the mcp capture")
-
-
 def readme_tiers() -> str:
     """The prose of README 'Language tiers' before the generated table."""
     body = section(read("README.md"), "Language tiers")

@@ -12,7 +12,7 @@ mod common;
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::PathBuf;
-use std::process::{Command, Output, Stdio};
+use std::process::{Command, Output};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 static NEXT: AtomicU64 = AtomicU64::new(1);
@@ -430,29 +430,4 @@ fn an_empty_tight_cache_refuses_without_suggesting_useless_gc() {
             .admitted(),
         0
     );
-
-    let mut child = repo
-        .command(&["mcp"], &[])
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .expect("MCP");
-    child.stdin.take().expect("stdin").write_all(
-        b"{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}\n\
-        {\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}\n\
-        {\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"find\",\"arguments\":{\"query\":\"kept\"}}}\n"
-    ).expect("request");
-    let output = child.wait_with_output().expect("MCP output");
-    assert!(
-        output.status.success(),
-        "{}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    let text = String::from_utf8(output.stdout).expect("JSON");
-    assert!(text.contains("\"isError\":true"), "{text}");
-    assert!(text.contains("cache capacity"), "{text}");
-    assert!(text.contains("\\nhint: "), "{text}");
-    assert!(text.contains("--place <a smaller directory>"), "{text}");
-    assert!(!text.contains("cache gc"), "{text}");
 }

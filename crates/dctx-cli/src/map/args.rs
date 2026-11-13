@@ -133,7 +133,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
     while index < args.len() {
         let flag = &args[index];
         index += 1;
-        // After `--` every word is the target, even when it starts with '-' (MCP always sends one).
+        // After `--` every word is the target, even when it starts with '-'.
         if !literal && flag == "--" {
             literal = true;
             continue;

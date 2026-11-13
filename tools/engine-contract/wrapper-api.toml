@@ -6,15 +6,6 @@
 version = 1
 
 [[surface]]
-name = "MCP transport"
-paths = ["crates/dctx-cli/src/mcp"]
-required = true
-rust_api = [
-  "crate::exit::Failure", "crate::exit::USAGE", "crate::map::execute", "crate::mcp",
-  "crate::context_cmd::Runtime", "crate::pack_for::output",
-]
-
-[[surface]]
 name = "RPC transport"
 paths = ["crates/dctx-cli/src/rpc"]
 required = true
@@ -28,7 +19,7 @@ rust_api = [
 
 [[surface]]
 name = "Language and standalone transport packages (including future packages)"
-paths = ["bindings", "packaging/npm", "crates/dctx-mcp*", "crates/dctx-rpc*"]
+paths = ["bindings", "packaging/npm", "crates/dctx-rpc*"]
 required = false
 # Packages must spawn the binary and use RPC, not link the Rust engine.
 rust_api = []

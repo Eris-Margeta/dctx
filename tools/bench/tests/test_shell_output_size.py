@@ -37,20 +37,14 @@ class ShellOutputSizeTests(unittest.TestCase):
                 self.assertTrue(file.endswith((".rs", ".py")))
                 self.assertEqual(node, f"s:{file}#{term}")
 
-    def test_both_modes_run_all_commands_and_terms_with_exact_mcp_overrides(self):
-        overrides = {
-            "map": ["--limit", "20"], "hubs": ["--limit", "10"],
-            "trace": ["--max-paths", "5", "--max-bytes", "8192"],
-            "impact": ["--max-sites", "50", "--max-bytes", "8192"],
-            "pack": ["--budget", "2000"],
-        }
+    def test_cli_defaults_run_all_commands_and_terms(self):
         completed = subprocess.CompletedProcess([], 0, stdout=b"answer\n", stderr=b"")
         with tempfile.TemporaryDirectory() as tmp, patch.object(
             sizes.subprocess, "run", return_value=completed
         ) as run, patch.dict(sizes.os.environ, {"DCTX_MAX_RECORDS": "1"}):
             report = sizes.measure(Path("dctx"), Path(tmp))
-            self.assertEqual(run.call_count, 260)
-            self.assertEqual(len(report["samples"]), 260)
+            self.assertEqual(run.call_count, 130)
+            self.assertEqual(len(report["samples"]), 130)
             self.assertEqual({row["command"] for row in report["samples"]}, {
                 "map", "find", "neighbors", "explain", "read", "hubs", "grep",
                 "skeleton", "path", "trace", "impact", "export", "pack",
@@ -62,19 +56,11 @@ class ShellOutputSizeTests(unittest.TestCase):
                 self.assertNotIn("DCTX_MAX_RECORDS", call.kwargs["env"])
                 self.assertEqual(call.kwargs["cwd"], Path(tmp) / "fixture")
                 self.assertEqual(call.kwargs["env"]["DCTX_CACHE_DIR"], str(Path(tmp) / "cache"))
-            for command in report["commands"]:
-                for term in sizes.TERMS:
-                    default, bounded = [row["arguments"] for row in report["samples"]
-                                        if row["command"] == command and row["term"] == term]
-                    offset = 1 if command == "pack" else 2
-                    self.assertEqual(bounded, default[:offset] + overrides.get(command, [])
-                                     + default[offset:])
-
     def test_json_shape_and_byte_threshold_include_unicode_and_final_line(self):
         # 30,000 bytes is not over the threshold; 30,001 bytes is. Multibyte
         # text must be counted as bytes, and an unterminated last line counts.
         payloads = [b"x" * 30_000, b"x" * 30_001, "é\nlast".encode()]
-        counter = iter(range(260))
+        counter = iter(range(130))
 
         def query(*args, **kwargs):
             return subprocess.CompletedProcess([], 0, stdout=payloads[next(counter) % 3], stderr=b"")
@@ -89,10 +75,10 @@ class ShellOutputSizeTests(unittest.TestCase):
         })
         self.assertEqual(report["schema"], 1)
         self.assertEqual(report["threshold_bytes"], 30_000)
-        self.assertEqual(report["calls"], 260)
-        self.assertEqual(report["modes"], ["cli_defaults", "mcp_defaults"])
+        self.assertEqual(report["calls"], 130)
+        self.assertEqual(report["modes"], ["cli_defaults"])
         self.assertEqual(len(report["terms"]), 10)
-        self.assertEqual(len(report["summary"]), 26)
+        self.assertEqual(len(report["summary"]), 13)
         self.assertEqual([r["stdout_bytes"] for r in report["samples"][:3]], [30000, 30001, 7])
         self.assertEqual([r["stdout_lines"] for r in report["samples"][:3]], [1, 1, 2])
         self.assertEqual([r["over_30000"] for r in report["samples"][:3]], [False, True, False])
@@ -127,9 +113,9 @@ class ShellOutputSizeTests(unittest.TestCase):
                                            "--output", str(output)]):
                 sizes.main()
             report = json.loads(output.read_text())
-            self.assertEqual(report["calls"], 260)
+            self.assertEqual(report["calls"], 130)
             self.assertEqual(stdout.getvalue(), sizes.table(report) + "\n")
-            self.assertEqual(len(stdout.getvalue().splitlines()), 28)
+            self.assertEqual(len(stdout.getvalue().splitlines()), 15)
             self.assertEqual(list(output.parent.iterdir()), [output])
             self.assertNotIn(str(root), output.read_text())
 

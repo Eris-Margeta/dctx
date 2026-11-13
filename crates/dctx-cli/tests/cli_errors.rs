@@ -343,7 +343,6 @@ fn every_subcommand_help_has_an_example() {
     let mut pages = vec![
         vec!["map", "--help"],
         vec!["pack", "--help"],
-        vec!["mcp", "--help"],
         vec!["languages", "--help"],
     ];
     for verb in [

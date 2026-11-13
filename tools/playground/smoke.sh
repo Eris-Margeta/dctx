@@ -2,7 +2,7 @@
 # End-to-end smoke test of a running playground (local binary or container) with the real dctx.
 #   tools/playground/smoke.sh http://127.0.0.1:8080
 # Needs curl and python3. Checks: health, samples, the recorded `map find greet` bytes, pasted
-# files, MCP tools/list (10 tools), the no-JS form, 25 refusals (400), oversize (413), the rate
+# files, the no-JS form, 24 refusals (400), oversize (413), the rate
 # limit (429), and that `.env` never reaches an answer.
 set -eu
 base=${1:-http://127.0.0.1:8080}
@@ -64,10 +64,6 @@ fi
 files=$(curl -sf -H 'Content-Type: application/json' -H 'X-Forwarded-For: 198.51.100.20' --data-binary '{"cmd":["map","skeleton","src/a.rs"],"files":[{"path":"src/a.rs","content":"pub fn alpha() {}\nfn beta() { alpha() }\n"}]}' "$base/api/v1/run")
 case "$files" in *'s:src/a.rs#alpha'*'"exit":0'*) ok "pasted files: skeleton" ;; *) bad "pasted files: $files" ;; esac
 
-mcp=$(curl -sf -H 'Content-Type: application/json' -H 'X-Forwarded-For: 198.51.100.21' --data-binary '{"requests":[{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"1"}}},{"jsonrpc":"2.0","id":2,"method":"tools/list"}]}' "$base/api/v1/mcp")
-n=$(printf '%s' "$mcp" | python3 -c 'import json,sys; r=json.load(sys.stdin)["responses"]; print(len(next(m for m in r if m.get("id")==2)["result"]["tools"]))')
-[ "$n" = 10 ] && ok "mcp tools/list: 10 tools" || bad "mcp tools/list: $n"
-
 form=$(curl -s -H 'X-Forwarded-For: 198.51.100.22' --data-urlencode 'cmd=map find greet' --data 'source=sample&sample=kiosk' "$base/api/v1/run-form")
 case "$form" in *'<h1>dctx map find greet</h1>'*'s:src/util.rs#greet'*) ok "form fallback (no JavaScript)" ;; *) bad "form: $form" ;; esac
 
@@ -76,7 +72,7 @@ case "$grep_env" in *example-not-a-secret*) bad ".env content reached an answer"
 
 refused=0
 for cmd in '["cache","status"]' '["cache","purge","--all","--yes"]' '["template","build","x"]' '["plugin","list"]' '["git","status"]' \
-  '["."]' '[".","-d","-c"]' '["mcp","."]' '["pack","/etc"]' '["pack",".","--output","o.txt"]' '["pack",".","--clipboard"]' \
+  '["."]' '[".","-d","-c"]' '["pack","/etc"]' '["pack",".","--output","o.txt"]' '["pack",".","--clipboard"]' \
   '["map","find","greet","--place","/"]' '["map","read","/etc/passwd"]' '["map","read","m:../x"]' '["map","read","s:../../x"]' \
   '["map","neighbors","s:a","--depth","9"]' '["map","map","a","--depth","4"]' '["map","find","x","--limit","41"]' \
   '["map","export","--output","g.mmd"]' '["map","read","s:a","--rev","HEAD"]' '["map","skeleton","a.rs","--profile"]' \

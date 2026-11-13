@@ -63,23 +63,6 @@ def rpc(context, case):
     return reply["result"]["output"].encode("utf-8")
 
 
-def mcp(context, case):
-    replies = context.run(["mcp"], [
-        {"jsonrpc": "2.0", "id": "hello", "method": "initialize", "params": {}},
-        {"jsonrpc": "2.0", "method": "notifications/initialized"},
-        {"jsonrpc": "2.0", "id": case["name"], "method": "tools/call", "params": case["mcp"]},
-    ]).splitlines()
-    if len(replies) != 2:
-        raise AssertionError(f"MCP: expected two replies, got {len(replies)}")
-    hello, reply = map(json.loads, replies)
-    if "error" in hello or reply["id"] != case["name"] or reply.get("result", {}).get("isError"):
-        raise AssertionError(f"MCP envelope mismatch: {hello}, {reply}")
-    content = reply["result"]["content"]
-    if len(content) != 1 or content[0]["type"] != "text":
-        raise AssertionError(f"MCP expected one engine text payload: {content}")
-    return content[0]["text"].encode("utf-8")
-
-
 def load_adapter(spec):
     name, filename = spec.split("=", 1)
     module_spec = importlib.util.spec_from_file_location(f"parity_adapter_{name}", filename)
@@ -108,7 +91,7 @@ def main():
     parser.add_argument("binary", type=Path)
     parser.add_argument("--adapter", action="append", default=[], metavar="NAME=FILE.py")
     args = parser.parse_args()
-    surfaces = {"cli": cli, "rpc": rpc, "mcp": mcp}
+    surfaces = {"cli": cli, "rpc": rpc}
     for spec in args.adapter:
         name, adapter = load_adapter(spec)
         if name in surfaces:

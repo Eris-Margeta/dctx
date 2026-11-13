@@ -37,14 +37,6 @@ LLMS_OUT = HERE / "data" / "llms.json"
 SENTINEL = "example-not-a-secret"  # the value of the sample's .env; it must never reach an output
 VERBS = ["map", "find", "neighbors", "explain", "read", "skeleton", "grep", "hubs", "path", "export"]
 GREET = "s:src/util.rs#greet"
-MCP_IN = [
-    {"jsonrpc": "2.0", "id": 1, "method": "initialize",
-     "params": {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "dctx-website", "version": "1"}}},
-    {"jsonrpc": "2.0", "method": "notifications/initialized"},
-    {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
-    {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "find", "arguments": {"query": "greet"}}},
-]
-
 # (id, group, argv after `dctx`, note). Order is the order of the examples page.
 COMMANDS: list[tuple[str, str, list[str], str]] = [
     ("version", "pack", ["--version"], ""),
@@ -68,7 +60,6 @@ COMMANDS: list[tuple[str, str, list[str], str]] = [
     ("find-json-meta", "json", ["map", "find", "greet", "--json", "--meta"], "With --meta the answer also carries the snapshot digest, the generation and the index age. The age changes every second, which is why the default leaves these fields out; its digits are replaced with … here."),
     ("export-mermaid", "graph", ["map", "export", "--format", "mermaid"], "Paste into any Mermaid renderer."),
     ("export-json", "graph", ["map", "export", "--format", "json"], ""),
-    ("mcp", "mcp", ["mcp", "."], "Four JSON-RPC lines on stdin: initialize, notifications/initialized, tools/list and a tools/call of find."),
     ("error-gone", "errors", ["map", "read", "m:nope.rs"], "An id that is not in the index: the `gone` page on stdout, exit 1, two lines on stderr."),
     ("error-env", "errors", ["map", "read", "m:.env"], "A sensitive file is not in the index at all."),
     ("error-usage", "errors", ["map", "find", ""], "An empty query is a usage error, exit 2."),
@@ -123,7 +114,7 @@ def capture(binary: str, version: str) -> dict:
         records = []
         for rid, group, argv, note in COMMANDS:
             cwd = templates if group == "templates" else place
-            stdin = "".join(json.dumps(m, separators=(",", ":")) + "\n" for m in MCP_IN) if rid == "mcp" else None
+            stdin = None
             out, err, code = run(binary, argv, cwd, env, stdin)
             if rid in SCRUBS:
                 pattern, repl = SCRUBS[rid]
@@ -164,8 +155,6 @@ def capture(binary: str, version: str) -> dict:
             else:
                 status = "ignored"
             files.append({"path": path, "bytes": (SAMPLE / path).stat().st_size, "status": status})
-        mcp_lines = [json.loads(line) for line in by_id["mcp"]["stdout"].splitlines() if line.strip()]
-        tools = next(m["result"]["tools"] for m in mcp_lines if m.get("id") == 2)
         footer = re.search(r"^# end body_tokens=(\d+) budget=(\d+) dropped=(\d+)$", by_id["pack-for"]["stdout"], re.M)
         # `dctx pack` prints the page on stdout and its status line on stderr.
         pack_line = re.search(r"pack bytes=(\d+) files=(\d+)", by_id["pack"]["stderr"])
@@ -181,7 +170,6 @@ def capture(binary: str, version: str) -> dict:
                 "files_read": len(listed) - len(omitted),
                 "pack_bytes": int(pack_line.group(1)), "pack_files": int(pack_line.group(2)),
                 "for_body_tokens": int(footer.group(1)), "for_budget": int(footer.group(2)), "for_dropped": int(footer.group(3)),
-                "mcp_tools": [t["name"] for t in tools],
             },
             "records": records,
         }

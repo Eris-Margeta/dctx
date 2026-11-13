@@ -84,7 +84,7 @@
   var twoScopes = {
     t: 11.5,
     steps: [[0, 'one machine'], [.8, 'the system dctx on PATH belongs to you'], [2.2, 'a project vendors its own dctx, pinned by its lockfile'],
-            [4.2, 'same engine, different version'], [5.8, 'agents and MCP call the system binary; app code and CI call the project one'],
+            [4.2, 'same engine, different version'], [5.8, 'agents call the system binary; app code and CI call the project one'],
             [7.6, 'dctx doctor lists both']],
     draw: function (g, t, D) {
       var V = D.v || '1.3.0', P = D.pv || '1.2.0', a0 = sm(0, .6, t), p3 = sm(4.2, 5.2, t), p4 = sm(5.8, 6.8, t), p5 = sm(7.6, 8.2, t);
@@ -101,7 +101,7 @@
         g.tx('same engine · different version', 260, 178.5, 'signal', p3, 8.5, 500, 'center');
       }
       [64, 312].forEach(function (x) { g.arrow(x, 200, 'ink', p4); });
-      g.tx('called by agents and MCP', 139, 202, 'ink', p4, 9, 400, 'center');
+      g.tx('called by agents', 139, 202, 'ink', p4, 9, 400, 'center');
       g.tx('called by app code and CI', 391, 202, 'ink', p4, 9, 400, 'center');
       g.tx('never falls back to PATH', 386, 215, 'muted', p4, 8.5, 400, 'center');
       if (p5 > 0) {
@@ -291,15 +291,15 @@
   /* ---- 5. the safe path ---- */
   var safe = {
     t: 14,
-    labels: [['new', 'user'], ['install', 'system binary'], ['one', 'project'], ['lean MCP', 'profile'], ['first', 'call'], ['measure', '']],
-    steps: [[0, 'a new user'], [2.5, 'install the system binary'], [4.4, 'pick one project'], [6.3, 'connect the lean MCP profile'],
+    labels: [['new', 'user'], ['install', 'system binary'], ['one', 'project'], ['CLI', 'commands'], ['first', 'call'], ['measure', '']],
+    steps: [[0, 'a new user'], [2.5, 'install the system binary'], [4.4, 'pick one project'], [6.3, 'use CLI commands'],
             [8.2, 'make the first call and read its last line'], [10.1, 'measure'], [12, 'measure before you change anything']],
     lines: function (D) {
       return [
-        ['# you have: one agent, one repository, no plan yet', '# the safe path: one project, the system binary,', '# the lean MCP profile; measure before you change anything'],
+        ['# you have: one agent, one repository, no plan yet', '# the safe path: one project, the system binary,', '# direct CLI commands; measure before you change anything'],
         ["# download your platform's archive from GitHub Releases", '$ sha256sum -c SHA256SUMS --ignore-missing', '$ dctx --version', 'dctx ' + (D.v || '1.3.0')],
         ['$ cd ~/code/app', '# one project root, not your home folder or a 200 GB tree', '# the system binary serves it; nothing installed per project'],
-        ['$ dctx mcp --profile lean /abs/path/to/app', '# two tools, find and read, with compact descriptions:', '# fewer tool definitions in every turn'],
+        ['$ dctx map find NAME', '$ dctx read ID', '# run commands in a shell or an agent shell tool'],
         ["$ dctx pack . --for '" + (D.q || 'greet store') + "' --budget " + (D.b || '800'), '# ... the bounded page ...', '!' + (D.end || '# end body_tokens=223 budget=800 dropped=0'), '# that last line is your first measurement'],
         ['# per task, count: calls, start-up tokens, total input', '# run the same task with grep + reads and compare', '# receipts that count this for you are planned']
       ];

@@ -6,9 +6,8 @@ mod common;
 
 use std::{
     fs,
-    io::Write as _,
     path::Path,
-    process::{Command, Output, Stdio},
+    process::{Command, Output},
 };
 
 fn command(root: &Path, place: &Path) -> Command {
@@ -61,30 +60,6 @@ fn pack_accepts_a_file_target_in_the_smallest_fixture_crate() {
     assert!(page.contains("s:src/lib.rs#"), "{page}");
     assert!(page.contains("## read m:src/lib.rs\n"), "{page}");
     assert!(page.contains("#![forbid(unsafe_code)]"), "{page}");
-}
-
-#[test]
-fn serve_indexes_the_current_fixtures_folder_over_stdio() {
-    let state = tempfile::tempdir().expect("state");
-    let place = Path::new(env!("CARGO_MANIFEST_DIR")).join("../dctx-map-parse/tests/fixtures");
-    for args in [vec!["serve"], vec!["serve", "--mcp"], vec!["mcp"]] {
-        let mut child = command(state.path(), &place)
-            .args(&args)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .expect("server");
-        child.stdin.take().expect("stdin").write_all(
-            b"{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"find\",\"arguments\":{\"query\":\"Widget\"}}}\n"
-        ).expect("request");
-        let page = ok(child.wait_with_output().expect("server exit"));
-        assert!(
-            page.contains("s:rust/src/lib.rs#Widget"),
-            "{args:?}: {page}"
-        );
-        assert!(!page.contains("isError"), "{args:?}: {page}");
-    }
 }
 
 #[test]

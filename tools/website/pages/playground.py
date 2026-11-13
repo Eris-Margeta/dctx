@@ -26,12 +26,6 @@ from lib import twice
 def run():
     return twice(21)
 """
-MCP_DEFAULT = "\n".join(json.dumps(m, separators=(",", ":")) for m in [
-    {"jsonrpc": "2.0", "id": 1, "method": "tools/list"},
-    {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "find", "arguments": {"query": "greet"}}},
-])
-
-
 def samples_static() -> list[tuple[str, str]]:
     """The bundled samples, from the same file the playground image uses."""
     return [tuple(line.split("\t", 1)) for line in read("tools/playground/samples.tsv").splitlines() if line.strip()]
@@ -49,8 +43,7 @@ def playground() -> tuple[str, list]:
 <p class="lede">Run the real <code>dctx {VERSION}</code> on a bundled sample or on text files you paste. Each run gets a fresh directory and an empty environment, and is limited to 3 s, 2 s of CPU and 256 MiB; nothing is stored. Commands are checked against the CLI's own options and never reach a shell.</p></div>
 <div class="pg">
  <div>
-  <div class="tabs js-only" role="tablist" aria-label="Mode"><button type="button" role="tab" id="t-cmd" aria-controls="p-cmd" aria-selected="true">Command</button><button type="button" role="tab" id="t-mcp" aria-controls="p-mcp" aria-selected="false">MCP</button></div>
-  <div id="p-cmd" role="tabpanel" aria-labelledby="t-cmd">
+  <div id="p-cmd">
    <form id="pg-form" method="post" action="/api/v1/run-form">
     <div class="field"><label for="pg-cmd">Command (after <code>dctx</code>)</label><input type="text" id="pg-cmd" name="cmd" value="map find greet" autocomplete="off" spellcheck="false" required></div>
     <div class="quick js-only" aria-label="Examples">{quick}</div>
@@ -61,10 +54,6 @@ def playground() -> tuple[str, list]:
     <div class="field"><label for="pg-files">My files: each starts with a line <code>--- path ---</code>; text only, at most 48 files, 96 KiB each</label><textarea id="pg-files" name="files" spellcheck="false">{e(SAMPLE_FILES)}</textarea></div>
     <div class="actions"><button class="btn btn-primary" type="submit">Run</button><a class="btn" href="/api/v1/openapi.json">API (OpenAPI)</a></div>
    </form>
-  </div>
-  <div id="p-mcp" role="tabpanel" aria-labelledby="t-mcp" hidden>
-   <div class="field"><label for="mcp-in">JSON-RPC messages for <code>dctx mcp</code>, one per line (at most 4); the place is the sample or files chosen on the Command tab</label><textarea id="mcp-in" spellcheck="false">{e(MCP_DEFAULT)}</textarea></div>
-   <div class="actions"><button class="btn btn-primary" type="button" id="mcp-run">Send</button></div>
   </div>
   <p class="status" id="pg-status" role="status" aria-live="polite"><span class="no-js-only">Without JavaScript the form opens the result as a page.</span></p>
   <div class="notice" id="pg-offline" hidden><p>The playground service is not reachable. Everything else on this site works, and the runs below were recorded from dctx {VERSION} when the site was built.</p></div>

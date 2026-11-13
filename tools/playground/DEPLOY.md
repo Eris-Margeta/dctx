@@ -75,7 +75,7 @@ tools/website/.venv/bin/python -c 'import json;print(json.load(open("website/bui
 curl -sI https://www.dctx.internet.technology/assets/$(ls website/assets | grep '^site\.' ) | grep -i cache-control   # immutable
 curl -sI https://www.dctx.internet.technology/llms.txt | grep -i content-type   # text/plain; charset=utf-8
 curl -s https://www.dctx.internet.technology/api/v1/health         # {"ok":true,"dctx":"1.1.0",...}
-tools/playground/smoke.sh https://www.dctx.internet.technology     # 16 checks: recorded bytes, files, MCP, form, 400/413/429 (SMOKE_ALL=1 replays all 20 examples; local only)
+tools/playground/smoke.sh https://www.dctx.internet.technology     # 15 checks: recorded bytes, files, form, 400/413/429 (SMOKE_ALL=1 replays all 20 examples; local only)
 ssh "$DEPLOY" "docker stats --no-stream | grep dctx-play; docker image ls | grep dctx-play"   # memory under 192 MiB; image size
 ```
 

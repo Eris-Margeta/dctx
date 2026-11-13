@@ -11,7 +11,6 @@ use std::time::{Duration, Instant};
 
 const FAKE_DCTX: &str = r#"#!/bin/sh
 if [ "$1" = "--version" ]; then echo "dctx 1.1.0 (abc1234)"; exit 0; fi
-if [ "$1" = "mcp" ]; then while IFS= read -r line; do printf '%s\n' "$line"; done; exit 0; fi
 if [ "$1" = "map" ] && [ "$2" = "find" ] && [ "$3" = "slow" ]; then exec /bin/sleep 10; fi
 if [ "$1" = "map" ] && [ "$2" = "find" ] && [ "$3" = "pause" ]; then /bin/sleep 1; fi
 printf 'place=%s\n' "$(/usr/bin/basename "$PWD")"
@@ -293,29 +292,6 @@ fn a_slow_run_is_killed_at_the_wall_clock_limit() {
     assert!(started.elapsed() < Duration::from_secs(5));
     let (_, _, metrics) = get(&s.addr, "/api/v1/metrics.json");
     assert!(metrics.contains(r#""timeouts_total":1"#), "{metrics}");
-}
-
-#[test]
-fn mcp_feeds_requests_on_stdin_and_returns_responses() {
-    let s = start(&[]);
-    let body = r#"{"requests":[{"jsonrpc":"2.0","id":1,"method":"tools/list"},{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"find","arguments":{"query":"greet"}}}]}"#;
-    let (status, _, reply) = post(&s.addr, "/api/v1/mcp", "application/json", body);
-    assert_eq!(status, 200, "{reply}");
-    assert!(reply.starts_with(r#"{"responses":[{"jsonrpc":"2.0","id":1,"method":"tools/list"},"#), "{reply}");
-}
-
-#[test]
-fn mcp_refuses_unknown_methods_tools_and_too_many_requests() {
-    let s = start(&["--burst", "100", "--rate", "6000"]);
-    for body in [
-        r#"{"requests":[]}"#,
-        r#"{"requests":[{"jsonrpc":"2.0","id":1,"method":"shutdown"}]}"#,
-        r#"{"requests":[{"jsonrpc":"1.0","id":1,"method":"tools/list"}]}"#,
-        r#"{"requests":[{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"rm"}}]}"#,
-        r#"{"requests":[1,2,3,4,5]}"#,
-    ] {
-        assert_eq!(post(&s.addr, "/api/v1/mcp", "application/json", body).0, 400, "{body}");
-    }
 }
 
 #[test]

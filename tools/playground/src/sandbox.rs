@@ -199,7 +199,7 @@ pub fn run(dctx: &Path, work: &Path, source: Source<'_>, argv: &[String], stdin:
     let started = Instant::now();
     let mut child = command.spawn()?;
     if let (Some(text), Some(mut pipe)) = (stdin, child.stdin.take()) {
-        // Small (≤ 4 MCP requests); a closed pipe just means the child exited early.
+        // A closed pipe means the child exited early.
         let _ = pipe.write_all(text.as_bytes());
     }
     let mut killed = None;

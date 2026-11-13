@@ -9,7 +9,7 @@ import highlight
 from common import BLOB, ORIGIN, VERSION, demo, e, fmt, read, rec, src
 from components import command, pretty, term, transcript
 
-GROUPS = [("pack", "Pack"), ("map", "Map, text"), ("json", "Map, JSON"), ("graph", "Graph export"), ("mcp", "MCP"),
+GROUPS = [("pack", "Pack"), ("map", "Map, text"), ("json", "Map, JSON"), ("graph", "Graph export"),
           ("errors", "Errors and exit codes")]
 TEMPLATE_DIR = "crates/dctx-template/templates"
 
@@ -22,7 +22,7 @@ def badges(r: dict) -> str:
 
 def block(r: dict) -> str:
     note = f'<p class="note">{re_code(r["note"])}</p>' if r.get("note") else ""
-    is_json = r["group"] in ("json", "mcp") or r["id"] == "export-json"
+    is_json = r["group"] == "json" or r["id"] == "export-json"
     if is_json and "scrubbed" not in r:
         shown = term(transcript(r, stdout=pretty(r["stdout"]), note="# pretty-printed; the raw bytes are below"), "kiosk")
         raw = f'<details class="raw"><summary><svg class="disclosure" width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true" focusable="false"><path d="m2 1 6 4-6 4z"/></svg>Raw output ({fmt(r["bytes"])} bytes, as captured)</summary><pre>{highlight.highlight(r["stdout"].rstrip(chr(10)), "json")}</pre></details>'

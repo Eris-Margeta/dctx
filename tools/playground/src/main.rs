@@ -9,7 +9,6 @@ mod form;
 mod grammar;
 mod http;
 #[allow(dead_code)]
-#[path = "../../../crates/dctx-cli/src/mcp/json.rs"]
 mod json;
 mod limits;
 mod sandbox;
@@ -28,7 +27,6 @@ use json::Json;
 const OPENAPI: &str = include_str!("../openapi.json");
 const FORM_CSS: &str = include_str!("form.css");
 const MAX_RESPONSE: usize = 300 * 1024;
-const MCP_METHODS: [&str; 5] = ["initialize", "notifications/initialized", "tools/list", "tools/call", "ping"];
 const USAGE: &str = "Usage: dctx-play [--listen ADDR] [--samples DIR] [--dctx PATH] [--work DIR]
                  [--rate N] [--burst N] [--concurrency N] [--queue N] [--threads N]
                  [--timeout-ms N] [--nproc N]
@@ -270,12 +268,11 @@ impl App {
             }
             ("GET" | "HEAD", "/api/v1/metrics.json") => self.metrics_json(),
             ("POST", "/api/v1/run") => self.post(req, peer, "run"),
-            ("POST", "/api/v1/mcp") => self.post(req, peer, "mcp"),
             ("POST", "/api/v1/run-form") => self.post(req, peer, "form"),
             (_, "/api/v1/health" | "/api/v1/samples" | "/api/v1/openapi.json" | "/api/v1/metrics.json" | "/api/v1/form.css") => {
                 error(405, "use GET").with("Allow", "GET, HEAD")
             }
-            (_, "/api/v1/run" | "/api/v1/mcp" | "/api/v1/run-form") => error(405, "use POST").with("Allow", "POST"),
+            (_, "/api/v1/run" | "/api/v1/run-form") => error(405, "use POST").with("Allow", "POST"),
             _ => error(404, "no such endpoint; see /api/v1/openapi.json"),
         }
     }
@@ -322,7 +319,6 @@ impl App {
         };
         let parsed = match kind {
             "run" => self.parse_run(body),
-            "mcp" => self.parse_mcp(body),
             _ => self.parse_form(body),
         };
         let (argv, place, stdin, title) = match parsed {
@@ -358,7 +354,6 @@ impl App {
         self.metrics.run(outcome.ms, outcome.killed == Some("timeout"));
         let response = match kind {
             "run" => run_response(outcome),
-            "mcp" => mcp_response(outcome),
             _ => form_response(&title, outcome),
         };
         self.cache.put(&key, response.clone(), Instant::now());
@@ -420,42 +415,6 @@ impl App {
         grammar::check(&argv)?;
         let place = self.place(value.get("sample"), value.get("files"))?;
         Ok((argv, place, None, String::new()))
-    }
-
-    #[allow(clippy::type_complexity)]
-    fn parse_mcp(&self, body: &str) -> Result<(Vec<String>, Place, Option<String>, String), String> {
-        let value = Self::parse_json(body, &["requests", "sample", "files"])?;
-        let Some(Json::Arr(requests)) = value.get("requests") else {
-            return Err("requests is a list of JSON-RPC messages".into());
-        };
-        if requests.is_empty() || requests.len() > 4 {
-            return Err("send 1 to 4 requests".into());
-        }
-        let mut stdin = String::new();
-        for request in requests {
-            if request.get("jsonrpc").and_then(Json::as_str) != Some("2.0") {
-                return Err("each request has \"jsonrpc\":\"2.0\"".into());
-            }
-            let method = request.get("method").and_then(Json::as_str).ok_or("each request has a method")?;
-            if !MCP_METHODS.contains(&method) {
-                return Err(format!("method {method:?} is not offered; use {}", MCP_METHODS.join(", ")));
-            }
-            if method == "tools/call" {
-                let params = request.get("params").ok_or("tools/call needs params")?;
-                let name = params.get("name").and_then(Json::as_str).ok_or("tools/call needs params.name")?;
-                if !grammar::VERBS.contains(&name) {
-                    return Err(format!("no tool {name:?}"));
-                }
-            }
-            let line = request.to_line();
-            if line.len() > 4096 {
-                return Err("a request is at most 4 KiB".into());
-            }
-            stdin.push_str(&line);
-            stdin.push('\n');
-        }
-        let place = self.place(value.get("sample"), value.get("files"))?;
-        Ok((vec!["mcp".into(), ".".into()], place, Some(stdin), String::new()))
     }
 
     #[allow(clippy::type_complexity)]
@@ -521,24 +480,6 @@ fn run_response(mut outcome: sandbox::Outcome) -> Response {
         outcome.stdout.truncate(keep);
         outcome.truncated = true;
     }
-}
-
-fn mcp_response(outcome: sandbox::Outcome) -> Response {
-    let responses: Vec<Json> =
-        outcome.stdout.lines().filter(|l| !l.trim().is_empty()).map(|l| json::parse(l).unwrap_or_else(|_| Json::str(l))).collect();
-    let body = Json::obj(vec![
-        ("responses", Json::Arr(responses)),
-        ("stderr", Json::str(&outcome.stderr)),
-        ("exit", exit_json(&outcome)),
-        ("killed", outcome.killed.map_or(Json::Null, Json::str)),
-        ("truncated", Json::Bool(outcome.truncated)),
-        ("ms", num(outcome.ms)),
-    ])
-    .to_line();
-    if body.len() > MAX_RESPONSE {
-        return error(500, "the MCP answer is larger than the response limit");
-    }
-    Response::json(200, body)
 }
 
 fn form_response(title: &str, outcome: sandbox::Outcome) -> Response {

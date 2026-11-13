@@ -4,10 +4,10 @@
  "version": "1.3.1",
  "released": "2026-11-09",
  "release_tag": "v1.3.1",
- "is": "dctx is an open-source (Apache-2.0) Rust context engine for AI-assisted coding: one local binary that packs a project into one structured block, or answers bounded, byte-stable symbol queries (find, read, neighbors, skeleton) as CLI output or MCP tools.",
+ "is": "dctx is an open-source (Apache-2.0) Rust context engine for AI-assisted coding: one local binary that packs a project into one structured block, or answers bounded, byte-stable symbol queries (find, read, neighbors, skeleton) as CLI output.",
  "is_not": [
   "No RAG: no embeddings, no vector search, and the engine never calls a model.",
-  "No network: pack, map, cache and mcp make no network calls; the release check counts socket calls under strace and fails on any.",
+  "No network: pack, map and cache make no network calls; the release check counts socket calls under strace and fails on any.",
   "No telemetry, not even opt-out.",
   "No agent loop: dctx answers one command at a time; the agent or the human decides what to ask next."
  ],
@@ -23,12 +23,6 @@
    "status": "available",
    "line": "`dctx pack PATH` for one structured block (clipboard, file or stdout); `dctx map find|read|neighbors|skeleton|...` for bounded symbol answers.",
    "link": "/cli/"
-  },
-  {
-   "name": "MCP server",
-   "status": "available",
-   "line": "`dctx mcp PATH` over stdio for Claude Code, Cursor and Codex; `--profile lean` exposes only find and read.",
-   "link": "/docs/modalities/#mcp-server-convenient-tools-with-startup-context"
   },
   {
    "name": "Task context",
@@ -62,17 +56,17 @@
   }
  ],
  "scopes": [
-  "System binary: the `dctx` on PATH belongs to you and your agents, and you upgrade it. Interactive agents and MCP call this one.",
+  "System binary: the `dctx` on PATH belongs to you and your agents, and you upgrade it. Interactive agents call this one.",
   "Project binary (Node from npm; Python and Go from CI): a binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Application code and CI call this one; a library never silently falls back to PATH.",
   "Same engine, different owner. `dctx doctor` lists every binary in reach; verify each against SHA256SUMS and its cosign signature."
  ],
- "notice": "dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.",
+ "notice": "dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, direct CLI commands. Measure before you change anything.",
  "benchmarks": {
   "baseline": "grep plus reading files",
   "claims": [
    {
     "status": "measured",
-    "text": "11 November 2026: 20 questions, a private 13-crate Rust workspace, claude-sonnet-5-5, dctx 1.3.0, three repeats per arm. Median total tokens [min, max]: grep plus reads (A) 14,904,014 [14,604,149, 15,622,381]; warm dctx CLI (B) 14,157,974 [11,221,908, 15,613,375]; fresh-cache dctx MCP (C), startup/indexing measured, 15,922,125 [15,513,198, 16,700,029]. B versus A: -5.01 %. On this corpus and model dctx did not save 25 % tokens; the pre-registered rule was not met. Official strict citation recall medians [min, max], A/B/C: 10.10 % [10.10, 20.73] / 14.46 % [8.36, 22.65] / 13.41 % [12.02, 66.72]. Diagnostic file-level recall medians: 53.77 % / 71.70 % / 76.42 %; diagnostic, not a replacement metric. The claim is accuracy and bounded context, not token savings: B and C named more required files at about equal (B) or higher (C) token cost. C cost +6.8 % tokens and +30 % wall time. dctx on its own does not save tokens by default. Savings come from a harness or agent system reusing byte-identical, prefix-stable context across long sessions over a large body of work, with complete control over every byte. There is no measured, citable savings figure for such a system yet. One corpus, one model, no significance claim; corpus and raw answers private and cannot be published; dctx 1.3.0 is not current HEAD. Under ~200 files, use grep.",
+    "text": "11 November 2026: 20 questions, a private 13-crate Rust workspace, claude-sonnet-5-5, dctx 1.3.0, three repeats per arm. Median total tokens [min, max]: grep plus reads 14,904,014 [14,604,149, 15,622,381]; dctx CLI (warm index) 14,157,974 [11,221,908, 15,613,375]. CLI median tokens were -5.01 % versus grep. On this corpus and model dctx did not save 25 % tokens; the pre-registered rule was not met. Official strict citation recall medians [min, max]: grep 10.10 % [10.10, 20.73]; CLI 14.46 % [8.36, 22.65]. Diagnostic file-level recall medians: 53.77 % and 71.70 %, respectively; diagnostic, not a replacement metric. The claim is accuracy and bounded context, not token savings. dctx on its own does not save tokens by default. Savings depend on a harness or agent system reusing byte-identical, prefix-stable context across long sessions; there is no measured, citable savings figure for such a system yet. One corpus, one model, no significance claim; corpus and raw answers private and cannot be published; dctx 1.3.0 is not current HEAD. Under ~200 files, use grep.",
     "link": "/benchmarks/#grep-read"
    },
    {
@@ -162,7 +156,7 @@
    "link": "https://github.com/Eris-Margeta/dctx/tree/main/tools/website"
   }
  ],
- "notice_status": "Receipts are planned. The safe path uses the lean MCP profile, `dctx mcp --profile lean`.",
+ "notice_status": "Receipts are planned. The safe path uses CLI commands from a shell or an agent's shell tool.",
  "safe_path": [
   [
    "One project",
@@ -173,8 +167,8 @@
    "Install the release archive from GitHub Releases and verify it against SHA256SUMS."
   ],
   [
-   "The lean MCP profile",
-   "`dctx mcp --profile lean` exposes two tools, find and read, with compact descriptions."
+   "Direct CLI commands",
+   "Run `dctx map find NAME`, then `dctx read ID`, from the project root."
   ],
   [
    "Measure",
@@ -201,10 +195,10 @@
    "link": "/docs/map-mode/"
   },
   {
-   "name": "MCP and ACP",
-   "line": "`dctx mcp` serves the map verbs to Claude Code, Cursor and Codex; the lean profile keeps startup small.",
-   "status": "MCP available (stdio); ACP planned",
-   "link": "/docs/modalities/#mcp-server-convenient-tools-with-startup-context"
+   "name": "ACP",
+   "line": "ACP is planned.",
+   "status": "planned",
+   "link": "/docs/modalities/"
   },
   {
    "name": "Libraries",
@@ -237,8 +231,8 @@
     "Pinning the version, exclusions in the project policy, not re-implementing engine logic"
    ],
    [
-    "MCP and ACP agent setup",
-    "Lean profile, tested client configs, measured start-up cost (MCP today; ACP planned)",
+    "ACP agent setup",
+    "ACP planned",
     "Turning off the host's own file tools, picking a profile, session ids and reading receipts (both planned)"
    ],
    [
@@ -279,24 +273,20 @@
   {
    "id": "many-projects",
    "name": "Many smaller projects",
-   "gets": "Set up once, then every project you open gives your agent the same two tools: find and read.",
+   "gets": "Install once, then run find and read from each project directory.",
    "who": "You move between many small and medium repositories during the day.",
-   "modality": "System binary, the lean MCP profile once in your agent, nothing per project.",
+   "modality": "System binary, called directly from a shell or an agent's shell tool.",
    "setup": [
     "Install the system binary once and put it on PATH.",
-    "Add one MCP entry to your agent: command `dctx`, arguments `mcp --profile lean`. With no path, the server serves the directory the client starts it in.",
-    "If your client does not start servers in the project directory, add the absolute project path as the last argument instead.",
+    "Run the dctx CLI directly from your agent's shell tool.",
+    "Start in the project directory, or use --place to name the project root.",
     "Nothing else per project: dctx reads `.gitignore` and `.dctxignore` where they already are."
    ],
-   "first_command": "dctx mcp --profile lean",
-   "expect": "This is the command your agent starts; in a terminal it waits for JSON-RPC on stdin (Ctrl-C stops it). Your agent sees two tools, `find` and `read`. `find` returns stable ids; `read` returns the verified source bytes of one id. The captured run below is the CLI equivalent on the sample project.",
+   "first_command": "dctx map find NAME",
+   "expect": "find returns stable ids; read returns the verified source bytes of one id. The captured run below shows find on the sample project.",
    "record": "find",
    "pitfall": "Stale caches of projects you deleted or no longer use. Auto-clean runs once a day and drops unpinned roots after 30 idle days; to clean by hand, run `dctx cache status`, then `dctx cache gc --dry-run` or `dctx cache purge --root PATH --dry-run`.",
    "links": [
-    [
-     "MCP client configuration",
-     "/docs/modalities/#client-configuration"
-    ],
     [
      "Choosing how to use dctx",
      "/docs/modalities/"
@@ -361,5 +351,5 @@
   "system": "Download the archive for your OS from GitHub Releases, verify it against SHA256SUMS, extract it and put `dctx` on PATH. Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.",
   "project": "Install the Node wrapper with `npm install @tejl/dctx`, then run `npx @tejl/dctx`. It pins the matching `@tejl/dctx-<platform>` optional dependency. Use CI artifacts for Python and Go, or embed the Rust facade from a tagged Git dependency."
  },
- "philosophy": "The binary is everything. One file holds the engine, the CLI and the MCP server; there is no service to run, no account and no model behind it. It works offline and makes zero network calls. The same tree and the same question give the same bytes, so answers can be compared, cached and trusted."
+ "philosophy": "The binary is everything. One file holds the engine and the CLI; there is no service to run, no account and no model behind it. It works offline and makes zero network calls. The same tree and the same question give the same bytes, so answers can be compared, cached and trusted."
 }
