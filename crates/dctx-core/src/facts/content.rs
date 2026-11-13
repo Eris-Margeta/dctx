@@ -12,6 +12,9 @@ use crate::file_classifier::{classify_file, FileContentHandling};
 
 /// Records `content` on a file node: sets its size and classifies it by extension and bytes.
 /// Directory nodes are left unchanged.
+/// Replaces prior content classification, so applying the same bytes twice is idempotent.
+/// Bytes may be invalid UTF-8. The caller must authorize reads and enforce byte
+/// limits before supplying content; this function does not perform source IO.
 pub fn apply_content(node: &mut DirContextTreeNode, content: &[u8]) {
     if node.node_type != NodeType::File {
         return;
@@ -37,10 +40,13 @@ pub fn apply_content(node: &mut DirContextTreeNode, content: &[u8]) {
 }
 
 /// Marks `node` and every descendant as ignored (shown, never read).
+/// Uses an explicit stack so caller-supplied depth cannot exhaust the call stack.
+/// This records visibility only; it does not erase previously retained bodies.
 pub fn mark_subtree_ignored(node: &mut DirContextTreeNode) {
-    node.is_ignored = true;
-    for child in &mut node.children {
-        mark_subtree_ignored(child);
+    let mut stack = vec![node];
+    while let Some(node) = stack.pop() {
+        node.is_ignored = true;
+        stack.extend(&mut node.children);
     }
 }
 

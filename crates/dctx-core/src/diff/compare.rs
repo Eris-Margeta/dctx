@@ -8,8 +8,11 @@
 use super::DiffReport;
 use crate::datatypes::DirContextTreeNode;
 
-/// Uspoređuje dva stabla i generira izvještaj.
-/// `old_root` može biti None (u slučaju prvog run-a, sve je Added).
+/// Compares snapshot trees without IO or recursion on the call stack.
+/// With no old root, every new node is added. New children are visited in stored
+/// order; unmatched old children are removed in path order. Duplicate child paths
+/// pair by occurrence in stored order, and every unmatched occurrence is reported.
+/// A kind replacement removes the entire old subtree and adds the entire new one.
 #[allow(
     clippy::must_use_candidate,
     reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
