@@ -1165,7 +1165,6 @@ fn diff_reordered_and_maximum_size_facts_are_repeatable() {
 }
 
 #[test]
-#[ignore = "BUG: diff reports an added item when identical trees contain duplicate paths"]
 fn diff_duplicate_items_do_not_invent_changes() {
     let mut root = tree(b"x");
     root.children.push(file("a.txt", b"x"));
@@ -1175,15 +1174,91 @@ fn diff_duplicate_items_do_not_invent_changes() {
             let report = diff_against(Some(&previous), &root, limit);
             assert!(!report.report.has_changes, "{report:?}");
             assert_eq!(report.version, Version::new_v1());
+            assert_eq!(report.report.stats.files_unchanged, 1);
+            assert_eq!(report.report.stats.total_files_in_new_state, 1);
         }
+    }
+
+    // Conflicting duplicates select the last entire subtree, without merging
+    // children from an earlier directory at the same path.
+    let mut discarded = node(NodeType::Directory, "nested");
+    discarded
+        .children
+        .push(file("nested/discarded.txt", b"old"));
+    let mut winner = node(NodeType::Directory, "nested");
+    winner.children.push(file("nested/kept.txt", b"old"));
+    winner.children.push(file("nested/kept.txt", b"newer"));
+    let mut unique_winner = winner.clone();
+    unique_winner.children.remove(0);
+    root.children = vec![
+        file("a.txt", b"old"),
+        discarded,
+        winner,
+        file("a.txt", b"new"),
+    ];
+    let previous = snapshot(root.clone(), Version::new_v1());
+    let mut unique = node(NodeType::Directory, "");
+    unique.children = vec![file("a.txt", b"new"), unique_winner];
+    let unique_previous = snapshot(unique.clone(), Version::new_v1());
+    for (old, new) in [
+        (&previous, &root),
+        (&previous, &unique),
+        (&unique_previous, &root),
+    ] {
+        let report = diff_against(Some(old), new, u32::MAX);
+        assert!(!report.report.has_changes, "{report:?}");
+        assert_eq!(report.report.stats.files_unchanged, 2);
+        assert_eq!(report.report.stats.total_files_in_new_state, 2);
+    }
+    // Changing the winning file still yields exactly one modification.
+    root.children.last_mut().unwrap().content_size += 1;
+    let changed = diff_against(Some(&previous), &root, u32::MAX);
+    assert_eq!(changed.report.entries.len(), 1);
+    assert_eq!(changed.report.stats.files_modified, 1);
+    assert_eq!(changed.version, Version { major: 1, minor: 1 });
+
+    let empty = node(NodeType::Directory, "");
+    for _ in 0..2 {
+        let removed = diff_against(Some(&previous), &empty, u32::MAX);
+        let paths: Vec<_> = removed
+            .report
+            .entries
+            .iter()
+            .map(|entry| entry.relative_path.as_str())
+            .collect();
+        assert_eq!(paths, ["a.txt", "nested", "nested/kept.txt"]);
+        assert_eq!(removed.report.stats.files_removed, 2);
     }
 }
 
 #[test]
-#[ignore = "BUG: repeated packing of duplicate source entries republishes and increments the version"]
 fn pack_duplicate_items_are_idempotent() {
     let source = FlatSource::new(&["a.txt", "a.txt"], b"x");
     pack_twice(&source, PackLimits::unbounded(), u64::MAX, u32::MAX);
+
+    let mut store = MemoryFactStore::new();
+    let mut cache = MemoryCache::new(u64::MAX);
+    let first = run_pack(
+        &source,
+        PackLimits::unbounded(),
+        &mut store,
+        &mut cache,
+        u32::MAX,
+    )
+    .unwrap();
+    assert_eq!(first.snapshot.tree().children.len(), 1);
+    let unique = FlatSource::new(&["a.txt"], b"x");
+    let second = run_pack(
+        &unique,
+        PackLimits::unbounded(),
+        &mut store,
+        &mut cache,
+        u32::MAX,
+    )
+    .unwrap();
+    assert!(!second.published);
+    assert_eq!(first.snapshot.digest(), second.snapshot.digest());
+    assert_eq!(store.publishes(), 1);
 }
 
 #[test]
@@ -1202,7 +1277,6 @@ fn decoder_rejects_unclaimed_leading_data() {
 }
 
 #[test]
-#[ignore = "BUG: packing at the exhausted major revision publishes an invalid version zero"]
 fn pack_refuses_exhausted_major_before_publication() {
     let source = source(b"new");
     let mut old = tree(b"old");
@@ -1218,16 +1292,34 @@ fn pack_refuses_exhausted_major_before_publication() {
     store
         .publish(&ViewKey::parse("hostile").unwrap(), &previous)
         .unwrap();
-    let mut cache = MemoryCache::new(u64::MAX);
+    // A zero-byte cache also proves the typed refusal happens before reservation.
+    let mut cache = MemoryCache::new(0);
+    let mut unchanged_source = MemorySource::new();
+    unchanged_source.insert_file("a.txt", b"old", 6).unwrap();
+    let unchanged = run_pack(
+        &unchanged_source,
+        PackLimits::unbounded(),
+        &mut store,
+        &mut cache,
+        u32::MAX,
+    )
+    .unwrap();
+    assert!(!unchanged.published);
+    assert_eq!(unchanged.snapshot.version(), previous.version());
     for _ in 0..2 {
-        assert!(run_pack(
-            &source,
-            PackLimits::unbounded(),
-            &mut store,
-            &mut cache,
-            u32::MAX
-        )
-        .is_err());
+        assert_eq!(
+            run_pack(
+                &source,
+                PackLimits::unbounded(),
+                &mut store,
+                &mut cache,
+                u32::MAX
+            )
+            .unwrap_err(),
+            DctxError::InvalidRequest {
+                reason: "snapshot version exhausted"
+            }
+        );
         assert_eq!(store.publishes(), 1);
         assert_eq!((cache.reserved(), cache.committed()), (0, 0));
         assert_eq!(

@@ -4,7 +4,7 @@
 //! commit point; cancellation or a refusal before it leaves the previous snapshot and cache unchanged.
 //! Depends on [`crate::snapshot`], [`crate::diff`], dctx-core and every dctx-ports trait. Used by hosts.
 
-use crate::diff::diff_against;
+use crate::diff::{deduplicate_tree, diff_against};
 use crate::snapshot::{scan, ScanOptions};
 use dctx_core::budget::PackLimits;
 use dctx_core::diff::DiffReport;
@@ -65,6 +65,7 @@ pub struct PackReport {
 ///
 /// # Errors
 /// Propagates source, cancellation, snapshot-validation, store and cache errors. Failed publication aborts its cache reservation.
+/// Refuses an exhausted version with `InvalidRequest` before reserving or publishing.
 #[allow(
     clippy::needless_pass_by_value,
     reason = "Keep the existing public pack signature; the port bundle is passed as the capability set for one operation."
@@ -75,9 +76,16 @@ pub fn pack(ports: PackPorts<'_>, request: &PackRequest<'_>) -> Result<PackRepor
         debug_ignored: request.debug_ignored,
         limits: request.limits,
     };
-    let scanned = scan(ports.source, ports.cancel, options)?;
+    let mut scanned = scan(ports.source, ports.cancel, options)?;
+    deduplicate_tree(&mut scanned.tree);
     let previous = ports.store.load(&request.view)?;
     let diff = diff_against(previous.as_ref(), &scanned.tree, request.max_diff_files);
+    // The tuple diff API represents version exhaustion with the zero-major sentinel.
+    if diff.version.major == 0 {
+        return Err(DctxError::InvalidRequest {
+            reason: "snapshot version exhausted",
+        });
+    }
     let snapshot = PackSnapshot::new(
         scanned.tree,
         diff.version,
