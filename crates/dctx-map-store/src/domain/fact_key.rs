@@ -12,6 +12,8 @@ use std::fmt;
 pub const GIT_IDENTITY: &str = "git identity is not a fact key";
 
 /// Parser and extraction contract bound into a [`FactKey`].
+/// Each text field is 1..=256 UTF-8 bytes, with no whitespace, controls,
+/// path separators, `|` delimiter or git-shaped identity.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExtractionContract {
     language: u16,

@@ -3,7 +3,7 @@
 //! Implements spec section 8 including FTS5 and owner indexes.
 //! Called only by the SQLite adapter at connection startup.
 use crate::domain::{Result, StoreError};
-use rusqlite::Connection;
+use rusqlite::{Connection, TransactionBehavior};
 
 pub(super) fn initialize(connection: &mut Connection) -> Result<()> {
     let version: i64 = connection.pragma_query_value(None, "user_version", |r| r.get(0))?;
@@ -13,7 +13,15 @@ pub(super) fn initialize(connection: &mut Connection) -> Result<()> {
     if version == 1 {
         return Ok(());
     }
-    let transaction = connection.transaction()?;
+    let transaction = connection.transaction_with_behavior(TransactionBehavior::Immediate)?;
+    // A concurrent opener may have initialized the database while we waited.
+    let version: i64 = transaction.pragma_query_value(None, "user_version", |r| r.get(0))?;
+    if version == 1 {
+        return Ok(());
+    }
+    if version != 0 {
+        return Err(StoreError::RebuildRequired(version));
+    }
     transaction.execute_batch(
         "CREATE TABLE meta(rev TEXT NOT NULL, schema INTEGER NOT NULL, built_at INTEGER NOT NULL);
          INSERT INTO meta VALUES('',1,0);

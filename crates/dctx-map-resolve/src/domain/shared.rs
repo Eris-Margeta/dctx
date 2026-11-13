@@ -50,12 +50,13 @@ pub struct SharedFact {
     pub key: FactKey,
     /// Local symbols. Admission sorts them.
     pub symbols: Vec<SharedSymbol>,
-    /// Local references. Admission sorts them.
+    /// Local references. Admission sorts them and removes exact duplicates.
     pub references: Vec<SharedReference>,
 }
 
 impl SharedFact {
     /// Sorts and checks a payload. Order of the inputs is not significant.
+    /// Exact duplicate references are harmless; duplicate local symbols are refused.
     ///
     /// # Errors
     /// Refuses invalid keys, duplicate or malformed symbols, missing reference sources, invalid scopes/bindings and layout-dependent identity targets.
@@ -74,6 +75,7 @@ impl SharedFact {
     }
 
     /// Canonicalizes order and rejects layout-dependent or ill-formed payloads.
+    /// Repeated successful checks leave identical symbols and references.
     ///
     /// # Errors
     /// Refuses invalid keys, duplicate or malformed symbols, missing reference sources, invalid scopes/bindings and layout-dependent identity targets.
@@ -81,6 +83,12 @@ impl SharedFact {
         self.key.check()?;
         self.symbols.sort();
         self.references.sort();
+        self.references.dedup();
+        self.validate()
+    }
+
+    pub(crate) fn validate(&self) -> Result<(), ResolveError> {
+        self.key.check()?;
         let mut locals = BTreeSet::new();
         let mut modules = 0;
         for symbol in &self.symbols {

@@ -9,6 +9,8 @@ use std::fmt;
 
 /// Parser and extraction contract bound into a [`FactKey`].
 /// A plugin label is not a field and cannot change the key.
+/// Text fields are nonempty tokens without whitespace, controls, paths or `|`.
+/// No fixed text-size ceiling is imposed by this pure resolver.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ExtractionContract {
     /// IDENTITY-v1 language tag. Zero is invalid. Rust is 1.
@@ -26,7 +28,7 @@ pub struct ExtractionContract {
 }
 
 impl ExtractionContract {
-    /// Rejects an empty contract, schema zero, and git-shaped tokens.
+    /// Rejects zero language/schema, empty tokens, paths, delimiters and git-shaped tokens.
     ///
     /// # Errors
     /// Refuses unsupported digest metadata or zero, empty, non-token or git-shaped extraction fields.
@@ -40,7 +42,7 @@ impl ExtractionContract {
             &self.parser_revision,
             &self.extraction_digest,
         ] {
-            if !identity_token(field) {
+            if !identity_token(field) || field.contains(['/', '\\']) {
                 return Err(ResolveError::InvalidScope(field.clone()));
             }
         }
@@ -142,6 +144,7 @@ impl fmt::Display for FactKey {
 
 pub(crate) fn identity_token(value: &str) -> bool {
     !value.is_empty()
+        && !value.contains('|')
         && !value.chars().any(|c| c.is_whitespace() || c.is_control())
         && !rejects_git_identity(value)
 }
@@ -152,13 +155,17 @@ pub(crate) fn rejects_git_identity(value: &str) -> bool {
     let hex_object = (bare.len() == 40 || bare.len() == 64)
         && bare.bytes().all(|byte| byte.is_ascii_hexdigit())
         && !value.starts_with("dctx:");
-    hex_object || value.split(['/', '\\']).any(|part| part == ".git") || value.contains(".git/")
+    value.starts_with("git:")
+        || hex_object
+        || value.split(['/', '\\']).any(|part| part == ".git")
+        || value.contains(".git/")
 }
 
 pub(crate) fn portable_path(path: &str) -> bool {
     !path.is_empty()
         && !path.starts_with('/')
         && !path.contains(['\\', ':', '~'])
+        && !path.chars().any(char::is_control)
         && path
             .split('/')
             .all(|part| !part.is_empty() && part != "." && part != ".." && part != ".git")

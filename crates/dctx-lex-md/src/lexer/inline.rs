@@ -86,6 +86,10 @@ pub(crate) fn scan(text: &str, max_brackets: usize) -> Vec<InlineRef> {
             }
             b']' => {
                 let opener = openers.pop();
+                #[allow(
+                    clippy::manual_option_zip,
+                    reason = "Option::zip eagerly parses destinations even when no active link opener exists."
+                )]
                 let link = opener
                     .filter(|o| o.active && bytes.get(i + 1) == Some(&b'('))
                     .and_then(|o| destination(text, i + 2).map(|d| (o, d)));

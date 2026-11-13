@@ -86,49 +86,65 @@ pub struct Resolution {
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum ResolveError {
     /// Each source file must occur once per snapshot.
-    #[error("duplicate facts for file {0}")]
+    #[error("duplicate facts for file {0}; next: supply each file once")]
     DuplicateFile(String),
     /// Stable identities must have one definition.
-    #[error("duplicate node {0}")]
+    #[error("duplicate node {0}; next: deduplicate definitions or assign distinct stable ids")]
     DuplicateNode(StableId),
     /// A node's model path, identity or category disagrees with its facts.
-    #[error("invalid node ownership or identity: {0}")]
+    #[error(
+        "invalid node ownership or identity: {0}; next: align the node kind, id and owning file"
+    )]
     InvalidNode(StableId),
     /// Reference sources must exist in the supplied snapshot.
-    #[error("unknown reference source: {0}")]
+    #[error("unknown reference source: {0}; next: include its definition in the snapshot")]
     UnknownSource(StableId),
     /// Non-containment references must come from their owning file.
-    #[error("reference source belongs to another file: {0}")]
+    #[error(
+        "reference source belongs to another file: {0}; next: move the reference to its source file"
+    )]
     ForeignSource(StableId),
     /// Definition names and scopes must be canonical package-relative names.
-    #[error("noncanonical name or scope: {0}")]
+    #[error(
+        "noncanonical name or scope: {0}; next: use a valid package-relative name or extraction token"
+    )]
     InvalidScope(String),
     /// Binding names belong only to imports/reexports and must be one segment.
-    #[error("invalid import binding: {0}")]
+    #[error(
+        "invalid import binding: {0}; next: use one local segment on a nonglob import or reexport"
+    )]
     InvalidBinding(String),
     /// Containment must be proven by the parser, never guessed by spelling.
-    #[error("containment requires an identity target")]
+    #[error("containment requires an identity target; next: supply the parser-proven target id")]
     UnprovenContainment,
     /// Two local symbols in one shared fact use the same name.
-    #[error("duplicate local symbol {0}")]
+    #[error("duplicate local symbol {0}; next: assign each local symbol a distinct name")]
     DuplicateSymbol(String),
     /// A retained fact key already stores a different payload.
-    #[error("fact key retains a different payload")]
+    #[error(
+        "fact key retains a different payload; next: correct the payload or use a new extraction contract"
+    )]
     ConflictingFact,
     /// The view placed a path whose fact key is not retained.
-    #[error("no retained fact for {0}")]
+    #[error("no retained fact for {0}; next: admit the fact before placing it")]
     MissingFact(String),
     /// The shared fact names a local symbol that is not in its payload.
-    #[error("shared fact is missing symbol {0}")]
+    #[error("shared fact is missing symbol {0}; next: include the referenced local symbol")]
     MissingSymbol(String),
     /// Root, namespace or revision is empty or has a git-shaped identity.
-    #[error("invalid view identity: {0}")]
+    #[error(
+        "invalid view identity: {0}; next: use a nonempty nongit token without paths or separators"
+    )]
     InvalidRoot(String),
     /// A placement path is not a portable relative path.
-    #[error("invalid placement path: {0}")]
+    #[error(
+        "invalid placement path: {0}; next: use a portable relative path and matching file/package snapshots"
+    )]
     InvalidPath(String),
     /// Shared references carry names only; resolved ids belong to a view.
-    #[error("shared reference carries a resolved identity")]
+    #[error(
+        "shared reference carries a resolved identity; next: retain a name spelling and resolve it in a view"
+    )]
     LayoutDependentTarget,
 }
 
