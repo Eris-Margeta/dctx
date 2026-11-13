@@ -136,6 +136,9 @@ impl MarkerNode {
 }
 
 /// Renders `root` with the v1 marker rules. `template.variables` must already hold `project` when the layout uses it.
+/// Children and duplicates retain caller order. Invalid UTF-8 bodies are decoded lossily,
+/// and substituted file bytes remain literal. This API allocates the complete output;
+/// prefer [`write_legacy_snapshot`] for large documents.
 #[allow(
     clippy::must_use_candidate,
     reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."

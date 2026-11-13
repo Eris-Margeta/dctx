@@ -52,7 +52,9 @@ impl FactStore for MemoryFactStore {
 
     fn publish(&mut self, view: &ViewKey, snapshot: &PackSnapshot) -> Result<(), DctxError> {
         if self.fail_publish {
-            return Err(DctxError::io("publish refused"));
+            return Err(DctxError::io(
+                "publish refused; use a store without fail_publishes injection",
+            ));
         }
         self.snapshots
             .insert(view.as_str().to_string(), snapshot.clone().into_manifest());
@@ -62,6 +64,8 @@ impl FactStore for MemoryFactStore {
 }
 
 /// A quota of `capacity` bytes with exact reservation accounting.
+/// Zero through `u64::MAX` are valid capacities. Failed admission leaves accounting unchanged;
+/// overcommitting an existing reservation leaves its bytes reserved until settlement or abort.
 #[derive(Debug)]
 pub struct MemoryCache {
     capacity: u64,
@@ -126,12 +130,13 @@ impl Cache for MemoryCache {
             self.outstanding
                 .remove(&reservation.id())
                 .ok_or(DctxError::InvalidRequest {
-                    reason: "unknown reservation",
+                    reason:
+                        "unknown reservation; reserve bytes before committing and settle only once",
                 })?;
         if used_bytes > reserved {
             self.outstanding.insert(reservation.id(), reserved);
             return Err(DctxError::InvalidRequest {
-                reason: "commit exceeds reservation",
+                reason: "commit exceeds reservation; reduce usage to the reserved bytes or abort",
             });
         }
         self.committed += used_bytes;
