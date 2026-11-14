@@ -31,6 +31,11 @@ struct Pending {
     macro_body: bool,
 }
 
+struct ImplHeader {
+    text: String,
+    span: SourceSpan,
+}
+
 struct Scan<'a> {
     sink: Sink,
     frames: Vec<Frame>,
@@ -41,6 +46,8 @@ struct Scan<'a> {
     test: bool,
     bang: bool,
     after_ident: bool,
+    attribute_depth: usize,
+    impl_header: Option<ImplHeader>,
 }
 
 /// Declarations and file-module imports recoverable line by line, with `refusal` as reason.
@@ -56,6 +63,8 @@ pub(crate) fn extract(source: &str, limits: &Limits, refusal: Refusal) -> Extrac
         test: false,
         bang: false,
         after_ident: false,
+        attribute_depth: 0,
+        impl_header: None,
     };
     let mut offset = 0;
     let lines = code.split_inclusive('\n').zip(source.split_inclusive('\n'));
@@ -77,6 +86,21 @@ pub(crate) fn extract(source: &str, limits: &Limits, refusal: Refusal) -> Extrac
 
 impl<'a> Scan<'a> {
     fn line(&mut self, offset: usize, number: u32, code: &str, raw: &'a str, docs: &[usize]) {
+        if let Some(mut header) = self.impl_header.take() {
+            header.text.push('\n');
+            header.text.push_str(code);
+            if let Some(brace) = code.find('{') {
+                header.span.end = offset + brace + 1;
+                header.span.lines[1] = number;
+                if let Some(head) = line_head::parse(&header.text) {
+                    self.record(head, header.span);
+                }
+                self.segments(offset + brace, number, &code[brace..], raw);
+            } else {
+                self.impl_header = Some(header);
+            }
+            return;
+        }
         let trimmed = code.trim_start();
         if trimmed.trim_end().is_empty() {
             let text = raw.trim();
@@ -88,38 +112,67 @@ impl<'a> Scan<'a> {
             }
             return;
         }
-        let rest = self.attributes(trimmed);
-        if !rest.trim_end().is_empty() {
-            if self.macro_bodies == 0
-                && let Some(head) = line_head::parse(rest)
-            {
-                let start = offset + (code.len() - rest.len());
+        self.segments(offset, number, code, raw);
+    }
+
+    /// Item boundaries can share a line; parentheses/brackets and macro bodies
+    /// do not introduce item positions. Process delimiters before the next head
+    /// so same-line children get their actual owner, including duplicate sites.
+    fn segments(&mut self, offset: usize, number: u32, code: &str, raw: &'a str) {
+        let end = offset + code.len() - (raw.len() - raw.trim_end().len());
+        let mut rest = code;
+        while !rest.is_empty() {
+            rest = self.attributes(rest.trim_start());
+            if rest.is_empty() {
+                break;
+            }
+            let start = offset + code.len() - rest.len();
+            if self.macro_bodies == 0 && self.delimiters.iter().all(|d| d.close == '}') {
                 let span = SourceSpan {
                     start,
-                    end: offset + raw.trim_end().len(),
+                    end,
                     lines: [number, number],
                 };
-                self.record(head, span);
+                if line_head::starts_impl(rest) && !rest.contains('{') {
+                    self.impl_header = Some(ImplHeader {
+                        text: rest.to_owned(),
+                        span,
+                    });
+                    return;
+                }
+                if let Some(head) = line_head::parse(rest) {
+                    self.record(head, span);
+                }
             }
             self.docs.clear();
             self.test = false;
+            let boundary = rest.find(['{', '}', ';']).map_or(rest.len(), |at| at + 1);
+            self.delimiters(&rest[..boundary]);
+            rest = &rest[boundary..];
         }
-        self.delimiters(code);
     }
 
     /// Strips leading `#[...]` / `#![...]` groups, noting test attributes.
     fn attributes<'l>(&mut self, mut rest: &'l str) -> &'l str {
-        while let Some(inner) = rest.strip_prefix("#[").or_else(|| rest.strip_prefix("#![")) {
-            let mut depth = 1_usize;
+        loop {
+            let inner = if self.attribute_depth > 0 {
+                rest
+            } else if let Some(inner) = rest.strip_prefix("#[").or_else(|| rest.strip_prefix("#!["))
+            {
+                self.attribute_depth = 1;
+                inner
+            } else {
+                return rest;
+            };
             let Some(end) = inner.char_indices().find_map(|(i, c)| {
                 match c {
-                    '[' => depth += 1,
-                    ']' => depth -= 1,
+                    '[' => self.attribute_depth += 1,
+                    ']' => self.attribute_depth -= 1,
                     _ => {}
                 }
-                (depth == 0).then_some(i)
+                (self.attribute_depth == 0).then_some(i)
             }) else {
-                return rest;
+                return "";
             };
             let path: String = inner[..end]
                 .split(['(', '=', ']'])
@@ -132,7 +185,6 @@ impl<'a> Scan<'a> {
             }
             rest = inner[end + 1..].trim_start();
         }
-        rest
     }
 
     fn record(&mut self, head: Head, span: SourceSpan) {

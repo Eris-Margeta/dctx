@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Reader",
+    "kind": "class",
+    "line": 1,
+    "parent": null
+  },
+  {
+    "name": "Reader::read",
+    "kind": "method",
+    "line": 2,
+    "parent": "Reader"
+  },
+  {
+    "name": "Reader::read::Chunk",
+    "kind": "class",
+    "line": 4,
+    "parent": "Reader::read"
+  },
+  {
+    "name": "Reader::read::Chunk::length",
+    "kind": "method",
+    "line": 4,
+    "parent": "Reader::read::Chunk"
+  }
+]

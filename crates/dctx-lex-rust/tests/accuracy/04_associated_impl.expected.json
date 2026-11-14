@@ -1,0 +1,8 @@
+[
+  {"name": "Bytes", "kind": "Struct", "line": 1, "parent": null},
+  {"name": "Bytes::impl<Iterator>", "kind": "Impl", "line": 2, "parent": null},
+  {"name": "Bytes::Item", "kind": "TypeAlias", "line": 3, "parent": "Bytes::impl<Iterator>"},
+  {"name": "Bytes::next", "kind": "Method", "line": 4, "parent": "Bytes::impl<Iterator>"},
+  {"name": "Bytes::impl", "kind": "Impl", "line": 6, "parent": null},
+  {"name": "Bytes::WIDTH", "kind": "Const", "line": 7, "parent": "Bytes::impl"}
+]

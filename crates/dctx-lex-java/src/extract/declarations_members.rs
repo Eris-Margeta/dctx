@@ -244,9 +244,18 @@ impl Walker<'_> {
         (close + 1).min(end)
     }
 
-    fn after_brackets(&self, mut index: usize, end: usize) -> usize {
-        while index < end && self.is_punct(index, "[") {
-            match self.close(index) {
+    pub(super) fn after_brackets(&self, mut index: usize, end: usize) -> usize {
+        while index < end {
+            // A dimension may carry type-use annotations, including after a
+            // method's parameter list: String names() @Axis [].
+            let mut bracket = index;
+            while bracket < end && self.is_annotation(bracket) {
+                bracket = self.skip_annotation_tokens(bracket, end);
+            }
+            if !self.is_punct(bracket, "[") {
+                break;
+            }
+            match self.close(bracket) {
                 Some(close) => index = close + 1,
                 None => break,
             }

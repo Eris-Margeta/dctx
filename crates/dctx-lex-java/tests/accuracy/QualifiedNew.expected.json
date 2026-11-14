@@ -1,0 +1,44 @@
+[
+  {
+    "name": "Container",
+    "kind": "class",
+    "line": 1,
+    "parent": null
+  },
+  {
+    "name": "Container::Item",
+    "kind": "class",
+    "line": 2,
+    "parent": "Container"
+  },
+  {
+    "name": "Container::Item::value",
+    "kind": "const",
+    "line": 2,
+    "parent": "Container::Item"
+  },
+  {
+    "name": "Allocation",
+    "kind": "class",
+    "line": 4,
+    "parent": null
+  },
+  {
+    "name": "Allocation::create",
+    "kind": "method",
+    "line": 5,
+    "parent": "Allocation"
+  },
+  {
+    "name": "Allocation::create::new Item",
+    "kind": "class",
+    "line": 6,
+    "parent": "Allocation::create"
+  },
+  {
+    "name": "Allocation::create::new Item::size",
+    "kind": "method",
+    "line": 7,
+    "parent": "Allocation::create::new Item"
+  }
+]

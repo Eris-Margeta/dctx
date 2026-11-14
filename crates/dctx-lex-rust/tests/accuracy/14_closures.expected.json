@@ -1,0 +1,4 @@
+[
+  {"name": "pipeline", "kind": "Function", "line": 1, "parent": null},
+  {"name": "pipeline::local", "kind": "Function", "line": 4, "parent": "pipeline"}
+]

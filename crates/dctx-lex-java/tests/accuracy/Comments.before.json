@@ -1,0 +1,3 @@
+[{"name":"Document","kind":"class","line":5,"parent":null},
+{"name":"Document::value","kind":"const","line":7,"parent":"Document"},
+{"name":"Document::read","kind":"method","line":8,"parent":"Document"}]

@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Loading",
+    "kind": "class",
+    "line": 1,
+    "parent": null
+  },
+  {
+    "name": "Loading::load",
+    "kind": "method",
+    "line": 2,
+    "parent": "Loading"
+  },
+  {
+    "name": "Loading::load::Result",
+    "kind": "class",
+    "line": 3,
+    "parent": "Loading::load"
+  },
+  {
+    "name": "Loading::load::Result::text",
+    "kind": "const",
+    "line": 3,
+    "parent": "Loading::load::Result"
+  },
+  {
+    "name": "Loading::close",
+    "kind": "method",
+    "line": 6,
+    "parent": "Loading"
+  }
+]

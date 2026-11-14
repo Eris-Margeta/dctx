@@ -1,0 +1,38 @@
+[
+  {
+    "name": "Pipeline",
+    "kind": "class",
+    "line": 1,
+    "parent": null
+  },
+  {
+    "name": "Pipeline::label",
+    "kind": "const",
+    "line": 2,
+    "parent": "Pipeline"
+  },
+  {
+    "name": "Pipeline::task",
+    "kind": "const",
+    "line": 3,
+    "parent": "Pipeline"
+  },
+  {
+    "name": "Pipeline::task::Local",
+    "kind": "class",
+    "line": 4,
+    "parent": "Pipeline::task"
+  },
+  {
+    "name": "Pipeline::task::Local::execute",
+    "kind": "method",
+    "line": 4,
+    "parent": "Pipeline::task::Local"
+  },
+  {
+    "name": "Pipeline::run",
+    "kind": "method",
+    "line": 7,
+    "parent": "Pipeline"
+  }
+]

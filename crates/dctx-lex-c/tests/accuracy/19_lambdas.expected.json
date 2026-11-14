@@ -1,0 +1,4 @@
+[
+  {"name": "twice", "kind": "untyped", "line": 1, "parent": null},
+  {"name": "apply", "kind": "function", "line": 2, "parent": null}
+]

@@ -175,7 +175,7 @@ fn c_and_cpp_counts_precision_and_repeat() {
             &path,
             C,
             Language::C,
-            "dctx-lex-c:2",
+            "dctx-lex-c:3",
             &[&path, "run"],
             &[
                 (EdgeKind::Imports, "box.h"),
