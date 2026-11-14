@@ -138,6 +138,10 @@ impl Walker<'_> {
                 index += 1;
                 continue;
             }
+            if let Some(next) = self.context_prefix(index) {
+                index = next;
+                continue;
+            }
             if !self.modifier_word(index) {
                 break;
             }

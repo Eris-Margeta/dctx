@@ -1,0 +1,13 @@
+[{"name":"Repository","kind":"interface","line":5,"parent":null},
+{"name":"Repository::find","kind":"method","line":13,"parent":"Repository"},
+{"name":"Repository::observe","kind":"method","line":15,"parent":"Repository"},
+{"name":"Repository::count","kind":"method","line":17,"parent":"Repository"},
+{"name":"MemoryRepository","kind":"class","line":20,"parent":null},
+{"name":"MemoryRepository::MemoryRepository","kind":"method","line":24,"parent":"MemoryRepository"},
+{"name":"MemoryRepository::store","kind":"const","line":25,"parent":"MemoryRepository"},
+{"name":"MemoryRepository::find","kind":"method","line":27,"parent":"MemoryRepository"},
+{"name":"MemoryRepository::observe","kind":"method","line":29,"parent":"MemoryRepository"},
+{"name":"MemoryRepository::Defaults","kind":"class","line":32,"parent":"MemoryRepository"},
+{"name":"MemoryRepository::Defaults::CAPACITY","kind":"const","line":33,"parent":"MemoryRepository::Defaults"},
+{"name":"MemoryRepository::Defaults::Limits","kind":"class","line":34,"parent":"MemoryRepository::Defaults"},
+{"name":"MemoryRepository::Defaults::Limits::max","kind":"const","line":35,"parent":"MemoryRepository::Defaults::Limits"}]

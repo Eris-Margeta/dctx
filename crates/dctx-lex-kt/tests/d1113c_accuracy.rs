@@ -460,3 +460,73 @@ fn masking_handles_nested_comments_raw_strings_and_templates() {
     };
     assert_eq!(line_breaks(source), line_breaks(&masked));
 }
+
+/// Held-out corpus: written after the extractor fixes by a different author,
+/// scored with the same rules so the main corpus cannot be overfitted silently.
+#[test]
+fn d1113g_heldout_accuracy() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/accuracy/heldout");
+    let mut files: Vec<_> = fs::read_dir(&root)
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .filter(|path| is_source(path))
+        .collect();
+    files.sort();
+    assert!(files.len() >= 8, "keep the breadth of the held-out corpus");
+    let mut after = Scores::new();
+    let mut masking_drift = Vec::new();
+    let mut report = format!("Kotlin held-out accuracy: {} files\n", files.len());
+    for path in files {
+        let name = path.file_name().unwrap().to_str().unwrap();
+        let source = fs::read(&path).unwrap();
+        let expected = read_labels(&labels_path(&path, "expected"));
+        let facts = KotlinLexer::default()
+            .extract(name, &source)
+            .expect("accepted fixture");
+        assert!(
+            facts.diagnostics.is_empty(),
+            "valid fixture produced diagnostics: {name}: {:?}",
+            facts.diagnostics
+        );
+        let actual = observations(&facts);
+        score(&expected, &actual, &mut after);
+        for label in &expected {
+            if !actual.contains(label) {
+                writeln!(report, "MISS {name}: {label:?}").unwrap();
+            }
+        }
+        for label in &actual {
+            if !expected.contains(label) {
+                writeln!(report, "EXTRA {name}: {label:?}").unwrap();
+            }
+            assert!(
+                !label.name.to_ascii_lowercase().contains("phantom"),
+                "literal/comment symbol: {name}: {label:?}"
+            );
+        }
+        let masked = mask_non_code(&source);
+        let clean = KotlinLexer::default()
+            .extract(name, &masked)
+            .expect("masked fixture");
+        if actual != observations(&clean) {
+            masking_drift.push(name.to_owned());
+        }
+    }
+    let total = table("held-out (current extractor)", &after, &mut report);
+    std::io::stdout()
+        .lock()
+        .write_all(report.as_bytes())
+        .unwrap();
+    assert!(
+        masking_drift.is_empty(),
+        "symbols changed after masking strings/comments: {masking_drift:?}"
+    );
+    assert!(
+        u64::from(total.tp) * 100 >= u64::from(total.tp + total.missed) * 97,
+        "held-out recall < 0.97"
+    );
+    assert!(
+        u64::from(total.tp) * 100 >= u64::from(total.tp + total.fp) * 99,
+        "held-out precision < 0.99"
+    );
+}

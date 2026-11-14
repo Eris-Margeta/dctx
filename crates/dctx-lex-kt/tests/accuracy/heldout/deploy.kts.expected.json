@@ -1,0 +1,8 @@
+[{"name":"Target","kind":"struct","line":7,"parent":null},
+{"name":"Target::Target","kind":"method","line":7,"parent":"Target"},
+{"name":"Target::host","kind":"const","line":7,"parent":"Target"},
+{"name":"Target::port","kind":"const","line":7,"parent":"Target"},
+{"name":"parseTargets","kind":"fn","line":9,"parent":null},
+{"name":"targets","kind":"const","line":16,"parent":null},
+{"name":"Report","kind":"class","line":22,"parent":null},
+{"name":"Report::print","kind":"method","line":23,"parent":"Report"}]
