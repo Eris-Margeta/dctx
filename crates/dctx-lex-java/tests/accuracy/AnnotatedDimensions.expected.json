@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Dimension",
+    "kind": "interface",
+    "line": 2,
+    "parent": null
+  },
+  {
+    "name": "Grids",
+    "kind": "class",
+    "line": 3,
+    "parent": null
+  },
+  {
+    "name": "Grids::names",
+    "kind": "const",
+    "line": 4,
+    "parent": "Grids"
+  },
+  {
+    "name": "Grids::cells",
+    "kind": "const",
+    "line": 5,
+    "parent": "Grids"
+  },
+  {
+    "name": "Grids::finish",
+    "kind": "method",
+    "line": 6,
+    "parent": "Grids"
+  }
+]

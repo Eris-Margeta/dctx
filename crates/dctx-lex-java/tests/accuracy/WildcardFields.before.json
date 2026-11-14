@@ -1,0 +1,4 @@
+[{"name":"Index","kind":"class","line":2,"parent":null},
+{"name":"Index::entries","kind":"const","line":3,"parent":"Index"},
+{"name":"Index::sink","kind":"const","line":4,"parent":"Index"},
+{"name":"Index::copy","kind":"method","line":5,"parent":"Index"}]

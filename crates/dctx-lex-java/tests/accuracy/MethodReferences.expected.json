@@ -1,0 +1,32 @@
+[
+  {
+    "name": "References",
+    "kind": "class",
+    "line": 2,
+    "parent": null
+  },
+  {
+    "name": "References::trim",
+    "kind": "const",
+    "line": 3,
+    "parent": "References"
+  },
+  {
+    "name": "References::build",
+    "kind": "const",
+    "line": 4,
+    "parent": "References"
+  },
+  {
+    "name": "References::allocate",
+    "kind": "const",
+    "line": 5,
+    "parent": "References"
+  },
+  {
+    "name": "References::accept",
+    "kind": "method",
+    "line": 6,
+    "parent": "References"
+  }
+]

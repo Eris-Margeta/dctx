@@ -1,0 +1,5 @@
+[
+  {"name": "Handle", "kind": "class", "line": 1, "parent": null},
+  {"name": "Handle::operator bool", "kind": "method", "line": 3, "parent": "Handle"},
+  {"name": "Handle::operator const char*", "kind": "method", "line": 4, "parent": "Handle"}
+]

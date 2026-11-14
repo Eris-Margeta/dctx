@@ -1,0 +1,6 @@
+[{"name":"Session","kind":"class","line":1,"parent":null},
+{"name":"Session::count","kind":"const","line":2,"parent":"Session"},
+{"name":"Session::Cursor","kind":"class","line":3,"parent":"Session"},
+{"name":"Session::Cursor::Cursor","kind":"method","line":4,"parent":"Session::Cursor"},
+{"name":"Session::Cursor::next","kind":"method","line":5,"parent":"Session::Cursor"},
+{"name":"Session::cursor","kind":"method","line":7,"parent":"Session"}]

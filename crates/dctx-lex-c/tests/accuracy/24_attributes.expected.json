@@ -1,0 +1,6 @@
+[
+  {"name": "acquire", "kind": "function", "line": 1, "parent": null},
+  {"name": "Result", "kind": "struct", "line": 2, "parent": null},
+  {"name": "Result::value", "kind": "method", "line": 3, "parent": "Result"},
+  {"name": "Result::error", "kind": "untyped", "line": 4, "parent": "Result"}
+]

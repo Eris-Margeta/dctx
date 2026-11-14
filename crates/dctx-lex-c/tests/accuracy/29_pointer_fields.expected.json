@@ -1,0 +1,5 @@
+[
+  {"name": "Hooks", "kind": "struct", "line": 1, "parent": null},
+  {"name": "Hooks::read", "kind": "untyped", "line": 2, "parent": "Hooks"},
+  {"name": "Hooks::release", "kind": "untyped", "line": 3, "parent": "Hooks"}
+]

@@ -1,0 +1,5 @@
+[
+  {"name": "HEADER", "kind": "Static", "line": 1, "parent": null},
+  {"name": "RAW", "kind": "Const", "line": 4, "parent": null},
+  {"name": "send", "kind": "Function", "line": 7, "parent": null}
+]

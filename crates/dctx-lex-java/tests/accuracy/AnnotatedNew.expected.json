@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Mark",
+    "kind": "interface",
+    "line": 2,
+    "parent": null
+  },
+  {
+    "name": "Decorated",
+    "kind": "class",
+    "line": 3,
+    "parent": null
+  },
+  {
+    "name": "Decorated::create",
+    "kind": "method",
+    "line": 4,
+    "parent": "Decorated"
+  },
+  {
+    "name": "Decorated::create::new Runnable",
+    "kind": "class",
+    "line": 5,
+    "parent": "Decorated::create"
+  },
+  {
+    "name": "Decorated::create::new Runnable::run",
+    "kind": "method",
+    "line": 6,
+    "parent": "Decorated::create::new Runnable"
+  }
+]

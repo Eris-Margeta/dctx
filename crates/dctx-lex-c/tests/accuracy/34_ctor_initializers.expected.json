@@ -1,0 +1,6 @@
+[
+  {"name": "Position", "kind": "struct", "line": 1, "parent": null},
+  {"name": "Position::x", "kind": "untyped", "line": 2, "parent": "Position"},
+  {"name": "Position::y", "kind": "untyped", "line": 3, "parent": "Position"},
+  {"name": "Position::Position", "kind": "method", "line": 4, "parent": "Position"}
+]

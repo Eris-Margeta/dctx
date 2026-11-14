@@ -1,0 +1,2 @@
+# Keep the exact bytes used by the baseline manifest, including CRLF and BOM.
+*.java -text

@@ -18,7 +18,7 @@ pub use domain::{
 /// Parser identity recorded with every fact key (PARSERS-v1 provenance).
 pub const PARSER_ID: &str = "dctx-lex-java";
 /// Bumped whenever extraction output can change for the same bytes.
-pub const PARSER_REVISION: u32 = 1;
+pub const PARSER_REVISION: u32 = 2;
 
 /// Bounded structural extractor; stateless apart from its limits.
 #[derive(Debug, Clone, Copy, Default)]
@@ -96,7 +96,7 @@ mod tests {
         assert_eq!(bare.nodes[0].fact.summary.source.as_str(), "sig");
         assert_eq!(bare.nodes[0].fact.summary.text, "p");
         assert_eq!(PARSER_ID, "dctx-lex-java");
-        assert_eq!(PARSER_REVISION, 1);
+        assert_eq!(PARSER_REVISION, 2);
     }
 
     #[test]

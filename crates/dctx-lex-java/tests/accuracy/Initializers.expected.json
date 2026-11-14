@@ -1,0 +1,44 @@
+[
+  {
+    "name": "Startup",
+    "kind": "class",
+    "line": 1,
+    "parent": null
+  },
+  {
+    "name": "Startup::Boot",
+    "kind": "class",
+    "line": 2,
+    "parent": "Startup"
+  },
+  {
+    "name": "Startup::Boot::load",
+    "kind": "method",
+    "line": 2,
+    "parent": "Startup::Boot"
+  },
+  {
+    "name": "Startup::Hook",
+    "kind": "class",
+    "line": 3,
+    "parent": "Startup"
+  },
+  {
+    "name": "Startup::Hook::attach",
+    "kind": "method",
+    "line": 3,
+    "parent": "Startup::Hook"
+  },
+  {
+    "name": "Startup::version",
+    "kind": "const",
+    "line": 4,
+    "parent": "Startup"
+  },
+  {
+    "name": "Startup::Startup",
+    "kind": "method",
+    "line": 5,
+    "parent": "Startup"
+  }
+]

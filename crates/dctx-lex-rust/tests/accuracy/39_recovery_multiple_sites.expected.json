@@ -1,0 +1,7 @@
+[
+  {"name": "a", "kind": "Module", "line": 1, "parent": null},
+  {"name": "a::run", "kind": "Function", "line": 1, "parent": "a"},
+  {"name": "a::run", "kind": "Function", "line": 1, "parent": "a"},
+  {"name": "b", "kind": "Module", "line": 2, "parent": null},
+  {"name": "b::run", "kind": "Function", "line": 2, "parent": "b"}
+]

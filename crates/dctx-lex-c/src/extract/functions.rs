@@ -97,7 +97,6 @@ impl Walker<'_> {
     fn find_func(&self, start: usize, end: usize) -> Option<FoundFn> {
         let mut index = start;
         let mut depth = 0i32;
-        let mut found = None;
         while index < end && depth >= 0 {
             if self.starts_attribute(index) {
                 let next = self.skip_attributes(index, end);
@@ -106,27 +105,25 @@ impl Walker<'_> {
                     continue;
                 }
             }
+            if depth == 0 && self.is(index, "=") {
+                return None;
+            }
             if depth == 0 && self.is(index, ";") {
-                return found.filter(|func: &FoundFn| func.term <= index);
+                return None;
             }
             if depth == 0 && self.is(index, "{") {
-                return found.filter(|func: &FoundFn| func.term == index);
+                return None;
             }
             if depth == 0
                 && self.is(index, "operator")
                 && let Some(func) = self.operator_func(index, end)
             {
-                found = Some(func);
-            } else if depth == 0
+                return Some(func);
+            } else if (depth == 0 || (depth == 1 && index >= 2 && self.is(index - 2, "*")))
                 && self.is(index, "(")
                 && let Some(func) = self.func_at(index, end)
             {
-                let keep_operator = found
-                    .as_ref()
-                    .is_some_and(|found| self.is(found.bare_at, "operator"));
-                if !keep_operator {
-                    found = Some(func);
-                }
+                return Some(func);
             }
             if self.is(index, "(") || self.is(index, "[") || self.is(index, "{") {
                 depth += 1;
@@ -135,7 +132,7 @@ impl Walker<'_> {
             }
             index += 1;
         }
-        found
+        None
     }
 
     fn func_at(&self, paren: usize, end: usize) -> Option<FoundFn> {
@@ -145,7 +142,9 @@ impl Walker<'_> {
         }
         let (name_lo, local) = self.qualify(bare_at);
         let close = self.close(paren)?;
-        let term = self.postfix_term(close + 1, end)?;
+        let term = self
+            .postfix_term(close + 1, end)
+            .or_else(|| self.knr_term(paren, close, end))?;
         Some(FoundFn {
             name_lo,
             name_hi: bare_at + 1,
@@ -252,6 +251,23 @@ impl Walker<'_> {
                 spelling.push_str(self.text(index));
                 index += 1;
             }
+        } else if self.ident(index) {
+            // Conversion-type-id: keep spaces between words, bind punctuation
+            // to the type (`operator const char*`, `operator ns::Value`).
+            spelling.push(' ');
+            let first = index;
+            while index < end && !self.is(index, "(") {
+                if !self.ident(index)
+                    && !matches!(self.text(index), "::" | "*" | "&" | "&&" | "<" | ">" | ">>")
+                {
+                    return None;
+                }
+                if index > first && self.ident(index) && self.ident(index - 1) {
+                    spelling.push(' ');
+                }
+                spelling.push_str(self.text(index));
+                index += 1;
+            }
         } else {
             return None;
         }
@@ -263,11 +279,13 @@ impl Walker<'_> {
         }
         let close = self.close(index)?;
         let term = self.postfix_term(close + 1, end)?;
+        let (name_lo, qualified) = self.qualify(op);
+        let prefix = qualified.strip_suffix("operator").unwrap_or("");
         Some(FoundFn {
-            name_lo: op,
+            name_lo,
             name_hi: index,
             bare_at: op,
-            local: spelling,
+            local: format!("{prefix}{spelling}"),
             close,
             term,
         })
@@ -294,6 +312,12 @@ impl Walker<'_> {
                         index += 1;
                     }
                 }
+                continue;
+            }
+            // A function may return a pointer to another function:
+            // `int (*select(int mode))(int code)`.
+            if self.is(index, ")") && self.is(index + 1, "(") {
+                index = self.close(index + 1)? + 1;
                 continue;
             }
             if self.is(index, ",") || self.is(index, "}") {
@@ -324,14 +348,7 @@ impl Walker<'_> {
                 return None;
             }
             if self.is(index, ":") {
-                index += 1;
-                while index < end && !self.is(index, "{") && !self.is(index, ";") {
-                    if self.is(index, "(") || self.is(index, "[") || self.is(index, "{") {
-                        index = self.after(index);
-                    } else {
-                        index += 1;
-                    }
-                }
+                index = self.after_initializers(index + 1, end)?;
                 continue;
             }
             if self.is(index, "->") {
@@ -445,6 +462,9 @@ impl Walker<'_> {
             }
             self.observe_nest(index, end, &mut nest);
         }
+        if let Some(name) = self.pointer_binder(start, limit) {
+            return Some(name);
+        }
         let mut chosen = None;
         let mut idents = 0;
         let mut index = start;
@@ -466,6 +486,85 @@ impl Walker<'_> {
             return None;
         }
         Some((at, self.text(at).to_string()))
+    }
+
+    /// Name inside a parenthesized pointer declarator, before its parameters.
+    fn pointer_binder(&self, start: usize, end: usize) -> Option<(usize, String)> {
+        for open in start..end {
+            if !self.is(open, "(") || !matches!(self.text(open + 1), "*" | "&" | "&&") {
+                continue;
+            }
+            let mut name = open + 2;
+            while name < end && matches!(self.text(name), "const" | "volatile" | "*" | "&" | "&&") {
+                name += 1;
+            }
+            if self.can_name(name) && matches!(self.text(name + 1), ")" | "[" | "(") {
+                return Some((name, self.text(name).to_string()));
+            }
+        }
+        None
+    }
+
+    /// K&R parameter declarations must bind only names in the identifier list.
+    fn knr_term(&self, open: usize, close: usize, end: usize) -> Option<usize> {
+        let mut params = std::collections::BTreeSet::new();
+        let mut index = open + 1;
+        loop {
+            if index >= close || !self.can_name(index) {
+                return None;
+            }
+            if !params.insert(self.text(index)) {
+                return None;
+            }
+            index += 1;
+            if index == close {
+                break;
+            }
+            if !self.is(index, ",") {
+                return None;
+            }
+            index += 1;
+        }
+        index = close + 1;
+        while index < end && !params.is_empty() {
+            let stop = self.consume_semi(index, end);
+            if stop <= index
+                || !self.is(stop - 1, ";")
+                || self.saw(index, stop, "{")
+                || self.saw(index, stop, "=")
+            {
+                return None;
+            }
+            let names = self.decl_names(index, stop);
+            if names.is_empty() || names.iter().any(|(_, name)| !params.remove(name.as_str())) {
+                return None;
+            }
+            index = stop;
+            if self.is(index, "{") {
+                return Some(index);
+            }
+        }
+        None
+    }
+
+    /// Skip each constructor mem-initializer before choosing the actual body.
+    fn after_initializers(&self, mut index: usize, end: usize) -> Option<usize> {
+        loop {
+            while index < end && !matches!(self.text(index), "(" | "{" | ";" | "}") {
+                index += 1;
+            }
+            if !matches!(self.text(index), "(" | "{") {
+                return None;
+            }
+            index = self.close(index)? + 1;
+            if self.is(index, "...") {
+                index += 1;
+            }
+            if !self.is(index, ",") {
+                return self.is(index, "{").then_some(index);
+            }
+            index += 1;
+        }
     }
 
     fn observe_nest(&self, index: usize, end: usize, nest: &mut AngleDepth) {

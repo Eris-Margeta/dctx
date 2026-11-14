@@ -1,0 +1,5 @@
+[
+  {"name": "Queue", "kind": "Struct", "line": 1, "parent": null},
+  {"name": "Queue<T>::impl", "kind": "Impl", "line": 2, "parent": null},
+  {"name": "Queue::pop", "kind": "Method", "line": 7, "parent": "Queue<T>::impl"}
+]

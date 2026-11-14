@@ -1,0 +1,7 @@
+[
+  {"name": "Reply", "kind": "type", "line": 1, "parent": null},
+  {"name": "Reply::code", "kind": "untyped", "line": 2, "parent": "Reply"},
+  {"name": "Word", "kind": "type", "line": 4, "parent": null},
+  {"name": "Word::bits", "kind": "untyped", "line": 5, "parent": "Word"},
+  {"name": "Word::value", "kind": "untyped", "line": 6, "parent": "Word"}
+]

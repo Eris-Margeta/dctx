@@ -1,0 +1,6 @@
+[
+  {"name": "open_device", "kind": "function", "line": 2, "parent": null},
+  {"name": "Device", "kind": "struct", "line": 3, "parent": null},
+  {"name": "Device::descriptor", "kind": "untyped", "line": 3, "parent": "Device"},
+  {"name": "close_device", "kind": "function", "line": 5, "parent": null}
+]
