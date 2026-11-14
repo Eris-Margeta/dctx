@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Templates",
+    "kind": "class",
+    "line": 1,
+    "parent": null
+  },
+  {
+    "name": "Templates::html",
+    "kind": "const",
+    "line": 2,
+    "parent": "Templates"
+  },
+  {
+    "name": "Templates::render",
+    "kind": "method",
+    "line": 7,
+    "parent": "Templates"
+  }
+]

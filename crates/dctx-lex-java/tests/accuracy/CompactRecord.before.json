@@ -1,0 +1,5 @@
+[{"name":"Range","kind":"struct","line":1,"parent":null},
+{"name":"Range::low","kind":"const","line":1,"parent":"Range"},
+{"name":"Range::high","kind":"const","line":1,"parent":"Range"},
+{"name":"Range::Range","kind":"method","line":2,"parent":"Range"},
+{"name":"Range::width","kind":"method","line":5,"parent":"Range"}]

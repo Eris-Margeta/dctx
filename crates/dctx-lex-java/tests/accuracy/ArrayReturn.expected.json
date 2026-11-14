@@ -1,0 +1,38 @@
+[
+  {
+    "name": "Snapshots",
+    "kind": "class",
+    "line": 1,
+    "parent": null
+  },
+  {
+    "name": "Snapshots::names",
+    "kind": "method",
+    "line": 2,
+    "parent": "Snapshots"
+  },
+  {
+    "name": "Snapshots::names::Copy",
+    "kind": "class",
+    "line": 3,
+    "parent": "Snapshots::names"
+  },
+  {
+    "name": "Snapshots::names::Copy::value",
+    "kind": "method",
+    "line": 3,
+    "parent": "Snapshots::names::Copy"
+  },
+  {
+    "name": "Snapshots::matrix",
+    "kind": "method",
+    "line": 6,
+    "parent": "Snapshots"
+  },
+  {
+    "name": "Snapshots::after",
+    "kind": "method",
+    "line": 7,
+    "parent": "Snapshots"
+  }
+]

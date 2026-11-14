@@ -1,0 +1,44 @@
+[
+  {
+    "name": "Channel",
+    "kind": "interface",
+    "line": 1,
+    "parent": null
+  },
+  {
+    "name": "Channel::LIMIT",
+    "kind": "const",
+    "line": 2,
+    "parent": "Channel"
+  },
+  {
+    "name": "Channel::send",
+    "kind": "method",
+    "line": 3,
+    "parent": "Channel"
+  },
+  {
+    "name": "Channel::flush",
+    "kind": "method",
+    "line": 4,
+    "parent": "Channel"
+  },
+  {
+    "name": "Channel::empty",
+    "kind": "method",
+    "line": 5,
+    "parent": "Channel"
+  },
+  {
+    "name": "Channel::reset",
+    "kind": "method",
+    "line": 6,
+    "parent": "Channel"
+  },
+  {
+    "name": "Channel::capacity",
+    "kind": "method",
+    "line": 7,
+    "parent": "Channel"
+  }
+]

@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Envelope",
+    "kind": "struct",
+    "line": 1,
+    "parent": null
+  },
+  {
+    "name": "Envelope::value",
+    "kind": "const",
+    "line": 1,
+    "parent": "Envelope"
+  },
+  {
+    "name": "Envelope::Envelope",
+    "kind": "method",
+    "line": 2,
+    "parent": "Envelope"
+  },
+  {
+    "name": "Envelope::map",
+    "kind": "method",
+    "line": 3,
+    "parent": "Envelope"
+  }
+]

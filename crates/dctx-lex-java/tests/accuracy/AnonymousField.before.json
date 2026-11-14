@@ -1,0 +1,6 @@
+[{"name":"Listener","kind":"class","line":1,"parent":null},
+{"name":"Listener::callback","kind":"const","line":2,"parent":"Listener"},
+{"name":"Listener::callback::new Runnable","kind":"class","line":2,"parent":"Listener::callback"},
+{"name":"Listener::callback::new Runnable::calls","kind":"const","line":3,"parent":"Listener::callback::new Runnable"},
+{"name":"Listener::callback::new Runnable::run","kind":"method","line":4,"parent":"Listener::callback::new Runnable"},
+{"name":"Listener::size","kind":"method","line":6,"parent":"Listener"}]

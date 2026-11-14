@@ -1,0 +1,6 @@
+[{"name":"Buffers","kind":"class","line":1,"parent":null},
+{"name":"Buffers::limits","kind":"const","line":2,"parent":"Buffers"},
+{"name":"Buffers::sizes","kind":"const","line":2,"parent":"Buffers"},
+{"name":"Buffers::spare","kind":"const","line":3,"parent":"Buffers"},
+{"name":"Buffers::data","kind":"const","line":3,"parent":"Buffers"},
+{"name":"Buffers::names","kind":"const","line":4,"parent":"Buffers"}]

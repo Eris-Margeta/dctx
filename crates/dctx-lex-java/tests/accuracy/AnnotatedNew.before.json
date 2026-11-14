@@ -1,0 +1,3 @@
+[{"name":"Mark","kind":"interface","line":2,"parent":null},
+{"name":"Decorated","kind":"class","line":3,"parent":null},
+{"name":"Decorated::create","kind":"method","line":4,"parent":"Decorated"}]

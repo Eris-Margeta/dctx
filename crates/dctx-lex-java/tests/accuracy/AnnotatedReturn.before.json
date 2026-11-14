@@ -1,0 +1,3 @@
+[{"name":"Axis","kind":"interface","line":2,"parent":null},
+{"name":"Axes","kind":"class","line":3,"parent":null},
+{"name":"Axes::names","kind":"method","line":4,"parent":"Axes"}]
