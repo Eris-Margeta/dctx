@@ -60,5 +60,5 @@
 <text x="800" y="205" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" font-size="104" font-weight="800" fill="#fff" letter-spacing="-3">dctx</text>
 <text x="804" y="250" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" font-size="30" font-weight="600" fill="#a78bfa">context, engineered.</text>
 <text x="804" y="290" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" font-size="18" fill="#cbd5e1">Fewer tokens. Stable prefixes. Exact source.</text>
-<text x="804" y="318" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" font-size="15" fill="#94a3b8">Rust  ·  offline  ·  no telemetry  ·  MCP server  ·  Apache-2.0</text>
+<text x="804" y="318" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" font-size="15" fill="#94a3b8">Rust  ·  offline  ·  no telemetry  ·  Apache-2.0</text>
 </svg>

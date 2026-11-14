@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Ordering",
+    "kind": "class",
+    "line": 1,
+    "parent": null
+  },
+  {
+    "name": "Ordering::first",
+    "kind": "method",
+    "line": 2,
+    "parent": "Ordering"
+  },
+  {
+    "name": "Ordering::raise",
+    "kind": "method",
+    "line": 5,
+    "parent": "Ordering"
+  }
+]

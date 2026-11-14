@@ -85,6 +85,9 @@ impl SealedSnapshot {
     }
 
     /// Reads an independently positioned bounded chunk from the sealed bytes.
+    /// At most 1 MiB may be read per call; the whole range must lie within the snapshot.
+    /// A zero-length read at EOF succeeds. Shared concurrent calls do not move a file cursor
+    /// and return identical bytes for the same range, even if the original file changes.
     ///
     /// # Errors
     /// Returns a resource-limit error for overflow or an out-of-bounds range, or an IO error when reading the sealed file fails.

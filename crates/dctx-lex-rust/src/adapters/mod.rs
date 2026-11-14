@@ -17,7 +17,12 @@ use std::borrow::Cow;
 /// a wide margin for syn's recursive descent, visitor and drop in debug builds.
 const WORKER_STACK_BYTES: usize = 128 << 20;
 
-/// Extracts file-local facts from one authorized Rust file.
+/// Extracts file-local facts from one authorized Rust file, without filesystem IO.
+///
+/// Limits are inclusive. This operation is reentrant and may be called concurrently
+/// with shared limits; each call uses its own bounded-stack parse worker. Repeated
+/// input and limits produce the same facts in traversal order. Duplicate items and
+/// call sites remain distinct records, identified by their positions and owners.
 ///
 /// Oversized and non-UTF-8 input is refused with no facts. Lexing, nesting and
 /// syntax refusals return `Completion::Partial` with line-scan facts labelled

@@ -62,6 +62,9 @@ pub struct PackSnapshot {
 
 impl PackSnapshot {
     /// Assembles a snapshot and computes its identity from `tree` and `digests`.
+    /// The caller supplies validated tree facts and digests of authorized reads.
+    /// This does not sort children or recompute content digests from retained bodies.
+    /// Version and capture time are envelope metadata, excluded from identity.
     /// # Errors
     /// Returns a resource-limit error if canonical snapshot bytes exceed the SHA-256 message length limit.
     pub fn new(
@@ -149,6 +152,9 @@ impl PackSnapshot {
 
 /// Canonical digest of a tree and its content digests. Equal facts give equal digests,
 /// independent of the clock. Children are encoded in their stored (sorted) order.
+/// Callers must provide canonical child order when order-independent identity is
+/// required. Duplicate nodes are encoded separately; extra digest-map entries
+/// that do not correspond to a tree node do not affect identity.
 /// # Errors
 /// Returns a resource-limit error if canonical snapshot bytes exceed the SHA-256 message length limit.
 pub fn snapshot_digest(

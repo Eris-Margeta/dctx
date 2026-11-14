@@ -29,7 +29,7 @@ impl<'a> Lexer<'a> {
         Self {
             src,
             b: src.as_bytes(),
-            pos: 0,
+            pos: if src.starts_with('\u{feff}') { 3 } else { 0 },
             line_token: false,
             tokens: Vec::new(),
             comments: Vec::new(),
@@ -117,11 +117,16 @@ impl<'a> Lexer<'a> {
             && self.b[self.pos] != b'('
             && self.b[self.pos] != b'\n'
             && self.b[self.pos] != b'"'
-            && self.pos - delim_at <= 16
+            && self.pos - delim_at < 16
         {
             self.pos += 1;
         }
         if self.pos >= self.b.len() || self.b[self.pos] != b'(' {
+            // A byte limit can stop inside a multibyte delimiter. Recovery must
+            // resume at a UTF-8 boundary, just like ordinary token scanning.
+            while !self.src.is_char_boundary(self.pos) {
+                self.pos += 1;
+            }
             self.problems
                 .push((start as u32, DiagnosticReason::UnterminatedRawString));
             return Some(Kind::Bad);

@@ -1,0 +1,6 @@
+[
+  {"name": "Mode", "kind": "enum", "line": 1, "parent": null},
+  {"name": "Mode::Read", "kind": "const", "line": 2, "parent": "Mode"},
+  {"name": "Mode::Write", "kind": "const", "line": 3, "parent": "Mode"},
+  {"name": "Mode::Both", "kind": "const", "line": 4, "parent": "Mode"}
+]

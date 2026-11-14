@@ -58,7 +58,9 @@ pub(crate) fn encode(plan: &ContextPlan, check_ops: bool) -> Result<Vec<u8>, Tem
     assemble(plan.capabilities, &slices)
 }
 
-/// Encodes `plan`, refusing unknown opcodes.
+/// Encodes `plan`, recomputing digests and refusing invalid instruction arguments or counts.
+/// Identical plan values produce identical bytes; caller-supplied collection order is preserved.
+/// Encoding checks representation limits, while [`crate::load`] checks plugin host policy.
 ///
 /// # Errors
 /// Refuses invalid plans, unrepresentable fields or lengths and an envelope above the plan-size ceiling.
@@ -66,7 +68,9 @@ pub fn to_bytes(plan: &ContextPlan) -> Result<Vec<u8>, TemplateError> {
     encode(plan, true)
 }
 
-/// Loads a plan. Version is checked before the trailing digest.
+/// Decodes one complete plan envelope. Version is checked before the trailing digest.
+/// Truncated and trailing bytes are refused. This checks structure and integrity;
+/// use [`crate::load`] to additionally check plugin locks and the host plugin policy.
 ///
 /// # Errors
 /// Refuses malformed, truncated, unsupported, oversized or digest-inconsistent envelopes and invalid plan structure.

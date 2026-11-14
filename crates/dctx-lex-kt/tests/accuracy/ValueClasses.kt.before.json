@@ -1,0 +1,11 @@
+[{"name":"UserId","kind":"class","line":3,"parent":null},
+{"name":"UserId::UserId","kind":"method","line":4,"parent":"UserId"},
+{"name":"UserId::raw","kind":"const","line":4,"parent":"UserId"},
+{"name":"UserId::masked","kind":"method","line":9,"parent":"UserId"},
+{"name":"Meters","kind":"class","line":12,"parent":null},
+{"name":"Meters::Meters","kind":"method","line":13,"parent":"Meters"},
+{"name":"Meters::value","kind":"const","line":13,"parent":"Meters"},
+{"name":"Meters::compareTo","kind":"method","line":14,"parent":"Meters"},
+{"name":"LegacyToken","kind":"class","line":17,"parent":null},
+{"name":"LegacyToken::LegacyToken","kind":"method","line":17,"parent":"LegacyToken"},
+{"name":"LegacyToken::token","kind":"const","line":17,"parent":"LegacyToken"}]

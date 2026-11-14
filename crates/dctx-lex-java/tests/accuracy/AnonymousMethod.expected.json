@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Tasks",
+    "kind": "class",
+    "line": 1,
+    "parent": null
+  },
+  {
+    "name": "Tasks::create",
+    "kind": "method",
+    "line": 2,
+    "parent": "Tasks"
+  },
+  {
+    "name": "Tasks::create::new Runnable",
+    "kind": "class",
+    "line": 3,
+    "parent": "Tasks::create"
+  },
+  {
+    "name": "Tasks::create::new Runnable::run",
+    "kind": "method",
+    "line": 4,
+    "parent": "Tasks::create::new Runnable"
+  }
+]

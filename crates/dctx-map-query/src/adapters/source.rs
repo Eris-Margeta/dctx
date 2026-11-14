@@ -20,6 +20,9 @@ use std::{
 };
 
 /// Read-only place source. Cache paths are chosen separately.
+/// Source bytes are returned unchanged, including invalid UTF-8; indexing reports
+/// encoding failures as parse diagnostics. Counters use interior mutability, so
+/// concurrent callers must own separate `FileSource` instances.
 pub struct FileSource {
     pub(crate) root: PathBuf,
     reads: Cell<usize>,

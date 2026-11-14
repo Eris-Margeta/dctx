@@ -52,6 +52,11 @@ impl<'a> Walk<'a> {
 
 impl Inventory for Walk<'_> {
     fn entries(&mut self, dir: &RelativePath) -> Result<Vec<InventoryEntry>, DctxError> {
+        // Source-lifetime guards share writes so a finished child can be renamed.
+        // Strictly repin the root during enumeration: an empty root could have
+        // become a reparse point since the previous call. Drop this operation
+        // guard on return; the subtree stack alone remains pinned between calls.
+        let _root = pin_directory(&self.source.root).map_err(map_io)?;
         self.pin(dir)?;
         let full = self.source.confined(dir)?;
         // Read the clock before enumeration, since Windows caches DirEntry

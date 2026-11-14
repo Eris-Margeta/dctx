@@ -189,6 +189,15 @@ impl Walker<'_> {
         {
             return true;
         }
+        // `T::class` is a class literal and `object : T {}` / `object {}` without
+        // `companion` is an anonymous object expression: both stay inside the
+        // expression instead of starting a declaration.
+        if index > 0 && self.is(index - 1, "::") {
+            return false;
+        }
+        if self.anon_object_expr(index) {
+            return false;
+        }
         self.ident(index)
             && matches!(
                 self.text(index),
@@ -203,6 +212,13 @@ impl Walker<'_> {
                     | "val"
                     | "var"
             )
+    }
+
+    pub(crate) fn anon_object_expr(&self, index: usize) -> bool {
+        self.is(index, "object")
+            && !self.is_decl_name(index + 1)
+            && !(index > 0 && self.is(index - 1, "companion"))
+            && (self.is(index + 1, ":") || self.is(index + 1, "{"))
     }
 
     pub(crate) fn type_tail(&self, start: usize, end: usize) -> (usize, u32) {
@@ -503,6 +519,26 @@ impl Walker<'_> {
 
     pub(crate) fn modifier_word(&self, index: usize) -> bool {
         self.ident(index) && is_modifier(self.text(index))
+    }
+
+    /// `context(A, B)` receiver list before a declaration; returns the token
+    /// after `)`. A call named `context` is not followed by a declaration.
+    pub(crate) fn context_prefix(&self, index: usize) -> Option<usize> {
+        if !(self.ident(index) && self.is(index, "context") && self.is(index + 1, "(")) {
+            return None;
+        }
+        let close = self.after(index + 1);
+        if close <= index + 1 {
+            return None;
+        }
+        // The receiver list usually sits on its own line (inserted `;`).
+        let to = self.skip_semis(close, self.toks.len());
+        let follows = self.is(to, "@")
+            || self.modifier_word(to)
+            || self.context_prefix(to).is_some()
+            || (self.ident(to) && decl_word(self.text(to)))
+            || (self.is(to, "fun") || self.is(to, "val") || self.is(to, "var"));
+        follows.then_some(to)
     }
 }
 

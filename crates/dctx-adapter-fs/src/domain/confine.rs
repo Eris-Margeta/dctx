@@ -6,6 +6,7 @@
 use std::path::{Component, Path, PathBuf};
 
 /// Drops `.` and applies `..` without consulting the filesystem.
+/// Leading parents on relative paths are preserved; absolute paths stop at their root.
 #[allow(
     clippy::must_use_candidate,
     reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
@@ -16,7 +17,11 @@ pub fn normalize(path: &Path) -> PathBuf {
         match component {
             Component::CurDir => {}
             Component::ParentDir => {
-                out.pop();
+                if matches!(out.components().next_back(), Some(Component::Normal(_))) {
+                    out.pop();
+                } else if !out.has_root() {
+                    out.push(component.as_os_str());
+                }
             }
             Component::Normal(part) => out.push(part),
             Component::RootDir | Component::Prefix(_) => out.push(component.as_os_str()),

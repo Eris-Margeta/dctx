@@ -1,26 +1,26 @@
 # dctx
 
-> dctx turns any folder into the smallest correct context for a task, offline, with byte-stable output that prompt caches can reuse. dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.
+> dctx turns any folder into the smallest correct context for a task, offline, with byte-stable output that prompt caches can reuse. dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, direct CLI commands. Measure before you change anything.
 
 ## About this file
 
 - Publisher: TEJL - tvornica elektroničkih jedinica i logike. TEJL.com: https://tejl.com/; TEJL.hr: https://tejl.hr/.
 - This is llms-small.txt: the facts and the route table, with an outline of the start documents. The other entry points: https://www.dctx.internet.technology/llms.txt, https://www.dctx.internet.technology/llms-full.txt.
 - Engine: dctx 1.3.1. Document captures are the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs them and fails on any byte of drift. Read the pack at https://www.dctx.internet.technology/llms-full.txt.
-- Docs commit: 94de7cc7d75014c3a677ad4d2164f3543633b957 (2026-11-13T00:29:55+01:00), the last commit that changed one of the documents.
+- Docs commit: 6378c8363bfe5d4ef414a4b57602767b6ff04198 (2026-11-13T04:26:06+01:00), the last commit that changed one of the documents.
 - Command: `dctx map map docs/START.md --depth 2`; `dctx map map docs/WHY-DCTX.md --depth 2`; `dctx map map README.md --depth 2`; `dctx map map docs/MODALITIES.md --depth 2`
-- Document capture budget: 1,027 of 2,500 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
+- Document capture budget: 969 of 2,500 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
 
 ## Facts
 
 ### What dctx is
 
-dctx is an open-source (Apache-2.0) Rust context engine for AI-assisted coding: one local binary that packs a project into one structured block, or answers bounded, byte-stable symbol queries (find, read, neighbors, skeleton) as CLI output or MCP tools.
+dctx is an open-source (Apache-2.0) Rust context engine for AI-assisted coding: one local binary that packs a project into one structured block, or answers bounded, byte-stable symbol queries (find, read, neighbors, skeleton) as CLI output.
 
 What it is not:
 
 - No RAG: no embeddings, no vector search, and the engine never calls a model.
-- No network: pack, map, cache and mcp make no network calls; the release check counts socket calls under strace and fails on any.
+- No network: pack, map and cache make no network calls; the release check counts socket calls under strace and fails on any.
 - No telemetry, not even opt-out.
 - No agent loop: dctx answers one command at a time; the agent or the human decides what to ask next.
 
@@ -34,7 +34,6 @@ What it is not:
 ### Modalities
 
 - CLI (available): `dctx pack PATH` for one structured block (clipboard, file or stdout); `dctx map find|read|neighbors|skeleton|...` for bounded symbol answers. https://www.dctx.internet.technology/cli/
-- MCP server (available): `dctx mcp PATH` over stdio for Claude Code, Cursor and Codex; `--profile lean` exposes only find and read. https://www.dctx.internet.technology/docs/modalities/#mcp-server-convenient-tools-with-startup-context
 - Task context (available): `dctx pack --for TEXT --budget N`: find, neighbors and read of the names in TEXT, cut to an estimated-token budget. https://www.dctx.internet.technology/docs/map-mode/
 - CI and prompt cache (available): Deterministic pack and map output; tree lines carry no timestamps by default, so the prefix stays stable across a touch. https://www.dctx.internet.technology/docs/modalities/#ci--prompt-cache-prefix-stability
 - Rust library (available from Git): The `dctx` facade crate as a tagged Git dependency; crates.io publication pending. https://www.dctx.internet.technology/docs/modalities/#rust-library-embed-the-facade
@@ -43,19 +42,19 @@ What it is not:
 
 Two scopes, one binary:
 
-- System binary: the `dctx` on PATH belongs to you and your agents, and you upgrade it. Interactive agents and MCP call this one.
+- System binary: the `dctx` on PATH belongs to you and your agents, and you upgrade it. Interactive agents call this one.
 - Project binary (Node from npm; Python and Go from CI): a binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Application code and CI call this one; a library never silently falls back to PATH.
 - Same engine, different owner. `dctx doctor` lists every binary in reach; verify each against SHA256SUMS and its cosign signature.
 
 ### Before you start
 
-> dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.
+> dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, direct CLI commands. Measure before you change anything.
 
 ### Benchmarks
 
 Baseline: grep plus reading files.
 
-- Measured: 11 November 2026: 20 questions, a private 13-crate Rust workspace, claude-sonnet-5-5, dctx 1.3.0, three repeats per arm. Median total tokens [min, max]: grep plus reads (A) 14,904,014 [14,604,149, 15,622,381]; warm dctx CLI (B) 14,157,974 [11,221,908, 15,613,375]; fresh-cache dctx MCP (C), startup/indexing measured, 15,922,125 [15,513,198, 16,700,029]. B versus A: -5.01 %. On this corpus and model dctx did not save 25 % tokens; the pre-registered rule was not met. Official strict citation recall medians [min, max], A/B/C: 10.10 % [10.10, 20.73] / 14.46 % [8.36, 22.65] / 13.41 % [12.02, 66.72]. Diagnostic file-level recall medians: 53.77 % / 71.70 % / 76.42 %; diagnostic, not a replacement metric. The claim is accuracy and bounded context, not token savings: B and C named more required files at about equal (B) or higher (C) token cost. C cost +6.8 % tokens and +30 % wall time. dctx on its own does not save tokens by default. Savings come from a harness or agent system reusing byte-identical, prefix-stable context across long sessions over a large body of work, with complete control over every byte. There is no measured, citable savings figure for such a system yet. One corpus, one model, no significance claim; corpus and raw answers private and cannot be published; dctx 1.3.0 is not current HEAD. Under ~200 files, use grep. https://www.dctx.internet.technology/benchmarks/#grep-read
+- Measured: 11 November 2026: 20 questions, a private 13-crate Rust workspace, claude-sonnet-5-5, dctx 1.3.0, three repeats per arm. Median total tokens [min, max]: grep plus reads 14,904,014 [14,604,149, 15,622,381]; dctx CLI (warm index) 14,157,974 [11,221,908, 15,613,375]. CLI median tokens were -5.01 % versus grep. On this corpus and model dctx did not save 25 % tokens; the pre-registered rule was not met. Official strict citation recall medians [min, max]: grep 10.10 % [10.10, 20.73]; CLI 14.46 % [8.36, 22.65]. Diagnostic file-level recall medians: 53.77 % and 71.70 %, respectively; diagnostic, not a replacement metric. The claim is accuracy and bounded context, not token savings. dctx on its own does not save tokens by default. Savings depend on a harness or agent system reusing byte-identical, prefix-stable context across long sessions; there is no measured, citable savings figure for such a system yet. One corpus, one model, no significance claim; corpus and raw answers private and cannot be published; dctx 1.3.0 is not current HEAD. Under ~200 files, use grep. https://www.dctx.internet.technology/benchmarks/#grep-read
 - Measured: Byte stability: the same query on unchanged code returns the same bytes; 33 of 33 text and JSON answers were byte-identical after unrelated edits (Linux only). https://www.dctx.internet.technology/docs/stability/
 - Historical: The October and November in-house numbers (run 7: 140 of 140 task questions, cold index and warm latency) measure tool output only, as estimated stdout tokens and raw fact coverage without a model; they are not agent completion rates or session costs. https://www.dctx.internet.technology/benchmarks/
 - Hypothesis: That a pack template changes model answer quality or cost is a hypothesis pending an A/B test; nothing on this site measures it. https://www.dctx.internet.technology/templates/
@@ -99,7 +98,7 @@ These existed before 1.2.0 and no longer work. A transcript that uses them descr
 - [Why dctx](https://www.dctx.internet.technology/why/): Why dctx exists, its philosophy, and why byte-identical output keeps the prompt cache hitting.
 - [README](https://www.dctx.internet.technology/docs/readme/): Installation, quick start, map mode, language tiers and the CLI reference.
 - [What dctx is](https://www.dctx.internet.technology/docs/start/): The claim and its limits, the advanced-user notice, choose your path, the safe path in ten minutes, responsibilities and the two scopes.
-- [Choosing how to use dctx](https://www.dctx.internet.technology/docs/modalities/): Clipboard, grep plus reads, long sessions, huge trees, MCP startup cost and CI.
+- [Choosing how to use dctx](https://www.dctx.internet.technology/docs/modalities/): Clipboard, grep plus reads, long sessions, huge trees, CLI usage and CI.
 - [Map mode guide](https://www.dctx.internet.technology/docs/map-mode/): Every map verb with examples, budgets, ids and precision labels.
 - [Agent snippet](https://www.dctx.internet.technology/docs/agents/): The AGENTS.md section that tells coding agents to ask dctx first.
 - [Plugins guide](https://www.dctx.internet.technology/docs/plugins/): The plugin boundary, capabilities, consent and current limits.
@@ -108,12 +107,12 @@ These existed before 1.2.0 and no longer work. A transcript that uses them descr
 - [Language coverage (ADR-018)](https://www.dctx.internet.technology/docs/language-coverage/): The three tiers and how a language enters one.
 - [Template contract (DTS v2)](https://www.dctx.internet.technology/docs/templates-contract/): DTS source v2 and the compiled plan IR v1.
 - [Templating engine (ADR-003)](https://www.dctx.internet.technology/docs/templating/): Markers, ahead-of-time compilation, the two rendering passes and the data variables.
-- [CLI exit codes](https://www.dctx.internet.technology/docs/exit-codes/): The exit-code contract for map, pack, mcp and languages.
+- [CLI exit codes](https://www.dctx.internet.technology/docs/exit-codes/): The exit-code contract for map, pack and languages.
 - [How dctx works](https://www.dctx.internet.technology/how-it-works/): Five short animations: two scopes of one binary, calls times context, prefix stability, the giant folder and the safe path for new users.
 
 ### CLI
 
-- [CLI reference](https://www.dctx.internet.technology/cli/): Every dctx command, flag, environment variable, exit code and MCP tool, captured from the dctx binary.
+- [CLI reference](https://www.dctx.internet.technology/cli/): Every dctx command, flag, environment variable, and exit code, captured from the dctx binary.
 - [Languages](https://www.dctx.internet.technology/languages/): The 50 language families dctx indexes, by tier: full, outline and docs.
 
 ### Examples
@@ -152,19 +151,19 @@ These existed before 1.2.0 and no longer work. A transcript that uses them descr
 
 ```text
 # dctx map
-d:docs/START.md#What dctx is	heading	L3-241
-d:docs/START.md#Choose your path	heading	L17-114
+d:docs/START.md#What dctx is	heading	L3-229
+d:docs/START.md#Choose your path	heading	L17-112
 d:docs/START.md#One giant folder	heading	L27-45
-d:docs/START.md#Many small projects	heading	L46-67
-d:docs/START.md#Agent builder embedding a library	heading	L68-93
-d:docs/START.md#Team / enterprise admin	heading	L94-114
-d:docs/START.md#Safe path in ten minutes	heading	L115-194
-d:docs/START.md#1. Install the system binary	heading	L117-137
-d:docs/START.md#2. Choose one project and inspect one answer	heading	L138-151
-d:docs/START.md#3. Configure the lean MCP profile	heading	L152-173
-d:docs/START.md#4. Measure before changing anything	heading	L174-194
-d:docs/START.md#Responsibilities	heading	L195-215
-d:docs/START.md#Two scopes, one binary	heading	L216-241
+d:docs/START.md#Many small projects	heading	L46-66
+d:docs/START.md#Agent builder embedding a library	heading	L67-91
+d:docs/START.md#Team / enterprise admin	heading	L92-112
+d:docs/START.md#Safe path in ten minutes	heading	L113-183
+d:docs/START.md#1. Install the system binary	heading	L115-135
+d:docs/START.md#2. Choose one project and inspect one answer	heading	L136-149
+d:docs/START.md#3. Use the CLI from your shell or agent	heading	L150-162
+d:docs/START.md#4. Measure before changing anything	heading	L163-183
+d:docs/START.md#Responsibilities	heading	L184-203
+d:docs/START.md#Two scopes, one binary	heading	L204-229
 # dctx map
 d:docs/WHY-DCTX.md#Why dctx exists	heading	L3-159
 d:docs/WHY-DCTX.md#The problem	heading	L7-14
@@ -189,32 +188,29 @@ d:README.md#What the output looks like	heading	L88-203
 d:README.md#Pack a project	heading	L92-140
 d:README.md#Find a symbol, then read it	heading	L141-167
 d:README.md#Pack for a task	heading	L168-203
-d:README.md#Which mode?	heading	L204-213
-d:README.md#Measured, in the open	heading	L214-233
-d:README.md#Start and choose your path	heading	L234-247
-d:README.md#The core belief: prompt-processing efficiency	heading	L248-258
-d:README.md#Quick Start	heading	L259-274
-d:README.md#Map mode: context for agents	heading	L275-285
-d:README.md#From source	heading	L286-303
-d:README.md#Use as a library	heading	L304-338
-d:README.md#CLI Reference	heading	L339-473
-d:README.md#Language tiers	heading	L404-473
-d:README.md#Security & Privacy	heading	L474-507
-d:README.md#Open source and maintenance	heading	L508-515
-d:README.md#Where it comes from	heading	L516-520
-d:README.md#Contributing	heading	L521-531
+d:README.md#Which mode?	heading	L204-212
+d:README.md#Measured, in the open	heading	L213-232
+d:README.md#Start and choose your path	heading	L233-246
+d:README.md#The core belief: prompt-processing efficiency	heading	L247-257
+d:README.md#Quick Start	heading	L258-272
+d:README.md#Map mode: context for agents	heading	L273-283
+d:README.md#From source	heading	L284-301
+d:README.md#Use as a library	heading	L302-336
+d:README.md#CLI Reference	heading	L337-468
+d:README.md#Language tiers	heading	L399-468
+d:README.md#Security & Privacy	heading	L469-502
+d:README.md#Open source and maintenance	heading	L503-510
+d:README.md#Where it comes from	heading	L511-515
+d:README.md#Contributing	heading	L516-526
 # dctx map
-d:docs/MODALITIES.md#Choosing how to use dctx	heading	L3-339
-d:docs/MODALITIES.md#Available surfaces and publication status	heading	L11-25
-d:docs/MODALITIES.md#Choose by task	heading	L26-36
-d:docs/MODALITIES.md#Human, one-off: pack to clipboard	heading	L37-56
-d:docs/MODALITIES.md#Short agent task: grep can be enough	heading	L57-85
-d:docs/MODALITIES.md#Huge trees: scope before indexing	heading	L86-164
-d:docs/MODALITIES.md#MCP server: convenient tools with startup context	heading	L165-255
-d:docs/MODALITIES.md#Client configuration	heading	L173-204
-d:docs/MODALITIES.md#Tools and startup cost	heading	L205-255
-d:docs/MODALITIES.md#CI / prompt-cache prefix stability	heading	L256-279
-d:docs/MODALITIES.md#Rust library: embed the facade	heading	L280-314
-d:docs/MODALITIES.md#Desktop app: Tauri preview today	heading	L315-322
-d:docs/MODALITIES.md#Python, Node and Go wrappers	heading	L323-339
+d:docs/MODALITIES.md#Choosing how to use dctx	heading	L3-244
+d:docs/MODALITIES.md#Available surfaces and publication status	heading	L11-24
+d:docs/MODALITIES.md#Choose by task	heading	L25-34
+d:docs/MODALITIES.md#Human, one-off: pack to clipboard	heading	L35-54
+d:docs/MODALITIES.md#Short agent task: grep can be enough	heading	L55-81
+d:docs/MODALITIES.md#Huge trees: scope before indexing	heading	L82-160
+d:docs/MODALITIES.md#CI / prompt-cache prefix stability	heading	L161-184
+d:docs/MODALITIES.md#Rust library: embed the facade	heading	L185-219
+d:docs/MODALITIES.md#Desktop app: Tauri preview today	heading	L220-227
+d:docs/MODALITIES.md#Python, Node and Go wrappers	heading	L228-244
 ```

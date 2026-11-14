@@ -9,9 +9,9 @@ tool descriptions, conversation replay, model output and provider cache effects.
 
 ## Grep plus file reads
 
-The [11 November whole-session benchmark](https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261111.md) measured grep plus reads against dctx CLI and MCP: CLI median total tokens -5.01 %; the pre-registered 25 % savings rule was not met.
+The [11 November whole-session benchmark](https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261111.md) measured grep plus reads against dctx CLI: CLI median total tokens -5.01 %; the pre-registered 25 % savings rule was not met.
 Official strict citation recall medians (A/B/C): 10.10 % / 14.46 % / 13.41 %; diagnostic file-level recall: 53.77 % / 71.70 % / 76.42 %. The claim is accuracy and bounded context, not token savings.
-On this corpus and model dctx did not save 25 % tokens; MCP cost +6.8 % tokens and +30 % wall time. The linked report gives median [min, max], methods and limitations; corpus and raw answers are private.
+On this corpus and model dctx did not save 25 % tokens. The linked report gives median [min, max], methods and limitations; corpus and raw answers are private.
 
 ## Secondary historical evidence: other-tool protocols
 
@@ -307,7 +307,7 @@ These exclusions apply to the historical tool-output protocols below the whole-s
 Call and import edges (`19e90a1`), byte-stable answers (`ce18608`), `.env` omission in pack (`6d4deec`),
 outline symbols for 25 formats and plain-text sections (`9c61ac9`, `e0821e3`, `839bd45`, `a32dad3`),
 neighbors depth 4 (`0de5ce1`), `hubs` (`6bc0cbc`), `grep` (`5691234`), `skeleton` (`2243c38`), `path` (`670e9e3`),
-`export` (`ac8408c`), `dctx mcp` (`50bbce4`) and a 1 GiB source ceiling (`5d26781`). Each feature's focused check, and
+`export` (`ac8408c`) and a 1 GiB source ceiling (`5d26781`). Each feature's focused check, and
 then all 15 checks together on `ac8408c`, passed on the Linux benchmark host before the benchmark ran.
 
 ## Next

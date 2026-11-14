@@ -120,16 +120,26 @@ impl Budget {
     }
 
     /// `Resources.Receive`: check every listed dimension first, then charge all or none.
+    /// Repeated dimensions accumulate within the batch. A refusal leaves every quota unchanged.
+    /// Empty batches succeed; a successful repeat charges again rather than acting as replay.
+    ///
+    /// ```
+    /// use dctx_plugin_host::{Budget, Dimension};
+    /// let mut budget = Budget::new(&[10], &[], &[], &[], &[]);
+    /// assert!(budget.charge(&[(Dimension::Content, 6), (Dimension::Content, 5)]).is_err());
+    /// assert_eq!(budget.quota(Dimension::Content).used(), 0);
+    /// ```
     /// # Errors
     /// Refuses if any charged quota would overflow or exceed its limit; charges are validated before mutation.
     pub fn charge(&mut self, charges: &[(Dimension, u64)]) -> Result<(), HostRefusal> {
         self.trace.push(ModelAction::ResourcesReceive);
+        let mut quotas = self.quotas;
         for (dimension, n) in charges {
-            self.quota(*dimension).check(*n)?;
+            if let Some((_, quota)) = quotas.iter_mut().find(|(d, _)| d == dimension) {
+                quota.charge(*n)?;
+            }
         }
-        for (dimension, n) in charges {
-            self.quota_mut(*dimension).charge(*n)?;
-        }
+        self.quotas = quotas;
         Ok(())
     }
 

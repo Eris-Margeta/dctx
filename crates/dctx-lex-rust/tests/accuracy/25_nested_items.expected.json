@@ -1,0 +1,9 @@
+[
+  {"name": "outer", "kind": "Function", "line": 1, "parent": null},
+  {"name": "outer::Local", "kind": "Struct", "line": 2, "parent": "outer"},
+  {"name": "outer::Local::impl", "kind": "Impl", "line": 3, "parent": "outer"},
+  {"name": "outer::Local::run", "kind": "Method", "line": 4, "parent": "outer::Local::impl"},
+  {"name": "outer::Local::run::helper", "kind": "Function", "line": 4, "parent": "outer::Local::run"},
+  {"name": "outer::LIMIT", "kind": "Const", "line": 6, "parent": "outer"},
+  {"name": "outer::Count", "kind": "TypeAlias", "line": 7, "parent": "outer"}
+]

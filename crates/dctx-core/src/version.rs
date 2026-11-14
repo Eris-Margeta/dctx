@@ -11,7 +11,7 @@ mod after_diff;
 
 pub use after_diff::version_after_diff;
 
-/// Predstavlja verzioniranje projekta (V{Major}.{Minor}).
+/// Snapshot revision, displayed as `V<major>` or `V<major>.<minor>`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Version {
     /// Major snapshot revision, displayed after the `V` prefix.
@@ -36,7 +36,7 @@ impl fmt::Display for VersionExhausted {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             formatter,
-            "version {}.{} cannot advance",
+            "version {}.{} cannot advance; start a new snapshot history before publishing",
             self.major, self.minor
         )
     }
@@ -45,7 +45,7 @@ impl fmt::Display for VersionExhausted {
 impl std::error::Error for VersionExhausted {}
 
 impl Version {
-    /// Defaultni početak: V1
+    /// Initial snapshot revision, V1.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
@@ -54,33 +54,21 @@ impl Version {
         Self { major: 1, minor: 0 }
     }
 
-    /// Parsira string poput "V1", "V1.5", "V2.0".
-    /// Ako je format neispravan, vraća V1.
+    /// Parses `V<major>` or `V<major>.<minor>` with `u32` components.
+    /// Malformed or overflowing components return V1 for the whole input.
+    /// A zero major is retained as the legacy unknown-version sentinel.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
     )]
     pub fn parse(version_str: &str) -> Self {
-        if !version_str.starts_with('V') {
+        let Some(clean_str) = version_str.strip_prefix('V') else {
             return Self::new_v1();
-        }
-
-        let clean_str = &version_str[1..]; // Makni 'V'
-
-        // Pokušaj splitati na točki
-        let parts: Vec<&str> = clean_str.split('.').collect();
-
-        if parts.is_empty() {
-            return Self::new_v1();
-        }
-
-        let major = parts[0].parse::<u32>().unwrap_or(1);
-        let minor = if parts.len() > 1 {
-            parts[1].parse::<u32>().unwrap_or(0)
-        } else {
-            0
         };
-
+        let (major, minor) = clean_str.split_once('.').unwrap_or((clean_str, "0"));
+        let (Ok(major), Ok(minor)) = (major.parse::<u32>(), minor.parse::<u32>()) else {
+            return Self::new_v1();
+        };
         Self { major, minor }
     }
 }

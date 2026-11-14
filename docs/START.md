@@ -9,10 +9,10 @@ is complete or minimal. The shipped engine selects lexical symbols and document
 sections, verifies source reads and bounds answers. A 200 GB folder needs a
 relevant sub-root and ignore rules; output budgets do not bound scanning.
 Byte stability enables reuse, while provider cache rules determine actual hits.
-dctx has no embeddings, network, telemetry or agent loop in its pack/map/MCP
+dctx has no embeddings, network, telemetry or agent loop in its pack/map
 workflows. It does not call a model or execute the task for you.
 
-> dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.
+> dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, direct CLI commands. Measure before you change anything.
 
 ## Choose your path
 
@@ -45,13 +45,12 @@ before warming an index; `--in` only filters after indexing.
 
 ### Many small projects
 
-Many small projects: system binary; lean MCP once in the agent config; nothing per project. Pitfall: stale caches of deleted projects -> cache gc/purge.
+Many small projects: system binary; CLI commands from each project root; no project dependency. Pitfall: stale caches of deleted projects -> cache gc/purge.
 
-Install one binary and configure the [lean MCP profile](guides/MCP.md) in your
-agent. The config can live at user scope; launch the server with the intended
-project root for each session. No project dependency is required. Start with a
-`find` call followed by `read` using its exact ID. Expect source plus freshness
-and precision in JSON, not a general receipt or session delta.
+Install one binary on PATH and use it from a shell or your agent's shell tool.
+Run commands from the intended project root. No project dependency is required.
+Start with `dctx map find`, then `dctx map read` using its exact ID. Expect source plus
+freshness and precision in JSON, not a general receipt or session delta.
 
 ```sh
 dctx cache status --json
@@ -86,10 +85,9 @@ Expect JSON records with IDs and precision/freshness metadata; pass a returned
 ID to `map read --json` for `source_utf8`. Keep engine selection and rendering in
 the engine. Pass opaque continuation cursors back unchanged rather than slicing
 pack text. [Named context](CONTEXT.md) adds stable chunk IDs and opt-in delivery
-sessions: use `dctx context TARGET --session ID --dedupe`, or the existing MCP
-`read` tool with `context: true`. Delivery history lasts for the CLI invocation
-or MCP/RPC connection; general receipts remain planned. A Rust facade `Session`
-is an in-process API object. See the [scope contract](#two-scopes-one-binary).
+sessions: use `dctx context TARGET --session ID --dedupe`. Delivery history lasts
+for the CLI invocation or RPC connection; general receipts remain planned.
+A Rust facade `Session` is an in-process API object. See the [scope contract](#two-scopes-one-binary).
 
 ### Team / enterprise admin
 
@@ -149,31 +147,22 @@ with `dctx map read 'ID' --json`. The JSON includes verified source bytes as
 `source_utf8` and reports precision, freshness and pagination. Keep the same
 root between calls, because root-relative IDs change when the root changes.
 
-### 3. Configure the lean MCP profile
+### 3. Use the CLI from your shell or agent
 
-In a client accepting `mcpServers`, replace both absolute paths:
+Run from the selected project root:
 
-```json
-{
-  "mcpServers": {
-    "dctx": {
-      "command": "/absolute/path/to/dctx",
-      "args": ["mcp", "--profile", "lean", "/absolute/path/to/project"]
-    }
-  }
-}
+```sh
+dctx map find Config --limit 5 --budget 500
+dctx map read 'ID_FROM_FIND' --budget 2000
 ```
 
-Restart the client and confirm that `find` and `read` are available. The lean
-profile has **two tools**, not the planned `context/read/find` profile. For a
-controlled comparison, turn off overlapping host file tools where the client
-allows it; keep instructions and task scope consistent. Use the
-[MCP guide](guides/MCP.md) for profile selection and measured startup overhead,
-and [client-specific configs](MODALITIES.md#client-configuration) for other formats.
+Replace `ID_FROM_FIND` with an exact ID returned by `find`. Use the same commands
+through an agent's shell tool. See the [map guide](guides/MAP-MODE.md) for bounds
+and pagination, and [agent guidance](guides/AGENTS-SNIPPET.md) for shell usage.
 
 ### 4. Measure before changing anything
 
-Run the same small task with grep plus narrow file reads and with lean MCP.
+Run the same small task with grep plus narrow file reads and with dctx CLI.
 Record task correctness, number of tool calls, startup instructions and schemas,
 all model input/output tokens, provider cache hits, latency and billed cost when
 available. Include the history carried into each model turn. Smaller tool
@@ -195,15 +184,14 @@ See [measurement evidence](BENCHMARK-20261030.md) and
 ## Responsibilities
 
 This table uses the scope contract's wording, with unshipped provisions marked
-`(planned)`. Prebuilt archives with `SHA256SUMS` exist today; signed CLI binary
-releases do not. ACP setup is planned; the MCP lean profile and its startup
-measurement exist.
+`(planned)`. Prebuilt archives with `SHA256SUMS`, cosign signatures, SBOM and
+provenance are available; see [download verification](VERIFYING.md).
 
 | Level | dctx provides | You are responsible for |
 |---|---|---|
 | System binary | Release archives with cosign signatures, SBOM and provenance, cache caps, `dctx doctor`, journals (planned), receipts (planned) | Choosing roots, policy file, keeping one version on PATH |
 | Project library | Pinned vendored binary and protocol client (Node on npm; Python and Go from CI), same bytes as CLI (checked in CI) | Pinning the version, exclusions in the project policy, not re-implementing engine logic |
-| MCP and ACP agent setup | Lean profile, tested client configs, measured start-up cost | Turning off the host's own file tools, picking a profile, session ids, reading receipts |
+| Agent shell setup | CLI commands and `agent-setup` guidance | Choosing roots, bounding answers and measuring whole sessions |
 | CI and cache | Byte-stable pack, prefix tiers (planned), deterministic exit codes | Pinning the binary, caching the index between runs, treating pack drift as a signal not noise |
 
 For current CLI exclusions, use `.gitignore` and `.dctxignore`; the unified policy
@@ -218,7 +206,7 @@ from the planned layered prefix tiers.
 The following is the distribution contract for the project-library wrappers
 and signed releases:
 
-> The system `dctx` on PATH belongs to you and your agents. A binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Same signed engine, different owner. Interactive agents and MCP call the system binary; application code and CI call the project binary; a library never silently falls back to PATH.
+> The system `dctx` on PATH belongs to you and your agents. A binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Same signed engine, different owner. Interactive agents call the system binary; application code and CI call the project binary; a library never silently falls back to PATH.
 
 Today, install the system binary from release archives. The Python, Node and Go
 wrappers already follow the no-fallback contract: they resolve an explicit path,

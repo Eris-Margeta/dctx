@@ -9,7 +9,7 @@ use super::Distribution;
 use crate::domain::bundle::OfflineBundle;
 use crate::domain::consent::CapabilitySet;
 use crate::domain::digest::{Fingerprint, PayloadCheck, Sha256Hex};
-use crate::domain::index::VerifiedIndex;
+use crate::domain::index::{IndexRelease, VerifiedIndex};
 use crate::domain::manifest::{Artifact, Payload, RELEASE_FILES};
 use crate::domain::names::{PluginId, SafeFileName, Version};
 use crate::domain::origin::HttpsUrl;
@@ -45,7 +45,8 @@ enum Source<'s> {
 }
 
 impl Distribution<'_> {
-    /// Installs `id` from the verified discovery index (newest stable or exact `version`).
+    /// Installs `id` from the verified discovery index (highest sequence or exact `version`).
+    /// The authenticated manifest must repeat the selected version, sequence and byte digest.
     /// # Errors
     /// Propagates index/trust selection, network/origin, signature, payload, quota, lock, and storage failures.
     pub fn install_from_index(
@@ -56,7 +57,7 @@ impl Distribution<'_> {
     ) -> Result<InstallReport, DistributionError> {
         let entry = index.entry(id, self.trust)?;
         let release = entry.select(version)?;
-        self.install_remote(id, &release.manifest_url, Some(release.manifest_sha256))
+        self.install_remote(id, &release.manifest_url, Some(release))
     }
 
     /// Installs from a signed manifest URL (`--url`); identity must match the approved `id`.
@@ -74,16 +75,27 @@ impl Distribution<'_> {
         &self,
         id: &PluginId,
         manifest_url: &HttpsUrl,
-        manifest_sha256: Option<Sha256Hex>,
+        release: Option<&IndexRelease>,
     ) -> Result<InstallReport, DistributionError> {
         let held = self.lock()?;
         let manifest = self.fetch_all(manifest_url, MANIFEST_MAX)?;
-        if manifest_sha256.is_some_and(|expected| Sha256Hex::of(&manifest).ok() != Some(expected)) {
+        if release
+            .is_some_and(|release| Sha256Hex::of(&manifest).ok() != Some(release.manifest_sha256))
+        {
             return Err(DistributionError::ManifestDigestMismatch);
         }
         let sig_url = manifest_url.sibling(&safe("plugin.json.sig")?);
         let signature = self.fetch_all(&sig_url, SIGNATURE_BYTES as u64)?;
         let verified = self.trust.authenticate(&manifest, &signature, id)?;
+        if release.is_some_and(|release| {
+            verified.manifest.version != release.version
+                || verified.manifest.release_sequence != release.release_sequence
+        }) {
+            return Err(DistributionError::malformed(
+                Document::Index,
+                "release-mismatch",
+            ));
+        }
         match self.fetch_all(&manifest_url.sibling(&safe("SHA256SUMS")?), MAX_SUMS_BYTES) {
             Ok(sums) => check_sums(&verified.manifest, &sums)?,
             Err(DistributionError::Network(NetworkError::NotFound)) => {}

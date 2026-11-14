@@ -1,0 +1,8 @@
+[{"name":"sql","kind":"const","line":3,"parent":null},
+{"name":"page","kind":"fn","line":9,"parent":null},
+{"name":"kotlinSnippet","kind":"const","line":17,"parent":null},
+{"name":"withQuotes","kind":"const","line":24,"parent":null},
+{"name":"afterRaw","kind":"fn","line":26,"parent":null},
+{"name":"RawHolder","kind":"class","line":28,"parent":null},
+{"name":"RawHolder::regex","kind":"const","line":29,"parent":"RawHolder"},
+{"name":"RawHolder::use","kind":"method","line":31,"parent":"RawHolder"}]

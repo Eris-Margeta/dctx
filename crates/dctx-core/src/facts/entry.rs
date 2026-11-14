@@ -20,7 +20,8 @@ pub struct SourceEntry {
 }
 
 impl SourceEntry {
-    /// A file entry.
+    /// Creates a file entry without validating `name`.
+    /// Validate it with [`RelativePath::child`] before using it as a source path.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
@@ -32,7 +33,8 @@ impl SourceEntry {
         }
     }
 
-    /// A directory entry.
+    /// Creates a directory entry without validating `name`.
+    /// Validate it with [`RelativePath::child`] before using it as a source path.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
@@ -87,6 +89,8 @@ pub struct ReadGrant {
 impl ReadGrant {
     /// Grants a read of `path` iff the item and all its ancestors were decided `Include`
     /// (`ancestors_readable`) and `decision` itself permits reading content.
+    /// The caller must establish the ancestor decisions; this function does not
+    /// walk a tree or check whether the path identifies a regular file.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."

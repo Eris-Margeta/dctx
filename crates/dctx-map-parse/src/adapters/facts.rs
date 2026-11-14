@@ -18,7 +18,7 @@ pub(super) struct Facts {
 impl Facts {
     #[allow(
         clippy::cast_possible_truncation,
-        reason = "Both parser entry points cap source at 8 MiB before fact assembly, so its line count fits u32."
+        reason = "Both parser entry points cap source at 32 MiB (8 MiB outside Markdown) before fact assembly, so its line count fits u32."
     )]
     pub fn new(
         path: &str,
@@ -130,6 +130,53 @@ pub(super) fn file_precision(
         completion,
         EvidenceLabel::new(parser)?,
     ))
+}
+
+/// Kotlin and PHP lexers count bare CR as a line break. Map those coordinates
+/// back to the model's LF-only lines, retaining the original source bytes.
+pub(super) fn project_cr_lines(
+    result: Result<ParsedFile, ParseError>,
+    bytes: &[u8],
+) -> Result<ParsedFile, ParseError> {
+    if !bytes
+        .iter()
+        .enumerate()
+        .any(|(at, byte)| *byte == b'\r' && bytes.get(at + 1) != Some(&b'\n'))
+    {
+        return result;
+    }
+    let mut line = 1_u32;
+    let mut projection = vec![line];
+    for (at, byte) in bytes.iter().enumerate() {
+        if *byte == b'\n' {
+            line += 1;
+            projection.push(line);
+        } else if *byte == b'\r' && bytes.get(at + 1) != Some(&b'\n') {
+            projection.push(line);
+        }
+    }
+    let project = |value: u32| {
+        projection
+            .get(value.saturating_sub(1) as usize)
+            .copied()
+            .unwrap_or(line)
+    };
+    match result {
+        Ok(mut file) => {
+            for node in &mut file.nodes {
+                node.lines = node.lines.map(project);
+            }
+            for reference in &mut file.references {
+                reference.lines = reference.lines.map(project);
+            }
+            Ok(file)
+        }
+        Err(ParseError::Syntax { path, line }) => Err(ParseError::Syntax {
+            path,
+            line: project(line),
+        }),
+        Err(error) => Err(error),
+    }
 }
 
 #[cfg(feature = "syntax-tree-sitter")]

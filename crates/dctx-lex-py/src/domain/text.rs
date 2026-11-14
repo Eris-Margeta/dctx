@@ -24,7 +24,19 @@ pub fn body_fingerprint(body: &str) -> String {
 }
 
 pub(crate) fn collapse(value: &str) -> String {
-    value.split_whitespace().collect::<Vec<_>>().join(" ")
+    if value.is_ascii()
+        && ![b'\t', b'\n', b'\r', 0x0b, 0x0c]
+            .iter()
+            .any(|byte| value.as_bytes().contains(byte))
+    {
+        value
+            .split(' ')
+            .filter(|part| !part.is_empty())
+            .collect::<Vec<_>>()
+            .join(" ")
+    } else {
+        value.split_whitespace().collect::<Vec<_>>().join(" ")
+    }
 }
 
 /// Whitespace-normalized text up to and including the first `". "`.
@@ -88,6 +100,9 @@ fn quote_kind(rest: &str) -> Option<(char, bool)> {
 }
 
 fn unescape(value: &str) -> String {
+    if !value.contains('\\') {
+        return value.to_owned();
+    }
     let mut out = String::with_capacity(value.len());
     let mut chars = value.chars().peekable();
     while let Some(ch) = chars.next() {

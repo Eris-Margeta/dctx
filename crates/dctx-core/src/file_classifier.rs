@@ -24,7 +24,11 @@ pub enum FileContentHandling {
     OmitSvgContent,
 }
 
-/// Classifies a file to determine content handling strategy
+/// Classifies bytes using a case-insensitive extension first, then a content sniff.
+/// Empty content is text unless the extension selects another handling mode.
+/// NUL anywhere makes an unknown type binary; otherwise the first 8,192 bytes
+/// must contain over 30% non-whitespace ASCII controls to be binary. This is a
+/// heuristic, not UTF-8 validation, and bytes are never decoded or read from disk.
 #[allow(
     clippy::must_use_candidate,
     reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."

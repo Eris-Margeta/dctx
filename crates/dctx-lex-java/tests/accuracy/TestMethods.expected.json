@@ -1,0 +1,26 @@
+[
+  {
+    "name": "ServiceChecks",
+    "kind": "class",
+    "line": 1,
+    "parent": null
+  },
+  {
+    "name": "ServiceChecks::accepts",
+    "kind": "method",
+    "line": 2,
+    "parent": "ServiceChecks"
+  },
+  {
+    "name": "ServiceChecks::rejects",
+    "kind": "method",
+    "line": 4,
+    "parent": "ServiceChecks"
+  },
+  {
+    "name": "ServiceChecks::helper",
+    "kind": "method",
+    "line": 5,
+    "parent": "ServiceChecks"
+  }
+]

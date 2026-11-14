@@ -1,0 +1,44 @@
+[
+  {
+    "name": "Decoder",
+    "kind": "class",
+    "line": 1,
+    "parent": null
+  },
+  {
+    "name": "Decoder::Decoder",
+    "kind": "method",
+    "line": 2,
+    "parent": "Decoder"
+  },
+  {
+    "name": "Decoder::Decoder",
+    "kind": "method",
+    "line": 3,
+    "parent": "Decoder"
+  },
+  {
+    "name": "Decoder::parse",
+    "kind": "method",
+    "line": 4,
+    "parent": "Decoder"
+  },
+  {
+    "name": "Decoder::parse",
+    "kind": "method",
+    "line": 5,
+    "parent": "Decoder"
+  },
+  {
+    "name": "Decoder::Inner",
+    "kind": "class",
+    "line": 6,
+    "parent": "Decoder"
+  },
+  {
+    "name": "Decoder::Inner::Inner",
+    "kind": "method",
+    "line": 6,
+    "parent": "Decoder::Inner"
+  }
+]

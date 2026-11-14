@@ -12,7 +12,7 @@
   if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
   if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
 })();</script>
-<link rel="stylesheet" href="/assets/site.26ea97c0.css">
+<link rel="stylesheet" href="/assets/site.a25acb15.css">
 <link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
@@ -20,7 +20,7 @@
 <meta name="description" content="Run the real dctx binary on a sample project or on your own text files, in the browser.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
-<meta name="dctx-build" content="c02d47d48ed42ea1c0878ab905d29ada93b4a8bfc4b6844205cfa1be14028ed4">
+<meta name="dctx-build" content="5911acafec879400818ec5bfbf4d92dd2d34c5307f59d1772c769078aed1140e">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -56,7 +56,7 @@
 <link rel="search" type="application/opensearchdescription+xml" title="dctx" href="/opensearch.xml">
 <link rel="alternate" type="application/atom+xml" title="dctx news" href="/news/feed.xml">
 <link rel="alternate" type="application/atom+xml" title="dctx releases" href="/changelog/feed.xml">
-<script src="/assets/playground.f59349d5.js" defer></script>
+<script src="/assets/playground.487b116b.js" defer></script>
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -195,8 +195,7 @@
 <p class="lede">Run the real <code>dctx 1.3.1</code> on a bundled sample or on text files you paste. Each run gets a fresh directory and an empty environment, and is limited to 3 s, 2 s of CPU and 256 MiB; nothing is stored. Commands are checked against the CLI's own options and never reach a shell.</p></div>
 <div class="pg">
  <div>
-  <div class="tabs js-only" role="tablist" aria-label="Mode"><button type="button" role="tab" id="t-cmd" aria-controls="p-cmd" aria-selected="true">Command</button><button type="button" role="tab" id="t-mcp" aria-controls="p-mcp" aria-selected="false">MCP</button></div>
-  <div id="p-cmd" role="tabpanel" aria-labelledby="t-cmd">
+  <div id="p-cmd">
    <form id="pg-form" method="post" action="/api/v1/run-form">
     <div class="field"><label for="pg-cmd">Command (after <code>dctx</code>)</label><input type="text" id="pg-cmd" name="cmd" value="map find greet" autocomplete="off" spellcheck="false" required></div>
     <div class="quick js-only" aria-label="Examples"><button type="button" data-cmd="map find greet">map find greet</button><button type="button" data-cmd="map find greet --json">map find greet --json</button><button type="button" data-cmd="map neighbors &#x27;s:src/util.rs#greet&#x27; --edge calls --dir in">map neighbors &#x27;s:src/util.rs#greet&#x27; --edge calls --dir in</button><button type="button" data-cmd="map read &#x27;s:src/util.rs#greet&#x27; --json">map read &#x27;s:src/util.rs#greet&#x27; --json</button><button type="button" data-cmd="map skeleton src/store.rs">map skeleton src/store.rs</button><button type="button" data-cmd="map hubs --limit 10">map hubs --limit 10</button><button type="button" data-cmd="map path &#x27;s:src/main.rs#main&#x27; &#x27;s:src/store.rs#save&#x27;">map path &#x27;s:src/main.rs#main&#x27; &#x27;s:src/store.rs#save&#x27;</button><button type="button" data-cmd="map export --format mermaid">map export --format mermaid</button><button type="button" data-cmd="pack . --for &#x27;greet store&#x27; --budget 600">pack . --for &#x27;greet store&#x27; --budget 600</button><button type="button" data-cmd="pack . --ext rs">pack . --ext rs</button><button type="button" data-cmd="languages">languages</button></div>
@@ -223,18 +222,13 @@ def run():
     <div class="actions"><button class="btn btn-primary" type="submit">Run</button><a class="btn" href="/api/v1/openapi.json">API (OpenAPI)</a></div>
    </form>
   </div>
-  <div id="p-mcp" role="tabpanel" aria-labelledby="t-mcp" hidden>
-   <div class="field"><label for="mcp-in">JSON-RPC messages for <code>dctx mcp</code>, one per line (at most 4); the place is the sample or files chosen on the Command tab</label><textarea id="mcp-in" spellcheck="false">{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1,&quot;method&quot;:&quot;tools/list&quot;}
-{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:2,&quot;method&quot;:&quot;tools/call&quot;,&quot;params&quot;:{&quot;name&quot;:&quot;find&quot;,&quot;arguments&quot;:{&quot;query&quot;:&quot;greet&quot;}}}</textarea></div>
-   <div class="actions"><button class="btn btn-primary" type="button" id="mcp-run">Send</button></div>
-  </div>
   <p class="status" id="pg-status" role="status" aria-live="polite"><span class="no-js-only">Without JavaScript the form opens the result as a page.</span></p>
   <div class="notice" id="pg-offline" hidden><p>The playground service is not reachable. Everything else on this site works, and the runs below were recorded from dctx 1.3.1 when the site was built.</p></div>
  </div>
  <div>
   <div class="term pg-out" id="pg-out"><div class="term-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="title">dctx</span></div><div class="scroll"><pre><span class="ln out hdrl"># results appear here</span></pre></div></div>
   <h2 class="eyebrow" id="api-h">API</h2>
-  <ul class="small"><li><code>GET /api/v1/health</code> Version, sample count and limits</li><li><code>GET /api/v1/samples</code> The bundled sample projects</li><li><code>POST /api/v1/run</code> Run one dctx command</li><li><code>POST /api/v1/mcp</code> Send up to four JSON-RPC messages to one `dctx mcp` process</li><li><code>POST /api/v1/run-form</code> The same as /run for an HTML form, answered with an HTML page</li><li><code>GET /api/v1/metrics.json</code> Counters: runs, cache hits, timeouts, refusals by reason, median run time</li><li><code>GET /api/v1/openapi.json</code> This document</li></ul>
+  <ul class="small"><li><code>GET /api/v1/health</code> Version, sample count and limits</li><li><code>GET /api/v1/samples</code> The bundled sample projects</li><li><code>POST /api/v1/run</code> Run one dctx command</li><li><code>POST /api/v1/run-form</code> The same as /run for an HTML form, answered with an HTML page</li><li><code>GET /api/v1/metrics.json</code> Counters: runs, cache hits, timeouts, refusals by reason, median run time</li><li><code>GET /api/v1/openapi.json</code> This document</li></ul>
  </div>
 </div>
 <h2 id="recorded">Recorded runs</h2>

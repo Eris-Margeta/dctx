@@ -80,7 +80,7 @@ impl<'de> serde::Deserialize<'de> for AnswerBudget {
 pub struct InvalidBudget;
 impl std::fmt::Display for InvalidBudget {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("budget must be 1..=2000 tokens")
+        f.write_str("invalid budget; choose 1..=2000 tokens")
     }
 }
 impl std::error::Error for InvalidBudget {}
@@ -115,6 +115,8 @@ pub struct Relation {
 }
 
 /// One indivisible query result; JSON keys match section 4.2.
+/// Public fields and JSON decoding do not enforce verb-specific invariants;
+/// [`crate::adapters::render`] validates them before emitting an answer.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "wire-json", derive(serde::Serialize, serde::Deserialize))]
 pub struct Record {
@@ -235,6 +237,8 @@ pub enum IdentityStatus {
 }
 
 /// Unrendered answer; timestamps and commands are supplied, never read from IO.
+/// The caller bounds input strings and lists; the renderer enforces output
+/// budgets, validates metadata and records, and sorts the returned page.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Answer {
     /// Place name.

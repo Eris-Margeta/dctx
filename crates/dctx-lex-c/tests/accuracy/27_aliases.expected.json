@@ -1,0 +1,7 @@
+[
+  {"name": "internal", "kind": "untyped", "line": 1, "parent": null},
+  {"name": "internal::Value", "kind": "struct", "line": 1, "parent": "internal"},
+  {"name": "impl", "kind": "untyped", "line": 2, "parent": null},
+  {"name": "ValueAlias", "kind": "type", "line": 3, "parent": null},
+  {"name": "Size", "kind": "type", "line": 4, "parent": null}
+]

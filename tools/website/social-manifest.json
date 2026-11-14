@@ -7,9 +7,9 @@
     },
     "inputs_sha256": "178e63d6aa79edfbb1766582a045ad68f3502fc0bafec598dad7d8e65bacd53e",
     "png": {
-      "bytes": 132295,
+      "bytes": 132307,
       "file": "404.png",
-      "sha256": "a355142622b7b5792dd1d418347a488ea4cb0a215c74c37789dc30c9f506a382"
+      "sha256": "70868c48ae278bb81ea629eef2cd1e9da65ea8a035659f2b8f7bb9a8a3138b57"
     },
     "twitter": {
       "bytes": 104279,
@@ -55,20 +55,20 @@
   },
   "cli": {
     "gif": {
-      "bytes": 133874,
+      "bytes": 133896,
       "file": "cli.gif",
-      "sha256": "1f0f90dec4f20d4ced06ab0137814845fb895f6ccc0e9642797e2f7dd07ef8a1"
+      "sha256": "5c7c10d3dbef95d3629feabbe897725efd3cb9d551d452f381d1863c64d3270d"
     },
-    "inputs_sha256": "41831573d61d3ba74de7f1d1035e13ad4f7b01644c2107bff13b1809697e21f6",
+    "inputs_sha256": "59713f8b20064648a64c77e04a828f575e0267e273fd241992e4fb00b6f92f00",
     "png": {
-      "bytes": 148858,
+      "bytes": 147978,
       "file": "cli.png",
-      "sha256": "bdaba726db72dec870b34720c121815f6349a0e650a55143a5aa4b770f8a3836"
+      "sha256": "09b5d2be6f406c8031700bcd0255162ce089e7120c6f78ce236f0675b393279c"
     },
     "twitter": {
-      "bytes": 100224,
+      "bytes": 99193,
       "file": "cli.twitter.png",
-      "sha256": "03bfce52f2124d088d45dc5875aa2cc7f97fcb125970b40e19b2eee3ea7ba773"
+      "sha256": "db2536e4763bd7dff4fcb1159c6160e1f88a9920d39e4c38f32ae0ed21bb4d58"
     }
   },
   "docs": {
@@ -181,27 +181,27 @@
   },
   "docs-exit-codes": {
     "gif": {
-      "bytes": 150006,
+      "bytes": 150031,
       "file": "docs-exit-codes.gif",
-      "sha256": "cbad522b93a522d905e406f2ca91f19012c3ad8ba3dccf9b0bf4a0222d7002f5"
+      "sha256": "e56e9c4f0cbec9be4fb5b73fa85bebdf161ac0937eb72837d472a69d45430986"
     },
-    "inputs_sha256": "848f951ece1142fec497c50be1ad80874b3aefe539c4cf165ca5c8a173b754a5",
+    "inputs_sha256": "16393469f6cb95a89c7433d3a4dd94cecdba158e6e3e531b9d656f05fedfc875",
     "png": {
-      "bytes": 173833,
+      "bytes": 174195,
       "file": "docs-exit-codes.png",
-      "sha256": "24969d599a261c9b65763129a0aff967948f0196caebd88aa9c61004e67fed43"
+      "sha256": "c7dbffb4f420a704b89cf09bd5f1eb9cb1506afb104810c686978fc0ffe18f42"
     },
     "twitter": {
-      "bytes": 115437,
+      "bytes": 114769,
       "file": "docs-exit-codes.twitter.png",
-      "sha256": "eb7d9635d21ae095148474f43c2328e39f04ee4dbaad74bbcd406270b07b0a56"
+      "sha256": "75ed04dda33f955e7d5a1d04eecc0a92d1532944281cb3a8b3ee8101654ed4f4"
     }
   },
   "docs-language-coverage": {
     "gif": {
-      "bytes": 145170,
+      "bytes": 145171,
       "file": "docs-language-coverage.gif",
-      "sha256": "469caf835a4d3b2efe2598fe8b89448c88c9f3c713eb96ef237864d3d9b1768b"
+      "sha256": "e06d82e11c2eb7b60f792c36e146600bc9422b58125ae7dcd407e8918ceda5c6"
     },
     "inputs_sha256": "7bbca73fb3c9b5c19288311b5319bd355b0d0ad76484cfc5d99d65cd799414fa",
     "png": {
@@ -235,20 +235,20 @@
   },
   "docs-modalities": {
     "gif": {
-      "bytes": 143757,
+      "bytes": 143334,
       "file": "docs-modalities.gif",
-      "sha256": "35a0c667fee75ad9af372d7139e928e54c64c86f311bc52b2486ad16d0c4371b"
+      "sha256": "6f8a7407399e23c1f3840fe9c526f1545db99a52d3d3ed8e2f498c3f15a8fda0"
     },
-    "inputs_sha256": "cc48b5704634ebcb39743b5c9fcb838718ecead24d8f132827f8ce8dc6168d00",
+    "inputs_sha256": "e80272e6ed9dc9a22e7886a8a40e6ca66e66d2e0eb009953f5aad97ec0be886f",
     "png": {
-      "bytes": 159155,
+      "bytes": 159635,
       "file": "docs-modalities.png",
-      "sha256": "1e454aa339d00aa420927ac6ebd8b7fbe6ecc0d6482818b9406e70bce8fad1c3"
+      "sha256": "9a366ddb576fbdf251f1f9c4deb19c6669132aa0c1a2a410fe6adfe4922cee27"
     },
     "twitter": {
-      "bytes": 114103,
+      "bytes": 113306,
       "file": "docs-modalities.twitter.png",
-      "sha256": "d5c1a10725ec89e3a27aabf2efaa25405982dd46a6ee66aa93f8008e19f47878"
+      "sha256": "724f722866c8228845616e6e6cb54ede08e1e4d6557544759dafad106e0a321f"
     }
   },
   "docs-plugins": {
@@ -313,9 +313,9 @@
     },
     "inputs_sha256": "4f6b2f448711f10f1717a6934784f9eca7bd782ccab83cc00b8565f4ebf9f9dd",
     "png": {
-      "bytes": 178509,
+      "bytes": 178521,
       "file": "docs-releasing.png",
-      "sha256": "79d311787ff97cd3910956eafedd3c8e71685d08f42ff202cda7636d98b4478d"
+      "sha256": "ea3f13a965d33b0178581a2c3151e3844ac107579e50df1008377a8c0f8260b0"
     },
     "twitter": {
       "bytes": 117216,
@@ -379,9 +379,9 @@
   },
   "docs-templates-contract": {
     "gif": {
-      "bytes": 138100,
+      "bytes": 138101,
       "file": "docs-templates-contract.gif",
-      "sha256": "7661d6bad28065bede99b62216e9716b20f9fa9098b36e1de8bccdf79c649d15"
+      "sha256": "404b175b000f75f376d01cc415607f83d29f2d0453a7771d1cdbbeb8ba132e03"
     },
     "inputs_sha256": "c534c68d7e8d9783d7560e1f7907283ae89d8deacf20d51aff9b88a78f3a43a7",
     "png": {
@@ -588,9 +588,9 @@
       "sha256": "32435de8fa5d24fbc2550e6bfbf3528f4cc0b9dc8c5778f2f8db8f43631fbd1d"
     },
     "twitter": {
-      "bytes": 117346,
+      "bytes": 117358,
       "file": "news-desktop-free-forever.twitter.png",
-      "sha256": "5b488347f797f592b97bb3b14c96e7f8b5929fcc5f446a98b33967b47bfcb2dc"
+      "sha256": "c71c63eee65668f974a46de1c99ca5a08f0eb0c6b193e9afbbede09bd27eb9bf"
     }
   },
   "news-specification-and-benchmark": {
@@ -655,9 +655,9 @@
     },
     "inputs_sha256": "67ea856d20ab9fd5a8afa5d20547c565a2399c831b89a326cdc3c0c1e48173fa",
     "png": {
-      "bytes": 140733,
+      "bytes": 140745,
       "file": "search.png",
-      "sha256": "949cc0e8624bf8da8e9a946d9e3026613516ee069cedb80cda82c18171e49060"
+      "sha256": "5f1605f51860f5663fbd7cda126fd5bf99035a17dbdd7c5d0f17459862620e99"
     },
     "twitter": {
       "bytes": 87048,

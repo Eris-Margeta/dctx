@@ -147,6 +147,9 @@ fn encode_consent(consent: &ConsentRecord) -> Json {
 }
 
 /// Restores a registry, refusing unknown formats and fields.
+/// Input is bounded to 16 MiB, depth 32 and 1,048,576 object members. Plugin IDs,
+/// version digests/sequences and lease digests must be unique; leases must reference
+/// installed versions. Array order is retained; object order does not affect encoding.
 /// # Errors
 /// Refuses malformed/oversized JSON, unsupported formats, duplicate IDs, or invalid registry records.
 pub fn decode(bytes: &[u8]) -> Result<Registry, DistributionError> {
@@ -205,7 +208,12 @@ fn decode_record(value: &Json) -> Result<(PluginId, PluginRecord), DistributionE
             &["digest", "count"],
         )?;
         let count = u32::try_from(lease.uint("count")?).map_err(|_| refuse("lease-count"))?;
-        leases.insert(digest(lease.req("digest")?)?, count);
+        if leases
+            .insert(digest(lease.req("digest")?)?, count)
+            .is_some()
+        {
+            return Err(refuse("duplicate-lease"));
+        }
     }
     let mut rollbacks = Vec::new();
     for entry in item.array("rollbacks", 0, usize::MAX)? {
@@ -225,6 +233,16 @@ fn decode_record(value: &Json) -> Result<(PluginId, PluginRecord), DistributionE
         .iter()
         .map(decode_version)
         .collect::<Result<Vec<_>, _>>()?;
+    let mut digests = std::collections::BTreeSet::new();
+    let mut sequences = std::collections::BTreeSet::new();
+    for version in &versions {
+        if !digests.insert(version.digest) || !sequences.insert(version.release_sequence) {
+            return Err(refuse("duplicate-version"));
+        }
+    }
+    if leases.keys().any(|digest| !digests.contains(digest)) {
+        return Err(refuse("lease-not-installed"));
+    }
     if active.is_some_and(|active| !versions.iter().any(|version| version.digest == active)) {
         return Err(refuse("active-not-installed"));
     }

@@ -20,6 +20,20 @@ pub enum StreamError {
     Protocol(Refusal),
 }
 
+impl std::fmt::Display for StreamError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Io(kind) => write!(
+                f,
+                "stream IO failure ({kind:?}); next: close the failed stream and reconnect before exchanging frames"
+            ),
+            Self::Protocol(refusal) => refusal.fmt(f),
+        }
+    }
+}
+
+impl std::error::Error for StreamError {}
+
 impl From<Refusal> for StreamError {
     fn from(refusal: Refusal) -> Self {
         Self::Protocol(refusal)

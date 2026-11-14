@@ -1,0 +1,11 @@
+[{"name":"Config","kind":"class","line":3,"parent":null},
+{"name":"Config::debug","kind":"const","line":4,"parent":"Config"},
+{"name":"Config::version","kind":"const","line":5,"parent":"Config"},
+{"name":"Config::dump","kind":"method","line":7,"parent":"Config"},
+{"name":"DefaultHandler","kind":"class","line":10,"parent":null},
+{"name":"DefaultHandler::run","kind":"method","line":11,"parent":"DefaultHandler"},
+{"name":"DefaultHandler::close","kind":"method","line":12,"parent":"DefaultHandler"},
+{"name":"listener","kind":"const","line":15,"parent":null},
+{"name":"Companion","kind":"class","line":15,"parent":null},
+{"name":"Companion::run","kind":"method","line":16,"parent":"Companion"},
+{"name":"counter","kind":"fn","line":21,"parent":null}]

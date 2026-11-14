@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Route",
+    "kind": "interface",
+    "line": 2,
+    "parent": null
+  },
+  {
+    "name": "Route::value",
+    "kind": "method",
+    "line": 4,
+    "parent": "Route"
+  },
+  {
+    "name": "Route::verbs",
+    "kind": "method",
+    "line": 5,
+    "parent": "Route"
+  },
+  {
+    "name": "Route::handler",
+    "kind": "method",
+    "line": 6,
+    "parent": "Route"
+  }
+]

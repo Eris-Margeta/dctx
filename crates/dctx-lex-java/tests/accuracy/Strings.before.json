@@ -1,0 +1,6 @@
+[{"name":"Escapes","kind":"class","line":1,"parent":null},
+{"name":"Escapes::sample","kind":"const","line":2,"parent":"Escapes"},
+{"name":"Escapes::quote","kind":"const","line":3,"parent":"Escapes"},
+{"name":"Escapes::apostrophe","kind":"const","line":4,"parent":"Escapes"},
+{"name":"Escapes::brace","kind":"const","line":5,"parent":"Escapes"},
+{"name":"Escapes::alive","kind":"method","line":6,"parent":"Escapes"}]

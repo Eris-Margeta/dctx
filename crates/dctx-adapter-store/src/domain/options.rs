@@ -40,6 +40,7 @@ pub struct StoreOptions {
     /// Durable or explicit ephemeral publication.
     pub mode: DurabilityMode,
     /// Trust namespace stored in kind 1. Not a filesystem path.
+    /// One to 64 ASCII letters, digits, dots, underscores or hyphens; `.git` is refused.
     pub namespace: String,
 }
 
@@ -66,6 +67,7 @@ impl StoreOptions {
 }
 
 /// Revisions stored in manifest kind 5. They are not VCS identities.
+/// Each text field accepts at most 4096 UTF-8 bytes and must not contain NUL.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Revisions {
     /// Resolver revision text.
@@ -106,9 +108,11 @@ pub struct SegmentBlob {
 /// One generation publish for a single root.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PublishRequest {
-    /// Root id. Not a path and not `.git`.
+    /// Root id: one to 64 ASCII letters, digits, dots, underscores or hyphens.
+    /// Dot components, `.git` and trailing dots are refused.
     pub root: String,
     /// Monotonic generation. The first committed generation is 1.
+    /// Later values must be the exact successor; no successor exists after `u64::MAX`.
     pub generation: u64,
     /// Source snapshot digest.
     pub snapshot: [u8; 32],
@@ -116,7 +120,7 @@ pub struct PublishRequest {
     pub view: [u8; 32],
     /// Policy epoch captured with the view.
     pub policy_epoch: u64,
-    /// Segments named by the new manifest.
+    /// Segments named by the new manifest. Duplicates are collapsed and digest order is canonical.
     pub segments: Vec<SegmentBlob>,
     /// Kind 5 revisions.
     pub revisions: Revisions,

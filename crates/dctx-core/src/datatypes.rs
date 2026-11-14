@@ -7,7 +7,7 @@
 use crate::domain::FileHandlingDecision;
 use std::path::PathBuf;
 
-/// Ekvivalent za `NodeType` iz C-a
+/// Kind of a snapshot tree node.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NodeType {
     /// A file whose content may be included in a snapshot.
@@ -16,7 +16,7 @@ pub enum NodeType {
     Directory,
 }
 
-/// Ekvivalent za `PatternType` iz C-a
+/// Matching strategy selected by the ignore-rule parser.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PatternType {
     /// No valid pattern has been assigned.
@@ -35,7 +35,8 @@ pub enum PatternType {
     Glob, // Matches complex patterns ("foo/**/bar", "config-*-prod.json")
 }
 
-/// Ekvivalent za `IgnoreRule` iz C-a
+/// One parsed ignore or omit rule. Negation is applied by the ordered rule set,
+/// while [`crate::selection::rule_matches`] tests the pattern alone.
 #[derive(Debug, Clone)]
 pub struct IgnoreRule {
     /// Pattern text after ignore-rule prefixes have been removed.
@@ -60,7 +61,7 @@ impl Default for IgnoreRule {
 }
 
 impl IgnoreRule {
-    /// Konstruktor za stvaranje praznog pravila
+    /// Creates an invalid, empty rule that matches nothing.
     #[allow(
         clippy::must_use_candidate,
         reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
@@ -70,34 +71,38 @@ impl IgnoreRule {
     }
 }
 
-/// Ekvivalent za `DirContextTreeNode` iz C-a
+/// Snapshot tree data retained for readers, diffing and rendering.
+///
+/// This legacy data type does not validate paths, child uniqueness, ordering or
+/// depth. Source adapters should validate names with [`crate::RelativePath`]
+/// before constructing nodes and enforce their configured traversal limits.
 #[derive(Debug, Clone)]
 pub struct DirContextTreeNode {
     /// Whether this node represents a file or a directory.
     pub node_type: NodeType,
 
-    /// Relativna putanja unutar arhive (npr. "src/main.rs")
+    /// Root-relative archive path, such as `src/main.rs`.
     pub relative_path: String,
 
-    /// Unix timestamp zadnje modifikacije
+    /// Last modification time as supplied by the source.
     pub last_modified_timestamp: u64,
 
     // --- Za datoteke ---
-    /// Offset gdje počinje sadržaj u binarnoj datoteci
+    /// Content offset within the binary format's data section.
     pub content_offset_in_data_section: u64,
 
-    /// Veličina sadržaja datoteke
+    /// Full file size in bytes, which can exceed a withheld or partial body.
     pub content_size: u64,
 
-    /// Apsolutna putanja na disku
+    /// Source path value; the core stores it without opening it.
     pub disk_path: PathBuf,
 
     // --- Za direktorije ---
-    /// Djeca ovog čvora.
+    /// Children in the caller's stored order; directories normally have unique paths.
     pub children: Vec<DirContextTreeNode>,
 
     // --- Za LLM Formatter ---
-    /// Generirani ID (npr. "F001", "D002")
+    /// Rendering identifier, such as `F001` or `D002`.
     pub generated_id_for_llm: String,
 
     // --- Cache za sadržaj ---

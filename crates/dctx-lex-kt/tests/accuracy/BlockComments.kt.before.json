@@ -1,0 +1,6 @@
+[{"name":"Visible","kind":"class","line":4,"parent":null},
+{"name":"Visible::shown","kind":"method","line":8,"parent":"Visible"},
+{"name":"Visible::afterNested","kind":"method","line":11,"parent":"Visible"},
+{"name":"Visible::kept","kind":"const","line":14,"parent":"Visible"},
+{"name":"AfterComment","kind":"interface","line":19,"parent":null},
+{"name":"trailing","kind":"fn","line":21,"parent":null}]

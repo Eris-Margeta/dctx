@@ -12,6 +12,8 @@ use crate::datatypes::{IgnoreRule, PatternType};
 /// A leading `!` negates, a trailing `/` restricts to directories and inline `#`
 /// comments are stripped. Simple shapes are classified as `Basename`, `Path`,
 /// `Suffix` (`*.ext`) or `Prefix` (`dir/*`); everything else with wildcards is `Glob`.
+/// Glob metacharacters are `*`, `**` and `?`; bracket expressions are literal.
+/// No size limit or filesystem validation is applied to rule text.
 #[allow(
     clippy::must_use_candidate,
     reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
@@ -52,7 +54,7 @@ pub fn parse_ignore_pattern_line(line: &str) -> Option<IgnoreRule> {
         {
             rule.pattern_type = PatternType::Suffix;
             rule.pattern = trimmed[1..].to_string();
-        } else if trimmed.ends_with("/*") && !trimmed[..trimmed.len() - 2].contains('*') {
+        } else if trimmed.ends_with("/*") && !trimmed[..trimmed.len() - 2].contains(['*', '?']) {
             rule.pattern_type = PatternType::Prefix;
             rule.pattern = trimmed[..trimmed.len() - 1].to_string();
         } else {
@@ -69,7 +71,8 @@ pub fn parse_ignore_pattern_line(line: &str) -> Option<IgnoreRule> {
     Some(rule)
 }
 
-/// Parses every rule line of a rule file's text, in order.
+/// Parses every rule line of a rule file's text, preserving order and duplicates.
+/// Comments and blanks are skipped; later matching rules override earlier ones.
 pub fn parse_rules(text: &str) -> Vec<IgnoreRule> {
     text.lines().filter_map(parse_ignore_pattern_line).collect()
 }

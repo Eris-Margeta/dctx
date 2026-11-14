@@ -1,0 +1,9 @@
+[{"name":"Ticker","kind":"class","line":7,"parent":null},
+{"name":"Ticker::Ticker","kind":"method","line":7,"parent":"Ticker"},
+{"name":"Ticker::periodMs","kind":"const","line":7,"parent":"Ticker"},
+{"name":"Ticker::ticks","kind":"method","line":8,"parent":"Ticker"},
+{"name":"Ticker::labels","kind":"method","line":16,"parent":"Ticker"},
+{"name":"firstMatching","kind":"fn","line":19,"parent":null},
+{"name":"Dispatchers2","kind":"class","line":25,"parent":null},
+{"name":"Dispatchers2::io","kind":"const","line":26,"parent":"Dispatchers2"},
+{"name":"Dispatchers2::main","kind":"const","line":27,"parent":"Dispatchers2"}]

@@ -220,11 +220,11 @@ pub(crate) fn modifier(word: &str) -> bool {
 )]
 pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
     let mut line_starts = vec![0];
-    for (index, byte) in source.bytes().enumerate() {
-        if byte == b'\n' {
-            line_starts.push(index as u32 + 1);
-        }
-    }
+    line_starts.extend(
+        source
+            .match_indices('\n')
+            .map(|(index, _)| index as u32 + 1),
+    );
     let scanned = scan::scan(source, limits.max_depth);
     if let Some(byte) = scanned.too_deep_at {
         return Err(LexError::TooDeep {

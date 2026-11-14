@@ -1,0 +1,38 @@
+[
+  {
+    "name": "Axis",
+    "kind": "interface",
+    "line": 2,
+    "parent": null
+  },
+  {
+    "name": "Axes",
+    "kind": "class",
+    "line": 3,
+    "parent": null
+  },
+  {
+    "name": "Axes::names",
+    "kind": "method",
+    "line": 4,
+    "parent": "Axes"
+  },
+  {
+    "name": "Axes::names::Label",
+    "kind": "class",
+    "line": 5,
+    "parent": "Axes::names"
+  },
+  {
+    "name": "Axes::names::Label::text",
+    "kind": "const",
+    "line": 5,
+    "parent": "Axes::names::Label"
+  },
+  {
+    "name": "Axes::done",
+    "kind": "method",
+    "line": 8,
+    "parent": "Axes"
+  }
+]

@@ -1,0 +1,7 @@
+[{"name":"handlers","kind":"const","line":3,"parent":null},
+{"name":"apply","kind":"fn","line":8,"parent":null},
+{"name":"sorter","kind":"const","line":13,"parent":null},
+{"name":"runAll","kind":"fn","line":15,"parent":null},
+{"name":"Button","kind":"class","line":19,"parent":null},
+{"name":"Button::onClick","kind":"const","line":20,"parent":"Button"},
+{"name":"Button::click","kind":"method","line":22,"parent":"Button"}]

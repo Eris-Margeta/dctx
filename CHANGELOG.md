@@ -42,6 +42,8 @@ dctx was never meant to ship an MCP server; the integration was an experiment to
 
 ### Fixed
 
+- Windows inventory releases parent write restrictions between operations so finished subtrees can be renamed, and checks file ACLs before reusing enumeration metadata.
+
 - Windows generation opening reuses guarded traversal directories and enumeration metadata, avoiding repeated ancestor opens per file while retaining identity, permission and racy-window checks.
 - Python, Go and npm bindings expose `trace` and `impact` with CLI byte parity, including bounded/no-path and empty-impact results.
 - Windows outside-index notices and `trace`/`impact` now normalize native separators and verbatim drive prefixes, keeping relative paths and `--also` hints slash-separated.

@@ -113,6 +113,7 @@ impl StoreFs for StdFs {
     }
 
     fn unlock(&self, root: &str) -> Result<(), StoreError> {
+        check_root(root)?;
         let mut locks = self.guard();
         if let Some(file) = locks.remove(root) {
             file.unlock().map_err(ports::io_err)?;
@@ -192,8 +193,26 @@ impl StoreFs for StdFs {
         }
         #[cfg(windows)]
         return windows::rename(&from, &to, false).map_err(ports::io_err);
-        #[cfg(not(windows))]
-        fs::rename(from, to).map_err(ports::io_err)
+        #[cfg(any(target_os = "linux", target_os = "android", target_vendor = "apple"))]
+        {
+            use rustix::fs::{CWD, RenameFlags, renameat_with};
+            // The absence check above is only an early refusal; the move itself
+            // must refuse a destination created by a concurrent publisher.
+            renameat_with(CWD, from, CWD, to, RenameFlags::NOREPLACE)
+                .map_err(|error| ports::io_err(error.into()))
+        }
+        #[cfg(not(any(
+            windows,
+            target_os = "linux",
+            target_os = "android",
+            target_vendor = "apple"
+        )))]
+        {
+            // Regular immutable files can be installed without replacing a name
+            // even on platforms without an exclusive rename operation.
+            fs::hard_link(&from, &to).map_err(ports::io_err)?;
+            fs::remove_file(from).map_err(ports::io_err)
+        }
     }
 
     fn rename_replace(&self, from: &str, to: &str) -> Result<(), StoreError> {

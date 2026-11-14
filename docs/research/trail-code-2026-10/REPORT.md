@@ -9,7 +9,7 @@ regenerated with `scripts/`. Where Trail-Code is better, this report says so pla
 - **dctx** at commit `17dff0b454c24f43848abad1c88ea982e02731f7` (branch `internal`), `dctx-cli v0.25.0`,
   agent interface `dctx map <map|find|neighbors|explain|read>`.
 - **Trail-Code** `@trailhq/trail-code@0.23.1` from npm (repository HEAD `b1211efd`, whose
-  `package.json` is also 0.23.1), CLI `trail` plus its MCP server.
+  `package.json` is also 0.23.1), CLI `trail`.
 
 ## 1. Summary
 
@@ -112,7 +112,6 @@ removed. Its raw outputs, symbol names, paths and source lines are **redacted** 
 | Dependencies | 46 external crates in `cargo tree -e normal` (see TC-F11) | 50 package versions (47 names) in `npm ls --all`; largest: `tree-sitter-wasm` 128 MB, `@trailhq/trail-code` 129 MB (bundled grammars), `tree-sitter-swift` 73 MB, two LLM-provider SDKs 34 MB and 14 MB (used only by `--deep`) |
 | Runtime | libc, libm, libgcc_s | Node >= 20 plus native addons |
 | Install side effects | none | `postinstall` records an anonymous install event and spawns a detached flush; `~/.graft/telemetry.json` and `~/.graft/update-check.json` created at install |
-| MCP | none (listed as planned in README) | 6 tools; tool definitions 3,515 bytes (~1,005 tokens) per agent session |
 
 ## 4. Indexing (section 2 of the brief)
 
@@ -371,7 +370,7 @@ per extension (`dctx map map FILE --depth 1 --limit 1`).
 - Text search (`trail grep`, grouped by enclosing symbol) and a bounded repository map (1 to 15k tokens).
 - Cache-friendly output: answers do not change when unrelated files change.
 - Incremental re-indexing; edits reach the graph without a full rebuild.
-- Language breadth (23 languages) and MCP integration.
+- Language breadth (23 languages).
 - On the largest Rust corpus, warm `callers` and `skeleton` are faster than dctx (0.8 s versus 1.45 s) with
   less memory per query.
 
@@ -501,12 +500,6 @@ changes when covered files change.
 Recommendation: keep dctx answers free of instructions; if savings metrics are useful, expose them in
 `dctx cache status` or a JSON field the caller can drop.
 
-**TC-F16 (info): MCP surface.**
-Evidence: Trail's MCP server exposes 6 tools whose definitions cost ~1,005 tokens per session, and answers
-match the CLI. dctx has no MCP server (planned).
-Recommendation: add MCP as a consent-gated adapter over the same facade, with at most four tools and a
-definition budget under 600 tokens, reusing map ids and budgets.
-
 **TC-F17 (info): Trail's freshness check costs a full build.**
 Evidence: `trail build --check` 49.5 s on pocketbase and 86.5 s on django, the same as cold builds;
 dctx verifies freshness on every query in 0.04 to 1.34 s.
@@ -553,7 +546,7 @@ All scripts are POSIX sh or Python 3 standard library only.
 |---|---|
 | `data/env.txt`, `data/tool-help.txt` | host, versions, pins, binary hash, `ldd`, CLI help of both tools |
 | `data/raw/runs.jsonl` and `*_runs.jsonl` | every measured command: wall, CPU, RSS, exit code, output bytes and sha256, load |
-| `data/raw/accuracy.jsonl`, `tasks.jsonl`, `freshness.jsonl`, `bounding.jsonl`, `coverage*.jsonl`, `adversarial.jsonl`, `network.jsonl`, `mcp.jsonl`, `init_writes.jsonl`, `writes.jsonl`, `index_size.jsonl` | per-phase results |
+| `data/raw/accuracy.jsonl`, `tasks.jsonl`, `freshness.jsonl`, `bounding.jsonl`, `coverage*.jsonl`, `adversarial.jsonl`, `network.jsonl`, `init_writes.jsonl`, `writes.jsonl`, `index_size.jsonl` | per-phase results |
 | `data/raw/strace.*.txt` | network audit traces |
 | `data/targets/` | targets, gold call sites and task questions per corpus (core reduced to counts) |
 | `data/outputs/` | first 16 KB of each raw answer (warm, unrelated-edit, accuracy and adversarial runs; core excluded) |

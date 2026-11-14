@@ -1,0 +1,5 @@
+[
+  {"name": "windows", "kind": "Module", "line": 1, "parent": null},
+  {"name": "windows::Handle", "kind": "Struct", "line": 2, "parent": "windows"},
+  {"name": "windows::close", "kind": "Function", "line": 3, "parent": "windows"}
+]

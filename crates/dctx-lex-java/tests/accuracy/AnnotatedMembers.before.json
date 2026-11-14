@@ -1,0 +1,3 @@
+[{"name":"Endpoint","kind":"class","line":1,"parent":null},
+{"name":"Endpoint::address","kind":"const","line":3,"parent":"Endpoint"},
+{"name":"Endpoint::toString","kind":"method","line":5,"parent":"Endpoint"}]

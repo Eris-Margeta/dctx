@@ -1,0 +1,12 @@
+[{"name":"pow","kind":"fn","line":3,"parent":null},
+{"name":"Pair2","kind":"struct","line":9,"parent":null},
+{"name":"Pair2::Pair2","kind":"method","line":9,"parent":"Pair2"},
+{"name":"Pair2::first","kind":"const","line":9,"parent":"Pair2"},
+{"name":"Pair2::second","kind":"const","line":9,"parent":"Pair2"},
+{"name":"with","kind":"fn","line":11,"parent":null},
+{"name":"Matcher","kind":"class","line":13,"parent":null},
+{"name":"Matcher::Matcher","kind":"method","line":13,"parent":"Matcher"},
+{"name":"Matcher::value","kind":"const","line":13,"parent":"Matcher"},
+{"name":"Matcher::shouldBe","kind":"method","line":14,"parent":"Matcher"},
+{"name":"Matcher::and","kind":"method","line":18,"parent":"Matcher"},
+{"name":"sample","kind":"const","line":21,"parent":null}]

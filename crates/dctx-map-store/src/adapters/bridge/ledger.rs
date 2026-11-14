@@ -8,7 +8,7 @@ use crate::domain::{
     Charge, MaintainReport, Result, StoreError, UNREACHABLE_GRACE_MS, VIEW_IDLE_MS,
     accounted_bytes, cache_limits, expired, idle, observed_clock,
 };
-use rusqlite::{Connection, OptionalExtension, Transaction, params};
+use rusqlite::{Connection, OptionalExtension, Transaction, TransactionBehavior, params};
 
 pub(crate) fn parse_count(connection: &Connection) -> Result<u64> {
     let parses: i64 =
@@ -29,7 +29,7 @@ pub(crate) fn cache_cap(connection: &Connection) -> Result<u64> {
 pub(crate) fn set_cap(connection: &mut Connection, cap: u64) -> Result<()> {
     let cap_i =
         i64::try_from(cap).map_err(|_| StoreError::InvalidKey("cache cap is out of range"))?;
-    let transaction = connection.transaction()?;
+    let transaction = connection.transaction_with_behavior(TransactionBehavior::Immediate)?;
     transaction.execute(
         "UPDATE bridge_ledger SET hard_cap = ?1 WHERE id = 1",
         [cap_i],
@@ -41,7 +41,7 @@ pub(crate) fn set_cap(connection: &mut Connection, cap: u64) -> Result<()> {
 }
 
 pub(crate) fn maintain(connection: &mut Connection, now_ms: u64) -> Result<MaintainReport> {
-    let transaction = connection.transaction()?;
+    let transaction = connection.transaction_with_behavior(TransactionBehavior::Immediate)?;
     let (observed, rewound) = touch(&transaction, now_ms)?;
     let before = sum_i64(&transaction)?;
     reclaim(&transaction, observed, None)?;

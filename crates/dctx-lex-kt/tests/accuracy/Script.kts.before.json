@@ -1,0 +1,9 @@
+[{"name":"root","kind":"const","line":5,"parent":null},
+{"name":"count","kind":"const","line":6,"parent":null},
+{"name":"walk","kind":"fn","line":8,"parent":null},
+{"name":"Entry","kind":"struct","line":10,"parent":null},
+{"name":"Entry::Entry","kind":"method","line":10,"parent":"Entry"},
+{"name":"Entry::name","kind":"const","line":10,"parent":"Entry"},
+{"name":"Entry::size","kind":"const","line":10,"parent":"Entry"},
+{"name":"Summary","kind":"class","line":18,"parent":null},
+{"name":"Summary::print","kind":"method","line":19,"parent":"Summary"}]

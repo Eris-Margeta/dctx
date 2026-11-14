@@ -93,7 +93,7 @@ text_type!(
     "invalid-path"
 );
 text_type!(
-    /// Bounded human text (at most 4096 UTF-8 bytes).
+    /// Human text without NUL (at most 4096 UTF-8 bytes); other controls are JSON-escaped.
     Text,
     is_text,
     "invalid-text"
@@ -268,7 +268,7 @@ fn is_project_path(value: &str) -> bool {
 }
 
 fn is_text(value: &str) -> bool {
-    value.len() <= 4096
+    value.len() <= 4096 && !value.contains('\0')
 }
 
 #[cfg(test)]

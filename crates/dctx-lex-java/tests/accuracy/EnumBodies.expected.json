@@ -1,0 +1,44 @@
+[
+  {
+    "name": "Policy",
+    "kind": "enum",
+    "line": 1,
+    "parent": null
+  },
+  {
+    "name": "Policy::KEEP",
+    "kind": "const",
+    "line": 2,
+    "parent": "Policy"
+  },
+  {
+    "name": "Policy::KEEP::apply",
+    "kind": "method",
+    "line": 2,
+    "parent": "Policy::KEEP"
+  },
+  {
+    "name": "Policy::DROP",
+    "kind": "const",
+    "line": 3,
+    "parent": "Policy"
+  },
+  {
+    "name": "Policy::DROP::apply",
+    "kind": "method",
+    "line": 3,
+    "parent": "Policy::DROP"
+  },
+  {
+    "name": "Policy::apply",
+    "kind": "method",
+    "line": 4,
+    "parent": "Policy"
+  },
+  {
+    "name": "Policy::fallback",
+    "kind": "method",
+    "line": 5,
+    "parent": "Policy"
+  }
+]

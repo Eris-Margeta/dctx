@@ -20,4 +20,4 @@ pub use domain::{
 pub const PARSER_ID: &str = "dctx-lex-rust/syn-3.0.9";
 
 /// Bumped whenever extraction output for the same bytes can change.
-pub const PARSER_REVISION: u32 = 1;
+pub const PARSER_REVISION: u32 = 2;

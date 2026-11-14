@@ -37,7 +37,13 @@ fn inputs(fixture: &'static str) -> impl Strategy<Value = Vec<u8>> {
     reason = "Standard iterator newline counts keep fixture and bounded 8 MiB corpus checks dependency-free; this is test validation rather than a parser hot path."
 )]
 fn assert_store_accepts(facts: &ParsedFile, source: &[u8]) {
-    let file_end = u32::try_from(source.iter().filter(|byte| **byte == b'\n').count()).unwrap() + 1;
+    // Line terminators: LF, CRLF (one) and a bare CR (the PHP lexer counts it, D1113-LEXHOSTILE).
+    let breaks = source
+        .iter()
+        .enumerate()
+        .filter(|&(i, &b)| b == b'\n' || (b == b'\r' && source.get(i + 1) != Some(&b'\n')))
+        .count();
+    let file_end = u32::try_from(breaks).unwrap() + 1;
     let mut nodes = facts.nodes.clone();
     let again = facts
         .nodes

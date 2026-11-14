@@ -214,7 +214,7 @@ fn xorshift(state: &mut u64) -> u64 {
 #[test]
 fn golden_c_fixture_extracts_includes_macros_and_calls() {
     assert_eq!(PARSER_ID, "dctx-lex-c");
-    assert_eq!(PARSER_REVISION, 1);
+    assert_eq!(PARSER_REVISION, 3);
     let facts = extract("basic.c", BASIC);
     assert_eq!(facts.dialect, Dialect::C);
     assert!(facts.diagnostics.is_empty(), "{:?}", facts.diagnostics);
@@ -223,7 +223,6 @@ fn golden_c_fixture_extracts_includes_macros_and_calls() {
         "basic.c",
         "LIMIT",
         "SHOW",
-        "configured",
         "add",
         "Box",
         "Box::width",
@@ -246,8 +245,7 @@ fn golden_c_fixture_extracts_includes_macros_and_calls() {
     assert_eq!(node(&facts, "basic.c").summary.source, SummarySource::Doc);
     assert_symbol(&facts, "LIMIT", Some(SymbolKind::Macro), true, "");
     assert_symbol(&facts, "SHOW", Some(SymbolKind::Macro), true, "");
-    assert_symbol(&facts, "configured", Some(SymbolKind::Function), true, "");
-    assert_eq!(node_precision(&facts, "configured"), Precision::Convention);
+    assert!(!names(&facts).contains(&"configured"));
     assert_symbol(
         &facts,
         "add",

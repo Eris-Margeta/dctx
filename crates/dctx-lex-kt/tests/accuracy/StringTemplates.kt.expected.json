@@ -1,0 +1,10 @@
+[{"name":"greet","kind":"fn","line":3,"parent":null},
+{"name":"nested","kind":"fn","line":5,"parent":null},
+{"name":"braces","kind":"const","line":8,"parent":null},
+{"name":"escapes","kind":"const","line":10,"parent":null},
+{"name":"Report","kind":"class","line":12,"parent":null},
+{"name":"Report::Report","kind":"method","line":12,"parent":"Report"},
+{"name":"Report::rows","kind":"const","line":12,"parent":"Report"},
+{"name":"Report::summary","kind":"method","line":13,"parent":"Report"},
+{"name":"Report::table","kind":"method","line":15,"parent":"Report"},
+{"name":"afterTemplates","kind":"fn","line":21,"parent":null}]

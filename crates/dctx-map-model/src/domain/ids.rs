@@ -11,18 +11,22 @@ use std::{fmt, str::FromStr};
 pub struct InvalidId;
 impl fmt::Display for InvalidId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("invalid stable map id")
+        f.write_str("invalid stable map id; use a kind prefix and a relative path without traversal, plus a name for symbols/tests/docs and a positive u32 ordinal when disambiguating duplicates")
     }
 }
 impl std::error::Error for InvalidId {}
 
 /// A canonical graph identity, never based on line numbers.
+/// Paths are relative, slash-separated and free of traversal or controls.
+/// Text and path lengths have no fixed ceiling; callers bound their input.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "wire-json", derive(serde::Serialize))]
 #[cfg_attr(feature = "wire-json", serde(transparent))]
 pub struct StableId(String);
 impl StableId {
     /// Builds a validated id. Ordinals are positive and only used for duplicates.
+    /// `name` must not contain the reserved `~` ordinal delimiter: supply the
+    /// duplicate ordinal separately. Use [`str::parse`] to restore a full id.
     ///
     /// # Errors
     /// Returns [`InvalidId`] for invalid paths or names, zero ordinals, or an ordinal without a name.
@@ -32,7 +36,10 @@ impl StableId {
         name: Option<&str>,
         ordinal: Option<u32>,
     ) -> Result<Self, InvalidId> {
-        if ordinal == Some(0) || (ordinal.is_some() && name.is_none()) {
+        if ordinal == Some(0)
+            || (ordinal.is_some() && name.is_none())
+            || name.is_some_and(|name| name.contains('~'))
+        {
             return Err(InvalidId);
         }
         let mut value = format!("{}:{path}", kind.letter());

@@ -1,0 +1,6 @@
+[{"name":"Outcome","kind":"interface","line":1,"parent":null},
+{"name":"Outcome::message","kind":"method","line":2,"parent":"Outcome"},
+{"name":"Success","kind":"struct","line":4,"parent":null},
+{"name":"Success::message","kind":"const","line":4,"parent":"Success"},
+{"name":"Failure","kind":"class","line":5,"parent":null},
+{"name":"Failure::message","kind":"method","line":6,"parent":"Failure"}]

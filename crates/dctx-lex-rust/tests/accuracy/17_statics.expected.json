@@ -1,0 +1,7 @@
+[
+  {"name": "READY", "kind": "Static", "line": 1, "parent": null},
+  {"name": "BUFFER", "kind": "Static", "line": 2, "parent": null},
+  {"name": "PORT", "kind": "Const", "line": 3, "parent": null},
+  {"name": "_", "kind": "Const", "line": 4, "parent": null},
+  {"name": "_::Registration", "kind": "Struct", "line": 4, "parent": "_"}
+]

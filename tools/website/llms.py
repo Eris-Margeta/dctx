@@ -256,8 +256,9 @@ def changelog_feed(releases: list[dict]) -> str:
     for r in releases:
         if not r["date"] or not re.match(r"^\d{4}-\d{2}-\d{2}$", r["date"]):
             continue
-        summary = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", r["html"]))).strip()[:240]
-        entries.append((r["name"], f"{ORIGIN}/changelog/#{r['slug']}", r["date"], summary, r["html"]))
+        url = f"{ORIGIN}/changelog/#{r['slug']}"
+        summary = f"Release notes for {r['name']}. Read the changelog for details."
+        entries.append((r["name"], url, r["date"], summary, f'<p><a href="{url}">Read the release notes</a>.</p>'))
     return atom("dctx releases", "/changelog/feed.xml", "/changelog/", entries)
 
 
@@ -328,6 +329,8 @@ def extract_page(page: str) -> dict:
     gate; inline tags and whitespace are handled exactly as in the search index.
     """
     main = page[page.index('<main id="main"'):page.index("</main>")]
+    # Historical commands belong on the changelog, not in current discovery text.
+    main = re.sub(r"<!-- release-history:start -->.*?<!-- release-history:end -->", "", main, flags=re.S)
     main = re.sub(r'<span class="glyph-wrap" role="img" aria-label="([^"]*)">', lambda m: html.unescape(m[1]), main)
     main = re.sub(r"<(script|style|svg|nav|footer|header)\b.*?</\1>", "", main, flags=re.S)
     main = re.sub(r"<!--.*?-->", "", main, flags=re.S)

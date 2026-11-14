@@ -69,6 +69,8 @@ pub struct Broker<A, F, R> {
 
 impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
     /// A broker for one session; `frame_bytes` is the negotiated operation frame ceiling.
+    /// Requests must already have passed protocol decoding and session validation. Ports are
+    /// trusted adapters: they must honor their identity, byte-bound and durable-audit contracts.
     pub fn new(
         authority: Authority,
         ledger: Ledger,
@@ -149,9 +151,12 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
     }
 
     /// Disable/cancel: close admission and revoke every ephemeral handle and upload.
+    /// Releases all live upload-byte charges. Repeating the call keeps admission closed.
     pub fn halt(&mut self) {
         self.authority.halt();
         self.handles.revoke_all();
+        let retained = self.budget.quota(Dimension::Upload).used();
+        self.budget.release(Dimension::Upload, retained);
     }
 
     /// Session authority (policy changes go through it).
@@ -334,13 +339,19 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
         }
         let token = match upload {
             Some(token) => token,
-            None => self.handles.start_upload(Upload {
+            None => match self.handles.start_upload(Upload {
                 resource: stage.resource.clone(),
                 precondition: stage.precondition.clone(),
                 invocation,
                 bytes: Vec::new(),
                 sealed: false,
-            })?,
+            }) {
+                Ok(token) => token,
+                Err(refusal) => {
+                    self.budget.release(Dimension::Upload, len);
+                    return Err(refusal);
+                }
+            },
         };
         let upload = self.handles.upload_mut(&token)?;
         upload.bytes.extend_from_slice(stage.bytes.as_bytes());

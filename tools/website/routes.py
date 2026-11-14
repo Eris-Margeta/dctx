@@ -79,7 +79,8 @@ POLICIES = [
 # "pack": one `dctx pack . --include /FILE ...`. Files are taken in this order while the dctx output
 # stays within the budget (estimated tokens, ceil(2 * UTF-8 bytes / 7)); the rest are listed as left out.
 LLMS_START = ["docs/START.md", "docs/WHY-DCTX.md", "README.md", "docs/MODALITIES.md"]
-LLMS_EXTRA = ["CHANGELOG.md", "crates/dctx-template/templates/default.dctx_template",
+# Release history stays on its own page; discovery files link to it.
+LLMS_EXTRA = ["crates/dctx-template/templates/default.dctx_template",
               "crates/dctx-template/templates/stamped.dctx_template"]
 
 

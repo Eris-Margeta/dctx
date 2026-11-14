@@ -62,9 +62,9 @@ page carries full chunks. Later pages in that delivery session carry the same ID
 with references in place of previously delivered content. Without `--dedupe`,
 every page contains full content and does not update delivery history.
 
-A delivery session lasts for one CLI invocation or one MCP/RPC connection. Multiple
+A delivery session lasts for one CLI invocation or one RPC connection. Multiple
 CLI targets (at most 64 per invocation) are processed in order, producing consecutive text pages or NDJSON
-with `--json`. MCP/RPC connections can retain multiple independent named sessions.
+with `--json`. RPC connections can retain multiple independent named sessions.
 New connections and new CLI processes start with empty history, even when an ID is
 reused. Nothing persists on disk. Clients must retain full chunks while using a
 session. Library callers own a `dctx::context::ContextSessions` value and can call
@@ -85,15 +85,6 @@ CLI:
 dctx context ping --json --session review-1 --dedupe
 ```
 
-MCP uses the existing `read` tool. The ten-tool inventory is unchanged, including
-in the lean profile. `context: true` changes the operation; `id` accepts the same
-file, symbol name, or stable ID as the CLI. Source-window flags and cursors are
-inapplicable to context and are refused.
-
-```json
-{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"read","arguments":{"id":"ping","context":true,"json":true,"session":"review-1","dedupe":true}}}
-```
-
 RPC uses the existing `context` verb after `hello`, with CLI context arguments.
 The older `context` request using `--for TEXT` still selects task context.
 
@@ -102,8 +93,8 @@ The older `context` request using `--for TEXT` still selects task context.
 {"id":1,"verb":"context","args":["ping","--session","review-1","--dedupe"]}
 ```
 
-RPC returns the JSON page as `result.output`; MCP transports it in its text
-content block. These strings match CLI `--json` output byte for byte, including LF.
+RPC returns the JSON page as `result.output`. This string matches CLI `--json`
+output byte for byte, including LF.
 The JSON page has `v`, `verb`, resolved `target`, ranked `chunks`, `more`, and
 `next`. Every full chunk has `id`, `role`, `target`, `ref: false`, and `content`.
 References have `ref: true` and omit `content`. Text uses `## chunk ID ROLE TARGET`

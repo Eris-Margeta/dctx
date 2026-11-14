@@ -27,6 +27,9 @@ const GROUP_ORDER: [u8; 32] = [
 ];
 
 /// Reason an Ed25519 signature could not be verified.
+///
+/// [`core::fmt::Display`] describes the refusal and the caller's next step.
+/// Errors are deterministic for the same inputs; see [`verify`] for check order.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum VerificationError {
     /// A public key must contain exactly 32 bytes.
@@ -50,14 +53,30 @@ pub enum VerificationError {
 impl core::fmt::Display for VerificationError {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let message = match self {
-            Self::PublicKeyLength => "Ed25519 public key must be 32 bytes",
-            Self::SignatureLength => "Ed25519 signature must be 64 bytes",
-            Self::PublicKeyEncoding => "non-canonical or invalid Ed25519 public key point",
-            Self::SmallOrderPublicKey => "small-order Ed25519 public key",
-            Self::SignaturePointEncoding => "non-canonical or invalid Ed25519 signature point",
-            Self::SmallOrderSignaturePoint => "small-order Ed25519 signature point",
-            Self::NonCanonicalScalar => "non-canonical Ed25519 signature scalar",
-            Self::EquationMismatch => "Ed25519 verification equation failed",
+            Self::PublicKeyLength => {
+                "Ed25519 public key must be 32 bytes; provide the complete raw public key"
+            }
+            Self::SignatureLength => {
+                "Ed25519 signature must be 64 bytes; provide the complete raw detached signature"
+            }
+            Self::PublicKeyEncoding => {
+                "non-canonical or invalid Ed25519 public key point; obtain the publisher's canonical public key"
+            }
+            Self::SmallOrderPublicKey => {
+                "small-order Ed25519 public key; obtain a non-small-order publisher public key"
+            }
+            Self::SignaturePointEncoding => {
+                "non-canonical or invalid Ed25519 signature point; obtain a new signature over the exact message bytes"
+            }
+            Self::SmallOrderSignaturePoint => {
+                "small-order Ed25519 signature point; obtain a new signature over the exact message bytes"
+            }
+            Self::NonCanonicalScalar => {
+                "non-canonical Ed25519 signature scalar; obtain a signature with S below the subgroup order"
+            }
+            Self::EquationMismatch => {
+                "Ed25519 verification equation failed; check the trusted public key, exact message bytes, and signature"
+            }
         };
         formatter.write_str(message)
     }
@@ -102,11 +121,21 @@ fn check_point(
 /// `k = SHA-512(R || A || message) mod L`. It does not multiply by eight.
 /// Mixed-order points are governed by that equation, not a prime-subgroup test.
 ///
+/// `message` may be empty or contain arbitrary binary data, including invalid
+/// UTF-8. Bytes are verified in their original order with no normalization,
+/// deduplication, domain separator or prehash added by this function. The caller
+/// supplies a trusted public key and constructs any protocol-specific envelope.
+/// The function holds no shared mutable state and supports concurrent calls.
+///
 /// The implementation is variable-time on public inputs. It supports neither
 /// Ed25519ctx nor Ed25519ph, signing, key generation or batch verification.
 ///
 /// # Errors
 /// Returns [`VerificationError`] for malformed inputs or a failed signature.
+/// Checks run in this order: public-key length, signature length, scalar range,
+/// public-key encoding/order, signature-point encoding/order, then the equation.
+/// Use the error's display message to identify the next step; do not repair or
+/// reduce malformed signature components to make them verify.
 pub fn verify(
     public_key: &[u8],
     message: &[u8],

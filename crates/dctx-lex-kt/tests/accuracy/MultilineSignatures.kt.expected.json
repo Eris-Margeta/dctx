@@ -1,0 +1,11 @@
+[{"name":"Widget","kind":"class","line":3,"parent":null},
+{"name":"Widget::Widget","kind":"method","line":4,"parent":"Widget"},
+{"name":"Widget::id","kind":"const","line":6,"parent":"Widget"},
+{"name":"Widget::visible","kind":"const","line":7,"parent":"Widget"},
+{"name":"Widget::render","kind":"method","line":9,"parent":"Widget"},
+{"name":"Widget::measure","kind":"method","line":14,"parent":"Widget"},
+{"name":"Widget::hidden","kind":"method","line":17,"parent":"Widget"},
+{"name":"Base","kind":"class","line":22,"parent":null},
+{"name":"Base::title","kind":"const","line":23,"parent":"Base"},
+{"name":"Base::subtitle","kind":"const","line":24,"parent":"Base"},
+{"name":"Base::build","kind":"method","line":27,"parent":"Base"}]

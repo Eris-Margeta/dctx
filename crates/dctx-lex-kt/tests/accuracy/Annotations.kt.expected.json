@@ -1,0 +1,10 @@
+[{"name":"Route","kind":"interface","line":8,"parent":null},
+{"name":"Route::Route","kind":"method","line":10,"parent":"Route"},
+{"name":"Route::path","kind":"const","line":10,"parent":"Route"},
+{"name":"Route::methods","kind":"const","line":10,"parent":"Route"},
+{"name":"Marker","kind":"interface","line":12,"parent":null},
+{"name":"UserController","kind":"class","line":14,"parent":null},
+{"name":"UserController::get","kind":"method","line":16,"parent":"UserController"},
+{"name":"UserController::fetch","kind":"method","line":19,"parent":"UserController"},
+{"name":"UserController::hits","kind":"const","line":23,"parent":"UserController"},
+{"name":"timeoutMs","kind":"const","line":27,"parent":null}]

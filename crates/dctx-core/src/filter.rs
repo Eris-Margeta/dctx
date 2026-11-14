@@ -30,10 +30,10 @@ pub struct FilterConfig {
     /// Show only non-empty files (>0 bytes)
     pub only_non_empty: bool,
 
-    /// Show only files larger than this size in bytes (None = no filter)
+    /// Include only files at least this many bytes (`None` means no lower bound).
     pub min_size_bytes: Option<u64>,
 
-    /// Show only files smaller than this size in bytes (None = no filter)
+    /// Include only files at most this many bytes (`None` means no upper bound).
     pub max_size_bytes: Option<u64>,
 
     /// Show ONLY hidden files/folders (starting with '.')
@@ -112,7 +112,9 @@ impl FilterConfig {
         self
     }
 
-    /// Set minimum file size in megabytes
+    /// Sets an inclusive lower size bound in MiB (1,048,576 bytes).
+    /// Fractional bytes truncate; negative values and NaN become zero, while
+    /// positive infinity and overflow saturate at `u64::MAX`.
     #[allow(
         clippy::must_use_candidate,
         clippy::return_self_not_must_use,
@@ -128,7 +130,9 @@ impl FilterConfig {
         self
     }
 
-    /// Set maximum file size in megabytes
+    /// Sets an inclusive upper size bound in MiB (1,048,576 bytes).
+    /// Fractional bytes truncate; negative values and NaN become zero, while
+    /// positive infinity and overflow saturate at `u64::MAX`.
     #[allow(
         clippy::must_use_candidate,
         clippy::return_self_not_must_use,

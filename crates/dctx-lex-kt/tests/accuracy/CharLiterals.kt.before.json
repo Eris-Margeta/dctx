@@ -1,0 +1,11 @@
+[{"name":"QUOTE","kind":"const","line":3,"parent":null},
+{"name":"APOS","kind":"const","line":4,"parent":null},
+{"name":"OPEN","kind":"const","line":5,"parent":null},
+{"name":"CLOSE","kind":"const","line":6,"parent":null},
+{"name":"unicode","kind":"const","line":7,"parent":null},
+{"name":"dollar","kind":"const","line":8,"parent":null},
+{"name":"classify","kind":"fn","line":10,"parent":null},
+{"name":"Lexer","kind":"class","line":17,"parent":null},
+{"name":"Lexer::isOpen","kind":"method","line":18,"parent":"Lexer"},
+{"name":"Lexer::isComment","kind":"method","line":20,"parent":"Lexer"},
+{"name":"afterChars","kind":"fn","line":23,"parent":null}]

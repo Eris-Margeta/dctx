@@ -1,0 +1,4 @@
+[
+  {"name": "crate::net::Client<T>::impl", "kind": "Impl", "line": 1, "parent": null},
+  {"name": "crate::net::Client::receive", "kind": "Method", "line": 2, "parent": "crate::net::Client<T>::impl"}
+]

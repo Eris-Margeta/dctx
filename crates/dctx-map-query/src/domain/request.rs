@@ -23,24 +23,28 @@ pub struct Request {
     /// One of the five read-only verbs.
     pub verb: Verb,
     /// Concept, path, stable id or alias, depending on the verb.
+    /// At most 4096 UTF-8 bytes with no control characters; only map permits empty text.
     pub target: String,
     /// Complete output budget.
     pub budget: AnswerBudget,
-    /// Maximum graph depth.
+    /// Maximum graph depth: 1..=4 for neighbors, 1..=3 for other verbs.
     pub depth: u8,
-    /// Maximum records on this page.
+    /// Maximum records on this page: 1..=40 for find, 1..=60 for other verbs.
     pub limit: usize,
     /// Number of ranked records already consumed.
     pub offset: usize,
     /// Display kinds to include, such as `fn`, `type` or `doc`.
+    /// Order and duplicate entries do not affect results or continuation commands.
     pub kinds: Vec<String>,
     /// Optional place-relative directory/file filter.
     pub within: Option<String>,
     /// Relations to traverse; empty means all relations.
+    /// Order and duplicate entries do not affect results or continuation commands.
     pub edges: Vec<EdgeKind>,
     /// Graph traversal direction.
     pub direction: Direction,
-    /// Absolute inclusive source lines within the node.
+    /// Absolute inclusive one-based source lines within the node.
+    /// At most 120 lines, or 400 with `full`; reversed and zero-start spans are refused.
     pub lines: Option<[u32; 2]>,
     /// Permit up to 400 source lines instead of 120.
     pub full: bool,
@@ -165,7 +169,10 @@ impl Request {
             write!(out, " --depth {}", self.depth).expect("writing to a String cannot fail");
         }
         if !self.kinds.is_empty() {
-            write!(out, " --kind {}", quote(&self.kinds.join(",")))
+            let mut kinds = self.kinds.clone();
+            kinds.sort();
+            kinds.dedup();
+            write!(out, " --kind {}", quote(&kinds.join(",")))
                 .expect("writing to a String cannot fail");
         }
         if let Some(path) = &self.within {
@@ -181,10 +188,13 @@ impl Request {
                 Direction::Both => " --dir both",
             });
             if !self.edges.is_empty() {
+                let mut edges = self.edges.clone();
+                edges.sort();
+                edges.dedup();
                 write!(
                     out,
                     " --edge {}",
-                    self.edges
+                    edges
                         .iter()
                         .map(|e| e.as_str())
                         .collect::<Vec<_>>()
@@ -279,7 +289,9 @@ mod tests {
                 request.depth = depth;
                 assert_eq!(
                     request.validate().expect_err("bounds").to_string(),
-                    format!("limit or depth exceeds the verb's bounds: {detail}")
+                    format!(
+                        "limit or depth exceeds the verb's bounds: {detail}; next: choose a value in the reported range and retry"
+                    )
                 );
             }
         }

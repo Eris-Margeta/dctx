@@ -25,18 +25,28 @@ impl Walker<'_> {
         let prefix = self.prefix(index, end);
         // Do not rescan the same annotation/modifier/semicolon run at each token.
         *next_candidate = prefix.next.max(index + 1);
-        if !self.is(prefix.next, "fun") {
-            return None;
+        let at = prefix.next;
+        // Named local classes are declarations; `T::class` is a class literal.
+        let local_class =
+            self.is(at, "class") && self.is_decl_name(at + 1) && !(at > 0 && self.is(at - 1, "::"));
+        if !local_class {
+            if !self.is(at, "fun") {
+                return None;
+            }
+            // Anonymous functions are expressions, not named declarations.
+            let (cursor, _) = self.fun_angles(at, end);
+            self.find_fun_name(cursor, end)?;
         }
-        // Anonymous functions are expressions, not named declarations.
-        let (cursor, _) = self.fun_angles(prefix.next, end);
-        self.find_fun_name(cursor, end)?;
         if self.depth >= 64 {
             self.problem(self.start_byte(index), DiagnosticReason::Malformed);
             return Some(end);
         }
         self.depth += 1;
-        let next = self.function_decl(index, &prefix, end, scope);
+        let next = if local_class {
+            self.type_decl(index, &prefix, end, scope)
+        } else {
+            self.function_decl(index, &prefix, end, scope)
+        };
         self.depth -= 1;
         Some(next.max(index + 1))
     }
@@ -126,6 +136,10 @@ impl Walker<'_> {
             }
             if self.is(index, "fun") && self.is(index + 1, "interface") {
                 index += 1;
+                continue;
+            }
+            if let Some(next) = self.context_prefix(index) {
+                index = next;
                 continue;
             }
             if !self.modifier_word(index) {

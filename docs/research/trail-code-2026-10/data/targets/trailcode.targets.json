@@ -179,13 +179,6 @@
       "text": "const r = federateAsk(root, override, query, { limit: opts.limit, source: opts.source, full: opts.full, in: opts.in });"
      },
      {
-      "file": "src/mcp/tools.ts",
-      "line": 167,
-      "qual": "",
-      "recv": "",
-      "text": "const r = federateAsk(root, dirOverride, query, { limit, source: true, full: args.full === true, in: inArg });"
-     },
-     {
       "file": "test/workspace.test.ts",
       "line": 101,
       "qual": "",
@@ -351,13 +344,6 @@
       "qual": "",
       "recv": "",
       "text": "const r = await ensureFreshGraph(resolve(root, child), { disabled: opts.disabled });"
-     },
-     {
-      "file": "src/mcp/tools.ts",
-      "line": 237,
-      "qual": "",
-      "recv": "",
-      "text": ": await ensureFreshGraph(root, { contextDir: dirOverride });"
      },
      {
       "file": "test/graph-refresh.test.ts",
@@ -539,13 +525,6 @@
       "qual": "",
       "recv": "",
       "text": "const r = grepGraph(graph, join(root, child), pattern, {"
-     },
-     {
-      "file": "src/mcp/tools.ts",
-      "line": 313,
-      "qual": "",
-      "recv": "",
-      "text": "const result = grepGraph(w, root, pattern, {"
      },
      {
       "file": "src/search/grep-cli.ts",
@@ -1432,22 +1411,6 @@
       "recv": "",
       "text": "if (!dirExists(base)) return [];",
       "bound_to": "src/hosts/agentx-hooks.ts:12:dirExists"
-     },
-     {
-      "file": "src/hosts/mcp-config.ts",
-      "line": 235,
-      "qual": "",
-      "recv": "",
-      "text": "if (dirExists(join(home, '.agentx'))) {",
-      "bound_to": "src/hosts/mcp-config.ts:83:dirExists"
-     },
-     {
-      "file": "src/hosts/mcp-config.ts",
-      "line": 241,
-      "qual": "",
-      "recv": "",
-      "text": "if (dirExists(join(home, '.config', 'opencode'))) {",
-      "bound_to": "src/hosts/mcp-config.ts:83:dirExists"
      }
     ],
     "ambiguous": []

@@ -9,7 +9,7 @@ the current release. Earlier planning is retained in the [archive](../archive/RE
 ## Engine and surfaces
 
 The `dctx` facade composes pack, map, templates and cache through explicit ports.
-CLI, MCP, desktop and future bindings should use the same selection, ranking,
+CLI, desktop and future bindings should use the same selection, ranking,
 rendering and retention rules. Domain code has no ambient filesystem, process,
 home-directory or output access. See the [crate map](../CRATE-MAP.md).
 

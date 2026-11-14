@@ -1,0 +1,4 @@
+[{"name":"Cache","kind":"class","line":3,"parent":null},
+{"name":"Cache::get","kind":"method","line":15,"parent":"Cache"},
+{"name":"Cache::clear","kind":"method","line":18,"parent":"Cache"},
+{"name":"newCache","kind":"fn","line":25,"parent":null}]

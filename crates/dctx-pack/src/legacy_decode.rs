@@ -13,7 +13,7 @@ use dctx_core::datatypes::NodeType;
 use dctx_core::version::Version;
 
 /// Decode a complete legacy file without touching its input or consulting a host.
-/// Both body modes validate all offsets and sizes. Extra trailing bytes are refused.
+/// Both body modes require every data byte to belong to exactly one file range.
 /// Snapshot revisions are not format versions: any positive major is supported.
 ///
 /// # Errors
@@ -137,20 +137,35 @@ fn validate_ranges(
     limits: LegacyLimits,
 ) -> Result<(), LegacyError> {
     let mut stack = vec![root];
-    let mut extent = 0;
+    let mut ranges = Vec::new();
     let mut body_bytes = 0;
     while let Some(node) = stack.pop() {
         if node.node_type == NodeType::File {
             let span = range(node, data.len())?;
-            extent = extent.max(span.end);
             body_bytes = add(body_bytes, span.len())?;
             // Overlapping ranges must not amplify a small buffer into unbounded copies.
             bounded(body_bytes, limits.max_total_bytes, "body bytes")?;
+            // Empty files claim no bytes, even when their offsets lie inside a body.
+            if !span.is_empty() {
+                ranges.push(span);
+            }
         }
         stack.extend(&node.children);
     }
-    if extent != data.len() {
-        return Err(LegacyError::TrailingBytes);
+    ranges.sort_unstable_by_key(|span| (span.start, span.end));
+    let mut claimed_end = 0;
+    for span in ranges {
+        if span.start != claimed_end {
+            return Err(LegacyError::CorruptData {
+                offset: span.start.min(claimed_end),
+            });
+        }
+        claimed_end = span.end;
+    }
+    if claimed_end != data.len() {
+        return Err(LegacyError::CorruptData {
+            offset: claimed_end,
+        });
     }
     Ok(())
 }

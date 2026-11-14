@@ -187,10 +187,9 @@ impl Write for TrimRange {
             self.start.get_or_insert(self.total + leading);
             self.end = self.total + text.trim_end().len();
         }
-        self.total = self
-            .total
-            .checked_add(bytes.len())
-            .ok_or_else(|| io::Error::other("render size overflow"))?;
+        self.total = self.total.checked_add(bytes.len()).ok_or_else(|| {
+            io::Error::other("render size overflow; reduce the template expansion or file bodies")
+        })?;
         Ok(bytes.len())
     }
     fn flush(&mut self) -> io::Result<()> {

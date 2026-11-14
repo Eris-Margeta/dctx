@@ -113,7 +113,7 @@ impl Walker<'_> {
                     self.walk(open + 1, close.min(end), &inner);
                 }
             }
-        } else if let Some((open, close)) = body {
+        } else if !typedef && let Some((open, close)) = body {
             self.scan_range(open + 1, close.min(end), scope);
         }
         let trailing = self.decl_names_forced(after_body, stop, body.is_some());
@@ -138,7 +138,19 @@ impl Walker<'_> {
                 body: (self.start_of(sig), self.end_of(last)),
                 public: self.decl_public(sig, at, scope),
             };
-            let _ = self.emit(item, scope);
+            if let Some(mut inner) = self.emit(item, scope)
+                && typedef
+                && tag.is_none()
+                && let Some((open, close)) = body
+            {
+                inner.region = Region::Type;
+                inner.public = true;
+                if keyword == "enum" {
+                    self.enum_body(open, close.min(end), &inner);
+                } else {
+                    self.walk(open + 1, close.min(end), &inner);
+                }
+            }
         }
         stop
     }
@@ -235,6 +247,9 @@ impl Draft {
     )]
     pub(super) fn new(path: &str, source: &str, max_facts: usize) -> Result<Self, LexError> {
         let id = StableId::new(NodeKind::Module, path, None, None)?;
+        if max_facts == 0 {
+            return Err(LexError::TooManyFacts { limit: 0 });
+        }
         let lines = source.bytes().filter(|byte| *byte == b'\n').count() as u32 + 1;
         let module = Node {
             id,

@@ -12,7 +12,7 @@
   if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
   if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
 })();</script>
-<link rel="stylesheet" href="/assets/site.26ea97c0.css">
+<link rel="stylesheet" href="/assets/site.a25acb15.css">
 <link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
@@ -20,7 +20,7 @@
 <meta name="description" content="Grep plus file reads, whole-session accounting, byte stability and secondary historical measurements.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
-<meta name="dctx-build" content="c02d47d48ed42ea1c0878ab905d29ada93b4a8bfc4b6844205cfa1be14028ed4">
+<meta name="dctx-build" content="5911acafec879400818ec5bfbf4d92dd2d34c5307f59d1772c769078aed1140e">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -231,16 +231,11 @@ The claim supported here is <strong>accuracy and bounded context</strong>, not t
 <td>B</td>
 <td>Read + Bash restricted to <code>dctx *</code>; index warm before measurement</td>
 </tr>
-<tr>
-<td>C</td>
-<td>Read + dctx MCP only; fresh cache, with start-up and indexing measured</td>
-</tr>
 </tbody>
 </table></div>
 <p>These are whole-session measurements, including conversation replay and provider
 cache usage, rather than estimates of tool stdout. The warm index in B excludes
-its preparation cost; C includes start-up and indexing. This difference limits
-direct comparisons between the two dctx modalities.</p>
+its preparation cost; these results do not measure cold indexing.</p>
 <h2 id="cost-and-turns">Cost and turns<a class="hd" href="#cost-and-turns" aria-label="Link to Cost and turns">#</a></h2>
 <p>Totals per arm cover all 20 questions; each cell is the median [min, max] of three runs.
 Total tokens = uncached input (including cache creation) + cached input + output.
@@ -253,7 +248,6 @@ tool calls.</p>
 <th>Metric</th>
 <th>A: grep plus reads</th>
 <th>B: dctx CLI</th>
-<th>C: dctx MCP</th>
 </tr>
 </thead>
 <tbody>
@@ -261,42 +255,35 @@ tool calls.</p>
 <td>Total tokens</td>
 <td>14,904,014 [14,604,149, 15,622,381]</td>
 <td>14,157,974 [11,221,908, 15,613,375]</td>
-<td>15,922,125 [15,513,198, 16,700,029]</td>
 </tr>
 <tr>
 <td>Uncached input tokens</td>
 <td>286,289 [284,340, 290,043]</td>
 <td>250,479 [220,537, 258,313]</td>
-<td>256,015 [247,681, 256,302]</td>
 </tr>
 <tr>
 <td>Cached input tokens</td>
 <td>14,543,028 [14,241,089, 15,246,829]</td>
 <td>13,833,705 [10,939,641, 15,278,757]</td>
-<td>15,579,598 [15,190,063, 16,365,955]</td>
 </tr>
 <tr>
 <td>Output tokens</td>
 <td>78,720 [74,697, 85,509]</td>
 <td>73,790 [61,730, 76,305]</td>
-<td>77,772 [75,454, 86,512]</td>
 </tr>
 <tr>
 <td>Wall time (s)</td>
 <td>700.87 [697.78, 811.59]</td>
 <td>719.84 [628.75, 768.06]</td>
-<td>910.99 [899.31, 974.98]</td>
 </tr>
 <tr>
 <td>Turns (<code>num_turns</code>)</td>
 <td>172 [159, 175]</td>
 <td>130 [129, 137]</td>
-<td>239 [221, 240]</td>
 </tr>
 </tbody>
 </table></div>
-<p>B versus A median total tokens: <strong>-5.01 %</strong>. C versus A: <strong>+6.8 % tokens</strong>
-and <strong>+30 % wall time</strong>.</p>
+<p>B versus A median total tokens: <strong>-5.01 %</strong>.</p>
 <h2 id="accuracy-both-metrics">Accuracy: both metrics<a class="hd" href="#accuracy-both-metrics" aria-label="Link to Accuracy: both metrics">#</a></h2>
 <p>The official metric is strict citation recall: exact repo-relative path and line,
 with a tolerance of +/-3 lines, against 574 required line references per run.
@@ -308,7 +295,6 @@ anywhere in the answer, against 106 file/question pairs per run.</p>
 <th>Metric</th>
 <th>A: grep plus reads</th>
 <th>B: dctx CLI</th>
-<th>C: dctx MCP</th>
 </tr>
 </thead>
 <tbody>
@@ -316,13 +302,11 @@ anywhere in the answer, against 106 file/question pairs per run.</p>
 <td>Official strict citation recall, median [min, max]</td>
 <td>10.10 % [10.10, 20.73]</td>
 <td>14.46 % [8.36, 22.65]</td>
-<td>13.41 % [12.02, 66.72]</td>
 </tr>
 <tr>
 <td>Diagnostic file-level recall, median</td>
 <td>53.77 %</td>
 <td>71.70 %</td>
-<td>76.42 %</td>
 </tr>
 </tbody>
 </table></div>
@@ -344,9 +328,8 @@ for such a system yet. See <a href="https://github.com/Eris-Margeta/dctx/blob/ma
 <strong>and</strong> match or exceed A's recall. <strong>NOT MET on tokens (-5.01 %)</strong>, even though
 B's median official recall exceeded A's. On this corpus and model dctx did not
 save 25 % tokens.</p>
-<p>B and C named more of the required files than grep at about equal (B) or higher
-(C) token cost. This supports an accuracy and bounded context claim, not a
-whole-session token-savings claim. The bounded context behavior is described in
+<p>B named more of the required files than grep at about equal token cost.
+This supports an accuracy and bounded context claim, not a whole-session token-savings claim. The bounded context behavior is described in
 <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/MODALITIES.md">Choosing how to use dctx</a>; these results do not establish a
 general accuracy advantage.</p>
 <p>Limitations: one corpus, one model, three repeats, and no significance claim.

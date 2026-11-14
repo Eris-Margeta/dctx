@@ -18,7 +18,17 @@ use dctx_hash::Sha256;
     reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract."
 )]
 pub fn body_fingerprint(body: &str) -> String {
-    let normalized = body.split_whitespace().collect::<Vec<_>>().join(" ");
+    // A long ASCII token or comment often needs no normalization. Preserve
+    // Unicode whitespace semantics on the general path, including vertical tab.
+    let normalized = if body.is_ascii()
+        && ![' ', '\t', '\n', '\r', '\x0b', '\x0c']
+            .into_iter()
+            .any(|ch| body.contains(ch))
+    {
+        std::borrow::Cow::Borrowed(body)
+    } else {
+        std::borrow::Cow::Owned(body.split_whitespace().collect::<Vec<_>>().join(" "))
+    };
     let mut hex = String::with_capacity(64);
     if let Ok(digest) = Sha256::digest(normalized.as_bytes()) {
         for byte in digest.as_bytes() {

@@ -1,0 +1,5 @@
+[
+  {"name": "BUFFER_LIMIT", "kind": "macro", "line": 1, "parent": null},
+  {"name": "CLAMP_LOW", "kind": "macro", "line": 2, "parent": null},
+  {"name": "TEXT", "kind": "macro", "line": 3, "parent": null}
+]

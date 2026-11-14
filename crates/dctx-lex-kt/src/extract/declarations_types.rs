@@ -11,6 +11,9 @@ struct Header {
     close: Option<usize>,
     ctor_public: bool,
     ctor_anns: Vec<Ann>,
+    /// First token of the primary constructor: its annotations, modifiers or
+    /// `constructor` keyword when present, else the parameter list.
+    ctor_first: usize,
     supers: Option<(usize, usize)>,
     where_clause: Option<(usize, usize)>,
     body: Option<usize>,
@@ -98,7 +101,13 @@ impl Walker<'_> {
         if let Some((from, to)) = angles {
             self.colon_types(from, to, &child);
         }
-        if let Some(ctor) = self.emit_ctor(&child, local, open, open, header.ctor_public) {
+        if let Some(ctor) = self.emit_ctor(
+            &child,
+            local,
+            (header.ctor_first, open),
+            open,
+            header.ctor_public,
+        ) {
             self.flush_anns(&ctor, &header.ctor_anns);
         }
         self.recover_open(open, end)
@@ -135,7 +144,13 @@ impl Walker<'_> {
             self.colon_types(from, to, &child);
         }
         if let (Some(open), Some(close)) = (header.paren, header.close) {
-            if let Some(ctor) = self.emit_ctor(&child, &local, open, close, header.ctor_public) {
+            if let Some(ctor) = self.emit_ctor(
+                &child,
+                &local,
+                (header.ctor_first, open),
+                close,
+                header.ctor_public,
+            ) {
                 self.flush_anns(&ctor, &header.ctor_anns);
             }
             self.walk_params(open, close, &child, Some(&child));
@@ -179,7 +194,7 @@ impl Walker<'_> {
         &mut self,
         owner: &Scope,
         local: &str,
-        open: usize,
+        (first, open): (usize, usize),
         last: usize,
         public: bool,
     ) -> Option<Scope> {
@@ -188,7 +203,7 @@ impl Walker<'_> {
             super::Symbol {
                 kind: SymbolKind::Method,
                 local: local.to_string(),
-                first: open,
+                first: first.min(open),
                 last,
                 sig_end: end,
                 body: (self.start_byte(open), end),
@@ -214,7 +229,7 @@ impl Walker<'_> {
     }
 
     fn type_header(&self, cursor: usize, end: usize, public: bool) -> Header {
-        let (at_paren, paren, ctor_public, ctor_anns) = self.peel_ctor(cursor, end, public);
+        let (ctor_first, paren, ctor_public, ctor_anns) = self.peel_ctor(cursor, end, public);
         if let Some(open) = paren {
             let Some(close) = self.matched(open, end) else {
                 return Header {
@@ -222,6 +237,7 @@ impl Walker<'_> {
                     close: None,
                     ctor_public,
                     ctor_anns,
+                    ctor_first,
                     supers: None,
                     where_clause: None,
                     body: None,
@@ -234,9 +250,9 @@ impl Walker<'_> {
             tail.close = Some(close);
             tail.ctor_public = ctor_public;
             tail.ctor_anns = ctor_anns;
+            tail.ctor_first = ctor_first;
             return tail;
         }
-        let _ = at_paren;
         self.header_tail(
             cursor,
             end,
@@ -252,6 +268,7 @@ impl Walker<'_> {
         end: usize,
         public: bool,
     ) -> (usize, Option<usize>, bool, Vec<Ann>) {
+        let first = self.skip_inserted(cursor, end);
         let mut look = cursor;
         let mut ctor_public = public;
         let mut anns = Vec::new();
@@ -286,7 +303,7 @@ impl Walker<'_> {
             look = self.skip_inserted(look, end);
         }
         if self.is(look, "(") && (look > cursor || self.is(cursor, "(")) {
-            return (look, Some(look), ctor_public, anns);
+            return (first.min(look), Some(look), ctor_public, anns);
         }
         (cursor, None, public, Vec::new())
     }
@@ -323,6 +340,7 @@ impl Walker<'_> {
             close: None,
             ctor_public: true,
             ctor_anns: Vec::new(),
+            ctor_first: cursor,
             supers,
             where_clause,
             body,

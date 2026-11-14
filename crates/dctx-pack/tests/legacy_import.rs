@@ -83,7 +83,10 @@ fn typed_magic_version_kind_utf8_and_trailing_errors() {
     assert!(matches!(decode(&bytes), Err(LegacyError::InvalidUtf8)));
     bytes = GOLDEN.to_vec();
     bytes.push(0);
-    assert!(matches!(decode(&bytes), Err(LegacyError::TrailingBytes)));
+    assert!(matches!(
+        decode(&bytes),
+        Err(LegacyError::CorruptData { offset: 7 })
+    ));
     assert!(decode(GOLDEN).is_ok());
 }
 
@@ -191,7 +194,10 @@ fn overlapping_ranges_cannot_amplify_copies_past_the_bound() {
         decode_legacy(&bytes, LegacyBodies::Include, limits),
         Err(LegacyError::LimitExceeded("body bytes"))
     ));
-    assert!(decode(&bytes).is_ok());
+    assert!(matches!(
+        decode(&bytes),
+        Err(LegacyError::CorruptData { offset: 0 })
+    ));
 }
 
 #[test]

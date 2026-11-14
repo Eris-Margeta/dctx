@@ -19,9 +19,11 @@ use crate::plugin::PluginState;
 use crate::source::{
     BudgetDraft, Draft, IndexDraft, VersionDecl, ViewDraft, guard_source, include_names, parse_v2,
 };
-use crate::v1::{Template, replace_vars};
+use crate::v1::{Template, replace_vars_bounded};
 
 /// Compiles v1 or v2 source into a sealed [`ContextPlan`].
+/// Variable expansion is checked before allocation: each value fits the 65,536-byte string
+/// limit, and the variable table and substituted bodies fit the 1 MiB plan envelope.
 ///
 /// # Errors
 /// Refuses invalid or oversized source, unresolved references, unsupported features and plugin/grant/budget requests outside the host ceiling.
@@ -57,7 +59,7 @@ enum PlanBuild {
 
 fn version_decl_plan(source: &str, host: &HostCeiling) -> Result<PlanBuild, TemplateError> {
     match crate::source::version_decl(source)? {
-        VersionDecl::V1 => Ok(PlanBuild::V1(Template::parse(source))),
+        VersionDecl::V1 => Ok(PlanBuild::V1(Template::parse_bounded(source)?)),
         VersionDecl::V2 => Ok(PlanBuild::Ready(Box::new(lower_v2(
             parse_v2(source)?,
             host,
@@ -83,16 +85,16 @@ fn lower_v1(template: &Template, host: &HostCeiling) -> Result<ContextPlan, Temp
     let partials = vec![
         (
             "TREE_ENTRY".to_string(),
-            replace_vars(&template.partial_tree_entry, &template.variables),
+            replace_vars_bounded(&template.partial_tree_entry, &template.variables)?,
         ),
         (
             "FILE_BLOCK".to_string(),
-            replace_vars(&template.partial_file_block, &template.variables),
+            replace_vars_bounded(&template.partial_file_block, &template.variables)?,
         ),
     ];
     let layouts = vec![(
         "main".to_string(),
-        replace_vars(&template.layout, &template.variables),
+        replace_vars_bounded(&template.layout, &template.variables)?,
     )];
     let render = limited_program(
         host,
@@ -312,6 +314,14 @@ fn check_budget(budget: &BudgetDraft, host: &HostCeiling) -> Result<BudgetPlan, 
 }
 
 fn lower_render(draft: &Draft, host: &HostCeiling) -> Result<RenderProgram, TemplateError> {
+    unique(
+        draft.partials.iter().map(|(name, _)| name.as_str()),
+        "partial",
+    )?;
+    unique(
+        draft.layouts.iter().map(|(name, _)| name.as_str()),
+        "render",
+    )?;
     let includes = include_names(&draft.template, &draft.partials, &draft.layouts);
     let mut errors = draft.template.validate();
     errors.retain(|err| match err {
@@ -466,21 +476,25 @@ fn walk_partial(
     visiting: &mut BTreeSet<String>,
     visited: &mut BTreeSet<String>,
 ) -> Option<String> {
-    if visited.contains(name) {
-        return None;
-    }
-    if !visiting.insert(name.to_string()) {
-        return Some(name.to_string());
-    }
-    if let Some((_, deps)) = edges.iter().find(|(item, _)| item == name) {
-        for dep in deps {
-            if let Some(found) = walk_partial(dep, edges, visiting, visited) {
-                return Some(found);
-            }
+    // Source-controlled include chains must not consume one call frame per edge.
+    let mut pending = vec![(name, false)];
+    while let Some((name, leaving)) = pending.pop() {
+        if leaving {
+            visiting.remove(name);
+            visited.insert(name.to_string());
+            continue;
+        }
+        if visited.contains(name) {
+            continue;
+        }
+        if !visiting.insert(name.to_string()) {
+            return Some(name.to_string());
+        }
+        pending.push((name, true));
+        if let Some((_, deps)) = edges.iter().find(|(item, _)| item == name) {
+            pending.extend(deps.iter().rev().map(|dep| (dep.as_str(), false)));
         }
     }
-    visiting.remove(name);
-    visited.insert(name.to_string());
     None
 }
 

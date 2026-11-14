@@ -1,65 +1,59 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Recursive snapshot walk: file counts, added and removed subtrees, and node comparison.
-//! Implements the child-matching half of the pack diff (relative path identity, decision 078).
+//! Iterative snapshot walks for counts, added/removed subtrees and comparison.
+//! Child identity is the relative path; duplicate occurrences pair in stored order.
 //! Depends on [`super`] and [`crate::datatypes`]; pure, no IO.
 //! Used by [`super::compare::compare_trees`].
-//! A file changes when its size differs, or when its modification time differs and its bytes do (a bare `touch` is no change).
-//! Directories change through children.
+//! A file changes when its size differs, or when its modification time differs and its bytes do.
 
 use super::{ChangeType, DiffEntry, DiffReport};
 use crate::datatypes::{DirContextTreeNode, NodeType};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, VecDeque};
 
 pub(super) fn count_files_recursive(node: &DirContextTreeNode) -> usize {
     let mut count = 0;
-    if node.node_type == NodeType::File {
-        count = 1;
-    }
-    if node.node_type == NodeType::Directory {
-        for child in &node.children {
-            count += count_files_recursive(child);
+    let mut stack = vec![node];
+    while let Some(node) = stack.pop() {
+        if node.node_type == NodeType::File {
+            count += 1;
+        } else {
+            stack.extend(&node.children);
         }
     }
     count
 }
 
 pub(super) fn mark_all_as_added_recursive(node: &DirContextTreeNode, report: &mut DiffReport) {
-    // Dodajemo entry u diff listu
-    report.entries.push(DiffEntry {
-        change_type: ChangeType::Added,
-        node_type: node.node_type,
-        relative_path: node.relative_path.clone(),
-    });
+    mark_subtree(node, ChangeType::Added, report);
+}
 
-    // Ažuriramo statistiku
-    if node.node_type == NodeType::File {
-        report.stats.files_added += 1;
-    }
+pub(super) fn mark_all_as_removed_recursive(node: &DirContextTreeNode, report: &mut DiffReport) {
+    mark_subtree(node, ChangeType::Removed, report);
+}
 
-    // Rekurzija za djecu
-    if node.node_type == NodeType::Directory {
-        for child in &node.children {
-            mark_all_as_added_recursive(child, report);
+fn mark_subtree(node: &DirContextTreeNode, change_type: ChangeType, report: &mut DiffReport) {
+    let mut stack = vec![node];
+    while let Some(node) = stack.pop() {
+        report.entries.push(DiffEntry {
+            change_type,
+            node_type: node.node_type,
+            relative_path: node.relative_path.clone(),
+        });
+        if node.node_type == NodeType::File {
+            match change_type {
+                ChangeType::Added => report.stats.files_added += 1,
+                ChangeType::Removed => report.stats.files_removed += 1,
+                ChangeType::Modified => unreachable!("subtree walks only add or remove"),
+            }
+        } else {
+            stack.extend(node.children.iter().rev());
         }
     }
 }
 
-pub(super) fn mark_all_as_removed_recursive(node: &DirContextTreeNode, report: &mut DiffReport) {
-    report.entries.push(DiffEntry {
-        change_type: ChangeType::Removed,
-        node_type: node.node_type,
-        relative_path: node.relative_path.clone(),
-    });
-
-    if node.node_type == NodeType::File {
-        report.stats.files_removed += 1;
-    }
-
-    if node.node_type == NodeType::Directory {
-        for child in &node.children {
-            mark_all_as_removed_recursive(child, report);
-        }
-    }
+enum Visit<'a> {
+    Compare(&'a DirContextTreeNode, &'a DirContextTreeNode),
+    Added(&'a DirContextTreeNode),
+    Removed(&'a DirContextTreeNode),
 }
 
 pub(super) fn compare_nodes_recursive(
@@ -67,91 +61,58 @@ pub(super) fn compare_nodes_recursive(
     new_node: &DirContextTreeNode,
     report: &mut DiffReport,
 ) {
-    // 1. Usporedba samog čvora (Modified check)
-    // Ovdje provjeravamo samo ako su oba fajlovi. Direktoriji se ne "mijenjaju" na isti način,
-    // promjene direktorija se reflektiraju kroz djecu.
-    if old_node.node_type == NodeType::File && new_node.node_type == NodeType::File {
-        let is_modified = is_file_modified(old_node, new_node);
-
-        if is_modified {
-            report.entries.push(DiffEntry {
-                change_type: ChangeType::Modified,
-                node_type: NodeType::File,
-                relative_path: new_node.relative_path.clone(),
-            });
-            report.stats.files_modified += 1;
-        } else {
-            // Nije modificiran -> Unchanged
-            report.stats.files_unchanged += 1;
-        }
-    } else if old_node.node_type != new_node.node_type {
-        // Tip se promijenio (npr. bio file, sad je dir).
-        // Tretiramo ovo kao Remove starog i Add novog.
-        // Ali u praksi, pošto recursion ide po imenima, ovo će se vjerojatno riješiti kroz children logiku.
-        // Ako smo ovdje, znači da smo matchali po imenu/pathu.
-
-        // Logika: Stari file je maknut, novi dir je dodan.
-        // Ali čekaj, ova funkcija prima dva čvora za koja ZNAMO da su "isti" path.
-        // Za jednostavnost, ako se tip promijeni, sve ispod starog je removed, sve ispod novog je added.
-        report.entries.push(DiffEntry {
-            change_type: ChangeType::Removed,
-            node_type: old_node.node_type,
-            relative_path: old_node.relative_path.clone(),
-        });
-        report.entries.push(DiffEntry {
-            change_type: ChangeType::Added,
-            node_type: new_node.node_type,
-            relative_path: new_node.relative_path.clone(),
-        });
-
-        // Update stats: Type changed (file->dir or dir->file)
-        // Mark old as removed and recursively count its files
-        if old_node.node_type == NodeType::File {
-            report.stats.files_removed += 1;
-        } else {
-            // Old was directory - recursively count removed files
-            report.stats.files_removed += count_files_recursive(old_node);
-        }
-
-        // Mark new as added and recursively count its files
-        if new_node.node_type == NodeType::File {
-            report.stats.files_added += 1;
-        } else {
-            // New is directory - recursively count added files
-            report.stats.files_added += count_files_recursive(new_node);
-        }
-
-        return;
-    }
-
-    // 2. Usporedba djece (samo za direktorije)
-    if old_node.node_type == NodeType::Directory && new_node.node_type == NodeType::Directory {
-        // Kreiramo mapu stare djece za brzi lookup po imenu (basename ili relative path)
-        // Relative path je jedinstven unutar stabla, ali unutar node.children je dovoljno gledati file_name
-        // Međutim, u DirContextTreeNode imamo samo relative_path.
-        // Koristit ćemo relative_path kao ključ.
-
-        let mut old_children_map: HashMap<&String, &DirContextTreeNode> = HashMap::new();
-        for child in &old_node.children {
-            old_children_map.insert(&child.relative_path, child);
-        }
-
-        // Prolazimo kroz novu djecu
-        for new_child in &new_node.children {
-            if let Some(old_child) = old_children_map.remove(&new_child.relative_path) {
-                // Postoji i u starom -> Rekurzivna usporedba
-                compare_nodes_recursive(old_child, new_child, report);
-            } else {
-                // Ne postoji u starom -> ADDED
-                mark_all_as_added_recursive(new_child, report);
+    let mut stack = vec![Visit::Compare(old_node, new_node)];
+    while let Some(visit) = stack.pop() {
+        let (old_node, new_node) = match visit {
+            Visit::Compare(old, new) => (old, new),
+            Visit::Added(node) => {
+                mark_all_as_added_recursive(node, report);
+                continue;
             }
-        }
-
-        // Što je ostalo u mapi, to je REMOVED
-        // Sortiranje nije nužno za logiku, ali je lijepo za determinizam (hashmap je random iter)
-        // Ali DiffEntry vector će ionako biti miksan.
-        for (_, old_child) in old_children_map {
-            mark_all_as_removed_recursive(old_child, report);
+            Visit::Removed(node) => {
+                mark_all_as_removed_recursive(node, report);
+                continue;
+            }
+        };
+        if old_node.node_type != new_node.node_type {
+            mark_all_as_removed_recursive(old_node, report);
+            mark_all_as_added_recursive(new_node, report);
+        } else if old_node.node_type == NodeType::File {
+            if is_file_modified(old_node, new_node) {
+                report.entries.push(DiffEntry {
+                    change_type: ChangeType::Modified,
+                    node_type: NodeType::File,
+                    relative_path: new_node.relative_path.clone(),
+                });
+                report.stats.files_modified += 1;
+            } else {
+                report.stats.files_unchanged += 1;
+            }
+        } else {
+            // Ordered keys make removals deterministic. Queues preserve every
+            // occurrence of a duplicate instead of silently replacing one.
+            let mut old_children: BTreeMap<&String, VecDeque<&DirContextTreeNode>> =
+                BTreeMap::new();
+            for child in &old_node.children {
+                old_children
+                    .entry(&child.relative_path)
+                    .or_default()
+                    .push_back(child);
+            }
+            let mut visits = Vec::new();
+            for child in &new_node.children {
+                let old = old_children
+                    .get_mut(&child.relative_path)
+                    .and_then(VecDeque::pop_front);
+                visits.push(match old {
+                    Some(old) => Visit::Compare(old, child),
+                    None => Visit::Added(child),
+                });
+            }
+            for old in old_children.into_values().flatten() {
+                visits.push(Visit::Removed(old));
+            }
+            stack.extend(visits.into_iter().rev());
         }
     }
 }

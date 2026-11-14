@@ -15,6 +15,9 @@ const LONG_OPS: &[&str] = &[
 
 impl Lx<'_> {
     pub(super) fn run(&mut self) -> Result<(), LexError> {
+        if self.src.starts_with('\u{feff}') {
+            self.i = '\u{feff}'.len_utf8();
+        }
         let mut fuel = self.b.len().saturating_mul(8).max(8);
         while self.i < self.b.len() {
             if fuel == 0 {
