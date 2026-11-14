@@ -1,0 +1,7 @@
+[{"name":"Calculator spec","kind":"class","line":5,"parent":null},
+{"name":"Calculator spec::adds two numbers","kind":"method","line":6,"parent":"Calculator spec"},
+{"name":"Calculator spec::handles fun and class keywords in names","kind":"method","line":11,"parent":"Calculator spec"},
+{"name":"Calculator spec::in","kind":"const","line":14,"parent":"Calculator spec"},
+{"name":"is","kind":"fn","line":17,"parent":null},
+{"name":"object","kind":"class","line":19,"parent":null},
+{"name":"object::fun","kind":"method","line":20,"parent":"object"}]

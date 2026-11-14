@@ -1,0 +1,13 @@
+[{"name":"View","kind":"class","line":3,"parent":null},
+{"name":"View::tag","kind":"const","line":4,"parent":"View"},
+{"name":"View::width","kind":"const","line":5,"parent":"View"},
+{"name":"View::View","kind":"method","line":7,"parent":"View"},
+{"name":"View::View","kind":"method","line":11,"parent":"View"},
+{"name":"Label","kind":"class","line":16,"parent":null},
+{"name":"Label::Label","kind":"method","line":16,"parent":"Label"},
+{"name":"Label::text","kind":"const","line":16,"parent":"Label"},
+{"name":"Label::Label","kind":"method","line":17,"parent":"Label"},
+{"name":"Label::Label","kind":"method","line":19,"parent":"Label"},
+{"name":"Failure","kind":"class","line":23,"parent":null},
+{"name":"Failure::Failure","kind":"method","line":24,"parent":"Failure"},
+{"name":"Failure::Failure","kind":"method","line":25,"parent":"Failure"}]

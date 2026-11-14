@@ -1,0 +1,7 @@
+[{"name":"process","kind":"fn","line":3,"parent":null},
+{"name":"process::square","kind":"fn","line":4,"parent":"process"},
+{"name":"process::add","kind":"fn","line":7,"parent":"process"},
+{"name":"Parser","kind":"class","line":17,"parent":null},
+{"name":"Parser::parse","kind":"method","line":18,"parent":"Parser"},
+{"name":"Parser::parse::isSep","kind":"fn","line":19,"parent":"Parser::parse"},
+{"name":"split","kind":"fn","line":26,"parent":null}]

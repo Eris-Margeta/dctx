@@ -1,0 +1,7 @@
+[{"name":"castOrNull","kind":"fn","line":3,"parent":null},
+{"name":"typeName","kind":"fn","line":5,"parent":null},
+{"name":"measure","kind":"fn","line":7,"parent":null},
+{"name":"Registry","kind":"class","line":14,"parent":null},
+{"name":"Registry::entries","kind":"const","line":15,"parent":"Registry"},
+{"name":"Registry::register","kind":"method","line":17,"parent":"Registry"},
+{"name":"Registry::lookup","kind":"method","line":21,"parent":"Registry"}]

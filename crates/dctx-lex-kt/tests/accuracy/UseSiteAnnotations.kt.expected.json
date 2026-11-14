@@ -1,0 +1,10 @@
+[{"name":"Dto","kind":"struct","line":6,"parent":null},
+{"name":"Dto::Dto","kind":"method","line":7,"parent":"Dto"},
+{"name":"Dto::userId","kind":"const","line":8,"parent":"Dto"},
+{"name":"Dto::cache","kind":"const","line":9,"parent":"Dto"},
+{"name":"Dto::isActive","kind":"const","line":10,"parent":"Dto"},
+{"name":"Dto::derived","kind":"const","line":12,"parent":"Dto"},
+{"name":"Dto::injected","kind":"const","line":15,"parent":"Dto"},
+{"name":"Status","kind":"enum","line":19,"parent":null},
+{"name":"Status::ACTIVE","kind":"const","line":21,"parent":"Status"},
+{"name":"Status::INACTIVE","kind":"const","line":22,"parent":"Status"}]

@@ -1,0 +1,10 @@
+[{"name":"CrlfService","kind":"class","line":3,"parent":null},
+{"name":"CrlfService::CrlfService","kind":"method","line":3,"parent":"CrlfService"},
+{"name":"CrlfService::port","kind":"const","line":3,"parent":"CrlfService"},
+{"name":"CrlfService::start","kind":"method","line":4,"parent":"CrlfService"},
+{"name":"CrlfService::stop","kind":"method","line":8,"parent":"CrlfService"},
+{"name":"raw","kind":"const","line":11,"parent":null},
+{"name":"crlfTopLevel","kind":"fn","line":15,"parent":null},
+{"name":"Mode","kind":"enum","line":20,"parent":null},
+{"name":"Mode::A","kind":"const","line":20,"parent":"Mode"},
+{"name":"Mode::B","kind":"const","line":20,"parent":"Mode"}]

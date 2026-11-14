@@ -1,0 +1,10 @@
+[{"name":"process","kind":"fn","line":3,"parent":null},
+{"name":"process::square","kind":"fn","line":4,"parent":"process"},
+{"name":"process::Acc","kind":"class","line":6,"parent":"process"},
+{"name":"process::Acc::Acc","kind":"method","line":6,"parent":"process::Acc"},
+{"name":"process::Acc::total","kind":"const","line":6,"parent":"process::Acc"},
+{"name":"process::Acc::add","kind":"method","line":7,"parent":"process::Acc"},
+{"name":"Parser","kind":"class","line":17,"parent":null},
+{"name":"Parser::parse","kind":"method","line":18,"parent":"Parser"},
+{"name":"Parser::parse::isSep","kind":"fn","line":19,"parent":"Parser::parse"},
+{"name":"split","kind":"fn","line":26,"parent":null}]
