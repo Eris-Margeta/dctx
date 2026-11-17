@@ -1,0 +1,37 @@
+{
+  "schema": "dctx.build/1",
+  "toolchain": "rustc 1.100.0 (0ef1bc386 2026-11-09)\nbinary: rustc\ncommit-hash: 0ef1bc386059596dada8fb65b50425aab2ea637a\ncommit-date: 2026-11-09\nhost: x86_64-unknown-linux-gnu\nrelease: 1.100.0\nLLVM version: 23.1.5",
+  "target": "x86_64-unknown-linux-gnu",
+  "profile": "release",
+  "features": "default",
+  "source_date_epoch": 1794873600,
+  "source_commit": "2f8f66600c46bbdb9ba97f9d3a3aef6c1fa392e0",
+  "source_tree": {
+    "algorithm": "dctx-build-tree/1",
+    "sha256": "a5579d728d19465e65a1ac45c6a2d1bbb535c49f496eb7a6aead643df1cbf845",
+    "files": 1854
+  },
+  "lockfile_sha256": "946f51e83ec610eeaf18d455a83f2451d42154bc23100f2f7467f7ac6a6d25af",
+  "linker": "cc (Debian 14.2.0-19) 14.2.0",
+  "libc": "ldd (Debian GLIBC 2.41-12+deb13u4) 2.41",
+  "linker_backend": "GNU ld (GNU Binutils for Debian) 2.44",
+  "rustflags": [
+    "--remap-path-prefix=SOURCE=/dctx/source",
+    "--remap-path-prefix=CARGO_HOME=/dctx/cargo",
+    "--remap-path-prefix=FRESH_TARGET=/dctx/target",
+    "-C strip=symbols",
+    "-C link-arg=-Wl,--build-id=none"
+  ],
+  "network": "isolated namespace; loopback only; cargo --frozen --offline",
+  "clean_builds": 2,
+  "artifact_sha256": [
+    "e708477585ebebe32b796ef130909923a5c0b1bfdbed0cc5e965add65d989012",
+    "e708477585ebebe32b796ef130909923a5c0b1bfdbed0cc5e965add65d989012"
+  ],
+  "reproducible": true,
+  "artifact": {
+    "file": "dctx-cli",
+    "sha256": "e708477585ebebe32b796ef130909923a5c0b1bfdbed0cc5e965add65d989012",
+    "bytes": 9574096
+  }
+}

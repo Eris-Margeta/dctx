@@ -88,7 +88,9 @@ fn run() {
             map::run(&args[1..])
         }
         Some("pack") => {
-            maybe_auto_clean(allow_auto_clean);
+            if args[2..] != ["--schema"] {
+                maybe_auto_clean(allow_auto_clean);
+            }
             // `--for`/`--budget` select the task-context page (map find, neighbors, read); everything else is the source page.
             if pack_for::requested(&args[2..]) {
                 pack_for::run(&args[1..])

@@ -3,6 +3,7 @@
 //! Named targets share one implementation across CLI, RPC, and library callers.
 mod chunks;
 mod named;
+mod pack_json;
 mod page;
 
 pub use chunks::{ContextSessions, chunk_id};
@@ -24,7 +25,7 @@ pub struct ContextRequest {
     pub text: String,
     /// Estimated token budget, 100..=100000.
     pub budget: u32,
-    /// 1 for text; 2 for a JSON document containing the complete text page.
+    /// 1 for text; 2 for the versioned `dctx.pack/1` envelope and exact source fragments.
     pub output_format: u32,
 }
 
@@ -61,25 +62,32 @@ impl Session {
         if !matches!(request.output_format, 1 | 2) {
             return Err(DctxError::invalid("context output format must be 1 or 2"));
         }
-        let mut report = build(request, |query| {
+        let mut sources = std::collections::BTreeMap::new();
+        let mut selections = Vec::new();
+        let mut report = build_selected(request, &mut selections, |query| {
             let mut sink = VecSink::new();
-            self.query(handle, query, &mut sink)?;
+            let mut answer = self.query(handle, query, &mut sink)?;
+            if request.output_format == 2 && query.verb == Verb::Read {
+                for record in &mut answer.records {
+                    self.context_source(handle, record)?;
+                    sources.insert(query.target.clone(), record.clone());
+                }
+                return Ok(crate::domain::encode_text("source", &answer, false));
+            }
             Ok(String::from_utf8_lossy(sink.as_bytes()).into_owned())
         })?;
         if request.output_format == 2 {
-            let mut json = String::from("{\"v\":2,\"verb\":\"context\",\"text\":");
-            crate::domain::quote_json(&mut json, &report.text);
-            use std::fmt::Write as _;
-            let _ = writeln!(json, ",\"hits\":{}}}", report.hits);
-            report.text = json;
+            report.text =
+                pack_json::render(&report, request, handle.digest(), &selections, &sources)?;
         }
         Ok(report)
     }
 }
 
 /// Builds the context page from typed facade map queries.
-fn build(
+fn build_selected(
     plan: &ContextRequest,
+    selections: &mut Vec<(String, usize)>,
     mut query: impl FnMut(&MapRequest) -> Result<String, DctxError>,
 ) -> Result<ContextReport, DctxError> {
     let extracted = terms::extract(&plan.text);
@@ -123,7 +131,10 @@ fn build(
     }
     for id in best.iter().take(READ_HITS) {
         if let Some(answer) = ask(&mut query, Verb::Read, id)? {
-            page.section(&format!("## read {id}"), &body(&answer));
+            let kept = page.section(&format!("## read {id}"), &body(&answer));
+            if kept > 1 {
+                selections.push((id.clone(), kept - 1));
+            }
         }
     }
     Ok(ContextReport {
@@ -254,6 +265,14 @@ fn is_test(id: &str) -> bool {
         .split("::")
         .any(|segment| matches!(segment, "tests" | "test"));
     dir || test_file || test_module
+}
+
+#[cfg(test)]
+fn build(
+    plan: &ContextRequest,
+    query: impl FnMut(&MapRequest) -> Result<String, DctxError>,
+) -> Result<ContextReport, DctxError> {
+    build_selected(plan, &mut Vec::new(), query)
 }
 
 #[cfg(test)]

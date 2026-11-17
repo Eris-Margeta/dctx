@@ -16,6 +16,9 @@ use dctx_core::version::Version;
 use crate::exit::{from_facade_scoped, Failure};
 use crate::host;
 
+/// Versioned task-context JSON schema, also shipped in `schemas/`.
+pub const JSON_SCHEMA: &str = include_str!("pack/schema.json");
+
 mod filter;
 use filter::{parse_extensions, parse_megabytes, parse_pattern, Filters};
 mod emit;
@@ -86,7 +89,8 @@ Pack filters (ADR-011, ADR-009):
   --exclude <pattern>   Drop files matching this ignore-rule glob (repeatable)
   --output, -o <path>   Write the page to one file
   --clipboard, -c       Copy the page to the clipboard
-  --json                Summary report; with --for, the facade JSON context page
+  --json                Summary report; with --for, versioned dctx.pack/1 JSON
+  --schema              Print the pack --for JSON schema without reading a project
   --tree-stamps=on|off  MOD: timestamp on tree lines: off (default) keeps the page prefix stable across a touch, on = the 1.0.0 text
 Task context (agent cards):
   --for <text>          Instead of the source page: map find on the names in <text>, then neighbors and read of the best hits
@@ -115,7 +119,10 @@ pub fn run(args: &[String]) -> Result<(), Failure> {
 /// # Errors
 /// Returns the same argument, source and no-result failures as [`output`], or a writer failure.
 pub fn write_output(args: &[String], stdout: &mut dyn std::io::Write) -> Result<(), Failure> {
-    if args.iter().any(|arg| arg == "--help" || arg == "-h") {
+    if args
+        .iter()
+        .any(|arg| arg == "--help" || arg == "-h" || arg == "--schema")
+    {
         return output(args)?.write_to(stdout);
     }
     let plan = parse(args).map_err(|message| {
@@ -270,6 +277,12 @@ fn no_result(plan: &Plan, files: u64) -> Option<Failure> {
 /// # Errors
 /// Returns argument, source, scan, render or output failures.
 pub fn output(args: &[String]) -> Result<crate::exit::CommandOutput, Failure> {
+    if args.len() == 2 && args[1] == "--schema" {
+        return Ok(crate::exit::CommandOutput {
+            stdout: JSON_SCHEMA.to_owned(),
+            failure: None,
+        });
+    }
     if args.iter().any(|arg| arg == "--help" || arg == "-h") {
         return Ok(crate::exit::CommandOutput {
             stdout: format!("{}{}", crate::help::pack_usage(), flag_help()),
