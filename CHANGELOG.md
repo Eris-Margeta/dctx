@@ -20,6 +20,11 @@ dctx was never meant to ship an MCP server; the integration was an experiment to
 
 ### Added
 
+- Versioned `dctx.pack/1` JSON for `pack --for --json`, with exact verified source
+  spans, span SHA-256 hashes, snapshot identity, and `pack --schema`. Includes
+  schema-validated golden and deterministic-output tests, compatibility rules,
+  and an offline two-build release recipe with a machine-readable manifest.
+
 - Repository-scale map-find latency fixtures (`--scale-files`) with settled mtimes, recorded shape, and informational Windows/Linux CI samples for 1,551 files.
 - Opt-in `DCTX_TIMINGS=1` emits map-find phase microseconds as stderr JSON, with phase medians in the Windows CI latency report.
 - Publish the first whole-session grep-versus-dctx benchmark: CLI median tokens -5.01 %, below the 25 % savings rule; both recall metrics and spread reported in [the study](docs/BENCHMARK-20261111.md).

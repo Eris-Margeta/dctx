@@ -334,6 +334,19 @@ before embedding it. Python, Node and Go wrappers over `dctx rpc` live in
 and [packages/go](packages/go/README.md); they are built and tested in CI.
 Install the Node wrapper with `npm install @tejl/dctx`; use CI artifacts for Python and Go.
 
+## Versioned pack JSON
+
+For a pinned external runtime, use `dctx pack --for 'fix alpha_body' --json`.
+The `schema` field is `dctx.pack/1`; `dctx pack --schema` prints the shipped
+[JSON Schema](schemas/dctx.pack-1.schema.json). Every included source fragment
+carries its relative path, exact byte and line bounds, content SHA-256, and the
+pack's source snapshot identity. Unknown source commits are explicitly `null`.
+
+Within this contract, additive changes increment the minor schema version;
+breaking changes require a new major schema ID. See the
+[pack contract and offline reproducible-build recipe](docs/PACK-SCHEMA.md)
+for span conventions, validation, and the two-build proof.
+
 ## CLI Reference
 
 ```
@@ -370,7 +383,8 @@ Pack filters:
   --exclude <pattern>   Drop files matching this ignore-rule glob (repeatable)
   --output, -o <path>   Write the page to one file
   --clipboard, -c       Copy the page to the clipboard
-  --json                Summary report; with --for, the facade JSON context page
+  --json                Summary report; with --for, versioned dctx.pack/1 JSON
+  --schema              Print the pack --for JSON schema without reading a project
   --tree-stamps=on|off  MOD: timestamp on tree lines (default off; on = the 1.0.0 text)
 Task context (agent cards):
   --for <text>          Map find on the names in <text>, then neighbors and read of the best hits

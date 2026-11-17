@@ -185,7 +185,7 @@ impl Session {
         (answer, encoded)
     }
 
-    pub(in crate::session) fn read_verified(
+    pub(crate) fn read_verified(
         &mut self,
         path: &str,
         expected: ContentDigest,

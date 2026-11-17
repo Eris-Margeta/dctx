@@ -43,6 +43,7 @@ have no page link; specifications also include planned behavior.
 ## Reference
 
 - [Commands](../README.md#cli-reference) and [map command guide](guides/MAP-MODE.md): run `dctx --help` for the complete current CLI.
+- [Versioned pack JSON and offline builds](PACK-SCHEMA.md): `dctx.pack/1`, exact source spans, compatibility and reproducibility proof.
 - [Engine RPC protocol](protocol/README.md): the versioned stdio protocol for language wrappers.
 - Policy file reference: **coming**; current [ignore semantics](ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md) and [planned policy lattice](SPEC.md#part-iv--policy) are separate contracts.
 - [Exit codes](CLI-EXIT-CODES.md): deterministic outcomes for scripts and clients.

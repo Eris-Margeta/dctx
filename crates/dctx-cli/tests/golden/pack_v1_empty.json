@@ -1,0 +1,1 @@
+{"schema":"dctx.pack/1","schema_version":"1.0","v":2,"verb":"context","text":"# dctx pack --for budget=3000 terms=1\n# end body_tokens=11 budget=3000 dropped=0\n","hits":0,"terms":1,"budget":3000,"snapshot":"v1:sha256:67cc2fa2ec45eefb480e8dd346f54e80bf6e00c6f4ce27536581954116c2993c:264","commit":null,"fragments":[]}

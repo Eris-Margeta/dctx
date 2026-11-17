@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.dctx.internet.technology/schemas/dctx.pack-1.schema.json",
+  "title": "dctx.pack/1 task context",
+  "description": "Version 1.0. Additive fields may be added within major 1. See docs/PACK-SCHEMA.md.",
+  "type": "object",
+  "required": [
+    "schema",
+    "schema_version",
+    "v",
+    "verb",
+    "text",
+    "hits",
+    "terms",
+    "budget",
+    "snapshot",
+    "commit",
+    "fragments"
+  ],
+  "properties": {
+    "schema": {
+      "const": "dctx.pack/1"
+    },
+    "schema_version": {
+      "type": "string",
+      "pattern": "^1\\.[0-9]+$"
+    },
+    "v": {
+      "const": 2
+    },
+    "verb": {
+      "const": "context"
+    },
+    "text": {
+      "type": "string"
+    },
+    "hits": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "terms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "budget": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 100000
+    },
+    "snapshot": {
+      "type": "string",
+      "pattern": "^v1:sha256:[0-9a-f]{64}:[0-9]+$"
+    },
+    "commit": {
+      "description": "Verified source commit when supplied by the source; null when unavailable. Never inferred from the build commit.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$"
+    },
+    "fragments": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/fragment"
+      }
+    }
+  },
+  "$defs": {
+    "fragment": {
+      "type": "object",
+      "required": [
+        "target",
+        "path",
+        "byte_start",
+        "byte_end",
+        "line_start",
+        "line_end",
+        "sha256",
+        "content"
+      ],
+      "properties": {
+        "target": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "description": "Slash-separated source-relative path; --also roots have directory labels.",
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\]+$"
+        },
+        "byte_start": {
+          "description": "Zero-based inclusive byte offset.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "byte_end": {
+          "description": "Zero-based exclusive byte offset.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_start": {
+          "description": "One-based inclusive line.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_end": {
+          "description": "One-based inclusive line containing the final span byte.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "content": {
+          "description": "Exact UTF-8 span bytes after JSON decoding. No newline normalization or truncation markers.",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}
