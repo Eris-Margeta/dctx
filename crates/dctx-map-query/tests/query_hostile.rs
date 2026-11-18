@@ -179,6 +179,12 @@ fn oversized_path_component_is_safe_to_filter_and_cannot_be_opened() {
     });
 }
 
+/// True when the filesystem itself refuses a hostile name (EILSEQ, ENAMETOOLONG, EINVAL).
+fn fs_refuses(error: &std::io::Error) -> bool {
+    matches!(error.raw_os_error(), Some(92 | 84 | 63 | 36 | 22))
+        || error.kind() == std::io::ErrorKind::InvalidFilename
+}
+
 #[cfg(unix)]
 #[test]
 fn non_utf8_filename_does_not_hide_valid_neighbors() {
@@ -187,11 +193,13 @@ fn non_utf8_filename_does_not_hide_valid_neighbors() {
     checked(|| {
         let root = tempfile::tempdir().unwrap();
         write_symbols(root.path());
-        fs::write(
+        if let Err(error) = fs::write(
             root.path().join(OsStr::from_bytes(b"bad-\xff.rs")),
             "pub fn hidden() {}\n",
-        )
-        .unwrap();
+        ) {
+            assert!(fs_refuses(&error), "{error}");
+            eprintln!("skip: fs refuses non-UTF-8 filename: {error}");
+        }
         fs::write(root.path().join("bad-\u{fffd}.rs"), "pub fn visible() {}\n").unwrap();
         let answer = repeated(root.path(), &Request::new(Verb::Map, "")).unwrap();
         let ids: Vec<_> = answer
