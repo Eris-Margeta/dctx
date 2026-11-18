@@ -8,7 +8,7 @@ use crate::ContentDigest;
 use crate::domain::{FileStamp, StaleReason};
 use crate::ports::{EntryMeta, FsKind, SourceFs};
 use dctx_hash::Sha256;
-use std::path::Path;
+use std::{io, path::Path};
 
 pub(crate) struct StableRead {
     pub stamp: FileStamp,
@@ -37,20 +37,26 @@ pub(crate) fn read_authorized<F: SourceFs>(
     fs: &F,
     path: &Path,
 ) -> Result<ReadAttempt, SourceError> {
-    let before = fs
-        .metadata(path)
-        .map_err(|source| SourceError::io(path, source))?;
+    let before = match fs.metadata(path) {
+        Ok(meta) => meta,
+        Err(source) if source.kind() == io::ErrorKind::NotFound => {
+            return Ok(ReadAttempt::Stale(StaleReason::Missing));
+        }
+        Err(source) => return Err(SourceError::io(path, source)),
+    };
     if before.kind != FsKind::File {
-        return Err(SourceError::InvalidPath {
-            path: path.to_path_buf(),
-        });
+        return Ok(ReadAttempt::Stale(StaleReason::Race));
     }
-    let bytes = fs
-        .read_file(path)
-        .map_err(|source| SourceError::io(path, source))?;
+    let bytes = match fs.read_file(path) {
+        Ok(bytes) => bytes,
+        Err(source) if source.kind() == io::ErrorKind::NotFound => {
+            return Ok(ReadAttempt::Stale(StaleReason::Missing));
+        }
+        Err(source) => return Err(SourceError::io(path, source)),
+    };
     let after = match fs.metadata(path) {
         Ok(meta) => meta,
-        Err(source) if source.kind() == std::io::ErrorKind::NotFound => {
+        Err(source) if source.kind() == io::ErrorKind::NotFound => {
             return Ok(ReadAttempt::Stale(StaleReason::Missing));
         }
         Err(source) => return Err(SourceError::io(path, source)),

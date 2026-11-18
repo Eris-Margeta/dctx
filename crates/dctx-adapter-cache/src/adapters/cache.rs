@@ -5,7 +5,7 @@
 //! Root ceilings stay on `reserve_for`. Unlink refuses symlinks and `..` instead of following them.
 
 use super::publish::publish_immutable;
-use super::{ensure_dir, locate, orphans, real_root};
+use super::{ensure_dir, locate, orphans, real_root, require_directory};
 use crate::domain::{Lifecycle, ObjectId, Purpose};
 use crate::error::CacheError;
 use crate::ports::{ObjectStore, OrphanFile};
@@ -51,6 +51,7 @@ impl FsObjectStore {
     /// # Errors
     /// Refuses unsafe paths or directory/object write failures under the cache root.
     pub fn put_object(&self, raw: u64, bytes: &[u8]) -> Result<(), CacheError> {
+        require_directory(&self.root)?;
         let dir = self.root.join("objects");
         ensure_dir(&dir)?;
         let path = dir.join(raw.to_string());
@@ -64,6 +65,7 @@ impl FsObjectStore {
     /// # Errors
     /// Refuses linked storage, non-regular objects, unsafe Unix ownership/write permissions, or I/O failures.
     pub fn open_object(&self, raw: u64) -> Result<Option<std::fs::File>, CacheError> {
+        require_directory(&self.root)?;
         let directory = self.root.join("objects");
         match std::fs::symlink_metadata(&directory) {
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
@@ -100,20 +102,13 @@ impl FsObjectStore {
         let meta = file.metadata().map_err(|_| CacheError::LedgerIo {
             reason: "object metadata",
         })?;
-        if !meta.is_file() {
+        if !meta.is_file() || super::is_link(&meta) {
             return Err(CacheError::OutsideCacheRoot);
         }
         #[cfg(unix)]
         {
             use std::os::unix::fs::MetadataExt;
             if meta.uid() != rustix::process::geteuid().as_raw() || meta.mode() & 0o022 != 0 {
-                return Err(CacheError::OutsideCacheRoot);
-            }
-        }
-        #[cfg(windows)]
-        {
-            use std::os::windows::fs::MetadataExt;
-            if meta.file_attributes() & 0x400 != 0 {
                 return Err(CacheError::OutsideCacheRoot);
             }
         }
@@ -130,7 +125,7 @@ impl FsObjectStore {
         match std::fs::symlink_metadata(&path) {
             Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(()),
             Err(_) => Err(CacheError::LedgerIo { reason: "metadata" }),
-            Ok(meta) if meta.file_type().is_symlink() => Err(CacheError::OutsideCacheRoot),
+            Ok(meta) if super::is_link(&meta) => Err(CacheError::OutsideCacheRoot),
             Ok(meta) if meta.is_file() => {
                 std::fs::remove_file(&path).map_err(|_| CacheError::LedgerIo { reason: "unlink" })
             }
