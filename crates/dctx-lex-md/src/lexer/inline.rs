@@ -3,6 +3,7 @@
 //! Implements `CommonMark` 0.31 §2.4 escapes, §6.1 code spans, §6.3 inline links, §6.5 autolinks.
 //! Pure, linear-time apart from bounded title scans; used by the outline step.
 use crate::ReferenceKind;
+use std::collections::{HashMap, VecDeque};
 
 /// Reference found in paragraph text; offsets index that text.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -27,7 +28,7 @@ pub(crate) fn scan(text: &str, max_brackets: usize) -> Vec<InlineRef> {
     let bytes = text.as_bytes();
     let mut found = Vec::new();
     let mut openers: Vec<Opener> = Vec::new();
-    let mut unmatched_runs: Vec<usize> = Vec::new();
+    let mut backticks = None;
     let mut i = 0;
     while i < bytes.len() {
         match bytes[i] {
@@ -40,11 +41,15 @@ pub(crate) fn scan(text: &str, max_brackets: usize) -> Vec<InlineRef> {
             }
             b'`' => {
                 let run = run_len(bytes, i);
-                let closer = if unmatched_runs.contains(&run) {
-                    None
-                } else {
-                    closing_run(bytes, i + run, run)
-                };
+                let from = i + run;
+                let runs = backticks.get_or_insert_with(|| backtick_runs(bytes, from));
+                let closer = runs.get_mut(&run).and_then(|positions| {
+                    // The scan only moves forward, so each stale entry is discarded once.
+                    while positions.front().is_some_and(|&pos| pos < from) {
+                        positions.pop_front();
+                    }
+                    positions.front().copied()
+                });
                 if let Some(close) = closer {
                     let name = text[i + run..close]
                         .trim_matches('`')
@@ -61,8 +66,7 @@ pub(crate) fn scan(text: &str, max_brackets: usize) -> Vec<InlineRef> {
                     }
                     i = close + run;
                 } else {
-                    unmatched_runs.push(run);
-                    i += run;
+                    i = from;
                 }
             }
             b'<' => i = autolink_end(bytes, i).unwrap_or(i + 1),
@@ -129,21 +133,17 @@ fn run_len(bytes: &[u8], at: usize) -> usize {
     bytes[at..].iter().take_while(|b| **b == bytes[at]).count()
 }
 
-/// Start of the next backtick run of exactly `len`, scanning from `from`.
-fn closing_run(bytes: &[u8], from: usize, len: usize) -> Option<usize> {
-    let mut j = from;
-    while j < bytes.len() {
-        if bytes[j] == b'`' {
-            let run = run_len(bytes, j);
-            if run == len {
-                return Some(j);
-            }
-            j += run;
-        } else {
-            j += 1;
-        }
+/// Index possible closers once. Backslashes inside a code span are literal, so
+/// only the outer scan interprets escapes when choosing an opener.
+fn backtick_runs(bytes: &[u8], mut from: usize) -> HashMap<usize, VecDeque<usize>> {
+    let mut runs = HashMap::<_, VecDeque<_>>::new();
+    while let Some(next) = bytes[from..].iter().position(|&b| b == b'`') {
+        let start = from + next;
+        let len = run_len(bytes, start);
+        runs.entry(len).or_default().push_back(start);
+        from = start + len;
     }
-    None
+    runs
 }
 
 /// End of a `<scheme:...>` autolink starting at `at`.
@@ -288,6 +288,8 @@ mod tests {
         assert_eq!(names("`` a ` b ``"), [(CodeSpan, "a ` b".into())]);
         assert_eq!(names("`a\n  b`"), [(CodeSpan, "a b".into())]);
         assert_eq!(names("\\`no`"), []);
+        assert_eq!(names(r"\``text`"), [(CodeSpan, "text".into())]);
+        assert_eq!(names(r"`text\`"), [(CodeSpan, "text\\".into())]);
         assert_eq!(names("``only one`"), []);
         assert_eq!(names("`` x `y`"), [(CodeSpan, "y".into())]);
         assert_eq!(names("` `"), []);
