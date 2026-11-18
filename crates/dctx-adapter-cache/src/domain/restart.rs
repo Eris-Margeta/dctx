@@ -108,6 +108,10 @@ impl Lifecycle {
     /// # Errors
     /// Refuses unknown formats, malformed/truncated/oversized framing, checksum failures, or inconsistent ledger contents.
     pub fn decode_ledger(bytes: &[u8]) -> Result<Self, CacheError> {
+        Self::decode_ledger_image(bytes).map(|(ledger, _)| ledger)
+    }
+
+    pub(crate) fn decode_ledger_image(bytes: &[u8]) -> Result<(Self, [u8; 32]), CacheError> {
         if bytes.len() < 12 || bytes[..8] != LEDGER_MAGIC[..] {
             return Err(corrupt("ledger magic"));
         }
@@ -139,7 +143,8 @@ impl Lifecycle {
         if digest.as_bytes().as_slice() != &bytes[16 + body_len..] {
             return Err(corrupt("checksum"));
         }
-        Self::decode_body(&bytes[16..16 + body_len])
+        let ledger = Self::decode_body(&bytes[16..16 + body_len])?;
+        Ok((ledger, *digest.as_bytes()))
     }
 
     fn reclaim_abandoned_now(&mut self) {

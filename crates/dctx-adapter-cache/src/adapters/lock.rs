@@ -44,6 +44,7 @@ impl LockGuard {
         shared: bool,
         wait: Duration,
     ) -> Result<Self, CacheError> {
+        super::require_directory(root)?;
         let started = Instant::now();
         // Readers release the entry lock once they hold their shared ledger lock,
         // so their bodies still run together. A writer keeps the entry lock while
@@ -67,13 +68,18 @@ impl LockGuard {
             use std::os::unix::fs::OpenOptionsExt;
             options.mode(0o600).custom_flags(super::no_follow());
         }
+        #[cfg(windows)]
+        {
+            use std::os::windows::fs::OpenOptionsExt;
+            options.custom_flags(0x0020_0000); // FILE_FLAG_OPEN_REPARSE_POINT
+        }
         let file = options
             .open(path)
             .map_err(|_| CacheError::LedgerIo { reason: "lock" })?;
         let metadata = file.metadata().map_err(|_| CacheError::LedgerIo {
             reason: "lock metadata",
         })?;
-        if !metadata.is_file() {
+        if !metadata.is_file() || super::is_link(&metadata) {
             return Err(CacheError::OutsideCacheRoot);
         }
         #[cfg(unix)]

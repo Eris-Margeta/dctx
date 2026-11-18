@@ -218,6 +218,54 @@ pub(crate) fn ensure_dir(root: &std::path::Path, dir: &std::path::Path) -> Resul
     Ok(())
 }
 
+#[cfg(unix)]
+pub(crate) fn open_under(
+    root: &std::path::Path,
+    rel: &str,
+    write: bool,
+    truncate: bool,
+) -> Result<std::fs::File, StoreError> {
+    use rustix::fs::{AtFlags, CWD, FileType, Mode, OFlags, openat, statat};
+    use rustix::io::Errno;
+
+    crate::domain::check_rel(rel)?;
+    let refuse = || StoreError::InvalidRequest { reason: "path" };
+    let open_error = |err| match err {
+        Errno::LOOP | Errno::NOTDIR => refuse(),
+        _ => io_err(err.into()),
+    };
+    let dir_flags = OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
+    let mut directory = openat(CWD, root, dir_flags, Mode::empty()).map_err(open_error)?;
+    let mut parts = rel.split('/').peekable();
+    let name = loop {
+        let part = parts.next().ok_or_else(refuse)?;
+        if parts.peek().is_none() {
+            break part;
+        }
+        directory = openat(&directory, part, dir_flags, Mode::empty()).map_err(open_error)?;
+    };
+    let entry = statat(&directory, name, AtFlags::SYMLINK_NOFOLLOW).map_err(open_error)?;
+    if FileType::from_raw_mode(entry.st_mode) != FileType::RegularFile {
+        return Err(refuse());
+    }
+    let access = if write {
+        OFlags::WRONLY
+    } else {
+        OFlags::RDONLY
+    };
+    let flags = access | OFlags::NOFOLLOW | OFlags::CLOEXEC | OFlags::NONBLOCK;
+    let file =
+        std::fs::File::from(openat(&directory, name, flags, Mode::empty()).map_err(open_error)?);
+    if !file.metadata().map_err(io_err)?.is_file() {
+        return Err(refuse());
+    }
+    if truncate {
+        file.set_len(0).map_err(io_err)?;
+    }
+    Ok(file)
+}
+
+#[cfg(not(unix))]
 pub(crate) fn open_under(
     root: &std::path::Path,
     rel: &str,

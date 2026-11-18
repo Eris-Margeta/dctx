@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Filesystem ledger and the in-memory `Cache` port.
-//! Implements CACHE-v1 publication: a unique temp file, sync, then rename, under a revision check.
+//! Implements CACHE-v1 publication: a unique temp file, sync, then rename, under an image check.
 //! Depends on [`crate::Lifecycle`] and std filesystem calls. Load reports orphans and does not delete them.
 //! Object bytes live in [`FsObjectStore`]. A symlink is never a reason to touch a path outside the cache root.
 
@@ -32,7 +32,7 @@ pub const LEDGER_FILE: &str = "ledger.v1";
 /// Historical fixed temp name. Stages now use a unique name so one store cannot commit another's bytes.
 pub const LEDGER_TEMP: &str = "ledger.v1.tmp";
 
-/// Revision this store last observed on the committed ledger.
+/// Image this store last observed on the committed ledger.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Observed {
     /// `load` or `store` has not looked at the committed file yet.
@@ -41,14 +41,15 @@ enum Observed {
     Absent,
     /// The committed file was corrupt, an unknown version, or not a regular file.
     Unreadable,
-    /// Logical revision of the committed image.
-    Revision(u64),
+    /// Verified checksum of the committed image.
+    Image([u8; 32]),
 }
 
 #[derive(Clone, Debug)]
 struct Staged {
     path: PathBuf,
-    revision: u64,
+    base: Observed,
+    checksum: [u8; 32],
 }
 
 static TEMP_SEQ: AtomicU64 = AtomicU64::new(1);
@@ -139,7 +140,7 @@ impl FsLedgerStore {
         self.exclusive(|| self.stage_locked(ledger))
     }
 
-    /// Renames this store's temp file over the committed ledger when the revision still matches.
+    /// Renames this store's verified temp file over the committed ledger when its base image still matches.
     /// # Errors
     /// Propagates lock acquisition and durable ledger commit failures.
     pub fn commit(&self) -> Result<(), CacheError> {
@@ -147,7 +148,11 @@ impl FsLedgerStore {
     }
 
     fn stage_locked(&self, ledger: &Lifecycle) -> Result<(), CacheError> {
+        let base = self.observed();
         let bytes = ledger.encode_ledger()?;
+        let (_, checksum) = bytes
+            .split_last_chunk::<32>()
+            .ok_or(CacheError::CorruptLedger { reason: "checksum" })?;
         let path = self.fresh_temp()?;
         write_exclusive(&path, &bytes)?;
         let previous = {
@@ -157,7 +162,8 @@ impl FsLedgerStore {
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             slot.replace(Staged {
                 path,
-                revision: ledger.logical_revision(),
+                base,
+                checksum: *checksum,
             })
         };
         if let Some(previous) = previous {
@@ -172,35 +178,39 @@ impl FsLedgerStore {
                 reason: "missing temp",
             });
         };
-        self.ensure_current()?;
+        self.ensure_current(staged.base)?;
         let to = self.root.join(LEDGER_FILE);
-        match fs::symlink_metadata(&staged.path) {
-            Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
+        match read_committed(&staged.path)? {
+            LedgerRead::Absent => {
                 return Err(CacheError::LedgerIo {
                     reason: "missing temp",
                 });
             }
-            Err(_) => return Err(CacheError::LedgerIo { reason: "metadata" }),
-            Ok(meta) if meta.file_type().is_symlink() || !meta.is_file() => {
-                return Err(CacheError::OutsideCacheRoot);
+            LedgerRead::Rejected(error) => return Err(error),
+            LedgerRead::Bytes(bytes) => {
+                let (_, checksum) = Lifecycle::decode_ledger_image(&bytes)?;
+                if checksum != staged.checksum {
+                    return Err(CacheError::CorruptLedger {
+                        reason: "staged ledger changed",
+                    });
+                }
             }
-            Ok(_) => {}
         }
         if let Ok(meta) = fs::symlink_metadata(&to)
-            && meta.file_type().is_symlink()
+            && is_link(&meta)
         {
             return Err(CacheError::OutsideCacheRoot);
         }
         fs::rename(&staged.path, &to).map_err(|_| CacheError::LedgerIo { reason: "rename" })?;
         sync_dir(&self.root)?;
-        self.set_observed(Observed::Revision(staged.revision));
+        self.set_observed(Observed::Image(staged.checksum));
         self.clear_staged();
         Ok(())
     }
 
     /// Stores `ledger` while the caller already holds [`Self::exclusive`].
     pub(super) fn store_locked(&self, ledger: &Lifecycle) -> Result<(), CacheError> {
-        self.ensure_current()?;
+        self.ensure_current(self.observed())?;
         self.unlink_evicted(ledger)?;
         self.stage_locked(ledger)?;
         self.commit_locked()
@@ -257,9 +267,9 @@ impl FsLedgerStore {
                 self.set_observed(Observed::Unreadable);
                 self.empty_load(empty_quota, Some(error))
             }
-            LedgerRead::Bytes(bytes) => match Lifecycle::decode_ledger(&bytes) {
-                Ok(lifecycle) => {
-                    self.set_observed(Observed::Revision(lifecycle.logical_revision()));
+            LedgerRead::Bytes(bytes) => match Lifecycle::decode_ledger_image(&bytes) {
+                Ok((lifecycle, checksum)) => {
+                    self.set_observed(Observed::Image(checksum));
                     let known = lifecycle
                         .object_ids()
                         .into_iter()
@@ -295,8 +305,8 @@ impl FsLedgerStore {
         })
     }
 
-    fn ensure_current(&self) -> Result<(), CacheError> {
-        if revision_matches(self.observed(), self.disk_token()?) {
+    fn ensure_current(&self, base: Observed) -> Result<(), CacheError> {
+        if observation_matches(base, self.disk_token()?) {
             Ok(())
         } else {
             Err(CacheError::InvalidRequest {
@@ -309,8 +319,8 @@ impl FsLedgerStore {
         match read_committed(&self.root.join(LEDGER_FILE))? {
             LedgerRead::Absent => Ok(Observed::Absent),
             LedgerRead::Rejected(_) => Ok(Observed::Unreadable),
-            LedgerRead::Bytes(bytes) => match Lifecycle::decode_ledger(&bytes) {
-                Ok(lifecycle) => Ok(Observed::Revision(lifecycle.logical_revision())),
+            LedgerRead::Bytes(bytes) => match Lifecycle::decode_ledger_image(&bytes) {
+                Ok((_, checksum)) => Ok(Observed::Image(checksum)),
                 Err(CacheError::CorruptLedger { .. } | CacheError::UnknownLedgerVersion { .. }) => {
                     Ok(Observed::Unreadable)
                 }
@@ -332,7 +342,7 @@ impl FsLedgerStore {
             match fs::symlink_metadata(&path) {
                 Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(path),
                 Err(_) => return Err(CacheError::LedgerIo { reason: "metadata" }),
-                Ok(meta) if meta.file_type().is_symlink() || meta.is_dir() => {
+                Ok(meta) if is_link(&meta) || meta.is_dir() => {
                     return Err(CacheError::OutsideCacheRoot);
                 }
                 Ok(_) => {}
@@ -375,7 +385,7 @@ impl FsLedgerStore {
     }
 }
 
-fn revision_matches(observed: Observed, disk: Observed) -> bool {
+fn observation_matches(observed: Observed, disk: Observed) -> bool {
     match observed {
         Observed::Unknown => matches!(disk, Observed::Absent),
         other => other == disk,
@@ -406,7 +416,7 @@ pub(super) fn real_root(root: &Path) -> Result<PathBuf, CacheError> {
     }
     let meta =
         fs::symlink_metadata(root).map_err(|_| CacheError::LedgerIo { reason: "metadata" })?;
-    if meta.file_type().is_symlink() || !meta.is_dir() {
+    if is_link(&meta) || !meta.is_dir() {
         return Err(CacheError::InvalidRequest {
             reason: "cache root is not a directory",
         });
@@ -447,7 +457,7 @@ fn check_ancestors(path: &Path, current: u32, allow_links: bool) -> Result<bool,
         let meta = fs::symlink_metadata(ancestor).map_err(|_| CacheError::LedgerIo {
             reason: "cache ancestor metadata",
         })?;
-        if meta.file_type().is_symlink() {
+        if is_link(&meta) {
             if !allow_links || (meta.uid() != 0 && meta.uid() != current) {
                 return Err(CacheError::OutsideCacheRoot);
             }
@@ -498,7 +508,7 @@ pub(super) fn locate(root: &Path, relative: &Path) -> Result<Option<PathBuf>, Ca
                 match fs::symlink_metadata(&cursor) {
                     Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
                     Err(_) => return Err(CacheError::LedgerIo { reason: "metadata" }),
-                    Ok(meta) if meta.file_type().is_symlink() || !meta.is_dir() => {
+                    Ok(meta) if is_link(&meta) || !meta.is_dir() => {
                         return Err(CacheError::OutsideCacheRoot);
                     }
                     Ok(_) => {}
@@ -520,9 +530,31 @@ pub(super) fn locate(root: &Path, relative: &Path) -> Result<Option<PathBuf>, Ca
     Ok(Some(cursor))
 }
 
+pub(super) fn require_directory(path: &Path) -> Result<(), CacheError> {
+    let meta = fs::symlink_metadata(path).map_err(|_| CacheError::LedgerIo {
+        reason: "directory metadata",
+    })?;
+    if !meta.is_dir() || is_link(&meta) {
+        return Err(CacheError::OutsideCacheRoot);
+    }
+    Ok(())
+}
+
+fn is_link(meta: &fs::Metadata) -> bool {
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        meta.file_attributes() & 0x400 != 0
+    }
+    #[cfg(not(windows))]
+    {
+        meta.file_type().is_symlink()
+    }
+}
+
 pub(super) fn ensure_dir(path: &Path) -> Result<(), CacheError> {
     match fs::symlink_metadata(path) {
-        Ok(meta) if meta.file_type().is_symlink() => return Err(CacheError::OutsideCacheRoot),
+        Ok(meta) if is_link(&meta) => return Err(CacheError::OutsideCacheRoot),
         Ok(meta) if meta.is_dir() => {
             real_root(path)?;
             return Ok(());
@@ -557,7 +589,7 @@ pub(super) fn ensure_dir(path: &Path) -> Result<(), CacheError> {
 
 pub(super) fn write_exclusive(path: &Path, bytes: &[u8]) -> Result<(), CacheError> {
     if let Ok(meta) = fs::symlink_metadata(path) {
-        if meta.file_type().is_symlink() || meta.is_dir() {
+        if is_link(&meta) || meta.is_dir() {
             return Err(CacheError::OutsideCacheRoot);
         }
         return Err(CacheError::LedgerIo { reason: "create" });
@@ -582,7 +614,7 @@ pub(super) fn write_exclusive(path: &Path, bytes: &[u8]) -> Result<(), CacheErro
 
 fn remove_regular_file(path: &Path) {
     match fs::symlink_metadata(path) {
-        Ok(meta) if meta.is_file() && !meta.file_type().is_symlink() => {
+        Ok(meta) if meta.is_file() && !is_link(&meta) => {
             let _ = fs::remove_file(path);
         }
         _ => {}
@@ -621,7 +653,7 @@ fn read_committed(path: &Path) -> Result<LedgerRead, CacheError> {
     match fs::symlink_metadata(path) {
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(LedgerRead::Absent),
         Err(_) => return Err(CacheError::LedgerIo { reason: "metadata" }),
-        Ok(meta) if meta.file_type().is_symlink() => {
+        Ok(meta) if is_link(&meta) => {
             return Ok(LedgerRead::Rejected(CacheError::CorruptLedger {
                 reason: "ledger symlink",
             }));
@@ -643,7 +675,12 @@ fn read_committed(path: &Path) -> Result<LedgerRead, CacheError> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::OpenOptionsExt;
-        options.custom_flags(no_follow());
+        options.custom_flags(no_follow() | rustix::fs::OFlags::NONBLOCK.bits() as i32);
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        options.custom_flags(0x0020_0000); // FILE_FLAG_OPEN_REPARSE_POINT
     }
     let file = options
         .open(path)
@@ -651,7 +688,7 @@ fn read_committed(path: &Path) -> Result<LedgerRead, CacheError> {
     let metadata = file.metadata().map_err(|_| CacheError::LedgerIo {
         reason: "ledger metadata",
     })?;
-    if !metadata.is_file() {
+    if !metadata.is_file() || is_link(&metadata) {
         return Err(CacheError::OutsideCacheRoot);
     }
     #[cfg(unix)]
