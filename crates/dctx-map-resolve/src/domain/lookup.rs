@@ -4,9 +4,7 @@
 //! Uses the borrowed symbol table; resolution assigns edge confidences.
 use super::{Reference, SymbolTable, Target};
 use dctx_map_model::{EdgeKind, StableId};
-use std::collections::{BTreeMap, BTreeSet};
-
-type Visiting<'a> = BTreeSet<(&'a str, &'a Reference)>;
+use std::collections::{BTreeMap, BTreeSet, btree_map, btree_set};
 
 #[derive(Default)]
 pub(super) struct Lookup {
@@ -18,11 +16,15 @@ pub(super) struct Lookup {
 impl Lookup {
     fn extend(&mut self, other: Self, exact: bool) {
         for (id, path) in other.candidates {
-            self.candidates
-                .entry(id)
-                .and_modify(|value| *value |= path && exact)
-                .or_insert(path && exact);
+            self.insert(id, path && exact);
         }
+    }
+
+    fn insert(&mut self, id: StableId, exact: bool) {
+        self.candidates
+            .entry(id)
+            .and_modify(|value| *value |= exact)
+            .or_insert(exact);
     }
 
     fn ids(ids: Option<&BTreeSet<StableId>>, exact: bool) -> Self {
@@ -40,171 +42,21 @@ impl Lookup {
 }
 
 impl<'a> SymbolTable<'a> {
-    pub(super) fn lookup(&self, package: &'a str, reference: &Reference) -> Lookup {
-        match &reference.target {
-            Target::Name(name) if reference.kind == EdgeKind::Documents => {
-                let path = Lookup::ids(self.paths.get(name.as_str()), true);
-                if path.bound {
-                    return path;
-                }
-            }
-            _ => {}
-        }
-        self.target(package, reference, &mut Visiting::new())
-    }
-
-    fn target(
-        &self,
-        package: &'a str,
-        reference: &Reference,
-        visiting: &mut Visiting<'a>,
-    ) -> Lookup {
-        match &reference.target {
-            Target::Id(id) => Lookup {
-                candidates: self
-                    .nodes
-                    .contains_key(id)
-                    .then(|| (id.clone(), true))
-                    .into_iter()
-                    .collect(),
-                bound: true,
-                scoped: true,
-            },
-            Target::Name(name) => {
-                let name = if matches!(reference.kind, EdgeKind::Imports | EdgeKind::Reexports) {
-                    name.strip_suffix("::*").unwrap_or(name)
-                } else {
-                    name
-                };
-                self.named(package, &reference.scope, name, visiting)
+    pub(super) fn lookup(&self, package: &'a str, reference: &'a Reference) -> Lookup {
+        if let Target::Name(name) = &reference.target
+            && reference.kind == EdgeKind::Documents
+        {
+            let path = Lookup::ids(self.paths.get(name.as_str()), true);
+            if path.bound {
+                return path;
             }
         }
-    }
-
-    fn named(
-        &self,
-        package: &'a str,
-        scope: &str,
-        name: &str,
-        visiting: &mut Visiting<'a>,
-    ) -> Lookup {
-        if name.split("::").any(str::is_empty) || name.contains('*') {
-            return Lookup::default();
+        Search {
+            table: self,
+            visiting: BTreeSet::new(),
+            frames: Vec::new(),
         }
-        if name == "crate" {
-            return self.at_scope(package, "", "", false, visiting);
-        }
-        if let Some(name) = name.strip_prefix("crate::") {
-            return self.at_scope(package, "", name, false, visiting);
-        }
-        if name == "self" {
-            return self.at_scope(package, scope, "", false, visiting);
-        }
-        if let Some(name) = name.strip_prefix("self::") {
-            return self.at_scope(package, scope, name, false, visiting);
-        }
-        if name == "super" || name.starts_with("super::") {
-            let mut base = scope;
-            let mut rest = name;
-            while rest == "super" || rest.starts_with("super::") {
-                if base.is_empty() {
-                    return Lookup::default();
-                }
-                base = parent(base);
-                rest = rest.strip_prefix("super::").unwrap_or("");
-            }
-            return self.at_scope(package, base, rest, false, visiting);
-        }
-        let mut scope = scope;
-        loop {
-            let found = self.at_scope(package, scope, name, false, visiting);
-            if found.bound || !found.candidates.is_empty() {
-                return found;
-            }
-            if scope.is_empty() {
-                break;
-            }
-            scope = parent(scope);
-        }
-        if name.contains("::") {
-            Lookup::default()
-        } else {
-            Lookup::ids(self.bare.get(&(package, name)), false)
-        }
-    }
-
-    fn at_scope(
-        &self,
-        package: &'a str,
-        scope: &str,
-        name: &str,
-        exported: bool,
-        visiting: &mut Visiting<'a>,
-    ) -> Lookup {
-        let qualified = join(scope, name);
-        let mut found = Lookup::ids(self.qualified.get(&(package, qualified.as_str())), true);
-        found.scoped = true;
-        let mut globs = Lookup::default();
-        let (head, tail) = name.split_once("::").unwrap_or((name, ""));
-        if !tail.is_empty() {
-            let prefix = join(scope, head);
-            if let Some(ids) = self.qualified.get(&(package, prefix.as_str())) {
-                found.bound = true;
-                for id in ids {
-                    found.extend(self.suffix(id, tail, visiting), true);
-                }
-            }
-        }
-        if let Some(imports) = self.imports.get(&(package, scope)) {
-            for import in imports {
-                if exported && import.kind != EdgeKind::Reexports {
-                    continue;
-                }
-                let glob = matches!(&import.target, Target::Name(value) if value.ends_with("::*"));
-                if glob && found.bound {
-                    continue;
-                }
-                if !glob && self.binding(import) != Some(head) {
-                    continue;
-                }
-                found.bound |= !glob;
-                if !visiting.insert((package, import)) {
-                    continue;
-                }
-                let target = self.target(package, import, visiting);
-                let suffix = if glob { name } else { tail };
-                let destination = if glob { &mut globs } else { &mut found };
-                for (id, exact) in target.candidates {
-                    if suffix.is_empty() {
-                        destination
-                            .candidates
-                            .entry(id)
-                            .and_modify(|value| *value |= exact)
-                            .or_insert(exact);
-                    } else {
-                        destination.extend(self.suffix(&id, suffix, visiting), exact);
-                    }
-                }
-                visiting.remove(&(package, import));
-            }
-        }
-        if !found.bound {
-            found.extend(globs, true);
-        }
-        found
-    }
-
-    fn suffix(&self, id: &StableId, tail: &str, visiting: &mut Visiting<'a>) -> Lookup {
-        match self.nodes.get(id) {
-            Some(entry) => self.at_scope(
-                entry.package,
-                &entry.definition.qualified_name,
-                tail,
-                true,
-                visiting,
-            ),
-            None => Lookup::default(),
-        }
+        .run(Step::Target(package, reference))
     }
 
     fn binding<'b>(&'b self, reference: &'b Reference) -> Option<&'b str> {
@@ -218,6 +70,290 @@ impl<'a> SymbolTable<'a> {
                     .get(id)
                     .and_then(|entry| entry.definition.qualified_name.rsplit("::").next()),
             })
+    }
+}
+
+enum Step<'a> {
+    Target(&'a str, &'a Reference),
+    Scope {
+        package: &'a str,
+        scope: &'a str,
+        name: &'a str,
+        exported: bool,
+    },
+    Done(Lookup),
+}
+
+// Each frame resumes a suspended lookup after its child has produced a result.
+enum Frame<'a, 'table> {
+    Parent(&'a str, &'a str, &'a str),
+    Prefix(Scope<'a, 'table>),
+    ImportTarget(Import<'a, 'table>),
+    ImportSuffix(
+        Import<'a, 'table>,
+        btree_map::IntoIter<StableId, bool>,
+        bool,
+    ),
+}
+
+struct Scope<'a, 'table> {
+    package: &'a str,
+    name: &'a str,
+    head: &'a str,
+    tail: &'a str,
+    exported: bool,
+    prefixes: Option<btree_set::IntoIter<StableId>>,
+    imports: std::slice::Iter<'table, &'a Reference>,
+    found: Lookup,
+    globs: Lookup,
+}
+
+struct Import<'a, 'table> {
+    scope: Scope<'a, 'table>,
+    reference: &'a Reference,
+    glob: bool,
+}
+
+impl Import<'_, '_> {
+    fn destination(&mut self) -> &mut Lookup {
+        if self.glob {
+            &mut self.scope.globs
+        } else {
+            &mut self.scope.found
+        }
+    }
+}
+
+struct Search<'a, 'table> {
+    table: &'table SymbolTable<'a>,
+    visiting: BTreeSet<(&'a str, &'a Reference)>,
+    frames: Vec<Frame<'a, 'table>>,
+}
+
+impl<'a, 'table> Search<'a, 'table> {
+    fn run(mut self, mut step: Step<'a>) -> Lookup {
+        loop {
+            step = match step {
+                Step::Target(package, reference) => self.target(package, reference),
+                Step::Scope {
+                    package,
+                    scope,
+                    name,
+                    exported,
+                } => self.at_scope(package, scope, name, exported),
+                Step::Done(found) => match self.frames.pop() {
+                    Some(frame) => self.resume(frame, found),
+                    None => return found,
+                },
+            };
+        }
+    }
+
+    fn resume(&mut self, frame: Frame<'a, 'table>, found: Lookup) -> Step<'a> {
+        match frame {
+            Frame::Parent(package, scope, name) => {
+                if found.bound || !found.candidates.is_empty() {
+                    Step::Done(found)
+                } else if !scope.is_empty() {
+                    self.lexical_scope(package, parent(scope), name)
+                } else if name.contains("::") {
+                    Step::Done(Lookup::default())
+                } else {
+                    Step::Done(Lookup::ids(self.table.bare.get(&(package, name)), false))
+                }
+            }
+            Frame::Prefix(mut scope) => {
+                scope.found.extend(found, true);
+                self.scan_scope(scope)
+            }
+            Frame::ImportTarget(import) => {
+                self.scan_candidates(import, found.candidates.into_iter())
+            }
+            Frame::ImportSuffix(mut import, candidates, exact) => {
+                import.destination().extend(found, exact);
+                self.scan_candidates(import, candidates)
+            }
+        }
+    }
+
+    fn target(&mut self, package: &'a str, reference: &'a Reference) -> Step<'a> {
+        match &reference.target {
+            Target::Id(id) => Step::Done(Lookup {
+                candidates: self
+                    .table
+                    .nodes
+                    .contains_key(id)
+                    .then(|| (id.clone(), true))
+                    .into_iter()
+                    .collect(),
+                bound: true,
+                scoped: true,
+            }),
+            Target::Name(name) => {
+                let name = if matches!(reference.kind, EdgeKind::Imports | EdgeKind::Reexports) {
+                    name.strip_suffix("::*").unwrap_or(name)
+                } else {
+                    name
+                };
+                self.named(package, &reference.scope, name)
+            }
+        }
+    }
+
+    fn named(&mut self, package: &'a str, scope: &'a str, name: &'a str) -> Step<'a> {
+        if name.split("::").any(str::is_empty) || name.contains('*') {
+            return Step::Done(Lookup::default());
+        }
+        let (scope, name) = if name == "crate" {
+            ("", "")
+        } else if let Some(name) = name.strip_prefix("crate::") {
+            ("", name)
+        } else if name == "self" {
+            (scope, "")
+        } else if let Some(name) = name.strip_prefix("self::") {
+            (scope, name)
+        } else if name == "super" || name.starts_with("super::") {
+            let mut base = scope;
+            let mut rest = name;
+            while rest == "super" || rest.starts_with("super::") {
+                if base.is_empty() {
+                    return Step::Done(Lookup::default());
+                }
+                base = parent(base);
+                rest = rest.strip_prefix("super::").unwrap_or("");
+            }
+            (base, rest)
+        } else {
+            return self.lexical_scope(package, scope, name);
+        };
+        Step::Scope {
+            package,
+            scope,
+            name,
+            exported: false,
+        }
+    }
+
+    fn lexical_scope(&mut self, package: &'a str, scope: &'a str, name: &'a str) -> Step<'a> {
+        self.frames.push(Frame::Parent(package, scope, name));
+        Step::Scope {
+            package,
+            scope,
+            name,
+            exported: false,
+        }
+    }
+
+    fn at_scope(
+        &mut self,
+        package: &'a str,
+        scope: &'a str,
+        name: &'a str,
+        exported: bool,
+    ) -> Step<'a> {
+        let qualified = join(scope, name);
+        let mut found = Lookup::ids(
+            self.table.qualified.get(&(package, qualified.as_str())),
+            true,
+        );
+        found.scoped = true;
+        let (head, tail) = name.split_once("::").unwrap_or((name, ""));
+        let prefixes = (!tail.is_empty())
+            .then(|| join(scope, head))
+            .and_then(|prefix| {
+                self.table
+                    .qualified
+                    .get(&(package, prefix.as_str()))
+                    .cloned()
+            });
+        found.bound |= prefixes.is_some();
+        let imports = self
+            .table
+            .imports
+            .get(&(package, scope))
+            .map_or(&[][..], Vec::as_slice);
+        self.scan_scope(Scope {
+            package,
+            name,
+            head,
+            tail,
+            exported,
+            prefixes: prefixes.map(BTreeSet::into_iter),
+            imports: imports.iter(),
+            found,
+            globs: Lookup::default(),
+        })
+    }
+
+    fn scan_scope(&mut self, mut scope: Scope<'a, 'table>) -> Step<'a> {
+        if let Some(id) = scope.prefixes.as_mut().and_then(Iterator::next) {
+            let step = self.suffix(&id, scope.tail);
+            self.frames.push(Frame::Prefix(scope));
+            return step;
+        }
+
+        for &reference in scope.imports.by_ref() {
+            if scope.exported && reference.kind != EdgeKind::Reexports {
+                continue;
+            }
+            let glob = matches!(&reference.target, Target::Name(value) if value.ends_with("::*"));
+            if (glob && scope.found.bound)
+                || (!glob && self.table.binding(reference) != Some(scope.head))
+            {
+                continue;
+            }
+            scope.found.bound |= !glob;
+            if self.visiting.insert((scope.package, reference)) {
+                let step = Step::Target(scope.package, reference);
+                self.frames.push(Frame::ImportTarget(Import {
+                    scope,
+                    reference,
+                    glob,
+                }));
+                return step;
+            }
+        }
+        if !scope.found.bound {
+            scope.found.extend(scope.globs, true);
+        }
+        Step::Done(scope.found)
+    }
+
+    fn scan_candidates(
+        &mut self,
+        mut import: Import<'a, 'table>,
+        mut candidates: btree_map::IntoIter<StableId, bool>,
+    ) -> Step<'a> {
+        let suffix = if import.glob {
+            import.scope.name
+        } else {
+            import.scope.tail
+        };
+        if suffix.is_empty() {
+            for (id, exact) in candidates {
+                import.destination().insert(id, exact);
+            }
+        } else if let Some((id, exact)) = candidates.next() {
+            let step = self.suffix(&id, suffix);
+            self.frames
+                .push(Frame::ImportSuffix(import, candidates, exact));
+            return step;
+        }
+        self.visiting
+            .remove(&(import.scope.package, import.reference));
+        self.scan_scope(import.scope)
+    }
+
+    fn suffix(&self, id: &StableId, tail: &'a str) -> Step<'a> {
+        match self.table.nodes.get(id) {
+            Some(entry) => Step::Scope {
+                package: entry.package,
+                scope: &entry.definition.qualified_name,
+                name: tail,
+                exported: true,
+            },
+            None => Step::Done(Lookup::default()),
+        }
     }
 }
 
