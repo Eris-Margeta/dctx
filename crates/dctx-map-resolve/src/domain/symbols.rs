@@ -7,6 +7,7 @@ use dctx_map_model::{EdgeKind, Node, NodeKind, StableId};
 use std::collections::{BTreeMap, BTreeSet};
 
 type Names<'a> = BTreeMap<(&'a str, &'a str), BTreeSet<StableId>>;
+type Imports<'a> = BTreeMap<(&'a str, &'a str, Option<&'a str>), Vec<&'a Reference>>;
 
 pub(super) struct Entry<'a> {
     pub definition: &'a Definition,
@@ -20,7 +21,7 @@ pub struct SymbolTable<'a> {
     pub(super) qualified: Names<'a>,
     pub(super) bare: Names<'a>,
     pub(super) paths: BTreeMap<&'a str, BTreeSet<StableId>>,
-    pub(super) imports: BTreeMap<(&'a str, &'a str), Vec<&'a Reference>>,
+    pub(super) imports: Imports<'a>,
 }
 
 impl<'a> SymbolTable<'a> {
@@ -51,10 +52,12 @@ impl<'a> SymbolTable<'a> {
         for file in ordered {
             for reference in &file.references {
                 table.validate(file, reference)?;
-                if matches!(reference.kind, EdgeKind::Imports | EdgeKind::Reexports) {
+                if matches!(reference.kind, EdgeKind::Imports | EdgeKind::Reexports)
+                    && let Some(binding) = table.import_binding(reference)
+                {
                     table
                         .imports
-                        .entry((&file.package, &reference.scope))
+                        .entry((&file.package, &reference.scope, binding))
                         .or_default()
                         .push(reference);
                 }
@@ -65,6 +68,25 @@ impl<'a> SymbolTable<'a> {
             imports.dedup();
         }
         Ok(table)
+    }
+
+    // The inner None is the bucket for glob imports. Unknown IDs have no binding.
+    fn import_binding(&self, reference: &'a Reference) -> Option<Option<&'a str>> {
+        if let Some(binding) = reference.binding.as_deref() {
+            return Some(Some(binding));
+        }
+        match &reference.target {
+            Target::Name(name) if name.ends_with("::*") => Some(None),
+            Target::Name(name) => name.rsplit("::").next().map(Some),
+            Target::Id(id) => self.nodes.get(id).and_then(|entry| {
+                entry
+                    .definition
+                    .qualified_name
+                    .rsplit("::")
+                    .next()
+                    .map(Some)
+            }),
+        }
     }
 
     /// Node associated with an exact stable identity.

@@ -58,19 +58,6 @@ impl<'a> SymbolTable<'a> {
         }
         .run(Step::Target(package, reference))
     }
-
-    fn binding<'b>(&'b self, reference: &'b Reference) -> Option<&'b str> {
-        reference
-            .binding
-            .as_deref()
-            .or_else(|| match &reference.target {
-                Target::Name(name) => name.rsplit("::").next(),
-                Target::Id(id) => self
-                    .nodes
-                    .get(id)
-                    .and_then(|entry| entry.definition.qualified_name.rsplit("::").next()),
-            })
-    }
 }
 
 enum Step<'a> {
@@ -99,29 +86,17 @@ enum Frame<'a, 'table> {
 struct Scope<'a, 'table> {
     package: &'a str,
     name: &'a str,
-    head: &'a str,
     tail: &'a str,
     exported: bool,
+    glob: bool,
     prefixes: Option<btree_set::IntoIter<StableId>>,
     imports: std::slice::Iter<'table, &'a Reference>,
     found: Lookup,
-    globs: Lookup,
 }
 
 struct Import<'a, 'table> {
     scope: Scope<'a, 'table>,
     reference: &'a Reference,
-    glob: bool,
-}
-
-impl Import<'_, '_> {
-    fn destination(&mut self) -> &mut Lookup {
-        if self.glob {
-            &mut self.scope.globs
-        } else {
-            &mut self.scope.found
-        }
-    }
 }
 
 struct Search<'a, 'table> {
@@ -170,7 +145,7 @@ impl<'a, 'table> Search<'a, 'table> {
                 self.scan_candidates(import, found.candidates.into_iter())
             }
             Frame::ImportSuffix(mut import, candidates, exact) => {
-                import.destination().extend(found, exact);
+                import.scope.found.extend(found, exact);
                 self.scan_candidates(import, candidates)
             }
         }
@@ -267,21 +242,34 @@ impl<'a, 'table> Search<'a, 'table> {
                     .cloned()
             });
         found.bound |= prefixes.is_some();
-        let imports = self
+        let named = self
             .table
             .imports
-            .get(&(package, scope))
-            .map_or(&[][..], Vec::as_slice);
+            .get(&(package, scope, Some(head)))
+            .filter(|imports| {
+                !exported
+                    || imports
+                        .iter()
+                        .any(|reference| reference.kind == EdgeKind::Reexports)
+            });
+        // A definition or explicit binding shadows every glob, even if the
+        // explicit binding's target cannot resolve.
+        found.bound |= named.is_some();
+        let glob = !found.bound;
+        let imports = if glob {
+            self.table.imports.get(&(package, scope, None))
+        } else {
+            named
+        };
         self.scan_scope(Scope {
             package,
             name,
-            head,
             tail,
             exported,
+            glob,
             prefixes: prefixes.map(BTreeSet::into_iter),
-            imports: imports.iter(),
+            imports: imports.map_or(&[][..], Vec::as_slice).iter(),
             found,
-            globs: Lookup::default(),
         })
     }
 
@@ -296,25 +284,12 @@ impl<'a, 'table> Search<'a, 'table> {
             if scope.exported && reference.kind != EdgeKind::Reexports {
                 continue;
             }
-            let glob = matches!(&reference.target, Target::Name(value) if value.ends_with("::*"));
-            if (glob && scope.found.bound)
-                || (!glob && self.table.binding(reference) != Some(scope.head))
-            {
-                continue;
-            }
-            scope.found.bound |= !glob;
             if self.visiting.insert((scope.package, reference)) {
                 let step = Step::Target(scope.package, reference);
-                self.frames.push(Frame::ImportTarget(Import {
-                    scope,
-                    reference,
-                    glob,
-                }));
+                self.frames
+                    .push(Frame::ImportTarget(Import { scope, reference }));
                 return step;
             }
-        }
-        if !scope.found.bound {
-            scope.found.extend(scope.globs, true);
         }
         Step::Done(scope.found)
     }
@@ -324,14 +299,14 @@ impl<'a, 'table> Search<'a, 'table> {
         mut import: Import<'a, 'table>,
         mut candidates: btree_map::IntoIter<StableId, bool>,
     ) -> Step<'a> {
-        let suffix = if import.glob {
+        let suffix = if import.scope.glob {
             import.scope.name
         } else {
             import.scope.tail
         };
         if suffix.is_empty() {
             for (id, exact) in candidates {
-                import.destination().insert(id, exact);
+                import.scope.found.insert(id, exact);
             }
         } else if let Some((id, exact)) = candidates.next() {
             let step = self.suffix(&id, suffix);
