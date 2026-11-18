@@ -24,7 +24,9 @@ impl Fixture {
         let file = repo.join("src/lib.rs");
         fs::write(&file, source).expect("source");
         // A fixed input timestamp makes the engine's metadata-bearing snapshot golden portable.
-        File::open(file)
+        File::options()
+            .write(true)
+            .open(file)
             .expect("file")
             .set_times(
                 FileTimes::new().set_modified(UNIX_EPOCH + Duration::from_secs(1_700_000_000)),
