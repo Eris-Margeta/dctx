@@ -284,26 +284,26 @@ fn walk(
         let mut entries = source.list(&disk)?;
         entries.sort_by(|left, right| left.name.cmp(&right.name));
         for entry in entries {
-            let name = entry
-                .name
-                .to_str()
-                .ok_or_else(|| Error::Denied("non-UTF-8 path".into()))?
-                .to_string();
-            if forbidden(&name) {
+            // Map identities require UTF-8 paths. Skipping the entry also
+            // avoids conflating it with a file whose name contains U+FFFD.
+            let Some(name) = entry.name.to_str() else {
+                continue;
+            };
+            if forbidden(name) {
                 continue;
             }
             if entry.kind == FsKind::Symlink || entry.kind == FsKind::Other {
                 continue;
             }
             let path = if relative.is_empty() {
-                name.clone()
+                name.to_owned()
             } else {
                 format!("{relative}/{name}")
             };
             let decision = engine.decide_with_parent(
                 &ItemContext {
                     relative_path: &path,
-                    name: &name,
+                    name,
                     is_directory: entry.kind == FsKind::Directory,
                     debug_mode: false,
                 },
