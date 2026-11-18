@@ -61,26 +61,25 @@ impl Fixture {
 }
 
 fn validate(bytes: &[u8], valid: bool) {
-    let mut child = Command::new("python3")
+    let python = if cfg!(windows) { "python" } else { "python3" };
+    let mut child = Command::new(python)
         .arg(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../scripts/validate_pack_schema.py"))
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .expect("schema tests require Python 3 and jsonschema >= 4.18 (see docs/PACK-SCHEMA.md)");
-    child
-        .stdin
-        .take()
-        .expect("stdin")
-        .write_all(bytes)
-        .expect("JSON input");
+        .unwrap_or_else(|err| panic!("pack schema tests require {python}: {err}"));
+    let written = child.stdin.take().expect("stdin").write_all(bytes);
     let output = child.wait_with_output().expect("validator");
-    assert_eq!(
-        output.status.success(),
-        valid,
-        "{}",
-        String::from_utf8_lossy(&output.stderr)
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        !stderr
+            .lines()
+            .any(|line| line == "ModuleNotFoundError: No module named 'jsonschema'"),
+        "pack schema tests require the Python module `jsonschema`. From the repo root, run `{python} -m pip install -r scripts/requirements.txt`."
     );
+    written.expect("JSON input");
+    assert_eq!(output.status.success(), valid, "{stderr}");
 }
 
 fn verify_spans(bytes: &[u8], repo: &Path) -> Value {
