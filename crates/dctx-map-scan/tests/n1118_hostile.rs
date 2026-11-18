@@ -223,6 +223,12 @@ fn binary_bytes_are_classified_and_hashed_without_decoding() {
     );
 }
 
+/// True when the filesystem itself refuses a hostile name (EILSEQ, ENAMETOOLONG, EINVAL).
+fn fs_refuses(error: &std::io::Error) -> bool {
+    matches!(error.raw_os_error(), Some(92 | 84 | 63 | 36 | 22))
+        || error.kind() == std::io::ErrorKind::InvalidFilename
+}
+
 #[cfg(unix)]
 #[test]
 fn invalid_utf8_name_reports_the_original_relative_path() {
@@ -231,7 +237,11 @@ fn invalid_utf8_name_reports_the_original_relative_path() {
     let temp = tempfile::tempdir().unwrap();
     fs::create_dir(temp.path().join("nested")).unwrap();
     let name = Path::new("nested").join(OsStr::from_bytes(b"bad-\xff.txt"));
-    fs::write(temp.path().join(&name), b"contents").unwrap();
+    if let Err(error) = fs::write(temp.path().join(&name), b"contents") {
+        assert!(fs_refuses(&error), "{error}");
+        eprintln!("skip: fs refuses non-UTF-8 filename: {error}");
+        return;
+    }
     for _ in 0..2 {
         assert!(matches!(
             scan_once(temp.path(), &StdFileSystem),
@@ -244,9 +254,14 @@ fn invalid_utf8_name_reports_the_original_relative_path() {
 fn traverses_six_hundred_directory_levels() {
     let temp = tempfile::tempdir().unwrap();
     let directory: PathBuf = std::iter::repeat_n("d", 600).collect();
-    fs::create_dir_all(temp.path().join(&directory)).unwrap();
     let leaf = directory.join("leaf.txt");
-    fs::write(temp.path().join(&leaf), b"bottom").unwrap();
+    let built = fs::create_dir_all(temp.path().join(&directory))
+        .and_then(|()| fs::write(temp.path().join(&leaf), b"bottom"));
+    if let Err(error) = built {
+        assert!(fs_refuses(&error), "{error}");
+        eprintln!("skip: fs refuses 600-level path: {error}");
+        return;
+    }
     fs::write(temp.path().join("top.txt"), b"top").unwrap();
     assert_eq!(
         scan_twice(temp.path(), &StdFileSystem),
