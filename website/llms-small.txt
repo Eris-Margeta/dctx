@@ -7,9 +7,9 @@
 - Publisher: TEJL - tvornica elektroničkih jedinica i logike. TEJL.com: https://tejl.com/; TEJL.hr: https://tejl.hr/.
 - This is llms-small.txt: the facts and the route table, with an outline of the start documents. The other entry points: https://www.dctx.internet.technology/llms.txt, https://www.dctx.internet.technology/llms-full.txt.
 - Engine: dctx 1.3.1. Document captures are the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs them and fails on any byte of drift. Read the pack at https://www.dctx.internet.technology/llms-full.txt.
-- Docs commit: 6378c8363bfe5d4ef414a4b57602767b6ff04198 (2026-11-13T04:26:06+01:00), the last commit that changed one of the documents.
+- Docs commit: 5f0b8b6e4560a9c6e2dc361fd7d2e6c33f9ba3b0 (2026-11-17T15:05:30+01:00), the last commit that changed one of the documents.
 - Command: `dctx map map docs/START.md --depth 2`; `dctx map map docs/WHY-DCTX.md --depth 2`; `dctx map map README.md --depth 2`; `dctx map map docs/MODALITIES.md --depth 2`
-- Document capture budget: 969 of 2,500 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
+- Document capture budget: 983 of 2,500 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
 
 ## Facts
 
@@ -196,12 +196,13 @@ d:README.md#Quick Start	heading	L258-272
 d:README.md#Map mode: context for agents	heading	L273-283
 d:README.md#From source	heading	L284-301
 d:README.md#Use as a library	heading	L302-336
-d:README.md#CLI Reference	heading	L337-468
-d:README.md#Language tiers	heading	L399-468
-d:README.md#Security & Privacy	heading	L469-502
-d:README.md#Open source and maintenance	heading	L503-510
-d:README.md#Where it comes from	heading	L511-515
-d:README.md#Contributing	heading	L516-526
+d:README.md#Versioned pack JSON	heading	L337-349
+d:README.md#CLI Reference	heading	L350-482
+d:README.md#Language tiers	heading	L413-482
+d:README.md#Security & Privacy	heading	L483-516
+d:README.md#Open source and maintenance	heading	L517-524
+d:README.md#Where it comes from	heading	L525-529
+d:README.md#Contributing	heading	L530-540
 # dctx map
 d:docs/MODALITIES.md#Choosing how to use dctx	heading	L3-244
 d:docs/MODALITIES.md#Available surfaces and publication status	heading	L11-24

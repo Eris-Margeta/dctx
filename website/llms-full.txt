@@ -7,9 +7,9 @@
 - Publisher: TEJL - tvornica elektroničkih jedinica i logike. TEJL.com: https://tejl.com/; TEJL.hr: https://tejl.hr/.
 - This is llms-full.txt: the facts, every public HTML page, the document pack and captured CLI help and examples. The other entry points: https://www.dctx.internet.technology/llms-small.txt, https://www.dctx.internet.technology/llms.txt.
 - Engine: dctx 1.3.1. Document captures are the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs them and fails on any byte of drift. Read the pack at https://www.dctx.internet.technology/llms-full.txt.
-- Docs commit: 6378c8363bfe5d4ef414a4b57602767b6ff04198 (2026-11-13T04:26:06+01:00), the last commit that changed one of the documents.
+- Docs commit: 5f0b8b6e4560a9c6e2dc361fd7d2e6c33f9ba3b0 (2026-11-17T15:05:30+01:00), the last commit that changed one of the documents.
 - Command: `dctx pack . --include /docs/START.md --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md --include /docs/guides/MAP-MODE.md --include /docs/guides/AGENTS-SNIPPET.md --include /docs/guides/PLUGINS.md --include /docs/SPEC.md --include /docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md --include /docs/ADR-018-Language-Coverage.md --include /docs/design/contracts/DTS-v2.md --include /docs/ADR-003-Templating-Engine.md --include /docs/CRATE-MAP.md --include /docs/CLI-EXIT-CODES.md --include /docs/BENCHMARK-20261030.md --include /docs/research/stability-20261105/REPORT.md --include /docs/research/trail-code-2026-10/REPORT.md --include /RELEASING.md --include /CONTRIBUTING.md --include /SECURITY.md --include /TRADEMARK.md --include /MAINTENANCE.md --include /crates/dctx-template/templates/default.dctx_template --include /crates/dctx-template/templates/stamped.dctx_template`
-- Document capture budget: 90,588 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 24 documents.
+- Document capture budget: 90,806 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 24 documents.
 
 ## Facts
 
@@ -339,7 +339,7 @@ Write to that address with your organisation, the tier you want and a contact na
 - The core (`pack`) and every modality stay open.
 
 </FILE_CONTENT_END ID="F002">
-<FILE_CONTENT_START ID="F003" PATH="README.md" LINES="527">
+<FILE_CONTENT_START ID="F003" PATH="README.md" LINES="541">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 <h1 align="center">dctx</h1>
@@ -676,6 +676,19 @@ before embedding it. Python, Node and Go wrappers over `dctx rpc` live in
 and [packages/go](packages/go/README.md); they are built and tested in CI.
 Install the Node wrapper with `npm install @tejl/dctx`; use CI artifacts for Python and Go.
 
+## Versioned pack JSON
+
+For a pinned external runtime, use `dctx pack --for 'fix alpha_body' --json`.
+The `schema` field is `dctx.pack/1`; `dctx pack --schema` prints the shipped
+[JSON Schema](schemas/dctx.pack-1.schema.json). Every included source fragment
+carries its relative path, exact byte and line bounds, content SHA-256, and the
+pack's source snapshot identity. Unknown source commits are explicitly `null`.
+
+Within this contract, additive changes increment the minor schema version;
+breaking changes require a new major schema ID. See the
+[pack contract and offline reproducible-build recipe](docs/PACK-SCHEMA.md)
+for span conventions, validation, and the two-build proof.
+
 ## CLI Reference
 
 ```
@@ -712,7 +725,8 @@ Pack filters:
   --exclude <pattern>   Drop files matching this ignore-rule glob (repeatable)
   --output, -o <path>   Write the page to one file
   --clipboard, -c       Copy the page to the clipboard
-  --json                Summary report; with --for, the facade JSON context page
+  --json                Summary report; with --for, versioned dctx.pack/1 JSON
+  --schema              Print the pack --for JSON schema without reading a project
   --tree-stamps=on|off  MOD: timestamp on tree lines (default off; on = the 1.0.0 text)
 Task context (agent cards):
   --for <text>          Map find on the names in <text>, then neighbors and read of the best hits
@@ -5577,7 +5591,7 @@ source: https://www.dctx.internet.technology/docs/
 Documentation Documentation
 New here? Choose your path first: dctx is an advanced tool with several ways to use it. Evaluating dctx, or an AI doing so? Read the facts and how to verify them .
 Every document is rendered from the repository at build time, with a Markdown twin next to it ( index.md ), and all of them are in llms-full.txt . The CLI reference is generated from the binary: /cli/ .
-Start Document What it covers Words Updated Source Why dctx Why dctx exists, its philosophy, and why byte-identical output keeps the prompt cache hitting. 1,724 2026-11-13 docs/WHY-DCTX.md README Installation, quick start, map mode, language tiers and the CLI reference. 2,538 2026-11-13 README.md What dctx is The claim and its limits, the advanced-user notice, choose your path, the safe path in ten minutes, responsibilities and the two scopes. 1,655 2026-11-13 docs/START.md Modalities Document What it covers Words Updated Source Choosing how to use dctx Clipboard, grep plus reads, long sessions, huge trees, CLI usage and CI. 1,735 2026-11-13 docs/MODALITIES.md Map mode guide Every map verb with examples, budgets, ids and precision labels. 2,694 2026-11-13 docs/guides/MAP-MODE.md Agent snippet The AGENTS.md section that tells coding agents to ask dctx first. 196 2026-11-09 docs/guides/AGENTS-SNIPPET.md Plugins guide The plugin boundary, capabilities, consent and current limits. 980 2026-11-07 docs/guides/PLUGINS.md Engine Document What it covers Words Updated Source Specification The core belief, the five constraints, the ten RAG defect classes, policy and roadmap. 9,224 2026-11-13 docs/SPEC.md Privacy guarantees Ignore semantics and the full sensitive-file deny list. 2,817 2026-11-13 docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md Language coverage (ADR-018) The three tiers and how a language enters one. 516 2026-11-07 docs/ADR-018-Language-Coverage.md Template contract (DTS v2) DTS source v2 and the compiled plan IR v1. 648 2026-11-07 docs/design/contracts/DTS-v2.md Templating engine (ADR-003) Markers, ahead-of-time compilation, the two rendering passes and the data variables. 508 2026-11-07 docs/ADR-003-Templating-Engine.md Crate map How the Rust workspace is organised. 1,899 2026-11-07 docs/CRATE-MAP.md Reference Document What it covers Words Updated Source CLI exit codes The exit-code contract for map, pack and languages. 929 2026-11-13 docs/CLI-EXIT-CODES.md Trust Document What it covers Words Updated Source Measurement evidence Grep plus file reads first; whole-session scope and secondary historical protocols. 4,180 2026-11-13 docs/BENCHMARK-20261030.md Byte-stability report Protocol, raw answers and limits of the 33/33 measurement. 1,063 2026-11-07 docs/research/stability-20261105/REPORT.md Earlier two-way study October 2026, before call edges: the benchmark that set the roadmap. 7,229 2026-11-13 docs/research/trail-code-2026-10/REPORT.md Releasing How a release is cut and checked. 158 2026-11-07 RELEASING.md Contributing How to propose changes, with a DCO sign-off. 546 2026-11-13 CONTRIBUTING.md Policies Document What it covers Source Security policy How to report a vulnerability privately. SECURITY.md Trademark policy Use of the dctx name and logo. TRADEMARK.md Maintenance What a maintenance agreement covers. MAINTENANCE.md
+Start Document What it covers Words Updated Source Why dctx Why dctx exists, its philosophy, and why byte-identical output keeps the prompt cache hitting. 1,724 2026-11-13 docs/WHY-DCTX.md README Installation, quick start, map mode, language tiers and the CLI reference. 2,628 2026-11-17 README.md What dctx is The claim and its limits, the advanced-user notice, choose your path, the safe path in ten minutes, responsibilities and the two scopes. 1,655 2026-11-13 docs/START.md Modalities Document What it covers Words Updated Source Choosing how to use dctx Clipboard, grep plus reads, long sessions, huge trees, CLI usage and CI. 1,735 2026-11-13 docs/MODALITIES.md Map mode guide Every map verb with examples, budgets, ids and precision labels. 2,694 2026-11-13 docs/guides/MAP-MODE.md Agent snippet The AGENTS.md section that tells coding agents to ask dctx first. 196 2026-11-09 docs/guides/AGENTS-SNIPPET.md Plugins guide The plugin boundary, capabilities, consent and current limits. 980 2026-11-07 docs/guides/PLUGINS.md Engine Document What it covers Words Updated Source Specification The core belief, the five constraints, the ten RAG defect classes, policy and roadmap. 9,224 2026-11-13 docs/SPEC.md Privacy guarantees Ignore semantics and the full sensitive-file deny list. 2,817 2026-11-13 docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md Language coverage (ADR-018) The three tiers and how a language enters one. 516 2026-11-07 docs/ADR-018-Language-Coverage.md Template contract (DTS v2) DTS source v2 and the compiled plan IR v1. 648 2026-11-07 docs/design/contracts/DTS-v2.md Templating engine (ADR-003) Markers, ahead-of-time compilation, the two rendering passes and the data variables. 508 2026-11-07 docs/ADR-003-Templating-Engine.md Crate map How the Rust workspace is organised. 1,899 2026-11-07 docs/CRATE-MAP.md Reference Document What it covers Words Updated Source CLI exit codes The exit-code contract for map, pack and languages. 929 2026-11-13 docs/CLI-EXIT-CODES.md Trust Document What it covers Words Updated Source Measurement evidence Grep plus file reads first; whole-session scope and secondary historical protocols. 4,180 2026-11-13 docs/BENCHMARK-20261030.md Byte-stability report Protocol, raw answers and limits of the 33/33 measurement. 1,063 2026-11-07 docs/research/stability-20261105/REPORT.md Earlier two-way study October 2026, before call edges: the benchmark that set the roadmap. 7,229 2026-11-13 docs/research/trail-code-2026-10/REPORT.md Releasing How a release is cut and checked. 158 2026-11-07 RELEASING.md Contributing How to propose changes, with a DCO sign-off. 546 2026-11-13 CONTRIBUTING.md Policies Document What it covers Source Security policy How to report a vulnerability privately. SECURITY.md Trademark policy Use of the dctx name and logo. TRADEMARK.md Maintenance What a maintenance agreement covers. MAINTENANCE.md
 Crawlers, including AI crawlers, may read this site: see robots.txt and llms.txt .
 
 ---
@@ -5767,7 +5781,7 @@ Document: `README.md` in [Documents](#documents). [Read the page](https://www.dc
 
 Rendered text and page details not already verbatim in the document pack:
 
-All documents Start What dctx is Choose your path Safe path in ten minutes Why dctx README and quick start Modalities Choosing how to use dctx CLI and agents: map mode Agent snippet Libraries CI and caching Plugins guide Scopes Two scopes, one binary Who is responsible for what Engine Specification Privacy guarantees Cache and limits Language coverage (ADR-018) Template contract (DTS v2) Templating engine (ADR-003) Crate map Reference CLI reference CLI exit codes Languages Templates Examples Trust Benchmarks Measurement evidence Byte-stability report Earlier two-way study Philosophy Security policy Releasing Contributing Trademark Maintenance For AI evaluators Facts and verification llms.txt dctx View source · Edit on GitHub · Markdown · README.md · 2,538 words · updated 13 November 2026 On this page Project status Installation What the output looks like Which mode? Measured, in the open Start and choose your path The core belief: prompt-processing efficiency Quick Start Map mode: context for agents From source Use as a library CLI Reference Security & Privacy Open source and maintenance Where it comes from Contributing
+All documents Start What dctx is Choose your path Safe path in ten minutes Why dctx README and quick start Modalities Choosing how to use dctx CLI and agents: map mode Agent snippet Libraries CI and caching Plugins guide Scopes Two scopes, one binary Who is responsible for what Engine Specification Privacy guarantees Cache and limits Language coverage (ADR-018) Template contract (DTS v2) Templating engine (ADR-003) Crate map Reference CLI reference CLI exit codes Languages Templates Examples Trust Benchmarks Measurement evidence Byte-stability report Earlier two-way study Philosophy Security policy Releasing Contributing Trademark Maintenance For AI evaluators Facts and verification llms.txt dctx View source · Edit on GitHub · Markdown · README.md · 2,628 words · updated 17 November 2026 On this page Project status Installation What the output looks like Which mode? Measured, in the open Start and choose your path The core belief: prompt-processing efficiency Quick Start Map mode: context for agents From source Use as a library Versioned pack JSON CLI Reference Security & Privacy Open source and maintenance Where it comes from Contributing
 dctx turns any folder into the smallest correct context for a task, offline, with byte-stable output that prompt caches can reuse. dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, direct CLI commands. Measure before you change anything.
 Run dctx agent-setup --format agents (or --format claude ) for short rules to paste into AGENTS.md or CLAUDE.md .
 Project status #
@@ -5880,6 +5894,11 @@ before embedding it. Python, Node and Go wrappers over dctx rpc live in
 packages/python , packaging/npm
 and packages/go ; they are built and tested in CI.
 Install the Node wrapper with npm install @tejl/dctx ; use CI artifacts for Python and Go.
+Versioned pack JSON #
+For a pinned external runtime, use dctx pack --for 'fix alpha_body' --json .
+The schema field is dctx.pack/1 ; dctx pack --schema prints the shipped
+JSON Schema . Every included source fragment
+pack's source snapshot identity. Unknown source commits are explicitly null .
 CLI Reference #
 dctx context returns ranked context for a file, symbol name or stable node id;
 dctx rpc serves the versioned engine protocol used by the language wrappers
