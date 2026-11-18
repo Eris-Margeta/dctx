@@ -47,6 +47,14 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Install pack schema test dependencies
+        run: |
+          if [ "$RUNNER_OS" = Windows ]; then
+            python -m pip install -r scripts/requirements.txt
+          else
+            python3 -m pip install -r scripts/requirements.txt
+          fi
+
       - name: Resolve CI and MSRV toolchains
         id: toolchain
         env:
