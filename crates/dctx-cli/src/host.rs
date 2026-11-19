@@ -96,7 +96,7 @@ pub fn open_mapped_at(path: &Path, root: Option<&Path>) -> Result<(Session, Stri
         return Ok((build(source, &place, "default", rules)?, key));
     }
     let root_id = place_root_id(&canonical)?;
-    if let Ok(session) = build_cached(source, &place, root, root_id, rules.clone()) {
+    if let Ok(session) = build_cached(source, &place, root, root_id, rules.clone(), false) {
         Ok((session, key))
     } else {
         let (source, place, canonical) = open_source(path)?;
@@ -230,6 +230,7 @@ fn build_cached(
     root: &Path,
     root_id: u64,
     rules: RuleSources,
+    defer_touch: bool,
 ) -> Result<Session, String> {
     let mut policy =
         load_policy(root).map_or_else(|_| AutoCleanConfig::default(), |item| item.auto);
@@ -238,7 +239,7 @@ fn build_cached(
         policy.enabled = false;
     }
     let selection = rules.policy();
-    Session::builder(source)
+    let builder = Session::builder(source)
         .clock(FixedClock(Timestamp(unix_millis())))
         .cancellation(Arc::new(CancelFlag::new()))
         .selection(selection)
@@ -251,9 +252,13 @@ fn build_cached(
         .place(place)
         .view("default")
         .cache_root(root, root_id)
-        .auto_clean(policy)
-        .build()
-        .map_err(facade_error)
+        .auto_clean(policy);
+    let builder = if defer_touch {
+        builder.defer_cache_touch_until_snapshot()
+    } else {
+        builder
+    };
+    builder.build().map_err(facade_error)
 }
 
 fn build(

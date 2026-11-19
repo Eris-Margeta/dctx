@@ -189,7 +189,8 @@ pub fn open_mapped_roots(path: &Path, also: &[PathBuf]) -> Result<(Session, Stri
     if let Ok(cache) = cache_root_dir() {
         if ensure_cache_dir(&cache).is_ok() {
             let id = place_root_id(Path::new(&key))?;
-            return build_cached(source, "roots", &cache, id, rules).map(|session| (session, key));
+            return build_cached(source, "roots", &cache, id, rules, false)
+                .map(|session| (session, key));
         }
     }
     build(source, "roots", "default", rules).map(|session| (session, key))
@@ -282,7 +283,7 @@ fn notice_session(
         if let Ok(cache) = cache_root_dir() {
             if ensure_cache_dir(&cache).is_ok() {
                 let id = place_root_id(Path::new(&key))?;
-                return build_cached(source, label, &cache, id, rules)
+                return build_cached(source, label, &cache, id, rules, true)
                     .map(|session| (session, key));
             }
         }
