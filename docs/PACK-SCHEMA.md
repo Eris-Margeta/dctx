@@ -7,10 +7,18 @@ LF-terminated JSON document. Its contract is **`dctx.pack/1`**, initially
 other dctx interfaces remain experimental. It applies to task packs; ordinary
 `pack --json` remains a summary and `context` has a separate interface.
 
-```sh
+Run the CLI in a project with an `alpha_body` declaration:
+
+```sh runnable
 dctx pack --schema > pack.schema.json
 dctx pack --for 'fix alpha_body' --json > pack.json
-python3 scripts/validate_pack_schema.py < pack.json
+```
+
+From the dctx source checkout, validate that output, replacing `PROJECT` with
+the path to your project:
+
+```sh
+python3 scripts/validate_pack_schema.py < PROJECT/pack.json
 ```
 
 The schema is shipped at [schemas/dctx.pack-1.schema.json](../schemas/dctx.pack-1.schema.json).

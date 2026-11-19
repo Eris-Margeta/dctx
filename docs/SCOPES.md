@@ -14,7 +14,7 @@ Activating a virtualenv or adding `node_modules/.bin` to PATH can shadow a syste
 
 ## Inspect installations
 
-```sh
+```sh runnable
 dctx doctor
 dctx doctor --json
 dctx doctor --probe-project

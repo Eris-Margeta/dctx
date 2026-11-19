@@ -5,8 +5,9 @@
 or stable node ID. Selection, content identities, budgets, deduplication, and both
 encodings belong to the engine. Transports forward the engine's page unchanged.
 The existing `dctx pack --for TEXT` task-context operation remains available.
+Run these examples from a Rust project with a `ping` function in `src/lib.rs`.
 
-```sh
+```sh runnable
 dctx context src/lib.rs --place .
 dctx context 's:src/lib.rs#ping' --json --budget 3000
 dctx context ping ping --session review-1 --dedupe --json
@@ -81,14 +82,14 @@ chunks before reference substitution, so repeated requests select the same conte
 
 CLI:
 
-```sh
+```sh runnable
 dctx context ping --json --session review-1 --dedupe
 ```
 
 RPC uses the existing `context` verb after `hello`, with CLI context arguments.
 The older `context` request using `--for TEXT` still selects task context.
 
-```json
+```jsonl
 {"id":0,"verb":"hello"}
 {"id":1,"verb":"context","args":["ping","--session","review-1","--dedupe"]}
 ```

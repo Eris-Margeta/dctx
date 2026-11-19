@@ -17,6 +17,7 @@ tag and platform explicitly; the examples use Linux x86_64 musl. ARM64 Linux,
 Intel/Apple Silicon macOS and Windows x64 have corresponding assets.
 
 ```sh
+set -eu
 TAG=v1.3.1 # select a release produced by the new workflow
 ASSET=dctx-x86_64-unknown-linux-musl.tar.gz
 REPO=Eris-Margeta/dctx
@@ -73,11 +74,11 @@ of reproducibility on every platform.
 
 ## Verify npm packages
 
-From version 1.3.1, `@tejl/dctx` is the Node.js shim on npm and `@tejl/dctx-<platform>` packages
-contain the native binaries. The owner publishes these packages manually from a
-Mac using the GitHub release assets; CI does not publish them. **There is no npm
-provenance attestation.** The cosign signatures and GitHub build attestations
-above authenticate the release archives, not the npm tarballs or JavaScript shim.
+From version 1.3.1, `@tejl/dctx` is the Node.js shim on npm and the platform
+packages contain the native binaries. When enabled by the release preflight,
+the `npm-publish` job prepares the packages from the GitHub release assets and
+publishes them. The cosign signatures and GitHub build attestations above
+authenticate the release archives. **There is no npm provenance attestation.**
 
 To check an installed binary, select the same version and platform for npm and
 the GitHub release. First authenticate `SHA256SUMS`, verify the selected release
