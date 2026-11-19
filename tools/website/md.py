@@ -109,6 +109,10 @@ def prepare(rel: str, for_html: bool = True) -> str:
     text = read(rel)
     if not for_html:
         return text
+    if rel in ("docs/MODALITIES.md", "docs/START.md"):
+        # Keep the docs_examples marker in the source and Markdown twin.
+        # Python-Markdown requires a single language token on these fences.
+        text = re.sub(r"(?m)^(```sh) runnable$", r"\1", text)
     if rel == "README.md":
         head, sep, rest = text.partition("\n---\n")
         strap = re.search(r"<strong>(.*?)</strong><br>\s*(.*?)\s*</p>", head, re.S)
