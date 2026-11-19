@@ -7,7 +7,7 @@
 
 Use the [current product contracts](design/PRODUCT-CONTRACTS.md), [README](../README.md) and [testing guide](TESTING.md) for release behavior.
 **Author:** dctx Team
-**Context:** Previous automated tests for `dctx` were insufficient. They failed to detect "lazy" state updates (requiring two runs to register a change) and did not adequately verify the clipboard mode or configuration propagation. We need a rigorous, battle-tested standard for verifying CLI behavior that mirrors actual human usage patterns.
+**Context:** Previous automated tests for `dctx` were insufficient. They failed to detect "lazy" state updates (requiring two runs to register a change) and did not adequately verify the clipboard mode or configuration propagation. We need CLI tests that mirror how people use the tool.
 
 ## 1. Context and Problem Statement
 *   **State Latency:** A single run of the tool might appear successful (exit code 0), but fail to persist state correctly for the *next* run.

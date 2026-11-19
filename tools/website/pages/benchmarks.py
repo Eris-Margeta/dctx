@@ -39,7 +39,7 @@ def benchmarks() -> tuple[str, list]:
     body = f"""<div class="wrap"><div class="page-head">{{{{crumbs}}}}<span class="eyebrow">Evidence</span><h1>Benchmarks</h1>
 <p class="lede">Compare dctx with grep plus file reads, then measure the whole agent session. Startup instructions, tool definitions and extra turns can outweigh smaller answers.</p></div>
 <h2 id="grep-read">Grep plus file reads</h2>
-<p>Measured whole-session results, 11 November 2026. {src(session_source, "Full report and method")}</p>
+<p>{src(session_source, "BENCHMARK-20261111.md")}</p>
 <div class="prose">{session_html}</div>
 <h2 id="history">Secondary historical evidence</h2>
 <div class="notice"><p>All other-tool tables below preserve the October research record. Their tokens are tool stdout estimates, not whole-session cost; scores measure gold facts in raw output without an agent model. The dctx team designed the 70-question protocol. The independent run selected repositories by seed and used language-server gold.</p></div>

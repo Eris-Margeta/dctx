@@ -56,7 +56,7 @@ def footer() -> str:
   <div class="ftr-grid">
    <div class="ftr-brand">
     <a class="brand" href="/">{ICON}<span>dctx</span></a>
-    <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
+    <p>The context engine for AI-assisted software development. Bounded answers, stable prefixes, exact source.</p>
     <p>An advanced tool with several ways to use it: <a href="/start/">start with the safe path</a>.</p>
     <p class="mono small">dctx {VERSION} &middot; Apache-2.0</p>
     <p class="ftr-prefs"><button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Animations: on</button></p>

@@ -559,20 +559,20 @@
   },
   "news-dctx-1-1": {
     "gif": {
-      "bytes": 163374,
+      "bytes": 163718,
       "file": "news-dctx-1-1.gif",
-      "sha256": "8059d5d2e33ead4d235e3237c86cbb12e5efcae717dab5cb85c2b5d6d3deb7d1"
+      "sha256": "932aea783b4c557f04666a8bde1bd73a4a4160db8d1314140411753a8c6ffd1c"
     },
-    "inputs_sha256": "73a58c26af090208f3aa6fadb53eec6624b99043eff0ba964e0aec6676923821",
+    "inputs_sha256": "01b941619fb31a3ef9bc3959f2f4403d22528a37f368b084cf21a0f3acfad783",
     "png": {
-      "bytes": 183809,
+      "bytes": 183787,
       "file": "news-dctx-1-1.png",
-      "sha256": "e1a8369ff1ca250da0a558b252e71b0acaac6f278bc65e1e0fa195912bc235ca"
+      "sha256": "dc6aaf31bb288780cd3f22d6a9aea490e95622b5e07ad2af072cabd4ff64a71b"
     },
     "twitter": {
-      "bytes": 116924,
+      "bytes": 118403,
       "file": "news-dctx-1-1.twitter.png",
-      "sha256": "d45759512228ee9b4748460f24709c775e91155eaca630d7c0f549b4773b8ebe"
+      "sha256": "eac8c481d7c1197681e57cdddf0e504e513c015b83dac8c975a00b2c3ec20566"
     }
   },
   "news-desktop-free-forever": {

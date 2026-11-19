@@ -188,8 +188,7 @@ files. `<repo>/scripts/checks/V1-1.zsh` reruns its canary checks with the switch
 **Assertion:** When a folder matches ignore rules, `walk_recursive()` uses `continue` (walker.rs:146) to skip the item entirely. The function is never called recursively on that folder's children.
 
 **Verification:**
-- Performance benchmark: 500MB `node_modules/` should take < 100ms to skip
-- Without ignore: Same folder would take 5-10 seconds to scan
+- Performance target: skip a 500 MB `node_modules/` folder in under 100 ms.
 - Debug mode exception: Recurses but still never reads files
 
 ### Guarantee 3: Debug Mode Does Not Compromise Privacy ✅
@@ -216,7 +215,9 @@ For ignored/omitted files, content-requiring variables are never resolved due to
 
 ---
 
-## Performance Characteristics
+## Illustrative performance scenarios
+
+The timings and memory figures below are design estimates.
 
 ### Ignored Folder Skip (Primary Optimization)
 **Scenario:** Project with 500MB `node_modules/` (50,000 files)
@@ -227,8 +228,6 @@ For ignored/omitted files, content-requiring variables are never resolved due to
 | Without ignore | Scan all 50k files | 5-10 sec | 50,000 |
 | Debug mode | Recurse but don't read | < 500ms | 0 |
 
-**Performance Gain:** 50-100x faster for large ignored folders.
-
 ### Omit Pattern Performance
 **Scenario:** Lockfiles in monorepo (20 files, 10MB each)
 
@@ -236,8 +235,6 @@ For ignored/omitted files, content-requiring variables are never resolved due to
 |------|----------|------|--------|
 | Include all | Read all lockfiles | ~200ms | 200MB |
 | Omit lockfiles | Show in tree, skip content | ~10ms | 2MB |
-
-**Performance Gain:** 20x faster, 100x less memory.
 
 ---
 
@@ -322,7 +319,7 @@ For ignored/omitted files, content-requiring variables are never resolved due to
 
 ### Positive
 ✅ **Provable Privacy:** Users can verify ignored files are never read
-✅ **Performance Boost:** 50-100x faster for projects with large ignored folders
+✅ **Less filesystem work:** Ignored folders can be skipped before enumeration
 ✅ **Semantic Clarity:** IGNORE vs OMIT distinction is clear and enforced
 ✅ **Debug Transparency:** Users can verify ignore rules without compromising privacy
 ✅ **Template Safety:** Custom templates cannot accidentally leak ignored file contents

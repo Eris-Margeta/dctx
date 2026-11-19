@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Explicit exceptions only: relative/path:line:canonical phrase | reason
 # Phrases: production-ready, enterprise-ready, stable release, battle-tested,
-# guaranteed savings, saves tokens by default, missing-status.
+# guaranteed savings, missing-status.
+# Benchmark phrases require a same-line BENCHMARK-YYYYMMDD citation.
 # No exceptions currently approved.

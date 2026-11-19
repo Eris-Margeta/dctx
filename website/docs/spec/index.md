@@ -316,9 +316,7 @@ snapshot, so `freshness.state` is always `"verified"`; there is no stale flag (R
 
 ## 10. The verbs
 
-```text
-dctx map <map|find|neighbors|explain|read|grep|status> [TARGET] [OPTIONS]
-```
+Run `dctx map --help` for the shipped syntax. The table includes planned verbs.
 
 | Verb | Use | Budget cap (tokens) |
 |---|---|---|
@@ -642,9 +640,10 @@ leaves collapse into one `partial` module node.
 
 **Gate:** cold build ≤5 s and peak RSS ≤150 MiB on the pinned corpus; persistent bytes
 ≤40 MiB. Measured today (§31.0): core (3,190 files) 6.05 s / 567 MiB; django (7,071
-files) 2.48 s / 92 MiB; flask (235 files) 0.09 s / 8 MiB. Cold indexing is 2.8 to 69
-times faster than the comparison tool on all seven corpora with 1.6 to 27 times less
-peak memory, and MUST stay at or below half of its time per corpus.
+files) 2.48 s / 92 MiB; flask (235 files) 0.09 s / 8 MiB. The cold-build time
+MUST stay at or below half of the comparison tool’s time per corpus. The
+[October tool-output measurements](https://www.dctx.internet.technology/docs/benchmark/) give the historical
+results and their scope.
 
 ## 21. Ranking
 

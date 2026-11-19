@@ -7,9 +7,9 @@
 - Publisher: TEJL - tvornica elektroničkih jedinica i logike. TEJL.com: https://tejl.com/; TEJL.hr: https://tejl.hr/.
 - This is llms-full.txt: the facts, every public HTML page, the document pack and captured CLI help and examples. The other entry points: https://www.dctx.internet.technology/llms-small.txt, https://www.dctx.internet.technology/llms.txt.
 - Engine: dctx 1.3.1. Document captures are the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs them and fails on any byte of drift. Read the pack at https://www.dctx.internet.technology/llms-full.txt.
-- Docs commit: 467323b0ff3fc7ad311fe3e75457a2514b6c0f10 (2026-11-19T05:57:50Z), the last commit that changed one of the documents.
+- Docs commit: 9881a6ef2b8088120e6cb9be41a05c944c6e7a2a (2026-11-19T09:41:29Z), the last commit that changed one of the documents.
 - Command: `dctx pack . --include /docs/START.md --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md --include /docs/guides/MAP-MODE.md --include /docs/guides/AGENTS-SNIPPET.md --include /docs/guides/PLUGINS.md --include /docs/SPEC.md --include /docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md --include /docs/ADR-018-Language-Coverage.md --include /docs/design/contracts/DTS-v2.md --include /docs/ADR-003-Templating-Engine.md --include /docs/CRATE-MAP.md --include /docs/CLI-EXIT-CODES.md --include /docs/BENCHMARK-20261030.md --include /docs/research/stability-20261105/REPORT.md --include /docs/research/trail-code-2026-10/REPORT.md --include /RELEASING.md --include /CONTRIBUTING.md --include /SECURITY.md --include /TRADEMARK.md --include /MAINTENANCE.md --include /crates/dctx-template/templates/default.dctx_template --include /crates/dctx-template/templates/stamped.dctx_template`
-- Document capture budget: 91,152 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 24 documents.
+- Document capture budget: 90,807 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 24 documents.
 
 ## Facts
 
@@ -54,10 +54,10 @@ Two scopes, one binary:
 
 Baseline: grep plus reading files.
 
-- Measured: 11 November 2026: 20 questions, a private 13-crate Rust workspace, claude-sonnet-5-5, dctx 1.3.0, three repeats per arm. Median total tokens [min, max]: grep plus reads 14,904,014 [14,604,149, 15,622,381]; dctx CLI (warm index) 14,157,974 [11,221,908, 15,613,375]. CLI median tokens were -5.01 % versus grep. On this corpus and model dctx did not save 25 % tokens; the pre-registered rule was not met. Official strict citation recall medians [min, max]: grep 10.10 % [10.10, 20.73]; CLI 14.46 % [8.36, 22.65]. Diagnostic file-level recall medians: 53.77 % and 71.70 %, respectively; diagnostic, not a replacement metric. The claim is accuracy and bounded context, not token savings. dctx on its own does not save tokens by default. Savings depend on a harness or agent system reusing byte-identical, prefix-stable context across long sessions; there is no measured, citable savings figure for such a system yet. One corpus, one model, no significance claim; corpus and raw answers private and cannot be published; dctx 1.3.0 is not current HEAD. Under ~200 files, use grep. https://www.dctx.internet.technology/benchmarks/#grep-read
+- Measured: On 12 November 2026, the dctx harness-prefix pack (P) reached 70.91% median strict citation recall versus 19.34% for grep plus file reads across 20 questions and three repeats per arm (300 graded answers across five arms). Median list-price token cost per question was $0.195418 versus $0.179670 for grep (+8.8%). The pack missed the prespecified cost threshold, so it did not win the benchmark. https://www.dctx.internet.technology/benchmarks/#grep-read
 - Measured: Byte stability: the same query on unchanged code returns the same bytes; 33 of 33 text and JSON answers were byte-identical after unrelated edits (Linux only). https://www.dctx.internet.technology/docs/stability/
 - Historical: The October and November in-house numbers (run 7: 140 of 140 task questions, cold index and warm latency) measure tool output only, as estimated stdout tokens and raw fact coverage without a model; they are not agent completion rates or session costs. https://www.dctx.internet.technology/benchmarks/
-- Hypothesis: That a pack template changes model answer quality or cost is a hypothesis pending an A/B test; nothing on this site measures it. https://www.dctx.internet.technology/templates/
+- Hypothesis: The whole-session benchmark compares tool and harness configurations. Isolating the effect of a pack template requires a separate A/B test. https://www.dctx.internet.technology/templates/
 
 ### Removed in 1.2.0
 
@@ -141,7 +141,7 @@ These existed before 1.2.0 and no longer work. A transcript that uses them descr
 
 - [Changelog](https://www.dctx.internet.technology/changelog/): Every dctx release, from dircontxt 1.0.0 in C to dctx in Rust, with known issues.
 - [News](https://www.dctx.internet.technology/news/): Releases, measurements and product decisions from the dctx project.
-- [dctx 1.1: three more languages, a prefix-stable pack, and a measured lead.](https://www.dctx.internet.technology/news/dctx-1-1/): Perl, Fortran and Verilog join map mode; dctx pack drops timestamps so prompt caches hit; the three-way benchmark and the byte-stability measurement are public.
+- [dctx 1.1: three more languages and a prefix-stable pack.](https://www.dctx.internet.technology/news/dctx-1-1/): Perl, Fortran and Verilog join map mode; dctx pack drops timestamps so prompt caches hit; the three-way benchmark and the byte-stability measurement are public.
 - [dctx Desktop is now free. Forever.](https://www.dctx.internet.technology/news/desktop-free-forever/): For individuals, teams and companies. No trial, no seat count, no expiry.
 - [Our specification, and a benchmark that does not flatter us.](https://www.dctx.internet.technology/news/specification-and-benchmark/): The dctx Context Management Specification, and an isolated comparison with Trail-Code: wins, losses and what comes next.
 
@@ -339,7 +339,7 @@ Write to that address with your organisation, the tier you want and a contact na
 - The core (`pack`) and every modality stay open.
 
 </FILE_CONTENT_END ID="F002">
-<FILE_CONTENT_START ID="F003" PATH="README.md" LINES="539">
+<FILE_CONTENT_START ID="F003" PATH="README.md" LINES="535">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 <h1 align="center">dctx</h1>
@@ -559,13 +559,9 @@ pub struct Order {
 
 The baseline is **grep plus reading files**.
 
-The [11 November whole-session benchmark](docs/BENCHMARK-20261111.md) measured 20 questions on a private 13-crate Rust workspace with `claude-sonnet-5-5`, dctx 1.3.0 and three repeats per arm. Median total tokens [min, max]: grep plus reads 14,904,014 [14,604,149, 15,622,381]; dctx CLI (warm index) 14,157,974 [11,221,908, 15,613,375].
+On 12 November 2026, the dctx harness-prefix pack (P) reached 70.91% median strict citation recall versus 19.34% for grep plus file reads across 20 questions and three repeats per arm (300 graded answers across five arms). Median list-price token cost per question was $0.195418 versus $0.179670 for grep (+8.8%). The pack missed the prespecified cost threshold, so it did not win the benchmark.
 
-**On this corpus and model dctx did not save 25 % tokens.** CLI median tokens were -5.01 % versus grep; the pre-registered success rule was not met. The claim is **accuracy and bounded context**, not token savings: CLI named more required files at about equal or higher token cost.
-
-dctx on its own does not save tokens by default. Savings come from a harness or agent system that reuses byte-identical, prefix-stable context across long sessions over a large body of work. It behaves like an advanced caching mechanism, with complete control over every byte of context. There is no measured, citable savings figure for such a system yet. [Why this matters](docs/WHY-DCTX.md#savings-belong-to-the-system).
-
-Official strict citation recall medians [min, max]: grep 10.10 % [10.10, 20.73], CLI 14.46 % [8.36, 22.65]. Diagnostic file-level recall medians: 53.77 % and 71.70 %, respectively; this does not replace strict recall. One corpus, one model, three repeats; no significance claim. Corpus and raw answers are private and cannot be published; dctx 1.3.0 is not current HEAD. **Under ~200 files, use grep.**
+[Whole-session benchmark and method](docs/BENCHMARK-20261111.md). One corpus and one model. **Under ~200 files, use grep.**
 
 Historical cold indexing of six benchmark corpora took dctx 0.13–1.20 s on one Linux x86_64 runner. This measures CLI wall time, not agent completion time or session cost.
 
@@ -1350,7 +1346,7 @@ instructions_text = "1. Manifest: The {{start_marker_open}}{{tree_start_marker}}
 ```
 
 </FILE_CONTENT_END ID="F013">
-<FILE_CONTENT_START ID="F014" PATH="docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md" LINES="426">
+<FILE_CONTENT_START ID="F014" PATH="docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md" LINES="423">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # ADR-014: Privacy Guarantees & Ignore Semantics
@@ -1541,8 +1537,7 @@ files. `<repo>/scripts/checks/V1-1.zsh` reruns its canary checks with the switch
 **Assertion:** When a folder matches ignore rules, `walk_recursive()` uses `continue` (walker.rs:146) to skip the item entirely. The function is never called recursively on that folder's children.
 
 **Verification:**
-- Performance benchmark: 500MB `node_modules/` should take < 100ms to skip
-- Without ignore: Same folder would take 5-10 seconds to scan
+- Performance target: skip a 500 MB `node_modules/` folder in under 100 ms.
 - Debug mode exception: Recurses but still never reads files
 
 ### Guarantee 3: Debug Mode Does Not Compromise Privacy [yes]
@@ -1569,7 +1564,9 @@ For ignored/omitted files, content-requiring variables are never resolved due to
 
 ---
 
-## Performance Characteristics
+## Illustrative performance scenarios
+
+The timings and memory figures below are design estimates.
 
 ### Ignored Folder Skip (Primary Optimization)
 **Scenario:** Project with 500MB `node_modules/` (50,000 files)
@@ -1580,8 +1577,6 @@ For ignored/omitted files, content-requiring variables are never resolved due to
 | Without ignore | Scan all 50k files | 5-10 sec | 50,000 |
 | Debug mode | Recurse but don't read | < 500ms | 0 |
 
-**Performance Gain:** 50-100x faster for large ignored folders.
-
 ### Omit Pattern Performance
 **Scenario:** Lockfiles in monorepo (20 files, 10MB each)
 
@@ -1589,8 +1584,6 @@ For ignored/omitted files, content-requiring variables are never resolved due to
 |------|----------|------|--------|
 | Include all | Read all lockfiles | ~200ms | 200MB |
 | Omit lockfiles | Show in tree, skip content | ~10ms | 2MB |
-
-**Performance Gain:** 20x faster, 100x less memory.
 
 ---
 
@@ -1675,7 +1668,7 @@ For ignored/omitted files, content-requiring variables are never resolved due to
 
 ### Positive
 [yes] **Provable Privacy:** Users can verify ignored files are never read
-[yes] **Performance Boost:** 50-100x faster for projects with large ignored folders
+[yes] **Less filesystem work:** Ignored folders can be skipped before enumeration
 [yes] **Semantic Clarity:** IGNORE vs OMIT distinction is clear and enforced
 [yes] **Debug Transparency:** Users can verify ignore rules without compromising privacy
 [yes] **Template Safety:** Custom templates cannot accidentally leak ignored file contents
@@ -1860,7 +1853,7 @@ Language family count, structural coverage, grammar completeness and edge confid
 Keep tree-sitter optional and preserve precision/refusal and store-invariant gates when extending adapters; optional oracle coverage is limited to its included grammars (`crates/dctx-map-parse/src/adapters/mod.rs`, `crates/dctx-map-parse/tests/fuzz_all.rs`).
 
 </FILE_CONTENT_END ID="F015">
-<FILE_CONTENT_START ID="F016" PATH="docs/BENCHMARK-20261030.md" LINES="324">
+<FILE_CONTENT_START ID="F016" PATH="docs/BENCHMARK-20261030.md" LINES="323">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # dctx measurement: grep plus file reads first
@@ -1872,9 +1865,8 @@ tool descriptions, conversation replay, model output and provider cache effects.
 
 ## Grep plus file reads
 
-The [11 November whole-session benchmark](BENCHMARK-20261111.md) measured grep plus reads against dctx CLI: CLI median total tokens -5.01 %; the pre-registered 25 % savings rule was not met.
-Official strict citation recall medians (A/B/C): 10.10 % / 14.46 % / 13.41 %; diagnostic file-level recall: 53.77 % / 71.70 % / 76.42 %. The claim is accuracy and bounded context, not token savings.
-On this corpus and model dctx did not save 25 % tokens. The linked report gives median [min, max], methods and limitations; corpus and raw answers are private.
+On 12 November 2026, the dctx harness-prefix pack (P) reached 70.91% median strict citation recall versus 19.34% for grep plus file reads across 20 questions and three repeats per arm (300 graded answers across five arms). Median list-price token cost per question was $0.195418 versus $0.179670 for grep (+8.8%). The pack missed the prespecified cost threshold, so it did not win the benchmark.
+[Whole-session benchmark and method](BENCHMARK-20261111.md).
 
 ## Secondary historical evidence: other-tool protocols
 
@@ -2160,7 +2152,7 @@ All corpora and the edit-stability, network and coverage tables are in
 
 These exclusions apply to the historical tool-output protocols below the whole-session summary above.
 
-- Whole-session cost or task-level answer quality from these historical protocols. Historical fact scores describe raw tool outputs only; the [11 November study](BENCHMARK-20261111.md) measures whole sessions with a frozen model.
+- Whole-session cost or task-level answer quality from these historical protocols. Historical fact scores describe raw tool outputs only; the [12 November study](BENCHMARK-20261111.md) measures whole sessions with a fixed model.
 - Anything about graphify's LLM semantic graph, or Trail-Code's learnings and LSP edges.
 - SWE-bench scores or agent-run numbers from these historical tool-output protocols.
 - Equal language depth. dctx's 25 new formats are outline tier: symbols, not call edges.
@@ -2698,7 +2690,7 @@ Without a wrapper, any language can invoke the CLI as a subprocess and consume
 `--json` map answers. Use the Rust facade when you need an in-process engine.
 
 </FILE_CONTENT_END ID="F019">
-<FILE_CONTENT_START ID="F020" PATH="docs/SPEC.md" LINES="975">
+<FILE_CONTENT_START ID="F020" PATH="docs/SPEC.md" LINES="974">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # The dctx Context Management Specification
@@ -3017,9 +3009,7 @@ snapshot, so `freshness.state` is always `"verified"`; there is no stale flag (R
 
 ## 10. The verbs
 
-```text
-dctx map <map|find|neighbors|explain|read|grep|status> [TARGET] [OPTIONS]
-```
+Run `dctx map --help` for the shipped syntax. The table includes planned verbs.
 
 | Verb | Use | Budget cap (tokens) |
 |---|---|---|
@@ -3343,9 +3333,10 @@ leaves collapse into one `partial` module node.
 
 **Gate:** cold build ≤5 s and peak RSS ≤150 MiB on the pinned corpus; persistent bytes
 ≤40 MiB. Measured today (§31.0): core (3,190 files) 6.05 s / 567 MiB; django (7,071
-files) 2.48 s / 92 MiB; flask (235 files) 0.09 s / 8 MiB. Cold indexing is 2.8 to 69
-times faster than the comparison tool on all seven corpora with 1.6 to 27 times less
-peak memory, and MUST stay at or below half of its time per corpus.
+files) 2.48 s / 92 MiB; flask (235 files) 0.09 s / 8 MiB. The cold-build time
+MUST stay at or below half of the comparison tool’s time per corpus. The
+[October tool-output measurements](BENCHMARK-20261030.md) give the historical
+results and their scope.
 
 ## 21. Ranking
 
@@ -3909,7 +3900,7 @@ Continue with the [documentation index](README.md), [modalities](MODALITIES.md)
 or [engine specification](SPEC.md).
 
 </FILE_CONTENT_END ID="F021">
-<FILE_CONTENT_START ID="F022" PATH="docs/WHY-DCTX.md" LINES="160">
+<FILE_CONTENT_START ID="F022" PATH="docs/WHY-DCTX.md" LINES="158">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Why dctx exists
@@ -4017,17 +4008,15 @@ The report states its limits too. It measures dctx's answers, not a provider's c
 
 ### Savings belong to the system
 
-dctx on its own does not save tokens by default. In the
-[11 November benchmark](BENCHMARK-20261111.md), the dctx CLI arm used 5.01 % fewer
-median total tokens than grep plus file reads, far below the 25 % rule.
+On 12 November 2026, the harness-prefix pack reached 70.91% median strict
+citation recall versus 19.34% for grep plus file reads (20 questions, three
+repeats per arm). Median list-price token cost per question rose 8.8%, from
+$0.179670 to $0.195418. The pack missed the prespecified cost threshold.
+[Whole-session benchmark and method](BENCHMARK-20261111.md).
 
-Token savings come from systems that use dctx: a harness or agent system built
-around its cache-hit philosophy, reusing byte-identical, prefix-stable context
-across long sessions over a large body of work. In that system, dctx behaves
-like any sufficiently advanced caching mechanism, with one difference: you have
-complete control over every byte of the context. The system must keep and reuse
-that context to benefit. There is no measured, citable savings figure for such a
-system yet.
+A harness can reuse byte-identical, prefix-stable context across turns. Its
+cost depends on what it reuses, how many turns it takes, and how the provider
+prices cached and uncached tokens. dctx supplies the context bytes.
 
 ### An illustration of money and time
 
@@ -4057,7 +4046,7 @@ If the context is byte-identical, turn one pays 200 units and the next nine pay 
 
 - [README](../README.md): install, quick start, map mode.
 - [Specification](SPEC.md): rules, metrics, roadmap.
-- [Measurement evidence](BENCHMARK-20261030.md): grep plus file reads first; other-tool numbers are secondary historical notes.
+- [Whole-session benchmark](BENCHMARK-20261111.md) and [historical tool-output measurements](BENCHMARK-20261030.md).
 - [Stability report](research/stability-20261105/REPORT.md): protocol, raw answers and limits.
 - [Map mode guide](guides/MAP-MODE.md): every verb and option.
 
@@ -4900,7 +4889,7 @@ regenerated with `scripts/`. Where Trail-Code is better, this report says so pla
 | Call graph (callers, depth 1) | **Trail-Code wins decisively.** Trail precision 0.94 to 1.00, recall 0.10 to 0.96 per corpus. dctx returns **no call or import edges at all** (recall 0 on 140 targets): the CLI facade only emits `contains` edges. |
 | Task-level answers (70 agent questions) | Trail 122/140 points, 312/354 gold facts in 88.7k tokens. dctx 69/140, 169/354 in 500k tokens (480k of them from the unbounded legacy tree used as the only overview). Without the overview question dctx uses 19.2k tokens for 137/322 facts (7.15 facts/1k tokens) versus Trail 57.0k for 284/322 (4.98 facts/1k): dctx is terser, Trail answers about twice as much. |
 | Footprint | **dctx wins.** One 9.2 MB binary (libc, libm, libgcc_s) versus 405.6 MB of `node_modules` (8,567 files, 50 package versions) plus a Node runtime. |
-| Cold index | **dctx wins** on all seven corpora: 0.09 to 6.05 s versus 2.44 to 94.9 s (2.8 to 69 times faster); peak RSS 8 to 567 MiB versus 181 to 2,111 MiB. Trail's index is smaller only on core (65 MB versus 158 MB). |
+| Cold index | **dctx wins** on all seven corpora: 0.09 to 6.05 s versus 2.44 to 94.9 s; peak RSS 8 to 567 MiB versus 181 to 2,111 MiB. Trail's index is smaller only on core (65 MB versus 158 MB). |
 | Warm query latency | **dctx wins** on small and medium repos (30 to 260 ms versus 0.6 to 1.4 s; Node startup sets Trail's floor near 0.6 s). On the largest Rust corpus dctx re-reads a 158 MB generation per process (1.45 s, 370 MiB per query) and Trail's `callers` is faster (0.83 s). |
 | Freshness | **Tie on correctness**: both see unstaged, untracked and staged edits and drop reverted symbols. Trail also adds the caller edge to the new function; dctx cannot. dctx's first query after an edit costs a full re-index (core: 7.5 s), and every edit adds a full new generation to the cache (core: 158 MB to 946 MB). |
 | Cache-friendliness | **Trail wins.** Trail text outputs are byte-identical across runs and across unrelated edits. Every dctx answer starts with a header containing the snapshot digest, so any edit anywhere changes byte 21 to 50 of every answer; dctx JSON is never byte-identical twice (`age_s`). |
@@ -5239,7 +5228,7 @@ per extension (`dctx map map FILE --depth 1 --limit 1`).
 - Footprint: 9.2 MB static-ish binary versus 405.6 MB of Node packages; no install scripts.
 - Privacy: no sockets in any run; no repository or home writes in map mode; `.gitignore` honoured even
   without `.git`; gitignored secrets never indexed.
-- Cold index: 2.8 to 69 times faster and 1.6 to 27 times less peak memory on all seven corpora.
+- Cold index on seven corpora: 0.09–6.05 s for dctx and 2.44–94.9 s for Trail-Code. Peak RSS was 8–567 MiB and 181–2,111 MiB, respectively.
 - Warm latency on small and medium repositories: 30 to 260 ms versus 0.6 to 1.4 s.
 - Hard output bounds on every map verb.
 - Finding definitions: rank 1 in 103/140 cases versus 79/140 for `trail ask`.
@@ -5372,7 +5361,7 @@ unnamed: 2}`) so an agent knows the map is incomplete.
 **TC-F14 (info): footprint, privacy and speed are real advantages; keep them.**
 Evidence: 9.2 MB binary versus 405.6 MB; 0 sockets versus a daily update check that ignores
 `DO_NOT_TRACK` and an install-time telemetry event; no repository writes versus `.gitignore`/`.ignore`
-edits on every Trail build; cold index 2.8 to 69 times faster on all seven corpora; definition ranking 103/140
+edits on every Trail build; lower cold-index times on all seven corpora in this October comparison; definition ranking 103/140
 versus 79/140. Recommendation: keep these as non-negotiable acceptance gates while closing TC-F01 to F07.
 
 **TC-F15 (info): do not copy Trail's in-band agent instructions.**
@@ -5562,7 +5551,7 @@ pub qty: u 32 ,
 # end body_tokens = 223 budget = 800 dropped = 0
 What has been measured Each number links to the document it is parsed from.
 grep + read the baseline for choosing a mode; count startup and every agent turn. Choosing how to use dctx 0.13–1.20 s cold index of 6 benchmark corpora, median of 3 runs. run 7 50 language families: 36 full, 8 outline, 6 docs. dctx languages 33/33 text and 33/33 JSON answers byte-identical after unrelated edits. report 0 socket attempts by dctx in every traced benchmark variant. network
-The baseline is grep plus reading files. The measured whole-session benchmark found a -5.01 % change in median total tokens with warm dctx CLI; the 25 % savings rule was not met. On this corpus and model dctx did not save 25 % tokens. The claim is accuracy and bounded context: CLI named more required files at about equal or higher token cost. dctx on its own does not save tokens by default. Savings come from a harness or agent system that reuses byte-identical, prefix-stable context across long sessions over a large body of work, with complete control over every byte. No measured savings figure exists for such a system yet. See the caching philosophy and both recall metrics, median and spread, and limitations .
+On 12 November 2026, the dctx harness-prefix pack (P) reached 70.91% median strict citation recall versus 19.34% for grep plus file reads across 20 questions and three repeats per arm (300 graded answers across five arms). Median list-price token cost per question was $0.195418 versus $0.179670 for grep (+8.8%). The pack missed the prespecified cost threshold, so it did not win the benchmark. Whole-session benchmark and method
 Returned bytes do not measure whole-session cost or establish an advantage over grep plus narrow line-range reads. Choose a mode and count startup context, all model turns and cached input. Evidence and secondary historical tables
 Pause animation: cost is calls times context Replay animation: cost is calls times context Calls cost more than output size. An illustration, not a measured result: every call re-reads the whole conversation so far. What the illustration shows (made-up units, not a benchmark): Each model call reads the whole conversation: the task and prompt, plus every earlier tool result. Agent A uses grep and file reads: eight calls with small results. The conversation grows a little with each call, and each call reads all of it again. Agent B uses dctx: two calls that return larger, bounded pages, then it is done. Adding up what every call re-reads (the shaded areas): 164 units for agent A, 29 for agent B. So the number of calls matters more than the size of one result. The reverse also holds: dctx used without a plan can add calls instead of removing them, so count the calls of your own sessions. Choosing how to use dctx explains how to count them.
 Ways to use it One binary, several modalities. Each has its own setup, cost and limits.
@@ -5604,7 +5593,7 @@ source: https://www.dctx.internet.technology/docs/
 Documentation Documentation
 New here? Choose your path first: dctx is an advanced tool with several ways to use it. Evaluating dctx, or an AI doing so? Read the facts and how to verify them .
 Every document is rendered from the repository at build time, with a Markdown twin next to it ( index.md ), and all of them are in llms-full.txt . The CLI reference is generated from the binary: /cli/ .
-Start Document What it covers Words Updated Source Why dctx Why dctx exists, its philosophy, and why byte-identical output keeps the prompt cache hitting. 1,724 2026-11-13 docs/WHY-DCTX.md README Installation, quick start, map mode, language tiers and the CLI reference. 2,635 2026-11-19 README.md What dctx is The claim and its limits, the advanced-user notice, choose your path, the safe path in ten minutes, responsibilities and the two scopes. 1,689 2026-11-19 docs/START.md Modalities Document What it covers Words Updated Source Choosing how to use dctx Clipboard, grep plus reads, long sessions, huge trees, CLI usage and CI. 1,751 2026-11-19 docs/MODALITIES.md Map mode guide Every map verb with examples, budgets, ids and precision labels. 2,694 2026-11-13 docs/guides/MAP-MODE.md Agent snippet The AGENTS.md section that tells coding agents to ask dctx first. 196 2026-11-09 docs/guides/AGENTS-SNIPPET.md Plugins guide The plugin boundary, capabilities, consent and current limits. 980 2026-11-07 docs/guides/PLUGINS.md Engine Document What it covers Words Updated Source Specification The core belief, the five constraints, the ten RAG defect classes, policy and roadmap. 9,224 2026-11-13 docs/SPEC.md Privacy guarantees Ignore semantics and the full sensitive-file deny list. 2,817 2026-11-13 docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md Language coverage (ADR-018) The three tiers and how a language enters one. 516 2026-11-07 docs/ADR-018-Language-Coverage.md Template contract (DTS v2) DTS source v2 and the compiled plan IR v1. 648 2026-11-07 docs/design/contracts/DTS-v2.md Templating engine (ADR-003) Markers, ahead-of-time compilation, the two rendering passes and the data variables. 508 2026-11-07 docs/ADR-003-Templating-Engine.md Crate map How the Rust workspace is organised. 1,899 2026-11-07 docs/CRATE-MAP.md Reference Document What it covers Words Updated Source CLI exit codes The exit-code contract for map, pack and languages. 943 2026-11-19 docs/CLI-EXIT-CODES.md Trust Document What it covers Words Updated Source Measurement evidence Grep plus file reads first; whole-session scope and secondary historical protocols. 4,180 2026-11-13 docs/BENCHMARK-20261030.md Byte-stability report Protocol, raw answers and limits of the 33/33 measurement. 1,063 2026-11-07 docs/research/stability-20261105/REPORT.md Earlier two-way study October 2026, before call edges: the benchmark that set the roadmap. 7,229 2026-11-13 docs/research/trail-code-2026-10/REPORT.md Releasing How a release is cut and checked. 272 2026-11-19 RELEASING.md Contributing How to propose changes, with a DCO sign-off. 546 2026-11-13 CONTRIBUTING.md Policies Document What it covers Source Security policy How to report a vulnerability privately. SECURITY.md Trademark policy Use of the dctx name and logo. TRADEMARK.md Maintenance What a maintenance agreement covers. MAINTENANCE.md
+Start Document What it covers Words Updated Source Why dctx Why dctx exists, its philosophy, and why byte-identical output keeps the prompt cache hitting. 1,687 2026-11-19 docs/WHY-DCTX.md README Installation, quick start, map mode, language tiers and the CLI reference. 2,497 2026-11-19 README.md What dctx is The claim and its limits, the advanced-user notice, choose your path, the safe path in ten minutes, responsibilities and the two scopes. 1,689 2026-11-19 docs/START.md Modalities Document What it covers Words Updated Source Choosing how to use dctx Clipboard, grep plus reads, long sessions, huge trees, CLI usage and CI. 1,751 2026-11-19 docs/MODALITIES.md Map mode guide Every map verb with examples, budgets, ids and precision labels. 2,694 2026-11-13 docs/guides/MAP-MODE.md Agent snippet The AGENTS.md section that tells coding agents to ask dctx first. 196 2026-11-09 docs/guides/AGENTS-SNIPPET.md Plugins guide The plugin boundary, capabilities, consent and current limits. 980 2026-11-07 docs/guides/PLUGINS.md Engine Document What it covers Words Updated Source Specification The core belief, the five constraints, the ten RAG defect classes, policy and roadmap. 9,228 2026-11-19 docs/SPEC.md Privacy guarantees Ignore semantics and the full sensitive-file deny list. 2,803 2026-11-19 docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md Language coverage (ADR-018) The three tiers and how a language enters one. 516 2026-11-07 docs/ADR-018-Language-Coverage.md Template contract (DTS v2) DTS source v2 and the compiled plan IR v1. 648 2026-11-07 docs/design/contracts/DTS-v2.md Templating engine (ADR-003) Markers, ahead-of-time compilation, the two rendering passes and the data variables. 508 2026-11-07 docs/ADR-003-Templating-Engine.md Crate map How the Rust workspace is organised. 1,899 2026-11-07 docs/CRATE-MAP.md Reference Document What it covers Words Updated Source CLI exit codes The exit-code contract for map, pack and languages. 943 2026-11-19 docs/CLI-EXIT-CODES.md Trust Document What it covers Words Updated Source Measurement evidence Grep plus file reads first; whole-session scope and secondary historical protocols. 4,157 2026-11-19 docs/BENCHMARK-20261030.md Byte-stability report Protocol, raw answers and limits of the 33/33 measurement. 1,063 2026-11-07 docs/research/stability-20261105/REPORT.md Earlier two-way study October 2026, before call edges: the benchmark that set the roadmap. 7,228 2026-11-19 docs/research/trail-code-2026-10/REPORT.md Releasing How a release is cut and checked. 272 2026-11-19 RELEASING.md Contributing How to propose changes, with a DCO sign-off. 546 2026-11-13 CONTRIBUTING.md Policies Document What it covers Source Security policy How to report a vulnerability privately. SECURITY.md Trademark policy Use of the dctx name and logo. TRADEMARK.md Maintenance What a maintenance agreement covers. MAINTENANCE.md
 Crawlers, including AI crawlers, may read this site: see robots.txt and llms.txt .
 
 ---
@@ -5706,7 +5695,7 @@ Modalities CLI available : dctx pack PATH for one structured block (clipboard, f
 Two scopes, one binary System binary: the dctx on PATH belongs to you and your agents, and you upgrade it. Interactive agents call this one. Project binary (Node from npm; Python and Go from CI): a binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Application code and CI call this one; a library never silently falls back to PATH. Same engine, different owner. dctx doctor lists every binary in reach; verify each against SHA256SUMS and its cosign signature.
 The notice This is the canonical wording, from What dctx is ( docs/START.md ) and the README; the home page and Choose your path carry it verbatim: dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, direct CLI commands. Measure before you change anything. Status: Receipts are planned. The safe path uses CLI commands from a shell or an agent's shell tool.
 Responsibilities Items marked planned or pending are not in dctx 1.3.x yet. Level dctx provides You are responsible for System binary Release archives with SHA256SUMS, cache caps; signed binary, doctor, journals and receipts (planned) Choosing roots, the ignore rules (a policy file is planned), keeping one version on PATH Project library Pinned vendored binary, protocol client, same bytes as CLI (Node on npm; Python and Go from CI; Rust facade from Git) Pinning the version, exclusions in the project policy, not re-implementing engine logic ACP agent setup ACP planned Turning off the host's own file tools, picking a profile, session ids and reading receipts (both planned) CI and cache Byte-stable pack, deterministic exit codes; prefix tiers (planned) Pinning the binary, caching the index between runs, treating pack drift as a signal not noise
-Benchmark status Baseline: grep plus reading files . measured 11 November 2026: 20 questions, a private 13-crate Rust workspace, claude-sonnet-5-5, dctx 1.3.0, three repeats per arm. Median total tokens [min, max]: grep plus reads 14,904,014 [14,604,149, 15,622,381]; dctx CLI (warm index) 14,157,974 [11,221,908, 15,613,375]. CLI median tokens were -5.01 % versus grep. On this corpus and model dctx did not save 25 % tokens; the pre-registered rule was not met. Official strict citation recall medians [min, max]: grep 10.10 % [10.10, 20.73]; CLI 14.46 % [8.36, 22.65]. Diagnostic file-level recall medians: 53.77 % and 71.70 %, respectively; diagnostic, not a replacement metric. The claim is accuracy and bounded context, not token savings. dctx on its own does not save tokens by default. Savings depend on a harness or agent system reusing byte-identical, prefix-stable context across long sessions; there is no measured, citable savings figure for such a system yet. One corpus, one model, no significance claim; corpus and raw answers private and cannot be published; dctx 1.3.0 is not current HEAD. Under ~200 files, use grep. Source measured Byte stability: the same query on unchanged code returns the same bytes; 33 of 33 text and JSON answers were byte-identical after unrelated edits (Linux only). Source historical The October and November in-house numbers (run 7: 140 of 140 task questions, cold index and warm latency) measure tool output only, as estimated stdout tokens and raw fact coverage without a model; they are not agent completion rates or session costs. Source hypothesis That a pack template changes model answer quality or cost is a hypothesis pending an A/B test; nothing on this site measures it. Source
+Benchmark status Baseline: grep plus reading files . measured On 12 November 2026, the dctx harness-prefix pack (P) reached 70.91% median strict citation recall versus 19.34% for grep plus file reads across 20 questions and three repeats per arm (300 graded answers across five arms). Median list-price token cost per question was $0.195418 versus $0.179670 for grep (+8.8%). The pack missed the prespecified cost threshold, so it did not win the benchmark. Source measured Byte stability: the same query on unchanged code returns the same bytes; 33 of 33 text and JSON answers were byte-identical after unrelated edits (Linux only). Source historical The October and November in-house numbers (run 7: 140 of 140 task questions, cold index and warm latency) measure tool output only, as estimated stdout tokens and raw fact coverage without a model; they are not agent completion rates or session costs. Source hypothesis The whole-session benchmark compares tool and harness configurations. Isolating the effect of a pack template requires a separate A/B test. Source
 Measured values, as the documents state them today: Parsed from the documents at build time; nothing is retyped. Value What it measures Source 33/33 text, 33/33 JSON map answers byte-identical after unrelated edits and over five runs, three Linux corpora docs/research/stability-20261105/REPORT.md 0 socket attempts by dctx in every traced benchmark variant docs/BENCHMARK-20261030.md 0.13-1.20 s cold index of 6 benchmark corpora, median of 3 runs docs/research/bench-3way-20261030/results/run7-53f8b6b/aggregate.json 50 language families: 36 full, 8 outline, 6 docs dctx languages
 Removed in 1.2.0 These existed before 1.2.0 and no longer work. A transcript that uses them describes an old version. No longer exists Use instead dctx PATH (the implicit snapshot command, for example dctx . ) dctx pack PATH the top-level snapshot flags -d / --diff , -t / --tree and -r / --reset dctx pack PATH with its filters the project rule files .legacyignore and .dctxomitcontent .gitignore and .dctxignore dctx cache gc --legacy and its export-selection flags dctx cache gc
 How to verify a claim Claim How to check it Test suite cargo test --workspace --locked --exclude dctx-desktop --exclude dctx-desktop-api CI Every push and pull request runs the suite on Linux, macOS (ARM64 and x64) and Windows, on stable Rust and the minimum supported version 1.91. No network calls scripts/release-check.sh --quick target/release/dctx-cli Byte stability python3 docs/research/stability-20261105/verify.py Historical benchmark docs/research/bench-3way-20261030/run-3way.sh target/release/dctx-cli Every output on this site Recorded from the real binary by tools/website/capture.py; tools/website/check.py re-records and fails on drift.
@@ -5721,7 +5710,7 @@ Document: `docs/WHY-DCTX.md` in [Documents](#documents). [Read the page](https:/
 
 Rendered text and page details not already verbatim in the document pack:
 
-All documents Start What dctx is Choose your path Safe path in ten minutes Why dctx README and quick start Modalities Choosing how to use dctx CLI and agents: map mode Agent snippet Libraries CI and caching Plugins guide Scopes Two scopes, one binary Who is responsible for what Engine Specification Privacy guarantees Cache and limits Language coverage (ADR-018) Template contract (DTS v2) Templating engine (ADR-003) Crate map Reference CLI reference CLI exit codes Languages Templates Examples Trust Benchmarks Measurement evidence Byte-stability report Earlier two-way study Philosophy Security policy Releasing Contributing Trademark Maintenance For AI evaluators Facts and verification llms.txt Why dctx exists View source · Edit on GitHub · Markdown · docs/WHY-DCTX.md · 1,724 words · updated 13 November 2026 On this page The problem What dctx does The philosophy Why byte-identical output matters What dctx is not Where to go next Sources in this repository
+All documents Start What dctx is Choose your path Safe path in ten minutes Why dctx README and quick start Modalities Choosing how to use dctx CLI and agents: map mode Agent snippet Libraries CI and caching Plugins guide Scopes Two scopes, one binary Who is responsible for what Engine Specification Privacy guarantees Cache and limits Language coverage (ADR-018) Template contract (DTS v2) Templating engine (ADR-003) Crate map Reference CLI reference CLI exit codes Languages Templates Examples Trust Benchmarks Measurement evidence Byte-stability report Earlier two-way study Philosophy Security policy Releasing Contributing Trademark Maintenance For AI evaluators Facts and verification llms.txt Why dctx exists View source · Edit on GitHub · Markdown · docs/WHY-DCTX.md · 1,687 words · updated 19 November 2026 On this page The problem What dctx does The philosophy Why byte-identical output matters What dctx is not Where to go next Sources in this repository
 The problem #
 An AI coding assistant only knows what is in its context window : the text sent to the model with your request. It cannot see the rest of your project.
 Each of these costs you. Models read text as tokens (small chunks of text, roughly a short word or part of one), and providers bill per token. The model reads every token before it answers, so more tokens also means more waiting. And answers get worse as irrelevant text piles up. The README sums it up: every token in front of a model is paid for three times, to read it, again when a cache is missed, and again in attention.
@@ -5757,7 +5746,7 @@ The evidence #
 The stability report measured map answers on 6 November 2026, on three pinned local corpora with 11 kinds of question each. 33 of 33 text answers and 33 of 33 JSON answers were byte-identical after an unrelated edit elsewhere in the project, and all were identical over five separate runs.
 The report states its limits too. It measures dctx's answers, not a provider's cache hits. It ran on Linux only. The layered design that would keep context prefix-stable across a whole conversation ( SPEC §12.1 ) is still a target.
 Savings belong to the system #
-11 November benchmark , the dctx CLI arm used 5.01 % fewer
+Whole-session benchmark and method .
 An illustration of money and time #
 Made-up numbers, not any provider's prices. Assume:
 Other reasons determinism matters #
@@ -5773,7 +5762,7 @@ Limits still matter. Plain dctx pack sends the selected project without an outpu
 Where to go next #
 README : install, quick start, map mode.
 Specification : rules, metrics, roadmap.
-Measurement evidence : grep plus file reads first; other-tool numbers are secondary historical notes.
+Whole-session benchmark and historical tool-output measurements .
 Stability report : protocol, raw answers and limits.
 Map mode guide : every verb and option.
 Sources in this repository #
@@ -5794,7 +5783,7 @@ Document: `README.md` in [Documents](#documents). [Read the page](https://www.dc
 
 Rendered text and page details not already verbatim in the document pack:
 
-All documents Start What dctx is Choose your path Safe path in ten minutes Why dctx README and quick start Modalities Choosing how to use dctx CLI and agents: map mode Agent snippet Libraries CI and caching Plugins guide Scopes Two scopes, one binary Who is responsible for what Engine Specification Privacy guarantees Cache and limits Language coverage (ADR-018) Template contract (DTS v2) Templating engine (ADR-003) Crate map Reference CLI reference CLI exit codes Languages Templates Examples Trust Benchmarks Measurement evidence Byte-stability report Earlier two-way study Philosophy Security policy Releasing Contributing Trademark Maintenance For AI evaluators Facts and verification llms.txt dctx View source · Edit on GitHub · Markdown · README.md · 2,635 words · updated 19 November 2026 On this page Project status Installation Which mode? Measured, in the open Start and choose your path The core belief: prompt-processing efficiency Quick Start From source Use as a library Versioned pack JSON CLI Reference Security & Privacy Open source and maintenance Where it comes from Contributing
+All documents Start What dctx is Choose your path Safe path in ten minutes Why dctx README and quick start Modalities Choosing how to use dctx CLI and agents: map mode Agent snippet Libraries CI and caching Plugins guide Scopes Two scopes, one binary Who is responsible for what Engine Specification Privacy guarantees Cache and limits Language coverage (ADR-018) Template contract (DTS v2) Templating engine (ADR-003) Crate map Reference CLI reference CLI exit codes Languages Templates Examples Trust Benchmarks Measurement evidence Byte-stability report Earlier two-way study Philosophy Security policy Releasing Contributing Trademark Maintenance For AI evaluators Facts and verification llms.txt dctx View source · Edit on GitHub · Markdown · README.md · 2,497 words · updated 19 November 2026 On this page Project status Installation Which mode? Measured, in the open Start and choose your path The core belief: prompt-processing efficiency Quick Start From source Use as a library Versioned pack JSON CLI Reference Security & Privacy Open source and maintenance Where it comes from Contributing
 dctx turns any folder into the smallest correct context for a task, offline, with byte-stable output that prompt caches can reuse. dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, direct CLI commands. Measure before you change anything.
 Run dctx agent-setup --format agents (or --format claude ) for short rules to paste into AGENTS.md or CLAUDE.md .
 Project status #
@@ -5832,10 +5821,7 @@ CI and prompt caching : pin inputs and measure byte stability and provider cache
 Desktop : build the Tauri 0.11 preview; the GPUI rebuild is planned.
 Measured, in the open #
 The baseline is grep plus reading files .
-The 11 November whole-session benchmark measured 20 questions on a private 13-crate Rust workspace with claude-sonnet-5-5 , dctx 1.3.0 and three repeats per arm. Median total tokens [min, max]: grep plus reads 14,904,014 [14,604,149, 15,622,381]; dctx CLI (warm index) 14,157,974 [11,221,908, 15,613,375].
-On this corpus and model dctx did not save 25 % tokens. CLI median tokens were -5.01 % versus grep; the pre-registered success rule was not met. The claim is accuracy and bounded context , not token savings: CLI named more required files at about equal or higher token cost.
-dctx on its own does not save tokens by default. Savings come from a harness or agent system that reuses byte-identical, prefix-stable context across long sessions over a large body of work. It behaves like an advanced caching mechanism, with complete control over every byte of context. There is no measured, citable savings figure for such a system yet. Why this matters .
-Official strict citation recall medians [min, max]: grep 10.10 % [10.10, 20.73], CLI 14.46 % [8.36, 22.65]. Diagnostic file-level recall medians: 53.77 % and 71.70 %, respectively; this does not replace strict recall. One corpus, one model, three repeats; no significance claim. Corpus and raw answers are private and cannot be published; dctx 1.3.0 is not current HEAD. Under ~200 files, use grep.
+Whole-session benchmark and method . One corpus and one model. Under ~200 files, use grep.
 Choosing how to use dctx covers scoping and CLI usage. Measurement evidence describes what was measured (tool-output bytes and estimated tokens); other-tool protocols are retained only as secondary historical notes.
 Start and choose your path #
 What dctx is , four user paths ,
@@ -6367,7 +6353,7 @@ Document: `docs/SPEC.md` in [Documents](#documents). [Read the page](https://www
 
 Rendered text and page details not already verbatim in the document pack:
 
-All documents Start What dctx is Choose your path Safe path in ten minutes Why dctx README and quick start Modalities Choosing how to use dctx CLI and agents: map mode Agent snippet Libraries CI and caching Plugins guide Scopes Two scopes, one binary Who is responsible for what Engine Specification Privacy guarantees Cache and limits Language coverage (ADR-018) Template contract (DTS v2) Templating engine (ADR-003) Crate map Reference CLI reference CLI exit codes Languages Templates Examples Trust Benchmarks Measurement evidence Byte-stability report Earlier two-way study Philosophy Security policy Releasing Contributing Trademark Maintenance For AI evaluators Facts and verification llms.txt The dctx Context Management Specification View source · Edit on GitHub · Markdown · docs/SPEC.md · 9,224 words · updated 13 November 2026 On this page Contents Part I — Principles 1. Purpose and the workflows served 2. The core belief: prompt-processing efficiency 3. Zero RAG defects 4. Privacy and authority Part II — Model 5. Identity 6. The graph: nodes, ids, outcomes 7. Edges, confidence and provenance 8. Precision labels 9. Freshness Part III — Answers 10. The verbs 11. Page formats and byte stability 12. Tiers, deltas, deduplication and compression levels 13. Token estimation Part IV — Policy 14. One language: DTS v2 15. The seven-layer policy lattice 16. Organization bundles, signing and enrollment 17. Explain and receipts Part V — Index 18. Segments, manifests and the per-file fact store 19. Freshness check and incremental rebuild 20. Cold build 21. Ranking Part VI — Extension 22. Core, surface or plugin: the decision procedure 23. Plugin protocol and its v1.x extensions 24. Surfaces 25. Blast radius (target) 26. Learnings (target) Part VII — Assurance 27. Dependencies and build profiles 28. Conformance suite 29. Formal models 30. Versioning and compatibility Part VIII — Delivery 31. Roadmap and acceptance gates 32. Non-goals Appendix A — Lineage Appendix B — Comparison with Trail-Code Appendix C — Reserved names Appendix D — Document map
+All documents Start What dctx is Choose your path Safe path in ten minutes Why dctx README and quick start Modalities Choosing how to use dctx CLI and agents: map mode Agent snippet Libraries CI and caching Plugins guide Scopes Two scopes, one binary Who is responsible for what Engine Specification Privacy guarantees Cache and limits Language coverage (ADR-018) Template contract (DTS v2) Templating engine (ADR-003) Crate map Reference CLI reference CLI exit codes Languages Templates Examples Trust Benchmarks Measurement evidence Byte-stability report Earlier two-way study Philosophy Security policy Releasing Contributing Trademark Maintenance For AI evaluators Facts and verification llms.txt The dctx Context Management Specification View source · Edit on GitHub · Markdown · docs/SPEC.md · 9,228 words · updated 19 November 2026 On this page Contents Part I — Principles 1. Purpose and the workflows served 2. The core belief: prompt-processing efficiency 3. Zero RAG defects 4. Privacy and authority Part II — Model 5. Identity 6. The graph: nodes, ids, outcomes 7. Edges, confidence and provenance 8. Precision labels 9. Freshness Part III — Answers 10. The verbs 11. Page formats and byte stability 12. Tiers, deltas, deduplication and compression levels 13. Token estimation Part IV — Policy 14. One language: DTS v2 15. The seven-layer policy lattice 16. Organization bundles, signing and enrollment 17. Explain and receipts Part V — Index 18. Segments, manifests and the per-file fact store 19. Freshness check and incremental rebuild 20. Cold build 21. Ranking Part VI — Extension 22. Core, surface or plugin: the decision procedure 23. Plugin protocol and its v1.x extensions 24. Surfaces 25. Blast radius (target) 26. Learnings (target) Part VII — Assurance 27. Dependencies and build profiles 28. Conformance suite 29. Formal models 30. Versioning and compatibility Part VIII — Delivery 31. Roadmap and acceptance gates 32. Non-goals Appendix A — Lineage Appendix B — Comparison with Trail-Code Appendix C — Reserved names Appendix D — Document map
 docs/research/trail-code-2026-10 (dctx 17dff0b , Trail-Code 0.23.1)
 This document specifies dctx , a context engine for AI-assisted software development.
 It is normative where it uses MUST , MUST NOT , SHOULD and MAY (RFC 2119).
@@ -6476,6 +6462,7 @@ prefix caching (PPE-3). Status: target; today both are in every default answer.
 Shipped behaviour (v1): the modes above are a target. The CLI always takes a strict
 snapshot, so freshness.state is always "verified" ; there is no stale flag (R3, §3).
 10. The verbs #
+Run dctx map --help for the shipped syntax. The table includes planned verbs.
 Outline a node or file ( --depth 1..3 ) — landed; the project root, p: , k: and directory targets as a paged overview — target, P1 (today refused or gone , TC-F05; the only overview is the unbounded legacy tree)
 Search names and concepts ( --kind , --in )
 Relations ( --edge , --dir in\|out\|both , --depth 1..4 )
@@ -6604,6 +6591,7 @@ Parallel parsing with a bounded parser thread pool ( std::thread::scope , ≤ av
 file ( extraction.max_facts_per_file , default 10,000); excess configuration and JSON
 leaves collapse into one partial module node.
 Gate: cold build ≤5 s and peak RSS ≤150 MiB on the pinned corpus; persistent bytes
+October tool-output measurements give the historical
 21. Ranking #
 22. Core, surface or plugin: the decision procedure #
 13 lexer crates covering 15 language variants (Rust, JS, TS, TSX, Markdown, Python, Go, Java, C/C++, JSON/TOML/YAML, C#, Kotlin, Ruby, PHP, Swift); syn adapter
@@ -6746,7 +6734,7 @@ Document: `docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md` in [Document
 
 Rendered text and page details not already verbatim in the document pack:
 
-All documents Start What dctx is Choose your path Safe path in ten minutes Why dctx README and quick start Modalities Choosing how to use dctx CLI and agents: map mode Agent snippet Libraries CI and caching Plugins guide Scopes Two scopes, one binary Who is responsible for what Engine Specification Privacy guarantees Cache and limits Language coverage (ADR-018) Template contract (DTS v2) Templating engine (ADR-003) Crate map Reference CLI reference CLI exit codes Languages Templates Examples Trust Benchmarks Measurement evidence Byte-stability report Earlier two-way study Philosophy Security policy Releasing Contributing Trademark Maintenance For AI evaluators Facts and verification llms.txt ADR-014: Privacy Guarantees & Ignore Semantics View source · Edit on GitHub · Markdown · docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md · 2,817 words · updated 13 November 2026 On this page Context and Problem Statement Decision Drivers Considered Options Decision Outcome Rule System Definition Semantic Definitions Privacy Guarantees (Formal) Performance Characteristics Implementation (COMPLETED) Consequences Compliance & Validation Related Decisions References Implementation Work Orders Test Coverage Summary
+All documents Start What dctx is Choose your path Safe path in ten minutes Why dctx README and quick start Modalities Choosing how to use dctx CLI and agents: map mode Agent snippet Libraries CI and caching Plugins guide Scopes Two scopes, one binary Who is responsible for what Engine Specification Privacy guarantees Cache and limits Language coverage (ADR-018) Template contract (DTS v2) Templating engine (ADR-003) Crate map Reference CLI reference CLI exit codes Languages Templates Examples Trust Benchmarks Measurement evidence Byte-stability report Earlier two-way study Philosophy Security policy Releasing Contributing Trademark Maintenance For AI evaluators Facts and verification llms.txt ADR-014: Privacy Guarantees & Ignore Semantics View source · Edit on GitHub · Markdown · docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md · 2,803 words · updated 19 November 2026 On this page Context and Problem Statement Decision Drivers Considered Options Decision Outcome Rule System Definition Semantic Definitions Privacy Guarantees (Formal) Illustrative performance scenarios Implementation (COMPLETED) Consequences Compliance & Validation Related Decisions References Implementation Work Orders Test Coverage Summary
 Status: current — architectural principle retained; historical examples describe their original release.
 For shipped behavior and limitations, see the README , testing guide and specification . Earlier “formally proven” wording refers to historical tests; tests and defense layers do not constitute a formal proof of all implementations.
 Date: 2026-02-02
@@ -6858,7 +6846,7 @@ Verification: [yes] PROVEN
 - [yes] Unit test: test_collect_file_paths_skips_ignored_subtree - entire subtrees skipped
 Guarantee 2: Ignored Folders Skip Recursion #
 Assertion: When a folder matches ignore rules, walk_recursive() uses continue (walker.rs:146) to skip the item entirely. The function is never called recursively on that folder's children.
-- Performance benchmark: 500MB node_modules/ should take < 100ms to skip
+- Performance target: skip a 500 MB node_modules/ folder in under 100 ms.
 Guarantee 3: Debug Mode Does Not Compromise Privacy [yes] #
 Assertion: When --debug-ignored is active, the system recurses into ignored folders and shows them in the tree, but the files are marked with is_ignored: true flag. The populate_file_contents_parallel() function respects this flag and never calls fs::read() on ignored files.
 Verification: [yes] PROVEN
@@ -6872,13 +6860,12 @@ Assertion: Template variables are classified by I/O requirement:
 For ignored/omitted files, content-requiring variables are never resolved due to !node.is_ignored guard preventing content block rendering.
 Verification: [yes] PROVEN
 - [yes] Test: test_template_variable_safety_for_ignored_files with 6 comprehensive assertions (WO-054)
+Illustrative performance scenarios #
 Ignored Folder Skip (Primary Optimization) #
 Scenario: Project with 500MB node_modules/ (50,000 files)
 fs::read() Calls
-Performance Gain: 50-100x faster for large ignored folders.
 Omit Pattern Performance #
 Scenario: Lockfiles in monorepo (20 files, 10MB each)
-Performance Gain: 20x faster, 100x less memory.
 Phase 1: Data Structure Changes [yes] (WO-050) #
 Completed: 2026-02-02
 [yes] Added is_ignored: bool to DirContextTreeNode struct (datatypes.rs:15)
@@ -6920,7 +6907,7 @@ Completed: 2026-02-02
 - docs/guides/DEVELOPER-GUIDE.md - Template Variable Safety section
 Positive #
 [yes] Provable Privacy: Users can verify ignored files are never read
-[yes] Performance Boost: 50-100x faster for projects with large ignored folders
+[yes] Less filesystem work: Ignored folders can be skipped before enumeration
 [yes] Semantic Clarity: IGNORE vs OMIT distinction is clear and enforced
 [yes] Debug Transparency: Users can verify ignore rules without compromising privacy
 [yes] Template Safety: Custom templates cannot accidentally leak ignored file contents
@@ -7208,10 +7195,10 @@ Document: `docs/BENCHMARK-20261030.md` in [Documents](#documents). [Read the pag
 
 Rendered text and page details not already verbatim in the document pack:
 
-All documents Start What dctx is Choose your path Safe path in ten minutes Why dctx README and quick start Modalities Choosing how to use dctx CLI and agents: map mode Agent snippet Libraries CI and caching Plugins guide Scopes Two scopes, one binary Who is responsible for what Engine Specification Privacy guarantees Cache and limits Language coverage (ADR-018) Template contract (DTS v2) Templating engine (ADR-003) Crate map Reference CLI reference CLI exit codes Languages Templates Examples Trust Benchmarks Measurement evidence Byte-stability report Earlier two-way study Philosophy Security policy Releasing Contributing Trademark Maintenance For AI evaluators Facts and verification llms.txt dctx measurement: grep plus file reads first View source · Edit on GitHub · Markdown · docs/BENCHMARK-20261030.md · 4,180 words · updated 13 November 2026 On this page Grep plus file reads Secondary historical evidence: other-tool protocols Historical three-way summary Run 7: 140 of 140 (main 53f8b6b, 31 October, 06:20 UTC) Run 6 (main 82ec474, 31 October, 02:04 UTC) Latest: run 5 and task-level re-run 3 (main a906884, 30 October, 16:39 and 17:05 UTC) Task-level questions: the October protocol, re-run on 30 October Run 4: callers recall wave (main de06a3d, 30 October, 09:17 UTC) Run 3: all outline families with call edges, .env leak closed (main 9c578fa, 30 October, 08:02 UTC) Run 2: call edges for the outline tier (main 99da638, 30 October, 07:24 UTC) Tables (run 1) Method Not claimed Changes included in the October baseline Next Independent benchmark, 31.10.2026, run uncapped on the Linux benchmark host
+All documents Start What dctx is Choose your path Safe path in ten minutes Why dctx README and quick start Modalities Choosing how to use dctx CLI and agents: map mode Agent snippet Libraries CI and caching Plugins guide Scopes Two scopes, one binary Who is responsible for what Engine Specification Privacy guarantees Cache and limits Language coverage (ADR-018) Template contract (DTS v2) Templating engine (ADR-003) Crate map Reference CLI reference CLI exit codes Languages Templates Examples Trust Benchmarks Measurement evidence Byte-stability report Earlier two-way study Philosophy Security policy Releasing Contributing Trademark Maintenance For AI evaluators Facts and verification llms.txt dctx measurement: grep plus file reads first View source · Edit on GitHub · Markdown · docs/BENCHMARK-20261030.md · 4,157 words · updated 19 November 2026 On this page Grep plus file reads Secondary historical evidence: other-tool protocols Historical three-way summary Run 7: 140 of 140 (main 53f8b6b, 31 October, 06:20 UTC) Run 6 (main 82ec474, 31 October, 02:04 UTC) Latest: run 5 and task-level re-run 3 (main a906884, 30 October, 16:39 and 17:05 UTC) Task-level questions: the October protocol, re-run on 30 October Run 4: callers recall wave (main de06a3d, 30 October, 09:17 UTC) Run 3: all outline families with call edges, .env leak closed (main 9c578fa, 30 October, 08:02 UTC) Run 2: call edges for the outline tier (main 99da638, 30 October, 07:24 UTC) Tables (run 1) Method Not claimed Changes included in the October baseline Next Independent benchmark, 31.10.2026, run uncapped on the Linux benchmark host
 The baseline for choosing dctx is grep plus reading files . Count the whole
 Grep plus file reads #
-The 11 November whole-session benchmark measured grep plus reads against dctx CLI: CLI median total tokens -5.01 %; the pre-registered 25 % savings rule was not met.
+Whole-session benchmark and method .
 Secondary historical evidence: other-tool protocols #
 "tokens" in these tables mean estimated tool stdout tokens , calculated as
 ceil(stdout_bytes / 3.5) , never whole-session tokens. Task scores are fact
@@ -7314,7 +7301,7 @@ Query mapping: dctx map find / map neighbors --dir in --edge calls / map skeleto
 Trail-Code ask / callers / skeleton / map . graphify query / affected --relation calls /
 explain <file> / GRAPH_REPORT.md .
 Not claimed #
-Whole-session cost or task-level answer quality from these historical protocols. Historical fact scores describe raw tool outputs only; the 11 November study measures whole sessions with a frozen model.
+Whole-session cost or task-level answer quality from these historical protocols. Historical fact scores describe raw tool outputs only; the 12 November study measures whole sessions with a fixed model.
 Changes included in the October baseline #
 Call and import edges ( 19e90a1 ), byte-stable answers ( ce18608 ), .env omission in pack ( 6d4deec ),
 outline symbols for 25 formats and plain-text sections ( 9c61ac9 , e0821e3 , 839bd45 , a32dad3 ),
@@ -7410,7 +7397,7 @@ Document: `docs/research/trail-code-2026-10/REPORT.md` in [Documents](#documents
 
 Rendered text and page details not already verbatim in the document pack:
 
-All documents Start What dctx is Choose your path Safe path in ten minutes Why dctx README and quick start Modalities Choosing how to use dctx CLI and agents: map mode Agent snippet Libraries CI and caching Plugins guide Scopes Two scopes, one binary Who is responsible for what Engine Specification Privacy guarantees Cache and limits Language coverage (ADR-018) Template contract (DTS v2) Templating engine (ADR-003) Crate map Reference CLI reference CLI exit codes Languages Templates Examples Trust Benchmarks Measurement evidence Byte-stability report Earlier two-way study Philosophy Security policy Releasing Contributing Trademark Maintenance For AI evaluators Facts and verification llms.txt dctx vs Trail-Code: head-to-head benchmark (October 2026) View source · Edit on GitHub · Markdown · docs/research/trail-code-2026-10/REPORT.md · 7,229 words · updated 13 November 2026 On this page 1. Summary 2. Methodology 3. Footprint 4. Indexing (section 2 of the brief) 5. Query latency and output size (section 3 and 4) 6. Freshness and incremental updates (section 2) 7. Call-graph and definition accuracy (section 5) 8. Task-level information efficiency (section 6) 9. Cache-friendliness (section 7) 10. Robustness and privacy: adversarial corpus (section 10) 11. Network and telemetry audit 12. Files written by trail init (flask, -y) 13. Bounding (section 8) 14. Language coverage (section 9) 15. Where dctx wins / where Trail-Code wins / ties 16. Findings 17. Not tested, and deviations 18. Reproducing
+All documents Start What dctx is Choose your path Safe path in ten minutes Why dctx README and quick start Modalities Choosing how to use dctx CLI and agents: map mode Agent snippet Libraries CI and caching Plugins guide Scopes Two scopes, one binary Who is responsible for what Engine Specification Privacy guarantees Cache and limits Language coverage (ADR-018) Template contract (DTS v2) Templating engine (ADR-003) Crate map Reference CLI reference CLI exit codes Languages Templates Examples Trust Benchmarks Measurement evidence Byte-stability report Earlier two-way study Philosophy Security policy Releasing Contributing Trademark Maintenance For AI evaluators Facts and verification llms.txt dctx vs Trail-Code: head-to-head benchmark (October 2026) View source · Edit on GitHub · Markdown · docs/research/trail-code-2026-10/REPORT.md · 7,228 words · updated 19 November 2026 On this page 1. Summary 2. Methodology 3. Footprint 4. Indexing (section 2 of the brief) 5. Query latency and output size (section 3 and 4) 6. Freshness and incremental updates (section 2) 7. Call-graph and definition accuracy (section 5) 8. Task-level information efficiency (section 6) 9. Cache-friendliness (section 7) 10. Robustness and privacy: adversarial corpus (section 10) 11. Network and telemetry audit 12. Files written by trail init (flask, -y) 13. Bounding (section 8) 14. Language coverage (section 9) 15. Where dctx wins / where Trail-Code wins / ties 16. Findings 17. Not tested, and deviations 18. Reproducing
 and one synthetic adversarial corpus. Every number below comes from data/raw/*.jsonl and can be
 regenerated with scripts/ . Where Trail-Code is better, this report says so plainly.
 dctx at commit 17dff0b454c24f43848abad1c88ea982e02731f7 (branch internal ), dctx-cli v0.25.0 ,
@@ -7420,7 +7407,7 @@ package.json is also 0.23.1), CLI trail .
 1. Summary #
 Trail-Code wins decisively. Trail precision 0.94 to 1.00, recall 0.10 to 0.96 per corpus. dctx returns no call or import edges at all (recall 0 on 140 targets): the CLI facade only emits contains edges.
 dctx wins. One 9.2 MB binary (libc, libm, libgcc_s) versus 405.6 MB of node_modules (8,567 files, 50 package versions) plus a Node runtime.
-dctx wins on all seven corpora: 0.09 to 6.05 s versus 2.44 to 94.9 s (2.8 to 69 times faster); peak RSS 8 to 567 MiB versus 181 to 2,111 MiB. Trail's index is smaller only on core (65 MB versus 158 MB).
+dctx wins on all seven corpora: 0.09 to 6.05 s versus 2.44 to 94.9 s; peak RSS 8 to 567 MiB versus 181 to 2,111 MiB. Trail's index is smaller only on core (65 MB versus 158 MB).
 dctx wins on small and medium repos (30 to 260 ms versus 0.6 to 1.4 s; Node startup sets Trail's floor near 0.6 s). On the largest Rust corpus dctx re-reads a 158 MB generation per process (1.45 s, 370 MiB per query) and Trail's callers is faster (0.83 s).
 Tie on correctness : both see unstaged, untracked and staged edits and drop reverted symbols. Trail also adds the caller edge to the new function; dctx cannot. dctx's first query after an edit costs a full re-index (core: 7.5 s), and every edit adds a full new generation to the cache (core: 158 MB to 946 MB).
 Trail wins. Trail text outputs are byte-identical across runs and across unrelated edits. Every dctx answer starts with a header containing the snapshot digest, so any edit anywhere changes byte 21 to 50 of every answer; dctx JSON is never byte-identical twice ( age_s ).
@@ -8370,13 +8357,45 @@ source: https://www.dctx.internet.technology/benchmarks/
 Evidence Benchmarks
 Compare dctx with grep plus file reads, then measure the whole agent session. Startup instructions, tool definitions and extra turns can outweigh smaller answers.
 Grep plus file reads
-Measured whole-session results, 11 November 2026. Full report and method
-Measured on 11.11.2026. NOT STABLE : dctx remains an advanced tool.
-On this corpus and model dctx did not save 25 % tokens. The pre-registered
-success rule was not met : CLI median total tokens were -5.01 % versus grep.
-The claim supported here is accuracy and bounded context , not token savings.
+BENCHMARK-20261111.md
+Round two verdict #
+On 12 November 2026, the dctx harness-prefix pack (P) reached 70.91% median strict citation recall versus 19.34% for grep plus file reads across 20 questions and three repeats per arm (300 graded answers across five arms). Median list-price token cost per question was $0.195418 versus $0.179670 for grep (+8.8%). The pack missed the prespecified cost threshold, so it did not win the benchmark.
 Method #
-Corpus: a private 13-crate Rust workspace; it is not public.
+One pinned private Rust workspace, dctx 1.3.1 ( a6259da ), and claude-sonnet-5-5 via Claude Code 2.1.319.
+Five arms ran the same 10 trace and 10 impact questions three times each. All 15 runs completed and all 300 answers were graded.
+Strict citation recall counts exact repo-relative path and line references, with a tolerance of ±3 lines. Each run pools matched and required references across its answers.
+Both pack arms supplied verified repo-relative paths and original line numbers alongside source excerpts. P retained grep plus file reads, and P2 also exposed the dctx CLI.
+Whole-session token counts include uncached input, cache creation and reads, and output. The cost column prices each token category separately at the 12 November list rates.
+Arm
+Median strict recall [min, max]
+Median total tokens per 20 questions
+Median list-price USD per question
+A: grep plus file reads
+19.34% [13.07%, 23.17%]
+15,427,072
+$0.179670
+B: dctx via Bash (warm index)
+13.41% [8.01%, 25.61%]
+14,950,317
+$0.176401
+C: dctx via MCP (historical)
+13.07% [8.19%, 18.64%]
+14,287,157
+$0.158096
+P: dctx harness-prefix pack
+70.91% [63.76%, 73.87%]
+12,378,679
+$0.195418
+P2: dctx harness-prefix pack variant
+72.13% [62.02%, 75.78%]
+13,046,490
+$0.207701
+P had to match or exceed A's median recall and cost at least 15% less per question. It met the recall requirement and missed the cost requirement. P2 was descriptive and cost about 15% more than A. The +8.8% for P refers to priced token usage. Cache reads and uncached input carry different prices, so the aggregate token count alone cannot determine cost.
+The pack results apply to this harness, corpus and model. The Bash and MCP arms had lower median recall than grep in this round. Three repeats per arm limit generalization, and the private corpus and answers prevent independent reproduction from the public repository. Under ~200 files, use grep.
+Earlier CLI pilot #
+On 11 November 2026, the two-arm CLI pilot used 20 questions and three repeats per arm (120 answers). The warm dctx CLI arm reached 14.46% median strict citation recall versus 10.10% for grep. Median total tokens were 14,157,974 versus 14,904,014 (−5.01%). The pilot missed its separate prespecified threshold of a 25% reduction in total tokens with recall at least as high as grep.
+Method #
+Corpus: a private 13-crate Rust workspace.
 Questions: 20, covering code location, call sites and multi-hop traces.
 Model: claude-sonnet-5-5 via Claude CLI.
 dctx: 1.3.0 ( 156e1bb ), not current HEAD.
@@ -8418,7 +8437,6 @@ Wall time (s)
 Turns ( num_turns )
 172 [159, 175]
 130 [129, 137]
-B versus A median total tokens: -5.01 % .
 Accuracy: both metrics #
 The official metric is strict citation recall: exact repo-relative path and line,
 with a tolerance of +/-3 lines, against 574 required line references per run.
@@ -8433,34 +8451,11 @@ Official strict citation recall, median [min, max]
 Diagnostic file-level recall, median
 53.77 %
 71.70 %
-A grader audit found no grader defect. Low strict recall comes from answers
+A grader audit found no defect. Low strict recall comes from answers
 citing shorthand paths such as store.rs:313 , and from line-level granularity:
 10 trace questions hold 82 % of required lines. File-level recall is a
 diagnostic, not a replacement metric. No file-level spread is supplied.
-Where savings would come from #
-dctx on its own does not save tokens by default. Token savings come from
-systems that use dctx: a harness or agent system built around its cache-hit
-philosophy, reusing byte-identical, prefix-stable context across long sessions
-over a large body of work. In that setting it behaves like any sufficiently
-advanced caching mechanism, with one difference: you have complete control
-over every byte of the context. The system must arrange that reuse; merely
-exposing dctx tools does not do it. There is no measured, citable savings figure
-for such a system yet. See the philosophy .
-Verdict and limitations #
-The pre-registered rule required B to save at least 25 % median total tokens
-and match or exceed A's recall. NOT MET on tokens (-5.01 %) , even though
-B's median official recall exceeded A's. On this corpus and model dctx did not
-save 25 % tokens.
-B named more of the required files than grep at about equal token cost.
-This supports an accuracy and bounded context claim, not a whole-session token-savings claim. The bounded context behavior is described in
-Choosing how to use dctx ; these results do not establish a
-general accuracy advantage.
-Limitations: one corpus, one model, three repeats, and no significance claim.
-The corpus and raw answers are private and cannot be published; these aggregate
-results cannot be independently reproduced from the public repository alone.
-dctx 1.3.0 is not current HEAD. The guidance Under ~200 files, use grep stays.
-The earlier measurement evidence preserves the historical
-tool-output protocols separately from this whole-session study.
+The October tool-output measurements used a separate protocol.
 Secondary historical evidence
 All other-tool tables below preserve the October research record. Their tokens are tool stdout estimates, not whole-session cost; scores measure gold facts in raw output without an agent model. The dctx team designed the 70-question protocol. The independent run selected repositories by seed and used language-server gold.
 Historical run 7: task-level protocol
@@ -8482,7 +8477,7 @@ Byte stability
 Build 0495f5f , 6 November 2026, three pinned corpora, 11 query shapes each. REPORT.md · full report Measurement Text JSON Answers identical after unrelated edit 33/33 33/33 Answers identical over five separate invocations 33/33 33/33 Baseline -> post-edit common-prefix ratio, minimum / mean 1.0 / 1.0 1.0 / 1.0 Consecutive same-request transitions, five per case 165 165 Same-request M7, minimum / mean 1.0 / 1.0 1.0 / 1.0 Consecutive changing-question transitions 195 195 Changing-question M7, minimum / median / mean 0.007795889 / 0.107142857 / 0.214830257 0.008776458 / 0.067594433 / 0.182446794 Changing-question M7, total prefix bytes / total current bytes 0.061846978 0.079892615
 Not claimed
 These exclusions apply to the historical tool-output protocols below the whole-session summary above.
-Whole-session cost or task-level answer quality from these historical protocols. Historical fact scores describe raw tool outputs only; the 11 November study measures whole sessions with a frozen model.
+Whole-session cost or task-level answer quality from these historical protocols. Historical fact scores describe raw tool outputs only; the 12 November study measures whole sessions with a fixed model.
 Anything about graphify's LLM semantic graph, or Trail-Code's learnings and LSP edges.
 SWE-bench scores or agent-run numbers from these historical tool-output protocols.
 Equal language depth. dctx's 25 new formats are outline tier: symbols, not call edges.
@@ -8509,22 +8504,22 @@ source: https://www.dctx.internet.technology/news/
 
 News News
 Releases, measurements and product decisions. Also an Atom feed .
-4 November 2026 Release dctx 1.1: three more languages, a prefix-stable pack, and a measured lead. Perl, Fortran and Verilog join map mode; dctx pack drops timestamps so prompt caches hit; the three-way benchmark and the byte-stability measurement are public. 21 October 2026 Announcement dctx Desktop is now free. Forever. For individuals, teams and companies. No trial, no seat count, no expiry. 21 October 2026 Engineering Our specification, and a benchmark that does not flatter us. The dctx Context Management Specification, and an isolated comparison with Trail-Code: wins, losses and what comes next.
+4 November 2026 Release dctx 1.1: three more languages and a prefix-stable pack. Perl, Fortran and Verilog join map mode; dctx pack drops timestamps so prompt caches hit; the three-way benchmark and the byte-stability measurement are public. 21 October 2026 Announcement dctx Desktop is now free. Forever. For individuals, teams and companies. No trial, no seat count, no expiry. 21 October 2026 Engineering Our specification, and a benchmark that does not flatter us. The dctx Context Management Specification, and an isolated comparison with Trail-Code: wins, losses and what comes next.
 
 ---
 url: https://www.dctx.internet.technology/news/dctx-1-1/
-title: dctx 1.1: three more languages, a prefix-stable pack, and a measured lead.
+title: dctx 1.1: three more languages and a prefix-stable pack.
 source: https://www.dctx.internet.technology/news/dctx-1-1/
 ---
 
 Release
-dctx 1.1: three more languages, a prefix-stable pack, and a measured lead. Perl, Fortran and Verilog join map mode; dctx pack drops timestamps so prompt caches hit; the three-way benchmark and the byte-stability measurement are public.
+dctx 1.1: three more languages and a prefix-stable pack. Perl, Fortran and Verilog join map mode; dctx pack drops timestamps so prompt caches hit; the three-way benchmark and the byte-stability measurement are public.
 4 November 2026 The dctx project
 dctx 1.3.1 was released on 4 November 2026. It folds in the 1.0.1 line and follows the first v1 release of 31 October.
 What is new
 Perl, Fortran and Verilog/SystemVerilog join the full tier, with symbols and lexical call edges labelled guess . dctx now covers 50 language families: 36 full, 8 outline and 6 documentation formats.
 A prefix-stable dctx pack . Tree lines carry the file id only, with no modification time and no size, so a bare touch leaves the page byte-identical and an edit keeps everything before the edited file as a shared prefix. --tree-stamps=on brings back the 1.0.0 lines.
-Faster id lookup , record and entry caps checked during the scan, and a closed stdout pipe that exits cleanly.
+Indexed id lookup , record and entry caps checked during the scan, and a closed stdout pipe that exits cleanly.
 Historical output-only measurements
 These other-tool results are retained as release history. Tokens here estimate tool stdout, not whole-session cost. The current baseline is grep plus file reads ; choose a mode and count startup context and all model turns.
 On our own 70-question protocol, run on 31 October against Trail-Code 0.28.0 and graphify 0.9.97 in code-only mode, dctx scored 140 of 140 points with 29,340 estimated tokens; Trail-Code scored 122 with 88,923 and graphify 96 with 197,203. Cold indexing of the six corpora took dctx 0.13–1.20 s.
@@ -8568,7 +8563,7 @@ source: https://www.dctx.internet.technology/news/specification-and-benchmark/
 Engineering
 Our specification, and a benchmark that does not flatter us. The dctx Context Management Specification, and an isolated comparison with Trail-Code: wins, losses and what comes next.
 21 October 2026 The dctx project
-Historical post. These results describe dctx as of October 2026, before call edges and byte-stable answers. For current measurements, read dctx 1.1 .
+Historical post. These results describe dctx as of October 2026, before call edges and byte-stable answers. For the whole-session results, see the grep comparison .
 An engineering organisation should be able to check every claim a tool makes. So we wrote down exactly what dctx is meant to be, and then measured where it stands today.
 The specification
 The dctx Context Management Specification turns our core belief, prompt-processing efficiency, into five testable constraints: every answer is bounded, deterministic, prefix-stable, non-redundant and honest about its precision and freshness. It names ten ways chunk retrieval fails and the mechanism that rules out each one, defines a seven-layer organisation policy in which every layer can only narrow the one above it, and lays out the roadmap with an acceptance gate for every step. Each item is marked as available, under contract or a target.
@@ -8582,7 +8577,7 @@ Bounds: map answers never exceeded their token budget.
 Network: dctx opened no sockets and wrote nothing into the repositories.
 Where Trail-Code led
 Call graphs: dctx's map command did not yet expose call or import edges.
-Answers to agent questions: 122 of 140 points against 69 of 140, with fewer tokens.
+Across 70 questions, Trail-Code’s tool output scored 122 of 140 points using 88,691 estimated tokens. dctx scored 69 of 140 using 500,005 estimated tokens.
 Stability under edits: Trail-Code kept most answers byte-identical after an unrelated change; dctx did not, which costs prompt-cache hits.
 Incremental refresh after an edit.
 What happens next
@@ -8674,7 +8669,7 @@ source: https://www.dctx.internet.technology/search/
 Search Search
 Titles, headings and text of every page, searched in your browser. Nothing is sent anywhere.
 Search the site
-Search needs JavaScript. Every page of the site: dctx / dctx is the open-source context engine for AI-assisted development: deterministic, bounded code context for agents and chat, offline, with no telemetry. Apache-2.0. Documentation /docs/ Specification, guides, benchmark reports and project policies for dctx, rendered from the repository. Choose your path /start/ dctx is an advanced tool with several ways to use it. Pick the path that matches your work: one giant folder, many small projects, a library in your own tool, or a team rollout. One giant folder /start/giant-folder/ You work inside one very large tree, for example a 200 GB monorepo, data or document folder. Setup, first command, what to expect and the pitfall to avoid. Many smaller projects /start/many-projects/ You move between many small and medium repositories during the day. Setup, first command, what to expect and the pitfall to avoid. Agent builder embedding a library /start/library/ You build an agent, editor or tool and want dctx inside it. Setup, first command, what to expect and the pitfall to avoid. Team or organisation admin /start/team/ You roll dctx out to a team or a fleet of machines. Setup, first command, what to expect and the pitfall to avoid. For AI evaluators /for-ai-evaluators/ What dctx is and is not, its version, modalities, benchmark status, removed commands and how to verify every claim. Why dctx /why/ Why dctx exists, its philosophy, and why byte-identical output keeps the prompt cache hitting. README /docs/readme/ Installation, quick start, map mode, language tiers and the CLI reference. What dctx is /docs/start/ The claim and its limits, the advanced-user notice, choose your path, the safe path in ten minutes, responsibilities and the two scopes. Choosing how to use dctx /docs/modalities/ Clipboard, grep plus reads, long sessions, huge trees, CLI usage and CI. Map mode guide /docs/map-mode/ Every map verb with examples, budgets, ids and precision labels. Agent snippet /docs/agents/ The AGENTS.md section that tells coding agents to ask dctx first. Plugins guide /docs/plugins/ The plugin boundary, capabilities, consent and current limits. Specification /docs/spec/ The core belief, the five constraints, the ten RAG defect classes, policy and roadmap. Privacy guarantees /docs/privacy/ Ignore semantics and the full sensitive-file deny list. Language coverage (ADR-018) /docs/language-coverage/ The three tiers and how a language enters one. Template contract (DTS v2) /docs/templates-contract/ DTS source v2 and the compiled plan IR v1. Templating engine (ADR-003) /docs/templating/ Markers, ahead-of-time compilation, the two rendering passes and the data variables. Crate map /docs/crate-map/ How the Rust workspace is organised. CLI exit codes /docs/exit-codes/ The exit-code contract for map, pack and languages. Measurement evidence /docs/benchmark/ Grep plus file reads first; whole-session scope and secondary historical protocols. Byte-stability report /docs/stability/ Protocol, raw answers and limits of the 33/33 measurement. Earlier two-way study /docs/benchmark-oct/ October 2026, before call edges: the benchmark that set the roadmap. Releasing /docs/releasing/ How a release is cut and checked. Contributing /docs/contributing/ How to propose changes, with a DCO sign-off. CLI reference /cli/ Every dctx command, flag, environment variable, and exit code, captured from the dctx binary. Languages /languages/ The 50 language families dctx indexes, by tier: full, outline and docs. Examples /examples/ Every dctx command on one sample project, with its exact output, exit code, bytes and estimated tokens. Templates /templates/ The two built-in dctx templates, their source, their output on the same project and what changes between them. Playground /playground/ Run the real dctx binary on a sample project or on your own text files, in the browser. Benchmarks /benchmarks/ Grep plus file reads, whole-session accounting, byte stability and secondary historical measurements. Changelog /changelog/ Every dctx release, from dircontxt 1.0.0 in C to dctx in Rust, with known issues. News /news/ Releases, measurements and product decisions from the dctx project. dctx 1.1: three more languages, a prefix-stable pack, and a measured lead. /news/dctx-1-1/ Perl, Fortran and Verilog join map mode; dctx pack drops timestamps so prompt caches hit; the three-way benchmark and the byte-stability measurement are public. dctx Desktop is now free. Forever. /news/desktop-free-forever/ For individuals, teams and companies. No trial, no seat count, no expiry. Our specification, and a benchmark that does not flatter us. /news/specification-and-benchmark/ The dctx Context Management Specification, and an isolated comparison with Trail-Code: wins, losses and what comes next. Security policy /security/ How to report a vulnerability privately, and what happens next. Trademark policy /trademark/ What the dctx name and logo may be used for, and what forks may call themselves. Maintenance /maintenance/ dctx is free under Apache-2.0. Maintenance agreements fund security response, long-term support and priority work. How dctx works /how-it-works/ Five short animations: two scopes of one binary, calls times context, prefix stability, the giant folder and the safe path for new users.
+Search needs JavaScript. Every page of the site: dctx / dctx is the open-source context engine for AI-assisted development: deterministic, bounded code context for agents and chat, offline, with no telemetry. Apache-2.0. Documentation /docs/ Specification, guides, benchmark reports and project policies for dctx, rendered from the repository. Choose your path /start/ dctx is an advanced tool with several ways to use it. Pick the path that matches your work: one giant folder, many small projects, a library in your own tool, or a team rollout. One giant folder /start/giant-folder/ You work inside one very large tree, for example a 200 GB monorepo, data or document folder. Setup, first command, what to expect and the pitfall to avoid. Many smaller projects /start/many-projects/ You move between many small and medium repositories during the day. Setup, first command, what to expect and the pitfall to avoid. Agent builder embedding a library /start/library/ You build an agent, editor or tool and want dctx inside it. Setup, first command, what to expect and the pitfall to avoid. Team or organisation admin /start/team/ You roll dctx out to a team or a fleet of machines. Setup, first command, what to expect and the pitfall to avoid. For AI evaluators /for-ai-evaluators/ What dctx is and is not, its version, modalities, benchmark status, removed commands and how to verify every claim. Why dctx /why/ Why dctx exists, its philosophy, and why byte-identical output keeps the prompt cache hitting. README /docs/readme/ Installation, quick start, map mode, language tiers and the CLI reference. What dctx is /docs/start/ The claim and its limits, the advanced-user notice, choose your path, the safe path in ten minutes, responsibilities and the two scopes. Choosing how to use dctx /docs/modalities/ Clipboard, grep plus reads, long sessions, huge trees, CLI usage and CI. Map mode guide /docs/map-mode/ Every map verb with examples, budgets, ids and precision labels. Agent snippet /docs/agents/ The AGENTS.md section that tells coding agents to ask dctx first. Plugins guide /docs/plugins/ The plugin boundary, capabilities, consent and current limits. Specification /docs/spec/ The core belief, the five constraints, the ten RAG defect classes, policy and roadmap. Privacy guarantees /docs/privacy/ Ignore semantics and the full sensitive-file deny list. Language coverage (ADR-018) /docs/language-coverage/ The three tiers and how a language enters one. Template contract (DTS v2) /docs/templates-contract/ DTS source v2 and the compiled plan IR v1. Templating engine (ADR-003) /docs/templating/ Markers, ahead-of-time compilation, the two rendering passes and the data variables. Crate map /docs/crate-map/ How the Rust workspace is organised. CLI exit codes /docs/exit-codes/ The exit-code contract for map, pack and languages. Measurement evidence /docs/benchmark/ Grep plus file reads first; whole-session scope and secondary historical protocols. Byte-stability report /docs/stability/ Protocol, raw answers and limits of the 33/33 measurement. Earlier two-way study /docs/benchmark-oct/ October 2026, before call edges: the benchmark that set the roadmap. Releasing /docs/releasing/ How a release is cut and checked. Contributing /docs/contributing/ How to propose changes, with a DCO sign-off. CLI reference /cli/ Every dctx command, flag, environment variable, and exit code, captured from the dctx binary. Languages /languages/ The 50 language families dctx indexes, by tier: full, outline and docs. Examples /examples/ Every dctx command on one sample project, with its exact output, exit code, bytes and estimated tokens. Templates /templates/ The two built-in dctx templates, their source, their output on the same project and what changes between them. Playground /playground/ Run the real dctx binary on a sample project or on your own text files, in the browser. Benchmarks /benchmarks/ Grep plus file reads, whole-session accounting, byte stability and secondary historical measurements. Changelog /changelog/ Every dctx release, from dircontxt 1.0.0 in C to dctx in Rust, with known issues. News /news/ Releases, measurements and product decisions from the dctx project. dctx 1.1: three more languages and a prefix-stable pack. /news/dctx-1-1/ Perl, Fortran and Verilog join map mode; dctx pack drops timestamps so prompt caches hit; the three-way benchmark and the byte-stability measurement are public. dctx Desktop is now free. Forever. /news/desktop-free-forever/ For individuals, teams and companies. No trial, no seat count, no expiry. Our specification, and a benchmark that does not flatter us. /news/specification-and-benchmark/ The dctx Context Management Specification, and an isolated comparison with Trail-Code: wins, losses and what comes next. Security policy /security/ How to report a vulnerability privately, and what happens next. Trademark policy /trademark/ What the dctx name and logo may be used for, and what forks may call themselves. Maintenance /maintenance/ dctx is free under Apache-2.0. Maintenance agreements fund security response, long-term support and priority work. How dctx works /how-it-works/ Five short animations: two scopes of one binary, calls times context, prefix stability, the giant folder and the safe path for new users.
 
 ---
 url: https://www.dctx.internet.technology/playground/offline/
