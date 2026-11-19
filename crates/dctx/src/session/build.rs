@@ -49,6 +49,7 @@ pub struct SessionBuilder {
     place: Option<String>,
     view: Option<String>,
     cache_root: Option<(PathBuf, u64)>,
+    defer_cache_touch: bool,
     auto_clean: AutoCleanConfig,
 }
 
@@ -70,6 +71,7 @@ impl SessionBuilder {
             place: None,
             view: None,
             cache_root: None,
+            defer_cache_touch: false,
             auto_clean: AutoCleanConfig::default(),
         }
     }
@@ -168,6 +170,15 @@ impl SessionBuilder {
     )]
     pub fn cache_root(mut self, path: impl Into<PathBuf>, root_id: u64) -> Self {
         self.cache_root = Some((path.into(), root_id));
+        self
+    }
+
+    /// For hosts opening a session to take a snapshot immediately. Record the
+    /// initial root use with the snapshot's cache transaction. A session that
+    /// never reaches a cache transaction leaves its use time alone.
+    #[must_use]
+    pub fn defer_cache_touch_until_snapshot(mut self) -> Self {
+        self.defer_cache_touch = true;
         self
     }
 
@@ -286,7 +297,12 @@ impl SessionBuilder {
             .cache
             .unwrap_or_else(|| Box::new(MemoryCache::new(u64::MAX)));
         let now_ms = clock.now().millis();
-        let managed = open_managed(self.cache_root, self.auto_clean, now_ms)?;
+        let managed = open_managed(
+            self.cache_root,
+            self.auto_clean,
+            now_ms,
+            self.defer_cache_touch,
+        )?;
         Ok(Session {
             source: self.source,
             store,
@@ -319,6 +335,7 @@ fn open_managed(
     root: Option<(PathBuf, u64)>,
     policy: AutoCleanConfig,
     now_ms: u64,
+    defer_touch: bool,
 ) -> Result<Option<PersistedCache>, DctxError> {
     let Some((path, root_id)) = root else {
         return Ok(None);
@@ -326,5 +343,5 @@ fn open_managed(
     if !cfg!(feature = "cache") {
         return Err(DctxError::unsupported("cache"));
     }
-    PersistedCache::open(&path, root_id, policy, now_ms).map(Some)
+    PersistedCache::open(&path, root_id, policy, now_ms, defer_touch).map(Some)
 }

@@ -144,6 +144,7 @@ pub(crate) struct PersistedCache {
     reclaimed: u64,
     /// One bound for persisted object admission and reads. Never below an admitted object.
     object_read_cap: u64,
+    touch_pending: bool,
 }
 
 static SESSION_IDS: AtomicU64 = AtomicU64::new(1);
@@ -153,12 +154,14 @@ fn next_session() -> SessionId {
 }
 
 impl PersistedCache {
-    /// Loads `path`, runs auto-clean once when `config` is enabled, then registers `root_id`.
+    /// Loads `path`, runs enabled auto-clean, and registers and touches the root.
+    /// Snapshot sessions can defer the write to their next cache transaction.
     pub(crate) fn open(
         path: &Path,
         root_id: u64,
         config: AutoCleanConfig,
         now_ms: u64,
+        defer_touch: bool,
     ) -> Result<Self, DctxError> {
         if !path.is_absolute()
             || path
@@ -203,8 +206,11 @@ impl PersistedCache {
             session: next_session(),
             reclaimed,
             object_read_cap: dctx_adapter_cache::HARD_CAP_BYTES,
+            touch_pending: defer_touch,
         };
-        cache.register_and_touch(now_ms)?;
+        if !defer_touch {
+            cache.register_and_touch(now_ms)?;
+        }
         Ok(cache)
     }
 
@@ -247,14 +253,13 @@ impl PersistedCache {
             .ledger
             .update_reclaiming(Quota::product_default(), &self.objects, |life| {
                 life.observe(clock_sample(now_ms));
-                if !life.status().roots.iter().any(|root| root.id == root_id) {
-                    life.register_root(root_id).map_err(map_cache)?;
-                }
+                cache_bind::ensure_root(life, root_id)?;
                 life.touch(root_id).map_err(map_cache)?;
                 Ok::<_, DctxError>(((), true))
             })
             .map_err(cache_bind::update_error)?;
         self.life = life;
+        self.touch_pending = false;
         Ok(())
     }
 }
@@ -327,7 +332,8 @@ mod persisted_tests {
 
     #[test]
     fn relative_and_raised_caps_are_refused_and_two_opens_share_the_root() {
-        let relative = PersistedCache::open(Path::new("cache"), 1, AutoCleanConfig::default(), 0);
+        let relative =
+            PersistedCache::open(Path::new("cache"), 1, AutoCleanConfig::default(), 0, false);
         assert_eq!(
             relative.map(|_| ()).expect_err("relative").code(),
             ErrorCode::InvalidRequest
@@ -337,18 +343,20 @@ mod persisted_tests {
         let dir = tempfile::tempdir().expect("temp");
         let root = dir.path().join("cache");
         std::fs::create_dir(&root).expect("dir");
-        let raised = PersistedCache::open(&root, 4, raised, 0);
+        let raised = PersistedCache::open(&root, 4, raised, 0, false);
         assert_eq!(
             raised.map(|_| ()).expect_err("cap").code(),
             ErrorCode::InvalidRequest
         );
 
-        let first = PersistedCache::open(&root, 4, AutoCleanConfig::default(), 5).expect("first");
+        let first =
+            PersistedCache::open(&root, 4, AutoCleanConfig::default(), 5, false).expect("first");
         assert_eq!(first.ledger_view().roots, 1);
         assert_eq!(first.ledger_view().last_auto_clean_ms, Some(5));
         assert_eq!(first.reclaimed(), 0);
         drop(first);
-        let second = PersistedCache::open(&root, 4, AutoCleanConfig::default(), 5).expect("second");
+        let second =
+            PersistedCache::open(&root, 4, AutoCleanConfig::default(), 5, false).expect("second");
         assert_eq!(second.ledger_view().roots, 1);
         assert_eq!(second.ledger_view().last_auto_clean_ms, Some(5));
         assert_eq!(second.reclaimed(), 0);
@@ -357,7 +365,8 @@ mod persisted_tests {
             enabled: false,
             ..AutoCleanConfig::default()
         };
-        let third = PersistedCache::open(&root, 4, disabled, 5 + 86_400_000).expect("disabled");
+        let third =
+            PersistedCache::open(&root, 4, disabled, 5 + 86_400_000, false).expect("disabled");
         assert_eq!(third.ledger_view().last_auto_clean_ms, Some(5));
         assert_eq!(third.reclaimed(), 0);
     }
