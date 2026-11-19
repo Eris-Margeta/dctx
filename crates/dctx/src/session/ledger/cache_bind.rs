@@ -80,6 +80,9 @@ impl PersistedCache {
                         .saturating_sub(pack_committed)
                         .saturating_sub(pack_reserved);
                     working.observe(clock_sample(now_ms));
+                    if self.touch_pending {
+                        working.touch(root_id).map_err(map_cache)?;
+                    }
                     // Reclaimable generations go before the request is refused, oldest first, across roots.
                     working.evict_to_fit(budget.saturating_sub(need));
                     let available =
@@ -114,6 +117,7 @@ impl PersistedCache {
         match outcome {
             Ok(((lease, alive), life)) => {
                 self.life = life;
+                self.touch_pending = false;
                 Ok(Some(SnapshotLease {
                     root: self.root_path.clone(),
                     lease,
@@ -277,10 +281,16 @@ impl PersistedCache {
                     return Ok((None, false));
                 }
                 let alive = self.ledger.hold_lease(lease).map_err(map_cache)?;
+                if self.touch_pending {
+                    working.touch(root_id).map_err(map_cache)?;
+                }
                 Ok((Some((lease, alive)), true))
             })
             .map_err(update_error)?;
         self.life = life;
+        if lease.is_some() {
+            self.touch_pending = false;
+        }
         Ok(lease.map(|(lease, alive)| SnapshotLease {
             root: self.root_path.clone(),
             lease,
@@ -381,8 +391,8 @@ fn read_object(root: &Path, raw: u64, limit: u64) -> Result<Option<Vec<u8>>, Dct
     Ok(Some(bytes))
 }
 
-fn ensure_root(life: &mut Lifecycle, root: RootId) -> Result<(), DctxError> {
-    if life.status().roots.iter().any(|item| item.id == root) {
+pub(super) fn ensure_root(life: &mut Lifecycle, root: RootId) -> Result<(), DctxError> {
+    if life.last_use(root).is_some() {
         return Ok(());
     }
     life.register_root(root).map_err(map_cache)

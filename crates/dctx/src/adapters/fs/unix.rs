@@ -50,9 +50,9 @@ pub(super) fn open_root(path: &Path) -> Result<File, CoreError> {
 }
 
 /// Opens a regular file under `parent`. The entry's type is checked without opening it first, so a device node,
-/// FIFO or socket is refused before `open` can reach a driver; the handle is checked again in case the entry was
-/// swapped between the two calls.
-fn open_content(parent: &File, name: &str) -> Result<File, CoreError> {
+/// FIFO or socket is refused before `open` can reach a driver. After opening, one handle stat checks
+/// both type and size, including when the name was swapped after the first check.
+fn open_content(parent: &File, name: &str, max_bytes: u64) -> Result<File, CoreError> {
     let listed = statat(parent, name, AtFlags::SYMLINK_NOFOLLOW).map_err(error)?;
     if FileType::from_raw_mode(listed.st_mode) != FileType::RegularFile {
         return Err(CoreError::PolicyDenied);
@@ -60,10 +60,21 @@ fn open_content(parent: &File, name: &str) -> Result<File, CoreError> {
     let file = openat(parent, name, CONTENT, Mode::empty())
         .map(File::from)
         .map_err(error)?;
-    if !file.metadata().map_err(map_io)?.is_file() {
+    let metadata = file.metadata().map_err(map_io)?;
+    if !metadata.is_file() {
         return Err(CoreError::PolicyDenied);
     }
+    if metadata.len() > max_bytes {
+        return Err(file_bytes_limit(max_bytes));
+    }
     Ok(file)
+}
+
+fn file_bytes_limit(limit: u64) -> CoreError {
+    CoreError::ResourceLimit {
+        resource: Resource::FileBytes,
+        limit,
+    }
 }
 
 impl FsSource {
@@ -88,11 +99,6 @@ impl FsSource {
             self.directory(&RelativePath::parse(parent)?)?,
             name.to_string(),
         ))
-    }
-
-    fn content(&self, path: &RelativePath) -> Result<File, CoreError> {
-        let (parent, name) = self.parent(path)?;
-        open_content(&parent, &name)
     }
 
     fn source_stat(&self, path: &RelativePath) -> Result<rustix::fs::Stat, CoreError> {
@@ -265,20 +271,14 @@ impl Source for FsSource {
     }
 
     fn read(&self, grant: &ReadGrant, max_bytes: u64) -> Result<Vec<u8>, CoreError> {
-        let file = self.content(grant.path())?;
-        let too_large = || CoreError::ResourceLimit {
-            resource: Resource::FileBytes,
-            limit: max_bytes,
-        };
-        if file.metadata().map_err(map_io)?.len() > max_bytes {
-            return Err(too_large());
-        }
+        let (parent, name) = self.parent(grant.path())?;
+        let file = open_content(&parent, &name, max_bytes)?;
         let mut bytes = Vec::new();
         file.take(max_bytes.saturating_add(1))
             .read_to_end(&mut bytes)
             .map_err(map_io)?;
         if bytes.len() as u64 > max_bytes {
-            return Err(too_large());
+            return Err(file_bytes_limit(max_bytes));
         }
         Ok(bytes)
     }
@@ -395,7 +395,7 @@ mod tests {
         fs::rename(root.path().join("sub"), root.path().join("old")).unwrap();
         symlink(outside.path(), root.path().join("sub")).unwrap();
         let mut bytes = Vec::new();
-        open_content(&parent, "a.rs")
+        open_content(&parent, "a.rs", 64)
             .unwrap()
             .read_to_end(&mut bytes)
             .unwrap();
@@ -506,7 +506,7 @@ mod tests {
         // A character device reached through a pinned directory handle is refused by its listed type.
         let dev = File::from(openat(rustix::fs::CWD, "/dev", DIRECTORY, Mode::empty()).unwrap());
         assert_eq!(
-            open_content(&dev, "null").unwrap_err(),
+            open_content(&dev, "null", 64).unwrap_err(),
             CoreError::PolicyDenied
         );
         assert!(CONTENT.contains(OFlags::NOCTTY));

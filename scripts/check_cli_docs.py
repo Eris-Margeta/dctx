@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
-"""Check documented dctx verbs/flags using only the selected binary's help.
+"""Check dctx exit codes, CLI reference coverage, and example verbs/flags.
 
 Scans README.md, docs/*.md and website/**/*.md or *.html from the repository
 root (the current directory). Markdown examples must be fenced; HTML examples
@@ -25,6 +25,8 @@ FLAG = re.compile(r"(?<![\w-])(--[a-zA-Z][\w-]*|-[a-zA-Z])\b")
 COMMAND = re.compile(r"^\s*(?:\$\s+|(?:Usage|Example):\s*)?dctx\s+(.+)$")
 HELP_COMMAND = re.compile(r"^\s*(?:Usage:\s*)?dctx\s+(.+)$")
 FENCE = re.compile(r"^\s*(?:>\s*)?(`{3,}|~{3,})(.*)$")
+EXIT_DOC = Path("docs/CLI-EXIT-CODES.md")
+EXIT_SOURCE = Path("crates/dctx-cli/src/exit.rs")
 
 
 class CodeBlocks(HTMLParser):
@@ -180,6 +182,63 @@ def usage_paths(syntax):
     return paths
 
 
+def command_declarations(lines):
+    """Read command paths from usage synopses and command listings."""
+    section = None
+    for line in lines:
+        stripped = line.strip()
+        if stripped.lower().startswith("usage:"):
+            section = "usage"
+        elif re.fullmatch(r"(?:Subcommands|Commands):", stripped, re.I):
+            section = "listing"
+            continue
+        elif not stripped:
+            section = None
+        if section == "usage":
+            match = HELP_COMMAND.match(line)
+            if match:
+                for path in usage_paths(match[1]):
+                    yield path, match[1]
+        elif section == "listing":
+            entry = re.fullmatch(r"\s{2,}([a-z][a-z0-9-]*)(?:[ \t]{2,}\S.*)?\s*", line)
+            if entry:
+                yield (entry[1],), ""
+            else:
+                section = None
+
+
+def check_exit_codes(root):
+    # The CLI declares the public taxonomy as constants in the exit module.
+    source = (root / EXIT_SOURCE).read_text(encoding="utf-8")
+    defined = {int(code) for code in re.findall(
+        r"^pub const \w+: i32\s*=\s*(-?\d+)\s*;", source, re.M)}
+    doc = (root / EXIT_DOC).read_text(encoding="utf-8")
+    documented = {int(code) for code in re.findall(r"^\s*\|\s*`?(-?\d+)`?\s*\|", doc, re.M)}
+    if not defined or not documented:
+        raise ValueError(f"no exit codes found in {EXIT_SOURCE if not defined else EXIT_DOC}")
+    for code in sorted(documented - defined):
+        print(f"{EXIT_DOC}: exit code {code} is not defined in {EXIT_SOURCE}")
+    for code in sorted(defined - documented):
+        print(f"{EXIT_DOC}: missing exit code {code} from {EXIT_SOURCE}")
+    print(f"Checked {len(defined)} CLI exit codes against {len(documented)} documented codes.")
+    return len(defined ^ documented)
+
+
+def check_reference(root, paths, expected):
+    documented = set()
+    for path in paths:
+        if not path.is_relative_to(root / "website/cli"):
+            continue
+        for block in blocks(path.read_text(encoding="utf-8"), is_html(path)):
+            for command, _ in command_declarations(line for _, line in block):
+                documented.add(command)
+    missing = expected - documented
+    for command in sorted(missing):
+        print(f"website/cli/: missing subcommand: dctx {' '.join(command)}")
+    print(f"Checked {len(expected)} subcommands against website/cli/.")
+    return len(missing)
+
+
 @dataclass
 class HelpNode:
     children: set = field(default_factory=set)
@@ -192,6 +251,7 @@ class Help:
         self.nodes = {(): HelpNode()}
         self.loaded = set()
         self.unavailable = set()
+        self.root_commands = set()
         self.load(())
         if not self.nodes[()].children:
             raise ValueError("binary help contains no recognizable commands")
@@ -218,28 +278,16 @@ class Help:
             # Keep that authoritative synopsis when a descendant has no help.
             self.unavailable.add(path)
             return
-        listing = False
-        usage = False
-        for line in page.splitlines():
-            stripped = line.strip()
-            if stripped.lower().startswith("usage:"):
-                usage = True
-            elif not stripped:
-                usage = False
-            match = HELP_COMMAND.match(line) if usage else None
-            if match:
-                for command in usage_paths(match[1]):
-                    self.node(command).options.update(flags(match[1]))
-            if re.fullmatch(r"(?:Subcommands|Commands):", stripped, re.I):
-                listing = True
-            elif listing and stripped:
-                entry = re.match(r"^\s{2,}([a-z][a-z0-9-]*)\s{2,}", line)
-                if entry:
-                    self.node(path + (entry[1],))
-                else:
-                    listing = False
+        lines = page.splitlines()
+        for command, syntax in command_declarations(lines):
+            if not syntax:
+                command = path + command
+            self.node(command).options.update(flags(syntax))
+            if not path and command:
+                self.root_commands.add(command)
+        for line in lines:
             # Option declarations apply to this page, not every synopsis on it.
-            if re.match(r"^\s+-[a-zA-Z-]", line) or stripped.startswith("`--"):
+            if re.match(r"^\s+-[a-zA-Z-]", line) or line.strip().startswith("`--"):
                 self.node(path).options.update(flags(line))
 
     def check(self, text):
@@ -299,23 +347,34 @@ def sources(root):
     return [path for path in paths if path.is_file()]
 
 
+def is_html(path):
+    return path.suffix.lower() in {".html", ".htm"}
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", type=Path, help="dctx binary whose help is authoritative")
     args = parser.parse_args(argv)
     root = Path.cwd()
-    binary = args.binary
-    if binary is None:
-        binary = next((root / name for name in ("target/debug/dctx", "target/release/dctx")
-                       if (root / name).is_file()), None)
-        if binary is None:
-            print("NOTE: no target/debug/dctx or target/release/dctx; build dctx or pass --binary PATH")
-            return 0
     try:
+        exit_drift = check_exit_codes(root)
+        debug = root / "target/debug/dctx"
+        reference_binary = args.binary or (debug if debug.is_file() else None)
+        if reference_binary is None:
+            print("SKIP: website/cli/ coverage requires target/debug/dctx or --binary PATH")
+        release = root / "target/release/dctx"
+        binary = reference_binary or (release if release.is_file() else None)
+        if binary is None:
+            print("SKIP: CLI examples require a dctx binary")
+            return int(bool(exit_drift))
         help_pages = Help(binary)
+        paths = sources(root)
+        reference_drift = 0
+        if reference_binary is not None:
+            reference_drift = check_reference(root, paths, help_pages.root_commands)
         count, drift = 0, 0
-        for path in sources(root):
-            for block in blocks(path.read_text(encoding="utf-8"), path.suffix.lower() in {".html", ".htm"}):
+        for path in paths:
+            for block in blocks(path.read_text(encoding="utf-8"), is_html(path)):
                 for command, locations in commands(block):
                     count += 1
                     for kind, value in help_pages.check(command):
@@ -324,7 +383,7 @@ def main(argv=None):
                         print(f"{path.relative_to(root)}:{number}: unknown {kind}: {value}")
                         drift += 1
         print(f"Checked {count} commands; {drift} drift issue(s).")
-        return int(bool(drift))
+        return int(bool(exit_drift + reference_drift + drift))
     except (OSError, ValueError, subprocess.TimeoutExpired) as error:
         print(f"ERROR: {error}", file=sys.stderr)
         return 2

@@ -132,6 +132,85 @@ class CheckVersionsTests(unittest.TestCase):
         self.write("CHANGELOG.md", "# Changelog\n```md\n## [0.0.0]\n```\n## 1.3.1 - today\n## 0.1.0\n")
         self.assert_status(0)
 
+    def preflight_fixture(self):
+        self.write("tools/release/toolchain.env", "DCTX_CI_RUST=1.100.0\nDCTX_RELEASE_RUST=1.99.0\n")
+        self.write("rust-toolchain.toml", '[toolchain]\nchannel = "1.100.0"\n')
+        self.write("packages/python/pyproject.toml", '[project]\nversion = "1.3.1"\n')
+        self.write(".github/workflows/ci.yml", f"""
+jobs:
+  build:
+    steps:
+      - uses: actions/checkout@{'a' * 40}
+      - uses: ./local
+      - run: rustup toolchain install "$DCTX_CI_RUST" --profile minimal
+""")
+
+    def test_preflight_passes_with_ci_pin_and_unreleased_heading(self):
+        self.preflight_fixture()
+        self.write("CHANGELOG.md", "## [Unreleased]\n\n## [1.3.1]\n")
+        self.write("Cargo.toml", '[workspace]\nmembers = ["crates/*"]\n')
+        self.write("crates/cli/Cargo.toml", '[package]\nversion = "1.3.1"\n')
+        result = self.assert_status(0, "--preflight")
+        self.assertEqual(result.stdout.splitlines(), [
+            "PASS versions", "PASS changelog", "PASS rust-toolchain", "PASS action-pins",
+        ])
+
+    def test_preflight_reports_cargo_npm_and_python_version_drift(self):
+        self.preflight_fixture()
+        self.write("Cargo.toml", '[workspace.package]\nversion = "1.3.0"\n')
+        self.write("packages/client/package.json", '{"version":"1.3.0"}')
+        self.write("packages/python/pyproject.toml", '[project]\nversion = "1.3.0"\n')
+        failure = self.assert_status(1, "--preflight").stdout.splitlines()[0]
+        self.assertTrue(failure.startswith("FAIL versions:"))
+        for source in ("Cargo.toml:workspace.package.version", "packages/client/package.json",
+                       "packages/python/pyproject.toml"):
+            self.assertIn(source, failure)
+
+    def test_preflight_rejects_fenced_changelog_entry(self):
+        self.preflight_fixture()
+        self.write("CHANGELOG.md", "## [Unreleased]\n```md\n## [1.3.1]\n```\n")
+        self.assertIn("FAIL changelog:", self.assert_status(1, "--preflight").stdout)
+
+    def test_preflight_requires_rust_toolchain_file(self):
+        self.preflight_fixture()
+        (self.root / "rust-toolchain.toml").unlink()
+        self.assertIn("FAIL rust-toolchain: rust-toolchain.toml: FileNotFoundError",
+                      self.assert_status(1, "--preflight").stdout)
+
+    def test_preflight_rejects_drift_from_workflow_ci_pin(self):
+        self.preflight_fixture()
+        self.write("rust-toolchain.toml", '[toolchain]\nchannel = "1.99.0"\n')
+        output = self.assert_status(1, "--preflight").stdout
+        self.assertIn("FAIL rust-toolchain: .github/workflows/ci.yml:", output)
+        self.assertIn("expected 1.100.0, found '1.99.0'", output)
+
+    def test_preflight_rejects_drift_from_literal_toolchain(self):
+        self.preflight_fixture()
+        self.write(".github/workflows/other.yaml", "env:\n  RUSTUP_TOOLCHAIN: '1.97.1'\n")
+        output = self.assert_status(1, "--preflight").stdout
+        self.assertIn("FAIL rust-toolchain: .github/workflows/other.yaml:2:", output)
+
+    def test_preflight_rejects_unpinned_tag_when_other_workflow_pins_sha(self):
+        self.preflight_fixture()
+        self.write(".github/workflows/other.yml", 'jobs:\n  call:\n    uses: "owner/repo/.github/workflows/run.yml@v1"\n')
+        output = self.assert_status(1, "--preflight").stdout
+        self.assertIn("FAIL action-pins: .github/workflows/other.yml:3:", output)
+        self.assertIn("@v1 needs a full commit SHA", output)
+
+    def test_release_script_fails_after_printing_all_preflight_results(self):
+        self.preflight_fixture()
+        (self.root / "rust-toolchain.toml").unlink()
+        for source in (SCRIPT, SCRIPT.with_name("release-check.sh")):
+            self.write(f"scripts/{source.name}", source.read_text(encoding="utf-8"))
+        command = ["bash", str(self.root / "scripts/release-check.sh"), "--preflight-only"]
+        result = subprocess.run(command, cwd=self.root, capture_output=True, text=True, check=False)
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("PASS versions", result.stdout)
+        self.assertIn("PASS changelog", result.stdout)
+        self.assertIn("FAIL rust-toolchain:", result.stdout)
+        self.assertIn("PASS action-pins", result.stdout)
+        self.assertTrue(result.stdout.endswith("RELEASE-CHECK FAIL: offline-preflight\n"))
+
     def test_usage_errors_exit_two(self):
         self.assert_status(2, "--unknown")
         self.assert_status(2, "--root")

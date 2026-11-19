@@ -67,7 +67,7 @@ macOS x64/ARM64 and Windows x64. Releases after 1.2.0 also ship cosign signature
 a CycloneDX SBOM, build provenance and offline bundles; see
 [verification, provenance and offline installation](docs/VERIFYING.md).
 
-```sh
+```sh runnable
 dctx --version
 ```
 
@@ -253,11 +253,9 @@ Read the [philosophy](docs/WHY-DCTX.md) and its
 
 ## Quick Start
 
-Try a tiny project (POSIX shell; on Windows use Git Bash):
+Create an empty directory named `dctx-demo` and run this inside it (POSIX shell; on Windows use Git Bash):
 
-```sh
-mkdir dctx-demo
-cd dctx-demo
+```sh runnable
 printf 'def hello(name):\n    return f"Hello, {name}!"\n' > hello.py
 dctx map skeleton hello.py
 ```
@@ -270,7 +268,7 @@ see [Map mode: context for agents](docs/guides/MAP-MODE.md).
 
 From this repository's root:
 
-```zsh
+```sh runnable
 dctx map find "Session"
 ```
 

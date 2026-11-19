@@ -9,14 +9,11 @@ permissions:
 
 jobs:
   latency:
-    runs-on: windows-latest
+    runs-on: windows-2022
     timeout-minutes: 45
     defaults:
       run:
         shell: bash
-    env:
-      CARGO_TARGET_DIR: ${{ github.workspace }}/target/win-latency
-      CARGO_HOME: ${{ github.workspace }}/.cache/win-latency/cargo
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -29,13 +26,19 @@ jobs:
           umask 022
           source tools/release/toolchain.env
           rustup toolchain install "$DCTX_RELEASE_RUST" --profile minimal
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/dctx-build"
           cargo +"$DCTX_RELEASE_RUST" build --release --locked -p dctx-cli
-      - name: Test harness and measure 30 processes over 1500 files
+      - name: Test latency harness
         run: |
           umask 022
-          python -m unittest scripts/test_win_latency.py
-          python scripts/win_latency.py --binary target/win-latency/release/dctx-cli.exe --runs 30 --files 1500
+          python -m unittest scripts.test_win_latency -v
+      - name: Measure 30 cold and 30 warm processes over 1500 files
+        id: measure
+        run: |
+          umask 022
+          python scripts/win_latency.py --binary "$RUNNER_TEMP/dctx-build/release/dctx-cli.exe" --runs 30 --files 1500 --max-p95-ms 500 --output target/win-latency/report.json
       - name: Upload latency JSON
+        if: ${{ !cancelled() && (steps.measure.outcome == 'success' || steps.measure.outcome == 'failure') }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: win-latency

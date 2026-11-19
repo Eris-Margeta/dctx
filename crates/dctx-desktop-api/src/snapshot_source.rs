@@ -395,10 +395,7 @@ fn survey_dir(
 }
 
 fn directory_visible(name: &str, config: &DesktopConfig) -> bool {
-    if config.has_active_filters() && config.only_hidden && !is_hidden(name) {
-        return false;
-    }
-    true
+    !(config.has_active_filters() && config.only_hidden && !is_hidden(name))
 }
 
 fn file_visible(name: &str, len: u64, config: &DesktopConfig) -> bool {

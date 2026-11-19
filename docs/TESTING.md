@@ -55,6 +55,17 @@ Existing unit tests use [`Duration::from_mins`](https://doc.rust-lang.org/std/ti
 stable since Rust 1.91; a local Rust 1.90.0 run fails to compile those tests.
 Desktop packages are excluded.
 
+From a fresh checkout, run `bun install` and `bun run build` in
+`apps/dctx-desktop` to prepare the frontend for the full workspace build.
+From the repository root, run `cargo test --workspace docs_examples` to verify
+relative links in the root README and top-level Markdown files in `docs/`. On Unix it also runs
+shell fences marked `sh runnable`. Use the marker for offline examples that
+use dctx or shell builtins and only write inside the example project. Each
+block gets a fresh temporary project and isolated home and cache. The fixture
+provides `Config`, `Session`, `ping` and `alpha_body` in `src/lib.rs`, another
+`Config` in `packages/service-a/src/lib.rs`, and the Go lexer fixture used in
+the modalities guide.
+
 One additional Ubuntu/stable job checks formatting, Clippy with `-D warnings`,
 Rust documentation with `-D warnings`, licence manifests and `THIRD_PARTY.md`, the
 existing `deny.toml` licence policy, the website (including release-binary capture

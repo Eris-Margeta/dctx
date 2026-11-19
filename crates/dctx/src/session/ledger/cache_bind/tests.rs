@@ -5,13 +5,58 @@ use crate::session::ledger::PersistedCache;
 use dctx_adapter_cache::CacheError;
 
 #[test]
+fn deferred_root_use_is_persisted_with_pin_or_refresh() {
+    let dir = tempfile::tempdir().expect("cache");
+    let policy = AutoCleanConfig {
+        enabled: false,
+        ..AutoCleanConfig::default()
+    };
+    let mut cold = PersistedCache::open(dir.path(), 42, policy, 1, true).expect("cold");
+    let root = cold.root_id;
+    assert_eq!(cold.life.last_use(root), None);
+    drop(
+        cold.admit_snapshot(1, b"original", 1024, 0, 0, None)
+            .unwrap(),
+    );
+    assert_eq!(cold.life.last_use(root).expect("registered").0, 1);
+
+    let mut warm = PersistedCache::open(dir.path(), 42, policy, 2, true).expect("warm");
+    assert_eq!(warm.life.last_use(root).expect("retained").0, 1);
+    assert_eq!(
+        warm.load_current_segment().unwrap().as_deref(),
+        Some(b"original".as_slice())
+    );
+    drop(warm.pin_current(2).unwrap().expect("pinned"));
+    warm.reload().unwrap();
+    assert_eq!(warm.life.last_use(root).expect("touched by pin").0, 2);
+
+    let mut refreshed = PersistedCache::open(dir.path(), 42, policy, 3, true).expect("refresh");
+    assert_eq!(refreshed.life.last_use(root).expect("retained").0, 2);
+    let expected = refreshed.life.current_generation(root);
+    drop(
+        refreshed
+            .admit_snapshot(3, b"refreshed", 1024, 0, 0, expected)
+            .unwrap(),
+    );
+    refreshed.reload().unwrap();
+    assert_eq!(
+        refreshed.life.last_use(root).expect("touched by refresh").0,
+        3
+    );
+    assert_eq!(
+        refreshed.load_current_segment().unwrap().as_deref(),
+        Some(b"refreshed".as_slice())
+    );
+}
+
+#[test]
 fn admitted_objects_are_readable_after_reopen_at_a_scaled_boundary() {
     let dir = tempfile::tempdir().expect("cache");
     let policy = AutoCleanConfig {
         enabled: false,
         ..AutoCleanConfig::default()
     };
-    let mut cold = PersistedCache::open(dir.path(), 42, policy, 0).expect("cold");
+    let mut cold = PersistedCache::open(dir.path(), 42, policy, 0, false).expect("cold");
     // Production reads cover every object that the product cache can admit,
     // including generations larger than the former 512 MiB read ceiling.
     assert_eq!(cold.object_read_cap, dctx_adapter_cache::HARD_CAP_BYTES);
@@ -24,7 +69,7 @@ fn admitted_objects_are_readable_after_reopen_at_a_scaled_boundary() {
     drop(lease);
     drop(cold);
 
-    let mut warm = PersistedCache::open(dir.path(), 42, policy, 1).expect("warm");
+    let mut warm = PersistedCache::open(dir.path(), 42, policy, 1, false).expect("warm");
     warm.object_read_cap = 64;
     assert_eq!(
         warm.load_current_segment().expect("warm read"),
@@ -118,7 +163,7 @@ fn a_superseded_inventory_can_neither_pin_nor_refresh_the_new_view() {
         enabled: false,
         ..AutoCleanConfig::default()
     };
-    let mut first = PersistedCache::open(dir.path(), 42, policy, 0).expect("first");
+    let mut first = PersistedCache::open(dir.path(), 42, policy, 0, false).expect("first");
     drop(
         first
             .admit_snapshot(0, b"old", 1024, 0, 0, None)
@@ -132,7 +177,7 @@ fn a_superseded_inventory_can_neither_pin_nor_refresh_the_new_view() {
         .life
         .current_generation(first.root_id)
         .expect("generation");
-    let mut second = PersistedCache::open(dir.path(), 42, policy, 1).expect("second");
+    let mut second = PersistedCache::open(dir.path(), 42, policy, 1, false).expect("second");
     drop(
         second
             .admit_snapshot(1, b"new", 1024, 0, 0, None)

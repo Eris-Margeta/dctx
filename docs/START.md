@@ -31,7 +31,7 @@ One giant folder (e.g. 200 GB): system binary; per-root ignore policy; name a su
 Install the [system binary](#safe-path-in-ten-minutes), choose a relevant package,
 and put exclusions in that root's `.dctxignore` before the first query:
 
-```sh
+```sh runnable
 dctx map find Config --place packages/service-a --budget 500 --limit 5
 ```
 
@@ -52,13 +52,14 @@ Run commands from the intended project root. No project dependency is required.
 Start with `dctx map find`, then `dctx map read` using its exact ID. Expect source plus
 freshness and precision in JSON, not a general receipt or session delta.
 
-```sh
-dctx cache status --json
+```sh runnable
+dctx cache status
 dctx cache gc --dry-run
-dctx cache purge --root /absolute/deleted-project --dry-run
 ```
 
-Inspect the dry run before applying cleanup; `purge` requires `--yes`.
+To target a deleted project, copy the cached root path or root ID from
+`cache status` and pass it to `dctx cache purge --root ROOT --dry-run`.
+Inspect the preview before replacing `--dry-run` with `--yes`.
 See [cache controls](guides/MAP-MODE.md#index-cache-and-privacy). Indexes live in an
 engine `major.minor` subdirectory (for example `1.3`) of the cache parent, which is
 `DCTX_CACHE_DIR` or the platform default `v2` cache root; patch releases share it, and
@@ -77,7 +78,7 @@ Python and Go as their READMEs describe. Alternatively, pin the
 or invoke the installed CLI as a subprocess. The first runnable Rust example is
 in the [library doctest](../examples/library/README.md). For subprocess use:
 
-```sh
+```sh runnable
 dctx map find Config --json --budget 500 --limit 5
 ```
 
@@ -93,13 +94,13 @@ A Rust facade `Session` is an in-process API object. See the [scope contract](#t
 
 Team / enterprise admin: system binary via package manager, signature + SBOM verification, one pinned version fleet-wide. Pitfall: mixing project and system versions without checking (`dctx doctor`).
 
-This is the rollout target. Today, pin a release archive and check its matching
-`SHA256SUMS` entry; package-manager distribution, signed CLI binaries and a
-release SBOM verification workflow are planned. Deploy the verified archive and
-root ignore rules through your existing fleet tooling. Record the resolved
-binary path and start with:
+Pin a release archive and verify it against its signed `SHA256SUMS` entry.
+Native release archives ship with signatures, SBOMs and provenance. Follow
+[download verification](VERIFYING.md), then deploy the verified archive and root
+ignore rules through your fleet tooling. Record the resolved binary path and
+start with:
 
-```sh
+```sh runnable
 dctx --version --verbose
 ```
 
@@ -119,13 +120,13 @@ Download the archive for your OS and architecture and `SHA256SUMS` from
 Compare the archive's SHA-256 with its matching entry before extracting it.
 On Linux use `sha256sum ARCHIVE`, on macOS `shasum -a 256 ARCHIVE`, or on Windows
 PowerShell `Get-FileHash ARCHIVE -Algorithm SHA256`, replacing `ARCHIVE` with the
-downloaded filename. This checks integrity against the release checksums;
-signed binary verification is planned.
+downloaded filename. This checks integrity against the release checksums.
+Use the [verification guide](VERIFYING.md) to authenticate the archive and checksum manifest.
 
 Extract the archive and put `dctx` (`dctx.exe` on Windows) on your user `PATH`.
 Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.
 
-```sh
+```sh runnable
 dctx --version
 ```
 
@@ -138,7 +139,7 @@ is needed for this path.
 Use a small project or a relevant sub-root. Check `.gitignore` and `.dctxignore`
 before scanning; leave `DCTX_INDEX_IGNORED` unset. From that directory:
 
-```sh
+```sh runnable
 dctx map find Config --json --budget 500 --limit 5
 ```
 
@@ -149,16 +150,17 @@ root between calls, because root-relative IDs change when the root changes.
 
 ### 3. Use the CLI from your shell or agent
 
-Run from the selected project root:
+Run from the selected project root. This example assumes `Config` is declared in
+`src/lib.rs`. Use the exact ID that `find` returns for your project.
 
-```sh
+```sh runnable
 dctx map find Config --limit 5 --budget 500
-dctx map read 'ID_FROM_FIND' --budget 2000
+dctx map read 's:src/lib.rs#Config' --budget 2000
 ```
 
-Replace `ID_FROM_FIND` with an exact ID returned by `find`. Use the same commands
-through an agent's shell tool. See the [map guide](guides/MAP-MODE.md) for bounds
-and pagination, and [agent guidance](guides/AGENTS-SNIPPET.md) for shell usage.
+Use the same commands through an agent's shell tool. See the
+[map guide](guides/MAP-MODE.md) for bounds and pagination, and
+[agent guidance](guides/AGENTS-SNIPPET.md) for shell usage.
 
 ### 4. Measure before changing anything
 
@@ -171,7 +173,7 @@ answers alone do not establish whole-session savings.
 General receipts are planned. Today, retain JSON metadata and the agent's usage
 report. For task packs, the shipped footer is a useful output accounting line:
 
-```sh
+```sh runnable
 dctx pack . --for 'Config' --budget 800
 ```
 

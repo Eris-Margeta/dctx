@@ -299,11 +299,10 @@ dctx . --ext rs,toml --small 0.5 --non-empty -c
 ```
 
 **After (Interactive TUI):**
-```bash
-# User runs without args
-dctx
+```text
+$ dctx
 
-# Menus guide user:
+Menus guide user:
 Main Menu → Advanced → Filters
   → Select "Extension": rs,toml
   → Select "Size": small = 0.5
