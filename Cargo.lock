@@ -1174,7 +1174,6 @@ dependencies = [
  "dctx-core",
  "dctx-hash",
  "dctx-ports",
- "tempfile",
 ]
 
 [[package]]
