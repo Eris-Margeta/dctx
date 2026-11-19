@@ -5942,6 +5942,11 @@ Choose your path #
 One giant folder #
 Install the system binary , choose a relevant package,
 and put exclusions in that root's .dctxignore before the first query:
+parent tree. Use an ID with map read . There is no general receipt yet;
+--json exposes freshness, precision and pagination. Each invocation checks
+before warming an index; --in only filters after indexing.
+Many small projects #
+Start with dctx map find , then dctx map read using its exact ID. Expect source plus
 cache status and pass it to dctx cache purge --root ROOT --dry-run .
 Inspect the preview before replacing --dry-run with --yes .
 See cache controls . Indexes live in an
@@ -5955,6 +5960,14 @@ CI. Install Node with npm install @tejl/dctx , which includes a pinned
 @tejl/dctx-<platform> optional dependency; use CI artifacts or a checkout for
 Rust facade from tagged Git,
 in the library doctest . For subprocess use:
+ID to map read --json for source_utf8 . Keep engine selection and rendering in
+pack text. Named context adds stable chunk IDs and opt-in delivery
+sessions: use dctx context TARGET --session ID --dedupe . Delivery history lasts
+A Rust facade Session is an in-process API object. See the scope contract .
+Team / enterprise admin #
+Team / enterprise admin: system binary via package manager, signature + SBOM verification, one pinned version fleet-wide. Pitfall: mixing project and system versions without checking ( dctx doctor ).
+Pin a release archive and verify it against its signed SHA256SUMS entry.
+download verification , then deploy the verified archive and root
 Expect version and feature/precision limits. dctx doctor lists the dctx
 use release procedure , testing and
 security reporting for the current controls. Signed
@@ -5965,12 +5978,18 @@ On Linux use sha256sum ARCHIVE , on macOS shasum -a 256 ARCHIVE , or on Windows
 PowerShell Get-FileHash ARCHIVE -Algorithm SHA256 , replacing ARCHIVE with the
 Use the verification guide to authenticate the archive and checksum manifest.
 Extract the archive and put dctx ( dctx.exe on Windows) on your user PATH .
+2. Choose one project and inspect one answer #
+Use a small project or a relevant sub-root. Check .gitignore and .dctxignore
+before scanning; leave DCTX_INDEX_IGNORED unset. From that directory:
 Replace Config with a symbol or heading in your project. Read a returned ID
 with dctx map read 'ID' --json . The JSON includes verified source bytes as
 source_utf8 and reports precision, freshness and pagination. Keep the same
 3. Use the CLI from your shell or agent #
 Run from the selected project root. This example assumes Config is declared in
 src/lib.rs . Use the exact ID that find returns for your project.
+map guide for bounds and pagination, and
+agent guidance for shell usage.
+4. Measure before changing anything #
 It reports body_tokens , budget and dropped , using estimated tokens rather
 See measurement evidence and
 CI/cache guidance .
@@ -6002,7 +6021,7 @@ Document: `docs/MODALITIES.md` in [Documents](#documents). [Read the page](https
 
 Rendered text and page details not already verbatim in the document pack:
 
-All documents Start What dctx is Choose your path Safe path in ten minutes Why dctx README and quick start Modalities Choosing how to use dctx CLI and agents: map mode Agent snippet Libraries CI and caching Plugins guide Scopes Two scopes, one binary Who is responsible for what Engine Specification Privacy guarantees Cache and limits Language coverage (ADR-018) Template contract (DTS v2) Templating engine (ADR-003) Crate map Reference CLI reference CLI exit codes Languages Templates Examples Trust Benchmarks Measurement evidence Byte-stability report Earlier two-way study Philosophy Security policy Releasing Contributing Trademark Maintenance For AI evaluators Facts and verification llms.txt Choosing how to use dctx View source · Edit on GitHub · Markdown · docs/MODALITIES.md · 1,751 words · updated 19 November 2026 On this page Available surfaces and publication status Choose by task Human, one-off: pack to clipboard Rust library: embed the facade Desktop app: Tauri preview today Python, Node and Go wrappers
+All documents Start What dctx is Choose your path Safe path in ten minutes Why dctx README and quick start Modalities Choosing how to use dctx CLI and agents: map mode Agent snippet Libraries CI and caching Plugins guide Scopes Two scopes, one binary Who is responsible for what Engine Specification Privacy guarantees Cache and limits Language coverage (ADR-018) Template contract (DTS v2) Templating engine (ADR-003) Crate map Reference CLI reference CLI exit codes Languages Templates Examples Trust Benchmarks Measurement evidence Byte-stability report Earlier two-way study Philosophy Security policy Releasing Contributing Trademark Maintenance For AI evaluators Facts and verification llms.txt Choosing how to use dctx View source · Edit on GitHub · Markdown · docs/MODALITIES.md · 1,751 words · updated 19 November 2026 On this page Available surfaces and publication status Choose by task Human, one-off: pack to clipboard Short agent task: grep can be enough Huge trees: scope before indexing CI / prompt-cache prefix stability Rust library: embed the facade Desktop app: Tauri preview today Python, Node and Go wrappers
 Compare dctx with grep plus reading files , and choose by the work you need to
 Available surfaces and publication status #
 Prebuilt archives , or build from source
@@ -6017,7 +6036,18 @@ Choose by task #
 find -> read --json , with skeleton for orientation
 Deterministic pack or scoped map output saved as an artifact
 Human, one-off: pack to clipboard #
+function matters. Narrow the root first, or use map reads. Pack's --ext rs,toml
+and --small 1 filters can restrict extensions and file sizes (MB); they are
+Short agent task: grep can be enough #
 dctx map find Session through the existing shell. Verbose agent instructions
+For your project, use the exact ID returned by find . Both text read and
+read --json include verified source bytes; JSON carries them in source_utf8 . Skeletons
+show declaration signatures without bodies. If an answer has more and next ,
+pass that opaque next value with --cursor on the same request, and count the
+Huge trees: scope before indexing #
+Map's shared cache stores a lifecycle ledger ( ledger.v1 ), policy ( policy.v1 ),
+The product hard cap is 2 GiB (2,147,483,648 accounted bytes) across the shared
+filesystem-size guarantee. cache config --max-bytes can only tighten it.
 If your shell is already in packages/service-a , run
 dctx map find Config --budget 500 --limit 5 there.
 --place selects the scan root. --in src narrows find/grep matches after
@@ -6035,6 +6065,9 @@ dctx does not read Git metadata, so .git/info/exclude and Git's
 core.excludesFile are not applied; put those patterns in .dctxignore or the
 Do not set DCTX_INDEX_IGNORED=1 when relying on these ignore rules.
 The built binary documents these environment variables , not scan-limit flags:
+DCTX_MAX_SOURCE_BYTES = 268435456 DCTX_MAX_RECORDS = 250000 DCTX_MAX_ENTRIES = 25000 \
+cache cap. A different absolute DCTX_CACHE_DIR selects a separate cache
+CI / prompt-cache prefix stability #
 --tree-stamps=off for stable prefixes. For map,
 leave --meta off to exclude changing snapshot, generation and age metadata.
 The stability report measured 33/33 text
