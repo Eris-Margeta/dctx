@@ -10,6 +10,31 @@ import unittest
 
 
 CHECKER = Path(__file__).with_name("check_cli_docs.py").resolve()
+EXIT_SOURCE = "crates/dctx-cli/src/exit.rs"
+EXIT_DOC = "docs/CLI-EXIT-CODES.md"
+REFERENCE = "website/cli/index.html"
+EXIT_CODES = """pub const OK: i32 = 0;
+pub const USAGE: i32 = 2;
+"""
+EXIT_TABLE = """| Code | Meaning |
+|---|---|
+| 0 | OK |
+| 2 | Usage |
+"""
+REFERENCE_HELP = """<pre><code>Commands:
+  inspect  Inspect the project
+  pack
+  map
+  cache
+  plugin
+  trace
+</code></pre>
+<pre><code>Usage: dctx map &lt;find|read&gt; &lt;TARGET&gt;
+       dctx cache status
+       dctx cache purge
+       dctx plugin info &lt;id&gt;
+</code></pre>
+"""
 STUB = '''#!/usr/bin/env python3
 import sys
 pages = {
@@ -20,6 +45,9 @@ pages = {
        dctx cache purge --root PATH [--dry-run]
        dctx plugin info <id> [--json]
        dctx trace <A> <B> [--json]
+
+Commands:
+  inspect  Inspect the project
 
 General Options:
   -h, --help     Show help
@@ -68,6 +96,9 @@ class DocsGateTests(unittest.TestCase):
         self.binary = self.root / "stub-dctx"
         self.binary.write_text(STUB, encoding="utf-8")
         self.binary.chmod(0o755)
+        self.write(EXIT_SOURCE, EXIT_CODES)
+        self.write(EXIT_DOC, EXIT_TABLE)
+        self.write(REFERENCE, REFERENCE_HELP)
 
     def write(self, name, content):
         path = self.root / name
@@ -93,7 +124,7 @@ class DocsGateTests(unittest.TestCase):
         ''')
         result = self.run_gate()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("Checked 5 commands; 0 drift", result.stdout)
+        self.assertIn("Checked 9 commands; 0 drift", result.stdout)
 
     def test_typo_verb(self):
         self.write("docs/usage.md", "```sh\ndctx pakk .\n```\n")
@@ -138,7 +169,7 @@ class DocsGateTests(unittest.TestCase):
         ''')
         result = self.run_gate()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("Checked 1 commands", result.stdout)
+        self.assertIn("Checked 5 commands", result.stdout)
 
     def test_text_blocks_and_inline_prose_skipped(self):
         self.write("README.md", '''
@@ -155,7 +186,7 @@ class DocsGateTests(unittest.TestCase):
         ''')
         result = self.run_gate()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("Checked 0 commands", result.stdout)
+        self.assertIn("Checked 4 commands", result.stdout)
 
     def test_html_code_blocks_parsed(self):
         self.write("website/docs/index.html", '''
@@ -170,7 +201,7 @@ class DocsGateTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("website/docs/index.html:4: unknown verb: pakk", result.stdout)
         self.assertIn("website/docs/index.html:5: unknown flag: --jsno", result.stdout)
-        self.assertIn("Checked 3 commands; 2 drift", result.stdout)
+        self.assertIn("Checked 7 commands; 2 drift", result.stdout)
 
     def test_html_text_and_legacy_skipped(self):
         self.write("website/index.html", '''
@@ -182,7 +213,7 @@ class DocsGateTests(unittest.TestCase):
         ''')
         result = self.run_gate()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("Checked 1 commands", result.stdout)
+        self.assertIn("Checked 5 commands", result.stdout)
 
     def test_html_terminal_line_spans_and_output(self):
         self.write("website/index.html", '''
@@ -192,7 +223,7 @@ class DocsGateTests(unittest.TestCase):
         result = self.run_gate()
         self.assertEqual(result.returncode, 1)
         self.assertIn("website/index.html:2: unknown verb: typo", result.stdout)
-        self.assertIn("Checked 3 commands; 1 drift", result.stdout)
+        self.assertIn("Checked 7 commands; 1 drift", result.stdout)
 
     def test_parent_synopsis_when_leaf_help_unavailable(self):
         self.write("README.md", "```sh\ndctx plugin info example/plugin --json\n```\n")
@@ -203,7 +234,7 @@ class DocsGateTests(unittest.TestCase):
         self.write("README.md", "```\n  dctx - Directory Context Generator\ndctx 1.3.1\n```\n")
         result = self.run_gate()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("Checked 0 commands", result.stdout)
+        self.assertIn("Checked 4 commands", result.stdout)
 
     def test_example_prefix_is_checked(self):
         self.write("README.md", "```sh\nExample: dctx pack . --typo\n```\n")
@@ -255,10 +286,33 @@ class DocsGateTests(unittest.TestCase):
         self.assertEqual(result.stdout.count("unknown verb: typo"), 3)
         self.assertNotIn("ignored", result.stdout)
 
-    def test_missing_default_binary_is_note_and_success(self):
+    def test_missing_default_binary_skips_reference_but_checks_codes(self):
         result = self.run_gate(default=True)
-        self.assertEqual(result.returncode, 0)
-        self.assertIn("NOTE:", result.stdout)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("SKIP: website/cli/ coverage", result.stdout)
+        self.assertIn("Checked 2 CLI exit codes", result.stdout)
+
+    def test_stale_documented_exit_code_without_binary(self):
+        self.write(EXIT_DOC, EXIT_TABLE + "| `8` | Stale code |\n")
+        result = self.run_gate(default=True)
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("exit code 8 is not defined", result.stdout)
+
+    def test_undocumented_source_exit_code_without_binary(self):
+        self.write(EXIT_SOURCE, EXIT_CODES + "pub const INDEX: i32 = 3;\n")
+        result = self.run_gate(default=True)
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("missing exit code 3", result.stdout)
+
+    def test_missing_nested_subcommand_and_listed_top_level_command(self):
+        self.write(REFERENCE, REFERENCE_HELP.replace("&lt;find|read&gt;", "find")
+                   .replace("  inspect  Inspect the project\n", "")
+                   + "<p>Examples: <code>dctx inspect</code> and <code>dctx map read</code></p>")
+        result = self.run_gate()
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("missing subcommand: dctx inspect", result.stdout)
+        self.assertIn("missing subcommand: dctx map read", result.stdout)
+        self.assertNotIn("missing subcommand: dctx map find", result.stdout)
 
     def test_default_binary_debug_then_release(self):
         for profile in ("release", "debug"):
@@ -269,7 +323,11 @@ class DocsGateTests(unittest.TestCase):
                 path.chmod(0o755)
                 result = self.run_gate(default=True)
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertNotIn("NOTE:", result.stdout)
+                if profile == "debug":
+                    self.assertIn("Checked 8 subcommands", result.stdout)
+                    self.assertNotIn("SKIP: website/cli/ coverage", result.stdout)
+                else:
+                    self.assertIn("SKIP: website/cli/ coverage", result.stdout)
 
     def test_usage_errors(self):
         for args in (("--unknown",), ("--binary",), ("--binary", "absent")):
