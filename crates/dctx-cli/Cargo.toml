@@ -43,6 +43,9 @@ rustix = { version = "=1.1.5", features = ["fs"] }
 
 [dev-dependencies]
 ed25519-dalek = { version = "=2.2.0", default-features = false, features = ["std"] }
+html5ever = "=0.39.0"
+markdown = "=1.0.0"
+percent-encoding = "=2.3.2"
 proptest = "1"
 
 [target.'cfg(unix)'.dev-dependencies]
