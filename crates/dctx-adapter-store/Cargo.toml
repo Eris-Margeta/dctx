@@ -23,7 +23,6 @@ rustix = { version = "=1.1.5", features = ["fs", "process"] }
 windows-sys = { version = "=0.61.2", features = ["Win32_Storage_FileSystem"] }
 
 [dev-dependencies]
-dctx-map-segment = { path = "../dctx-map-segment" }
 proptest = "1"
 tempfile = "=3.24.0"
 
