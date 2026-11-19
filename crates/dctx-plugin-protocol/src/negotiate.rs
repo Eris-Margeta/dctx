@@ -22,11 +22,14 @@ fn negotiation(code: ErrorCode, reason: &'static str) -> Refusal {
     Refusal::new(code, Stage::Session, Predicate::WNegotiate, reason)
 }
 
-/// Checks min <= max and one range per major.
+/// Checks positive majors, min <= max and one range per major.
 /// # Errors
-/// Refuses reversed minor ranges or duplicate major versions.
+/// Refuses major zero, reversed minor ranges or duplicate major versions.
 pub fn validate_ranges(ranges: &[VersionRange]) -> Result<(), Refusal> {
     for (index, range) in ranges.iter().enumerate() {
+        if range.major == 0 {
+            return Err(Refusal::semantic(Predicate::WNegotiate, "zero-major"));
+        }
         if range.min_minor > range.max_minor {
             return Err(Refusal::semantic(Predicate::WNegotiate, "range-reversed"));
         }
