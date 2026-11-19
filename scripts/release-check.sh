@@ -5,7 +5,9 @@
 #   scripts/release-check.sh --quick [BIN]     skip cargo; use BIN or $DCTX_BIN as dctx-cli
 #   scripts/release-check.sh --scan-only [DIR] only the shipped-code scan, on DIR (default: the repo root)
 #
-# Gates, in order: cargo-build, cargo-test, cargo-clippy (skipped by --quick), code-scan, determinism,
+#   scripts/release-check.sh --preflight-only run only the offline metadata and workflow checks
+#
+# Gates, in order: offline preflight, cargo-build, cargo-test, cargo-clippy (skipped by --quick), code-scan, determinism,
 # unrelated-edit, network. Each prints `PASS <gate>`, `FAIL <gate>: <why>` or `SKIP <gate>: <why>`.
 # The last line is `RELEASE-CHECK PASS`, or `RELEASE-CHECK FAIL: <failed gates>` with exit status 1 (2 = usage).
 # The Linux build host has no Tauri system libraries, so cargo runs on the workspace without dctx-desktop,
@@ -13,12 +15,13 @@
 set -u
 [ -d "$HOME/.cargo/bin" ] && PATH="$HOME/.cargo/bin:$PATH"
 ROOT=$(cd "$(dirname "$0")/.." && pwd -P)
-quick=0; scan_only=0; arg=""
-usage() { sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-2}"; }
+quick=0; scan_only=0; preflight_only=0; arg=""
+usage() { sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-2}"; }
 while [ $# -gt 0 ]; do
   case $1 in
     --quick) quick=1 ;;
     --scan-only) scan_only=1 ;;
+    --preflight-only) preflight_only=1 ;;
     -h|--help) usage 0 ;;
     -*) echo "release-check: unknown option $1" >&2; usage 2 ;;
     *) [ -z "$arg" ] || usage 2; arg=$1 ;;
@@ -52,7 +55,17 @@ code_scan() {
   fail code-scan "$(printf '%s' "$debt" | grep -c '^') debt line(s), $(printf '%s' "$ignores" | grep -c '^') unlinked #[ignore]"
 }
 
+if [ $preflight_only = 1 ]; then
+  [ $((quick + scan_only)) = 0 ] && [ -z "$arg" ] || usage 2
+fi
 if [ $scan_only = 1 ]; then code_scan "${arg:-$ROOT}"; finish; fi
+
+# ---- offline preflight: run before selecting a binary or invoking Cargo.
+if ! python3 -I "$ROOT/scripts/check_versions.py" --preflight; then
+  fail offline-preflight "see the diagnostics above"
+  finish
+fi
+if [ $preflight_only = 1 ]; then finish; fi
 
 # ---- cargo gates (full mode). Tests close inherited descriptors first, as CI does: native confinement rejects
 # every descriptor beyond its three protocol pipes.

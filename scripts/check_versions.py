@@ -53,7 +53,7 @@ def headings(text):
             yield match[1] or match[2]
 
 
-def check(root, allow_unreleased=False):
+def check(root, allow_unreleased=False, preflight=False):
     rows = []
     expected = None
 
@@ -74,25 +74,40 @@ def check(root, allow_unreleased=False):
 
     try:
         sections = list(headings(read_text(root / "CHANGELOG.md")))
-        if sections and sections[0].lower() == "unreleased":
-            add("CHANGELOG.md:top", sections.pop(0), accepted=allow_unreleased)
-        if sections:
-            add("CHANGELOG.md:release", sections[0])
-        elif not allow_unreleased or not rows or rows[-1][0] != "CHANGELOG.md:top":
-            add("CHANGELOG.md:release", None)
+        if preflight:
+            release = next((section for section in sections if section.lower() != "unreleased"), None)
+            add("CHANGELOG.md:release", expected if expected in sections else release)
+        else:
+            unreleased = bool(sections and sections[0].lower() == "unreleased")
+            if unreleased:
+                add("CHANGELOG.md:top", sections.pop(0), accepted=allow_unreleased)
+            if sections or not (allow_unreleased and unreleased):
+                add("CHANGELOG.md:release", sections[0] if sections else None)
     except (OSError, UnicodeError) as exc:
         error("CHANGELOG.md", exc)
 
     try:
         cargo = tomllib.loads(read_text(root / "Cargo.toml"))
-        add("Cargo.toml:workspace.package.version",
-            cargo.get("workspace", {}).get("package", {}).get("version"))
+        workspace = cargo.get("workspace", {}).get("package", {})
+        crates = sorted(root.glob("crates/*/Cargo.toml")) if preflight else []
+        if "version" in workspace or not preflight or (not crates and "package" not in cargo):
+            add("Cargo.toml:workspace.package.version", workspace.get("version"))
+        if preflight and "package" in cargo:
+            crates.insert(0, root / "Cargo.toml")
+        for path in crates:
+            source = f"{path.relative_to(root).as_posix()}:package.version"
+            try:
+                manifest = cargo if path == root / "Cargo.toml" else tomllib.loads(read_text(path))
+                version = manifest.get("package", {}).get("version")
+                add(source, workspace.get("version") if version == {"workspace": True} else version)
+            except (OSError, UnicodeError, ValueError, AttributeError) as exc:
+                error(source, exc)
     except (OSError, UnicodeError, ValueError, AttributeError) as exc:
         error("Cargo.toml:workspace.package.version", exc)
 
     # This repository's published npm packages live in packaging/npm; also honor
     # the packages/* layout, including every manifest added there in the future.
-    manifests = sorted({*root.glob("packages/*/package.json"),
+    manifests = sorted({*root.glob("packages/**/package.json"),
                         *root.glob("packaging/npm/*/package.json")})
 
     def json_versions(path, fields):
@@ -109,6 +124,16 @@ def check(root, allow_unreleased=False):
 
     for path in manifests:
         json_versions(path, ("version",))
+    for path in sorted(root.glob("packages/**/pyproject.toml")):
+        source = f"{path.relative_to(root).as_posix()}:project.version"
+        try:
+            add(source, tomllib.loads(read_text(path)).get("project", {}).get("version"))
+        except (OSError, UnicodeError, ValueError, AttributeError) as exc:
+            error(source, exc)
+
+    if preflight:
+        return rows
+
     for relative in WEBSITE_JSON:
         path = root / relative
         if path.exists():
@@ -136,13 +161,103 @@ def check(root, allow_unreleased=False):
     return rows
 
 
+# These selectors read the scalar declarations used by the repository's workflows.
+# Keep the preflight dependency-free and never source a workflow or shell file.
+ACTION_USE = re.compile(r"""^\s*(?:-\s*)?uses:\s*["']?([^\s"'#]+)""")
+TOOLCHAIN_FIELD = re.compile(r"""^\s*(?:-\s*)?(?:toolchain|RUSTUP_TOOLCHAIN|DCTX_CI_RUST):\s*["']?([^\s"'#]+)""")
+TOOLCHAIN_INSTALL = re.compile(r"""\brustup\s+toolchain\s+install\s+["']?([^\s"'#]+)""")
+CHANNEL = re.compile(r"(?:stable|beta|nightly(?:-\d{4}-\d{2}-\d{2})?|\d+\.\d+(?:\.\d+)?)")
+SHA = re.compile(r"[a-fA-F0-9]{40}")
+
+
+def workflow_checks(root):
+    toolchains = []
+    actions = []
+    read_errors = []
+    workflows = sorted((root / ".github/workflows").glob("*.y*ml"))
+    for path in workflows:
+        try:
+            lines = read_text(path).splitlines()
+        except (OSError, UnicodeError) as exc:
+            read_errors.append(f"{path.name}: {type(exc).__name__}")
+            continue
+        for number, line in enumerate(lines, 1):
+            source = f".github/workflows/{path.name}:{number}"
+            action = ACTION_USE.match(line)
+            if action and not action[1].startswith(("./", "docker://")):
+                actions.append((source, action[1]))
+            # The matrix includes an MSRV lane, and release and benchmark jobs
+            # deliberately install their own toolchains.
+            if path.name == "performance.yml" or line.lstrip().startswith("#"):
+                continue
+            field = TOOLCHAIN_FIELD.match(line)
+            install = TOOLCHAIN_INSTALL.search(line)
+            match = field or install
+            if match and (CHANNEL.fullmatch(match[1]) or match[1] in ("$DCTX_CI_RUST", "${DCTX_CI_RUST}")):
+                toolchains.append((source, match[1]))
+            if action and action[1].startswith("dtolnay/rust-toolchain@"):
+                ref = action[1].split("@", 1)[1]
+                if CHANNEL.fullmatch(ref):
+                    toolchains.append((source, ref))
+
+    errors = read_errors.copy()
+    try:
+        channel = tomllib.loads(read_text(root / "rust-toolchain.toml")).get("toolchain", {}).get("channel")
+        if not isinstance(channel, str) or not channel.strip():
+            errors.append("rust-toolchain.toml: missing toolchain.channel")
+    except (OSError, UnicodeError, ValueError, AttributeError) as exc:
+        channel = None
+        errors.append(f"rust-toolchain.toml: {type(exc).__name__}")
+    if not toolchains:
+        errors.append("no default Rust toolchain found in .github/workflows")
+    ci_pin = None
+    if any(expected.startswith("$") for _, expected in toolchains):
+        try:
+            pin = re.search(r"""(?m)^DCTX_CI_RUST=["']?([^\s"'#]+)""",
+                            read_text(root / "tools/release/toolchain.env"))
+            if pin:
+                ci_pin = pin[1]
+        except (OSError, UnicodeError):
+            pass
+    for source, expected in toolchains:
+        if expected.startswith("$"):
+            expected = ci_pin
+        if expected is None or (channel and channel != expected):
+            errors.append(f"{source}: expected {expected or 'a DCTX_CI_RUST pin'}, found {channel!r}")
+    yield "rust-toolchain", errors
+
+    errors = read_errors.copy()
+    if any(SHA.fullmatch(action.rpartition("@")[2]) for _, action in actions):
+        errors.extend(f"{source}: {action} needs a full commit SHA"
+                      for source, action in actions if not SHA.fullmatch(action.rpartition("@")[2]))
+    yield "action-pins", errors
+
+
+def run_preflight(root):
+    rows = check(root, preflight=True)
+    version = rows[0][1]
+    checks = [
+        ("versions", [f"{source}={value!r} (VERSION={version!r})" for source, value, ok in rows
+                      if not ok and not source.startswith("CHANGELOG.md")]),
+        ("changelog", [f"{source}={value!r} (VERSION={version!r})" for source, value, ok in rows
+                       if not ok and source.startswith("CHANGELOG.md")]),
+        *workflow_checks(root),
+    ]
+    for name, errors in checks:
+        print(f"FAIL {name}: " + "; ".join(errors) if errors else f"PASS {name}")
+    return int(any(errors for _, errors in checks))
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1],
                         help="repository tree to check (default: this script's repository)")
     parser.add_argument("--allow-unreleased", action="store_true",
                         help="accept an Unreleased top section; still check the latest release if present")
+    parser.add_argument("--preflight", action="store_true", help="run the offline release preflight")
     args = parser.parse_args(argv)
+    if args.preflight:
+        return run_preflight(args.root)
     rows = check(args.root, args.allow_unreleased)
     print("source\tvalue\tok")
     for source, value, ok in rows:
