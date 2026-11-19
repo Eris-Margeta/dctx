@@ -7,6 +7,21 @@ and rollback runbook is [docs/RELEASING.md](https://github.com/Eris-Margeta/dctx
 
 The desktop app retains its separate `desktop-v*` release workflow.
 
+## Offline release preflight
+
+Run `scripts/release-check.sh --preflight-only` with Python 3.11 or newer.
+Full and quick release checks also run this preflight before building or using
+the CLI binary. It checks the Cargo, npm and Python release versions against
+`VERSION` and requires a matching release heading in `CHANGELOG.md`.
+
+Set `rust-toolchain.toml`'s channel to the default CI toolchain. The preflight
+reads `DCTX_CI_RUST` from `tools/release/toolchain.env` when referenced by a
+workflow, and checks literal default toolchain declarations. The MSRV,
+release-only and performance pins can differ. When workflows use commit SHA
+pins, every external repository action and reusable workflow must use a full
+commit SHA. Each check prints a PASS or FAIL line, and any failure blocks the
+release check.
+
 ## Publication gate
 
 Before any future production/public release, complete the required production
