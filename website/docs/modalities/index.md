@@ -43,7 +43,7 @@ dctx pack . --clipboard
 Paste the resulting structured context into your chat. The local clipboard must
 be available. To inspect or save the same selection instead:
 
-```sh
+```sh runnable
 dctx pack . --output context.txt
 ```
 
@@ -57,8 +57,8 @@ pack filters, not map index limits. Inspect the content before sharing it.
 If you know a name and expect only a few file reads, use the existing shell:
 
 ```sh
-grep -R -n -F --include='*.rs' 'struct Session' crates/dctx/src
-sed -n '130,170p' crates/dctx/src/session/mod.rs
+grep -n -F 'pub struct Session {' crates/dctx/src/session/mod.rs
+sed -n '143,170p' crates/dctx/src/session/mod.rs
 ```
 
 Choose the line range from the search result; reading a narrow range is an
@@ -66,7 +66,7 @@ honest baseline alongside whole-file reads. If a symbol read is useful, call
 `dctx map find Session` through the existing shell. Verbose agent instructions
 add starting context; measure their cost before adding them for a tiny edit.
 
-```sh
+```sh runnable
 cd crates/dctx-lex-go
 dctx map find Add --budget 500 --limit 5
 dctx map read 's:tests/fixtures/basic.go#Add' --json
@@ -101,14 +101,14 @@ cache-limit error; it does not quietly return a complete partial index. Repeatin
 the same unscoped request will not fix this. The cap is not a RAM-usage or exact
 filesystem-size guarantee. `cache config --max-bytes` can only tighten it.
 
-Start at the relevant package, not the huge parent:
+From the repository root, select the relevant package:
 
-```sh
-cd packages/service-a
-dctx map find Config --budget 500 --limit 5
-# Equivalent root selection from elsewhere:
+```sh runnable
 dctx map find Config --place packages/service-a --budget 500 --limit 5
 ```
+
+If your shell is already in `packages/service-a`, run
+`dctx map find Config --budget 500 --limit 5` there.
 
 `--place` selects the scan root. `--in src` narrows find/grep matches **after**
 indexing; `--budget`, `--limit` and `--cursor` bound answers, not the tree scan.
@@ -144,7 +144,7 @@ The built binary documents these **environment variables**, not scan-limit flags
 
 For a deliberately smaller scope and fail-fast ceilings:
 
-```sh
+```sh runnable
 DCTX_MAX_SOURCE_BYTES=268435456 DCTX_MAX_RECORDS=250000 DCTX_MAX_ENTRIES=25000 \
   dctx map find Config --place packages/service-a --budget 500 --limit 5
 dctx cache status --json
@@ -162,7 +162,7 @@ needed directories, or query several explicit scopes and account for extra calls
 
 Save deterministic output from a fixed selection as a build artifact:
 
-```sh
+```sh runnable
 dctx pack . --output context.txt
 dctx map find Session --json > symbol-context.json
 ```
