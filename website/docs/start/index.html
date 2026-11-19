@@ -20,7 +20,7 @@
 <meta name="description" content="The claim and its limits, the advanced-user notice, choose your path, the safe path in ten minutes, responsibilities and the two scopes.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
-<meta name="dctx-build" content="05c0ec7f30202953903f504d58b1f8d1a9c741af481e9b7b260641dfe929683c">
+<meta name="dctx-build" content="8838167794cc0c652324d565951f8f6d978a8be6efb0631db73e8e69f41ccb59">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -244,29 +244,22 @@ scope and distribution features are labeled explicitly.</p>
 <p>One giant folder (e.g. 200 GB): system binary; per-root ignore policy; name a sub-root/--place in tasks. Pitfall: pointing agents at the whole root.</p>
 <p>Install the <a href="#safe-path-in-ten-minutes">system binary</a>, choose a relevant package,
 and put exclusions in that root's <code>.dctxignore</code> before the first query:</p>
-<p>```sh runnable
-dctx map find Config --place packages/service-a --budget 500 --limit 5</p>
-<div class="hl"><pre><code>
-Expect bounded symbol IDs and line ranges, not a complete answer about the whole
-parent tree. Use an ID with `map read`. There is no general receipt yet;
-`--json` exposes freshness, precision and pagination. Each invocation checks
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> map find Config <span class="t-a">--place</span> packages/service-a <span class="t-a">--budget</span> 500 <span class="t-a">--limit</span> 5</code></pre></div>
+<p>Expect bounded symbol IDs and line ranges, not a complete answer about the whole
+parent tree. Use an ID with <code>map read</code>. There is no general receipt yet;
+<code>--json</code> exposes freshness, precision and pagination. Each invocation checks
 source stamps; no daemon or file watcher is used. Catalog-first sharding and a
 unified policy file are planned. Read the
-[huge-tree limits and ignore example](MODALITIES.md#huge-trees-scope-before-indexing)
-before warming an index; `--in` only filters after indexing.
-
-### Many small projects
-
-Many small projects: system binary; CLI commands from each project root; no project dependency. Pitfall: stale caches of deleted projects -&gt; cache gc/purge.
-
-Install one binary on PATH and use it from a shell or your agent's shell tool.
+<a href="/docs/modalities/#huge-trees-scope-before-indexing">huge-tree limits and ignore example</a>
+before warming an index; <code>--in</code> only filters after indexing.</p>
+<h3 id="many-small-projects">Many small projects<a class="hd" href="#many-small-projects" aria-label="Link to Many small projects">#</a></h3>
+<p>Many small projects: system binary; CLI commands from each project root; no project dependency. Pitfall: stale caches of deleted projects -&gt; cache gc/purge.</p>
+<p>Install one binary on PATH and use it from a shell or your agent's shell tool.
 Run commands from the intended project root. No project dependency is required.
-Start with `dctx map find`, then `dctx map read` using its exact ID. Expect source plus
-freshness and precision in JSON, not a general receipt or session delta.
-
-```sh runnable
-dctx cache status
-dctx cache gc --dry-run</code></pre></div>
+Start with <code>dctx map find</code>, then <code>dctx map read</code> using its exact ID. Expect source plus
+freshness and precision in JSON, not a general receipt or session delta.</p>
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> cache status
+<span class="t-f">dctx</span> cache gc <span class="t-a">--dry-run</span></code></pre></div>
 <p>To target a deleted project, copy the cached root path or root ID from
 <code>cache status</code> and pass it to <code>dctx cache purge --root ROOT --dry-run</code>.
 Inspect the preview before replacing <code>--dry-run</code> with <code>--yes</code>.
@@ -284,29 +277,22 @@ Python and Go as their READMEs describe. Alternatively, pin the
 <a href="/docs/modalities/#rust-library-embed-the-facade">Rust facade</a> from tagged Git,
 or invoke the installed CLI as a subprocess. The first runnable Rust example is
 in the <a href="https://github.com/Eris-Margeta/dctx/blob/main/examples/library/README.md">library doctest</a>. For subprocess use:</p>
-<p>```sh runnable
-dctx map find Config --json --budget 500 --limit 5</p>
-<div class="hl"><pre><code>
-Expect JSON records with IDs and precision/freshness metadata; pass a returned
-ID to `map read --json` for `source_utf8`. Keep engine selection and rendering in
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> map find Config <span class="t-a">--json</span> <span class="t-a">--budget</span> 500 <span class="t-a">--limit</span> 5</code></pre></div>
+<p>Expect JSON records with IDs and precision/freshness metadata; pass a returned
+ID to <code>map read --json</code> for <code>source_utf8</code>. Keep engine selection and rendering in
 the engine. Pass opaque continuation cursors back unchanged rather than slicing
-pack text. [Named context](CONTEXT.md) adds stable chunk IDs and opt-in delivery
-sessions: use `dctx context TARGET --session ID --dedupe`. Delivery history lasts
+pack text. <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/CONTEXT.md">Named context</a> adds stable chunk IDs and opt-in delivery
+sessions: use <code>dctx context TARGET --session ID --dedupe</code>. Delivery history lasts
 for the CLI invocation or RPC connection; general receipts remain planned.
-A Rust facade `Session` is an in-process API object. See the [scope contract](#two-scopes-one-binary).
-
-### Team / enterprise admin
-
-Team / enterprise admin: system binary via package manager, signature + SBOM verification, one pinned version fleet-wide. Pitfall: mixing project and system versions without checking (`dctx doctor`).
-
-Pin a release archive and verify it against its signed `SHA256SUMS` entry.
+A Rust facade <code>Session</code> is an in-process API object. See the <a href="#two-scopes-one-binary">scope contract</a>.</p>
+<h3 id="team--enterprise-admin">Team / enterprise admin<a class="hd" href="#team--enterprise-admin" aria-label="Link to Team / enterprise admin">#</a></h3>
+<p>Team / enterprise admin: system binary via package manager, signature + SBOM verification, one pinned version fleet-wide. Pitfall: mixing project and system versions without checking (<code>dctx doctor</code>).</p>
+<p>Pin a release archive and verify it against its signed <code>SHA256SUMS</code> entry.
 Native release archives ship with signatures, SBOMs and provenance. Follow
-[download verification](VERIFYING.md), then deploy the verified archive and root
+<a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/VERIFYING.md">download verification</a>, then deploy the verified archive and root
 ignore rules through your fleet tooling. Record the resolved binary path and
-start with:
-
-```sh runnable
-dctx --version --verbose</code></pre></div>
+start with:</p>
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> <span class="t-a">--version</span> <span class="t-a">--verbose</span></code></pre></div>
 <p>Expect version and feature/precision limits. <code>dctx doctor</code> lists the dctx
 binaries visible from a directory with their scopes and SHA-256 checksums;
 signature-status output is planned. Check paths and versions explicitly during onboarding;
@@ -324,20 +310,14 @@ downloaded filename. This checks integrity against the release checksums.
 Use the <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/VERIFYING.md">verification guide</a> to authenticate the archive and checksum manifest.</p>
 <p>Extract the archive and put <code>dctx</code> (<code>dctx.exe</code> on Windows) on your user <code>PATH</code>.
 Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.</p>
-<p>```sh runnable
-dctx --version</p>
-<div class="hl"><pre><code>
-Use the system binary for interactive agents. Project wrappers are available
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> <span class="t-a">--version</span></code></pre></div>
+<p>Use the system binary for interactive agents. Project wrappers are available
 through npm for Node and CI artifacts for Python and Go; no project dependency
-is needed for this path.
-
-### 2. Choose one project and inspect one answer
-
-Use a small project or a relevant sub-root. Check `.gitignore` and `.dctxignore`
-before scanning; leave `DCTX_INDEX_IGNORED` unset. From that directory:
-
-```sh runnable
-dctx map find Config --json --budget 500 --limit 5</code></pre></div>
+is needed for this path.</p>
+<h3 id="2-choose-one-project-and-inspect-one-answer">2. Choose one project and inspect one answer<a class="hd" href="#2-choose-one-project-and-inspect-one-answer" aria-label="Link to 2. Choose one project and inspect one answer">#</a></h3>
+<p>Use a small project or a relevant sub-root. Check <code>.gitignore</code> and <code>.dctxignore</code>
+before scanning; leave <code>DCTX_INDEX_IGNORED</code> unset. From that directory:</p>
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> map find Config <span class="t-a">--json</span> <span class="t-a">--budget</span> 500 <span class="t-a">--limit</span> 5</code></pre></div>
 <p>Replace <code>Config</code> with a symbol or heading in your project. Read a returned ID
 with <code>dctx map read 'ID' --json</code>. The JSON includes verified source bytes as
 <code>source_utf8</code> and reports precision, freshness and pagination. Keep the same
@@ -345,27 +325,20 @@ root between calls, because root-relative IDs change when the root changes.</p>
 <h3 id="3-use-the-cli-from-your-shell-or-agent">3. Use the CLI from your shell or agent<a class="hd" href="#3-use-the-cli-from-your-shell-or-agent" aria-label="Link to 3. Use the CLI from your shell or agent">#</a></h3>
 <p>Run from the selected project root. This example assumes <code>Config</code> is declared in
 <code>src/lib.rs</code>. Use the exact ID that <code>find</code> returns for your project.</p>
-<p>```sh runnable
-dctx map find Config --limit 5 --budget 500
-dctx map read 's:src/lib.rs#Config' --budget 2000</p>
-<div class="hl"><pre><code>
-Use the same commands through an agent's shell tool. See the
-[map guide](guides/MAP-MODE.md) for bounds and pagination, and
-[agent guidance](guides/AGENTS-SNIPPET.md) for shell usage.
-
-### 4. Measure before changing anything
-
-Run the same small task with grep plus narrow file reads and with dctx CLI.
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> map find Config <span class="t-a">--limit</span> 5 <span class="t-a">--budget</span> 500
+<span class="t-f">dctx</span> map read <span class="t-s">'s:src/lib.rs#Config'</span> <span class="t-a">--budget</span> 2000</code></pre></div>
+<p>Use the same commands through an agent's shell tool. See the
+<a href="/docs/map-mode/">map guide</a> for bounds and pagination, and
+<a href="/docs/agents/">agent guidance</a> for shell usage.</p>
+<h3 id="4-measure-before-changing-anything">4. Measure before changing anything<a class="hd" href="#4-measure-before-changing-anything" aria-label="Link to 4. Measure before changing anything">#</a></h3>
+<p>Run the same small task with grep plus narrow file reads and with dctx CLI.
 Record task correctness, number of tool calls, startup instructions and schemas,
 all model input/output tokens, provider cache hits, latency and billed cost when
 available. Include the history carried into each model turn. Smaller tool
-answers alone do not establish whole-session savings.
-
-General receipts are planned. Today, retain JSON metadata and the agent's usage
-report. For task packs, the shipped footer is a useful output accounting line:
-
-```sh runnable
-dctx pack . --for 'Config' --budget 800</code></pre></div>
+answers alone do not establish whole-session savings.</p>
+<p>General receipts are planned. Today, retain JSON metadata and the agent's usage
+report. For task packs, the shipped footer is a useful output accounting line:</p>
+<div class="hl" data-lang="shell"><pre><code><span class="t-f">dctx</span> pack . <span class="t-a">--for</span> <span class="t-s">'Config'</span> <span class="t-a">--budget</span> 800</code></pre></div>
 <p>It reports <code>body_tokens</code>, <code>budget</code> and <code>dropped</code>, using estimated tokens rather
 than a provider tokenizer. It is not a whole-session receipt. Save outputs
 outside the selected tree, and compare repeated runs with identical inputs.
@@ -434,7 +407,7 @@ explicitly, and use separate absolute <code>DCTX_CACHE_DIR</code> locations when
 installations of the same engine family must not share an index. Both future scopes should read the project's exclusions; today the
 CLI loads ignore files while a Rust host supplies its own selection rules.</p>
 <p>Continue with the <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/README.md">documentation index</a>, <a href="/docs/modalities/">modalities</a>
-or <a href="/docs/spec/">engine specification</a>.</p><nav class="pager" aria-label="Previous and next"><a class="prev" href="/docs/readme/" rel="prev"><span>Previous</span>README</a><a class="next" href="/docs/modalities/" rel="next"><span>Next</span>Choosing how to use dctx</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#choose-your-path">Choose your path</a></li><li class="l3"><a href="#one-giant-folder">One giant folder</a></li><li class="l3"><a href="#agent-builder-embedding-a-library">Agent builder embedding a library</a></li><li class="l2"><a href="#safe-path-in-ten-minutes">Safe path in ten minutes</a></li><li class="l3"><a href="#1-install-the-system-binary">1. Install the system binary</a></li><li class="l3"><a href="#3-use-the-cli-from-your-shell-or-agent">3. Use the CLI from your shell or agent</a></li><li class="l2"><a href="#responsibilities">Responsibilities</a></li><li class="l2"><a href="#two-scopes-one-binary">Two scopes, one binary</a></li></ul></nav></div>
+or <a href="/docs/spec/">engine specification</a>.</p><nav class="pager" aria-label="Previous and next"><a class="prev" href="/docs/readme/" rel="prev"><span>Previous</span>README</a><a class="next" href="/docs/modalities/" rel="next"><span>Next</span>Choosing how to use dctx</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#choose-your-path">Choose your path</a></li><li class="l3"><a href="#one-giant-folder">One giant folder</a></li><li class="l3"><a href="#many-small-projects">Many small projects</a></li><li class="l3"><a href="#agent-builder-embedding-a-library">Agent builder embedding a library</a></li><li class="l3"><a href="#team--enterprise-admin">Team / enterprise admin</a></li><li class="l2"><a href="#safe-path-in-ten-minutes">Safe path in ten minutes</a></li><li class="l3"><a href="#1-install-the-system-binary">1. Install the system binary</a></li><li class="l3"><a href="#2-choose-one-project-and-inspect-one-answer">2. Choose one project and inspect one answer</a></li><li class="l3"><a href="#3-use-the-cli-from-your-shell-or-agent">3. Use the CLI from your shell or agent</a></li><li class="l3"><a href="#4-measure-before-changing-anything">4. Measure before changing anything</a></li><li class="l2"><a href="#responsibilities">Responsibilities</a></li><li class="l2"><a href="#two-scopes-one-binary">Two scopes, one binary</a></li></ul></nav></div>
 </main>
 <footer class="ftr">
  <div class="wrap">
