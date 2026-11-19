@@ -165,7 +165,7 @@ def readme_tiers() -> str:
 
 def readme_block(heading: str, index: int = 0) -> str:
     body = section(read("README.md"), heading)
-    blocks = re.findall(r"```(?:zsh|sh|toml)?\n(.*?)```", body, re.S)
+    blocks = re.findall(r"```(?:zsh|sh|toml)?(?: runnable)?\n(.*?)```", body, re.S)
     return blocks[index].rstrip("\n")
 
 
