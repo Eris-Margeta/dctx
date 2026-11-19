@@ -18,7 +18,7 @@ regenerated with `scripts/`. Where Trail-Code is better, this report says so pla
 | Call graph (callers, depth 1) | **Trail-Code wins decisively.** Trail precision 0.94 to 1.00, recall 0.10 to 0.96 per corpus. dctx returns **no call or import edges at all** (recall 0 on 140 targets): the CLI facade only emits `contains` edges. |
 | Task-level answers (70 agent questions) | Trail 122/140 points, 312/354 gold facts in 88.7k tokens. dctx 69/140, 169/354 in 500k tokens (480k of them from the unbounded legacy tree used as the only overview). Without the overview question dctx uses 19.2k tokens for 137/322 facts (7.15 facts/1k tokens) versus Trail 57.0k for 284/322 (4.98 facts/1k): dctx is terser, Trail answers about twice as much. |
 | Footprint | **dctx wins.** One 9.2 MB binary (libc, libm, libgcc_s) versus 405.6 MB of `node_modules` (8,567 files, 50 package versions) plus a Node runtime. |
-| Cold index | **dctx wins** on all seven corpora: 0.09 to 6.05 s versus 2.44 to 94.9 s (2.8 to 69 times faster); peak RSS 8 to 567 MiB versus 181 to 2,111 MiB. Trail's index is smaller only on core (65 MB versus 158 MB). |
+| Cold index | **dctx wins** on all seven corpora: 0.09 to 6.05 s versus 2.44 to 94.9 s; peak RSS 8 to 567 MiB versus 181 to 2,111 MiB. Trail's index is smaller only on core (65 MB versus 158 MB). |
 | Warm query latency | **dctx wins** on small and medium repos (30 to 260 ms versus 0.6 to 1.4 s; Node startup sets Trail's floor near 0.6 s). On the largest Rust corpus dctx re-reads a 158 MB generation per process (1.45 s, 370 MiB per query) and Trail's `callers` is faster (0.83 s). |
 | Freshness | **Tie on correctness**: both see unstaged, untracked and staged edits and drop reverted symbols. Trail also adds the caller edge to the new function; dctx cannot. dctx's first query after an edit costs a full re-index (core: 7.5 s), and every edit adds a full new generation to the cache (core: 158 MB to 946 MB). |
 | Cache-friendliness | **Trail wins.** Trail text outputs are byte-identical across runs and across unrelated edits. Every dctx answer starts with a header containing the snapshot digest, so any edit anywhere changes byte 21 to 50 of every answer; dctx JSON is never byte-identical twice (`age_s`). |
@@ -357,7 +357,7 @@ per extension (`dctx map map FILE --depth 1 --limit 1`).
 - Footprint: 9.2 MB static-ish binary versus 405.6 MB of Node packages; no install scripts.
 - Privacy: no sockets in any run; no repository or home writes in map mode; `.gitignore` honoured even
   without `.git`; gitignored secrets never indexed.
-- Cold index: 2.8 to 69 times faster and 1.6 to 27 times less peak memory on all seven corpora.
+- Cold index on seven corpora: 0.09–6.05 s for dctx and 2.44–94.9 s for Trail-Code. Peak RSS was 8–567 MiB and 181–2,111 MiB, respectively.
 - Warm latency on small and medium repositories: 30 to 260 ms versus 0.6 to 1.4 s.
 - Hard output bounds on every map verb.
 - Finding definitions: rank 1 in 103/140 cases versus 79/140 for `trail ask`.
@@ -490,7 +490,7 @@ unnamed: 2}`) so an agent knows the map is incomplete.
 **TC-F14 (info): footprint, privacy and speed are real advantages; keep them.**
 Evidence: 9.2 MB binary versus 405.6 MB; 0 sockets versus a daily update check that ignores
 `DO_NOT_TRACK` and an install-time telemetry event; no repository writes versus `.gitignore`/`.ignore`
-edits on every Trail build; cold index 2.8 to 69 times faster on all seven corpora; definition ranking 103/140
+edits on every Trail build; lower cold-index times on all seven corpora in this October comparison; definition ranking 103/140
 versus 79/140. Recommendation: keep these as non-negotiable acceptance gates while closing TC-F01 to F07.
 
 **TC-F15 (info): do not copy Trail's in-band agent instructions.**

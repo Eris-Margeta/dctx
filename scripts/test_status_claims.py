@@ -44,6 +44,42 @@ class StatusClaimsTests(unittest.TestCase):
                 self.write("docs/guide.md", "# Guide\n" + phrase.upper() + "\n")
                 self.assertEqual(checker.check(self.root), [checker.Violation("docs/guide.md", 2, phrase)])
 
+    def test_unqualified_benchmark_claims(self):
+        for claim, phrase in (
+            ("dctx BEATS grep", "beats grep"),
+            ("dctx saves tokens by default", "saves tokens"),
+            ("dctx uses fewer tokens", "fewer tokens"),
+            ("dctx is 2.5 times faster", "times faster"),
+            ("dctx is 50–100x faster", "times faster"),
+            ("dctx is 3× faster", "times faster"),
+        ):
+            with self.subTest(claim=claim):
+                self.write("docs/guide.md", "# Guide\n" + claim + "\n")
+                self.assertEqual(checker.check(self.root), [checker.Violation("docs/guide.md", 2, phrase)])
+
+    def test_benchmark_citation_must_be_on_claim_line(self):
+        self.write("docs/guide.md",
+                   "It beats grep ([study](BENCHMARK-20261111.md)).\n"
+                   "It saves tokens. <!-- BENCHMARK-20261111.md -->\n"
+                   "The study is BENCHMARK-20261111.md.\n"
+                   "It is 4× faster.\n"
+                   "It is 2 times faster. BENCHMARK-202611110.md\n")
+        self.assertEqual(checker.check(self.root), [
+            checker.Violation("docs/guide.md", 2, "saves tokens"),
+            checker.Violation("docs/guide.md", 4, "times faster"),
+            checker.Violation("docs/guide.md", 5, "times faster"),
+        ])
+
+    def test_benchmark_claims_in_website_and_llms(self):
+        self.write("website/benchmarks/index.html",
+                   '<p>It <b>beats</b> grep. <a href="BENCHMARK-20261111.md">Study</a></p>\n'
+                   '<meta content="dctx saves tokens">\n')
+        self.write("website/llms-small.txt", "It is 3 times faster.\n")
+        self.assertEqual(checker.check(self.root), [
+            checker.Violation("website/benchmarks/index.html", 2, "saves tokens"),
+            checker.Violation("website/llms-small.txt", 1, "times faster"),
+        ])
+
     def test_not_enterprise_ready(self):
         self.write("docs/guide.md", "It is NOT enterprise-ready.\nIt is not\nenterprise-ready.\n"
                    "It is **not** enterprise-ready.\nIt is not **enterprise-ready**.\n")

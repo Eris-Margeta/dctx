@@ -184,7 +184,7 @@ Success criteria:
 - Performance impact: <1% overhead for content analysis on unrecognized extensions
 - False positive rate: 0% in test suite (all text files correctly identified)
 
-**Real-World Validation:**
+**Legacy CLI validation (v0.9.0 and v0.10.0):**
 ```bash
 # Before (v0.9.0)
 dctx /path/to/project

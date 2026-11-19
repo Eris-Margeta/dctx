@@ -9,9 +9,8 @@ tool descriptions, conversation replay, model output and provider cache effects.
 
 ## Grep plus file reads
 
-The [11 November whole-session benchmark](https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261111.md) measured grep plus reads against dctx CLI: CLI median total tokens -5.01 %; the pre-registered 25 % savings rule was not met.
-Official strict citation recall medians (A/B/C): 10.10 % / 14.46 % / 13.41 %; diagnostic file-level recall: 53.77 % / 71.70 % / 76.42 %. The claim is accuracy and bounded context, not token savings.
-On this corpus and model dctx did not save 25 % tokens. The linked report gives median [min, max], methods and limitations; corpus and raw answers are private.
+On 12 November 2026, the dctx harness-prefix pack (P) reached 70.91% median strict citation recall versus 19.34% for grep plus file reads across 20 questions and three repeats per arm (300 graded answers across five arms). Median list-price token cost per question was $0.195418 versus $0.179670 for grep (+8.8%). The pack missed the prespecified cost threshold, so it did not win the benchmark.
+[Whole-session benchmark and method](https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261111.md).
 
 ## Secondary historical evidence: other-tool protocols
 
@@ -297,7 +296,7 @@ All corpora and the edit-stability, network and coverage tables are in
 
 These exclusions apply to the historical tool-output protocols below the whole-session summary above.
 
-- Whole-session cost or task-level answer quality from these historical protocols. Historical fact scores describe raw tool outputs only; the [11 November study](https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261111.md) measures whole sessions with a frozen model.
+- Whole-session cost or task-level answer quality from these historical protocols. Historical fact scores describe raw tool outputs only; the [12 November study](https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261111.md) measures whole sessions with a fixed model.
 - Anything about graphify's LLM semantic graph, or Trail-Code's learnings and LSP edges.
 - SWE-bench scores or agent-run numbers from these historical tool-output protocols.
 - Equal language depth. dctx's 25 new formats are outline tier: symbols, not call edges.

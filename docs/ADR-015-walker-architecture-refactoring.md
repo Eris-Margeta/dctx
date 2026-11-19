@@ -230,7 +230,7 @@ The dramatic speedup on large projects comes from skipping ignored directories e
 ✅ **Maintainability:** Clear separation of concerns, easy to reason about
 ✅ **Testability:** Each component tests independently, 317 tests total
 ✅ **Debuggability:** Built-in statistics and diagnostics
-✅ **Performance:** 50-100x faster on large projects
+✅ **Performance:** Skip traversal of ignored directories
 ✅ **Correctness:** Bug fixed as natural consequence of proper architecture
 ✅ **Type Safety:** Explicit states prevent invalid combinations
 

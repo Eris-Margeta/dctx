@@ -217,13 +217,9 @@ pub struct Order {
 
 The baseline is **grep plus reading files**.
 
-The [11 November whole-session benchmark](docs/BENCHMARK-20261111.md) measured 20 questions on a private 13-crate Rust workspace with `claude-sonnet-5-5`, dctx 1.3.0 and three repeats per arm. Median total tokens [min, max]: grep plus reads 14,904,014 [14,604,149, 15,622,381]; dctx CLI (warm index) 14,157,974 [11,221,908, 15,613,375].
+On 12 November 2026, the dctx harness-prefix pack (P) reached 70.91% median strict citation recall versus 19.34% for grep plus file reads across 20 questions and three repeats per arm (300 graded answers across five arms). Median list-price token cost per question was $0.195418 versus $0.179670 for grep (+8.8%). The pack missed the prespecified cost threshold, so it did not win the benchmark.
 
-**On this corpus and model dctx did not save 25 % tokens.** CLI median tokens were -5.01 % versus grep; the pre-registered success rule was not met. The claim is **accuracy and bounded context**, not token savings: CLI named more required files at about equal or higher token cost.
-
-dctx on its own does not save tokens by default. Savings come from a harness or agent system that reuses byte-identical, prefix-stable context across long sessions over a large body of work. It behaves like an advanced caching mechanism, with complete control over every byte of context. There is no measured, citable savings figure for such a system yet. [Why this matters](docs/WHY-DCTX.md#savings-belong-to-the-system).
-
-Official strict citation recall medians [min, max]: grep 10.10 % [10.10, 20.73], CLI 14.46 % [8.36, 22.65]. Diagnostic file-level recall medians: 53.77 % and 71.70 %, respectively; this does not replace strict recall. One corpus, one model, three repeats; no significance claim. Corpus and raw answers are private and cannot be published; dctx 1.3.0 is not current HEAD. **Under ~200 files, use grep.**
+[Whole-session benchmark and method](docs/BENCHMARK-20261111.md). One corpus and one model. **Under ~200 files, use grep.**
 
 Historical cold indexing of six benchmark corpora took dctx 0.13–1.20 s on one Linux x86_64 runner. This measures CLI wall time, not agent completion time or session cost.
 

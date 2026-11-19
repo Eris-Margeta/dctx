@@ -63,8 +63,7 @@ dctx was never meant to ship an MCP server; the integration was an experiment to
   Map, hubs, trace and impact have smaller default answer bounds; explicit
   limits still override them. A bounded `pack` tool returns task definitions,
   callers/imports and source in one call. Tool names and opt-in JSON remain
-  compatible; byte budgets guard catalog and response size in tests. See the
-  [payload study](docs/research/mcp-cost-20261112.md).
+  compatible; byte budgets guard catalog and response size in tests.
 
 - Node wrapper is published as `@tejl/dctx` on npm; the unscoped name `dctx` was refused by the registry.
 
@@ -103,8 +102,7 @@ until it happens, the release archives are the install path.
   current folder with path, ownership scope, version, build commit, SHA-256 and cache
   sizes. It changes nothing and uses no network.
 - MCP `--profile lean|three` and `--tools NAME,...` select a smaller tool set with
-  compact descriptions (lean start-up tool definitions: 6,278 -> 1,637 bytes). See
-  [docs/guides/MCP.md](docs/guides/MCP.md).
+  compact descriptions (lean start-up tool definitions: 6,278 -> 1,637 bytes).
 - Python, Node (npm) and Go client packages over `dctx rpc`, each with CLI byte-parity
   tests in CI. They are not published to a registry yet.
 - Release supply chain: keyless cosign signatures, CycloneDX SBOMs, GitHub build

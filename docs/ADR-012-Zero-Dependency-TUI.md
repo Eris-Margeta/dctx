@@ -292,7 +292,7 @@ fn main() {
 
 ### User Experience Improvements
 
-**Before (Headless CLI):**
+**Before (legacy headless CLI):**
 ```bash
 # User must remember flags and syntax
 dctx . --ext rs,toml --small 0.5 --non-empty -c

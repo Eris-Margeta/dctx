@@ -7,7 +7,7 @@ from common import VERSION
 NEWS = [
     {
         "slug": "dctx-1-1", "date": "2026-11-04", "kind": "Release",
-        "title": "dctx 1.1: three more languages, a prefix-stable pack, and a measured lead.",
+        "title": "dctx 1.1: three more languages and a prefix-stable pack.",
         "summary": "Perl, Fortran and Verilog join map mode; dctx pack drops timestamps so prompt caches hit; the three-way benchmark and the byte-stability measurement are public.",
         "body": f"""
 <p>dctx {VERSION} was released on 4 November 2026. It folds in the 1.0.1 line and follows the first v1 release of 31 October.</p>
@@ -15,7 +15,7 @@ NEWS = [
 <ul>
 <li><strong>Perl, Fortran and Verilog/SystemVerilog</strong> join the full tier, with symbols and lexical call edges labelled <code>guess</code>. dctx now covers 50 language families: 36 full, 8 outline and 6 documentation formats.</li>
 <li><strong>A prefix-stable <code>dctx pack</code>.</strong> Tree lines carry the file id only, with no modification time and no size, so a bare <code>touch</code> leaves the page byte-identical and an edit keeps everything before the edited file as a shared prefix. <code>--tree-stamps=on</code> brings back the 1.0.0 lines.</li>
-<li><strong>Faster id lookup</strong>, record and entry caps checked during the scan, and a closed stdout pipe that exits cleanly.</li>
+<li><strong>Indexed id lookup</strong>, record and entry caps checked during the scan, and a closed stdout pipe that exits cleanly.</li>
 </ul>
 <h2>Historical output-only measurements</h2>
 <p>These other-tool results are retained as release history. Tokens here estimate tool stdout, not whole-session cost. The current baseline is <a href="/benchmarks/#grep-read">grep plus file reads</a>; <a href="/docs/modalities/">choose a mode</a> and count startup context and all model turns.</p>
@@ -52,7 +52,7 @@ NEWS = [
         "title": "Our specification, and a benchmark that does not flatter us.",
         "summary": "The dctx Context Management Specification, and an isolated comparison with Trail-Code: wins, losses and what comes next.",
         "body": f"""
-<div class="caveat"><p><strong>Historical post.</strong> These results describe dctx as of October 2026, before call edges and byte-stable answers. For current measurements, read <a href="/news/dctx-1-1/">dctx 1.1</a>.</p></div>
+<div class="caveat"><p><strong>Historical post.</strong> These results describe dctx as of October 2026, before call edges and byte-stable answers. For the whole-session results, see <a href="/benchmarks/#grep-read">the grep comparison</a>.</p></div>
 <p>An engineering organisation should be able to check every claim a tool makes. So we wrote down exactly what dctx is meant to be, and then measured where it stands today.</p>
 <h2>The specification</h2>
 <p>The dctx Context Management Specification turns our core belief, prompt-processing efficiency, into five testable constraints: every answer is bounded, deterministic, prefix-stable, non-redundant and honest about its precision and freshness. It names ten ways chunk retrieval fails and the mechanism that rules out each one, defines a seven-layer organisation policy in which every layer can only narrow the one above it, and lays out the roadmap with an acceptance gate for every step. Each item is marked as available, under contract or a target.</p>
@@ -69,7 +69,7 @@ NEWS = [
 <h3>Where Trail-Code led</h3>
 <ul>
 <li>Call graphs: dctx's map command did not yet expose call or import edges.</li>
-<li>Answers to agent questions: 122 of 140 points against 69 of 140, with fewer tokens.</li>
+<li>Across 70 questions, Trail-Code’s tool output scored 122 of 140 points using 88,691 estimated tokens. dctx scored 69 of 140 using 500,005 estimated tokens.</li>
 <li>Stability under edits: Trail-Code kept most answers byte-identical after an unrelated change; dctx did not, which costs prompt-cache hits.</li>
 <li>Incremental refresh after an edit.</li>
 </ul>

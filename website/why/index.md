@@ -105,17 +105,15 @@ The report states its limits too. It measures dctx's answers, not a provider's c
 
 ### Savings belong to the system
 
-dctx on its own does not save tokens by default. In the
-[11 November benchmark](https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261111.md), the dctx CLI arm used 5.01 % fewer
-median total tokens than grep plus file reads, far below the 25 % rule.
+On 12 November 2026, the harness-prefix pack reached 70.91% median strict
+citation recall versus 19.34% for grep plus file reads (20 questions, three
+repeats per arm). Median list-price token cost per question rose 8.8%, from
+$0.179670 to $0.195418. The pack missed the prespecified cost threshold.
+[Whole-session benchmark and method](https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261111.md).
 
-Token savings come from systems that use dctx: a harness or agent system built
-around its cache-hit philosophy, reusing byte-identical, prefix-stable context
-across long sessions over a large body of work. In that system, dctx behaves
-like any sufficiently advanced caching mechanism, with one difference: you have
-complete control over every byte of the context. The system must keep and reuse
-that context to benefit. There is no measured, citable savings figure for such a
-system yet.
+A harness can reuse byte-identical, prefix-stable context across turns. Its
+cost depends on what it reuses, how many turns it takes, and how the provider
+prices cached and uncached tokens. dctx supplies the context bytes.
 
 ### An illustration of money and time
 
@@ -145,7 +143,7 @@ If the context is byte-identical, turn one pays 200 units and the next nine pay 
 
 - [README](https://www.dctx.internet.technology/docs/readme/): install, quick start, map mode.
 - [Specification](https://www.dctx.internet.technology/docs/spec/): rules, metrics, roadmap.
-- [Measurement evidence](https://www.dctx.internet.technology/docs/benchmark/): grep plus file reads first; other-tool numbers are secondary historical notes.
+- [Whole-session benchmark](https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261111.md) and [historical tool-output measurements](https://www.dctx.internet.technology/docs/benchmark/).
 - [Stability report](https://www.dctx.internet.technology/docs/stability/): protocol, raw answers and limits.
 - [Map mode guide](https://www.dctx.internet.technology/docs/map-mode/): every verb and option.
 

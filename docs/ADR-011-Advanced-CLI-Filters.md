@@ -229,7 +229,7 @@ struct SnapshotConfig {
 **Filter Precedence:**
 When multiple filters are active, ALL must pass for a file to be included (AND logic).
 
-**Example Usage:**
+**Legacy CLI examples:**
 ```bash
 # Only Rust files
 dctx . --ext rs
