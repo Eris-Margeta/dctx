@@ -26,7 +26,7 @@ jobs:
   test:
     name: ${{ matrix.os }}, ${{ matrix.toolchain }}
     # Linux on our own runners for upstream push events only; PR/fork code stays on hosted runners.
-    runs-on: ${{ (matrix.os == 'ubuntu-24.04' && github.event_name == 'push' && github.repository == 'Eris-Margeta/dctx') && fromJSON('["self-hosted","Linux","X64","dctx"]') || matrix.os }}
+    runs-on: ${{ (matrix.os == 'ubuntu-24.04' && github.event_name == 'push' && github.repository == 'Eris-Margeta/dctx') && fromJSON('["self-hosted","Linux","X64","dctx","dctx-fast"]') || matrix.os }}
     # Allow headroom for cold builds and repository-scale tests on every host.
     timeout-minutes: 90
     strategy:
