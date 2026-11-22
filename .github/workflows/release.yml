@@ -31,6 +31,9 @@ jobs:
 
   preflight:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
     outputs:
       npm: ${{ steps.secrets.outputs.npm }}
       crates: ${{ steps.secrets.outputs.crates }}
@@ -39,6 +42,14 @@ jobs:
         with:
           ref: refs/tags/${{ env.RELEASE_TAG }}
           persist-credentials: false
+      - name: Refuse to publish unless the full CI for this commit is green
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # The checkout is detached at the tag; the guard needs the tagged commit's CI verdict.
+          ./tools/release/require-green-ci.sh "$(git rev-parse HEAD)" "$GITHUB_REPOSITORY"
       - name: Validate release version and notes
         shell: bash
         run: |

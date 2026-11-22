@@ -39,7 +39,8 @@ jobs:
   quality:
     if: ${{ (inputs.start || 'quality') == 'quality' }}
     name: Format, lint, docs and release gates
-    runs-on: ubuntu-24.04
+    # Own runners for push events of the upstream repo only; PR/fork code never runs on them.
+    runs-on: ${{ (github.event_name == 'push' && github.repository == 'Eris-Margeta/dctx') && fromJSON('["self-hosted","Linux","X64","dctx"]') || 'ubuntu-24.04' }}
     timeout-minutes: 60
     defaults:
       run:
