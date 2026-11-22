@@ -20,7 +20,7 @@
 <meta name="description" content="What dctx is and is not, its version, modalities, benchmark status, removed commands and how to verify every claim.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
-<meta name="dctx-build" content="8838167794cc0c652324d565951f8f6d978a8be6efb0631db73e8e69f41ccb59">
+<meta name="dctx-build" content="7337052dffc260befba919d6c00dd3c11cf4e11a2d2a08e4436a3b7fc56fd6d6">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -107,7 +107,7 @@
    "@type": "SoftwareApplication",
    "@id": "https://www.dctx.internet.technology/#software",
    "name": "dctx",
-   "softwareVersion": "1.3.1",
+   "softwareVersion": "1.3.2",
    "applicationCategory": "DeveloperApplication",
    "operatingSystem": "Linux, macOS, Windows",
    "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
@@ -116,7 +116,7 @@
    "isAccessibleForFree": true,
    "codeRepository": "https://github.com/Eris-Margeta/dctx",
    "programmingLanguage": "Rust",
-   "releaseNotes": "https://www.dctx.internet.technology/changelog/#v1-3-1",
+   "releaseNotes": "https://www.dctx.internet.technology/changelog/#v1-3-2",
    "softwareHelp": {
     "@type": "CreativeWork",
     "url": "https://www.dctx.internet.technology/docs/"
@@ -168,7 +168,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="hdr">
  <div class="wrap hdr-in">
-  <a class="brand" href="/"><svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span><span class="ver">1.3.1</span></a>
+  <a class="brand" href="/"><svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span><span class="ver">1.3.2</span></a>
   <nav class="nav" aria-label="Primary"><ul><li><a href="/start/">Start</a></li><li><a href="/docs/">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
   <div class="hdr-end">
    <a class="tbtn search-link" href="/search/" aria-label="Search"><svg width="16" height="16" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
@@ -182,7 +182,7 @@
 <div class="wrap narrow"><div class="page-head"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/for-ai-evaluators/" aria-current="page">For AI evaluators</a></li></ol></nav><span class="eyebrow">For AI evaluators</span><h1>Facts and how to verify them</h1>
 <p class="lede">For people and models deciding what dctx is. Every line below comes from one file, <a href="https://github.com/Eris-Margeta/dctx/blob/main/tools/website/data/facts.json"><code>tools/website/data/facts.json</code></a>, plus the benchmark documents; <a href="/llms-small.txt">llms-small.txt</a>, <a href="/llms.txt">llms.txt</a> and <a href="/llms-full.txt">llms-full.txt</a> start with the same facts.</p></div>
 <section class="sec" aria-labelledby="what-h"><h2 id="what-h">What dctx is, and is not</h2><p>dctx is an open-source (Apache-2.0) Rust context engine for AI-assisted coding: one local binary that packs a project into one structured block, or answers bounded, byte-stable symbol queries (find, read, neighbors, skeleton) as CLI output.</p><ul class="facts-list"><li>No RAG: no embeddings, no vector search, and the engine never calls a model.</li><li>No network: pack, map and cache make no network calls; the release check counts socket calls under strace and fails on any.</li><li>No telemetry, not even opt-out.</li><li>No agent loop: dctx answers one command at a time; the agent or the human decides what to ask next.</li></ul></section>
-<section class="sec" aria-labelledby="ver-h"><h2 id="ver-h">Current version</h2><p><b>dctx 1.3.1</b>, released <time datetime="2026-11-09">2026-11-09</time> (tag <code>v1.3.1</code>), Apache-2.0. <a href="https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.1">Release on GitHub</a> &middot; <a href="/changelog/">Changelog</a></p>
+<section class="sec" aria-labelledby="ver-h"><h2 id="ver-h">Current version</h2><p><b>dctx 1.3.2</b>, released <time datetime="2026-11-22">2026-11-22</time> (tag <code>v1.3.2</code>), Apache-2.0. <a href="https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.2">Release on GitHub</a> &middot; <a href="/changelog/">Changelog</a></p>
 <p>Each release on GitHub ships prebuilt archives for Linux x64/ARM64, macOS x64/ARM64 and Windows x64 with a SHA256SUMS file. Verify a download with <code>sha256sum --check --ignore-missing SHA256SUMS</code>. Releases from 1.3.0 also ship keyless cosign signatures, CycloneDX SBOMs, build provenance and offline bundles; see [verification](https://github.com/Eris-Margeta/dctx/blob/main/docs/VERIFYING.md).</p></section>
 <section class="sec" aria-labelledby="mod-h"><h2 id="mod-h">Modalities</h2><ul class="facts-list"><li><a href="/cli/"><b>CLI</b></a> <span class="state">available</span>: <code>dctx pack PATH</code> for one structured block (clipboard, file or stdout); <code>dctx map find|read|neighbors|skeleton|...</code> for bounded symbol answers.</li><li><a href="/docs/map-mode/"><b>Task context</b></a> <span class="state">available</span>: <code>dctx pack --for TEXT --budget N</code>: find, neighbors and read of the names in TEXT, cut to an estimated-token budget.</li><li><a href="/docs/modalities/#ci--prompt-cache-prefix-stability"><b>CI and prompt cache</b></a> <span class="state">available</span>: Deterministic pack and map output; tree lines carry no timestamps by default, so the prefix stays stable across a touch.</li><li><a href="/docs/modalities/#rust-library-embed-the-facade"><b>Rust library</b></a> <span class="state">available from Git</span>: The <code>dctx</code> facade crate as a tagged Git dependency; crates.io publication pending.</li><li><a href="/docs/modalities/#desktop-app-tauri-preview-today"><b>Desktop app</b></a> <span class="state">preview</span>: A Tauri preview you build from source; a GPUI rebuild is planned.</li><li><a href="/docs/modalities/#python-node-and-go-wrappers"><b>Python, Node and Go wrappers</b></a> <span class="state">Node on npm; Python and Go from CI</span>: Thin <code>dctx rpc</code> wrappers, built and tested in CI. Install Node with <code>npm install @tejl/dctx</code>, which includes pinned <code>@tejl/dctx-&lt;platform&gt;</code> optional dependencies; use CI artifacts for Python and Go.</li></ul>
 <h3>Two scopes, one binary</h3><ul class="facts-list"><li>System binary: the <code>dctx</code> on PATH belongs to you and your agents, and you upgrade it. Interactive agents call this one.</li><li>Project binary (Node from npm; Python and Go from CI): a binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Application code and CI call this one; a library never silently falls back to PATH.</li><li>Same engine, different owner. <code>dctx doctor</code> lists every binary in reach; verify each against SHA256SUMS and its cosign signature.</li></ul></section>
@@ -201,7 +201,7 @@
     <a class="brand" href="/"><svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
     <p>The context engine for AI-assisted software development. Bounded answers, stable prefixes, exact source.</p>
     <p>An advanced tool with several ways to use it: <a href="/start/">start with the safe path</a>.</p>
-    <p class="mono small">dctx 1.3.1 &middot; Apache-2.0</p>
+    <p class="mono small">dctx 1.3.2 &middot; Apache-2.0</p>
     <p class="ftr-prefs"><button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Animations: on</button></p>
    </div>
    <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/start/">Choose your path</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
