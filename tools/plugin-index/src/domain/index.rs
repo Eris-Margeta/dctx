@@ -217,7 +217,7 @@ mod tests {
     use super::*;
 
     const FINGERPRINT: &str = "21fe31dfa154a261626bf854046fd2271b7bed4b6abe45aa58877ef47f9721b9";
-    const DIGEST: &str = "75e85d17d6a2815c44298874a011f6f642aa481ef99491ee3a8c94548b6d9bd5";
+    const DIGEST: &str = "a1cf5a775360627d2697a4d2d89ff44862ccb808bdc4bb66fa72ee39bb83a0e6";
 
     fn page(plugins: &str) -> String {
         format!(r#"{{"schema":1,"sequence":1,"plugins":[{plugins}]}}"#)

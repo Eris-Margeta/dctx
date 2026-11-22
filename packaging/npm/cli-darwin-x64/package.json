@@ -1,6 +1,6 @@
 {
   "name": "@tejl/dctx-darwin-x64",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "dctx native CLI for darwin-x64",
   "license": "Apache-2.0",
   "repository": {

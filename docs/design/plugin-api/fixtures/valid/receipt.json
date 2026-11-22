@@ -9,14 +9,14 @@
   "invocation": "op:1",
   "plugin": {
     "id": "dctx/git",
-    "version": "1.3.1",
+    "version": "1.3.2",
     "publisher_key": "fixture-key-1",
     "artifact_digest": "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
   },
   "project": "project:1",
   "policy_epoch": 1,
   "policy_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "plan_digest": "sha256:c50f23306aeefe5e751e9dc0734a51a6d1764d9fcf582e013069155034170879",
+  "plan_digest": "sha256:7ed2b5be69c3076c8452f07d5b9013ce335ea4648f57e4b72c06a1e660352b78",
   "method": "file.replace",
   "resource": "file:ignore",
   "action_id": "action:replace",

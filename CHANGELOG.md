@@ -14,6 +14,8 @@ and distribution plans below do not describe the current release.
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-11-22
+
 ### Removed: MCP server
 
 dctx was never meant to ship an MCP server; the integration was an experiment to reach a wider audience, and that was the wrong call. dctx is a command-line tool and the binary is the single source of truth: use the dctx CLI directly, from a shell or an agent's shell tool. MCP support is removed and no longer supported.

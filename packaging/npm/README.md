@@ -45,7 +45,7 @@ newlines. Tests discover the verb set from the schema to prevent coverage drift.
 To fill all six packages from five local release archives and `SHA256SUMS`:
 
 ```sh
-python3 tools/release/prepare-npm.py v1.3.1 artifacts/
+python3 tools/release/prepare-npm.py v1.3.2 artifacts/
 (cd packaging/npm/dctx && npm pack --ignore-scripts --dry-run)
 python3 tools/release/test-packaging.py
 ```

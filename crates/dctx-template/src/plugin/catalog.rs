@@ -23,7 +23,7 @@ pub fn bundled_git_plugin() -> KnownPlugin {
             "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
         )),
         manifest_digest: Some(hex32(
-            "75e85d17d6a2815c44298874a011f6f642aa481ef99491ee3a8c94548b6d9bd5",
+            "a1cf5a775360627d2697a4d2d89ff44862ccb808bdc4bb66fa72ee39bb83a0e6",
         )),
         publisher_key: "fixture-key-1".to_string(),
         origin: PluginOrigin::Bundled,

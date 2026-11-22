@@ -18,7 +18,7 @@ Intel/Apple Silicon macOS and Windows x64 have corresponding assets.
 
 ```sh
 set -eu
-TAG=v1.3.1 # select a release produced by the new workflow
+TAG=v1.3.2 # select a release produced by the new workflow
 ASSET=dctx-x86_64-unknown-linux-musl.tar.gz
 REPO=Eris-Margeta/dctx
 gh release download "$TAG" --repo "$REPO" --pattern "$ASSET" \
@@ -165,7 +165,7 @@ On the disconnected host (Linux example), with an absolute path to the trusted r
 
 ```sh
 set -eu
-TAG=v1.3.1 # the expected release tag
+TAG=v1.3.2 # the expected release tag
 ASSET=dctx-x86_64-unknown-linux-musl-airgap.tar.gz
 TRUSTED_ROOT=/media/transfer/trusted_root.json
 IDENTITY="https://github.com/Eris-Margeta/dctx/.github/workflows/release.yml@refs/tags/$TAG"

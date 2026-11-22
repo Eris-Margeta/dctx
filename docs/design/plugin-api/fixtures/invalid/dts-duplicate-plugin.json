@@ -10,9 +10,9 @@
       "required": false,
       "resolution": {
         "status": "available",
-        "version": "1.3.1",
+        "version": "1.3.2",
         "artifact_digest": "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-        "manifest_digest": "sha256:75e85d17d6a2815c44298874a011f6f642aa481ef99491ee3a8c94548b6d9bd5",
+        "manifest_digest": "sha256:a1cf5a775360627d2697a4d2d89ff44862ccb808bdc4bb66fa72ee39bb83a0e6",
         "publisher_key": "fixture-key-1",
         "origin": "bundled"
       },
@@ -61,9 +61,9 @@
       "required": false,
       "resolution": {
         "status": "available",
-        "version": "1.3.1",
+        "version": "1.3.2",
         "artifact_digest": "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-        "manifest_digest": "sha256:75e85d17d6a2815c44298874a011f6f642aa481ef99491ee3a8c94548b6d9bd5",
+        "manifest_digest": "sha256:a1cf5a775360627d2697a4d2d89ff44862ccb808bdc4bb66fa72ee39bb83a0e6",
         "publisher_key": "fixture-key-1",
         "origin": "bundled"
       },
