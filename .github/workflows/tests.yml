@@ -40,6 +40,11 @@ jobs:
       run:
         shell: bash
     steps:
+      - if: ${{ runner.environment == 'self-hosted' }}
+        shell: bash
+        run: |
+          # Go module caches are read-only; make any leftovers deletable so checkout can clean the workspace.
+          chmod -R u+w "$GITHUB_WORKSPACE" 2>/dev/null || true
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1 (GitHub API resolved)
         with:
           persist-credentials: false
