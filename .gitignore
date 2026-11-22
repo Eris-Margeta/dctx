@@ -344,3 +344,6 @@ GEMINI.md
 
 # CLI release helpers (the generic IDE rule above ignores directories named release).
 !/tools/release/
+# secrets (ASC hard rule 22.11)
+*.p8
+.secrets/
