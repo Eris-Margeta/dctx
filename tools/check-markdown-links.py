@@ -25,6 +25,9 @@ class Links(HTMLParser):
         self.ids = set()
         self.headings = Counter()
         self.heading = None
+        # python-markdown's fenced_code rejects info strings with extra words (```sh runnable)
+        # and then swallows the headings that follow; keep only the language word.
+        source = re.sub(r'^([ \t]*(?:`{3,}|~{3,}))[ \t]*([^\s`~{]+)[ \t]+[^\n`]*$', r'\1\2', source, flags=re.M)
         self.feed(markdown.markdown(source, extensions=['fenced_code', 'tables']))
 
     def handle_starttag(self, tag, attrs):
