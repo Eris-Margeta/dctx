@@ -22,10 +22,8 @@ first:
    catalog benchmarks under an instruction counter, checked against the committed
    baseline) and [`fuzz-smoke.yml`](../.github/workflows/fuzz-smoke.yml) (bounded
    parser property targets with a 180-second budget).
-4. **deploy-site**: only on pushes to `main`, after every package workflow passes,
-   [`deploy-site.yml`](../.github/workflows/deploy-site.yml) publishes the website
-   when the commit changed `website/`, `tools/website/`, `docs/` or `CHANGELOG.md`
-   and the deployment secrets are configured.
+4. **Website deploy** is not a CI job. The maintainer's own host pulls the green `main`
+   build and publishes the website; CI only builds and checks it.
 
 A stage starts only when every earlier stage passed, and a failing step stops its
 job. Inside a stage, the first failing OS/toolchain combination cancels the rest
