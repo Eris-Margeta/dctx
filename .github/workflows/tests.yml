@@ -75,6 +75,11 @@ jobs:
         run: |
           if [ "$RUNNER_OS" = Windows ]; then
             python -m pip install -r scripts/requirements.txt
+          elif [ "${{ runner.environment }}" = self-hosted ]; then
+            # Debian system python has no pip: use a throwaway venv and put it first on PATH.
+            python3 -m venv "$RUNNER_TEMP/venv"
+            "$RUNNER_TEMP/venv/bin/pip" install -r scripts/requirements.txt
+            echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
           else
             python3 -m pip install -r scripts/requirements.txt
           fi
