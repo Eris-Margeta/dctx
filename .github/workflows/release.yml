@@ -37,7 +37,6 @@ jobs:
       checks: read
       statuses: read
     outputs:
-      npm: ${{ steps.secrets.outputs.npm }}
       crates: ${{ steps.secrets.outputs.crates }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1 (GitHub API resolved)
@@ -68,14 +67,12 @@ jobs:
           fi
           ./tools/extract-changelog.sh "$RELEASE_TAG" > release-notes.md
           test -s release-notes.md
-      - name: Check optional publishing credentials
+      - name: Check optional crates.io publishing credentials
         id: secrets
         shell: bash
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
-          if [ -n "$NPM_TOKEN" ]; then echo 'npm=true' >> "$GITHUB_OUTPUT"; fi
           if [ -n "$CARGO_REGISTRY_TOKEN" ]; then echo 'crates=true' >> "$GITHUB_OUTPUT"; fi
 
   build:
@@ -248,39 +245,6 @@ jobs:
           if [[ "$RELEASE_TAG" == *-* ]]; then extra+=(--prerelease); fi
           gh release create "$RELEASE_TAG" artifacts/* --verify-tag \
             --title "dctx $RELEASE_TAG" --notes-file release-notes.md "${extra[@]}"
-
-  npm-publish:
-    needs: [preflight, release]
-    if: needs.preflight.outputs.npm == 'true'
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1 (GitHub API resolved)
-        with:
-          ref: refs/tags/${{ env.RELEASE_TAG }}
-          persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0 (GitHub API resolved)
-        with:
-          node-version: '24'
-          registry-url: https://registry.npmjs.org
-      - name: Prepare packages from released assets
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release download "$RELEASE_TAG" --dir artifacts --pattern 'dctx-*' --pattern SHA256SUMS
-          python3 tools/release/prepare-npm.py "$RELEASE_TAG" artifacts
-      - name: Publish platform packages, then shim
-        shell: bash
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          set -euo pipefail
-          npm_tag=latest
-          if [[ "$RELEASE_TAG" == *-* ]]; then npm_tag=next; fi
-          for package in packaging/npm/cli-* packaging/npm/dctx; do
-            (cd "$package" && npm publish --access public --tag "$npm_tag")
-          done
 
   crates-publish:
     needs: [preflight, release]
