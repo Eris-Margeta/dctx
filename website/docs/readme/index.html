@@ -20,7 +20,7 @@
 <meta name="description" content="Installation, quick start, map mode, language tiers and the CLI reference.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
-<meta name="dctx-build" content="7337052dffc260befba919d6c00dd3c11cf4e11a2d2a08e4436a3b7fc56fd6d6">
+<meta name="dctx-build" content="bc2e56e0d42a7c2bceade6350d81ad7e532fe8115137714dea9caf7a1ed6ce05">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -41,7 +41,7 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="dctx: README. Installation, quick start, map mode, language tiers and the CLI reference.">
-<meta property="article:modified_time" content="2026-11-22T14:03:16Z">
+<meta property="article:modified_time" content="2026-11-23T08:02:18Z">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="README · dctx">
 <meta name="twitter:description" content="Installation, quick start, map mode, language tiers and the CLI reference.">
@@ -192,13 +192,13 @@
    "mainEntityOfPage": {
     "@id": "https://www.dctx.internet.technology/docs/readme/#webpage"
    },
-   "wordCount": 2497,
+   "wordCount": 2662,
    "encoding": {
     "@type": "MediaObject",
     "contentUrl": "https://www.dctx.internet.technology/docs/readme/index.md",
     "encodingFormat": "text/markdown"
    },
-   "dateModified": "2026-11-22T14:03:16Z"
+   "dateModified": "2026-11-23T08:02:18Z"
   }
  ]
 }
@@ -219,7 +219,7 @@
  </div>
 </header>
 <main id="main">
-<div class="wrap docs-grid"><aside class="sidebar" aria-label="Documentation"><p class="side-h"><a href="/docs/">All documents</a></p><p class="side-h">Start</p><ul><li><a href="/docs/start/">What dctx is</a></li><li><a href="/start/">Choose your path</a></li><li><a href="/docs/start/#safe-path-in-ten-minutes">Safe path in ten minutes</a></li><li><a href="/why/">Why dctx</a></li><li><a href="/docs/readme/" aria-current="page">README and quick start</a></li></ul><p class="side-h">Modalities</p><ul><li><a href="/docs/modalities/">Choosing how to use dctx</a></li><li><a href="/docs/map-mode/">CLI and agents: map mode</a></li><li><a href="/docs/agents/">Agent snippet</a></li><li><a href="/docs/modalities/#rust-library-embed-the-facade">Libraries</a></li><li><a href="/docs/modalities/#ci--prompt-cache-prefix-stability">CI and caching</a></li><li><a href="/docs/plugins/">Plugins guide</a></li></ul><p class="side-h">Scopes</p><ul><li><a href="/start/#two-scopes">Two scopes, one binary</a></li><li><a href="/start/#responsibilities">Who is responsible for what</a></li></ul><p class="side-h">Engine</p><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/docs/privacy/">Privacy guarantees</a></li><li><a href="/docs/modalities/#huge-trees-scope-before-indexing">Cache and limits</a></li><li><a href="/docs/language-coverage/">Language coverage (ADR-018)</a></li><li><a href="/docs/templates-contract/">Template contract (DTS v2)</a></li><li><a href="/docs/templating/">Templating engine (ADR-003)</a></li><li><a href="/docs/crate-map/">Crate map</a></li></ul><p class="side-h">Reference</p><ul><li><a href="/cli/">CLI reference</a></li><li><a href="/docs/exit-codes/">CLI exit codes</a></li><li><a href="/languages/">Languages</a></li><li><a href="/templates/">Templates</a></li><li><a href="/examples/">Examples</a></li></ul><p class="side-h">Trust</p><ul><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/docs/benchmark/">Measurement evidence</a></li><li><a href="/docs/stability/">Byte-stability report</a></li><li><a href="/docs/benchmark-oct/">Earlier two-way study</a></li><li><a href="/why/#the-philosophy">Philosophy</a></li><li><a href="/security/">Security policy</a></li><li><a href="/docs/releasing/">Releasing</a></li><li><a href="/docs/contributing/">Contributing</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="/maintenance/">Maintenance</a></li></ul><p class="side-h">For AI evaluators</p><ul><li><a href="/for-ai-evaluators/">Facts and verification</a></li><li><a href="/llms.txt">llms.txt</a></li></ul></aside><article class="prose"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/docs/readme/" aria-current="page">README</a></li></ol></nav><h1 id="dctx">dctx</h1><p class="doc-meta"><a href="https://github.com/Eris-Margeta/dctx/blob/main/README.md">View source</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/edit/main/README.md">Edit on GitHub</a> &middot; <a href="/docs/readme/index.md" type="text/markdown">Markdown</a> &middot; <code>README.md</code> &middot; 2,497 words &middot; updated <time datetime="2026-11-22">22 November 2026</time></p><details class="toc-m"><summary><svg class="disclosure" width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true" focusable="false"><path d="m2 1 6 4-6 4z"/></svg>On this page</summary><ul><li><a href="#project-status">Project status</a></li><li><a href="#installation">Installation</a></li><li><a href="#which-mode">Which mode?</a></li><li><a href="#measured-in-the-open">Measured, in the open</a></li><li><a href="#start-and-choose-your-path">Start and choose your path</a></li><li><a href="#the-core-belief-prompt-processing-efficiency">The core belief: prompt-processing efficiency</a></li><li><a href="#quick-start">Quick Start</a></li><li><a href="#from-source">From source</a></li><li><a href="#use-as-a-library">Use as a library</a></li><li><a href="#versioned-pack-json">Versioned pack JSON</a></li><li><a href="#cli-reference">CLI Reference</a></li><li><a href="#security--privacy">Security &amp; Privacy</a></li><li><a href="#open-source-and-maintenance">Open source and maintenance</a></li><li><a href="#where-it-comes-from">Where it comes from</a></li><li><a href="#contributing">Contributing</a></li></ul></details>
+<div class="wrap docs-grid"><aside class="sidebar" aria-label="Documentation"><p class="side-h"><a href="/docs/">All documents</a></p><p class="side-h">Start</p><ul><li><a href="/docs/start/">What dctx is</a></li><li><a href="/start/">Choose your path</a></li><li><a href="/docs/start/#safe-path-in-ten-minutes">Safe path in ten minutes</a></li><li><a href="/why/">Why dctx</a></li><li><a href="/docs/readme/" aria-current="page">README and quick start</a></li></ul><p class="side-h">Modalities</p><ul><li><a href="/docs/modalities/">Choosing how to use dctx</a></li><li><a href="/docs/map-mode/">CLI and agents: map mode</a></li><li><a href="/docs/agents/">Agent snippet</a></li><li><a href="/docs/modalities/#rust-library-embed-the-facade">Libraries</a></li><li><a href="/docs/modalities/#ci--prompt-cache-prefix-stability">CI and caching</a></li><li><a href="/docs/plugins/">Plugins guide</a></li></ul><p class="side-h">Scopes</p><ul><li><a href="/start/#two-scopes">Two scopes, one binary</a></li><li><a href="/start/#responsibilities">Who is responsible for what</a></li></ul><p class="side-h">Engine</p><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/docs/privacy/">Privacy guarantees</a></li><li><a href="/docs/modalities/#huge-trees-scope-before-indexing">Cache and limits</a></li><li><a href="/docs/language-coverage/">Language coverage (ADR-018)</a></li><li><a href="/docs/templates-contract/">Template contract (DTS v2)</a></li><li><a href="/docs/templating/">Templating engine (ADR-003)</a></li><li><a href="/docs/crate-map/">Crate map</a></li></ul><p class="side-h">Reference</p><ul><li><a href="/cli/">CLI reference</a></li><li><a href="/docs/exit-codes/">CLI exit codes</a></li><li><a href="/languages/">Languages</a></li><li><a href="/templates/">Templates</a></li><li><a href="/examples/">Examples</a></li></ul><p class="side-h">Trust</p><ul><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/docs/benchmark/">Measurement evidence</a></li><li><a href="/docs/stability/">Byte-stability report</a></li><li><a href="/docs/benchmark-oct/">Earlier two-way study</a></li><li><a href="/why/#the-philosophy">Philosophy</a></li><li><a href="/security/">Security policy</a></li><li><a href="/docs/releasing/">Releasing</a></li><li><a href="/docs/contributing/">Contributing</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="/maintenance/">Maintenance</a></li></ul><p class="side-h">For AI evaluators</p><ul><li><a href="/for-ai-evaluators/">Facts and verification</a></li><li><a href="/llms.txt">llms.txt</a></li></ul></aside><article class="prose"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/docs/readme/" aria-current="page">README</a></li></ol></nav><h1 id="dctx">dctx</h1><p class="doc-meta"><a href="https://github.com/Eris-Margeta/dctx/blob/main/README.md">View source</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/edit/main/README.md">Edit on GitHub</a> &middot; <a href="/docs/readme/index.md" type="text/markdown">Markdown</a> &middot; <code>README.md</code> &middot; 2,662 words &middot; updated <time datetime="2026-11-23">23 November 2026</time></p><details class="toc-m"><summary><svg class="disclosure" width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true" focusable="false"><path d="m2 1 6 4-6 4z"/></svg>On this page</summary><ul><li><a href="#project-status">Project status</a></li><li><a href="#installation">Installation</a></li><li><a href="#which-mode">Which mode?</a></li><li><a href="#measured-in-the-open">Measured, in the open</a></li><li><a href="#start-and-choose-your-path">Start and choose your path</a></li><li><a href="#the-core-belief-prompt-processing-efficiency">The core belief: prompt-processing efficiency</a></li><li><a href="#quick-start">Quick Start</a></li><li><a href="#from-source">From source</a></li><li><a href="#use-as-a-library">Use as a library</a></li><li><a href="#versioned-pack-json">Versioned pack JSON</a></li><li><a href="#cli-reference">CLI Reference</a></li><li><a href="#security--privacy">Security &amp; Privacy</a></li><li><a href="#open-source-and-maintenance">Open source and maintenance</a></li><li><a href="#where-it-comes-from">Where it comes from</a></li><li><a href="#contributing">Contributing</a></li></ul></details>
 <p><strong>dctx turns any folder into the smallest correct context for a task, offline, with byte-stable output that prompt caches can reuse.</strong> dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, direct CLI commands. Measure before you change anything.</p>
 <hr />
 <p>Under ~200 files, use grep. dctx pays off on large repos, multi-hop questions and many agents sharing one index.</p>
@@ -228,6 +228,51 @@
 <p><strong>dctx is not yet stable and not enterprise-ready.</strong> It has been in development since January 2026. Until version 2.0, expect breaking changes often. AI providers keep changing how they optimize context on their side; dctx adapts to those changes quickly, but not in real time. Stability is the goal of 2.0, and the project is working toward it: we see an ultimate solution to this problem, and we are denoising it.</p>
 <p>dctx began as an internal tool that was never meant to be open-sourced, so parts of it are still messy. It was opened up because colleagues who rely on it needed it in the open, and development continues in public.</p>
 <p>The founding promise is zero dependencies. Today dctx still has dependencies. The goal is to become the single best context management tool.</p>
+<h3 id="ci-status">CI status<a class="hd" href="#ci-status" aria-label="Link to CI status">#</a></h3>
+<p>Every workflow below runs on every push to <code>main</code> and on every pull request, so each commit shows all of its checks. A release is refused unless every check on the commit is green (<a href="https://github.com/Eris-Margeta/dctx/blob/main/tools/release/require-green-ci.sh"><code>tools/release/require-green-ci.sh</code></a>). CI may stay red for at most 24 hours (<a href="/docs/contributing/#ci-stays-green">CONTRIBUTING</a>).</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Workflow</th>
+<th>Status on <code>main</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CI (format, lint, docs, release gates; Linux, macOS and Windows tests)</td>
+<td><a href="https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml?query=branch%3Amain"><img alt="CI (format, lint, docs, release gates; Linux, macOS and Windows tests)" src="https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml/badge.svg?branch=main" /></a></td>
+</tr>
+<tr>
+<td>Go package</td>
+<td><a href="https://github.com/Eris-Margeta/dctx/actions/workflows/go.yml?query=branch%3Amain"><img alt="Go package" src="https://github.com/Eris-Margeta/dctx/actions/workflows/go.yml/badge.svg?branch=main" /></a></td>
+</tr>
+<tr>
+<td>npm transport</td>
+<td><a href="https://github.com/Eris-Margeta/dctx/actions/workflows/npm.yml?query=branch%3Amain"><img alt="npm transport" src="https://github.com/Eris-Margeta/dctx/actions/workflows/npm.yml/badge.svg?branch=main" /></a></td>
+</tr>
+<tr>
+<td>Python packages</td>
+<td><a href="https://github.com/Eris-Margeta/dctx/actions/workflows/python-packages.yml?query=branch%3Amain"><img alt="Python packages" src="https://github.com/Eris-Margeta/dctx/actions/workflows/python-packages.yml/badge.svg?branch=main" /></a></td>
+</tr>
+<tr>
+<td>Performance regression guard</td>
+<td><a href="https://github.com/Eris-Margeta/dctx/actions/workflows/performance.yml?query=branch%3Amain"><img alt="Performance regression guard" src="https://github.com/Eris-Margeta/dctx/actions/workflows/performance.yml/badge.svg?branch=main" /></a></td>
+</tr>
+<tr>
+<td>Parser fuzz smoke</td>
+<td><a href="https://github.com/Eris-Margeta/dctx/actions/workflows/fuzz-smoke.yml?query=branch%3Amain"><img alt="Parser fuzz smoke" src="https://github.com/Eris-Margeta/dctx/actions/workflows/fuzz-smoke.yml/badge.svg?branch=main" /></a></td>
+</tr>
+<tr>
+<td>Windows map find latency</td>
+<td><a href="https://github.com/Eris-Margeta/dctx/actions/workflows/win-latency.yml?query=branch%3Amain"><img alt="Windows map find latency" src="https://github.com/Eris-Margeta/dctx/actions/workflows/win-latency.yml/badge.svg?branch=main" /></a></td>
+</tr>
+<tr>
+<td>Reproducible Linux release archive</td>
+<td><a href="https://github.com/Eris-Margeta/dctx/actions/workflows/reproducible.yml?query=branch%3Amain"><img alt="Reproducible Linux release archive" src="https://github.com/Eris-Margeta/dctx/actions/workflows/reproducible.yml/badge.svg?branch=main" /></a></td>
+</tr>
+</tbody>
+</table></div>
+<p>Release-only workflows (they run on release tags or by hand, never per commit): <a href="https://github.com/Eris-Margeta/dctx/actions/workflows/release.yml">Release</a>, <a href="https://github.com/Eris-Margeta/dctx/actions/workflows/release-desktop.yml">Release Desktop App</a>, <a href="https://github.com/Eris-Margeta/dctx/actions/workflows/deploy-site.yml">Deploy website</a>.</p>
 <h2 id="installation">Installation<a class="hd" href="#installation" aria-label="Link to Installation">#</a></h2>
 <p><strong>System binary — available now.</strong> Download the archive for your OS and architecture
 from <a href="https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.2">GitHub Releases</a>,
@@ -622,7 +667,7 @@ The <a href="/changelog/">changelog</a> and <a href="https://github.com/Eris-Mar
 <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/README.md#for-ai-evaluators">For AI evaluators</a> ·
 <a href="/llms-small.txt">llms-small.txt</a> ·
 <a href="/llms.txt">llms.txt</a> ·
-<a href="/llms-full.txt">llms-full.txt</a></p><nav class="pager" aria-label="Previous and next"><a class="prev" href="/why/" rel="prev"><span>Previous</span>Why dctx</a><a class="next" href="/docs/start/" rel="next"><span>Next</span>What dctx is</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#project-status">Project status</a></li><li class="l2"><a href="#installation">Installation</a></li><li class="l3"><a href="#find-a-symbol-then-read-it">Find a symbol, then read it</a></li><li class="l3"><a href="#pack-for-a-task">Pack for a task</a></li><li class="l2"><a href="#which-mode">Which mode?</a></li><li class="l2"><a href="#measured-in-the-open">Measured, in the open</a></li><li class="l2"><a href="#start-and-choose-your-path">Start and choose your path</a></li><li class="l2"><a href="#the-core-belief-prompt-processing-efficiency">The core belief: prompt-processing efficiency</a></li><li class="l2"><a href="#quick-start">Quick Start</a></li><li class="l2"><a href="#from-source">From source</a></li><li class="l2"><a href="#use-as-a-library">Use as a library</a></li><li class="l2"><a href="#versioned-pack-json">Versioned pack JSON</a></li><li class="l2"><a href="#cli-reference">CLI Reference</a></li><li class="l3"><a href="#language-tiers">Language tiers</a></li><li class="l2"><a href="#security--privacy">Security &amp; Privacy</a></li><li class="l2"><a href="#open-source-and-maintenance">Open source and maintenance</a></li><li class="l2"><a href="#where-it-comes-from">Where it comes from</a></li><li class="l2"><a href="#contributing">Contributing</a></li></ul></nav></div>
+<a href="/llms-full.txt">llms-full.txt</a></p><nav class="pager" aria-label="Previous and next"><a class="prev" href="/why/" rel="prev"><span>Previous</span>Why dctx</a><a class="next" href="/docs/start/" rel="next"><span>Next</span>What dctx is</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#project-status">Project status</a></li><li class="l3"><a href="#ci-status">CI status</a></li><li class="l2"><a href="#installation">Installation</a></li><li class="l3"><a href="#find-a-symbol-then-read-it">Find a symbol, then read it</a></li><li class="l3"><a href="#pack-for-a-task">Pack for a task</a></li><li class="l2"><a href="#which-mode">Which mode?</a></li><li class="l2"><a href="#measured-in-the-open">Measured, in the open</a></li><li class="l2"><a href="#start-and-choose-your-path">Start and choose your path</a></li><li class="l2"><a href="#the-core-belief-prompt-processing-efficiency">The core belief: prompt-processing efficiency</a></li><li class="l2"><a href="#quick-start">Quick Start</a></li><li class="l2"><a href="#from-source">From source</a></li><li class="l2"><a href="#use-as-a-library">Use as a library</a></li><li class="l2"><a href="#versioned-pack-json">Versioned pack JSON</a></li><li class="l2"><a href="#cli-reference">CLI Reference</a></li><li class="l3"><a href="#language-tiers">Language tiers</a></li><li class="l2"><a href="#security--privacy">Security &amp; Privacy</a></li><li class="l2"><a href="#open-source-and-maintenance">Open source and maintenance</a></li><li class="l2"><a href="#where-it-comes-from">Where it comes from</a></li><li class="l2"><a href="#contributing">Contributing</a></li></ul></nav></div>
 </main>
 <footer class="ftr">
  <div class="wrap">

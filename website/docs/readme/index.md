@@ -57,6 +57,23 @@ dctx began as an internal tool that was never meant to be open-sourced, so parts
 
 The founding promise is zero dependencies. Today dctx still has dependencies. The goal is to become the single best context management tool.
 
+### CI status
+
+Every workflow below runs on every push to `main` and on every pull request, so each commit shows all of its checks. A release is refused unless every check on the commit is green ([`tools/release/require-green-ci.sh`](https://github.com/Eris-Margeta/dctx/blob/main/tools/release/require-green-ci.sh)). CI may stay red for at most 24 hours ([CONTRIBUTING](https://www.dctx.internet.technology/docs/contributing/#ci-stays-green)).
+
+| Workflow | Status on `main` |
+| --- | --- |
+| CI (format, lint, docs, release gates; Linux, macOS and Windows tests) | [![CI (format, lint, docs, release gates; Linux, macOS and Windows tests)](https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml?query=branch%3Amain) |
+| Go package | [![Go package](https://github.com/Eris-Margeta/dctx/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/Eris-Margeta/dctx/actions/workflows/go.yml?query=branch%3Amain) |
+| npm transport | [![npm transport](https://github.com/Eris-Margeta/dctx/actions/workflows/npm.yml/badge.svg?branch=main)](https://github.com/Eris-Margeta/dctx/actions/workflows/npm.yml?query=branch%3Amain) |
+| Python packages | [![Python packages](https://github.com/Eris-Margeta/dctx/actions/workflows/python-packages.yml/badge.svg?branch=main)](https://github.com/Eris-Margeta/dctx/actions/workflows/python-packages.yml?query=branch%3Amain) |
+| Performance regression guard | [![Performance regression guard](https://github.com/Eris-Margeta/dctx/actions/workflows/performance.yml/badge.svg?branch=main)](https://github.com/Eris-Margeta/dctx/actions/workflows/performance.yml?query=branch%3Amain) |
+| Parser fuzz smoke | [![Parser fuzz smoke](https://github.com/Eris-Margeta/dctx/actions/workflows/fuzz-smoke.yml/badge.svg?branch=main)](https://github.com/Eris-Margeta/dctx/actions/workflows/fuzz-smoke.yml?query=branch%3Amain) |
+| Windows map find latency | [![Windows map find latency](https://github.com/Eris-Margeta/dctx/actions/workflows/win-latency.yml/badge.svg?branch=main)](https://github.com/Eris-Margeta/dctx/actions/workflows/win-latency.yml?query=branch%3Amain) |
+| Reproducible Linux release archive | [![Reproducible Linux release archive](https://github.com/Eris-Margeta/dctx/actions/workflows/reproducible.yml/badge.svg?branch=main)](https://github.com/Eris-Margeta/dctx/actions/workflows/reproducible.yml?query=branch%3Amain) |
+
+Release-only workflows (they run on release tags or by hand, never per commit): [Release](https://github.com/Eris-Margeta/dctx/actions/workflows/release.yml), [Release Desktop App](https://github.com/Eris-Margeta/dctx/actions/workflows/release-desktop.yml), [Deploy website](https://github.com/Eris-Margeta/dctx/actions/workflows/deploy-site.yml).
+
 ## Installation
 
 **System binary — available now.** Download the archive for your OS and architecture

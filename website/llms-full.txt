@@ -7,9 +7,9 @@
 - Publisher: TEJL - tvornica elektroničkih jedinica i logike. TEJL.com: https://tejl.com/; TEJL.hr: https://tejl.hr/.
 - This is llms-full.txt: the facts, every public HTML page, the document pack and captured CLI help and examples. The other entry points: https://www.dctx.internet.technology/llms-small.txt, https://www.dctx.internet.technology/llms.txt.
 - Engine: dctx 1.3.2. Document captures are the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs them and fails on any byte of drift. Read the pack at https://www.dctx.internet.technology/llms-full.txt.
-- Docs commit: ecac4ae2c53f6e692c8866b9dd7fd935a03dd77b (2026-11-22T14:03:16Z), the last commit that changed one of the documents.
+- Docs commit: 5666e790c234490e48e035d69d5e36efea37b5e3 (2026-11-23T08:02:18Z), the last commit that changed one of the documents.
 - Command: `dctx pack . --include /docs/START.md --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md --include /docs/guides/MAP-MODE.md --include /docs/guides/AGENTS-SNIPPET.md --include /docs/guides/PLUGINS.md --include /docs/SPEC.md --include /docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md --include /docs/ADR-018-Language-Coverage.md --include /docs/design/contracts/DTS-v2.md --include /docs/ADR-003-Templating-Engine.md --include /docs/CRATE-MAP.md --include /docs/CLI-EXIT-CODES.md --include /docs/BENCHMARK-20261030.md --include /docs/research/stability-20261105/REPORT.md --include /docs/research/trail-code-2026-10/REPORT.md --include /RELEASING.md --include /CONTRIBUTING.md --include /SECURITY.md --include /TRADEMARK.md --include /MAINTENANCE.md --include /crates/dctx-template/templates/default.dctx_template --include /crates/dctx-template/templates/stamped.dctx_template`
-- Document capture budget: 90,807 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 24 documents.
+- Document capture budget: 91,618 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 24 documents.
 
 ## Facts
 
@@ -195,7 +195,7 @@ These existed before 1.2.0 and no longer work. A transcript that uses them descr
       [D] docs/research/trail-code-2026-10 (ID:D033)
         [F] docs/research/trail-code-2026-10/REPORT.md (ID:F034)
 </DIRECTORY_TREE>
-<FILE_CONTENT_START ID="F001" PATH="CONTRIBUTING.md" LINES="98">
+<FILE_CONTENT_START ID="F001" PATH="CONTRIBUTING.md" LINES="102">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Contributing to dctx
@@ -294,6 +294,10 @@ unrelated formatting, generated governance files, local caches, credentials and
 private research artifacts. Maintainers may ask for a smaller change or additional
 validation before merging. Pull requests, including forks, run on GitHub-hosted CI runners.
 
+## CI stays green
+
+A red workflow on `main` must be fixed within 24 hours; no CI may stay red longer than that.
+
 </FILE_CONTENT_END ID="F001">
 <FILE_CONTENT_START ID="F002" PATH="MAINTENANCE.md" LINES="42">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
@@ -339,7 +343,7 @@ Write to that address with your organisation, the tier you want and a contact na
 - The core (`pack`) and every modality stay open.
 
 </FILE_CONTENT_END ID="F002">
-<FILE_CONTENT_START ID="F003" PATH="README.md" LINES="535">
+<FILE_CONTENT_START ID="F003" PATH="README.md" LINES="552">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 <h1 align="center">dctx</h1>
@@ -398,6 +402,23 @@ Run `dctx agent-setup --format agents` (or `--format claude`) for short rules to
 dctx began as an internal tool that was never meant to be open-sourced, so parts of it are still messy. It was opened up because colleagues who rely on it needed it in the open, and development continues in public.
 
 The founding promise is zero dependencies. Today dctx still has dependencies. The goal is to become the single best context management tool.
+
+### CI status
+
+Every workflow below runs on every push to `main` and on every pull request, so each commit shows all of its checks. A release is refused unless every check on the commit is green ([`tools/release/require-green-ci.sh`](tools/release/require-green-ci.sh)). CI may stay red for at most 24 hours ([CONTRIBUTING](CONTRIBUTING.md#ci-stays-green)).
+
+| Workflow | Status on `main` |
+| --- | --- |
+| CI (format, lint, docs, release gates; Linux, macOS and Windows tests) | [![CI (format, lint, docs, release gates; Linux, macOS and Windows tests)](https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml?query=branch%3Amain) |
+| Go package | [![Go package](https://github.com/Eris-Margeta/dctx/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/Eris-Margeta/dctx/actions/workflows/go.yml?query=branch%3Amain) |
+| npm transport | [![npm transport](https://github.com/Eris-Margeta/dctx/actions/workflows/npm.yml/badge.svg?branch=main)](https://github.com/Eris-Margeta/dctx/actions/workflows/npm.yml?query=branch%3Amain) |
+| Python packages | [![Python packages](https://github.com/Eris-Margeta/dctx/actions/workflows/python-packages.yml/badge.svg?branch=main)](https://github.com/Eris-Margeta/dctx/actions/workflows/python-packages.yml?query=branch%3Amain) |
+| Performance regression guard | [![Performance regression guard](https://github.com/Eris-Margeta/dctx/actions/workflows/performance.yml/badge.svg?branch=main)](https://github.com/Eris-Margeta/dctx/actions/workflows/performance.yml?query=branch%3Amain) |
+| Parser fuzz smoke | [![Parser fuzz smoke](https://github.com/Eris-Margeta/dctx/actions/workflows/fuzz-smoke.yml/badge.svg?branch=main)](https://github.com/Eris-Margeta/dctx/actions/workflows/fuzz-smoke.yml?query=branch%3Amain) |
+| Windows map find latency | [![Windows map find latency](https://github.com/Eris-Margeta/dctx/actions/workflows/win-latency.yml/badge.svg?branch=main)](https://github.com/Eris-Margeta/dctx/actions/workflows/win-latency.yml?query=branch%3Amain) |
+| Reproducible Linux release archive | [![Reproducible Linux release archive](https://github.com/Eris-Margeta/dctx/actions/workflows/reproducible.yml/badge.svg?branch=main)](https://github.com/Eris-Margeta/dctx/actions/workflows/reproducible.yml?query=branch%3Amain) |
+
+Release-only workflows (they run on release tags or by hand, never per commit): [Release](https://github.com/Eris-Margeta/dctx/actions/workflows/release.yml), [Release Desktop App](https://github.com/Eris-Margeta/dctx/actions/workflows/release-desktop.yml), [Deploy website](https://github.com/Eris-Margeta/dctx/actions/workflows/deploy-site.yml).
 
 ## Installation
 
@@ -5593,7 +5614,7 @@ source: https://www.dctx.internet.technology/docs/
 Documentation Documentation
 New here? Choose your path first: dctx is an advanced tool with several ways to use it. Evaluating dctx, or an AI doing so? Read the facts and how to verify them .
 Every document is rendered from the repository at build time, with a Markdown twin next to it ( index.md ), and all of them are in llms-full.txt . The CLI reference is generated from the binary: /cli/ .
-Start Document What it covers Words Updated Source Why dctx Why dctx exists, its philosophy, and why byte-identical output keeps the prompt cache hitting. 1,687 2026-11-19 docs/WHY-DCTX.md README Installation, quick start, map mode, language tiers and the CLI reference. 2,497 2026-11-22 README.md What dctx is The claim and its limits, the advanced-user notice, choose your path, the safe path in ten minutes, responsibilities and the two scopes. 1,689 2026-11-22 docs/START.md Modalities Document What it covers Words Updated Source Choosing how to use dctx Clipboard, grep plus reads, long sessions, huge trees, CLI usage and CI. 1,751 2026-11-22 docs/MODALITIES.md Map mode guide Every map verb with examples, budgets, ids and precision labels. 2,694 2026-11-13 docs/guides/MAP-MODE.md Agent snippet The AGENTS.md section that tells coding agents to ask dctx first. 196 2026-11-09 docs/guides/AGENTS-SNIPPET.md Plugins guide The plugin boundary, capabilities, consent and current limits. 980 2026-11-07 docs/guides/PLUGINS.md Engine Document What it covers Words Updated Source Specification The core belief, the five constraints, the ten RAG defect classes, policy and roadmap. 9,228 2026-11-19 docs/SPEC.md Privacy guarantees Ignore semantics and the full sensitive-file deny list. 2,803 2026-11-19 docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md Language coverage (ADR-018) The three tiers and how a language enters one. 516 2026-11-07 docs/ADR-018-Language-Coverage.md Template contract (DTS v2) DTS source v2 and the compiled plan IR v1. 648 2026-11-07 docs/design/contracts/DTS-v2.md Templating engine (ADR-003) Markers, ahead-of-time compilation, the two rendering passes and the data variables. 508 2026-11-07 docs/ADR-003-Templating-Engine.md Crate map How the Rust workspace is organised. 1,899 2026-11-07 docs/CRATE-MAP.md Reference Document What it covers Words Updated Source CLI exit codes The exit-code contract for map, pack and languages. 943 2026-11-19 docs/CLI-EXIT-CODES.md Trust Document What it covers Words Updated Source Measurement evidence Grep plus file reads first; whole-session scope and secondary historical protocols. 4,157 2026-11-19 docs/BENCHMARK-20261030.md Byte-stability report Protocol, raw answers and limits of the 33/33 measurement. 1,063 2026-11-07 docs/research/stability-20261105/REPORT.md Earlier two-way study October 2026, before call edges: the benchmark that set the roadmap. 7,228 2026-11-19 docs/research/trail-code-2026-10/REPORT.md Releasing How a release is cut and checked. 272 2026-11-19 RELEASING.md Contributing How to propose changes, with a DCO sign-off. 546 2026-11-13 CONTRIBUTING.md Policies Document What it covers Source Security policy How to report a vulnerability privately. SECURITY.md Trademark policy Use of the dctx name and logo. TRADEMARK.md Maintenance What a maintenance agreement covers. MAINTENANCE.md
+Start Document What it covers Words Updated Source Why dctx Why dctx exists, its philosophy, and why byte-identical output keeps the prompt cache hitting. 1,687 2026-11-19 docs/WHY-DCTX.md README Installation, quick start, map mode, language tiers and the CLI reference. 2,662 2026-11-23 README.md What dctx is The claim and its limits, the advanced-user notice, choose your path, the safe path in ten minutes, responsibilities and the two scopes. 1,689 2026-11-22 docs/START.md Modalities Document What it covers Words Updated Source Choosing how to use dctx Clipboard, grep plus reads, long sessions, huge trees, CLI usage and CI. 1,751 2026-11-22 docs/MODALITIES.md Map mode guide Every map verb with examples, budgets, ids and precision labels. 2,694 2026-11-13 docs/guides/MAP-MODE.md Agent snippet The AGENTS.md section that tells coding agents to ask dctx first. 196 2026-11-09 docs/guides/AGENTS-SNIPPET.md Plugins guide The plugin boundary, capabilities, consent and current limits. 980 2026-11-07 docs/guides/PLUGINS.md Engine Document What it covers Words Updated Source Specification The core belief, the five constraints, the ten RAG defect classes, policy and roadmap. 9,228 2026-11-19 docs/SPEC.md Privacy guarantees Ignore semantics and the full sensitive-file deny list. 2,803 2026-11-19 docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md Language coverage (ADR-018) The three tiers and how a language enters one. 516 2026-11-07 docs/ADR-018-Language-Coverage.md Template contract (DTS v2) DTS source v2 and the compiled plan IR v1. 648 2026-11-07 docs/design/contracts/DTS-v2.md Templating engine (ADR-003) Markers, ahead-of-time compilation, the two rendering passes and the data variables. 508 2026-11-07 docs/ADR-003-Templating-Engine.md Crate map How the Rust workspace is organised. 1,899 2026-11-07 docs/CRATE-MAP.md Reference Document What it covers Words Updated Source CLI exit codes The exit-code contract for map, pack and languages. 943 2026-11-19 docs/CLI-EXIT-CODES.md Trust Document What it covers Words Updated Source Measurement evidence Grep plus file reads first; whole-session scope and secondary historical protocols. 4,157 2026-11-19 docs/BENCHMARK-20261030.md Byte-stability report Protocol, raw answers and limits of the 33/33 measurement. 1,063 2026-11-07 docs/research/stability-20261105/REPORT.md Earlier two-way study October 2026, before call edges: the benchmark that set the roadmap. 7,228 2026-11-19 docs/research/trail-code-2026-10/REPORT.md Releasing How a release is cut and checked. 272 2026-11-19 RELEASING.md Contributing How to propose changes, with a DCO sign-off. 569 2026-11-23 CONTRIBUTING.md Policies Document What it covers Source Security policy How to report a vulnerability privately. SECURITY.md Trademark policy Use of the dctx name and logo. TRADEMARK.md Maintenance What a maintenance agreement covers. MAINTENANCE.md
 Crawlers, including AI crawlers, may read this site: see robots.txt and llms.txt .
 
 ---
@@ -5783,11 +5804,15 @@ Document: `README.md` in [Documents](#documents). [Read the page](https://www.dc
 
 Rendered text and page details not already verbatim in the document pack:
 
-All documents Start What dctx is Choose your path Safe path in ten minutes Why dctx README and quick start Modalities Choosing how to use dctx CLI and agents: map mode Agent snippet Libraries CI and caching Plugins guide Scopes Two scopes, one binary Who is responsible for what Engine Specification Privacy guarantees Cache and limits Language coverage (ADR-018) Template contract (DTS v2) Templating engine (ADR-003) Crate map Reference CLI reference CLI exit codes Languages Templates Examples Trust Benchmarks Measurement evidence Byte-stability report Earlier two-way study Philosophy Security policy Releasing Contributing Trademark Maintenance For AI evaluators Facts and verification llms.txt dctx View source · Edit on GitHub · Markdown · README.md · 2,497 words · updated 22 November 2026 On this page Project status Installation Which mode? Measured, in the open Start and choose your path The core belief: prompt-processing efficiency Quick Start From source Use as a library Versioned pack JSON CLI Reference Security & Privacy Open source and maintenance Where it comes from Contributing
+All documents Start What dctx is Choose your path Safe path in ten minutes Why dctx README and quick start Modalities Choosing how to use dctx CLI and agents: map mode Agent snippet Libraries CI and caching Plugins guide Scopes Two scopes, one binary Who is responsible for what Engine Specification Privacy guarantees Cache and limits Language coverage (ADR-018) Template contract (DTS v2) Templating engine (ADR-003) Crate map Reference CLI reference CLI exit codes Languages Templates Examples Trust Benchmarks Measurement evidence Byte-stability report Earlier two-way study Philosophy Security policy Releasing Contributing Trademark Maintenance For AI evaluators Facts and verification llms.txt dctx View source · Edit on GitHub · Markdown · README.md · 2,662 words · updated 23 November 2026 On this page Project status Installation Which mode? Measured, in the open Start and choose your path The core belief: prompt-processing efficiency Quick Start From source Use as a library Versioned pack JSON CLI Reference Security & Privacy Open source and maintenance Where it comes from Contributing
 dctx turns any folder into the smallest correct context for a task, offline, with byte-stable output that prompt caches can reuse. dctx is an advanced tool with several ways to use it. Used well, it cuts irrelevant text from selected tool answers. It does not save tokens by default; savings depend on a system reusing byte-identical, prefix-stable context. Extra calls can add tokens. If you are new, follow the safe path: one project, the system binary, direct CLI commands. Measure before you change anything.
 Run dctx agent-setup --format agents (or --format claude ) for short rules to paste into AGENTS.md or CLAUDE.md .
 Project status #
 dctx is not yet stable and not enterprise-ready. It has been in development since January 2026. Until version 2.0, expect breaking changes often. AI providers keep changing how they optimize context on their side; dctx adapts to those changes quickly, but not in real time. Stability is the goal of 2.0, and the project is working toward it: we see an ultimate solution to this problem, and we are denoising it.
+CI status #
+Every workflow below runs on every push to main and on every pull request, so each commit shows all of its checks. A release is refused unless every check on the commit is green ( tools/release/require-green-ci.sh ). CI may stay red for at most 24 hours ( CONTRIBUTING ).
+Status on main
+Release-only workflows (they run on release tags or by hand, never per commit): Release , Release Desktop App , Deploy website .
 Installation #
 System binary — available now. Download the archive for your OS and architecture
 from GitHub Releases ,
@@ -7696,7 +7721,7 @@ Document: `CONTRIBUTING.md` in [Documents](#documents). [Read the page](https://
 
 Rendered text and page details not already verbatim in the document pack:
 
-All documents Start What dctx is Choose your path Safe path in ten minutes Why dctx README and quick start Modalities Choosing how to use dctx CLI and agents: map mode Agent snippet Libraries CI and caching Plugins guide Scopes Two scopes, one binary Who is responsible for what Engine Specification Privacy guarantees Cache and limits Language coverage (ADR-018) Template contract (DTS v2) Templating engine (ADR-003) Crate map Reference CLI reference CLI exit codes Languages Templates Examples Trust Benchmarks Measurement evidence Byte-stability report Earlier two-way study Philosophy Security policy Releasing Contributing Trademark Maintenance For AI evaluators Facts and verification llms.txt Contributing to dctx View source · Edit on GitHub · Markdown · CONTRIBUTING.md · 546 words · updated 13 November 2026 On this page Bugs, ideas and questions CLI development setup Validation Developer Certificate of Origin Pull requests
+All documents Start What dctx is Choose your path Safe path in ten minutes Why dctx README and quick start Modalities Choosing how to use dctx CLI and agents: map mode Agent snippet Libraries CI and caching Plugins guide Scopes Two scopes, one binary Who is responsible for what Engine Specification Privacy guarantees Cache and limits Language coverage (ADR-018) Template contract (DTS v2) Templating engine (ADR-003) Crate map Reference CLI reference CLI exit codes Languages Templates Examples Trust Benchmarks Measurement evidence Byte-stability report Earlier two-way study Philosophy Security policy Releasing Contributing Trademark Maintenance For AI evaluators Facts and verification llms.txt Contributing to dctx View source · Edit on GitHub · Markdown · CONTRIBUTING.md · 569 words · updated 23 November 2026 On this page Bugs, ideas and questions CLI development setup Validation Developer Certificate of Origin Pull requests CI stays green
 Read the specification , crate map and
 Code of Conduct before making changes. Project contributions
 are licensed under Apache-2.0 , consistent with NOTICE .
@@ -7728,6 +7753,8 @@ Pull requests #
 Create a focused branch from main and describe the problem, resulting behavior
 editing guides. Use clear commit messages, for example fix(cli): reject empty
 output paths .
+CI stays green #
+A red workflow on main must be fixed within 24 hours; no CI may stay red longer than that.
 
 ---
 url: https://www.dctx.internet.technology/cli/
