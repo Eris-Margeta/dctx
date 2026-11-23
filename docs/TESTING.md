@@ -24,7 +24,7 @@ first:
    baseline) and [`fuzz-smoke.yml`](../.github/workflows/fuzz-smoke.yml) (bounded
    parser property targets with a 180-second budget), plus
    [`win-latency.yml`](../.github/workflows/win-latency.yml) (Windows `map find`
-   cold/warm latency) and [`reproducible.yml`](../.github/workflows/reproducible.yml)
+   cold latency, A/B against the latest release on the same runner) and [`reproducible.yml`](../.github/workflows/reproducible.yml)
    (two clean Linux musl builds must match byte for byte).
 4. **Website deploy** is not a CI job. The maintainer's own host pulls the green `main`
    build and publishes the website; CI only builds and checks it.

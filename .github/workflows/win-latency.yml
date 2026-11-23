@@ -1,5 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 name: Windows map find latency
+# Method: hosted Windows runners vary too much for a fixed limit, so this job builds the current
+# commit AND fetches the latest released binary, runs both interleaved (7 rounds, same fixture,
+# same cold/warm protocol) on the same runner, and FAILS if the median-of-rounds cold p95 is >20%
+# slower than the release, or above 1000 ms. The 500 ms target is a warning only. See CONTRIBUTING.md.
 
 on:
   # Own workflow on every push to main and every PR, so its badge and commit check show its
@@ -37,15 +41,34 @@ jobs:
           rustup toolchain install "$DCTX_RELEASE_RUST" --profile minimal
           export CARGO_TARGET_DIR="$RUNNER_TEMP/dctx-build"
           cargo +"$DCTX_RELEASE_RUST" build --release --locked -p dctx-cli
+      - name: Fetch latest release binary as baseline
+        id: baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          umask 022
+          tag=$(gh release view -R "$GITHUB_REPOSITORY" --json tagName -q .tagName)
+          dir="$RUNNER_TEMP/dctx-baseline"
+          mkdir -p "$dir"
+          gh release download "$tag" -R "$GITHUB_REPOSITORY" -D "$dir" \
+            -p 'dctx-x86_64-pc-windows-msvc.zip' -p SHA256SUMS
+          (cd "$dir" && grep ' dctx-x86_64-pc-windows-msvc.zip$' SHA256SUMS | sha256sum -c -)
+          python -m zipfile -e "$dir/dctx-x86_64-pc-windows-msvc.zip" "$dir/bin"
+          test -f "$dir/bin/dctx.exe"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
       - name: Test latency harness
         run: |
           umask 022
-          python -m unittest scripts.test_win_latency -v
-      - name: Measure 30 cold and 30 warm processes over 1500 files
+          python -m unittest scripts.test_win_latency scripts.test_win_latency_ab -v
+      - name: A/B against the latest release, 7 interleaved rounds of 30 cold and 30 warm processes over 1500 files
         id: measure
         run: |
           umask 022
-          python scripts/win_latency.py --binary "$RUNNER_TEMP/dctx-build/release/dctx-cli.exe" --runs 30 --files 1500 --max-p95-ms 500 --output target/win-latency/report.json
+          python scripts/win_latency_ab.py \
+            --baseline "$RUNNER_TEMP/dctx-baseline/bin/dctx.exe" --baseline-label "${{ steps.baseline.outputs.tag }}" \
+            --candidate "$RUNNER_TEMP/dctx-build/release/dctx-cli.exe" \
+            --rounds 7 --runs 30 --files 1500 --max-regression 0.20 --ceiling-ms 1000 --target-ms 500 \
+            --output target/win-latency/report.json
       - name: Upload latency JSON
         if: ${{ !cancelled() && (steps.measure.outcome == 'success' || steps.measure.outcome == 'failure') }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

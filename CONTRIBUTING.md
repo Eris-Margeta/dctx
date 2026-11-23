@@ -99,3 +99,8 @@ validation before merging. Pull requests, including forks, run on GitHub-hosted 
 ## CI stays green
 
 A red workflow on `main` must be fixed within 24 hours; no CI may stay red longer than that.
+
+Windows `map find` latency is gated relative, not absolute: the job builds the commit and fetches the
+latest release, runs both interleaved on the same runner (7 rounds, same fixture), and fails when the
+median-of-rounds cold p95 is more than 20% slower than the release or above 1000 ms. Missing the
+500 ms target is a warning annotation in the job summary, not a failure.

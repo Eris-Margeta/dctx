@@ -46,7 +46,8 @@ def generate_fixture(root: Path, files: int = 1500) -> None:
         os.utime(source, ns=(settled_ns, settled_ns))
 
 
-def measure(binary: str, root: Path, runs: int) -> dict:
+def measure(binary: str, root: Path, runs: int, cache_root: Path | None = None) -> dict:
+    """Run cold then warm queries against root/fixture; caches live under cache_root (default root)."""
     if runs < MIN_RUNS:
         raise ValueError(f"runs must be at least {MIN_RUNS}")
     env = {key: value for key, value in os.environ.items() if not key.startswith("DCTX_")}
@@ -68,8 +69,9 @@ def measure(binary: str, root: Path, runs: int) -> dict:
             raise RuntimeError("map find did not return the fixture symbol")
         return elapsed
 
-    cold = [query(root / f"cold-{index}") for index in range(runs)]
-    warm_cache = root / "warm"
+    caches = root if cache_root is None else cache_root
+    cold = [query(caches / f"cold-{index}") for index in range(runs)]
+    warm_cache = caches / "warm"
     query(warm_cache)
     warm = [query(warm_cache) for _ in range(runs)]
     return {
