@@ -1,6 +1,11 @@
 name: Reproducible Linux release archive
 
 on:
+  # Also on every push to main and every PR (inputs.ref is empty there, so the pushed commit
+  # is rebuilt), so reproducibility is a visible check on every commit, not only at release.
+  push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
     inputs:
       ref:

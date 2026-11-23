@@ -10,7 +10,8 @@ first:
    described below.
 2. **linux**, then **macos**, then **windows**: each calls the reusable
    [`tests.yml`](../.github/workflows/tests.yml) workflow for that stage's runners.
-3. **packages**: after Windows passes, five called workflows run in parallel:
+3. **packages**: separate workflows that run on every push to `main` and every pull
+   request, in parallel with CI, so each has its own badge and commit check:
    [`npm.yml`](../.github/workflows/npm.yml) (Node transport, CLI parity and tarball
    contents on Ubuntu, macOS and Windows with Node 18 and 24; packs the client
    without publishing), [`go.yml`](../.github/workflows/go.yml) (generated API,
@@ -21,18 +22,22 @@ first:
    [`performance.yml`](../.github/workflows/performance.yml) (synthetic CLI and
    catalog benchmarks under an instruction counter, checked against the committed
    baseline) and [`fuzz-smoke.yml`](../.github/workflows/fuzz-smoke.yml) (bounded
-   parser property targets with a 180-second budget).
+   parser property targets with a 180-second budget), plus
+   [`win-latency.yml`](../.github/workflows/win-latency.yml) (Windows `map find`
+   cold/warm latency) and [`reproducible.yml`](../.github/workflows/reproducible.yml)
+   (two clean Linux musl builds must match byte for byte).
 4. **Website deploy** is not a CI job. The maintainer's own host pulls the green `main`
    build and publishes the website; CI only builds and checks it.
 
-A stage starts only when every earlier stage passed, and a failing step stops its
+Inside CI, a stage starts only when every earlier stage passed, and a failing step stops its
 job. Inside a stage, the first failing OS/toolchain combination cancels the rest
-of the stage (`fail-fast: true`) and every later stage, so a red commit never pays
-for the more expensive hosts. Manual dispatch can start at one stage, stop after
+of the stage (`fail-fast: true`) and every later test stage, so a red commit does not
+pay for the later test hosts. Manual dispatch can start at one stage, stop after
 another (`start`/`until`) and pass a test-name `filter`, to iterate on one
-platform failure without rerunning the whole chain. The package, performance and
-fuzz workflows can also be dispatched on their own. The release workflows
-(`release.yml` on `v*` tags, the manually dispatched `reproducible.yml`, and
+platform failure without rerunning the whole chain. The package workflows can also be dispatched on their
+own. A release is refused unless every workflow, check-run and commit status on the commit is green
+(`tools/release/require-green-ci.sh`). The release workflows
+(`release.yml` on `v*` tags, which also calls `reproducible.yml`, and
 `release-desktop.yml` on `desktop-v*` tags) are separate from this chain.
 
 Each test-stage combination below runs `cargo test --workspace --locked --exclude

@@ -2,9 +2,16 @@
 name: Python packages
 
 on:
-  # Called by ci.yml after the test stages pass; manual runs stay available.
-  workflow_call:
+  # Own workflow on every push to main and every PR, so its badge and commit check show its
+  # real latest result (owner 23.11: every CI job visible on every commit). Manual runs stay.
+  push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read

@@ -137,8 +137,10 @@ jobs:
       - name: Audit dependencies (reviewed exceptions in .cargo/audit.toml)
         run: cargo audit --file Cargo.lock
 
-      - name: Release supply-chain script tests
-        run: python3 -m unittest discover -s tools/release -p 'test_supply_chain.py' -v
+      - name: Release supply-chain and green-CI guard tests
+        run: |
+          python3 -m unittest discover -s tools/release -p 'test_supply_chain.py' -v
+          python3 -m unittest discover -s tools/release -p 'test_require_green_ci.py' -v
 
       - name: Workflow validation
         run: |
@@ -210,28 +212,3 @@ jobs:
     with:
       os: '["windows-2022"]'
       filter: ${{ inputs.filter }}
-
-  npm:
-    needs: windows
-    if: ${{ !failure() && !cancelled() && contains(fromJSON('["packages"]'), inputs.until || 'packages') }}
-    uses: ./.github/workflows/npm.yml
-
-  go:
-    needs: windows
-    if: ${{ !failure() && !cancelled() && contains(fromJSON('["packages"]'), inputs.until || 'packages') }}
-    uses: ./.github/workflows/go.yml
-
-  python:
-    needs: windows
-    if: ${{ !failure() && !cancelled() && contains(fromJSON('["packages"]'), inputs.until || 'packages') }}
-    uses: ./.github/workflows/python-packages.yml
-
-  performance:
-    needs: windows
-    if: ${{ !failure() && !cancelled() && contains(fromJSON('["packages"]'), inputs.until || 'packages') }}
-    uses: ./.github/workflows/performance.yml
-
-  fuzz:
-    needs: windows
-    if: ${{ !failure() && !cancelled() && contains(fromJSON('["packages"]'), inputs.until || 'packages') }}
-    uses: ./.github/workflows/fuzz-smoke.yml

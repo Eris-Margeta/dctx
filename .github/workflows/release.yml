@@ -34,6 +34,8 @@ jobs:
     permissions:
       contents: read
       actions: read
+      checks: read
+      statuses: read
     outputs:
       npm: ${{ steps.secrets.outputs.npm }}
       crates: ${{ steps.secrets.outputs.crates }}

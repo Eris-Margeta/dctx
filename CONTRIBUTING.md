@@ -95,3 +95,7 @@ run. Include relevant OS/build features for platform-specific changes. Avoid
 unrelated formatting, generated governance files, local caches, credentials and
 private research artifacts. Maintainers may ask for a smaller change or additional
 validation before merging. Pull requests, including forks, run on GitHub-hosted CI runners.
+
+## CI stays green
+
+A red workflow on `main` must be fixed within 24 hours; no CI may stay red longer than that.
