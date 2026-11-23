@@ -74,15 +74,13 @@ def check(root, allow_unreleased=False, preflight=False):
 
     try:
         sections = list(headings(read_text(root / "CHANGELOG.md")))
-        if preflight:
-            release = next((section for section in sections if section.lower() != "unreleased"), None)
-            add("CHANGELOG.md:release", expected if expected in sections else release)
-        else:
-            unreleased = bool(sections and sections[0].lower() == "unreleased")
-            if unreleased:
-                add("CHANGELOG.md:top", sections.pop(0), accepted=allow_unreleased)
-            if sections or not (allow_unreleased and unreleased):
-                add("CHANGELOG.md:release", sections[0] if sections else None)
+        unreleased = bool(sections and sections[0].lower() == "unreleased")
+        if unreleased:
+            top = sections.pop(0)
+            if not preflight:
+                add("CHANGELOG.md:top", top, accepted=allow_unreleased)
+        if preflight or sections or not (allow_unreleased and unreleased):
+            add("CHANGELOG.md:release", sections[0] if sections else None)
     except (OSError, UnicodeError) as exc:
         error("CHANGELOG.md", exc)
 
