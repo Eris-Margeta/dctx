@@ -60,79 +60,98 @@ impl Terms {
 
 /// The search terms of `text`, deduplicated, code-like first, at most [`MAX_TERMS`].
 pub(super) fn extract(text: &str) -> Terms {
-    let mut code: Vec<String> = Vec::new();
-    // Plain words in text order, each with "shorter than MIN_PLAIN".
-    let mut plain: Vec<(String, bool)> = Vec::new();
+    let mut code = Vec::new();
+    let mut plain = Vec::new();
+    let mut lower = String::new();
     let mut common = 0;
-    // Odd pieces of a split on backticks are the backticked spans.
-    for span in text.split('`').skip(1).step_by(2) {
-        let inside = words(span);
-        if let [(word, _)] = inside.as_slice()
+    let mut spans = text.split('`');
+    // A short plain word is eligible only without backticks or a code-like name.
+    let mut bare = spans
+        .next()
+        .filter(|head| head.len() == text.len())
+        .map(|_| Vec::new());
+    // After the initial piece, every other piece is a backticked span.
+    for span in spans.step_by(2) {
+        let mut inside = words(span);
+        if let Some((word, _)) = inside.next()
             && is_name(word)
+            && inside.next().is_none()
         {
-            push_unique(&mut code, word);
+            push_unique(&mut code, word, str::eq);
+            if code.len() == MAX_TERMS {
+                break;
+            }
         }
     }
     for (word, pathed) in words(text) {
-        if !is_name(&word) {
+        if !is_name(word) {
             continue;
         }
-        let lower = word.to_ascii_lowercase();
-        if pathed || is_code_like(&word) {
-            push_unique(&mut code, &word);
-        } else if !word.chars().all(|ch| ch.is_ascii_alphabetic()) {
+        if pathed || is_code_like(word) {
+            bare = None;
+            push_unique(&mut code, word, str::eq);
+            continue;
+        }
+        if !word.chars().all(|ch| ch.is_ascii_alphabetic()) {
             // Numbers, versions and mixed words such as `v2` are not plain names.
             continue;
-        } else if STOP.contains(&lower.as_str()) || SHORT_STOP.contains(&lower.as_str()) {
+        }
+        lower.clear();
+        lower.push_str(word);
+        lower.make_ascii_lowercase();
+        if STOP.contains(&lower.as_str()) || SHORT_STOP.contains(&lower.as_str()) {
             common += 1;
-        } else if !KEYWORDS.contains(&lower.as_str())
-            && !plain
-                .iter()
-                .any(|(seen, _)| seen.eq_ignore_ascii_case(&word))
-        {
-            plain.push((word, lower.len() < MIN_PLAIN));
+        } else if code.len() < MAX_TERMS && !KEYWORDS.contains(&lower.as_str()) {
+            if let Some(bare) = &mut bare {
+                push_unique(bare, word, str::eq_ignore_ascii_case);
+            }
+            if word.len() >= MIN_PLAIN {
+                push_unique(&mut plain, word, str::eq_ignore_ascii_case);
+            }
         }
     }
-    // A short plain word is a name only in a text that marks nothing as code.
-    let bare = code.is_empty() && !text.contains('`');
-    let mut list = code;
-    let code = list.len().min(MAX_TERMS);
-    for (word, short) in plain {
-        if (bare || !short) && !list.iter().any(|name| name.eq_ignore_ascii_case(&word)) {
-            list.push(word);
-        }
+    // Each code term can exclude at most one folded plain term and uses one slot.
+    // The first MAX_TERMS eligible plain terms therefore suffice.
+    let code_count = code.len();
+    for word in bare.unwrap_or(plain) {
+        push_unique(&mut code, word, str::eq_ignore_ascii_case);
     }
-    list.truncate(MAX_TERMS);
-    Terms { list, code, common }
+    Terms {
+        list: code.into_iter().map(str::to_owned).collect(),
+        code: code_count,
+        common,
+    }
 }
 
 /// Keep file names intact, including short stems such as `lib.rs`. Other words
 /// split at punctuation; a Rust `::` path yields its last segment. A dctx id or a URL
 /// (a single `:` inside the word, such as `s:a.rs`) yields nothing.
-fn words(text: &str) -> Vec<(String, bool)> {
+fn words(text: &str) -> impl Iterator<Item = (&str, bool)> {
     text.split(|ch: char| !(ch.is_ascii_alphanumeric() || "_:/.-".contains(ch)))
-        .flat_map(|run| {
+        .filter_map(|run| {
             let run = run.trim_end_matches('.').trim_start_matches("./");
-            if run.trim_end_matches(':').replace("::", "").contains(':') {
-                return Vec::new();
-            }
+            (!run
+                .trim_end_matches(':')
+                .split("::")
+                .any(|part| part.contains(':')))
+            .then_some(run)
+        })
+        .flat_map(|run| {
             let filename = run.rsplit('/').next().unwrap_or(run);
-            if !run.contains(':')
+            let is_file = !run.contains(':')
                 && filename.rsplit_once('.').is_some_and(|(stem, ext)| {
                     !stem.is_empty()
                         && !ext.is_empty()
                         && ext.chars().all(|ch| ch.is_ascii_alphanumeric())
-                })
-            {
-                vec![(run.to_string(), true)]
-            } else {
-                symbol_words(run)
-            }
+                });
+            is_file
+                .then_some((run, true))
+                .into_iter()
+                .chain((!is_file).then(|| symbol_words(run)).into_iter().flatten())
         })
-        .collect()
 }
 
-fn symbol_words(text: &str) -> Vec<(String, bool)> {
+fn symbol_words(text: &str) -> impl Iterator<Item = (&str, bool)> {
     text.split(|ch: char| !(ch.is_ascii_alphanumeric() || ch == '_' || ch == ':'))
         .filter_map(|run| {
             let pathed = run.contains("::");
@@ -140,9 +159,8 @@ fn symbol_words(text: &str) -> Vec<(String, bool)> {
                 .rsplit("::")
                 .find(|part| !part.trim_matches(':').is_empty())?;
             let word = last.trim_matches(':');
-            (!word.contains(':')).then(|| (word.to_string(), pathed))
+            (!word.contains(':')).then_some((word, pathed))
         })
-        .collect()
 }
 
 /// A word that can name a symbol: 2..=[`MAX_LEN`] bytes, starting with a letter or `_`, holding a letter.
@@ -163,9 +181,9 @@ fn is_code_like(word: &str) -> bool {
     inner_underscore || inner_capital
 }
 
-fn push_unique(list: &mut Vec<String>, word: &str) {
-    if !list.iter().any(|seen| seen == word) {
-        list.push(word.to_string());
+fn push_unique<'a>(list: &mut Vec<&'a str>, word: &'a str, same: impl Fn(&str, &str) -> bool) {
+    if list.len() < MAX_TERMS && !list.iter().any(|seen| same(seen, word)) {
+        list.push(word);
     }
 }
 
@@ -175,6 +193,184 @@ mod tests {
 
     fn list(text: &str) -> Vec<String> {
         extract(text).list
+    }
+
+    // The previous collect, deduplicate, then truncate rules serve as an oracle.
+    fn legacy_extract(text: &str) -> Terms {
+        fn collect_words(text: &str) -> Vec<(&str, bool)> {
+            text.split(|ch: char| !(ch.is_ascii_alphanumeric() || "_:/.-".contains(ch)))
+                .flat_map(|run| {
+                    let run = run.trim_end_matches('.').trim_start_matches("./");
+                    if run.trim_end_matches(':').replace("::", "").contains(':') {
+                        return Vec::new();
+                    }
+                    let filename = run.rsplit('/').next().unwrap_or(run);
+                    if !run.contains(':')
+                        && filename.rsplit_once('.').is_some_and(|(stem, ext)| {
+                            !stem.is_empty()
+                                && !ext.is_empty()
+                                && ext.chars().all(|ch| ch.is_ascii_alphanumeric())
+                        })
+                    {
+                        return vec![(run, true)];
+                    }
+                    run.split(|ch: char| !(ch.is_ascii_alphanumeric() || ch == '_' || ch == ':'))
+                        .filter_map(|part| {
+                            let pathed = part.contains("::");
+                            let last = part
+                                .rsplit("::")
+                                .find(|part| !part.trim_matches(':').is_empty())?;
+                            let word = last.trim_matches(':');
+                            (!word.contains(':')).then_some((word, pathed))
+                        })
+                        .collect()
+                })
+                .collect()
+        }
+
+        let mut code = Vec::new();
+        let mut plain: Vec<&str> = Vec::new();
+        let mut common = 0;
+        for span in text.split('`').skip(1).step_by(2) {
+            if let [(word, _)] = collect_words(span).as_slice()
+                && is_name(word)
+                && !code.contains(word)
+            {
+                code.push(*word);
+            }
+        }
+        for (word, pathed) in collect_words(text) {
+            if !is_name(word) {
+                continue;
+            }
+            let lower = word.to_ascii_lowercase();
+            if pathed || is_code_like(word) {
+                if !code.contains(&word) {
+                    code.push(word);
+                }
+            } else if !word.chars().all(|ch| ch.is_ascii_alphabetic()) {
+                continue;
+            } else if STOP.contains(&lower.as_str()) || SHORT_STOP.contains(&lower.as_str()) {
+                common += 1;
+            } else if !KEYWORDS.contains(&lower.as_str())
+                && !plain.iter().any(|seen| seen.eq_ignore_ascii_case(word))
+            {
+                plain.push(word);
+            }
+        }
+        let bare = code.is_empty() && !text.contains('`');
+        let mut list = code;
+        let code = list.len().min(MAX_TERMS);
+        for word in plain {
+            if (bare || word.len() >= MIN_PLAIN)
+                && !list.iter().any(|name| name.eq_ignore_ascii_case(word))
+            {
+                list.push(word);
+            }
+        }
+        list.truncate(MAX_TERMS);
+        Terms {
+            list: list.into_iter().map(str::to_owned).collect(),
+            code,
+            common,
+        }
+    }
+
+    #[test]
+    fn matches_legacy_on_mixed_text() {
+        let fragments = [
+            "",
+            "main fn run",
+            "Cache cache CACHE",
+            "`CACHE`",
+            "`main loop`",
+            "`main",
+            "`x cache`",
+            "`and`",
+            "cache_get CACHE_GET",
+            "cHeck CHECK check and",
+            "crate::cache crate::::main crate:::skip",
+            "./src/lib.rs s:src/lib.rs https://example.com",
+            "naïve alpha-beta gamma.delta ___ .end..",
+            "v2 123 _x e _: x:",
+        ];
+        for first in fragments {
+            for second in fragments {
+                for third in fragments {
+                    let text = format!("{first} {second} {third}");
+                    assert_eq!(extract(&text), legacy_extract(&text), "{text:?}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn matches_legacy_with_saturated_candidates_and_common_words() {
+        let short = "ax bx cx dx ex fx gx hx";
+        let plain = (b'a'..=b'z')
+            .flat_map(|a| {
+                (b'a'..=b'z').map(move |b| format!("entry{}{}", char::from(a), char::from(b)))
+            })
+            .collect::<Vec<_>>()
+            .join("-");
+        let code = (0..676)
+            .map(|n| format!("name_{n}"))
+            .collect::<Vec<_>>()
+            .join(" ");
+        let backticked = format!("`{}`", code.replace(' ', "` `"));
+        let common = " and check".repeat(400);
+        for tail in ["", "`main loop`", &code, &backticked] {
+            let text = format!("{short} {plain} {tail}{common}");
+            let terms = extract(&text);
+            assert_eq!(terms, legacy_extract(&text));
+            assert_eq!(terms.list.len(), MAX_TERMS);
+            assert_eq!(terms.common, 800);
+        }
+    }
+
+    #[test]
+    fn matches_legacy_with_late_code_and_duplicates() {
+        let plain = "main Alpha Bravo Cider Delta Ember Flare Glint Hazel Ivory alpha BRAVO";
+        let code = "early_name other_name third_name fourth_name fifth_name sixth_name seventh_name eighth_name";
+        let cases = [
+            (
+                format!("{plain} early_name `alpha` `ALPHA` `alpha` crate::bravo early_name glint"),
+                [
+                    "alpha",
+                    "ALPHA",
+                    "early_name",
+                    "bravo",
+                    "Cider",
+                    "Delta",
+                    "Ember",
+                    "Flare",
+                ],
+            ),
+            (
+                format!("{plain} crate::alpha crate::bravo crate::alpha"),
+                [
+                    "alpha", "bravo", "Cider", "Delta", "Ember", "Flare", "Glint", "Hazel",
+                ],
+            ),
+            (
+                format!("{code} `late_name` `late_name` `early_name` other_name"),
+                [
+                    "late_name",
+                    "early_name",
+                    "other_name",
+                    "third_name",
+                    "fourth_name",
+                    "fifth_name",
+                    "sixth_name",
+                    "seventh_name",
+                ],
+            ),
+        ];
+        for (text, expected) in cases {
+            let terms = extract(&text);
+            assert_eq!(terms, legacy_extract(&text));
+            assert_eq!(terms.list, expected);
+        }
     }
 
     #[test]
