@@ -1,7 +1,7 @@
-name: Deploy website
+name: Build and validate website
 
 on:
-  # Called by ci.yml after the test stages pass; manual runs stay available.
+  # Manual runs build, validate, and save the site as an artifact.
   workflow_call:
   workflow_dispatch:
 
@@ -9,14 +9,11 @@ permissions:
   contents: read
 
 jobs:
-  # Builds with third-party Python packages, so it never sees a deploy secret.
   build:
     permissions:
       contents: read
       actions: read
     runs-on: ubuntu-24.04
-    outputs:
-      changed: ${{ steps.changed.outputs.changed }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1 (GitHub API resolved)
         with:
@@ -39,11 +36,11 @@ jobs:
           tools/website/.venv/bin/python -m pip install -r tools/website/requirements.txt
       - name: Build and check website
         if: steps.changed.outputs.changed == 'true'
-        # This deploy verifies the generated site. CLI capture drift remains in CI.
+        # The CLI capture drift check runs in CI.
         run: |
           tools/website/.venv/bin/python tools/website/build.py
           tools/website/.venv/bin/python tools/website/check.py --working-tree --no-capture
-      - name: Keep the built site for the deploy job
+      - name: Upload the built website artifact
         if: steps.changed.outputs.changed == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2 (GitHub API resolved)
         with:
@@ -52,54 +49,3 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
-
-  # Runs no repository code: it downloads the built site and rsyncs it.
-  # Deploys only from main, through the `dctx-site` environment (deployments limited to main).
-  deploy:
-    needs: build
-    if: needs.build.outputs.changed == 'true' && github.ref == 'refs/heads/main'
-    permissions:
-      contents: read
-    runs-on: ubuntu-24.04
-    environment: dctx-site
-    # Serialize deployments so an older sync cannot overwrite a newer one mid-flight.
-    concurrency:
-      group: deploy-site
-      cancel-in-progress: false
-    steps:
-      - name: Check optional deployment credentials
-        id: check
-        env:
-          SITE_KEY: ${{ secrets.DCTX_SITE_SSH_KEY }}
-          SITE_HOST: ${{ secrets.DCTX_SITE_HOST }}
-          SITE_KNOWN_HOSTS: ${{ secrets.DCTX_SITE_KNOWN_HOSTS }}
-        run: |
-          if [ -n "$SITE_KEY" ] && [ -n "$SITE_HOST" ] && [ -n "$SITE_KNOWN_HOSTS" ]; then
-            echo 'ready=true' >> "$GITHUB_OUTPUT"
-          else
-            echo 'deploy credentials are not configured; skipping the deploy'
-          fi
-      - name: Collect the built site
-        if: steps.check.outputs.ready == 'true'
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0 (GitHub API resolved)
-        with:
-          name: website
-          path: website
-      - name: Deploy to /srv/sites/dctx via restricted rsync
-        if: steps.check.outputs.ready == 'true'
-        shell: bash
-        env:
-          SITE_KEY: ${{ secrets.DCTX_SITE_SSH_KEY }}
-          SITE_HOST: ${{ secrets.DCTX_SITE_HOST }}
-          SITE_KNOWN_HOSTS: ${{ secrets.DCTX_SITE_KNOWN_HOSTS }}
-        run: |
-          set -euo pipefail
-          umask 077
-          install -d -m 700 "$RUNNER_TEMP/dctx-site-ssh"
-          trap 'rm -rf "$RUNNER_TEMP/dctx-site-ssh"' EXIT
-          printf '%s\n' "$SITE_KEY" > "$RUNNER_TEMP/dctx-site-ssh/key"
-          printf '%s\n' "$SITE_KNOWN_HOSTS" > "$RUNNER_TEMP/dctx-site-ssh/known_hosts"
-          export RSYNC_RSH="ssh -i $RUNNER_TEMP/dctx-site-ssh/key -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/dctx-site-ssh/known_hosts"
-          # rrsync -wo /srv/sites/dctx maps remote ./ to that directory.
-          rsync -rltz --delete-delay --delay-updates --chmod=D755,F644 \
-            --exclude=.gitignore website/ "$SITE_HOST:./"
