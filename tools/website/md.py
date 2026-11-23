@@ -119,6 +119,11 @@ def prepare(rel: str, for_html: bool = True) -> str:
         if not sep or not strap:
             raise SystemExit("md.py: README header changed; update prepare()")
         text = f"# dctx\n\n**{strap.group(1).strip()}** {strap.group(2).strip()}\n\n---\n" + rest
+        # CI status table: the site loads no third-party images, so each workflow badge becomes a
+        # link to that workflow's live runs on main (same complete set of workflows as GitHub).
+        text = re.sub(r"\[!\[[^\]]*\]\(https://github\.com/Eris-Margeta/dctx/actions/workflows/[\w.-]+/badge\.svg"
+                      r"\?branch=main\)\]\((https://github\.com/Eris-Margeta/dctx/actions/workflows/[^)\s]+)\)",
+                      r"[latest runs on main](\1)", text)
     text = re.sub(r"<!--.*?-->\n?", "", text, flags=re.S)
     # GitHub nests lists indented by 2 spaces; Python-Markdown needs 4. Double list-item indents
     # outside fenced code (HTML rendering only; the Markdown twin is the file itself).
