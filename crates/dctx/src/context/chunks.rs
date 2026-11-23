@@ -78,31 +78,148 @@ impl ContextSessions {
         }
         if request.dedupe && !report.chunks.is_empty() {
             let name = request.session_id.as_deref().unwrap_or_default();
-            if !self.seen.contains_key(name) && self.seen.len() >= MAX_SESSIONS {
-                return Err(DctxError::invalid(
-                    "context session capacity reached; reset a session",
-                ));
-            }
-            let previous = self.seen.get(name);
-            let additions: BTreeSet<_> =
-                report.chunks.iter().map(|chunk| chunk.id.clone()).collect();
-            let total = previous.map_or(additions.len(), |seen| seen.union(&additions).count());
-            if total > MAX_CHUNKS {
-                return Err(DctxError::invalid(
-                    "context chunk capacity reached; reset the session",
-                ));
-            }
-            for chunk in &mut report.chunks {
-                chunk.reference = previous.is_some_and(|seen| seen.contains(&chunk.id));
-            }
-            report.text = render(&report, request.output_format);
-            Arc::make_mut(self.seen.entry(name.to_string()).or_default()).extend(additions);
+            self.dedupe(name, &mut report, request.output_format)?;
         }
         Ok(report)
+    }
+
+    fn dedupe(
+        &mut self,
+        name: &str,
+        report: &mut NamedContextReport,
+        output_format: u32,
+    ) -> Result<(), DctxError> {
+        let previous = self.seen.get(name);
+        if previous.is_none() && self.seen.len() >= MAX_SESSIONS {
+            return Err(DctxError::invalid(
+                "context session capacity reached; reset a session",
+            ));
+        }
+
+        let mut additions = BTreeSet::new();
+        // Only prior pages can satisfy a reference, even for duplicate IDs in this page.
+        for chunk in &mut report.chunks {
+            chunk.reference = previous.is_some_and(|seen| seen.contains(&chunk.id));
+            if !chunk.reference {
+                additions.insert(&chunk.id);
+            }
+        }
+        let previous_count = previous.map_or(0, |seen| seen.len());
+        if previous_count + additions.len() > MAX_CHUNKS {
+            return Err(DctxError::invalid(
+                "context chunk capacity reached; reset the session",
+            ));
+        }
+        if !additions.is_empty() {
+            Arc::make_mut(self.seen.entry(name.to_string()).or_default())
+                .extend(additions.into_iter().cloned());
+        }
+        report.text = render(report, output_format);
+        Ok(())
     }
 
     /// Forgets a delivery session. Its next request emits full chunks again.
     pub fn reset(&mut self, session_id: &str) {
         self.seen.remove(session_id);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::context::ContextChunk;
+
+    fn sessions_with_history(count: usize) -> ContextSessions {
+        let history = (0..count).map(|id| id.to_string()).collect();
+        ContextSessions {
+            seen: BTreeMap::from([("session".into(), Arc::new(history))]),
+        }
+    }
+
+    fn page(ids: &[&str]) -> NamedContextReport {
+        NamedContextReport {
+            text: String::new(),
+            target: "s:a.rs#f".into(),
+            chunks: ids
+                .iter()
+                .map(|&id| ContextChunk {
+                    id: id.into(),
+                    role: "source".into(),
+                    target: "s:a.rs#f".into(),
+                    content: "fn f() {}\n".into(),
+                    reference: false,
+                })
+                .collect(),
+            more: 0,
+            next: None,
+        }
+    }
+
+    #[test]
+    fn repeated_pages_share_history_and_preserve_reference_bytes() {
+        let mut sessions = sessions_with_history(MAX_CHUNKS);
+        let cloned = sessions.clone();
+        for (format, expected) in [
+            (
+                1,
+                "# dctx context s:a.rs#f\n## ref 0 source s:a.rs#f\n# end chunks=1 more=0\n",
+            ),
+            (
+                2,
+                concat!(
+                    "{\"v\":2,\"verb\":\"context\",\"target\":\"s:a.rs#f\",\"chunks\":[",
+                    "{\"id\":\"0\",\"role\":\"source\",\"target\":\"s:a.rs#f\",\"ref\":true}],",
+                    "\"more\":0,\"next\":null}\n",
+                ),
+            ),
+        ] {
+            let mut report = page(&["0"]);
+            sessions.dedupe("session", &mut report, format).unwrap();
+            assert!(report.chunks[0].reference);
+            assert_eq!(report.text, expected);
+            assert!(Arc::ptr_eq(
+                &sessions.seen["session"],
+                &cloned.seen["session"]
+            ));
+        }
+    }
+
+    #[test]
+    fn duplicate_new_ids_count_once_at_the_chunk_limit() {
+        let mut sessions = sessions_with_history(MAX_CHUNKS - 1);
+        let cloned = sessions.clone();
+        let mut report = page(&["new", "new"]);
+        sessions.dedupe("session", &mut report, 1).unwrap();
+
+        assert!(report.chunks.iter().all(|chunk| !chunk.reference));
+        assert_eq!(sessions.seen["session"].len(), MAX_CHUNKS);
+        assert!(sessions.seen["session"].contains("new"));
+        assert!(!cloned.seen["session"].contains("new"));
+    }
+
+    #[test]
+    fn mixed_overflow_preserves_shared_history_and_allows_retry() {
+        let mut sessions = sessions_with_history(MAX_CHUNKS - 1);
+        let cloned = sessions.clone();
+        let mut overflow = page(&["0", "new", "other"]);
+        assert!(matches!(
+            sessions.dedupe("session", &mut overflow, 1),
+            Err(DctxError::InvalidRequest {
+                reason: "context chunk capacity reached; reset the session",
+                ..
+            })
+        ));
+        assert!(Arc::ptr_eq(
+            &sessions.seen["session"],
+            &cloned.seen["session"]
+        ));
+
+        let mut retry = page(&["0", "new"]);
+        sessions.dedupe("session", &mut retry, 1).unwrap();
+        assert!(retry.chunks[0].reference);
+        assert!(!retry.chunks[1].reference);
+        assert_eq!(sessions.seen["session"].len(), MAX_CHUNKS);
+        assert!(sessions.seen["session"].contains("new"));
+        assert!(!sessions.seen["session"].contains("other"));
     }
 }
