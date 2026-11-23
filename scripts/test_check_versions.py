@@ -147,13 +147,36 @@ jobs:
 
     def test_preflight_passes_with_ci_pin_and_unreleased_heading(self):
         self.preflight_fixture()
-        self.write("CHANGELOG.md", "## [Unreleased]\n\n## [1.3.1]\n")
+        self.write("CHANGELOG.md", "## [Unreleased]\n\n## [1.3.1](releases/1.3.1)\n")
         self.write("Cargo.toml", '[workspace]\nmembers = ["crates/*"]\n')
         self.write("crates/cli/Cargo.toml", '[package]\nversion = "1.3.1"\n')
         result = self.assert_status(0, "--preflight")
         self.assertEqual(result.stdout.splitlines(), [
             "PASS versions", "PASS changelog", "PASS rust-toolchain", "PASS action-pins",
         ])
+
+    def test_preflight_accepts_plain_release_heading_after_fenced_example(self):
+        self.preflight_fixture()
+        self.write("CHANGELOG.md", "# Changelog\n```md\n## 1.3.2\n```\n## 1.3.1 - today\n## 0.1.0\n")
+        self.assertIn("PASS changelog", self.assert_status(0, "--preflight").stdout)
+
+    def test_preflight_rejects_newer_heading_before_expected_release(self):
+        self.preflight_fixture()
+        self.write("CHANGELOG.md", "## [Unreleased]\n\n## [1.3.2]\n\n## [1.3.1]\n")
+        result = self.assert_status(1, "--preflight")
+        self.assertEqual(result.stdout.splitlines(), [
+            "PASS versions", "FAIL changelog: CHANGELOG.md:release='1.3.2' (VERSION='1.3.1')",
+            "PASS rust-toolchain", "PASS action-pins",
+        ])
+
+    def test_preflight_requires_a_release_heading(self):
+        self.preflight_fixture()
+        for sections in ("", "## Unreleased\n"):
+            with self.subTest(sections=sections):
+                self.write("CHANGELOG.md", "# Changelog\n" + sections)
+                result = self.assert_status(1, "--preflight")
+                self.assertIn("FAIL changelog: CHANGELOG.md:release='<missing>' (VERSION='1.3.1')",
+                              result.stdout.splitlines())
 
     def test_preflight_reports_cargo_npm_and_python_version_drift(self):
         self.preflight_fixture()
