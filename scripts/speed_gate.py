@@ -4,13 +4,15 @@
 
 Five cold-cache runs per size are compared by median process elapsed time.
 Only a ratio above 6x or different stdout bytes across repeated runs fails the
-gate (exit 1). Setup/command errors exit 2; a missing binary skips with a NOTE.
+gate (exit 1). Setup/command errors exit 2. Automatic discovery skips with a
+NOTE when it finds no executable.
 Fixtures, subprocess state and caches are temporary and stay in this worktree.
 """
 from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+import json
 import math
 import os
 from pathlib import Path
@@ -50,12 +52,36 @@ def generate_fixture(root: Path, files: int = BASE_FILES) -> None:
         os.utime(source, (1_600_000_000, 1_600_000_000))
 
 
-def find_binary(override: Path | None, worktree: Path = WORKTREE) -> Path | None:
-    candidates = [override] if override is not None else [
-        worktree / "target" / profile / name
-        for profile in ("release", "debug")
-        for name in ("dctx", "dctx-cli", "dctx.exe", "dctx-cli.exe")
-    ]
+def cargo_target_dir(worktree: Path) -> Path:
+    configured = os.environ.get("CARGO_TARGET_DIR") or os.environ.get("CARGO_BUILD_TARGET_DIR")
+    if configured:
+        return Path(configured)
+    if (worktree / "Cargo.toml").is_file():
+        # Let Cargo resolve layered config files and their relative paths.
+        try:
+            result = subprocess.run(
+                ["cargo", "metadata", "--offline", "--locked", "--no-deps", "--format-version", "1"],
+                cwd=worktree, capture_output=True, check=True,
+            )
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            pass  # A prebuilt executable can still be used without Cargo metadata.
+        else:
+            return Path(json.loads(result.stdout)["target_directory"])
+    return worktree / "target"
+
+
+def find_binary(override: Path | None, worktree: Path = WORKTREE, *,
+                target_dir: Path | None = None) -> Path | None:
+    if override is not None:
+        candidates = [override]
+    else:
+        if target_dir is None:
+            target_dir = cargo_target_dir(worktree)
+        candidates = [
+            target_dir / profile / name
+            for profile in ("release", "debug")
+            for name in ("dctx", "dctx-cli", "dctx.exe", "dctx-cli.exe")
+        ]
     return next((path.resolve() for path in candidates
                  if path.is_file() and os.access(path, os.X_OK)), None)
 
@@ -129,16 +155,27 @@ def time_ratio(small: float, large: float) -> float:
     return large / small if small else (math.inf if large else 1.0)
 
 
+class SpeedGateParser(argparse.ArgumentParser):
+    def error(self, message: str) -> None:
+        super().error(json.dumps(message))
+
+
 def main(argv: list[str] | None = None, *,
          timer: Callable[[], float] = time.perf_counter) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = SpeedGateParser(prog="speed_gate.py", description=__doc__)
     parser.add_argument("--binary", type=Path, help="path to a built dctx executable")
+    parser.add_argument("--target-dir", type=Path,
+                        help="Cargo target directory for automatic discovery "
+                             "(defaults to CARGO_TARGET_DIR, CARGO_BUILD_TARGET_DIR, "
+                             "Cargo configuration, or the worktree's target directory)")
     args = parser.parse_args(argv)
-    binary = find_binary(args.binary)
-    if binary is None:
-        print("NOTE: no built dctx binary found; speed gate skipped (use --binary PATH).")
-        return 0
     try:
+        binary = find_binary(args.binary, WORKTREE, target_dir=args.target_dir)
+        if binary is None:
+            if args.binary is not None:
+                raise ValueError(f"explicit binary is missing or not executable: {args.binary}")
+            print("NOTE: no built dctx binary found; speed gate skipped (use --binary PATH).")
+            return 0
         with tempfile.TemporaryDirectory(prefix="speed-gate-", dir=WORKTREE) as tmp:
             root = Path(tmp)
             commands = discover_commands(binary, root / "help")
@@ -166,7 +203,7 @@ def main(argv: list[str] | None = None, *,
                       f"{'yes' if deterministic else 'NO'} | {'PASS' if passed else 'FAIL'} |")
             return int(failed)
     except (OSError, subprocess.CalledProcessError, ValueError) as error:
-        print(f"ERROR: speed gate could not run: {error}", file=sys.stderr)
+        print(f"ERROR: speed gate could not run: {json.dumps(str(error))}", file=sys.stderr)
         return 2
 
 
