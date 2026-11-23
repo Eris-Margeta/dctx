@@ -10,6 +10,7 @@ import unittest
 from unittest.mock import patch
 
 from scripts import win_latency as latency
+from scripts import win_latency_ab as ab
 
 
 def process_result():
@@ -101,6 +102,34 @@ class MeasurementTests(unittest.TestCase):
         with patch.object(latency.subprocess, "run", return_value=result):
             with self.assertRaises(RuntimeError):
                 latency.measure("dctx", Path("fixture-root"), 30)
+
+    def test_first_stdout_mismatch_reports_mode_and_sample(self):
+        stable = process_result()
+        changed = process_result()
+        changed.stdout += b"\n"
+        runs = latency.MIN_RUNS
+        cases = (("cold", 2, 1), ("warmup", 1, runs), ("warm", 2, runs + 2))
+        for mode, sample, preceding in cases:
+            with self.subTest(mode=mode), patch.object(
+                latency.subprocess, "run", side_effect=[stable] * preceding + [changed, changed]
+            ) as run:
+                with self.assertRaisesRegex(RuntimeError, rf"stdout differs .* at {mode} sample {sample}$"):
+                    latency.measure("dctx", Path("fixture-root"), runs)
+                self.assertEqual(run.call_count, preceding + 1)
+
+    def test_ab_allows_different_stable_stdout_per_binary(self):
+        def run_query(command, **kwargs):
+            result = process_result()
+            result.stdout += command[0].encode()
+            return result
+
+        runs = latency.MIN_RUNS
+        rounds = ab.MIN_ROUNDS
+        with patch.object(latency.subprocess, "run", side_effect=run_query) as run:
+            report = ab.run_rounds("release", "candidate", Path("fixture-root"), rounds, runs)
+        self.assertEqual(run.call_count, 2 * rounds * (2 * runs + 1))
+        self.assertEqual(len(report["rounds"]["baseline"]), rounds)
+        self.assertEqual(len(report["rounds"]["candidate"]), rounds)
 
     def test_failed_process_is_an_error(self):
         with patch.object(latency.subprocess, "run", side_effect=subprocess.CalledProcessError(1, [])):

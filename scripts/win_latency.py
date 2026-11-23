@@ -3,7 +3,8 @@
 """Measure cold and warm map-find latency including process startup.
 
 Cold queries each use a fresh dctx cache. Warm queries reuse the cache built by
-one excluded warmup. Each query runs in a new process.
+one excluded warmup. Each query runs in a new process and must return the same
+stdout bytes as the first cold query for that binary measurement.
 --dry generates the same fixture and reports its shape without invoking dctx.
 All temporary files and caches stay beneath the output directory.
 """
@@ -58,22 +59,29 @@ def measure(binary: str, root: Path, runs: int, cache_root: Path | None = None) 
     })
     fixture = root / "fixture"
     command = [binary, "map", "find", TERM, "--place", "."]
+    symbol = f"#{TERM}".encode()
+    reference: bytes | None = None
 
-    def query(cache: Path) -> float:
+    def query(cache: Path, mode: str, sample: int) -> float:
+        nonlocal reference
         query_env = {**env, "DCTX_CACHE_DIR": str(cache)}
         start = time.perf_counter_ns()
         result = subprocess.run(command, cwd=fixture, env=query_env, capture_output=True, check=True,
                                 timeout=120)
         elapsed = (time.perf_counter_ns() - start) / 1_000_000
-        if f"#{TERM}".encode() not in result.stdout:
-            raise RuntimeError("map find did not return the fixture symbol")
+        if symbol not in result.stdout:
+            raise RuntimeError(f"map find did not return the fixture symbol at {mode} sample {sample}")
+        if reference is None:
+            reference = result.stdout
+        elif result.stdout != reference:
+            raise RuntimeError(f"map find stdout differs from cold sample 1 at {mode} sample {sample}")
         return elapsed
 
     caches = root if cache_root is None else cache_root
-    cold = [query(caches / f"cold-{index}") for index in range(runs)]
+    cold = [query(caches / f"cold-{index}", "cold", index + 1) for index in range(runs)]
     warm_cache = caches / "warm"
-    query(warm_cache)
-    warm = [query(warm_cache) for _ in range(runs)]
+    query(warm_cache, "warmup", 1)
+    warm = [query(warm_cache, "warm", sample) for sample in range(1, runs + 1)]
     return {
         "runs_per_mode": runs,
         "warmup_runs": 1,
