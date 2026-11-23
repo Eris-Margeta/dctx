@@ -2,6 +2,7 @@
 """Fast gate tests using a shell CLI and injected clocks, never timing sleeps."""
 import contextlib
 import io
+import json
 import os
 from pathlib import Path
 import tempfile
@@ -62,14 +63,16 @@ class SpeedGateTests(unittest.TestCase):
         self.binary.write_text(STUB, encoding="utf-8")
         self.binary.chmod(0o755)
 
-    def run_stub(self, mode, files=80):
+    def run_stub(self, mode, files=80, *, argv=None):
         clock = StubTimer(self.root / "cost")
         output = io.StringIO()
         with patch.dict(os.environ, {"SPEED_GATE_TEST_MODE": mode,
                                     "SPEED_GATE_TEST_COST": str(clock.cost)}), patch.object(
             gate, "BASE_FILES", files
         ), contextlib.redirect_stdout(output):
-            status = gate.main(["--binary", str(self.binary)], timer=clock)
+            if argv is None:
+                argv = ["--binary", str(self.binary)]
+            status = gate.main(argv, timer=clock)
         return status, output.getvalue(), clock.calls
 
     def test_linear_passes_both_commands_and_all_five_runs(self):
@@ -143,15 +146,75 @@ class SpeedGateTests(unittest.TestCase):
             destination.write_text(STUB, encoding="utf-8")
             destination.chmod(0o755)
         expected = self.root / "target" / "release" / "dctx-cli"
-        self.assertEqual(gate.find_binary(None, self.root), expected)
-        self.assertEqual(gate.find_binary(self.binary, self.root), self.binary)
+        with patch.dict(os.environ, {"CARGO_TARGET_DIR": "", "CARGO_BUILD_TARGET_DIR": ""}):
+            self.assertEqual(gate.find_binary(None, self.root), expected)
+        self.assertEqual(gate.find_binary(self.binary, self.root, target_dir=self.root / "target"),
+                         self.binary)
 
-    def test_missing_binary_skips_with_note(self):
-        output = io.StringIO()
-        with contextlib.redirect_stdout(output):
-            status = gate.main(["--binary", str(self.root / "absent")])
+    def assert_invalid_binary(self, binary):
+        with patch.object(gate, "generate_fixture") as generate, \
+                contextlib.redirect_stdout(io.StringIO()) as stdout, \
+                contextlib.redirect_stderr(io.StringIO()) as stderr:
+            status = gate.main(["--binary", str(binary)])
+        self.assertEqual(status, 2)
+        detail = json.dumps(f"explicit binary is missing or not executable: {binary}")
+        self.assertEqual(stderr.getvalue(), f"ERROR: speed gate could not run: {detail}\n")
+        self.assertEqual(stdout.getvalue(), "")
+        generate.assert_not_called()
+
+    def test_missing_explicit_binary_is_setup_error(self):
+        self.assert_invalid_binary(self.root / "absent")
+
+    def test_missing_explicit_binary_escapes_hostile_path(self):
+        self.assert_invalid_binary(self.root / 'absent\n\x1b[31m"')
+
+    def test_nonexecutable_explicit_binary_is_setup_error(self):
+        self.binary.chmod(0o644)
+        self.assert_invalid_binary(self.binary)
+
+    def test_automatic_discovery_uses_alternate_target(self):
+        target = self.root / "alternate-target"
+        destination = target / "debug" / "dctx-cli"
+        destination.parent.mkdir(parents=True)
+        self.binary.rename(destination)
+        for argv, env in (
+            (["--target-dir", str(target)], {"CARGO_TARGET_DIR": str(self.root / "absent")}),
+            ([], {"CARGO_TARGET_DIR": str(target), "CARGO_BUILD_TARGET_DIR": str(self.root / "absent")}),
+            ([], {"CARGO_TARGET_DIR": "", "CARGO_BUILD_TARGET_DIR": str(target)}),
+        ):
+            with self.subTest(argv=argv, env=env), patch.dict(os.environ, env):
+                status, output, calls = self.run_stub("linear", argv=argv)
+                self.assertEqual(status, 0)
+                self.assertEqual(output.count("PASS"), 2)
+                self.assertEqual(calls, 2 * 2 * 5 * 2)
+
+    def test_automatic_discovery_uses_cargo_file_configuration(self):
+        (self.root / "Cargo.toml").write_text('[workspace]\nresolver = "2"\n', encoding="utf-8")
+        config_dir = self.root / ".cargo"
+        config_dir.mkdir()
+        (config_dir / "config.toml").write_text(
+            '[build]\ntarget-dir = "alternate-target"\n', encoding="utf-8"
+        )
+        destination = self.root / "alternate-target" / "debug" / "dctx"
+        destination.parent.mkdir(parents=True)
+        self.binary.rename(destination)
+        with patch.dict(os.environ), patch.object(gate, "WORKTREE", self.root):
+            os.environ.pop("CARGO_TARGET_DIR", None)
+            os.environ.pop("CARGO_BUILD_TARGET_DIR", None)
+            status, output, calls = self.run_stub("linear", argv=[])
+        self.assertEqual(status, 0)
+        self.assertEqual(output.count("PASS"), 2)
+        self.assertEqual(calls, 2 * 2 * 5 * 2)
+
+    def test_no_implicit_binary_skips_with_note(self):
+        with patch.dict(os.environ, {"CARGO_TARGET_DIR": "", "CARGO_BUILD_TARGET_DIR": ""}), \
+                patch.object(gate, "WORKTREE", self.root), \
+                patch.object(gate, "generate_fixture") as generate, \
+                contextlib.redirect_stdout(io.StringIO()) as output:
+            status = gate.main([])
         self.assertEqual(status, 0)
         self.assertIn("NOTE", output.getvalue())
+        generate.assert_not_called()
 
     def test_command_error_is_not_a_regression_verdict(self):
         self.binary.write_text("#!/bin/sh\nexit 3\n", encoding="utf-8")
@@ -172,6 +235,16 @@ class SpeedGateTests(unittest.TestCase):
                 gate.main(["--help"])
         self.assertEqual(caught.exception.code, 0)
         self.assertIn("--binary", output.getvalue())
+
+    def test_invalid_argument_escapes_hostile_text(self):
+        argument = '--unexpected\n\x1b[31m"'
+        with contextlib.redirect_stderr(io.StringIO()) as output:
+            with self.assertRaises(SystemExit) as caught:
+                gate.main([argument])
+        self.assertEqual(caught.exception.code, 2)
+        diagnostic = json.dumps(f"unrecognized arguments: {argument}")
+        self.assertIn(f"speed_gate.py: error: {diagnostic}\n", output.getvalue())
+        self.assertNotIn("\x1b", output.getvalue())
 
     def test_zero_time_ratio_is_defined(self):
         self.assertEqual(gate.time_ratio(0, 0), 1)
