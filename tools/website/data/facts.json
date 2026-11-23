@@ -222,7 +222,7 @@
   "rows": [
    [
     "System binary",
-    "Release archives with SHA256SUMS, cache caps; signed binary, doctor, journals and receipts (planned)",
+    "Release archives with cosign signatures, signed `SHA256SUMS`, SBOMs and build provenance, cache caps, `dctx doctor` for local binary inventory; journals (planned), receipts (planned)",
     "Choosing roots, the ignore rules (a policy file is planned), keeping one version on PATH"
    ],
    [
