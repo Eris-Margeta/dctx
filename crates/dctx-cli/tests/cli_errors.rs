@@ -7,6 +7,7 @@
 
 mod common;
 
+use serde_json::{json, Value};
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -74,22 +75,22 @@ impl Fixture {
         assert_eq!(
             output.status.code(),
             Some(code),
-            "{args:?}: stdout {stdout}; stderr {stderr}"
+            "{args:?}: stdout {stdout:?}; stderr {stderr:?}"
         );
         assert!(
             stderr.contains(message),
-            "{args:?}: want {message:?} in {stderr}"
+            "{args:?}: want {message:?} in {stderr:?}"
         );
         assert!(
             stderr
                 .lines()
                 .any(|line| line.starts_with("hint: ") && line.len() > "hint: ".len()),
-            "{args:?}: no hint in {stderr}"
+            "{args:?}: no hint in {stderr:?}"
         );
         for text in ["panicked", "RUST_BACKTRACE"] {
             assert!(
                 !stdout.contains(text) && !stderr.contains(text),
-                "{args:?}: {text} in {stdout}{stderr}"
+                "{args:?}: {text} in stdout {stdout:?}, stderr {stderr:?}"
             );
         }
     }
@@ -100,10 +101,24 @@ impl Fixture {
         assert_eq!(
             output.status.code(),
             Some(0),
-            "{args:?}: {}",
+            "{args:?}: {:?}",
             String::from_utf8_lossy(&output.stderr)
         );
         String::from_utf8(output.stdout).expect("UTF-8 stdout")
+    }
+
+    fn json(&self, code: i32, args: &[&str]) -> (Value, String) {
+        let output = self.output(&words(args));
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert_eq!(
+            output.status.code(),
+            Some(code),
+            "{args:?}: stdout {stdout:?}, stderr {stderr:?}"
+        );
+        let page = serde_json::from_slice(&output.stdout)
+            .unwrap_or_else(|error| panic!("{args:?}: invalid JSON ({error:?}) in {stdout:?}"));
+        (page, stderr.into_owned())
     }
 }
 
@@ -202,7 +217,7 @@ fn grep_limits_are_independent_of_literal_case_and_windows_style_paths() {
     ] {
         for limit in ["1", "40"] {
             let page = fixture.ok(&words(&["map", "grep", literal, "--limit", limit]));
-            assert!(page.contains(" grep\n"), "{page}");
+            assert!(page.contains(" grep\n"), "{page:?}");
         }
         for limit in 41..=60 {
             fixture.refuse(
@@ -332,9 +347,71 @@ fn a_gone_page_still_reaches_stdout_before_exit_1() {
     assert_eq!(output.status.code(), Some(1));
     assert!(
         String::from_utf8_lossy(&output.stdout).contains("gone\tm:nope.py"),
-        "{}",
+        "{:?}",
         String::from_utf8_lossy(&output.stdout)
     );
+}
+
+#[test]
+fn empty_find_gone_read_and_unmatched_task_pack_yield_no_source() {
+    let fixture = Fixture::new();
+    let term = "absent_probe";
+    let missing_id = "m:nope.py";
+
+    let (known, _) = fixture.json(0, &["map", "find", "beta", "--json"]);
+    assert!(
+        known["records"]
+            .as_array()
+            .expect("find records")
+            .iter()
+            .any(|record| record["id"] == "s:a.py#beta"),
+        "known helper missing from {known:?}"
+    );
+
+    let (find, stderr) = fixture.json(0, &["map", "find", term, "--json"]);
+    assert_eq!(find["verb"], "find");
+    assert_eq!(find["records"], json!([]));
+    assert_eq!(find["more"], 0);
+    assert_eq!(find.get("next"), Some(&Value::Null));
+    assert!(find.get("outcome").is_none(), "{find:?}");
+    assert!(stderr.is_empty(), "{stderr:?}");
+
+    let (read, _) = fixture.json(1, &["map", "read", missing_id, "--json"]);
+    assert_eq!(read["verb"], "read");
+    assert_eq!(read["outcome"], "gone");
+    assert_eq!(read["outcome_id"], missing_id);
+    assert_eq!(read["records"], json!([]));
+
+    let (pack, stderr) = fixture.json(1, &["pack", "--for", term, "--json"]);
+    assert_eq!(pack["schema"], "dctx.pack/1");
+    assert_eq!(pack["verb"], "context");
+    assert_eq!(pack["terms"], 1);
+    assert_eq!(pack["hits"], 0);
+    assert_eq!(pack["fragments"], json!([]));
+    let page = pack["text"].as_str().expect("task pack text");
+    assert!(
+        !page.lines().any(|line| line.starts_with("## read ")),
+        "{page:?}"
+    );
+    assert!(!page.contains("return beta()"), "{page:?}");
+    let diagnostic = "pack --for: no name in the text matched the index";
+    assert!(stderr.contains(diagnostic), "{stderr:?}");
+    assert!(!pack.to_string().contains(diagnostic), "{pack:?}");
+}
+
+#[test]
+fn hostile_lookup_target_cannot_inject_a_diagnostic_line() {
+    let fixture = Fixture::new();
+    let output = fixture.output(&words(&["map", "find", "absent_probe\n\x1b[31m\"injected"]));
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert_eq!(output.status.code(), Some(2), "{stderr:?}");
+    assert!(output.stdout.is_empty(), "{:?}", output.stdout);
+    assert!(
+        stderr.contains("target is too long or contains control characters"),
+        "{stderr:?}"
+    );
+    assert_eq!(stderr.lines().count(), 2, "{stderr:?}");
+    assert!(!stderr.contains(['\x1b', '"']), "{stderr:?}");
 }
 
 #[test]
@@ -363,7 +440,7 @@ fn every_subcommand_help_has_an_example() {
         let text = fixture.ok(&words(&page));
         assert!(
             text.lines().any(|line| line.starts_with("Example: dctx ")),
-            "{page:?}: {text}"
+            "{page:?}: {text:?}"
         );
     }
 }
@@ -376,9 +453,9 @@ fn a_bare_dctx_without_a_terminal_prints_usage_and_exits_2() {
     assert_eq!(output.status.code(), Some(2));
     assert!(output.stdout.is_empty(), "{:?}", output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains("needs a terminal"), "{stderr}");
-    assert!(stderr.contains("hint: usage: dctx <COMMAND>"), "{stderr}");
-    assert!(!stderr.contains('\x1b'), "{stderr}");
+    assert!(stderr.contains("needs a terminal"), "{stderr:?}");
+    assert!(stderr.contains("hint: usage: dctx <COMMAND>"), "{stderr:?}");
+    assert!(!stderr.contains('\x1b'), "{stderr:?}");
 }
 
 #[test]
@@ -416,10 +493,10 @@ fn cache_and_template_failures_follow_the_contract() {
 fn pack_help_is_the_pack_page_only() {
     let fixture = Fixture::new();
     let page = fixture.ok(&words(&["pack", "--help"]));
-    assert!(page.starts_with("Usage: dctx pack"), "{page}");
+    assert!(page.starts_with("Usage: dctx pack"), "{page:?}");
     assert!(page.contains("Pack filters"));
     for global in ["precision:", "dctx cache", "Template Commands"] {
-        assert!(!page.contains(global), "{global}: {page}");
+        assert!(!page.contains(global), "{global}: {page:?}");
     }
     let global = fixture.ok(&words(&["--help"]));
     assert!(global.contains("hubs|path|export>"), "{global}");
