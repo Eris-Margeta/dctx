@@ -126,8 +126,8 @@ transfer. Take the selected `dctx-TARGET-airgap.tar.gz` and its
 Provision Python 3.11 or later, the [standalone verifier](https://github.com/Eris-Margeta/dctx/blob/main/tools/release/verify-airgap-target.py)
 from a trusted checkout, cosign 3.1.4 on PATH, and an independently
 authenticated Sigstore root. Keep the transferred files in a private directory
-where they stay unchanged through extraction. See the [trust-root transfer
-instructions](VERIFYING.md#air-gap-transfer-and-offline-install).
+where they stay unchanged through extraction. See the
+[trust-root transfer instructions](https://github.com/Eris-Margeta/dctx/blob/main/docs/VERIFYING.md#air-gap-transfer-and-offline-install).
 
 On the disconnected host, start in that directory. Set these inputs to your
 own choices and trusted local paths (Linux x64 example).
