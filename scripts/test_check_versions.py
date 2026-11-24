@@ -48,7 +48,7 @@ class CheckVersionsTests(unittest.TestCase):
 
     def assert_status(self, status, *args):
         result = self.run_check(*args)
-        self.assertEqual(result.returncode, status, result.stdout + result.stderr)
+        self.assertEqual(result.returncode, status, ascii(result.stdout + result.stderr))
         self.assertNotIn("Traceback", result.stderr)
         return result
 
@@ -132,18 +132,21 @@ class CheckVersionsTests(unittest.TestCase):
         self.write("CHANGELOG.md", "# Changelog\n```md\n## [0.0.0]\n```\n## 1.3.1 - today\n## 0.1.0\n")
         self.assert_status(0)
 
-    def preflight_fixture(self):
+    def preflight_fixture(self, step_action="actions/checkout@" + "a" * 40, job_workflow=None):
         self.write("tools/release/toolchain.env", "DCTX_CI_RUST=1.100.0\nDCTX_RELEASE_RUST=1.99.0\n")
         self.write("rust-toolchain.toml", '[toolchain]\nchannel = "1.100.0"\n')
         self.write("packages/python/pyproject.toml", '[project]\nversion = "1.3.1"\n')
-        self.write(".github/workflows/ci.yml", f"""
+        workflow = f"""on: push
 jobs:
   build:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@{'a' * 40}
-      - uses: ./local
+      - uses: {step_action}
       - run: rustup toolchain install "$DCTX_CI_RUST" --profile minimal
-""")
+"""
+        if job_workflow:
+            workflow += f"  call:\n    uses: '{job_workflow}'\n"
+        self.write(".github/workflows/ci.yml", workflow)
 
     def test_preflight_passes_with_ci_pin_and_unreleased_heading(self):
         self.preflight_fixture()
@@ -220,6 +223,53 @@ jobs:
         self.assertIn("FAIL action-pins: .github/workflows/other.yml:3:", output)
         self.assertIn("@v1 needs a full commit SHA", output)
 
+    def test_preflight_rejects_sole_unpinned_step(self):
+        self.preflight_fixture("actions/checkout@v4")
+        self.assertEqual(self.assert_status(1, "--preflight").stdout.splitlines(), [
+            "PASS versions", "PASS changelog", "PASS rust-toolchain",
+            "FAIL action-pins: .github/workflows/ci.yml:6: actions/checkout@v4 needs a full commit SHA",
+        ])
+
+    def test_preflight_reports_all_unpinned_references(self):
+        workflow = "owner/repo/.github/workflows/build.yml@123abcd"
+        self.preflight_fixture("actions/checkout@main", workflow)
+        self.assertEqual(self.assert_status(1, "--preflight").stdout.splitlines(), [
+            "PASS versions", "PASS changelog", "PASS rust-toolchain",
+            "FAIL action-pins: .github/workflows/ci.yml:6: actions/checkout@main needs a full commit SHA; "
+            f".github/workflows/ci.yml:9: {workflow} needs a full commit SHA",
+        ])
+
+    def test_preflight_requires_the_entire_ref_to_be_a_sha(self):
+        sha = "a" * 40
+        for ref in (f"{sha}#tag", f'{sha}"tag', f"tag@{sha}"):
+            with self.subTest(ref=ref):
+                self.preflight_fixture(f"actions/checkout@{ref}")
+                output = self.assert_status(1, "--preflight").stdout
+                self.assertIn(f"actions/checkout@{json.dumps(ref)[1:-1]} needs a full commit SHA", output)
+
+    def test_preflight_accepts_pinned_local_and_docker_references(self):
+        sha = "0123456789AbCdEf" * 2 + "01234567"
+        for step, job in (
+            (f'"actions/checkout@{sha}" # release tag', f"owner/repo/.github/workflows/build.yml@{sha}"),
+            ("./local", "./.github/workflows/build.yml"),
+            ("docker://alpine:latest", None),
+        ):
+            with self.subTest(step=step, job=job):
+                self.preflight_fixture(step, job)
+                self.assertEqual(self.assert_status(0, "--preflight").stdout.splitlines(), [
+                    "PASS versions", "PASS changelog", "PASS rust-toolchain", "PASS action-pins",
+                ])
+
+    def test_preflight_escapes_workflow_diagnostics(self):
+        self.preflight_fixture()
+        path = '.github/workflows/bad\n\x1b".yml'
+        self.write(path, "jobs:\n  call:\n    uses: owner/repo/.github/workflows/build.yml@bad\x1bref\n")
+        self.assertEqual(self.assert_status(1, "--preflight").stdout.splitlines(), [
+            "PASS versions", "PASS changelog", "PASS rust-toolchain",
+            r'FAIL action-pins: .github/workflows/bad\n\u001b\".yml:3: '
+            r'owner/repo/.github/workflows/build.yml@bad\u001bref needs a full commit SHA',
+        ])
+
     def test_release_script_fails_after_printing_all_preflight_results(self):
         self.preflight_fixture()
         (self.root / "rust-toolchain.toml").unlink()
@@ -227,7 +277,7 @@ jobs:
             self.write(f"scripts/{source.name}", source.read_text(encoding="utf-8"))
         command = ["bash", str(self.root / "scripts/release-check.sh"), "--preflight-only"]
         result = subprocess.run(command, cwd=self.root, capture_output=True, text=True, check=False)
-        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertEqual(result.returncode, 1, ascii(result.stdout + result.stderr))
         self.assertIn("PASS versions", result.stdout)
         self.assertIn("PASS changelog", result.stdout)
         self.assertIn("FAIL rust-toolchain:", result.stdout)
@@ -237,6 +287,8 @@ jobs:
     def test_usage_errors_exit_two(self):
         self.assert_status(2, "--unknown")
         self.assert_status(2, "--root")
+        result = self.assert_status(2, '--bad\n\x1b"')
+        self.assertIn(r'--bad\n\u001b\"', result.stderr)
 
 
 if __name__ == "__main__":
