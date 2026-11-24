@@ -7,9 +7,9 @@
 - Publisher: TEJL - tvornica elektroničkih jedinica i logike. TEJL.com: https://tejl.com/; TEJL.hr: https://tejl.hr/.
 - This is llms-small.txt: the facts and the route table, with an outline of the start documents. The other entry points: https://www.dctx.internet.technology/llms.txt, https://www.dctx.internet.technology/llms-full.txt.
 - Engine: dctx 1.3.2. Document captures are the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs them and fails on any byte of drift. Read the pack at https://www.dctx.internet.technology/llms-full.txt.
-- Docs commit: 01b6798aff3934e6d32dd6d77e14ccef7b66058b (2026-11-24T01:02:52Z), the last commit that changed one of the documents.
+- Docs commit: 0f532d41afbc3c48bc11f69a47932c5adadd4a95 (2026-11-24T09:49:28Z), the last commit that changed one of the documents.
 - Command: `dctx map map docs/START.md --depth 2`; `dctx map map docs/WHY-DCTX.md --depth 2`; `dctx map map README.md --depth 2`; `dctx map map docs/MODALITIES.md --depth 2`
-- Document capture budget: 994 of 2,500 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
+- Document capture budget: 1,008 of 2,500 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
 
 ## Facts
 
@@ -151,19 +151,20 @@ These existed before 1.2.0 and no longer work. A transcript that uses them descr
 
 ```text
 # dctx map
-d:docs/START.md#What dctx is	heading	L3-235
-d:docs/START.md#Choose your path	heading	L17-119
+d:docs/START.md#What dctx is	heading	L3-282
+d:docs/START.md#Choose your path	heading	L17-166
 d:docs/START.md#One giant folder	heading	L27-45
 d:docs/START.md#Many small projects	heading	L46-69
 d:docs/START.md#Agent builder embedding a library	heading	L70-98
-d:docs/START.md#Team / enterprise admin	heading	L99-119
-d:docs/START.md#Safe path in ten minutes	heading	L120-190
-d:docs/START.md#1. Install the system binary	heading	L122-141
-d:docs/START.md#2. Choose one project and inspect one answer	heading	L142-155
-d:docs/START.md#3. Use the CLI from your shell or agent	heading	L156-169
-d:docs/START.md#4. Measure before changing anything	heading	L170-190
-d:docs/START.md#Responsibilities	heading	L191-210
-d:docs/START.md#Two scopes, one binary	heading	L211-235
+d:docs/START.md#Team / enterprise admin	heading	L99-166
+d:docs/START.md#Air-gap install	heading	L120-166
+d:docs/START.md#Safe path in ten minutes	heading	L167-237
+d:docs/START.md#1. Install the system binary	heading	L169-188
+d:docs/START.md#2. Choose one project and inspect one answer	heading	L189-202
+d:docs/START.md#3. Use the CLI from your shell or agent	heading	L203-216
+d:docs/START.md#4. Measure before changing anything	heading	L217-237
+d:docs/START.md#Responsibilities	heading	L238-257
+d:docs/START.md#Two scopes, one binary	heading	L258-282
 # dctx map
 d:docs/WHY-DCTX.md#Why dctx exists	heading	L3-157
 d:docs/WHY-DCTX.md#The problem	heading	L7-14

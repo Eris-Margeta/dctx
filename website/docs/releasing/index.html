@@ -20,7 +20,7 @@
 <meta name="description" content="How a release is cut and checked.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="generator" content="dctx website builder">
-<meta name="dctx-build" content="2d3d90fc573a5b404a6df018992a5125364a4a8e821e36acd2ccc9075aaa339e">
+<meta name="dctx-build" content="bbc355f2bef1b633007974a9a9e2fe75495a79bc0898913f747f4838c0018ce2">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
@@ -41,7 +41,7 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="dctx: Releasing. How a release is cut and checked.">
-<meta property="article:modified_time" content="2026-11-19T05:57:46Z">
+<meta property="article:modified_time" content="2026-11-24T09:49:03Z">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Releasing · dctx">
 <meta name="twitter:description" content="How a release is cut and checked.">
@@ -192,13 +192,13 @@
    "mainEntityOfPage": {
     "@id": "https://www.dctx.internet.technology/docs/releasing/#webpage"
    },
-   "wordCount": 272,
+   "wordCount": 595,
    "encoding": {
     "@type": "MediaObject",
     "contentUrl": "https://www.dctx.internet.technology/docs/releasing/index.md",
     "encodingFormat": "text/markdown"
    },
-   "dateModified": "2026-11-19T05:57:46Z"
+   "dateModified": "2026-11-24T09:49:03Z"
   }
  ]
 }
@@ -219,7 +219,7 @@
  </div>
 </header>
 <main id="main">
-<div class="wrap docs-grid"><aside class="sidebar" aria-label="Documentation"><p class="side-h"><a href="/docs/">All documents</a></p><p class="side-h">Start</p><ul><li><a href="/docs/start/">What dctx is</a></li><li><a href="/start/">Choose your path</a></li><li><a href="/docs/start/#safe-path-in-ten-minutes">Safe path in ten minutes</a></li><li><a href="/why/">Why dctx</a></li><li><a href="/docs/readme/">README and quick start</a></li></ul><p class="side-h">Modalities</p><ul><li><a href="/docs/modalities/">Choosing how to use dctx</a></li><li><a href="/docs/map-mode/">CLI and agents: map mode</a></li><li><a href="/docs/agents/">Agent snippet</a></li><li><a href="/docs/modalities/#rust-library-embed-the-facade">Libraries</a></li><li><a href="/docs/modalities/#ci--prompt-cache-prefix-stability">CI and caching</a></li><li><a href="/docs/plugins/">Plugins guide</a></li></ul><p class="side-h">Scopes</p><ul><li><a href="/start/#two-scopes">Two scopes, one binary</a></li><li><a href="/start/#responsibilities">Who is responsible for what</a></li></ul><p class="side-h">Engine</p><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/docs/privacy/">Privacy guarantees</a></li><li><a href="/docs/modalities/#huge-trees-scope-before-indexing">Cache and limits</a></li><li><a href="/docs/language-coverage/">Language coverage (ADR-018)</a></li><li><a href="/docs/templates-contract/">Template contract (DTS v2)</a></li><li><a href="/docs/templating/">Templating engine (ADR-003)</a></li><li><a href="/docs/crate-map/">Crate map</a></li></ul><p class="side-h">Reference</p><ul><li><a href="/cli/">CLI reference</a></li><li><a href="/docs/exit-codes/">CLI exit codes</a></li><li><a href="/languages/">Languages</a></li><li><a href="/templates/">Templates</a></li><li><a href="/examples/">Examples</a></li></ul><p class="side-h">Trust</p><ul><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/docs/benchmark/">Measurement evidence</a></li><li><a href="/docs/stability/">Byte-stability report</a></li><li><a href="/docs/benchmark-oct/">Earlier two-way study</a></li><li><a href="/why/#the-philosophy">Philosophy</a></li><li><a href="/security/">Security policy</a></li><li><a href="/docs/releasing/" aria-current="page">Releasing</a></li><li><a href="/docs/contributing/">Contributing</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="/maintenance/">Maintenance</a></li></ul><p class="side-h">For AI evaluators</p><ul><li><a href="/for-ai-evaluators/">Facts and verification</a></li><li><a href="/llms.txt">llms.txt</a></li></ul></aside><article class="prose"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/docs/releasing/" aria-current="page">Releasing</a></li></ol></nav><h1 id="releasing-dctx">Releasing dctx</h1><p class="doc-meta"><a href="https://github.com/Eris-Margeta/dctx/blob/main/RELEASING.md">View source</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/edit/main/RELEASING.md">Edit on GitHub</a> &middot; <a href="/docs/releasing/index.md" type="text/markdown">Markdown</a> &middot; <code>RELEASING.md</code> &middot; 272 words &middot; updated <time datetime="2026-11-19">19 November 2026</time></p><details class="toc-m"><summary><svg class="disclosure" width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true" focusable="false"><path d="m2 1 6 4-6 4z"/></svg>On this page</summary><ul><li><a href="#offline-release-preflight">Offline release preflight</a></li><li><a href="#publication-gate">Publication gate</a></li></ul></details>
+<div class="wrap docs-grid"><aside class="sidebar" aria-label="Documentation"><p class="side-h"><a href="/docs/">All documents</a></p><p class="side-h">Start</p><ul><li><a href="/docs/start/">What dctx is</a></li><li><a href="/start/">Choose your path</a></li><li><a href="/docs/start/#safe-path-in-ten-minutes">Safe path in ten minutes</a></li><li><a href="/why/">Why dctx</a></li><li><a href="/docs/readme/">README and quick start</a></li></ul><p class="side-h">Modalities</p><ul><li><a href="/docs/modalities/">Choosing how to use dctx</a></li><li><a href="/docs/map-mode/">CLI and agents: map mode</a></li><li><a href="/docs/agents/">Agent snippet</a></li><li><a href="/docs/modalities/#rust-library-embed-the-facade">Libraries</a></li><li><a href="/docs/modalities/#ci--prompt-cache-prefix-stability">CI and caching</a></li><li><a href="/docs/plugins/">Plugins guide</a></li></ul><p class="side-h">Scopes</p><ul><li><a href="/start/#two-scopes">Two scopes, one binary</a></li><li><a href="/start/#responsibilities">Who is responsible for what</a></li></ul><p class="side-h">Engine</p><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/docs/privacy/">Privacy guarantees</a></li><li><a href="/docs/modalities/#huge-trees-scope-before-indexing">Cache and limits</a></li><li><a href="/docs/language-coverage/">Language coverage (ADR-018)</a></li><li><a href="/docs/templates-contract/">Template contract (DTS v2)</a></li><li><a href="/docs/templating/">Templating engine (ADR-003)</a></li><li><a href="/docs/crate-map/">Crate map</a></li></ul><p class="side-h">Reference</p><ul><li><a href="/cli/">CLI reference</a></li><li><a href="/docs/exit-codes/">CLI exit codes</a></li><li><a href="/languages/">Languages</a></li><li><a href="/templates/">Templates</a></li><li><a href="/examples/">Examples</a></li></ul><p class="side-h">Trust</p><ul><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/docs/benchmark/">Measurement evidence</a></li><li><a href="/docs/stability/">Byte-stability report</a></li><li><a href="/docs/benchmark-oct/">Earlier two-way study</a></li><li><a href="/why/#the-philosophy">Philosophy</a></li><li><a href="/security/">Security policy</a></li><li><a href="/docs/releasing/" aria-current="page">Releasing</a></li><li><a href="/docs/contributing/">Contributing</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="/maintenance/">Maintenance</a></li></ul><p class="side-h">For AI evaluators</p><ul><li><a href="/for-ai-evaluators/">Facts and verification</a></li><li><a href="/llms.txt">llms.txt</a></li></ul></aside><article class="prose"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/docs/releasing/" aria-current="page">Releasing</a></li></ol></nav><h1 id="releasing-dctx">Releasing dctx</h1><p class="doc-meta"><a href="https://github.com/Eris-Margeta/dctx/blob/main/RELEASING.md">View source</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/edit/main/RELEASING.md">Edit on GitHub</a> &middot; <a href="/docs/releasing/index.md" type="text/markdown">Markdown</a> &middot; <code>RELEASING.md</code> &middot; 595 words &middot; updated <time datetime="2026-11-24">24 November 2026</time></p><details class="toc-m"><summary><svg class="disclosure" width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true" focusable="false"><path d="m2 1 6 4-6 4z"/></svg>On this page</summary><ul><li><a href="#offline-release-preflight">Offline release preflight</a></li><li><a href="#disconnected-verification-before-installation">Disconnected verification before installation</a></li><li><a href="#publication-gate">Publication gate</a></li></ul></details>
 <p>The current CLI packaging, registry publication, website deployment, secret setup
 and rollback runbook is <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/RELEASING.md">docs/RELEASING.md</a>.</p>
 <p>The desktop app retains its separate <code>desktop-v*</code> release workflow.</p>
@@ -235,6 +235,53 @@ release-only and performance pins can differ. When workflows use commit SHA
 pins, every external repository action and reusable workflow must use a full
 commit SHA. Each check prints a PASS or FAIL line, and any failure blocks the
 release check.</p>
+<h2 id="disconnected-verification-before-installation">Disconnected verification before installation<a class="hd" href="#disconnected-verification-before-installation" aria-label="Link to Disconnected verification before installation">#</a></h2>
+<p>On the disconnected machine, run the <a href="https://github.com/Eris-Margeta/dctx/blob/main/tools/release/verify-offline-provenance.sh">consumer verification command</a>
+from a directory containing the published files for one tag and target. Run it
+before extracting either archive or copying an executable. It reads both archives
+in place. For each one it checks the cosign blob signature and the SLSA build
+provenance against that archive's bytes.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Provision independently of the release payloads</th>
+<th>Transfer from the selected release</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bash, an authenticated copy of the consumer command, <span class="unlinked">cosign 3.1.4</span> and <span class="unlinked">GitHub CLI with offline attestation verification</span> on a trusted PATH</td>
+<td>The native <code>dctx-TARGET.tar.gz</code> (Windows uses <code>dctx-TARGET.zip</code>), its <code>.sigstore.json</code> sidecar and <code>archive-provenance.jsonl</code></td>
+</tr>
+<tr>
+<td>An authenticated Sigstore <code>trusted_root.json</code> for cosign and the independently authenticated <span class="unlinked">trusted root material for gh</span> appropriate to the signing infrastructure</td>
+<td><code>dctx-TARGET-airgap.tar.gz</code>, its <code>.sigstore.json</code> sidecar and the external <code>airgap-provenance.jsonl</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>MAIN can replay the following from the transfer directory with networking
+disabled. In this example, <code>../consumer</code> holds the trusted script and <code>../trust</code>
+holds the two preprovisioned root files. Set <code>TAG</code> and <code>TARGET</code> from the
+independently recorded release selection. Use a directory under your control
+and retain the same verified bytes through installation.</p>
+<div class="hl" data-lang="shell"><pre><code><span class="t-k">set</span> <span class="t-f">-eu</span>
+<span class="t-v">TAG</span>=<span class="t-s">v1.3.2</span>
+<span class="t-v">TARGET</span>=<span class="t-s">x86_64-unknown-linux-musl</span>
+<span class="t-f">bash</span> ../consumer/verify-offline-provenance.sh <span class="t-s">"$TAG"</span> <span class="t-s">"$TARGET"</span> <span class="t-k">\</span>
+  <span class="t-f">../trust/trusted_root.json</span> ../trust/gh-trusted-root.jsonl</code></pre></div>
+<p>Repeat with <code>TARGET=x86_64-pc-windows-msvc</code> and the corresponding genuine
+assets to cover ZIP. A zero exit requires both verifiers to accept both archives.
+The cosign certificate must name the release workflow at the exact tag with the
+GitHub Actions OIDC issuer. The GitHub attestation must match
+<code>Eris-Margeta/dctx</code>, <code>.github/workflows/release.yml</code> and <code>refs/tags/$TAG</code>,
+and pass the hosted-runner policy. A missing input, unsupported option or
+verifier refusal stops the procedure. After success, continue with the signed
+manifest and checksum checks in the <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/VERIFYING.md#air-gap-transfer-and-offline-install">offline install guide</a>.</p>
+<p><code>python3 -B tools/release/test_offline_provenance.py</code> runs policy and ordering
+tests with recording verifiers. Only a disconnected run with genuine signed
+material, independently trusted roots and the real verifier binaries provides
+cryptographic evidence. Record the tag, target, verifier versions, independently
+authenticated root identifiers and command exit status for that run.</p>
 <h2 id="publication-gate">Publication gate<a class="hd" href="#publication-gate" aria-label="Link to Publication gate">#</a></h2>
 <p>Before any future production/public release, complete the required production
 security review and full relevant audit for the exact candidate
@@ -248,7 +295,7 @@ project, and use owner-only permissions (exclude it from staging/export for a
 non-Git project). Use the separate overlay instead of the vendor default path.
 Any unresolved gate blocker needs explicit informed owner disposition tied to the
 exact release. A gate pass is not a claim of complete security.</p>
-<p>The owner must authorize the production tag/publication and deployment.</p><nav class="pager" aria-label="Previous and next"><a class="prev" href="/docs/benchmark-oct/" rel="prev"><span>Previous</span>Earlier two-way study</a><a class="next" href="/docs/contributing/" rel="next"><span>Next</span>Contributing</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#offline-release-preflight">Offline release preflight</a></li><li class="l2"><a href="#publication-gate">Publication gate</a></li></ul></nav></div>
+<p>The owner must authorize the production tag/publication and deployment.</p><nav class="pager" aria-label="Previous and next"><a class="prev" href="/docs/benchmark-oct/" rel="prev"><span>Previous</span>Earlier two-way study</a><a class="next" href="/docs/contributing/" rel="next"><span>Next</span>Contributing</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#offline-release-preflight">Offline release preflight</a></li><li class="l2"><a href="#disconnected-verification-before-installation">Disconnected verification before installation</a></li><li class="l2"><a href="#publication-gate">Publication gate</a></li></ul></nav></div>
 </main>
 <footer class="ftr">
  <div class="wrap">

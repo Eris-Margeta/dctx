@@ -117,6 +117,53 @@ use [release procedure](https://www.dctx.internet.technology/docs/releasing/), [
 [security reporting](https://www.dctx.internet.technology/security/) for the current controls. Signed
 organization policy bundles and audit journals are planned.
 
+#### Air-gap install
+
+Choose the release tag and target triple from your deployment plan before
+transfer. Take the selected `dctx-TARGET-airgap.tar.gz` and its
+`.sigstore.json` sidecar, **plus the release-level `SHA256SUMS` and
+`SHA256SUMS.sigstore.json`**. Windows x64 also uses an outer tarball.
+Provision Python 3.11 or later, the [standalone verifier](https://github.com/Eris-Margeta/dctx/blob/main/tools/release/verify-airgap-target.py)
+from a trusted checkout, cosign 3.1.4 on PATH, and an independently
+authenticated Sigstore root. Keep the transferred files in a private directory
+where they stay unchanged through extraction. See the [trust-root transfer
+instructions](VERIFYING.md#air-gap-transfer-and-offline-install).
+
+On the disconnected host, start in that directory. Set these inputs to your
+own choices and trusted local paths (Linux x64 example).
+
+```sh
+TAG=v1.3.2
+TARGET=x86_64-unknown-linux-musl
+TRUSTED_ROOT="$PWD/trusted_root.json"
+VERIFIER="../trusted-tools/verify-airgap-target.py"
+```
+
+Run this block in the same shell. It authenticates both the release manifest
+and the outer tarball under the selected tag's release workflow and GitHub
+Actions issuer. Extraction requires a single manifest row for the full
+selected basename and a matching SHA-256 of the compressed bytes.
+
+```sh
+set -eu
+ASSET="dctx-${TARGET}-airgap.tar.gz"
+python3 "$VERIFIER" --target "$TARGET" --tag "$TAG" --trusted-root "$TRUSTED_ROOT"
+mkdir verified-dctx
+tar -xzf "$ASSET" -C verified-dctx
+```
+
+Keep the same tag, trust root and workflow identity for the remaining checks.
+Verify [build provenance](https://github.com/Eris-Margeta/dctx/blob/main/docs/VERIFYING.md#verify-github-build-provenance) for the
+outer and native archives, carrying `airgap-provenance.jsonl` for the outer
+archive and using the enclosed `archive-provenance.jsonl` for the native one.
+In `verified-dctx`, authenticate the **inner** `SHA256SUMS` with its own
+sidecar and check its hashes before installing `dctx` or `dctx.exe`. Follow
+the [platform-specific offline install steps](https://github.com/Eris-Margeta/dctx/blob/main/docs/VERIFYING.md#air-gap-transfer-and-offline-install).
+
+The Linux and Windows x64 fixtures test the checksum decision and record the
+cosign arguments. Signature evidence for a release comes from successful
+cosign verification of the actual blobs and bundles with your trusted root.
+
 ## Safe path in ten minutes
 
 ### 1. Install the system binary
