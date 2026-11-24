@@ -50,10 +50,38 @@ pub(super) fn relative_import(name: &str) -> Option<(&str, Option<&str>)> {
     if !name.starts_with("./") && !name.starts_with("../") {
         return None;
     }
-    Some(
-        name.rsplit_once("::")
-            .map_or((name, None), |(module, binding)| (module, Some(binding))),
-    )
+    Some(js_import_parts(name))
+}
+
+/// The JS lexer spells a selected member as `module::member`.
+fn js_import_parts(name: &str) -> (&str, Option<&str>) {
+    name.rsplit_once("::")
+        .map_or((name, None), |(module, member)| (module, Some(member)))
+}
+
+/// Local name evidence in an import fact, independent of its target.
+pub(super) enum ImportBinding<'a> {
+    None,
+    Named(&'a str),
+    /// The producer uses the import path for its implicit local names.
+    Path,
+}
+
+pub(super) fn import_binding<'a>(
+    family: &str,
+    name: &'a str,
+    alias: Option<&'a str>,
+) -> ImportBinding<'a> {
+    if let Some(local) = alias {
+        return ImportBinding::Named(local);
+    }
+    if family == "javascript" {
+        // The lexer appends a member for unaliased named imports. A module alone
+        // (side-effect import or unassigned require) introduces no local name.
+        let (_, member) = js_import_parts(name);
+        return member.map_or(ImportBinding::None, ImportBinding::Named);
+    }
+    ImportBinding::Path
 }
 
 /// Segments of an import spelling. A trailing source extension, quotes, relative dots and `*` are dropped.
@@ -157,6 +185,18 @@ mod tests {
         assert_eq!(
             relative_import(&format!("{path}::f")),
             Some((path, Some("f")))
+        );
+    }
+
+    #[test]
+    fn a_side_effect_specifier_introduces_no_local_name() {
+        let path = "./a\n\x1b\"/util.mjs";
+        assert!(
+            matches!(
+                import_binding("javascript", path, None),
+                ImportBinding::None
+            ),
+            "{path:?}"
         );
     }
 

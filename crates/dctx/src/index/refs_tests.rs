@@ -76,6 +76,189 @@ fn linked(files: &[(&str, &str)]) -> Vec<String> {
         .collect()
 }
 
+/// Non-containment edges from the production walk, including the confidence of each edge.
+fn walked_dependencies(files: &[(&str, &str)]) -> Vec<[String; 4]> {
+    use super::{WalkArgs, walk_source};
+    use crate::domain::{
+        FreshnessMode, HostGrants, OperationLimits, ParserChoice, PolicyView, resolve_scan,
+    };
+    use dctx_core::selection::{RuleTexts, SelectionPolicy};
+    use dctx_ports::memory::{CancelFlag, MemorySource};
+    use dctx_template::HostCeiling;
+
+    let mut source = MemorySource::new();
+    for (path, body) in files {
+        source
+            .insert_file(path, body.as_bytes(), 0)
+            .expect("fixture file");
+    }
+    let walked = walk_source(&WalkArgs {
+        source: &source,
+        cancel: &CancelFlag::new(),
+        policy: PolicyView {
+            selection: &SelectionPolicy::from_texts(&RuleTexts::default()),
+            ceiling: &HostCeiling::base(),
+            grants: HostGrants::PermitAll,
+            plan: None,
+            view: "map",
+        },
+        limits: &resolve_scan(&OperationLimits::default()).expect("limits"),
+        freshness: FreshnessMode::ImmutableSnapshot,
+        parser: ParserChoice::Structural,
+        deadline_ms: None,
+        started_ms: 0,
+        now_ms: 0,
+        elapsed: None,
+    })
+    .expect("walk");
+
+    let mut dependencies = Vec::new();
+    for edge in &walked.edges {
+        let kind = walked.text.get(edge.edge);
+        if kind == "contains" {
+            continue;
+        }
+        let (mut src, mut dst) = (String::new(), String::new());
+        write_endpoint(&mut src, &walked.nodes, &walked.text, edge.src);
+        write_endpoint(&mut dst, &walked.nodes, &walked.text, edge.dst);
+        dependencies.push([
+            src,
+            kind.to_owned(),
+            dst,
+            walked.text.get(edge.confidence).to_owned(),
+        ]);
+    }
+    dependencies.sort();
+    dependencies
+}
+
+#[test]
+fn walk_imports_modules_regardless_of_contents_or_decoys() {
+    for (importer, import, target, decoy, comment, declaration) in [
+        (
+            "p/b.mjs",
+            "import './util.mjs';",
+            "p/util.mjs",
+            "q/util.mjs",
+            "// side effects only",
+            "export function hit() {}",
+        ),
+        (
+            "b.py",
+            "import util",
+            "util.py",
+            "q/util.py",
+            "# side effects only",
+            "def hit():\n    pass\n",
+        ),
+    ] {
+        for body in ["", comment, declaration] {
+            for with_decoy in [false, true] {
+                let mut files = vec![(importer, import), (target, body)];
+                if with_decoy {
+                    files.push((decoy, declaration));
+                }
+                assert_eq!(
+                    walked_dependencies(&files),
+                    [[
+                        format!("m:{importer}"),
+                        "imports".into(),
+                        format!("m:{target}"),
+                        "exact".into()
+                    ]],
+                    "{files:?}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn qualified_parameter_calls_need_evidence_beyond_the_module_filename() {
+    for receiver in ["util", "renamed"] {
+        for stem in ["util", "renamed"] {
+            let module = format!("unrelated/{stem}.py");
+            let caller = format!("def run({receiver}):\n    return {receiver}.hit()\n");
+            let edges =
+                walked_dependencies(&[("b.py", &caller), (&module, "def hit():\n    pass\n")]);
+            assert!(edges.is_empty(), "{receiver:?} {module:?} {edges:?}");
+
+            let module = format!("{stem}.mjs");
+            let caller = format!(
+                "import './{module}';\nexport function run({receiver}) {{ {receiver}.hit(); }}"
+            );
+            let files = [
+                ("b.mjs", caller.as_str()),
+                (&module, "export function hit() {}"),
+            ];
+            assert_eq!(
+                walked_dependencies(&files),
+                [[
+                    "m:b.mjs".to_owned(),
+                    "imports".into(),
+                    format!("m:{module}"),
+                    "exact".into()
+                ]],
+                "{files:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn namespace_aliases_resolve_qualified_calls_independently_of_the_filename() {
+    for (importer, caller, module, definition) in [
+        (
+            "b.mjs",
+            "import * as dep from './util.mjs';\nexport function run() { dep.hit(); }",
+            "util.mjs",
+            "export function hit() {}",
+        ),
+        (
+            "b.py",
+            "import util as dep\ndef run():\n    return dep.hit()\n",
+            "util.py",
+            "def hit():\n    pass\n",
+        ),
+    ] {
+        assert_eq!(
+            walked_dependencies(&[(importer, caller), (module, definition)]),
+            [
+                [
+                    format!("m:{importer}"),
+                    "imports".into(),
+                    format!("m:{module}"),
+                    "exact".into()
+                ],
+                [
+                    format!("s:{importer}#run"),
+                    "calls".into(),
+                    format!("s:{module}#hit"),
+                    "name".into()
+                ],
+            ]
+        );
+    }
+}
+
+#[test]
+fn local_namespace_alias_does_not_reach_a_sibling_scope() {
+    let edges = walked_dependencies(&[
+        (
+            "b.py",
+            "def left():\n    import util as dep\n    dep.hit()\ndef left_more(dep):\n    dep.hit()\n",
+        ),
+        ("util.py", "def hit():\n    pass\n"),
+    ]);
+    assert_eq!(
+        edges,
+        [
+            ["s:b.py#left", "calls", "s:util.py#hit", "name"],
+            ["s:b.py#left", "imports", "m:util.py", "exact"],
+        ]
+    );
+}
+
 #[test]
 fn python_calls_resolve_in_file_and_through_an_import() {
     let edges = linked(&[
@@ -283,11 +466,11 @@ fn the_first_duplicate_member_keeps_its_calls() {
     let source = "export function has(x: string): boolean { return !!x }\nexport const H = [\n  { detect: (p) =>\n      has('a') ||\n      has('b') },\n  { detect: (p) => has('c') },\n];\n";
     let edges = linked(&[("a.ts", source)]);
     assert!(
-        edges.contains(&"calls s:a.ts#detect>s:a.ts#has name".to_string()),
+        edges.contains(&"calls s:a.ts#H::detect>s:a.ts#has name".to_string()),
         "{edges:?}"
     );
     assert!(
-        edges.contains(&"calls s:a.ts#detect~2>s:a.ts#has name".to_string()),
+        edges.contains(&"calls s:a.ts#H::detect~2>s:a.ts#has name".to_string()),
         "{edges:?}"
     );
 }
