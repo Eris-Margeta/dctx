@@ -23,8 +23,13 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-24.04, macos-15, windows-2022]
+        os: ['ubuntu-24.04', 'macos-15', 'windows-2022']
         node: ['18', '24']
+        include:
+          - os: ubuntu-24.04-arm
+            node: '24'
+          - os: macos-15-intel
+            node: '24'
     defaults:
       run:
         shell: bash
@@ -52,6 +57,10 @@ jobs:
           node packaging/npm/scripts/generate-types.mjs --check
           export DCTX_TEST_BIN="$GITHUB_WORKSPACE/target/debug/dctx-cli"
           if [[ "$RUNNER_OS" == Windows ]]; then export DCTX_TEST_BIN="$DCTX_TEST_BIN.exe"; fi
+          if [[ ! -f "$DCTX_TEST_BIN" || ! -x "$DCTX_TEST_BIN" ]]; then
+            printf 'Expected an executable engine at %q\n' "$DCTX_TEST_BIN" >&2
+            exit 1
+          fi
           # npm supplies its JS entry point so pack works without a shell on Windows.
           npm exec -- node --test packaging/npm/test/client.test.cjs packaging/npm/test/parity.test.cjs packaging/npm/test/pack.test.cjs packaging/npm/test/names.test.cjs
       - name: TypeScript consumer contract
