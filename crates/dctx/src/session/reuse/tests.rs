@@ -6,7 +6,7 @@ use dctx_ports::memory::{CancelFlag, FixedClock, MemorySource};
 
 use super::super::SnapshotHandle;
 use super::*;
-use crate::domain::{AutoCleanConfig, HostGrants, MapRequest, VecSink, Verb};
+use crate::domain::{AnswerRecord, AutoCleanConfig, HostGrants, MapRequest, VecSink, Verb};
 use crate::{HostCeiling, RuleTexts, StoragePolicy};
 
 #[allow(
@@ -39,12 +39,21 @@ fn source(body: &[u8]) -> MemorySource {
     source
 }
 
-fn find_ids(session: &mut Session, handle: &SnapshotHandle, query: &str) -> Vec<String> {
+fn find_records(session: &mut Session, handle: &SnapshotHandle, query: &str) -> Vec<AnswerRecord> {
     let mut request = MapRequest::new(Verb::Find);
     request.query = query.to_string();
     let mut sink = VecSink::new();
-    let answer = session.query(handle, &request, &mut sink).expect("query");
-    answer.records.into_iter().map(|record| record.id).collect()
+    session
+        .query(handle, &request, &mut sink)
+        .expect("query")
+        .records
+}
+
+fn find_ids(session: &mut Session, handle: &SnapshotHandle, query: &str) -> Vec<String> {
+    find_records(session, handle, query)
+        .into_iter()
+        .map(|record| record.id)
+        .collect()
 }
 
 #[test]
@@ -333,7 +342,7 @@ mod stamp {
                     "a file written just now is racy and carries no stamp"
                 ),
                 other => {
-                    let stamp = stamp.unwrap_or_else(|| panic!("{other} must carry a stamp"));
+                    let stamp = stamp.unwrap_or_else(|| panic!("{other:?} must carry a stamp"));
                     let meta = std::fs::metadata(fixture.path(other)).expect("meta");
                     assert_eq!(stamp.size, meta.len());
                     assert_eq!(
@@ -473,12 +482,15 @@ mod stamp {
         assert!(!stamp_pass_mode(Some("strict_live")).expect("strict"));
         let error = stamp_pass_mode(Some("strict-live")).expect_err("typo");
         assert_eq!(error.code().as_str(), "InvalidRequest");
-        assert!(error.to_string().contains("DCTX_FRESHNESS"), "{error}");
+        assert!(error.to_string().contains("DCTX_FRESHNESS"), "{error:?}");
     }
 }
 
 mod robustness {
     use super::*;
+    use dctx_adapter_cache::adapters::{FsLedgerStore, FsObjectStore};
+    use dctx_adapter_cache::ports::LedgerStore;
+    use dctx_adapter_cache::{Lifecycle, ObjectId, Quota, RootId};
     use proptest::prelude::*;
     use std::sync::OnceLock;
 
@@ -603,6 +615,176 @@ mod robustness {
                     .reused()
             );
         }
+    }
+
+    fn current_manifest(life: &Lifecycle, root: RootId) -> ObjectId {
+        let generation = life.current_generation(root).expect("current generation");
+        let manifest = life
+            .manifest_of(root, generation)
+            .expect("current manifest");
+        life.manifest_object(manifest).expect("manifest object")
+    }
+
+    #[test]
+    fn managed_retry_replaces_a_conflicting_object_left_before_rename() {
+        let cache = tempfile::tempdir().expect("cache");
+        let path = cache.path();
+        let root = RootId::new(1);
+        let quota = Quota::product_default();
+        let mut initial = open(source(b""), path);
+        drop(
+            initial
+                .store_cache_segment(b"original")
+                .expect("original publish")
+                .expect("lease"),
+        );
+        drop(initial);
+
+        let ledger = FsLedgerStore::open(path).expect("ledger");
+        let objects = FsObjectStore::open(path).expect("objects");
+        let mut next = ledger.load(quota).expect("load").lifecycle;
+        let manifest_path = path
+            .join("objects")
+            .join(current_manifest(&next, root).raw().to_string());
+        let mut manifest = std::fs::read(manifest_path).expect("original manifest bytes");
+        let manifest_len = u64::try_from(manifest.len()).expect("manifest length");
+        let segment = next
+            .insert_segment(8, 0, &[root])
+            .expect("successor segment");
+        next.publish_view(root, manifest_len, &[segment])
+            .expect("successor view");
+        let successor_manifest = current_manifest(&next, root);
+        // The on-disk view envelope ends with the little-endian segment ID.
+        let (_, segment_id) = manifest
+            .split_last_chunk_mut::<8>()
+            .expect("manifest layout");
+        *segment_id = segment.raw().to_le_bytes();
+        objects
+            .put_object(segment.raw(), b"stranded")
+            .expect("orphan segment");
+        objects
+            .put_object(successor_manifest.raw(), &manifest)
+            .expect("orphan manifest");
+        assert_eq!(next.begin_reclaim(), 2);
+        ledger.stage(&next).expect("stage successor");
+        drop(ledger);
+        drop(objects);
+
+        let mut reopened = open(source(b""), path);
+        assert_eq!(
+            reopened.load_retained().expect("before retry").as_deref(),
+            Some(b"original".as_slice())
+        );
+        drop(
+            reopened
+                .store_cache_segment(b"replaced")
+                .expect("retry publish")
+                .expect("lease"),
+        );
+        drop(reopened);
+
+        let mut warm = open(source(b""), path);
+        assert_eq!(
+            warm.load_retained().expect("after retry").as_deref(),
+            Some(b"replaced".as_slice())
+        );
+        let loaded = FsLedgerStore::open(path)
+            .expect("reopen ledger")
+            .load(quota)
+            .expect("load settled image");
+        assert_eq!(
+            current_manifest(&loaded.lifecycle, root),
+            successor_manifest
+        );
+        assert_eq!(loaded.lifecycle.status().buckets.pending, 0);
+        assert_eq!(loaded.lifecycle.admitted(), manifest_len + 8);
+        assert_eq!(loaded.orphans.len(), 1, "{:?}", loaded.orphans);
+        assert!(loaded.orphans[0].relative.ends_with(".tmp"));
+    }
+
+    fn missing_generation_object_rebuilds_then_reuses(remove_manifest: bool) {
+        let cache = tempfile::tempdir().expect("cache");
+        let path = cache.path();
+        let source_bytes = b"/// The retained symbol.\nfn kept() {}\nfn caller() { kept(); }\n";
+        let request = SnapshotRequest::strict();
+        let mut cold = open(source(source_bytes), path);
+        let handle = cold.snapshot_reusable(&request, "fixture").expect("cold");
+        let original = find_records(&mut cold, &handle, "kept");
+        assert_eq!(original.len(), 1, "{original:?}");
+        assert_eq!(original[0].id, "s:item.rs#kept");
+        let retained = cold
+            .load_retained()
+            .expect("load")
+            .expect("retained segment");
+        drop(handle);
+        drop(cold);
+
+        let loaded = FsLedgerStore::open(path)
+            .expect("ledger")
+            .load(Quota::product_default())
+            .expect("load");
+        let life = loaded.lifecycle;
+        let manifest = current_manifest(&life, RootId::new(1));
+        let ids = life.object_ids();
+        assert_eq!(ids.len(), 2);
+        let segment = ids
+            .into_iter()
+            .find(|&id| id != manifest)
+            .expect("segment ID");
+        let object_path = |id: ObjectId| path.join("objects").join(id.raw().to_string());
+        assert_eq!(
+            std::fs::read(object_path(segment)).expect("segment bytes"),
+            retained
+        );
+        let (missing, surviving) = if remove_manifest {
+            (manifest, segment)
+        } else {
+            (segment, manifest)
+        };
+        std::fs::remove_file(object_path(missing)).expect("unlink selected object");
+        let objects = FsObjectStore::open(path).expect("objects");
+        assert!(
+            objects
+                .open_object(missing.raw())
+                .expect("missing object")
+                .is_none()
+        );
+        assert!(
+            objects
+                .open_object(surviving.raw())
+                .expect("surviving object")
+                .is_some()
+        );
+
+        let mut reopened = open(source(source_bytes), path);
+        assert!(
+            reopened
+                .load_retained()
+                .expect("read incomplete view")
+                .is_none()
+        );
+        let handle = reopened
+            .snapshot_reusable(&request, "fixture")
+            .expect("rebuild");
+        assert!(!handle.reused());
+        assert_eq!(find_records(&mut reopened, &handle, "kept"), original);
+        drop(handle);
+        drop(reopened);
+
+        let mut warm = open(source(source_bytes), path);
+        let handle = warm.snapshot_reusable(&request, "fixture").expect("warm");
+        assert!(handle.reused());
+        assert_eq!(find_records(&mut warm, &handle, "kept"), original);
+    }
+
+    #[test]
+    fn missing_manifest_rebuilds_then_reuses_original_records() {
+        missing_generation_object_rebuilds_then_reuses(true);
+    }
+
+    #[test]
+    fn missing_segment_rebuilds_then_reuses_original_records() {
+        missing_generation_object_rebuilds_then_reuses(false);
     }
 }
 
