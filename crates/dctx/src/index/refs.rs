@@ -4,6 +4,35 @@
 //! The resolver in dctx-map-resolve is not a dependency of this crate, so the same lookup order lives here.
 //! The walk records [`FileRefs`] for files with children or references, then [`link`] appends `calls` and `imports` edges once.
 
+#[path = "imports/config.rs"]
+pub(super) mod config;
+#[path = "imports/documents.rs"]
+mod documents;
+#[path = "imports/go.rs"]
+pub(super) mod go;
+#[path = "imports/headers.rs"]
+mod headers;
+#[path = "imports/javascript.rs"]
+mod javascript;
+#[path = "imports/jvm.rs"]
+mod jvm;
+#[path = "imports/lua.rs"]
+mod lua;
+#[path = "imports/namespaces.rs"]
+mod namespaces;
+#[path = "imports/php.rs"]
+mod php;
+#[path = "imports/proto.rs"]
+mod proto;
+#[path = "imports/python.rs"]
+mod python;
+#[path = "imports/ruby.rs"]
+mod ruby;
+#[path = "imports/rust.rs"]
+mod rust;
+#[path = "imports/swift.rs"]
+mod swift;
+
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 use dctx_map_model::{Confidence, EdgeKind};
@@ -29,9 +58,55 @@ pub(crate) struct RawRef {
     pub scope: String,
     /// Local name bound by an import.
     pub alias: Option<String>,
+    pub form: RefForm,
+}
+
+/// Form information used during linking. Inventory facts never become graph edges.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub(crate) enum RefForm {
+    #[default]
+    Ordinary,
+    TypeOnly,
+    ImportEquals,
+    ExportAssignment,
+    Require,
+    Public,
+    Package,
+    GoModule,
+    SwiftDependency,
+    PythonAll,
+    Parameter,
+    RustModule {
+        path: Option<String>,
+    },
+    QuotedHeader,
+    AngleHeader,
+    Load,
+    RelativeLoad,
+    Namespace,
+    PhpFunction,
+    PhpConst,
+    PhpFile,
+    PhpDirectory,
+    Interop,
+    Anchor,
+    ProtoPublic,
+    ProtoWeak,
+    Lua(Vec<String>),
 }
 
 impl RawRef {
+    pub(crate) fn fact(form: RefForm, name: &str, scope: &str) -> Self {
+        Self {
+            src: String::new(),
+            kind: EdgeKind::Contains,
+            name: name.to_owned(),
+            scope: scope.to_owned(),
+            alias: None,
+            form,
+        }
+    }
+
     /// Keeps calls and imports only. Other relations yield `None`.
     pub(crate) fn new(
         src: &str,
@@ -40,7 +115,10 @@ impl RawRef {
         scope: &str,
         alias: Option<&str>,
     ) -> Option<Self> {
-        if !matches!(kind, EdgeKind::Calls | EdgeKind::Imports) {
+        if !matches!(
+            kind,
+            EdgeKind::Calls | EdgeKind::Imports | EdgeKind::Reexports | EdgeKind::Documents
+        ) {
             return None;
         }
         Some(Self {
@@ -49,6 +127,7 @@ impl RawRef {
             name: name.to_string(),
             scope: scope.to_string(),
             alias: alias.map(str::to_string),
+            form: RefForm::Ordinary,
         })
     }
 }
@@ -117,7 +196,29 @@ impl Caller<'_> {
 }
 
 /// Lookup tables over the generation, built once per [`link`].
+#[derive(Clone, Copy)]
+pub(super) struct ImportPaths<'a> {
+    pub python: &'a str,
+    pub includes: &'a [&'a str],
+    pub ruby: &'a [&'a str],
+    pub proto: &'a [&'a str],
+    pub cwd: Option<&'a str>,
+}
+
+impl Default for ImportPaths<'_> {
+    fn default() -> Self {
+        Self {
+            python: "",
+            includes: &[],
+            ruby: &[],
+            proto: &[""],
+            cwd: Some(""),
+        }
+    }
+}
+
 struct Tables<'a> {
+    paths: ImportPaths<'a>,
     nodes: &'a [IndexedNode],
     text: &'a TextBlob,
     files: &'a [FileRefs],
@@ -126,6 +227,8 @@ struct Tables<'a> {
     /// (language family, last name segment) to symbols.
     bare: HashMap<(&'a str, &'a str), Vec<u32>>,
     /// Module nodes by literal inventory path, including files without symbols or references.
+    go: go::Packages<'a>,
+    rust: rust::ModuleTree,
     module_paths: HashMap<&'a str, u32>,
     /// Module key to (module index, key is the full path form, language family).
     modules: HashMap<String, Vec<(u32, bool, &'a str)>>,
@@ -140,15 +243,27 @@ pub(crate) fn link(
     text: &mut TextBlob,
     files: &[FileRefs],
 ) {
+    link_with_paths(nodes, edges, text, files, ImportPaths::default());
+}
+
+pub(super) fn link_with_paths(
+    nodes: &[IndexedNode],
+    edges: &mut Vec<IndexedEdge>,
+    text: &mut TextBlob,
+    files: &[FileRefs],
+    paths: ImportPaths<'_>,
+) {
     if files.iter().all(|file| file.refs.is_empty()) {
         return;
     }
     let calls = text.push(EdgeKind::Calls.as_str());
     let imports = text.push(EdgeKind::Imports.as_str());
+    let documents = text.push(EdgeKind::Documents.as_str());
+    let reexports = text.push(EdgeKind::Reexports.as_str());
     let exact = text.push(Confidence::Exact.as_str());
     let name = text.push(Confidence::Name.as_str());
     let guess = text.push(Confidence::Guess.as_str());
-    let tables = Tables::build(nodes, text, files);
+    let tables = Tables::build(nodes, text, files, paths);
     for file in files.iter().filter(|file| !file.refs.is_empty()) {
         let mut found = BTreeMap::new();
         tables.link_file(file, &mut found);
@@ -156,6 +271,8 @@ pub(crate) fn link(
             let edge = match kind {
                 EdgeKind::Calls => calls,
                 EdgeKind::Imports => imports,
+                EdgeKind::Reexports => reexports,
+                EdgeKind::Documents => documents,
                 _ => continue,
             };
             let confidence = match rank {
@@ -175,7 +292,12 @@ pub(crate) fn link(
 
 impl<'a> Tables<'a> {
     /// Indexes symbols by file and name, and modules by path key.
-    fn build(nodes: &'a [IndexedNode], text: &'a TextBlob, files: &'a [FileRefs]) -> Self {
+    fn build(
+        nodes: &'a [IndexedNode],
+        text: &'a TextBlob,
+        files: &'a [FileRefs],
+        paths: ImportPaths<'a>,
+    ) -> Self {
         let mut names: HashMap<(u32, &str), Vec<u32>> = HashMap::new();
         let mut bare: HashMap<(&str, &str), Vec<u32>> = HashMap::new();
         let mut modules: HashMap<String, Vec<(u32, bool, &str)>> = HashMap::new();
@@ -221,7 +343,10 @@ impl<'a> Tables<'a> {
                     .push(index);
             }
         }
-        Self {
+        let mut tables = Self {
+            paths,
+            go: go::Packages::default(),
+            rust: rust::ModuleTree::default(),
             nodes,
             text,
             files,
@@ -229,7 +354,10 @@ impl<'a> Tables<'a> {
             bare,
             module_paths,
             modules,
-        }
+        };
+        tables.go = go::Packages::build(&tables);
+        tables.rust = rust::ModuleTree::build(&tables);
+        tables
     }
 
     /// Resolves the imports of `file` first, then its calls through the bindings they made.
@@ -266,21 +394,38 @@ impl<'a> Tables<'a> {
             declared,
             bindings: Vec::new(),
         };
-        for reference in file
-            .refs
-            .iter()
-            .filter(|reference| reference.kind == EdgeKind::Imports)
-        {
+        for reference in file.refs.iter().filter(|reference| {
+            matches!(
+                reference.kind,
+                EdgeKind::Imports | EdgeKind::Reexports | EdgeKind::Documents
+            )
+        }) {
             let Some(&src) = ids.get(&reference.src) else {
                 continue;
             };
+            if reference.kind == EdgeKind::Documents {
+                if family == "markdown"
+                    && let Some(dst) = self.document_target(importer, &reference.name)
+                    && src != dst
+                {
+                    note(found, src, EdgeKind::Documents, dst, Confidence::Name);
+                }
+                continue;
+            }
+            if family == "swift" {
+                self.swift_import(importer, src, reference, found);
+                continue;
+            }
+            if family == "go" {
+                self.go_import(&mut caller, importer, reference, src, found);
+                continue;
+            }
             let segments = if family == "javascript" {
                 import_segments(&reference.name)
             } else {
                 module_segments(&reference.name)
             };
-            let Some((dst, module)) =
-                self.import_target(importer, family, &reference.name, &segments)
+            let Some((dst, module)) = self.import_target(importer, family, reference, &segments)
             else {
                 continue;
             };
@@ -291,11 +436,34 @@ impl<'a> Tables<'a> {
             let target_path = self.text.get(self.nodes[dst as usize].path);
             if language_family(language_of(target_path)) != family {
                 if module {
-                    note(found, src, EdgeKind::Imports, dst, Confidence::Exact);
+                    note(found, src, reference.kind, dst, Confidence::Exact);
                 }
                 continue;
             }
-            note(found, src, EdgeKind::Imports, dst, Confidence::Exact);
+            let rank = if reference.form == RefForm::Require && family == "javascript" {
+                Confidence::Name
+            } else {
+                Confidence::Exact
+            };
+            note(found, src, reference.kind, dst, rank);
+            if matches!(family, "c" | "ruby" | "config" | "proto" | "lua")
+                || matches!(reference.form, RefForm::PhpFile | RefForm::PhpDirectory)
+            {
+                continue;
+            }
+            if family == "python" {
+                self.python_bindings(&mut caller, reference, dst, module);
+                continue;
+            }
+            if reference.kind == EdgeKind::Reexports || reference.form == RefForm::TypeOnly {
+                continue;
+            }
+            let (dst, module) =
+                if matches!(reference.form, RefForm::Require | RefForm::ImportEquals) && module {
+                    self.js_assignment(dst).unwrap_or((dst, true))
+                } else {
+                    (dst, module)
+                };
             let mut bind = |name: &str| {
                 caller.bindings.push(Binding {
                     scope: &reference.scope,
@@ -329,6 +497,11 @@ impl<'a> Tables<'a> {
             let Some((callee, qualifier)) = segments.split_last() else {
                 continue;
             };
+            if family == "python"
+                && self.python_shadowed(file, &reference.scope, qualifier.first().unwrap_or(callee))
+            {
+                continue;
+            }
             // `interpolate(..)` inside the method `Captures::interpolate` is the imported free function, not the method itself.
             let free = receiver_only
                 && reference
@@ -348,17 +521,29 @@ impl<'a> Tables<'a> {
         &self,
         importer: &str,
         family: &str,
-        name: &str,
+        reference: &RawRef,
         segments: &[String],
     ) -> Option<(u32, bool)> {
-        if family == "javascript"
-            && let Some((path, binding)) = relative_import(name)
-        {
-            let module = self.relative_js_module(importer, path)?;
-            return match binding {
-                Some(symbol) => self.import_symbol(module, symbol),
-                None => Some((module, true)),
-            };
+        match family {
+            "config" => return self.config_target(importer, reference),
+            "proto" => return self.proto_target(&reference.name),
+            "lua" => return self.lua_target(reference),
+            "jvm" => return self.jvm_target(importer, &reference.name),
+            "csharp" => return self.csharp_target(reference),
+            "c" => return self.header_target(importer, reference),
+            "ruby" => return self.ruby_target(importer, reference),
+            "php" => return self.php_target(importer, reference),
+            "swift" => return None,
+            _ => {}
+        }
+        if family == "rust" {
+            return self.rust_target(importer, reference);
+        }
+        if family == "python" {
+            return self.python_target(importer, &reference.name);
+        }
+        if family == "javascript" {
+            return self.javascript_target(importer, reference);
         }
         if let Some(module) = self.module_named(segments, family) {
             return Some((module, true));
@@ -368,37 +553,11 @@ impl<'a> Tables<'a> {
         self.import_symbol(module, symbol)
     }
 
-    /// Joins a specifier to the importer inside the inventory, without touching the filesystem.
-    fn relative_js_module(&self, importer: &str, path: &str) -> Option<u32> {
-        let mut parts: Vec<_> = importer.split('/').collect();
-        parts.pop();
-        for part in path.split('/') {
-            match part {
-                "" | "." => {}
-                ".." => {
-                    parts.pop()?;
-                }
-                _ => parts.push(part),
-            }
-        }
-        let base = parts.join("/");
-        let lookup = |stem: &str| {
-            JS_SOURCE_EXTENSIONS.iter().find_map(|ext| {
-                self.module_paths
-                    .get(format!("{stem}.{ext}").as_str())
-                    .copied()
-            })
-        };
-        if !matches!(path.rsplit('/').next(), Some("" | "." | "..")) {
-            if let Some(&module) = self.module_paths.get(base.as_str()) {
-                return Some(module);
-            }
-            if let Some(module) = lookup(&base) {
-                return Some(module);
-            }
-        }
-        parts.push("index");
-        lookup(&parts.join("/"))
+    fn facts(&self, module: u32) -> &[RawRef] {
+        self.files
+            .binary_search_by_key(&module, |f| f.first)
+            .ok()
+            .map_or(&[], |i| self.files[i].refs.as_slice())
     }
 
     fn import_symbol(&self, module: u32, symbol: &str) -> Option<(u32, bool)> {
@@ -459,13 +618,22 @@ impl<'a> Tables<'a> {
             walk = walk.rsplit_once("::").map_or("", |(parent, _)| parent);
         }
         let local = qualifier.first().map_or(callee, String::as_str);
-        if let Some(binding) = caller.binding(scope, local) {
+        let binding = if caller.family == "python" && !qualifier.is_empty() {
+            (1..=qualifier.len()).rev().find_map(|count| {
+                caller
+                    .binding(scope, &qualifier[..count].join("."))
+                    .map(|binding| (binding, count))
+            })
+        } else {
+            caller.binding(scope, local).map(|binding| (binding, 1))
+        };
+        if let Some((binding, consumed)) = binding {
             if qualifier.is_empty() {
                 if !binding.module {
                     return (vec![binding.dst], Confidence::Name);
                 }
             } else {
-                let rest = qualifier[1..]
+                let rest = qualifier[consumed..]
                     .iter()
                     .map(String::as_str)
                     .chain([callee])
@@ -477,10 +645,48 @@ impl<'a> Tables<'a> {
                     let node = &self.nodes[binding.dst as usize];
                     (self.file_of(binding.dst), format!("{}::{rest}", node.name))
                 };
+                if caller.family == "go" && binding.module {
+                    return self
+                        .go_member(owner, &name)
+                        .map_or((Vec::new(), Confidence::Guess), |dst| {
+                            (vec![dst], Confidence::Name)
+                        });
+                }
+                if caller.family == "javascript" && binding.module {
+                    return self
+                        .js_export(owner, &name, false, &mut Vec::new(), &mut 4096)
+                        .map_or((Vec::new(), Confidence::Guess), |(dst, _)| {
+                            (vec![dst], Confidence::Name)
+                        });
+                }
                 if let Some(hit) = self.names.get(&(owner, name.as_str())) {
                     return Self::pick(hit);
                 }
             }
+            return (Vec::new(), Confidence::Guess);
+        }
+        if caller.family == "python"
+            && file.refs.iter().any(|r| {
+                r.kind == EdgeKind::Imports
+                    && r.name.ends_with("::*")
+                    && (r.scope.is_empty()
+                        || scope == r.scope
+                        || scope
+                            .strip_prefix(&r.scope)
+                            .is_some_and(|s| s.starts_with("::")))
+            })
+        {
+            return (Vec::new(), Confidence::Guess);
+        }
+        if caller.family == "javascript"
+            && caller.file.refs.iter().any(|r| {
+                r.kind == EdgeKind::Imports
+                    && matches!(
+                        import_binding("javascript", &r.name, r.alias.as_deref()),
+                        ImportBinding::Named(n) if n == local
+                    )
+            })
+        {
             return (Vec::new(), Confidence::Guess);
         }
         (

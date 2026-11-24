@@ -309,7 +309,11 @@ pub(super) fn references(
     // In Verilog the enclosing module is a caller too, so module-scope `type` spans are scanned like function bodies.
     let verilog = language == "verilog";
     let mut seen: HashMap<&str, u32> = HashMap::new();
-    let mut refs = Vec::new();
+    let mut refs = if language == "lua" {
+        lua_imports(path, text, &masked)
+    } else {
+        Vec::new()
+    };
     for symbol in symbols {
         let count = seen.entry(symbol.name.as_str()).or_insert(0);
         *count += 1;
@@ -577,6 +581,74 @@ fn erlang_call_names<'a>(body: &'a str, own: &str) -> Vec<&'a str> {
 /// True when `word` is an Erlang keyword or guard word that may never name a call.
 fn guards_word(word: &str) -> bool {
     ERLANG_NOT_CALLS.contains(&word)
+}
+
+/// Follow a straight-line literal loader setup. Unknown statements can replace the searchers.
+fn lua_imports(path: &str, source: &str, masked: &str) -> Vec<RawRef> {
+    use crate::index::refs::RefForm;
+    fn literal(value: &str) -> Option<&str> {
+        let quote = value.chars().next()?;
+        if !matches!(quote, '"' | '\'') {
+            return None;
+        }
+        value
+            .strip_prefix(quote)?
+            .strip_suffix(quote)
+            .filter(|s| !s.contains([quote, '\\']))
+    }
+    let mut templates = None;
+    let mut refs = Vec::new();
+    let owner = format!("m:{path}");
+    for (line, code) in source.lines().zip(masked.lines()) {
+        let code = code.trim();
+        if code.is_empty() {
+            continue;
+        }
+        let Some((left, right)) = line.trim().trim_end_matches(';').split_once('=') else {
+            break;
+        };
+        if left.trim() == "package.path" && code.starts_with("package.path") {
+            templates = literal(right.trim()).and_then(|p| {
+                let entries: Vec<_> = p.split(';').map(str::to_owned).collect();
+                entries
+                    .iter()
+                    .all(|p| p.starts_with("./") && p.contains('?'))
+                    .then_some(entries)
+            });
+            continue;
+        }
+        let Some(local) = left.trim().strip_prefix("local ") else {
+            break;
+        };
+        if matches!(local, "require" | "package" | "_ENV")
+            || !local.chars().all(|c| c == '_' || c.is_alphanumeric())
+        {
+            break;
+        }
+        let Some(arg) = right
+            .trim()
+            .strip_prefix("require")
+            .and_then(|s| s.trim().strip_prefix('('))
+            .and_then(|s| s.strip_suffix(')'))
+            .and_then(|s| literal(s.trim()))
+        else {
+            break;
+        };
+        if !arg
+            .split('.')
+            .all(|part| !part.is_empty() && part.chars().all(|c| c == '_' || c.is_alphanumeric()))
+        {
+            break;
+        }
+        let Some(templates) = &templates else { break };
+        if let Some(mut reference) = RawRef::new(&owner, EdgeKind::Imports, arg, "", None) {
+            reference.form = RefForm::Lua(templates.clone());
+            refs.push(reference);
+        }
+        // Loading a module can change the searchers or package.loaded.
+        break;
+    }
+    refs
 }
 
 #[cfg(test)]

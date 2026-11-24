@@ -359,6 +359,22 @@ fn literal_condition(mut text: &str) -> Option<bool> {
     }
 }
 
+impl crate::CLexer {
+    /// Literal include delimiter, verified against the lexer's emitted operand.
+    /// A macro or include_next needs compiler context and supplies no first-search site.
+    #[must_use]
+    pub fn include_delimiter(source: &str, name: &str) -> Option<char> {
+        let cleaned = scrub(source);
+        if !cleaned.trim_start().starts_with('#') {
+            return None;
+        }
+        let (directive, operand) = split_keyword(&cleaned);
+        (directive == "include" && include_path(operand).as_deref() == Some(name))
+            .then(|| operand.chars().next())
+            .flatten()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

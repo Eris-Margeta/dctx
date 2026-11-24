@@ -18,6 +18,9 @@ pub(crate) struct Decl {
 
 impl Walker<'_> {
     pub fn statements(&mut self, begin: usize, end: usize, scope: &Scope) {
+        if begin == 0 && scope.owner == 0 {
+            self.export_assignment(end, scope);
+        }
         if self.enter(begin) {
             let mut i = begin;
             let mut head = begin;
@@ -39,6 +42,48 @@ impl Walker<'_> {
             }
         }
         self.leave();
+    }
+
+    /// Keep a single unconditional assignment of an identifier. Additional writes invalidate it.
+    fn export_assignment(&mut self, end: usize, scope: &Scope) {
+        let mut assignment = None;
+        let mut depth = 0usize;
+        for i in 0..end {
+            let common = self.is(i, "module") && self.is(i + 1, ".") && self.is(i + 2, "exports");
+            let ts = self.ts && self.is(i, "export") && self.is(i + 1, "=");
+            if common || ts {
+                let eq = if common { i + 3 } else { i + 1 };
+                let local = eq + 1;
+                if assignment.is_some()
+                    || depth != 0
+                    || !(i == 0 || self.is(i - 1, ";") || self.is(i - 1, "}"))
+                    || !self.is(eq, "=")
+                    || !self.word(local)
+                    || !(local + 1 == end || self.is(local + 1, ";"))
+                {
+                    return;
+                }
+                assignment = Some(local);
+            }
+            if matches!(self.text(i), "(" | "{" | "[") {
+                depth += 1;
+            }
+            if matches!(self.text(i), ")" | "}" | "]") {
+                depth = depth.saturating_sub(1);
+            }
+        }
+        if let Some(i) = assignment {
+            self.refer(
+                0,
+                scope,
+                dctx_map_model::EdgeKind::Reexports,
+                self.text(i).to_owned(),
+                Some("export=".into()),
+                (i, i),
+                (i, i),
+                crate::Precision::Convention,
+            );
+        }
     }
 
     /// Whether token `i` starts a statement, given the current statement's `head`.

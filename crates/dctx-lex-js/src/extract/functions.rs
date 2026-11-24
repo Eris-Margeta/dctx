@@ -92,7 +92,7 @@ impl Walker<'_> {
         let item = Item {
             kind: NodeKind::Symbol,
             symbol: SymbolKind::Function,
-            local,
+            local: local.clone(),
             first,
             last,
             sig_end,
@@ -101,6 +101,19 @@ impl Walker<'_> {
             doc: decl.anchor,
         };
         let inner = self.item(item, scope);
+        if decl.default && local != "default" {
+            self.refer(
+                inner.owner,
+                scope,
+                dctx_map_model::EdgeKind::Reexports,
+                local.clone(),
+                Some("default".into()),
+                (k, k),
+                (k, k),
+                crate::Precision::Structural,
+            );
+        }
+
         if let Some(open) = generics {
             self.type_params(open, params, &inner);
         }

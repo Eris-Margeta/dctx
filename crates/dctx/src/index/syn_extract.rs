@@ -13,7 +13,7 @@ use dctx_lex_rust::{
 use dctx_map_model::{EdgeKind, NodeKind};
 
 use super::extract::{Symbol, signature_text};
-use super::refs::RawRef;
+use super::refs::{RawRef, RefForm};
 use super::write_stable_id;
 use crate::domain::{DctxError, Resource};
 
@@ -49,10 +49,16 @@ pub(crate) fn extract(
     let syntax = extracted.coverage == Coverage::Syntax
         && matches!(extracted.completion, Completion::Complete);
     let mut symbols = Vec::new();
+    let mut refs = Vec::new();
     // Stable id text of each kept declaration, in declaration order. Repeated names take `~2`, `~3` as the graph does.
     let mut owners: Vec<Option<String>> = Vec::with_capacity(extracted.declarations.len());
     let mut seen: HashMap<&str, u32> = HashMap::new();
     for declaration in &extracted.declarations {
+        if declaration.kind == DeclarationKind::Module {
+            refs.push(RawRef::fact(RefForm::Namespace, &declaration.name, ""));
+        } else if declaration.public {
+            refs.push(RawRef::fact(RefForm::Public, &declaration.name, ""));
+        }
         let Some(kind) = kind_of(declaration.kind) else {
             owners.push(None);
             continue;
@@ -100,15 +106,32 @@ pub(crate) fn extract(
     }
     let mut module = String::new();
     write_stable_id(&mut module, b'm', path, "", 0);
-    let mut refs = Vec::new();
     for import in &extracted.imports {
-        refs.extend(RawRef::new(
+        if import.kind == dctx_lex_rust::ImportKind::ExternCrate {
+            continue;
+        }
+        let Some(mut reference) = RawRef::new(
             &module,
             EdgeKind::Imports,
             &import.path,
             &import.scope,
             import.alias.as_deref(),
-        ));
+        ) else {
+            continue;
+        };
+        if import.kind == dctx_lex_rust::ImportKind::ModFile {
+            reference.form = RefForm::RustModule {
+                path: import.alias.as_ref().map(|_| import.path.clone()),
+            };
+            if let Some(local) = reference.alias.take() {
+                reference.name = local;
+            }
+        } else if import.public {
+            let mut exported = reference.clone();
+            exported.kind = EdgeKind::Reexports;
+            refs.push(exported);
+        }
+        refs.push(reference);
     }
     for call in &extracted.references {
         if call.confidence == Confidence::Unresolved(UnresolvedReason::QualifiedSelf) {

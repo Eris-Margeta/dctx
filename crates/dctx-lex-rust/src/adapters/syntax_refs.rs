@@ -99,7 +99,7 @@ impl Extractor<'_> {
 
 /// Flattens a use tree iteratively; each leaf spans from its first path segment.
 pub(super) fn uses(ex: &mut Extractor<'_>, node: &syn::ItemUse) {
-    let exported = public(&node.vis);
+    let exported = matches!(node.vis, syn::Visibility::Public(_));
     let root = if node.leading_colon.is_some() {
         "::"
     } else {
@@ -147,13 +147,31 @@ pub(super) fn module_file(ex: &mut Extractor<'_>, node: &syn::ItemMod) {
         .as_ref()
         .map_or(node.ident.span(), |semi| semi.spans[0]);
     let span = between(&[&node.vis, &node.unsafety, &node.mod_token], end);
-    ex.import(
-        ImportKind::ModFile,
-        ident(&node.ident),
-        None,
-        public(&node.vis),
-        span,
-    );
+    let name = ident(&node.ident);
+    let mut operand = name.clone();
+    let mut alias = None;
+    for attr in &node.attrs {
+        if attr.path().is_ident("cfg") || attr.path().is_ident("cfg_attr") {
+            return;
+        }
+        if attr.path().is_ident("path") {
+            let syn::Meta::NameValue(value) = &attr.meta else {
+                return;
+            };
+            let syn::Expr::Lit(literal) = &value.value else {
+                return;
+            };
+            let syn::Lit::Str(path) = &literal.lit else {
+                return;
+            };
+            if alias.is_some() {
+                return;
+            }
+            operand = path.value();
+            alias = Some(name.clone());
+        }
+    }
+    ex.import(ImportKind::ModFile, operand, alias, public(&node.vis), span);
 }
 
 pub(super) fn extern_crate(ex: &mut Extractor<'_>, node: &syn::ItemExternCrate) {

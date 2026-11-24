@@ -7,8 +7,7 @@
 
 use dctx_map_model::NodeKind;
 
-use crate::index::extract::Symbol;
-use crate::index::lex_dispatch;
+use crate::index::extract::{Symbol, extract_structural_refs};
 use crate::index::refs::RawRef;
 use crate::index::span_index::SpanIndex;
 
@@ -86,15 +85,12 @@ fn scripts(path: &str, text: &str, blocks: &[Block]) -> (Vec<Symbol>, Vec<RawRef
     for block in blocks {
         masked[block.start..block.end].copy_from_slice(&text.as_bytes()[block.start..block.end]);
     }
-    let Ok(masked) = String::from_utf8(masked) else {
-        return (Vec::new(), Vec::new());
-    };
-    let (language, synthetic) = if blocks.iter().any(|block| block.typed) {
-        ("typescript", SYNTHETIC_TS)
+    let synthetic = if blocks.iter().any(|block| block.typed) {
+        SYNTHETIC_TS
     } else {
-        ("javascript", SYNTHETIC_JS)
+        SYNTHETIC_JS
     };
-    let (symbols, mut refs) = lex_dispatch::lexed(language, synthetic, &masked);
+    let (symbols, mut refs) = extract_structural_refs(synthetic, &masked);
     for reference in &mut refs {
         if let Some(tail) = reference
             .src

@@ -4,8 +4,11 @@
 //! computed callees are abstained rather than guessed (PARSERS-v1 JavaScript row).
 //! Uses expressions for arguments; called from `Walker::paren`.
 use super::{Item, Scope, Walker};
-use crate::domain::{Precision, compact};
 use crate::lexer::{Kind, NONE};
+use crate::{
+    RawReference,
+    domain::{Precision, compact},
+};
 use dctx_map_model::{EdgeKind, NodeKind, SymbolKind};
 
 impl Walker<'_> {
@@ -45,12 +48,29 @@ impl Walker<'_> {
 
     pub fn call(&mut self, i: usize, close: usize, end: usize, scope: &Scope) -> usize {
         let last = Self::last(close, end);
-        if let Some((start, callee_last, member)) = self.callee(i) {
+        if i > 0 && self.is(i - 1, "import") && !(i >= 2 && matches!(self.text(i - 2), "." | "?."))
+        {
+            if i + 2 == close
+                && let Some(module) = self.module_literal(i + 1)
+            {
+                let site = (i - 1, last);
+                self.refer(
+                    scope.owner,
+                    scope,
+                    EdgeKind::Imports,
+                    RawReference::module_name(&module, None),
+                    None,
+                    site,
+                    site,
+                    Precision::Structural,
+                );
+            }
+        } else if let Some((start, callee_last, member)) = self.callee(i) {
             let raw =
                 &self.src[self.start_byte(start) as usize..self.end_byte(callee_last) as usize];
             let literal =
                 self.kind(i + 1) == Some(Kind::Str) && (self.is(i + 2, ",") || self.is(i + 2, ")"));
-            if !member && raw == "require" && literal {
+            if !member && raw == "require" && literal && !self.loader_shadowed(start) {
                 self.require(start, i, close, last, scope);
             } else if let Some(name) = literal.then(|| test_name(raw, self.text(i + 1))).flatten() {
                 let item = Item {
@@ -96,6 +116,67 @@ impl Walker<'_> {
         }
         self.expr(i + 1, close, scope);
         (close + 1).min(end)
+    }
+
+    /// Examine enclosing scopes only. Sibling function parameters cannot bind this call.
+    fn loader_shadowed(&self, site: usize) -> bool {
+        let end = self.toks.len();
+        let mut i = 0;
+        // On unusually large scopes abstain if establishing the loader binding exceeds the scan budget.
+        let mut budget = 2048usize;
+        while i < end {
+            let Some(rest) = budget.checked_sub(1) else {
+                return true;
+            };
+            budget = rest;
+            if self.is(i, "require")
+                && i > 0
+                && matches!(
+                    self.text(i - 1),
+                    "function" | "const" | "let" | "var" | "class" | "import" | "as"
+                )
+            {
+                return true;
+            }
+            if self.is(i, "require") && self.is(i + 1, "=>") && self.arrow_contains(i + 2, site) {
+                return true;
+            }
+            if self.is(i, "(") {
+                let close = self.close(i, end);
+                let arrow = self.is(close + 1, "=>");
+                let body = close + 1 + usize::from(arrow);
+                let encloses = if arrow {
+                    self.arrow_contains(body, site)
+                } else {
+                    self.is(body, "{")
+                        && body < site
+                        && site < self.close(body, end)
+                        && !self.control_paren(close)
+                };
+                if encloses && (i + 1..close).any(|j| self.is(j, "require")) {
+                    return true;
+                }
+            }
+            if matches!(self.text(i), "(" | "[" | "{") {
+                let close = self.close(i, self.toks.len());
+                if !(i < site && site < close) {
+                    i = close.saturating_add(1);
+                    continue;
+                }
+            }
+            i += 1;
+        }
+        false
+    }
+
+    fn arrow_contains(&self, body: usize, site: usize) -> bool {
+        body <= site
+            && site
+                < if self.is(body, "{") {
+                    self.close(body, self.toks.len())
+                } else {
+                    self.expr_end(body, self.toks.len())
+                }
     }
 
     /// (first token, last token, is member) of an identifier or member callee.
@@ -189,7 +270,9 @@ impl Walker<'_> {
 
     /// `require('m')`: binds `const x`, `const { a, b: c }` or nothing.
     fn require(&mut self, start: usize, open: usize, close: usize, last: usize, scope: &Scope) {
-        let module = self.content(open + 1);
+        let Some(module) = self.module_literal(open + 1) else {
+            return;
+        };
         let key = (start, last);
         let binding = self
             .binding
@@ -207,7 +290,7 @@ impl Walker<'_> {
                         let alias = self.src
                             [self.start_byte(s + 2) as usize..self.end_byte(e - 1) as usize]
                             .to_owned();
-                        let name = format!("{module}::{}", self.text(s));
+                        let name = RawReference::module_name(&module, Some(self.text(s)));
                         self.refer(
                             0,
                             scope,
@@ -219,7 +302,7 @@ impl Walker<'_> {
                             convention,
                         );
                     } else if e == s + 1 && self.ident(s) {
-                        let name = format!("{module}::{}", self.text(s));
+                        let name = RawReference::module_name(&module, Some(self.text(s)));
                         self.refer(
                             0,
                             scope,
@@ -246,7 +329,7 @@ impl Walker<'_> {
                     0,
                     scope,
                     EdgeKind::Imports,
-                    module,
+                    RawReference::module_name(&module, None),
                     Some(alias),
                     key,
                     key,
@@ -257,13 +340,19 @@ impl Walker<'_> {
                 0,
                 scope,
                 EdgeKind::Imports,
-                module,
+                RawReference::module_name(&module, None),
                 None,
                 key,
                 key,
                 convention,
             ),
         }
+    }
+
+    pub fn module_literal(&self, i: usize) -> Option<String> {
+        (self.kind(i) == Some(Kind::Str))
+            .then(|| crate::RawReference::string_literal(self.text(i)))
+            .flatten()
     }
 
     /// Text between the quotes of a string token.
