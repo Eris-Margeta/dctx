@@ -67,7 +67,8 @@ dctx was never meant to ship an MCP server; the integration was an experiment to
   callers/imports and source in one call. Tool names and opt-in JSON remain
   compatible; byte budgets guard catalog and response size in tests.
 
-- Node wrapper is published as `@tejl/dctx` on npm; the unscoped name `dctx` was refused by the registry.
+- The npm shim is available as `@tejl/dctx` with five pinned optional
+  `@tejl/dctx-<platform>` packages. Use `npx @tejl/dctx`.
 
 - Clarify npm stability and binary verification, and guard every npm package manifest against install hooks.
 - Release version checks now cover the bundled git plugin, its fixtures and their digests.
@@ -76,9 +77,7 @@ dctx was never meant to ship an MCP server; the integration was an experiment to
 
 ### Changed
 
-- The Node wrapper is published as `@tejl/dctx`, with platform packages
-  `@tejl/dctx-<platform>`. The registry refused the unscoped name `dctx`;
-  use `npx @tejl/dctx`.
+- The npm registry refused the unscoped name `dctx`.
 
 ### Fixed
 

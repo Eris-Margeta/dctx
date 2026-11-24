@@ -66,9 +66,10 @@ STEPS = [
      "The agent searches by name, gets short stable ids back, then reads only the piece it asks for. "
      "Same question, same answer, every turn.", "/docs/map-mode/", "Map mode guide", _agent),
     ("lib", "Library", "Build it into your own tool",
-     "Ask for `--json` and get structured records with the exact source. The Rust library works from Git "
-     "today; Node is on npm as @tejl/dctx from 1.3.1; use CI artifacts for Python and Go.",
-     "/docs/modalities/#rust-library-embed-the-facade", "Embed the library", _library),
+     "Ask for `--json` and get structured records with the exact source. Use Go from a checkout with a local "
+     "`go.mod` replacement and a matching executable, Python from CI wheel artifacts, or Node via "
+     "`npm install @tejl/dctx` with five pinned optional native packages. The Rust facade is available from tagged Git.",
+     "/docs/modalities/#python-node-and-go-wrappers", "Install a wrapper", _library),
 ]
 
 

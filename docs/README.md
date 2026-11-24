@@ -20,14 +20,14 @@ have no page link; specifications also include planned behavior.
 - [CLI](MODALITIES.md#human-one-off-pack-to-clipboard): terminal, clipboard and shell workflows.
 - [Agents](MODALITIES.md#choose-by-task): short tasks, repeated source reads and huge-tree scoping.
 - ACP: **coming**.
-- [Libraries](MODALITIES.md#rust-library-embed-the-facade): Rust facade from Git; Node wrapper on npm as `@tejl/dctx` with `@tejl/dctx-<platform>` native packages; Python and Go wrappers from CI.
+- [Libraries](MODALITIES.md#rust-library-embed-the-facade) include the Rust facade from tagged Git and [wrappers](MODALITIES.md#python-node-and-go-wrappers) over `dctx rpc`.
 - [CI and caching](MODALITIES.md#ci--prompt-cache-prefix-stability): fixed inputs, byte stability and measurement limits.
 - [Desktop](MODALITIES.md#desktop-app-tauri-preview-today): Tauri preview and planned GPUI rebuild.
 
 ## Scopes
 
 - [System binary](START.md#two-scopes-one-binary): you and your interactive agents own the executable on PATH.
-- [Project binary](START.md#agent-builder-embedding-a-library): pinned Node wrapper from npm, Python and Go wrappers from CI, or the Rust facade.
+- [Project binary](START.md#agent-builder-embedding-a-library) covers Go from a checkout with a local module replacement and a matching executable, Python from CI wheel artifacts, and `@tejl/dctx` from npm with five pinned optional native packages.
 - [Coexistence](START.md#two-scopes-one-binary): per-engine-version cache namespaces.
 - [Scopes, coexistence and `dctx doctor`](SCOPES.md): binary ownership, cache namespaces and the doctor command.
 

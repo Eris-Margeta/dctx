@@ -15,12 +15,7 @@ provider caching can change its billed cost. Count both calls and session tokens
 | CLI / interactive terminal | [Prebuilt archives](https://github.com/Eris-Margeta/dctx/releases/tag/v1.3.2), or [build from source](../README.md#from-source) | Available now; crates.io publication pending | One-off chat (`pack --clipboard`), shell agents, scripts and CI; run `dctx` for the terminal menu |
 | Rust library (`dctx` facade) | Tagged Git dependency in the [library section](#rust-library-embed-the-facade) | Available from Git; crates.io publication pending | Embedding pack, map, templates and cache in Rust tools and editors |
 | Desktop app | [Build the Tauri app](../apps/dctx-desktop/README.md#quick-start) | Tauri 0.11 preview today; GPUI rebuild planned | Selecting projects and generating snapshots in a GUI |
-| Python, Node and Go wrappers | `npm install @tejl/dctx` for Node; CI artifacts for Python and Go; see [language wrappers](#python-node-and-go-wrappers) | Node published on npm; all wrappers tested in CI | Calling the engine over `dctx rpc` from Python, Node or Go projects |
-
-From version 1.3.1, the npm release publishes `@tejl/dctx` with pinned `@tejl/dctx-<platform>` optional
-dependencies. Python and Go wrappers are available as CI artifacts; the Rust
-facade is available as a tagged Git dependency. Native release archives remain
-available for system installation or an explicit `DCTX_BIN` path.
+| Python, Node and Go wrappers | [Go checkout and local replacement](#python-node-and-go-wrappers), Python CI wheel artifacts, or `npm install @tejl/dctx` | Node published on npm; all wrappers tested in CI | Calling the engine over `dctx rpc` from Python, Node or Go projects |
 
 ## Choose by task
 
@@ -232,13 +227,22 @@ Thin wrappers over the versioned [`dctx rpc` protocol](protocol/README.md) live 
 [packaging/npm/dctx](../packaging/npm/dctx/README.md) (which also forwards the
 `dctx` CLI command) and [packages/go](../packages/go/README.md). Each starts the
 native engine, passes CLI argument strings and returns the engine's bytes
-unchanged; CI checks byte parity with the CLI. Install the Node wrapper with
-`npm install @tejl/dctx`; npm includes the matching pinned `@tejl/dctx-<platform>`
-optional dependency. Install Python and Go wrappers from CI artifacts or a
-checkout, as each README describes, and point them at an engine
-from the [GitHub release archives](https://github.com/Eris-Margeta/dctx/releases)
-that has `dctx rpc`. Their arguments carry full CLI authority, so never pass
-untrusted values as `--place`, `--output` or dash-leading arguments.
+unchanged. CI checks byte parity with the CLI.
+
+- **Go.** Check out the repository and add a local `replace` in your consuming
+  module's `go.mod` pointing to the checkout's `packages/go`. Set `DCTX_BIN`
+  to the absolute path of a version-matched executable from the
+  [GitHub release archives](https://github.com/Eris-Margeta/dctx/releases).
+  The Go module tag is pending.
+- **Python.** Install the wrapper and matching platform wheels from CI wheel
+  artifacts, or build them locally as described in the Python README. PyPI
+  publication is pending.
+- **Node.** Run `npm install @tejl/dctx`. The scoped shim pins five
+  `@tejl/dctx-<platform>` optional native packages at its own version, and npm
+  installs the package matching your OS and architecture by default.
+
+Wrapper arguments carry full CLI authority, so never pass untrusted values as
+`--place`, `--output` or dash-leading arguments.
 
 Without a wrapper, any language can invoke the CLI as a subprocess and consume
 `--json` map answers. Use the Rust facade when you need an in-process engine.

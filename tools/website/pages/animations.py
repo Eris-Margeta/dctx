@@ -45,8 +45,9 @@ def two_scopes() -> str:
         "What the animation shows, step by step:",
         ["One machine.",
          f"The system <code>dctx</code> on <code>PATH</code> (version {VERSION}) belongs to you and your agents; you decide when to upgrade it.",
-         "A project vendors its own <code>dctx</code> inside <code>node_modules</code> or a virtualenv, pinned by its lockfile "
-         "and upgraded only when the project bumps it. The Node wrapper is on npm as @tejl/dctx from 1.3.1; the pip package is built in CI, with registry publication pending.",
+         "A project pins its own <code>dctx</code> and decides when to upgrade. Use Go from a checkout with a local "
+         "<code>go.mod</code> replacement and a matching executable. Python uses CI wheel artifacts in a virtualenv. "
+         "<code>npm install @tejl/dctx</code> uses the matching one of five pinned optional native packages.",
          "Both are the same engine at different versions.",
          "Interactive agents call the system binary; application code and CI call the project binary. "
          "A library never falls back to <code>PATH</code> silently.",

@@ -60,21 +60,27 @@ dctx cache gc --dry-run
 To target a deleted project, copy the cached root path or root ID from
 `cache status` and pass it to `dctx cache purge --root ROOT --dry-run`.
 Inspect the preview before replacing `--dry-run` with `--yes`.
-See [cache controls](guides/MAP-MODE.md#index-cache-and-privacy). Indexes live in an
-engine `major.minor` subdirectory (for example `1.3`) of the cache parent, which is
-`DCTX_CACHE_DIR` or the platform default `v2` cache root; patch releases share it, and
-data from other engine versions is ignored.
+See [cache controls](guides/MAP-MODE.md#index-cache-and-privacy). Since 1.3,
+indexes live in an engine `major.minor` subdirectory (for example `1.3`) of the
+cache parent, which is `DCTX_CACHE_DIR` or the platform default `v2` cache root.
+When upgrading from pre-1.3, the engine builds a fresh index on first use and
+leaves the old unscoped files untouched. Patch releases in the same family
+share an index. See [cache isolation](SCOPES.md#cache-isolation) for purge scope.
 
 ### Agent builder embedding a library
 
 Agent builder embedding a library: project library with its own pinned binary (Python, Node or Go wrapper over `dctx rpc`); never parse or slice pack text. Pitfall: re-implementing engine logic.
 
-The [Python](../packages/python/README.md), [Node](../packaging/npm/dctx/README.md)
-and [Go](../packages/go/README.md) wrappers over `dctx rpc` are built and tested in
-CI. Install Node with `npm install @tejl/dctx`, which includes a pinned
-`@tejl/dctx-<platform>` optional dependency; use CI artifacts or a checkout for
-Python and Go as their READMEs describe. Alternatively, pin the
-[Rust facade](MODALITIES.md#rust-library-embed-the-facade) from tagged Git,
+CI builds and tests the wrappers over `dctx rpc`.
+
+- For [Go](../packages/go/README.md), use a checkout with a local `go.mod` replacement
+  for `packages/go` and set `DCTX_BIN` to a matching release executable.
+- For [Python](../packages/python/README.md), install the wrapper and matching
+  platform wheels from CI wheel artifacts.
+- For [Node](../packaging/npm/dctx/README.md), run `npm install @tejl/dctx`. The shim
+  declares five pinned optional native packages, and npm selects the matching one.
+
+Alternatively, pin the [Rust facade](MODALITIES.md#rust-library-embed-the-facade) from tagged Git
 or invoke the installed CLI as a subprocess. The first runnable Rust example is
 in the [library doctest](../examples/library/README.md). For subprocess use:
 
@@ -130,9 +136,8 @@ Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.
 dctx --version
 ```
 
-Use the system binary for interactive agents. Project wrappers are available
-through npm for Node and CI artifacts for Python and Go; no project dependency
-is needed for this path.
+Use the system binary for interactive agents. This path needs only the CLI.
+See [wrapper setup](#agent-builder-embedding-a-library) for application code.
 
 ### 2. Choose one project and inspect one answer
 
@@ -192,7 +197,7 @@ provenance are available; see [download verification](VERIFYING.md).
 | Level | dctx provides | You are responsible for |
 |---|---|---|
 | System binary | Release archives with cosign signatures, SBOM and provenance, cache caps, `dctx doctor`, journals (planned), receipts (planned) | Choosing roots, policy file, keeping one version on PATH |
-| Project library | Pinned vendored binary and protocol client (Node on npm; Python and Go from CI), same bytes as CLI (checked in CI) | Pinning the version, exclusions in the project policy, not re-implementing engine logic |
+| Project library | Protocol client with CLI byte parity checked in CI. Node and Python offer matching native packages; Go uses a separately supplied executable. | Pinning the executable version, setting project exclusions and delegating engine logic to the engine |
 | Agent shell setup | CLI commands and `agent-setup` guidance | Choosing roots, bounding answers and measuring whole sessions |
 | CI and cache | Byte-stable pack, prefix tiers (planned), deterministic exit codes | Pinning the binary, caching the index between runs, treating pack drift as a signal not noise |
 
@@ -211,17 +216,16 @@ and signed releases:
 > The system `dctx` on PATH belongs to you and your agents. A binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Same signed engine, different owner. Interactive agents call the system binary; application code and CI call the project binary; a library never silently falls back to PATH.
 
 Today, install the system binary from release archives. The Python, Node and Go
-wrappers already follow the no-fallback contract: they resolve an explicit path,
-`DCTX_BIN`, their own platform package (Python, Node) or a versioned user cache,
-and never search `PATH`. Until they are published, install them from CI
-artifacts or a checkout, or invoke an explicitly pinned CLI path. The Rust facade
-is an in-process library, not a vendored executable.
+wrappers resolve an explicit path, `DCTX_BIN`, their own platform package
+(Python and Node) or a versioned user cache. See [wrapper setup](#agent-builder-embedding-a-library)
+for each installation path. The Rust facade runs in-process.
 
-The CLI cache lives in `<cache-parent>/<engine-major.minor>/` under the
-platform-specific `dctx/v2` parent (or `DCTX_CACHE_DIR`), so engines 1.2 and 1.3
-keep separate indexes while patch releases of one family share theirs (see
-[scopes](SCOPES.md)). A version/path line in every pack is planned. Today
-`dctx rpc` reports the engine version in `hello`, and `dctx doctor` lists the dctx
+The CLI cache lives in `<cache-parent>/<engine-major.minor>/`. The parent is
+`DCTX_CACHE_DIR` or the platform-specific `v2` cache root. Engine 1.3 ignores
+the unscoped cache used before 1.3. Ordinary commands neither migrate nor
+delete that data, and CLI cache commands target the current engine namespace
+(see [scopes](SCOPES.md#cache-isolation)). A version/path line in every pack is
+planned. Today `dctx rpc` reports the engine version in `hello`, and `dctx doctor` lists the dctx
 binaries visible from a directory. Check the executable path and version
 explicitly, and use separate absolute `DCTX_CACHE_DIR` locations when two
 installations of the same engine family must not share an index. Both future scopes should read the project's exclusions; today the

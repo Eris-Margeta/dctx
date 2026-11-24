@@ -45,7 +45,9 @@
 
 ---
 
-Under ~200 files, use grep. dctx pays off on large repos, multi-hop questions and many agents sharing one index.
+As a heuristic, start with grep and narrow file reads on repos under about 200
+files. On larger repos or multi-hop tasks, try dctx, especially when agents can
+reuse one index. Measure the payoff on your own workload.
 
 Run `dctx agent-setup --format agents` (or `--format claude`) for short rules to paste into `AGENTS.md` or `CLAUDE.md`.
 
@@ -88,13 +90,16 @@ a CycloneDX SBOM, build provenance and offline bundles; see
 dctx --version
 ```
 
-**Node wrapper — available on npm from 1.3.1.** Run `npm install @tejl/dctx` to install the
-[Node wrapper](packaging/npm/dctx/README.md) and its matching pinned
-`@tejl/dctx-<platform>` native package, then `npx @tejl/dctx --version` to check it.
-The [Python](packages/python/README.md) and [Go](packages/go/README.md) wrappers
-over `dctx rpc` are built and tested in CI; use their CI artifacts. The
-[Rust facade](docs/MODALITIES.md#rust-library-embed-the-facade) is available from
-tagged Git. Use the release archives for the CLI.
+- **Go.** Use a [checkout and a local `go.mod` replacement](packages/go/README.md)
+  for the module, and set `DCTX_BIN` to a matching release executable. Module
+  publication is pending.
+- **Python.** Install the [wrapper and matching platform wheels](packages/python/README.md)
+  from CI wheel artifacts. PyPI publication is pending.
+- **Node.** Run `npm install @tejl/dctx`, then `npx @tejl/dctx --version` to
+  check it. The [shim](packaging/npm/dctx/README.md) pins five optional native
+  packages, and npm selects the matching platform package.
+- **Rust.** Use the [facade](docs/MODALITIES.md#rust-library-embed-the-facade)
+  from tagged Git.
 
 Follow [the safe path in ten minutes](docs/START.md#safe-path-in-ten-minutes)
 for one project, CLI setup and whole-session measurement.
@@ -223,7 +228,7 @@ pub struct Order {
 - [CLI and one-off chat](docs/MODALITIES.md#human-one-off-pack-to-clipboard): pack selected source for a prompt or use the interactive terminal.
 - [Agents, short tasks](docs/MODALITIES.md#short-agent-task-grep-can-be-enough): compare with grep plus narrow file reads first.
 - [Agents, long sessions and huge trees](docs/MODALITIES.md#huge-trees-scope-before-indexing): scope the root, find symbols and read exact source.
-- [Libraries](docs/MODALITIES.md#rust-library-embed-the-facade): embed the Rust facade today; install the [Node wrapper](packaging/npm/dctx/README.md) with `npm install @tejl/dctx`, or use CI artifacts for the Python and Go wrappers.
+- [Libraries](docs/MODALITIES.md#rust-library-embed-the-facade) cover the Rust facade and [wrapper installs](docs/MODALITIES.md#python-node-and-go-wrappers) from a Go checkout, Python wheel artifacts or the scoped npm package.
 - [CI and prompt caching](docs/MODALITIES.md#ci--prompt-cache-prefix-stability): pin inputs and measure byte stability and provider cache behavior.
 - [Desktop](docs/MODALITIES.md#desktop-app-tauri-preview-today): build the Tauri 0.11 preview; the GPUI rebuild is planned.
 
@@ -234,9 +239,9 @@ pub struct Order {
 
 The baseline is **grep plus reading files**.
 
-On 12 November 2026, the dctx harness-prefix pack (P) reached 70.91% median strict citation recall versus 19.34% for grep plus file reads across 20 questions and three repeats per arm (300 graded answers across five arms). Median list-price token cost per question was $0.195418 versus $0.179670 for grep (+8.8%). The pack missed the prespecified cost threshold, so it did not win the benchmark.
+On 12 November 2026, the dctx harness-prefix pack (P) reached 70.91% median strict citation recall versus 19.34% for grep plus file reads across 20 questions and three repeats per arm (300 graded answers across five arms). Median list-price token cost per question was $0.195418 versus $0.179670 for grep (+8.8%). The pack missed the prespecified target of at least 15% lower cost per question.
 
-[Whole-session benchmark and method](docs/BENCHMARK-20261111.md). One corpus and one model. **Under ~200 files, use grep.**
+[Whole-session benchmark and method](docs/BENCHMARK-20261111.md). The study used one corpus and one model. As a heuristic, start with grep and narrow file reads on repos under about 200 files. A shared dctx index may pay off on larger repos or multi-hop tasks when agents reuse it. Measure that payoff on your own workload.
 
 Historical cold indexing of six benchmark corpora took dctx 0.13–1.20 s on one Linux x86_64 runner. This measures CLI wall time, not agent completion time or session cost.
 
@@ -340,10 +345,8 @@ println!("{}", std::str::from_utf8(output.as_bytes())?);
 The host supplies selection rules and storage policy; `FsSource` does not
 load `.gitignore` automatically. Read the
 [library integration boundary](docs/MODALITIES.md#rust-library-embed-the-facade)
-before embedding it. Python, Node and Go wrappers over `dctx rpc` live in
-[packages/python](packages/python/README.md), [packaging/npm](packaging/npm/dctx/README.md)
-and [packages/go](packages/go/README.md); they are built and tested in CI.
-Install the Node wrapper with `npm install @tejl/dctx`; use CI artifacts for Python and Go.
+before embedding it. The [Go, Python and Node installation instructions](#installation)
+cover the wrappers over `dctx rpc`. CI tests their byte parity with the CLI.
 
 ## Versioned pack JSON
 

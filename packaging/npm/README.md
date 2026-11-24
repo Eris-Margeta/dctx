@@ -7,8 +7,9 @@ Each `cli-*` directory is an optional OS/CPU constrained package containing the
 native binary. Executables are generated and ignored by git. There are no
 installation hooks or binary downloads. The owner publishes manually from a Mac,
 using the GitHub release assets; CI does not publish npm packages.
-Available on npm from version 1.3.1, `@tejl/dctx` pins `@tejl/dctx-<platform>` optional dependencies.
-Then `npm install @tejl/dctx` installs the shim and the matching native package.
+Run `npm install @tejl/dctx` to install the scoped shim. It pins five
+`@tejl/dctx-<platform>` optional native packages at its own version, and npm
+installs the matching package by default.
 See [the package API](dctx/README.md) for resolution and handshake behavior.
 See [npm verification](../../docs/VERIFYING.md#verify-npm-packages) for binary
 checksum checks. There is no npm provenance attestation.

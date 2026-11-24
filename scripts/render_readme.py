@@ -49,7 +49,7 @@ def cold_walls(index, tool):
         else:
             failed.append(corpus)
     if not walls:
-        sys.exit(f"render_readme: no cold index walls for {tool}")
+        sys.exit(f"render_readme: no cold index walls for {tool!a}")
     return walls, failed
 
 
@@ -67,7 +67,9 @@ def render():
         summary,
         "",
         "[Whole-session benchmark and method](docs/BENCHMARK-20261111.md). "
-        "One corpus and one model. **Under ~200 files, use grep.**",
+        "The study used one corpus and one model. As a heuristic, start with grep and narrow file reads "
+        "on repos under about 200 files. A shared dctx index may pay off on larger repos or multi-hop "
+        "tasks when agents reuse it. Measure that payoff on your own workload.",
         "",
         f"Historical cold indexing of six benchmark corpora took dctx {seconds(walls)} on one Linux x86_64 runner. "
         "This measures CLI wall time, not agent completion time or session cost.",
@@ -81,7 +83,7 @@ def render():
 def splice(readme, block, begin=BEGIN, end=END):
     """Replace exactly one generated block, refusing missing or duplicate markers."""
     if readme.count(begin) != 1 or readme.count(end) != 1:
-        sys.exit(f"render_readme: README.md needs exactly one {begin.strip()} and one {end} marker")
+        sys.exit(f"render_readme: README.md needs exactly one {begin.strip()!a} and one {end!a} marker")
     head, rest = readme.split(begin, 1)
     _, tail = rest.split(end, 1)
     return head + begin + block + end + tail

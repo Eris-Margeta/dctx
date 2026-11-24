@@ -92,9 +92,10 @@ def facts() -> tuple[str, int]:
 
 
 def bench_table() -> str:
-    claim = factsrc.load()["benchmarks"]["claims"][0]
-    return (f'<p>{e(claim["text"])} '
-            f'<a href="{e(claim["link"])}">Whole-session benchmark and method</a></p>')
+    report = read("docs/BENCHMARK-20261111.md")
+    summary = data.section(report, "Round two verdict").lstrip().split("\n\n", 1)[0]
+    return (f'<p>{e(summary)} '
+            '<a href="/benchmarks/#grep-read">Whole-session benchmark and method</a></p>')
 
 
 ANIMATIONS = ("two_scopes", "calls_times_context", "prefix_stability", "giant_folder", "safe_path")
@@ -144,7 +145,7 @@ def body() -> str:
    <h1 id="hero-title">Give AI the right code, <span class="accent">not all of it.</span></h1>
    <div class="hero-copy">
     <p class="lede">dctx reads your project on your machine and hands an AI only the parts that matter, as one short page. Same project, same page, every time. No network, no telemetry.</p>
-    <p>Under ~200 files, use grep. dctx pays off on large repos, multi-hop questions and many agents sharing one index.</p>
+    <p>As a heuristic, start with grep and narrow file reads on repos under about 200 files. On larger repos or multi-hop tasks, try dctx, especially when agents can reuse one index. Measure the payoff on your own workload.</p>
     <div class="actions">
      <a class="btn btn-primary" href="#paths">Choose your path</a><a class="btn" href="/docs/">Read the docs</a><a class="btn" href="/playground/">Playground</a><a class="btn" href="{REPO}">GitHub</a>
     </div>
@@ -221,7 +222,7 @@ def body() -> str:
     {code("From source (Rust 1.91 or newer)", data.readme_block("From source"), "shell")}
    </div>
    <div>
-    <h3>Project libraries <span class="state">Node on npm; Python and Go in CI</span></h3>
+    <h3>Project libraries <span class="state">Go checkout, Python wheels, Node on npm</span></h3>
     <p>{md_inline(f["install"]["project"])}</p>
     {code("Cargo.toml (Rust facade, from Git today)", rust_dependency())}
     <h4>Two scopes, one binary</h4>
