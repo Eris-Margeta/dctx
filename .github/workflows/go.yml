@@ -26,12 +26,22 @@ jobs:
       matrix:
         include:
           - os: ubuntu-24.04
+            go: '1.23.12'
+            exe: ''
+            toolchain: local
+          - os: ubuntu-24.04
             go: '1.26.10'
             exe: ''
           - os: ubuntu-24.04
             go: stable
             exe: ''
+          - os: ubuntu-24.04-arm
+            go: stable
+            exe: ''
           - os: macos-15
+            go: stable
+            exe: ''
+          - os: macos-15-intel
             go: stable
             exe: ''
           - os: windows-2022
@@ -44,6 +54,7 @@ jobs:
       CARGO_TERM_COLOR: always
       DCTX_TEST_BIN: ${{ github.workspace }}/target/debug/dctx-cli${{ matrix.exe }}
       DCTX_REQUIRE_ENGINE_TESTS: '1'
+      GOTOOLCHAIN: ${{ matrix.toolchain || 'auto' }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -52,6 +63,16 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
           cache: false
+      - name: Verify effective Go floor
+        if: matrix.toolchain == 'local'
+        working-directory: packages/go
+        env:
+          EXPECTED_GO_VERSION: ${{ matrix.go }}
+        run: |
+          if ! version=$(go env GOVERSION 2>&1) || [[ "$GOTOOLCHAIN" != local || "$version" != "go$EXPECTED_GO_VERSION" ]]; then
+            printf 'Expected Go %q with GOTOOLCHAIN=local, got %q\n' "$EXPECTED_GO_VERSION" "$version" >&2
+            exit 1
+          fi
       - name: Install Rust toolchain
         run: |
           source tools/release/toolchain.env
@@ -72,4 +93,9 @@ jobs:
           go vet ./...
       - name: Transport, race and every-verb CLI parity tests (no skips)
         working-directory: packages/go
-        run: go test -race -count=1 -timeout 3m -v ./...
+        run: |
+          if [[ ! -f "$DCTX_TEST_BIN" || ! -x "$DCTX_TEST_BIN" ]]; then
+            printf 'Expected an executable engine at %q\n' "$DCTX_TEST_BIN" >&2
+            exit 1
+          fi
+          go test -race -count=1 -timeout 3m -v ./...
