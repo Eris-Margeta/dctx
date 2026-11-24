@@ -33,16 +33,23 @@ The running engine's version and build commit are known directly. `doctor` execu
 
 ## Cache isolation
 
-The CLI cache root is `<cache-parent>/<engine-major.minor>/`. For example, engines 1.2 and 1.3 use separate indexes and ledgers. Compatible patch releases share their major/minor namespace. System and project installations of the same engine family may reuse this cache; binary ownership does not change the index format. A caller can set a separate `DCTX_CACHE_DIR` to isolate a project's cache further.
+The 1.3 CLI uses `<cache-parent>/<engine-major.minor>/` as its cache root. Compatible patches such as 1.3.1 and 1.3.2 share the `1.3` directory and ledger when they use the same parent. System and project installations can share that cache or set separate parents for isolation.
 
-`DCTX_CACHE_DIR` is an absolute cache **parent**, not a final engine namespace. Without it, the existing platform parent is retained:
+Set `DCTX_CACHE_DIR` to an absolute cache parent path. For example, with `DCTX_CACHE_DIR=/path/to/dctx-cache`, the 1.3 CLI uses `/path/to/dctx-cache/1.3` and its ledger is `/path/to/dctx-cache/1.3/ledger.v1`. With `DCTX_CACHE_DIR` unset or empty, the paths are:
 
-| Platform | Cache parent | Example engine root |
-| --- | --- | --- |
-| Linux / other Unix | `$XDG_CACHE_HOME/dctx/v2`, or `$HOME/.cache/dctx/v2` | `…/dctx/v2/1.2/` |
-| macOS | `$HOME/Library/Caches/dctx/v2` | `…/dctx/v2/1.2/` |
-| Windows | `%LOCALAPPDATA%\dctx\Cache\v2` | `…\dctx\Cache\v2\1.2\` |
+| Platform | Cache parent | Active cache directory (1.3) | Active ledger (1.3) |
+| --- | --- | --- | --- |
+| Linux / other Unix (`XDG_CACHE_HOME` set and nonempty) | `$XDG_CACHE_HOME/dctx/v2` | `$XDG_CACHE_HOME/dctx/v2/1.3` | `$XDG_CACHE_HOME/dctx/v2/1.3/ledger.v1` |
+| Linux / other Unix (`XDG_CACHE_HOME` unset or empty) | `$HOME/.cache/dctx/v2` | `$HOME/.cache/dctx/v2/1.3` | `$HOME/.cache/dctx/v2/1.3/ledger.v1` |
+| macOS | `$HOME/Library/Caches/dctx/v2` | `$HOME/Library/Caches/dctx/v2/1.3` | `$HOME/Library/Caches/dctx/v2/1.3/ledger.v1` |
+| Windows | `%LOCALAPPDATA%\dctx\Cache\v2` | `%LOCALAPPDATA%\dctx\Cache\v2\1.3` | `%LOCALAPPDATA%\dctx\Cache\v2\1.3\ledger.v1` |
 
 The `v2` parent is the existing cache-container name; the next directory selects the engine family. All normal CLI cache readers, writers, policy, ledger, auto-clean and cache commands use the selected namespace. Explicit Rust host APIs that accept a cache root continue to use the exact root supplied by that host; custom hosts must supply an isolated engine namespace themselves.
 
-Old unscoped cache files are ignored. Startup, `doctor`, auto-clean and ordinary commands never migrate or delete them, and other engine namespaces are untouched. A new engine builds its own index on first use. Existing `cache purge --all --dry-run` / `cache purge --all --yes` target the current engine namespace. A host needing to purge a legacy root can use the existing Rust `dctx_cli::run_in` cache-purge API with that exact root; the normal purge confirmation and managed-ledger rules still apply. There is no automatic legacy-directory cleanup or recursive deletion of unknown files.
+In the pre-1.3 layout used by the tagged 1.2.0 CLI, the unscoped ledger is `<cache-parent>/ledger.v1`. With the same `DCTX_CACHE_DIR=/path/to/dctx-cache` across an upgrade, that ledger is `/path/to/dctx-cache/ledger.v1`. The 1.3 CLI leaves the unscoped ledger in place and builds an index in its own child directory on first use. Auto-clean and `cache purge --all` are scoped to the active child directory.
+
+A custom Rust host can target the legacy root explicitly with the `dctx_cli::run_in` cache-purge API. The normal purge confirmation and managed-ledger rules apply.
+
+To back up the active 1.3 cache, copy the whole `1.3` directory, including its ledger, policy and managed objects. To retain the old 1.2.0 cache, back up the parent containing the unscoped ledger and its data. A backup of the parent also includes any versioned child directories present there. Leave the original files in place during the upgrade.
+
+Run `dctx doctor --json` with the 1.3 binary and the same environment as your cache-using commands. The row with `running: true` gives the active directory in `cache_root`. For other detected binaries, doctor computes that field from the reported major and minor version. Use the parent to locate the actual unscoped ledger of a 1.2.0 installation.
