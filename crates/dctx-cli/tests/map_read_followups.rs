@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Binary checks for absolute --lines and an over-budget read.
+//! Binary checks for absolute --lines and over-budget read continuations.
 //! Covers DCTX-SERIOUS-GAPS G5b and G9b and contracts/API-PORTS-v1.md.
 //! Depends on the compiled dctx-cli and a temporary source file. No network.
 //! Used by `cargo nextest -p dctx-cli`. Depth stays unset when --lines is set.
@@ -9,26 +9,24 @@
 
 mod common;
 
+use serde_json::{Value, json};
 use std::fmt::Write as _;
 use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Output};
-use std::sync::atomic::{AtomicU64, Ordering};
-
-static NEXT: AtomicU64 = AtomicU64::new(1);
 
 struct Repository {
-    root: PathBuf,
+    root: tempfile::TempDir,
 }
 
 impl Repository {
     fn new(label: &str) -> Self {
-        let n = NEXT.fetch_add(1, Ordering::Relaxed);
-        let root =
-            std::env::temp_dir().join(format!("dctx-e02n-{label}-{}-{n}", std::process::id()));
-        let _ = fs::remove_dir_all(&root);
-        fs::create_dir_all(root.join("repo")).expect("repo");
+        let root = tempfile::Builder::new()
+            .prefix(label)
+            .tempdir()
+            .expect("temporary repository");
         for folder in [
+            "repo",
             "home",
             "config",
             "cache",
@@ -38,13 +36,13 @@ impl Repository {
             "empty-path",
             "tmp",
         ] {
-            fs::create_dir(root.join(folder)).expect("isolated directory");
+            fs::create_dir(root.path().join(folder)).expect("isolated directory");
         }
         Self { root }
     }
 
     fn repo(&self) -> PathBuf {
-        self.root.join("repo")
+        self.root.path().join("repo")
     }
 
     fn output(&self, args: &[&str]) -> Output {
@@ -55,77 +53,42 @@ impl Repository {
             .args(args)
             .env("DCTX_AUTO_CLEAN", "0")
             .env("NO_COLOR", "1");
-        common::isolated_dirs(&mut command, &self.root);
+        common::isolated_dirs(&mut command, self.root.path());
         for (variable, folder) in [
             ("DCTX_PLUGIN_ROOT", "plugins"),
             ("DCTX_CACHE_DIR", "cache"),
             ("DCTX_MAP_CACHE", "map-cache"),
             ("PATH", "empty-path"),
         ] {
-            command.env(variable, self.root.join(folder));
+            command.env(variable, self.root.path().join(folder));
         }
         command.output().expect("run compiled CLI")
     }
 
-    fn run(&self, args: &[&str]) -> String {
+    fn read_json(&self, args: &[&str]) -> Value {
         let output = self.output(args);
         assert!(
             output.status.success(),
-            "{args:?}: status {}; stdout: {}; stderr: {}",
+            "status {}. {}",
             output.status,
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr),
+            command_diagnostic(args, &output.stdout, &output.stderr),
         );
-        String::from_utf8(output.stdout).expect("UTF-8 stdout")
+        serde_json::from_slice(&output.stdout).unwrap_or_else(|error| {
+            panic!(
+                "invalid JSON ({:?}). {}",
+                error.to_string(),
+                command_diagnostic(args, &output.stdout, &output.stderr)
+            )
+        })
     }
 }
 
-impl Drop for Repository {
-    fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.root);
-    }
-}
-
-fn json_string_at(text: &str) -> Option<String> {
-    let mut chars = text.chars();
-    if chars.next() != Some('"') {
-        return None;
-    }
-    let mut out = String::new();
-    while let Some(ch) = chars.next() {
-        if ch == '"' {
-            return Some(out);
-        }
-        if ch != '\\' {
-            out.push(ch);
-            continue;
-        }
-        match chars.next() {
-            Some('"') => out.push('"'),
-            Some('\\') => out.push('\\'),
-            Some('n') => out.push('\n'),
-            Some('r') => out.push('\r'),
-            Some('t') => out.push('\t'),
-            Some('u') => {
-                let hex: String = chars.by_ref().take(4).collect();
-                let code = u32::from_str_radix(&hex, 16).ok()?;
-                out.push(char::from_u32(code)?);
-            }
-            _ => return None,
-        }
-    }
-    None
-}
-
-fn json_field(page: &str, key: &str) -> Option<String> {
-    let pattern = format!("\"{key}\":");
-    let index = page.find(&pattern)?;
-    let rest = &page[index + pattern.len()..];
-    if rest.starts_with("null") {
-        None
-    } else {
-        json_string_at(rest)
-    }
+fn command_diagnostic(args: &[&str], stdout: &[u8], stderr: &[u8]) -> String {
+    format!(
+        "{args:?}; stdout: {:?}; stderr: {:?}",
+        String::from_utf8_lossy(stdout),
+        String::from_utf8_lossy(stderr),
+    )
 }
 
 fn line_slice(text: &str, start: u32, end: u32) -> String {
@@ -171,11 +134,11 @@ fn lines_35_36_match_disk_lines() {
         let _ = writeln!(body, "// L{number:02}");
     }
     fs::write(repo.repo().join("lines.rs"), &body).expect("source");
-    let page = repo.run(&["map", "read", "m:lines.rs", "--lines", "35-36", "--json"]);
-    let source = json_field(&page, "source_utf8").expect("source");
-    assert_eq!(source, line_slice(&body, 35, 36), "{page}");
+    let page = repo.read_json(&["map", "read", "m:lines.rs", "--lines", "35-36", "--json"]);
+    let source = read_record(&page)["source_utf8"].as_str().expect("source");
+    assert_eq!(source, line_slice(&body, 35, 36));
     assert_eq!(source, "// L35\n// L36\n");
-    assert!(json_field(&page, "next").is_none(), "{page}");
+    assert_eq!(page.get("next"), Some(&Value::Null));
 }
 
 #[test]
@@ -193,7 +156,7 @@ fn a_module_past_the_budget_returns_a_marked_prefix_and_the_rest_once() {
         pages += 1;
         assert!(pages <= 120, "continuation did not finish");
         let page = match &cursor {
-            Some(token) => repo.run(&[
+            Some(token) => repo.read_json(&[
                 "map",
                 "read",
                 "m:wide.rs",
@@ -205,7 +168,7 @@ fn a_module_past_the_budget_returns_a_marked_prefix_and_the_rest_once() {
                 "--cursor",
                 token,
             ]),
-            None => repo.run(&[
+            None => repo.read_json(&[
                 "map",
                 "read",
                 "m:wide.rs",
@@ -216,18 +179,140 @@ fn a_module_past_the_budget_returns_a_marked_prefix_and_the_rest_once() {
                 "1000",
             ]),
         };
-        let source = json_field(&page, "source_utf8").expect("source");
+        let source = read_record(&page)["source_utf8"].as_str().expect("source");
         let marked = source.contains("[DCTX_TRUNCATED]");
-        seen.push_str(&without_mark(&source));
-        if let Some(token) = json_field(&page, "next") {
-            assert!(marked, "{page}");
-            assert!(token.contains("|read|m:wide.rs|"), "{token}");
-            cursor = Some(token);
+        seen.push_str(&without_mark(source));
+        if let Some(token) = page["next"].as_str() {
+            assert!(marked, "{source:?}");
+            assert!(token.contains("|read|m:wide.rs|"), "{token:?}");
+            cursor = Some(token.to_owned());
         } else {
-            assert!(!marked, "{page}");
+            assert_eq!(page.get("next"), Some(&Value::Null));
+            assert!(!marked, "{source:?}");
             break;
         }
     }
     assert!(pages > 1, "the module fit in one page");
     assert_eq!(seen, body);
+}
+
+#[test]
+fn read_page_coordinates() {
+    const MODULE: &str = "m:src/lib.rs";
+    const METHOD: &str = "s:src/lib.rs#Widget::run";
+    let repo = Repository::new("read-coordinates");
+    fs::create_dir(repo.repo().join("src")).expect("fixture source directory");
+    fs::write(
+        repo.repo().join("Cargo.toml"),
+        include_bytes!("../../dctx-map-parse/tests/fixtures/rust/Cargo.toml"),
+    )
+    .expect("fixture manifest");
+    let body = include_bytes!("../../dctx-map-parse/tests/fixtures/rust/src/lib.rs");
+    fs::write(repo.repo().join("src/lib.rs"), body).expect("fixture library");
+    fs::write(
+        repo.repo().join("src/support.rs"),
+        include_bytes!("../../dctx-map-parse/tests/fixtures/rust/src/support.rs"),
+    )
+    .expect("fixture support");
+
+    let mut offsets = vec![0];
+    for (offset, line) in body.split_inclusive(|&byte| byte == b'\n').enumerate() {
+        offsets.push(offsets[offset] + line.len());
+    }
+    let last_line = offsets.len() - 1;
+    let page = repo.read_json(&["map", "read", METHOD, "--lines", "24-24", "--json"]);
+    let record = read_record(&page);
+    assert_eq!(record["id"], METHOD);
+    assert_eq!(record["path"], "src/lib.rs");
+    assert_eq!(record["lines"], json!([23, 25]), "enclosing method lines");
+    assert_eq!(record["span"], json!([438, 483]), "enclosing method bytes");
+    let call = &body[offsets[23]..offsets[24]];
+    assert_eq!(call, b"        helper()\n");
+    assert_eq!(
+        record["source_utf8"].as_str().map(str::as_bytes),
+        Some(call)
+    );
+    assert_eq!(page.get("next"), Some(&Value::Null));
+
+    let mut cursor: Option<String> = None;
+    // The module starts at line 1. Each resume starts at the line in its cursor.
+    let mut start = 1;
+    let mut seen = Vec::new();
+    loop {
+        let mut args = vec!["map", "read", MODULE, "--budget", "250", "--json"];
+        if let Some(token) = cursor.as_deref() {
+            args.extend(["--cursor", token]);
+        }
+        let page = repo.read_json(&args);
+        let record = read_record(&page);
+        assert_eq!(record["id"], MODULE);
+        assert_eq!(record["path"], "src/lib.rs");
+        assert_eq!(
+            record["lines"],
+            json!([1, last_line]),
+            "enclosing module lines"
+        );
+        assert_eq!(
+            record["span"],
+            json!([0, body.len()]),
+            "enclosing module bytes"
+        );
+        let source = record["source_utf8"].as_str().expect("source excerpt");
+        let next = page.get("next").expect("continuation field");
+        let (excerpt, next_line) = if next.is_null() {
+            assert!(cursor.is_some(), "budget 250 must require a continuation");
+            (source, last_line + 1)
+        } else {
+            let token = next.as_str().expect("read cursor");
+            let parts: Vec<_> = token.split('|').collect();
+            let ["v1", _, "read", MODULE, next_start, end, "0"] = parts.as_slice() else {
+                panic!("unexpected read cursor {token:?}");
+            };
+            let next_start: usize = next_start.parse().expect("cursor start line");
+            let end: usize = end.parse().expect("cursor end line");
+            assert_eq!(end, last_line);
+            assert!(
+                (start + 1..=end).contains(&next_start),
+                "cursor did not advance within the module: {token:?}"
+            );
+            let marker = format!("[DCTX_TRUNCATED] lines {next_start}-{end}\n");
+            let excerpt = source
+                .strip_suffix(&marker)
+                .unwrap_or_else(|| panic!("missing trailing marker {marker:?} in {source:?}"));
+            (excerpt, next_start)
+        };
+        assert_eq!(page["more"], json!(last_line + 1 - next_line));
+        assert_eq!(
+            excerpt.as_bytes(),
+            &body[offsets[start - 1]..offsets[next_line - 1]],
+            "module excerpt at lines {start} through {}",
+            next_line - 1,
+        );
+        seen.extend_from_slice(excerpt.as_bytes());
+        if next.is_null() {
+            break;
+        }
+        cursor = next.as_str().map(str::to_owned);
+        start = next_line;
+    }
+    assert_eq!(
+        seen,
+        body.as_slice(),
+        "module coverage through its last line"
+    );
+}
+
+fn read_record(page: &Value) -> &Value {
+    let records = page["records"].as_array().expect("read records");
+    assert_eq!(records.len(), 1, "expected one read record");
+    &records[0]
+}
+
+#[test]
+fn command_diagnostic_escapes_hostile_arguments_and_output() {
+    let hostile = "first\n\u{1b}\"second";
+    assert_eq!(
+        command_diagnostic(&[hostile], hostile.as_bytes(), hostile.as_bytes()),
+        r#"["first\n\u{1b}\"second"]; stdout: "first\n\u{1b}\"second"; stderr: "first\n\u{1b}\"second""#,
+    );
 }
