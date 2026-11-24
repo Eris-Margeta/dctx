@@ -370,7 +370,7 @@ fn reclaim_reopens_before_rename_and_retries_with_the_existing_objects() {
     );
     let settled = reopened.load(quota).expect("load after retry");
     assert_charges(&settled, 0, CUT_VIEW_BYTES);
-    assert_eq!(settled.orphans, [staged.clone()]);
+    assert_eq!(settled.orphans, std::slice::from_ref(staged));
     assert_eq!(object_files(&dir), 2);
 }
 
