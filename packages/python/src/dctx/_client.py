@@ -47,7 +47,7 @@ class Client(Operations):
                  binary: str | os.PathLike[str] | None = None) -> None:
         self.project = Path(project).expanduser().resolve(strict=True)
         if not self.project.is_dir():
-            raise NotADirectoryError(self.project)
+            raise NotADirectoryError(f"Project is not a directory: {str(self.project)!r}")
         self.binary = resolve_binary(binary)
         self._lock = threading.Lock()
         self._closed = False
@@ -60,7 +60,9 @@ class Client(Operations):
                 stderr=None, close_fds=True,
             )
         except OSError as exc:
-            raise TransportError(f"Cannot start dctx engine: {exc}. {install_instructions()}") from exc
+            raise TransportError(
+                f"Cannot start dctx engine: {str(exc)!r}. {install_instructions()!r}"
+            ) from None
         try:
             self.hello()
         except BaseException:
@@ -73,8 +75,11 @@ class Client(Operations):
         if not all(isinstance(arg, str) for arg in args):
             raise TypeError("RPC arguments must be strings")
         request_id = self._next_id
-        frame = json.dumps({"id": request_id, "verb": verb, "args": args},
-                           ensure_ascii=True, separators=(",", ":")).encode("utf-8")
+        try:
+            frame = json.dumps({"id": request_id, "verb": verb, "args": args},
+                               ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+        except UnicodeEncodeError:
+            raise ValueError("RPC arguments must be valid UTF-8") from None
         if len(frame) > 1_048_576:
             raise ValueError("RPC request exceeds the engine's 1,048,576-byte frame limit")
         self._next_id += 1
@@ -92,7 +97,7 @@ class Client(Operations):
             if version != __version__:
                 raise VersionMismatchError(
                     f"dctx package {__version__} requires engine {__version__}; got {version!r}. "
-                    f"Selected executable: {self.binary}. {install_instructions()}"
+                    f"Selected executable: {str(self.binary)!r}. {install_instructions()!r}"
                 )
             if ("result" in reply) == ("error" in reply):
                 raise TransportError("dctx response must contain exactly one result or error")
@@ -114,7 +119,7 @@ class Client(Operations):
             self._abort()
             if isinstance(exc, TransportError):
                 raise
-            raise TransportError(f"dctx transport failed: {exc}") from exc
+            raise TransportError(f"dctx transport failed: {str(exc)!r}") from None
         except BaseException:
             # An interrupted read may leave an operation in flight. It cannot be
             # safely correlated with a later call, so abort before propagating.

@@ -28,14 +28,14 @@ type Options struct {
 // TransportError indicates a failed process or invalid RPC envelope. Work is not retried.
 type TransportError struct{ Cause error }
 
-func (e *TransportError) Error() string { return "dctx transport: " + e.Cause.Error() }
+func (e *TransportError) Error() string { return fmt.Sprintf("dctx transport: %q", e.Cause.Error()) }
 func (e *TransportError) Unwrap() error { return e.Cause }
 
 // VersionMismatchError indicates an incompatible engine release or RPC major.
 type VersionMismatchError struct{ Expected, Actual string }
 
 func (e *VersionMismatchError) Error() string {
-	return fmt.Sprintf("dctx version mismatch: require %s, got %q. %s", e.Expected, e.Actual, InstallInstructions())
+	return fmt.Sprintf("dctx version mismatch: require %q, got %q. %q", e.Expected, e.Actual, InstallInstructions())
 }
 
 // Error returns the engine diagnostic unchanged. Branch on Code, not its text.
@@ -174,6 +174,34 @@ func decodeObject(data []byte, value any, required ...string) error {
 	return json.Unmarshal(data, value)
 }
 
+// The JSON encoder escapes these two scalars even with HTML escaping disabled.
+// Restore their UTF-8 bytes, stepping over JSON escapes to preserve literal \u text.
+func restoreLineSeparators(frame []byte) []byte {
+	if !bytes.Contains(frame, []byte(`\u202`)) {
+		return frame
+	}
+	compact, rest := frame[:0], frame
+	for {
+		escape := bytes.IndexByte(rest, '\\')
+		if escape < 0 {
+			return append(compact, rest...)
+		}
+		compact = append(compact, rest[:escape]...)
+		rest = rest[escape:]
+		switch {
+		case bytes.HasPrefix(rest, []byte(`\u2028`)):
+			compact = append(compact, "\u2028"...)
+			rest = rest[6:]
+		case bytes.HasPrefix(rest, []byte(`\u2029`)):
+			compact = append(compact, "\u2029"...)
+			rest = rest[6:]
+		default:
+			compact = append(compact, rest[:2]...)
+			rest = rest[2:]
+		}
+	}
+}
+
 func (c *Client) exchange(verb Verb, args []string) (json.RawMessage, error) {
 	if c.closed || c.aborted.Load() {
 		return nil, fmt.Errorf("dctx client is closed")
@@ -191,19 +219,19 @@ func (c *Client) exchange(verb Verb, args []string) (json.RawMessage, error) {
 			return nil, fmt.Errorf("RPC arguments must be UTF-8")
 		}
 	}
-	if args == nil {
-		args = []string{}
-	}
 	c.nextID++
-	id, _ := json.Marshal(strconv.FormatUint(c.nextID, 10))
-	frame, err := json.Marshal(Request{ID: id, Verb: verb, Args: args})
-	if err != nil {
+	id := strconv.FormatUint(c.nextID, 10)
+	var wire bytes.Buffer
+	encoder := json.NewEncoder(&wire)
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(Request{ID: json.RawMessage(strconv.Quote(id)), Verb: verb, Args: args}); err != nil {
 		return nil, err
 	}
-	if len(frame) > 1_048_576 {
+	frame := restoreLineSeparators(wire.Bytes()) // Encode already appended LF.
+	if len(frame)-1 > 1_048_576 {
 		return nil, fmt.Errorf("RPC request exceeds the engine's 1,048,576-byte frame limit")
 	}
-	if _, err := c.input.Write(append(frame, '\n')); err != nil {
+	if _, err := c.input.Write(frame); err != nil {
 		return nil, &TransportError{err}
 	}
 	line, err := c.reader.ReadBytes('\n') // No scanner limit: engine output is never truncated.
@@ -218,7 +246,7 @@ func (c *Client) exchange(verb Verb, args []string) (json.RawMessage, error) {
 		return nil, &TransportError{err}
 	}
 	var actualID string
-	if json.Unmarshal(response.ID, &actualID) != nil || actualID != strconv.FormatUint(c.nextID, 10) {
+	if json.Unmarshal(response.ID, &actualID) != nil || actualID != id {
 		return nil, &TransportError{fmt.Errorf("invalid response correlation id")}
 	}
 	if response.EngineVersion != Version {

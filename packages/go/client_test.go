@@ -94,6 +94,8 @@ func helperServer() {
 			}
 		} else {
 			switch scenario {
+			case "capture":
+				reply["result"] = map[string]any{"output": scanner.Text() + "\n"}
 			case "operation-engine":
 				reply["engine_version"] = "0.0.0"
 			case "output-type":
@@ -240,9 +242,9 @@ func TestInvalidOperationResponseEndsSession(t *testing.T) {
 
 func TestInvalidRequestsDoNotPoisonSession(t *testing.T) {
 	client := helperClient(t, "")
-	for _, args := range [][]string{{string([]byte{0xff})}, {strings.Repeat("x", 1_048_576)}} {
-		if _, err := client.Find(context.Background(), args...); err == nil {
-			t.Fatal("invalid request accepted")
+	for _, arg := range []string{"bad\n\x1b\"\xff", "\xed\xa0\x80"} {
+		if _, err := client.Find(context.Background(), arg); err == nil || err.Error() != "RPC arguments must be UTF-8" {
+			t.Fatalf("expected local invalid UTF-8 refusal, got %q", err)
 		}
 	}
 	if _, err := client.Call(context.Background(), VerbHello); err == nil {
@@ -250,6 +252,43 @@ func TestInvalidRequestsDoNotPoisonSession(t *testing.T) {
 	}
 	if _, err := client.Languages(context.Background()); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestCompactRequestBytesAndFrameBoundary(t *testing.T) {
+	client := helperClient(t, "capture")
+	ctx := context.Background()
+	ordinary, err := client.Find(ctx, "--limit", "2", "two words")
+	if expected := `{"args":["--limit","2","two words"],"id":"2","verb":"find"}` + "\n"; err != nil || string(ordinary) != expected {
+		t.Fatalf("ordinary request = %q, error = %q", ordinary, err)
+	}
+
+	arg := "\n\x1b\"\\λ&<>\u2028\u2029" + `\u2028`
+	prefix := `{"args":["--help","\n\u001b\"\\` + "λ&<>\u2028\u2029" + `\\u2028`
+	suffix := `"],"id":"3","verb":"languages"}` + "\n"
+	padding := strings.Repeat("x", 1_048_576-len(prefix)-len(suffix)+1)
+	exact, err := client.Languages(ctx, "--help", arg+padding)
+	if err != nil {
+		t.Fatalf("exact limit request refused: %q", err)
+	}
+	if len(exact) != 1_048_577 || string(exact) != prefix+padding+suffix {
+		t.Fatalf("exact limit request wire bytes changed (got %d bytes including LF)", len(exact))
+	}
+	if _, err := client.Languages(ctx, "--help", arg+padding+"x"); err == nil ||
+		err.Error() != "RPC request exceeds the engine's 1,048,576-byte frame limit" {
+		t.Fatalf("expected local frame limit refusal, got %q", err)
+	}
+	reused, err := client.Languages(ctx)
+	if expected := `{"id":"5","verb":"languages"}` + "\n"; err != nil || string(reused) != expected {
+		t.Fatalf("request after refusal = %q, error = %q", reused, err)
+	}
+}
+
+func TestTransportDiagnosticQuotesCause(t *testing.T) {
+	cause := errors.New("bad\n\x1b\"")
+	err := &TransportError{cause}
+	if got, want := err.Error(), `dctx transport: "bad\n\x1b\""`; got != want {
+		t.Errorf("diagnostic = %q, want %q", got, want)
 	}
 }
 

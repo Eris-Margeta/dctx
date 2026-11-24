@@ -219,6 +219,8 @@ for line in sys.stdin.buffer:
         reply["result"] = {}
     elif MODE == "error":
         reply["error"] = {"code": 1, "message": "gone", "hint": "refresh", "output": "before\\r\\n\\n", "future": 1}
+    elif MODE == "capture":
+        reply["result"] = {"output": line.decode("utf-8")}
     else:
         reply["result"] = {"output": json.dumps(request["args"], ensure_ascii=False) + "\\r\\n\\n", "future": 1}
     print(json.dumps(reply), flush=True)
@@ -290,9 +292,42 @@ if MODE == "hang_on_eof":
         with self.client() as client:
             with self.assertRaises(TypeError):
                 client.find(1)
+            for arg in ('bad\n\x1b"\ud800', "\udfff", "\ud83d\ude42"):
+                with self.assertRaisesRegex(ValueError, "^RPC arguments must be valid UTF-8$"):
+                    client.find(arg)
             with self.assertRaises(ValueError):
                 client.find("x" * 1_048_576)
             self.assertEqual(client.languages(), b"[]\r\n\n")
+
+    def test_compact_request_bytes_and_frame_boundary(self):
+        with self.client("capture") as client:
+            self.assertEqual(
+                client.find("--limit", "2", "two words"),
+                b'{"id":1,"verb":"find","args":["--limit","2","two words"]}\n',
+            )
+            arg = '\n\x1b"\\λ&<>\u2028\u2029' + r"\u2028"
+            prefix = (rb'{"id":2,"verb":"languages","args":["--help","\n\u001b\"\\'
+                      + "λ&<>\u2028\u2029".encode("utf-8") + rb'\\u2028')
+            suffix = b'"]}\n'
+            padding = "x" * (1_048_576 - len(prefix) - len(suffix) + 1)
+            exact = client.languages("--help", arg + padding)
+            self.assertEqual(len(exact), 1_048_577)
+            self.assertTrue(exact == prefix + padding.encode("ascii") + suffix,
+                            "request wire bytes changed")
+            with self.assertRaisesRegex(ValueError, "1,048,576-byte frame limit"):
+                client.languages("--help", arg + padding + "x")
+            self.assertEqual(client.languages(), b'{"id":3,"verb":"languages","args":[]}\n')
+
+    def test_startup_diagnostic_quotes_subprocess_error(self):
+        self.server.touch(mode=0o755)
+        hostile = 'bad\n\x1b"'
+        with mock.patch("dctx._client.subprocess.Popen", side_effect=OSError(hostile)):
+            with self.assertRaises(TransportError) as caught:
+                Client(self.root, binary=self.server)
+        diagnostic = str(caught.exception)
+        self.assertIn(repr(hostile), diagnostic)
+        self.assertNotIn("\n", diagnostic)
+        self.assertNotIn("\x1b", diagnostic)
 
     def test_concurrent_calls_stay_correlated(self):
         with self.client() as client:
