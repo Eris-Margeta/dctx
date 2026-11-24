@@ -78,8 +78,14 @@ lost.
 Every line produces one reply. A blank line, malformed JSON, invalid UTF-8,
 unknown verb, missing id, invalid arguments or oversized frame returns a usage
 error and the session continues. A syntactically invalid frame uses `id: null`;
-a valid id in an otherwise invalid request is preserved. Requests are limited to
-1,048,576 bytes before LF (including a CR in CRLF). Oversized frames are drained
+a valid id in an otherwise invalid request is preserved. The request limit is
+1,048,576 UTF-8 bytes before LF (including a CR in CRLF). Count the complete
+encoded JSON envelope, including the correlation ID, field names, punctuation,
+and required escapes for quotation marks, backslashes, and control characters.
+Use compact JSON with literal UTF-8 for other characters, including non-ASCII
+scalars and `&`, `<`, and `>`. Request strings must contain only Unicode scalar
+values. Python and Go reject invalid strings and oversized requests before
+writing a frame, leaving the session usable. The engine drains oversized frames
 through their LF without retaining their contents. A final frame at EOF is
 processed without requiring a trailing LF. Responses are complete, never
 truncated to a transport budget, and flushed individually. An actual stdin or
