@@ -2,17 +2,17 @@
 //! Call and import edges for the facade index.
 //! Implements SPEC-MAP-MODE 5.3 and 6.3 over the lexers' raw references, using the generation's own nodes.
 //! The resolver in dctx-map-resolve is not a dependency of this crate, so the same lookup order lives here.
-//! The walk records one [`FileRefs`] per file, then [`link`] appends `calls` and `imports` edges once.
+//! The walk records [`FileRefs`] for files with children or references, then [`link`] appends `calls` and `imports` edges once.
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 
-use dctx_map_model::EdgeKind;
+use dctx_map_model::{Confidence, EdgeKind};
 
 use super::decl_pair::is_declaration_only_path;
 use super::extract::language_of;
 use super::refs_names::{
-    JS_SOURCE_EXTENSIONS, call_segments, import_segments, last_segment, module_keys,
-    module_segments, relative_import,
+    ImportBinding, JS_SOURCE_EXTENSIONS, call_segments, import_binding, import_segments,
+    last_segment, module_keys, module_segments, relative_import,
 };
 use super::{IndexedEdge, IndexedNode, TextBlob, write_node_id};
 
@@ -81,28 +81,39 @@ fn language_family(language: &str) -> &str {
     }
 }
 
-/// Edge confidence in rank order: a lower rank wins when two references reach the same pair.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-enum Rank {
-    Exact,
-    Name,
-    Guess,
-}
-
 /// The calling file as the resolver sees it.
 struct Caller<'b> {
     file: &'b FileRefs,
     /// Language family of the file, see [`language_family`].
     family: &'b str,
-    /// Every name segment the file declares or imports (resolved or not): the types a receiver call can name.
-    visible: HashSet<&'b str>,
+    /// Names declared in this file that can own a method.
+    declared: HashSet<&'b str>,
+    bindings: Vec<Binding<'b>>,
 }
 
 /// A local name an import introduced, and what it points to.
-struct Binding {
+struct Binding<'b> {
+    scope: &'b str,
     name: String,
     dst: u32,
     module: bool,
+}
+
+impl Caller<'_> {
+    /// The nearest enclosing import that introduces this name.
+    fn binding(&self, scope: &str, name: &str) -> Option<&Binding<'_>> {
+        self.bindings
+            .iter()
+            .filter(|binding| {
+                binding.name == name
+                    && (binding.scope.is_empty()
+                        || scope == binding.scope
+                        || scope
+                            .strip_prefix(binding.scope)
+                            .is_some_and(|tail| tail.starts_with("::")))
+            })
+            .max_by_key(|binding| binding.scope.len())
+    }
 }
 
 /// Lookup tables over the generation, built once per [`link`].
@@ -132,20 +143,26 @@ pub(crate) fn link(
     if files.iter().all(|file| file.refs.is_empty()) {
         return;
     }
-    let labels = [
-        text.push("calls"),
-        text.push("imports"),
-        text.push("exact"),
-        text.push("name"),
-        text.push("guess"),
-    ];
+    let calls = text.push(EdgeKind::Calls.as_str());
+    let imports = text.push(EdgeKind::Imports.as_str());
+    let exact = text.push(Confidence::Exact.as_str());
+    let name = text.push(Confidence::Name.as_str());
+    let guess = text.push(Confidence::Guess.as_str());
     let tables = Tables::build(nodes, text, files);
     for file in files.iter().filter(|file| !file.refs.is_empty()) {
-        let mut found: BTreeMap<(u32, bool, u32), Rank> = BTreeMap::new();
+        let mut found = BTreeMap::new();
         tables.link_file(file, &mut found);
-        for ((src, call, dst), rank) in found {
-            let edge = if call { labels[0] } else { labels[1] };
-            let confidence = labels[2 + rank as usize];
+        for ((src, kind, dst), rank) in found {
+            let edge = match kind {
+                EdgeKind::Calls => calls,
+                EdgeKind::Imports => imports,
+                _ => continue,
+            };
+            let confidence = match rank {
+                Confidence::Exact => exact,
+                Confidence::Name => name,
+                Confidence::Guess => guess,
+            };
             edges.push(IndexedEdge {
                 src,
                 dst,
@@ -162,23 +179,27 @@ impl<'a> Tables<'a> {
         let mut names: HashMap<(u32, &str), Vec<u32>> = HashMap::new();
         let mut bare: HashMap<(&str, &str), Vec<u32>> = HashMap::new();
         let mut modules: HashMap<String, Vec<(u32, bool, &str)>> = HashMap::new();
-        let module_paths = nodes
+        let mut module_paths = HashMap::new();
+        for (index, node) in nodes
             .iter()
             .enumerate()
             .filter(|(_, node)| node.letter == b'm')
-            .filter_map(|(index, node)| Some((text.get(node.path), u32::try_from(index).ok()?)))
-            .collect();
+        {
+            let Ok(index) = u32::try_from(index) else {
+                break;
+            };
+            let path = text.get(node.path);
+            module_paths.insert(path, index);
+            let family = language_family(language_of(path));
+            for (key, full) in module_keys(path) {
+                modules.entry(key).or_default().push((index, full, family));
+            }
+        }
         for file in files {
             let Some(module) = nodes.get(file.first as usize) else {
                 continue;
             };
             let family = language_family(language_of(text.get(module.path)));
-            for (key, full) in module_keys(text.get(module.path)) {
-                modules
-                    .entry(key)
-                    .or_default()
-                    .push((file.first, full, family));
-            }
             for index in file.first.saturating_add(1)..file.end {
                 let Some(node) = nodes.get(index as usize) else {
                     break;
@@ -212,7 +233,7 @@ impl<'a> Tables<'a> {
     }
 
     /// Resolves the imports of `file` first, then its calls through the bindings they made.
-    fn link_file(&self, file: &FileRefs, found: &mut BTreeMap<(u32, bool, u32), Rank>) {
+    fn link_file(&self, file: &FileRefs, found: &mut BTreeMap<(u32, EdgeKind, u32), Confidence>) {
         let mut ids: HashMap<String, u32> = HashMap::new();
         for index in file.first..file.end {
             let Some(node) = self.nodes.get(index as usize) else {
@@ -233,31 +254,18 @@ impl<'a> Tables<'a> {
         let language = language_of(importer);
         let family = language_family(language);
         let receiver_only = RECEIVER_ONLY.contains(&language);
-        let mut visible: HashSet<&str> = HashSet::new();
+        let mut declared: HashSet<&str> = HashSet::new();
         for index in file.first.saturating_add(1)..file.end {
             if let Some(node) = self.nodes.get(index as usize) {
-                visible.extend(node.name.split([':', '.']).filter(|part| !part.is_empty()));
+                declared.extend(node.name.split([':', '.']).filter(|part| !part.is_empty()));
             }
         }
-        for reference in file
-            .refs
-            .iter()
-            .filter(|reference| reference.kind == EdgeKind::Imports)
-        {
-            visible.extend(
-                reference
-                    .name
-                    .rsplit(|ch: char| !(ch.is_alphanumeric() || ch == '_' || ch == '$'))
-                    .find(|part| !part.is_empty()),
-            );
-            visible.extend(reference.alias.as_deref());
-        }
-        let caller = Caller {
+        let mut caller = Caller {
             file,
             family,
-            visible,
+            declared,
+            bindings: Vec::new(),
         };
-        let mut bindings: Vec<Binding> = Vec::new();
         for reference in file
             .refs
             .iter()
@@ -283,29 +291,29 @@ impl<'a> Tables<'a> {
             let target_path = self.text.get(self.nodes[dst as usize].path);
             if language_family(language_of(target_path)) != family {
                 if module {
-                    note(found, src, false, dst, Rank::Exact);
+                    note(found, src, EdgeKind::Imports, dst, Confidence::Exact);
                 }
                 continue;
             }
-            note(found, src, false, dst, Rank::Exact);
-            if let Some(alias) = &reference.alias {
-                bindings.push(Binding {
-                    name: alias.clone(),
+            note(found, src, EdgeKind::Imports, dst, Confidence::Exact);
+            let mut bind = |name: &str| {
+                caller.bindings.push(Binding {
+                    scope: &reference.scope,
+                    name: name.to_owned(),
                     dst,
                     module,
-                });
-            } else if let (Some(first), Some(last)) = (segments.first(), segments.last()) {
-                bindings.push(Binding {
-                    name: last.clone(),
-                    dst,
-                    module,
-                });
-                if module && first != last {
-                    bindings.push(Binding {
-                        name: first.clone(),
-                        dst,
-                        module,
-                    });
+                })
+            };
+            match import_binding(family, &reference.name, reference.alias.as_deref()) {
+                ImportBinding::None => {}
+                ImportBinding::Named(local) => bind(local),
+                ImportBinding::Path => {
+                    if let (Some(first), Some(last)) = (segments.first(), segments.last()) {
+                        bind(last);
+                        if module && first != last {
+                            bind(first);
+                        }
+                    }
                 }
             }
         }
@@ -327,16 +335,10 @@ impl<'a> Tables<'a> {
                     .name
                     .chars()
                     .all(|ch| ch.is_alphanumeric() || ch == '_' || ch == '$');
-            let (targets, rank) = self.call_targets(
-                &caller,
-                &reference.scope,
-                qualifier,
-                callee,
-                &bindings,
-                free,
-            );
+            let (targets, rank) =
+                self.call_targets(&caller, &reference.scope, qualifier, callee, free);
             for dst in targets {
-                note(found, src, true, dst, rank);
+                note(found, src, EdgeKind::Calls, dst, rank);
             }
         }
     }
@@ -424,20 +426,18 @@ impl<'a> Tables<'a> {
         (pool.len() == 1).then(|| pool[0])
     }
 
-    /// Targets of one call: lexical scope, then imports, then module paths, then a project-wide guess.
+    /// Targets of one call: lexical scope, then visible import bindings, then a project-wide guess.
     ///
     /// A `free` call (a bare name in a [`RECEIVER_ONLY`] language) skips every candidate of kind `method`.
-    /// Module paths and the guess only consider files of the caller's language family.
     fn call_targets(
         &self,
         caller: &Caller<'_>,
         scope: &str,
         qualifier: &[String],
         callee: &str,
-        bindings: &[Binding],
         free: bool,
-    ) -> (Vec<u32>, Rank) {
-        let (file, family) = (caller.file, caller.family);
+    ) -> (Vec<u32>, Confidence) {
+        let file = caller.file;
         let qualified = qualifier.join("::");
         let mut walk = scope;
         loop {
@@ -458,36 +458,35 @@ impl<'a> Tables<'a> {
             }
             walk = walk.rsplit_once("::").map_or("", |(parent, _)| parent);
         }
-        for binding in bindings {
-            if let Some(first) = qualifier.first() {
-                if *first != binding.name {
-                    continue;
+        let local = qualifier.first().map_or(callee, String::as_str);
+        if let Some(binding) = caller.binding(scope, local) {
+            if qualifier.is_empty() {
+                if !binding.module {
+                    return (vec![binding.dst], Confidence::Name);
                 }
+            } else {
                 let rest = qualifier[1..]
                     .iter()
                     .map(String::as_str)
                     .chain([callee])
                     .collect::<Vec<_>>()
                     .join("::");
-                let (owner, name) = match self.nodes.get(binding.dst as usize) {
-                    _ if binding.module => (binding.dst, rest),
-                    Some(node) => (self.file_of(binding.dst), format!("{}::{rest}", node.name)),
-                    None => continue,
+                let (owner, name) = if binding.module {
+                    (binding.dst, rest)
+                } else {
+                    let node = &self.nodes[binding.dst as usize];
+                    (self.file_of(binding.dst), format!("{}::{rest}", node.name))
                 };
                 if let Some(hit) = self.names.get(&(owner, name.as_str())) {
                     return Self::pick(hit);
                 }
-            } else if binding.name == callee && !binding.module {
-                return (vec![binding.dst], Rank::Name);
             }
+            return (Vec::new(), Confidence::Guess);
         }
-        if !qualifier.is_empty()
-            && let Some(module) = self.module_named(qualifier, family)
-            && let Some(hit) = self.names.get(&(module, callee))
-        {
-            return Self::pick(hit);
-        }
-        (self.guess(caller, callee, qualifier, free), Rank::Guess)
+        (
+            self.guess(caller, scope, callee, qualifier, free),
+            Confidence::Guess,
+        )
     }
 
     /// The candidates a call can reach: all of `hits`, or for a `free` call those that are not methods.
@@ -505,10 +504,10 @@ impl<'a> Tables<'a> {
     }
 
     /// Hits inside one file: a single one is a `name` match, overloads are guesses.
-    fn pick(hit: &[u32]) -> (Vec<u32>, Rank) {
+    fn pick(hit: &[u32]) -> (Vec<u32>, Confidence) {
         match hit {
-            [only] => (vec![*only], Rank::Name),
-            many => (many.iter().copied().take(4).collect(), Rank::Guess),
+            [only] => (vec![*only], Confidence::Name),
+            many => (many.iter().copied().take(4).collect(), Confidence::Guess),
         }
     }
 
@@ -517,19 +516,19 @@ impl<'a> Tables<'a> {
     /// A call with a receiver (`recv.name()`) that still has several candidates resolves to the one candidate of kind `method`, so a lone method wins over same-named free functions, and a lone owned class method (`Owner::name`) wins over object-literal members. Two or more of the same standing stay ambiguous and emit nothing.
     ///
     /// A call with a receiver or qualifier (`recv.name()`, `Type::name()`, `pkg.Name()`) then keeps its pick only if the
-    /// caller can see it: it is in the caller's own file, it is an owned member whose owner the caller declares, imports
-    /// or names as the qualifier, or it is a free symbol whose file or directory the qualifier names. Without types the
-    /// receiver is unknown, so `iter.map(..)` or `text.lines()` never guesses its way to a same-named project method.
+    /// caller can see it in the same file or can identify its owner by declaration, import or qualifier.
+    /// Without types the receiver is unknown, so `iter.map(..)` or `text.lines()` never guesses its way to a same-named project method.
     fn guess(
         &self,
         caller: &Caller<'_>,
+        scope: &str,
         callee: &str,
         qualifier: &[String],
         free: bool,
     ) -> Vec<u32> {
         let mut picked = self.pick_guess(caller.file, caller.family, callee, qualifier, free);
         if let Some(named) = qualifier.last() {
-            picked.retain(|&hit| self.visible_to(caller, named, hit));
+            picked.retain(|&hit| self.visible_to(caller, scope, named, hit));
         }
         picked
     }
@@ -596,7 +595,7 @@ impl<'a> Tables<'a> {
     }
 
     /// True when a call qualified by `named` (its last qualifier segment) can see candidate `hit`; see [`Self::guess`].
-    fn visible_to(&self, caller: &Caller<'_>, named: &str, hit: u32) -> bool {
+    fn visible_to(&self, caller: &Caller<'_>, scope: &str, named: &str, hit: u32) -> bool {
         if self.file_of(hit) == caller.file.first {
             return true;
         }
@@ -605,13 +604,11 @@ impl<'a> Tables<'a> {
         };
         if let Some((owner, _)) = node.name.rsplit_once("::") {
             let owner = last_segment(owner);
-            return owner == named || caller.visible.contains(owner);
+            return owner == named
+                || caller.declared.contains(owner)
+                || caller.binding(scope, owner).is_some();
         }
-        let path = self.text.get(node.path);
-        let stem = path.rsplit('/').next().map_or("", |base| {
-            base.split_once('.').map_or(base, |(stem, _)| stem)
-        });
-        stem == named || last_segment_of_dir(path) == named
+        false
     }
 
     /// Module index of the file holding node `index`.
@@ -624,14 +621,18 @@ impl<'a> Tables<'a> {
 }
 
 /// Records an edge, keeping the strongest confidence for a pair.
-fn note(found: &mut BTreeMap<(u32, bool, u32), Rank>, src: u32, call: bool, dst: u32, rank: Rank) {
-    let slot = found.entry((src, call, dst)).or_insert(rank);
+fn note(
+    found: &mut BTreeMap<(u32, EdgeKind, u32), Confidence>,
+    src: u32,
+    kind: EdgeKind,
+    dst: u32,
+    rank: Confidence,
+) {
+    if !kind.permits(rank) {
+        return;
+    }
+    let slot = found.entry((src, kind, dst)).or_insert(rank);
     *slot = (*slot).min(rank);
-}
-
-/// Last directory segment of a root-relative path (`a/b/c.go` is `b`).
-fn last_segment_of_dir(path: &str) -> &str {
-    dir_of(path).rsplit('/').next().unwrap_or("")
 }
 
 /// Directory part of a root-relative path.
