@@ -9,7 +9,7 @@ use crate::{Error, Result, ports::SourceFile};
 use dctx_adapter_cache::{Lifecycle, RootId};
 use dctx_adapter_store::{
     Pin, PublishRequest, Revisions, SegmentBlob, SegmentRole, SegmentStore, StdFs as StoreFs,
-    StoreOptions,
+    StoreError, StoreOptions,
 };
 use dctx_map_segment::{
     Completion, Coverage, DeclarationDraft, DeclarationKind, FactDraft, Language, NodeDraft,
@@ -43,18 +43,11 @@ pub(super) fn root_id(place: &str) -> String {
     id
 }
 
-pub(super) fn open_store(directory: &Path, place: &str, database: &Path) -> Result<Segments> {
+pub(super) fn open_store(directory: &Path, _place: &str, _database: &Path) -> Result<Segments> {
     let fs = StoreFs::open(directory)?;
     let store = SegmentStore::open(fs, StoreOptions::capped(512 * 1024 * 1024))?;
-    let root = root_id(place);
-    let warm = store
-        .raw_current_generation(&root)
-        .ok()
-        .flatten()
-        .is_some_and(|generation| recall(database, &root, generation).is_some());
-    if !warm {
-        store.recover()?;
-    }
+    // Recovery validates the on-disk pointers even when a journal is remembered.
+    store.recover()?;
     Ok(store)
 }
 
@@ -92,7 +85,7 @@ pub(super) fn persist(index: &mut Index) -> Result<()> {
     });
     admit(u64::try_from(admitted).unwrap_or(u64::MAX))?;
     let request = PublishRequest {
-        root: root.clone(),
+        root,
         generation,
         snapshot: snapshot_digest(index)?,
         view: view_digest,
@@ -100,13 +93,13 @@ pub(super) fn persist(index: &mut Index) -> Result<()> {
         segments,
         revisions: Revisions::structural(),
     };
-    index
+    let published = index
         .segments
         .as_ref()
         .ok_or_else(|| Error::Request("missing segment store".into()))?
         .publish(request)?;
     if let Some(database) = index.database.clone() {
-        remember(database, root, generation, journal);
+        remember(database, published.root, published.manifest, journal);
     }
     Ok(())
 }
@@ -116,33 +109,32 @@ pub(super) fn read_journal(index: &Index) -> Result<Option<Journal>> {
         return Ok(None);
     };
     let root = root_id(&index.place);
+    let pin = match segments.pin(&root) {
+        Ok(pin) => pin,
+        Err(StoreError::InvalidRequest { reason: "empty" }) => return Ok(None),
+        Err(error) => return Err(error.into()),
+    };
+    let manifest = *pin.manifest();
     if let Some(database) = &index.database
-        && let Some(generation) = segments.raw_current_generation(&root)?
-        && let Some(journal) = recall(database, &root, generation)
+        && let Some(journal) = recall(database, &root, manifest)
     {
+        segments.release(pin)?;
         return Ok(Some(journal));
     }
-    let Some(generation) = segments.committed(&root)? else {
-        return Ok(None);
-    };
-    let pin = segments.pin(&root)?;
     let loaded = decode_pin(segments, &pin);
-    let released = segments.release(pin).map_err(Error::from);
-    match (loaded, released) {
-        (Ok(journal), Ok(())) => {
-            if let Some(database) = index.database.clone() {
-                remember(database, root, generation, journal.clone());
-            }
-            Ok(Some(journal))
-        }
-        (Err(error), _) | (Ok(_), Err(error)) => Err(error),
+    let released = segments.release(pin);
+    let journal = loaded?;
+    released?;
+    if let Some(database) = index.database.clone() {
+        remember(database, root, manifest, journal.clone());
     }
+    Ok(Some(journal))
 }
 
 struct Remembered {
     database: std::path::PathBuf,
     root: String,
-    generation: u64,
+    manifest: [u8; 32],
     journal: Journal,
 }
 
@@ -153,18 +145,18 @@ fn memory() -> MutexGuard<'static, Option<Remembered>> {
         .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
-fn remember(database: std::path::PathBuf, root: String, generation: u64, journal: Journal) {
+fn remember(database: std::path::PathBuf, root: String, manifest: [u8; 32], journal: Journal) {
     *memory() = Some(Remembered {
         database,
         root,
-        generation,
+        manifest,
         journal,
     });
 }
 
-fn recall(database: &Path, root: &str, generation: u64) -> Option<Journal> {
+fn recall(database: &Path, root: &str, manifest: [u8; 32]) -> Option<Journal> {
     memory().as_ref().and_then(|entry| {
-        (entry.database == database && entry.root == root && entry.generation == generation)
+        (entry.database == database && entry.root == root && entry.manifest == manifest)
             .then(|| entry.journal.clone())
     })
 }
