@@ -143,10 +143,39 @@ jobs:
       - name: Audit dependencies (reviewed exceptions in .cargo/audit.toml)
         run: cargo audit --file Cargo.lock
 
-      - name: Release supply-chain and green-CI guard tests
+      - name: Release and workflow policy tests
+        run: >-
+          python3 -B -m unittest -v
+          tools.release.test_supply_chain
+          tools.release.test_require_green_ci
+          tools.release.test_npm_owner_gate
+          tools.ci.test_site_workflow_scope
+          tools.ci.test_wrapper_parity_matrix
+
+      - name: Check quality policy test wiring offline
+        shell: python
         run: |
-          python3 -m unittest discover -s tools/release -p 'test_supply_chain.py' -v
-          python3 -m unittest discover -s tools/release -p 'test_require_green_ci.py' -v
+          from pathlib import Path
+          import re
+          from textwrap import dedent
+
+          workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+          job = re.search(r"(?ms)^  quality:\n(.*?)(?=^  \S|\Z)", workflow)[1]
+          conditions = re.findall(r"(?m)^    if: (.*)$", job)
+          assert conditions == ["$" + "{{ (inputs.start || 'quality') == 'quality' }}"], "quality must run by default"
+          assert not re.search(r"(?m)^    continue-on-error:", job), "quality must propagate failures"
+          steps = job.split("\n      - ")
+          step, = [s for s in steps if s.startswith("name: Release and workflow policy tests\n")]
+          # A single unconditional command gives the step the unittest exit status.
+          _, body = step.rstrip().split("\n", 1)
+          assert dedent(body) == """\
+          run: >-
+            python3 -B -m unittest -v
+            tools.release.test_supply_chain
+            tools.release.test_require_green_ci
+            tools.release.test_npm_owner_gate
+            tools.ci.test_site_workflow_scope
+            tools.ci.test_wrapper_parity_matrix""", "expected the five policy suites to gate quality"
 
       - name: Workflow validation
         run: |
