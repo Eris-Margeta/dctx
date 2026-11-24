@@ -75,19 +75,23 @@ pub(super) fn item(
             SymbolKind::Class
         }
         "variable_declarator" | "field_definition" | "public_field_definition" | "pair" => {
-            let Some(value) = node.child_by_field_name("value") else {
-                return Ok(None);
-            };
-            if !matches!(
-                value.kind(),
-                "arrow_function" | "function_expression" | "generator_function"
-            ) {
-                return Ok(None);
-            }
-            if matches!(node.kind(), "field_definition" | "public_field_definition") {
-                SymbolKind::Method
-            } else {
-                SymbolKind::Function
+            match node.child_by_field_name("value").map(|value| value.kind()) {
+                Some("arrow_function" | "function_expression" | "generator_function") => {
+                    if matches!(node.kind(), "field_definition" | "public_field_definition") {
+                        SymbolKind::Method
+                    } else {
+                        SymbolKind::Function
+                    }
+                }
+                _ if node.kind() == "variable_declarator"
+                    && exported(node)
+                    && node
+                        .child_by_field_name("name")
+                        .is_some_and(|name| name.kind() == "identifier") =>
+                {
+                    SymbolKind::Const
+                }
+                _ => return Ok(None),
             }
         }
         "call_expression" if test.is_some() => SymbolKind::Function,
@@ -112,7 +116,11 @@ pub(super) fn item(
         NodeKind::Symbol
     };
     let value = node.child_by_field_name("value").unwrap_or(node);
-    let body = value.child_by_field_name("body");
+    let body = if symbol_kind == SymbolKind::Const {
+        None
+    } else {
+        value.child_by_field_name("body")
+    };
     let signature = source[node.start_byte()..body.map_or(node.end_byte(), |n| n.start_byte())]
         .split_whitespace()
         .collect::<Vec<_>>()

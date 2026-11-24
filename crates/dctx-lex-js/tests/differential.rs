@@ -9,7 +9,7 @@ use dctx_map_model::{EdgeKind, NodeKind, SummarySource};
 use dctx_map_parse::{ParsedFile, Parser, TreeSitterParser};
 use std::collections::BTreeMap;
 
-const CASES: &[(&str, &str)] = &[
+const FIXTURES: &[(&str, &str)] = &[
     (
         "module.mjs",
         include_str!("../../dctx-map-parse/tests/fixtures/js/module.mjs"),
@@ -18,6 +18,26 @@ const CASES: &[(&str, &str)] = &[
         "module.ts",
         include_str!("../../dctx-map-parse/tests/fixtures/ts/module.ts"),
     ),
+    (
+        "bindings.js",
+        "/** Public configuration. */\n\
+         export const config = { label: `line\n\x1b[31m\"`, value: load() };\n\
+         export let pending, ready = true;\n\
+         export var total = 1;\n\
+         export const f = () => {}, g = function named() {};\n\
+         const local = 1;\n\
+         const privateFn = () => local;\n\
+         export const { omitted } = config;",
+    ),
+    (
+        "bindings.ts",
+        "export const X: number = 1\n\
+         export let current: State\n\
+         export const make: Factory = () => build();",
+    ),
+];
+
+const CORPUS: &[(&str, &str)] = &[
     ("corpus/service.js", include_str!("corpus/service.js")),
     ("corpus/view.jsx", include_str!("corpus/view.jsx")),
     ("corpus/unicode.js", include_str!("corpus/unicode.js")),
@@ -165,10 +185,10 @@ fn language(path: &str) -> &'static str {
 )]
 fn precision_and_recall_meet_the_declaration_gate_per_language() {
     let mut totals: BTreeMap<(&str, &str), (usize, usize, usize)> = BTreeMap::new();
-    for (path, source) in CASES {
+    for (path, source) in FIXTURES.iter().chain(CORPUS) {
         let oracle = TreeSitterParser
             .parse(path, source.as_bytes())
-            .unwrap_or_else(|e| panic!("oracle rejects {path}: {e}"));
+            .unwrap_or_else(|e| panic!("oracle rejects {path:?}: {e:?}"));
         let lexed = JsLexer::default().extract(path, source.as_bytes()).unwrap();
         let (expected, emitted) = (oracle_facts(&oracle), lexer_facts(&lexed));
         for family in FAMILIES {
@@ -179,7 +199,7 @@ fn precision_and_recall_meet_the_declaration_gate_per_language() {
             if m != n || m != d {
                 let missing: Vec<_> = x.iter().filter(|k| !e.contains(k)).collect();
                 let extra: Vec<_> = e.iter().filter(|k| !x.contains(k)).collect();
-                println!("{path} {family}: missing {missing:#?} extra {extra:#?}");
+                println!("{path:?} {family}: missing {missing:?} extra {extra:?}");
             }
             let total = totals.entry((language(path), family)).or_default();
             total.0 += m;
@@ -215,13 +235,13 @@ fn precision_and_recall_meet_the_declaration_gate_per_language() {
 
 #[test]
 fn oracle_fixtures_are_reproduced_exactly() {
-    for (path, source) in &CASES[..2] {
+    for (path, source) in FIXTURES {
         let oracle = TreeSitterParser.parse(path, source.as_bytes()).unwrap();
         let lexed = JsLexer::default().extract(path, source.as_bytes()).unwrap();
         let nodes: Vec<_> = lexed.nodes.iter().map(|n| n.fact.clone()).collect();
-        assert_eq!(nodes, oracle.nodes, "{path} nodes");
+        assert_eq!(nodes, oracle.nodes, "{path:?} nodes");
         let edges: Vec<_> = lexed.edges.iter().map(|e| e.fact.clone()).collect();
-        assert_eq!(edges, oracle.edges, "{path} edges");
+        assert_eq!(edges, oracle.edges, "{path:?} edges");
         let refs: Vec<_> = lexed
             .references
             .iter()
@@ -251,6 +271,6 @@ fn oracle_fixtures_are_reproduced_exactly() {
                 )
             })
             .collect();
-        assert_eq!(refs, expected, "{path} references");
+        assert_eq!(refs, expected, "{path:?} references");
     }
 }

@@ -18,7 +18,7 @@ pub use domain::{
 /// Parser identity recorded with every fact key (PARSERS-v1 provenance).
 pub const PARSER_ID: &str = "dctx-lex-js";
 /// Bumped whenever extraction output can change for the same bytes.
-pub const PARSER_REVISION: u32 = 2;
+pub const PARSER_REVISION: u32 = 3;
 
 /// Bounded structural extractor; stateless apart from its limits.
 ///

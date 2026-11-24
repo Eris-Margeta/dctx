@@ -34,6 +34,46 @@ fn references(facts: &ParsedFile) -> Vec<(&str, EdgeKind, &str, &str, Option<&st
 }
 
 #[test]
+fn javascript_exported_variables_have_stable_symbol_ids() {
+    use NodeKind::{Module, Symbol};
+    use SymbolKind::{Const, Function};
+
+    let facts = PureParser
+        .parse(
+            "a.js",
+            b"export const X = 1, f = () => {};\nexport let pending;\nexport var total = 0;\nconst local = 2;",
+        )
+        .unwrap();
+    assert_eq!(
+        symbols(&facts),
+        [
+            ("a.js", Module, None),
+            ("X", Symbol, Some(Const)),
+            ("f", Symbol, Some(Function)),
+            ("pending", Symbol, Some(Const)),
+            ("total", Symbol, Some(Const)),
+        ]
+    );
+    assert_eq!(facts.nodes[1].id.as_str(), "s:a.js#X");
+    assert!(facts.nodes[1..].iter().all(|n| n.public));
+    assert_eq!(facts.edges[0].kind, EdgeKind::Contains);
+    assert_eq!(facts.edges[0].src.as_str(), "m:a.js");
+    assert_eq!(facts.edges[0].dst, facts.nodes[1].id);
+}
+
+#[test]
+fn typescript_exported_constants_keep_annotations_and_initializer_fingerprints() {
+    let facts = PureParser
+        .parse("a.ts", b"export const X: number = 1;")
+        .unwrap();
+    let node = &facts.nodes[1];
+    assert_eq!(node.id.as_str(), "s:a.ts#X");
+    assert_eq!(node.symbol_kind, Some(SymbolKind::Const));
+    assert_eq!(node.signature, "X: number = 1");
+    assert_eq!(node.fingerprint, dctx_map_parse::body_fingerprint("1"));
+}
+
+#[test]
 #[allow(
     clippy::too_many_lines,
     reason = "Keep the complete JavaScript fixture and its exact ordered node/reference expectations together."
