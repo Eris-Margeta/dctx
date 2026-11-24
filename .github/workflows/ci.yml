@@ -208,6 +208,7 @@ jobs:
     uses: ./.github/workflows/tests.yml
     with:
       os: '["macos-15", "macos-15-intel"]'
+      timeout-minutes: 45
       filter: ${{ inputs.filter }}
 
   windows:
