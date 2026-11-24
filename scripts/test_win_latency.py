@@ -13,8 +13,12 @@ from scripts import win_latency as latency
 from scripts import win_latency_ab as ab
 
 
-def process_result():
-    return subprocess.CompletedProcess([], 0, stdout=f"s:fixture.rs#{latency.TERM}".encode())
+FIND_HEADER = b"# fixture find\n"
+PROBE_ROW = b"s:group_0000/item_0000.rs#win_latency_probe\tfn\tL1\n"
+
+
+def process_result(rows=PROBE_ROW):
+    return subprocess.CompletedProcess([], 0, stdout=FIND_HEADER + rows)
 
 
 def clock_ticks(durations_ms):
@@ -97,16 +101,27 @@ class MeasurementTests(unittest.TestCase):
             self.assertEqual(call.kwargs["cwd"], root / "fixture")
             self.assertTrue(call.kwargs["check"])
 
-    def test_missing_match_is_an_error(self):
-        result = subprocess.CompletedProcess([], 0, stdout=b"no matches")
-        with patch.object(latency.subprocess, "run", return_value=result):
-            with self.assertRaises(RuntimeError):
-                latency.measure("dctx", Path("fixture-root"), 30)
+    def test_requires_exactly_the_fixture_match(self):
+        wrong_path = PROBE_ROW.replace(b"item_0000.rs", b"item_0001.rs")
+        for case, rows in (
+            ("wrong path", wrong_path),
+            ("wrong kind", PROBE_ROW.replace(b"\tfn\t", b"\tstruct\t")),
+            ("duplicate", PROBE_ROW * 2),
+            ("extra match", PROBE_ROW + wrong_path),
+            ("missing", b""),
+            ("hostile path", PROBE_ROW.replace(b"item_0000", b'wrong\n\x1b"item')),
+        ):
+            with self.subTest(case=case), patch.object(
+                latency.subprocess, "run", return_value=process_result(rows)
+            ) as run:
+                with self.assertRaises(RuntimeError) as error:
+                    latency.measure("dctx", Path("fixture-root"), latency.MIN_RUNS)
+                self.assertEqual(str(error.exception), "map find fixture answer mismatch at cold sample 1")
+                run.assert_called_once()
 
     def test_first_stdout_mismatch_reports_mode_and_sample(self):
         stable = process_result()
-        changed = process_result()
-        changed.stdout += b"\n"
+        changed = process_result(PROBE_ROW.replace(b"\t", b"  "))
         runs = latency.MIN_RUNS
         cases = (("cold", 2, 1), ("warmup", 1, runs), ("warm", 2, runs + 2))
         for mode, sample, preceding in cases:
@@ -117,11 +132,10 @@ class MeasurementTests(unittest.TestCase):
                     latency.measure("dctx", Path("fixture-root"), runs)
                 self.assertEqual(run.call_count, preceding + 1)
 
-    def test_ab_allows_different_stable_stdout_per_binary(self):
+    def test_ab_allows_equivalent_spacing_per_binary(self):
         def run_query(command, **kwargs):
-            result = process_result()
-            result.stdout += command[0].encode()
-            return result
+            row = PROBE_ROW if command[0] == "release" else PROBE_ROW.replace(b"\t", b"  ")
+            return process_result(row)
 
         runs = latency.MIN_RUNS
         rounds = ab.MIN_ROUNDS

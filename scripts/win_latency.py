@@ -3,8 +3,8 @@
 """Measure cold and warm map-find latency including process startup.
 
 Cold queries each use a fresh dctx cache. Warm queries reuse the cache built by
-one excluded warmup. Each query runs in a new process and must return the same
-stdout bytes as the first cold query for that binary measurement.
+one excluded warmup. Each query must return the fixture's single function and
+the same stdout bytes as the first cold query for that binary measurement.
 --dry generates the same fixture and reports its shape without invoking dctx.
 All temporary files and caches stay beneath the output directory.
 """
@@ -59,7 +59,7 @@ def measure(binary: str, root: Path, runs: int, cache_root: Path | None = None) 
     })
     fixture = root / "fixture"
     command = [binary, "map", "find", TERM, "--place", "."]
-    symbol = f"#{TERM}".encode()
+    expected_match = [f"s:group_0000/item_0000.rs#{TERM}".encode(), b"fn"]
     reference: bytes | None = None
 
     def query(cache: Path, mode: str, sample: int) -> float:
@@ -69,8 +69,11 @@ def measure(binary: str, root: Path, runs: int, cache_root: Path | None = None) 
         result = subprocess.run(command, cwd=fixture, env=query_env, capture_output=True, check=True,
                                 timeout=120)
         elapsed = (time.perf_counter_ns() - start) / 1_000_000
-        if symbol not in result.stdout:
-            raise RuntimeError(f"map find did not return the fixture symbol at {mode} sample {sample}")
+        # Find emits a "# <place> find" header, then rows starting with ID and kind.
+        matches = [fields[:2] for line in result.stdout.splitlines()
+                   if (fields := line.split()) and fields[0] != b"#"]
+        if matches != [expected_match]:
+            raise RuntimeError(f"map find fixture answer mismatch at {mode} sample {sample}")
         if reference is None:
             reference = result.stdout
         elif result.stdout != reference:
