@@ -5,7 +5,7 @@
 //! Domain tests use the in-memory ledger; the rest go through the filesystem ledger in a temp directory.
 
 use dctx_adapter_cache::adapters::{FsLedgerStore, FsObjectStore, LeaseHold, LedgerUpdateError};
-use dctx_adapter_cache::ports::LedgerStore;
+use dctx_adapter_cache::ports::{LedgerStore, LoadedLedger, ObjectStore};
 use dctx_adapter_cache::{
     CacheError, GenerationId, LeaseId, Lifecycle, ObjectId, Physical, Quota, RootId, SessionId,
 };
@@ -88,7 +88,22 @@ fn reclaim_waits_for_the_lease_and_follows_its_release() {
     assert!(life.p3_holds() && life.p4_holds());
 }
 
-/// One publish through the exclusive section: segment and manifest files carry the generation number.
+fn write_view(
+    life: &mut Lifecycle,
+    objects: &FsObjectStore,
+    root: RootId,
+    payload: &[u8],
+) -> Result<(ObjectId, ObjectId, GenerationId), CacheError> {
+    let (segment, generation) = view(life, root, u64::try_from(payload.len()).expect("len"))?;
+    let manifest = life
+        .manifest_object(life.manifest_of(root, generation).expect("manifest"))
+        .expect("object");
+    objects.put_object(segment.raw(), payload)?;
+    objects.put_object(manifest.raw(), &segment.raw().to_le_bytes())?;
+    Ok((segment, manifest, generation))
+}
+
+/// One publish through the exclusive section.
 fn publish_files(
     ledger: &FsLedgerStore,
     objects: &FsObjectStore,
@@ -101,15 +116,7 @@ fn publish_files(
             if life.status().roots.iter().all(|row| row.id != root) {
                 life.register_root(root)?;
             }
-            let segment =
-                life.insert_segment(u64::try_from(payload.len()).expect("len"), 0, &[root])?;
-            let generation = life.publish_view(root, MANIFEST, &[segment])?;
-            let manifest = life
-                .manifest_object(life.manifest_of(root, generation).expect("manifest"))
-                .expect("object");
-            objects.put_object(segment.raw(), payload)?;
-            objects.put_object(manifest.raw(), &segment.raw().to_le_bytes())?;
-            Ok(((segment, manifest, generation), true))
+            Ok((write_view(life, objects, root, payload)?, true))
         })
         .map(|(value, _)| value)
 }
@@ -303,94 +310,159 @@ fn reclaim_frees_the_generation_of_a_reader_that_died_but_never_of_one_that_live
     let _ = lease;
 }
 
+const CUT_VIEW_BYTES: u64 = MANIFEST + 5;
+
+fn assert_charges(loaded: &LoadedLedger, pending: u64, admitted: u64) {
+    assert!(loaded.fault.is_none(), "{:?}", loaded.fault);
+    let status = loaded.lifecycle.status();
+    assert_eq!(status.buckets.pending, pending);
+    assert_eq!(status.admitted, admitted);
+}
+
 #[test]
-fn reclaim_crash_before_the_commit_keeps_the_previous_generation_readable() {
+fn reclaim_reopens_before_rename_and_retries_with_the_existing_objects() {
     let (_dir, dir) = cache_dir();
     let ledger = FsLedgerStore::open(&dir).expect("ledger");
     let objects = FsObjectStore::open(&dir).expect("objects");
     let quota = Quota::scaled(100_000);
     let root = RootId::new(1);
     publish_files(&ledger, &objects, quota, root, b"gen-1").expect("one");
-    // The publisher dies after writing the new files and before any ledger commit.
-    let loaded = ledger.load(quota).expect("load");
-    let mut next = loaded.lifecycle;
-    let segment = next.insert_segment(5, 0, &[root]).expect("segment");
-    let generation = next.publish_view(root, MANIFEST, &[segment]).expect("view");
-    let manifest = next
-        .manifest_object(next.manifest_of(root, generation).expect("manifest"))
-        .expect("object");
-    objects
-        .put_object(segment.raw(), b"gen-2")
-        .expect("segment file");
-    objects
-        .put_object(manifest.raw(), &segment.raw().to_le_bytes())
-        .expect("manifest file");
-    drop(next);
-    // A restarted process: generation 1 is current and whole; the half-published files are orphans.
+    // Construct the cut after staging the first reclaim image, before its rename.
+    let mut next = ledger.load(quota).expect("load").lifecycle;
+    let successor = write_view(&mut next, &objects, root, b"gen-2").expect("successor objects");
+    assert_eq!(next.begin_reclaim(), 2);
+    ledger.stage(&next).expect("stage successor");
+    drop(ledger);
+    drop(objects);
+
     let restarted = FsLedgerStore::open(&dir).expect("restart");
     assert_eq!(
         read_current(&restarted, &dir, quota, root).expect("read"),
         Some(b"gen-1".to_vec())
     );
-    let orphans = restarted.load(quota).expect("load").orphans;
-    assert_eq!(orphans.len(), 2);
-    // The next publish takes the same ids; the stale files are replaced and old ones reclaimed.
-    let again = FsObjectStore::open(&dir).expect("objects");
-    for orphan in &orphans {
-        fs::remove_file(dir.join(&orphan.relative)).expect("clear orphan");
+    let loaded = restarted.load(quota).expect("load");
+    assert_charges(&loaded, 0, CUT_VIEW_BYTES);
+    assert_eq!(loaded.orphans.len(), 3, "{:?}", loaded.orphans);
+    for id in [successor.0, successor.1] {
+        let relative = format!("objects/{}", id.raw());
+        assert!(loaded.orphans.iter().any(|file| file.relative == relative));
     }
-    publish_files(&restarted, &again, quota, root, b"gen-3").expect("publish");
+    let staged = loaded
+        .orphans
+        .iter()
+        .find(|file| file.relative.starts_with("ledger.") && file.relative.ends_with(".tmp"))
+        .expect("staged ledger orphan");
     assert_eq!(
-        read_current(&restarted, &dir, quota, root).expect("read"),
-        Some(b"gen-3".to_vec())
+        fs::read(dir.join(&staged.relative)).expect("read stage"),
+        next.encode_ledger().expect("encode successor")
     );
+
+    // Replay the same publication against the immutable files already at its IDs.
+    let again = FsObjectStore::open(&dir).expect("objects");
+    assert_eq!(
+        publish_files(&restarted, &again, quota, root, b"gen-2").expect("retry publish"),
+        successor
+    );
+    let reopened = FsLedgerStore::open(&dir).expect("reopen after retry");
+    assert_eq!(
+        read_current(&reopened, &dir, quota, root).expect("read"),
+        Some(b"gen-2".to_vec())
+    );
+    let settled = reopened.load(quota).expect("load after retry");
+    assert_charges(&settled, 0, CUT_VIEW_BYTES);
+    assert_eq!(settled.orphans, [staged.clone()]);
     assert_eq!(object_files(&dir), 2);
 }
 
-#[test]
-fn reclaim_crash_between_the_commits_leaves_pending_files_the_next_publish_unlinks() {
+fn reopen_pending_image(unlink_one: bool) {
     let (_dir, dir) = cache_dir();
     let ledger = FsLedgerStore::open(&dir).expect("ledger");
     let objects = FsObjectStore::open(&dir).expect("objects");
     let quota = Quota::scaled(100_000);
     let root = RootId::new(1);
-    let (old_segment, _, _) = publish_files(&ledger, &objects, quota, root, b"gen-1").expect("one");
-    // Publish generation 2 and mark generation 1 pending, then die before unlinking anything.
+    let (old_segment, old_manifest, _) =
+        publish_files(&ledger, &objects, quota, root, b"gen-1").expect("one");
+    // Construct the first committed image. Optionally complete the first unlink before reopening.
     let mut life = ledger.load(quota).expect("load").lifecycle;
-    let segment = life.insert_segment(5, 0, &[root]).expect("segment");
-    let generation = life.publish_view(root, MANIFEST, &[segment]).expect("view");
-    let manifest = life
-        .manifest_object(life.manifest_of(root, generation).expect("manifest"))
-        .expect("object");
-    objects
-        .put_object(segment.raw(), b"gen-2")
-        .expect("segment file");
-    objects
-        .put_object(manifest.raw(), &segment.raw().to_le_bytes())
-        .expect("manifest file");
+    write_view(&mut life, &objects, root, b"gen-2").expect("successor objects");
     assert_eq!(life.begin_reclaim(), 2);
     ledger.store(&life).expect("first commit");
-    drop(life);
-    assert_eq!(object_files(&dir), 4);
+    if unlink_one {
+        objects.unlink_object(old_segment).expect("first unlink");
+    }
+    drop(ledger);
+    drop(objects);
+
     let restarted = FsLedgerStore::open(&dir).expect("restart");
-    // The reader sees generation 2 whole, and the old files are charged as pending, not leaked.
+    let again = FsObjectStore::open(&dir).expect("objects");
     assert_eq!(
         read_current(&restarted, &dir, quota, root).expect("read"),
         Some(b"gen-2".to_vec())
     );
     let loaded = restarted.load(quota).expect("load");
+    assert_charges(&loaded, CUT_VIEW_BYTES, 2 * CUT_VIEW_BYTES);
+    for id in [old_segment, old_manifest] {
+        assert_eq!(
+            loaded.lifecycle.object_state(id),
+            Some(Physical::PendingUnlink)
+        );
+    }
     assert_eq!(
-        loaded.lifecycle.object_state(old_segment),
-        Some(Physical::PendingUnlink)
+        again
+            .open_object(old_segment.raw())
+            .expect("old segment")
+            .is_some(),
+        !unlink_one
+    );
+    assert!(
+        again
+            .open_object(old_manifest.raw())
+            .expect("old manifest")
+            .is_some()
     );
     assert!(loaded.orphans.is_empty());
-    // Any later section finishes the unlink.
-    let again = FsObjectStore::open(&dir).expect("objects");
+
     publish_files(&restarted, &again, quota, root, b"gen-3").expect("publish");
+    let reopened = FsLedgerStore::open(&dir).expect("reopen after publish");
+    let settled = reopened.load(quota).expect("load after publish");
+    assert_charges(&settled, 0, CUT_VIEW_BYTES);
+    assert!(settled.orphans.is_empty(), "{:?}", settled.orphans);
+    for id in [old_segment, old_manifest] {
+        assert_eq!(settled.lifecycle.object_state(id), None);
+        assert!(again.open_object(id.raw()).expect("old object").is_none());
+    }
     assert_eq!(object_files(&dir), 2);
     assert_eq!(
-        read_current(&restarted, &dir, quota, root).expect("read"),
+        read_current(&reopened, &dir, quota, root).expect("read"),
         Some(b"gen-3".to_vec())
+    );
+}
+
+#[test]
+fn reclaim_reopens_at_the_first_pending_image_commit() {
+    reopen_pending_image(false);
+}
+
+#[test]
+fn reclaim_reopens_after_one_pending_unlink() {
+    reopen_pending_image(true);
+}
+
+#[cfg(unix)]
+#[test]
+fn orphan_diagnostics_escape_hostile_names() {
+    let (_dir, dir) = cache_dir();
+    let name = "orphan\n\x1b\"";
+    fs::write(dir.join(name), b"stray").expect("write orphan");
+    let loaded = FsLedgerStore::open(&dir)
+        .expect("ledger")
+        .load(Quota::scaled(100_000))
+        .expect("load");
+    assert_eq!(loaded.orphans.len(), 1, "{:?}", loaded.orphans);
+    assert_eq!(loaded.orphans[0].relative, name);
+    assert_eq!(
+        format!("{:?}", loaded.orphans),
+        r#"[OrphanFile { relative: "orphan\n\u{1b}\"" }]"#
     );
 }
 
@@ -530,6 +602,73 @@ fn evicted_files_are_unlinked_before_the_ledger_commits() {
         loaded.orphans.is_empty(),
         "no file outlives its charge: {:?}",
         loaded.orphans
+    );
+}
+
+#[test]
+fn evict_reopens_after_pressure_unlinks_before_commit() {
+    let (_dir, dir) = cache_dir();
+    let ledger = FsLedgerStore::open(&dir).expect("ledger");
+    let objects = FsObjectStore::open(&dir).expect("objects");
+    let quota = Quota::scaled(2 * CUT_VIEW_BYTES);
+    let root = RootId::new(1);
+    let mut life = Lifecycle::new(quota).expect("quota");
+    life.register_root(root).expect("root");
+    let (retired_segment, retired_manifest, _) =
+        write_view(&mut life, &objects, root, b"gen-1").expect("retired view");
+    let (_, _, current) = write_view(&mut life, &objects, root, b"gen-2").expect("current view");
+    ledger.store(&life).expect("commit at capacity");
+
+    // Admission evicts the retired view to fit the successor. Construct the cut after the
+    // adapter has unlinked those names and staged the first image, before the rename.
+    let successor = write_view(&mut life, &objects, root, b"gen-3").expect("admit under pressure");
+    let evicted = [retired_segment, retired_manifest];
+    assert_eq!(life.evicted_ids(), evicted);
+    assert_eq!(life.begin_reclaim(), 2);
+    for id in evicted {
+        assert!(
+            objects
+                .open_object(id.raw())
+                .expect("eviction target")
+                .is_some()
+        );
+        objects.unlink_object(id).expect("evict object file");
+    }
+    ledger.stage(&life).expect("stage successor");
+    drop(ledger);
+    drop(objects);
+
+    let restarted = FsLedgerStore::open(&dir).expect("restart");
+    let again = FsObjectStore::open(&dir).expect("objects");
+    let loaded = restarted.load(quota).expect("load");
+    assert_charges(&loaded, 0, 2 * CUT_VIEW_BYTES);
+    assert_eq!(loaded.lifecycle.current_generation(root), Some(current));
+    assert_eq!(loaded.lifecycle.status().reclaimable_bytes, CUT_VIEW_BYTES);
+    for id in evicted {
+        assert!(loaded.lifecycle.object_bytes(id).is_some());
+        assert!(again.open_object(id.raw()).expect("evicted name").is_none());
+    }
+    assert_eq!(
+        read_current(&restarted, &dir, quota, root).expect("read"),
+        Some(b"gen-2".to_vec())
+    );
+
+    assert_eq!(
+        publish_files(&restarted, &again, quota, root, b"gen-3").expect("retry admission"),
+        successor
+    );
+    let reopened = FsLedgerStore::open(&dir).expect("reopen after retry");
+    let settled = reopened.load(quota).expect("load after retry");
+    assert_charges(&settled, 0, CUT_VIEW_BYTES);
+    for id in evicted {
+        assert_eq!(settled.lifecycle.object_state(id), None);
+    }
+    assert_eq!(settled.orphans.len(), 1, "{:?}", settled.orphans);
+    assert!(settled.orphans[0].relative.ends_with(".tmp"));
+    assert_eq!(object_files(&dir), 2);
+    assert_eq!(
+        read_current(&reopened, &dir, quota, root).expect("read"),
+        Some(b"gen-3".to_vec())
     );
 }
 
