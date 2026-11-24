@@ -17,8 +17,8 @@ function fixture(t, mode = '') {
   return { cwd, binaryPath: process.execPath, env: { ...process.env, FAKE_RPC_MODE: mode, FAKE_RPC_VERSION: version } };
 }
 
-test('exact opaque output, argument boundaries, future fields, FIFO and graceful drain', async (t) => {
-  const client = await connect(fixture(t));
+test('batched CRLF replies preserve exact output, argument boundaries, future fields and graceful FIFO drain', { timeout: 10000 }, async (t) => {
+  const client = await connect(fixture(t, 'batch-crlf'));
   t.after(() => client.abort());
   assert.equal(client.hello.protocol_version, '1.9.0');
   const args = ['with spaces', 'λ', '', '; $(no shell)', '--json'];
@@ -26,12 +26,25 @@ test('exact opaque output, argument boundaries, future fields, FIFO and graceful
   const closed = client.close();
   const [first, second] = await Promise.all(replies);
   assert.equal(first.result.output, JSON.stringify(args) + '\nλ\u0000opaque\n\n');
+  assert.equal(second.result.output, '[]\nλ\u0000opaque\n\n');
   assert.deepEqual(first.future, { retained: true });
   assert.equal(BigInt(second.id), BigInt(first.id) + 1n);
   await closed;
   await client.abort();
   await client.close();
   await assert.rejects(client.request('languages'), /closed/);
+});
+
+test('a UTF-8 character split across stdout writes is delivered exactly once', { timeout: 10000 }, async (t) => {
+  const client = await connect(fixture(t, 'split'));
+  t.after(() => client.abort());
+  const first = client.request('find');
+  const split = client.request('read', ['split']);
+  const last = first.then(() => client.request('languages', ['last']));
+  const [reply, next] = await Promise.all([split, last]);
+  assert.equal(reply.result.output, '["split"]\nλ\u0000opaque\n\n');
+  assert.equal(next.result.output, '["last"]\nλ\u0000opaque\n\n');
+  await client.close();
 });
 
 test('engine errors resolve without losing code, hint, output or unknown fields', async (t) => {
@@ -44,12 +57,35 @@ test('engine errors resolve without losing code, hint, output or unknown fields'
 
 for (const [mode, expected] of [
   ['version', /does not match/], ['protocol', /unsupported protocol/],
-  ['hello-shape', /invalid result envelope/], ['hello-error', /handshake refused: refused/],
+  ['hello-shape', /invalid result envelope/],
 ]) {
   test(`handshake rejects ${mode} before operations`, { timeout: 10000 }, async (t) => {
     await assert.rejects(connect(fixture(t, mode)), expected);
   });
 }
+
+test('handshake diagnostics escape engine newlines, controls and quotes', { timeout: 10000 }, async (t) => {
+  await assert.rejects(connect(fixture(t, 'hello-error')), {
+    message: 'dctx rpc: handshake refused: "refused\\n\\u001b[31m\\"\\u009b\\u2028"',
+  });
+});
+
+test('spawn failure preserves native metadata and escapes the executable path', {
+  skip: process.platform === 'win32', timeout: 10000,
+}, async (t) => {
+  const { cwd } = fixture(t);
+  const binaryPath = path.join(cwd, 'engine\n\u001b[31m"');
+  fs.writeFileSync(binaryPath, `#!${path.join(cwd, 'missing-interpreter')}\n`, { mode: 0o755 });
+  await assert.rejects(connect({ cwd, binaryPath }), (error) => {
+    assert.equal(error.code, 'ENOENT');
+    assert.equal(error.errno, -os.constants.errno.ENOENT);
+    assert.equal(error.syscall, `spawn ${binaryPath}`);
+    assert.equal(error.path, binaryPath);
+    assert.equal(error.message, `dctx rpc: I/O error ${JSON.stringify(`${error.syscall} ENOENT`)}`);
+    assert.ok(!error.stack.includes(binaryPath));
+    return true;
+  });
+});
 
 test('handshake timeout terminates an unresponsive executable', { timeout: 10000 }, async (t) => {
   await assert.rejects(connect({ ...fixture(t, 'hang'), handshakeTimeoutMs: 100 }), /handshake timed out/);
@@ -57,8 +93,10 @@ test('handshake timeout terminates an unresponsive executable', { timeout: 10000
 
 for (const [mode, expected] of [
   ['id', /unexpected response id/], ['both', /exactly one/], ['shape', /invalid result/],
-  ['malformed', /JSON/], ['bad-error', /invalid error/], ['exit', /exited/],
+  ['malformed', /^dctx rpc: invalid JSON response frame$/], ['bad-error', /invalid error/], ['exit', /exited/],
   ['version-after-hello', /does not match/],
+  ['unterminated', /^dctx rpc: incomplete response frame \(missing LF\)$/],
+  ['invalid-utf8', /^dctx rpc: invalid UTF-8 response frame$/],
 ]) {
   test(`transport failure ${mode} rejects pending calls and closes the process`, { timeout: 10000 }, async (t) => {
     const client = await connect(fixture(t, mode));
@@ -68,7 +106,7 @@ for (const [mode, expected] of [
       assert.equal(result.status, 'rejected');
       assert.match(result.reason.message, expected);
     }
-    await assert.rejects(client.close(), expected);
+    await assert.rejects(client.close(), { message: expected });
   });
 }
 
@@ -103,6 +141,21 @@ test('stderr stays separate from engine output', async (t) => {
   assert.ok((await client.request('languages')).result);
   await client.close();
   assert.equal(Buffer.concat(chunks).toString(), 'raw diagnostic λ\n');
+});
+
+test('a stderr callback failure preserves the error in pending calls and close', { timeout: 10000 }, async (t) => {
+  const original = Object.assign(new Error('stderr consumer failed'), { code: 'ERR_STDERR_CALLBACK' });
+  const client = await connect({
+    ...fixture(t, 'stderr-error'),
+    onStderr: () => { throw original; },
+  });
+  t.after(() => client.abort());
+  const isOriginalError = (error) => error === original && error.code === 'ERR_STDERR_CALLBACK';
+  await Promise.all([
+    assert.rejects(client.request('find'), isOriginalError),
+    assert.rejects(client.request('languages'), isOriginalError),
+  ]);
+  await assert.rejects(client.close(), isOriginalError);
 });
 
 test('explicit executable overrides environment; invalid explicit choice never falls back', (t) => {

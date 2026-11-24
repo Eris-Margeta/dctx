@@ -3,14 +3,22 @@
 'use strict';
 
 const { spawn } = require('node:child_process');
-const { createInterface } = require('node:readline');
+const { TextDecoder } = require('node:util');
 const { version } = require('../package.json');
 const { resolveBinary, cacheBinaryPath } = require('./resolve.js');
 const MAX_REQUEST_BYTES = 1048576;
 
+function quoteDiagnostic(value) {
+  return JSON.stringify(value).replace(/[\u007f-\u009f\u2028\u2029]/g,
+    (character) => `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`);
+}
+
 class DctxClient {
   #child;
   #pending = [];
+  #frameParts = [];
+  // Keep a leading BOM so JSON.parse rejects it as part of the frame.
+  #decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
   #nextId = 0n;
   #failure;
   #closing = false;
@@ -34,16 +42,17 @@ class DctxClient {
     } else {
       child.stderr.pipe(process.stderr, { end: false });
     }
-    const lines = createInterface({ input: child.stdout, crlfDelay: Infinity });
-    lines.on('line', (line) => this.#receive(line));
-    child.on('error', (error) => this.#fail(error));
-    child.stdin.on('error', (error) => this.#fail(error));
-    child.stdout.on('error', (error) => this.#fail(error));
-    child.stderr.on('error', (error) => this.#fail(error));
+    child.stdout.on('data', (chunk) => this.#receiveBytes(chunk));
+    child.stdout.on('end', () => {
+      if (this.#frameParts.length) this.#fail(new Error('dctx rpc: incomplete response frame (missing LF)'));
+    });
+    child.on('error', this.#failIO);
+    child.stdin.on('error', this.#failIO);
+    child.stdout.on('error', this.#failIO);
+    child.stderr.on('error', this.#failIO);
     this.#done = new Promise((resolve) => {
       child.on('close', (code, signal) => {
         this.#exited = true;
-        lines.close();
         if (this.#pending.length || !this.#closing || code !== 0) {
           this.#fail(new Error(`dctx rpc exited (code=${code}, signal=${signal})`));
         }
@@ -54,17 +63,58 @@ class DctxClient {
 
   #fail(error) {
     this.#failure ??= error;
+    this.#frameParts = [];
     for (const pending of this.#pending.splice(0)) pending.reject(this.#failure);
     this.#child.kill();
   }
 
-  #receive(line) {
+  #failIO = (error) => {
+    if (!error || this.#failure) return;
+    error.message = `dctx rpc: I/O error ${quoteDiagnostic(error.message)}`;
+    this.#fail(error);
+  };
+
+  #receiveBytes(chunk) {
+    let start = 0;
+    while (!this.#failure && start < chunk.length) {
+      const newline = chunk.indexOf(0x0a, start);
+      if (newline === -1) {
+        this.#frameParts.push(chunk.subarray(start));
+        return;
+      }
+      let frame = chunk.subarray(start, newline);
+      if (this.#frameParts.length) {
+        this.#frameParts.push(frame);
+        frame = Buffer.concat(this.#frameParts);
+        this.#frameParts = [];
+      }
+      this.#receive(frame);
+      start = newline + 1;
+    }
+  }
+
+  #receive(frame) {
+    let line;
     try {
-      const reply = JSON.parse(line);
+      line = this.#decoder.decode(frame);
+    } catch {
+      this.#fail(new Error('dctx rpc: invalid UTF-8 response frame'));
+      return;
+    }
+    let reply;
+    try {
+      reply = JSON.parse(line);
+    } catch {
+      this.#fail(new Error('dctx rpc: invalid JSON response frame'));
+      return;
+    }
+    try {
       const pending = this.#pending[0];
       if (!pending || !reply || reply.id !== pending.id) throw new Error('dctx rpc: unexpected response id');
       if (reply.engine_version !== version) {
-        throw new Error(`dctx rpc: engine version ${reply.engine_version} does not match npm package ${version}. Set DCTX_BIN to dctx ${version} or reinstall @tejl/dctx@${version} with optional dependencies.`);
+        const engineVersion = typeof reply.engine_version === 'string'
+          ? quoteDiagnostic(reply.engine_version) : '(missing or invalid)';
+        throw new Error(`dctx rpc: engine version ${engineVersion} does not match npm package ${version}. Set DCTX_BIN to dctx ${version} or reinstall @tejl/dctx@${version} with optional dependencies.`);
       }
       const result = Object.hasOwn(reply, 'result');
       const error = Object.hasOwn(reply, 'error');
@@ -97,15 +147,15 @@ class DctxClient {
     } catch (error) { return Promise.reject(error); }
     return new Promise((resolve, reject) => {
       this.#pending.push({ id, verb, resolve, reject });
-      this.#child.stdin.write(`${frame}\n`, (error) => { if (error) this.#fail(error); });
+      this.#child.stdin.write(`${frame}\n`, this.#failIO);
     });
   }
 
   async initialize() {
     const reply = await this.#send('hello', []);
-    if (reply.error) throw new Error(`dctx rpc: handshake refused: ${reply.error.message}`);
+    if (reply.error) throw new Error(`dctx rpc: handshake refused: ${quoteDiagnostic(reply.error.message)}`);
     if (!/^1\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(reply.result.protocol_version)) {
-      throw new Error(`dctx rpc: unsupported protocol version ${reply.result.protocol_version}; expected major 1`);
+      throw new Error(`dctx rpc: unsupported protocol version ${quoteDiagnostic(reply.result.protocol_version)}; expected major 1`);
     }
     this.#hello = Object.freeze({ ...reply.result, verbs: Object.freeze([...reply.result.verbs]) });
   }
