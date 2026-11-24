@@ -4,7 +4,7 @@
 
 ## Round two verdict
 
-On 12 November 2026, the dctx harness-prefix pack (P) reached 70.91% median strict citation recall versus 19.34% for grep plus file reads across 20 questions and three repeats per arm (300 graded answers across five arms). Median list-price token cost per question was $0.195418 versus $0.179670 for grep (+8.8%). The pack missed the prespecified cost threshold, so it did not win the benchmark.
+On 12 November 2026, the dctx harness-prefix pack (P) reached 70.91% median strict citation recall versus 19.34% for grep plus file reads across 20 questions and three repeats per arm (300 graded answers across five arms). Median list-price token cost per question was $0.195418 versus $0.179670 for grep (+8.8%). The pack missed the prespecified target of at least 15% lower cost per question.
 
 ### Method
 
@@ -24,7 +24,9 @@ On 12 November 2026, the dctx harness-prefix pack (P) reached 70.91% median stri
 
 P had to match or exceed A's median recall and cost at least 15% less per question. It met the recall requirement and missed the cost requirement. P2 was descriptive and cost about 15% more than A. The +8.8% for P refers to priced token usage. Cache reads and uncached input carry different prices, so the aggregate token count alone cannot determine cost.
 
-The pack results apply to this harness, corpus and model. The Bash and MCP arms had lower median recall than grep in this round. Three repeats per arm limit generalization, and the private corpus and answers prevent independent reproduction from the public repository. **Under ~200 files, use grep.**
+The pack results apply to this harness, corpus and model. The Bash and MCP arms had lower median recall than grep in this round. Three repeats per arm limit generalization, and the private corpus and answers prevent independent reproduction from the public repository.
+
+As a heuristic, start with grep and narrow file reads on repos under about 200 files. A shared dctx index may pay off on larger repos or multi-hop tasks when agents reuse it. The study used one fixed corpus and did not measure a repository-size crossover or the payoff from sharing an index across agents.
 
 ## Earlier CLI pilot
 

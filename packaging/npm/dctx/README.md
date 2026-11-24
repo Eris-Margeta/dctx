@@ -11,7 +11,7 @@ strings and returns engine envelopes without parsing or rendering their output.
 It includes the `dctx` CLI command, which verifies the engine handshake and then
 forwards CLI arguments, standard streams, exit status and signals.
 
-Available on npm from version 1.3.1. Install with Node 18+:
+Install the scoped package from npm with Node 18+.
 
 ```sh
 npm install @tejl/dctx
@@ -20,8 +20,10 @@ npx @tejl/dctx --version
 
 For a global install, run `npm install -g @tejl/dctx`, then `dctx --version`.
 
-The `@tejl/dctx` package pins `@tejl/dctx-<os>-<arch>` optional dependencies, and npm
-installs the matching native platform package. If optional dependencies were
+The `@tejl/dctx` package pins five optional native packages at its own version:
+`@tejl/dctx-linux-x64`, `@tejl/dctx-linux-arm64`, `@tejl/dctx-darwin-x64`,
+`@tejl/dctx-darwin-arm64` and `@tejl/dctx-win32-x64`. npm installs the
+matching native platform package by default. If optional dependencies were
 omitted, install the package for your platform at the same version, for example
 `npm install "@tejl/dctx-linux-x64@<version>"`. Replace `<version>` in these
 examples with your selected release version.
