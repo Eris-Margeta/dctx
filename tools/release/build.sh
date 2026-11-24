@@ -40,6 +40,32 @@ fi
 cargo +"$DCTX_RELEASE_RUST" build --locked --release -p dctx-cli --bin dctx-cli --target "$target"
 binary="${CARGO_TARGET_DIR:-target}/$target/release/dctx-cli"
 if [[ "$target" == *-windows-* ]]; then binary+=.exe; fi
-"$binary" --version
+# Compare bytes so extra records (including blank lines) and NULs survive capture.
+python3 - "$binary" <<'PYTHON'
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+version = Path("VERSION").read_bytes()
+match = re.fullmatch(rb"([0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.]+)?)(?:\r?\n)?", version)
+if not match:
+    sys.exit("Invalid release token in VERSION")
+sha = os.environ["DCTX_GIT_SHA"]
+if not re.fullmatch(r"[0-9A-Fa-f]{7,}", sha):
+    sys.exit("Expected at least seven hexadecimal digits in DCTX_GIT_SHA")
+expected = b"dctx " + match[1] + b" (" + sha[:7].encode("ascii") + b")"
+
+try:
+    result = subprocess.run([sys.argv[1], "--version"], capture_output=True)
+except OSError as error:
+    sys.exit(f"Could not execute built CLI: {str(error)!a}")
+if result.stderr:
+    print(f"Built CLI --version stderr: {result.stderr!r}", file=sys.stderr)
+if result.returncode or result.stdout not in (expected + b"\n", expected + b"\r\n"):
+    sys.exit(f"Built CLI --version exited {result.returncode}; expected {expected!r}, got {result.stdout!r}")
+sys.stdout.buffer.write(result.stdout)
+PYTHON
 python3 tools/release/supply-chain.py archive --target "$target" --binary "$binary" \
   --out "$output" --epoch "$SOURCE_DATE_EPOCH"
