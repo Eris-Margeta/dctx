@@ -7,9 +7,9 @@
 - Publisher: TEJL - tvornica elektroničkih jedinica i logike. TEJL.com: https://tejl.com/; TEJL.hr: https://tejl.hr/.
 - This is llms.txt: the facts and an index of every public HTML page. The other entry points: https://www.dctx.internet.technology/llms-small.txt, https://www.dctx.internet.technology/llms-full.txt.
 - Engine: dctx 1.3.2. Document captures are the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs them and fails on any byte of drift. Read the pack at https://www.dctx.internet.technology/llms-full.txt.
-- Docs commit: 2e925f6b419d4ed5726bb72bc2b84c82c0db66dc (2026-11-23T09:40:51Z), the last commit that changed one of the documents.
+- Docs commit: 01b6798aff3934e6d32dd6d77e14ccef7b66058b (2026-11-24T01:02:52Z), the last commit that changed one of the documents.
 - Command: `dctx pack . --include /docs/START.md --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md`
-- Document capture budget: 19,038 of 20,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
+- Document capture budget: 19,204 of 20,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
 
 **Facts**
 
@@ -38,12 +38,12 @@ What it is not:
 - CI and prompt cache (available): Deterministic pack and map output; tree lines carry no timestamps by default, so the prefix stays stable across a touch. https://www.dctx.internet.technology/docs/modalities/#ci--prompt-cache-prefix-stability
 - Rust library (available from Git): The `dctx` facade crate as a tagged Git dependency; crates.io publication pending. https://www.dctx.internet.technology/docs/modalities/#rust-library-embed-the-facade
 - Desktop app (preview): A Tauri preview you build from source; a GPUI rebuild is planned. https://www.dctx.internet.technology/docs/modalities/#desktop-app-tauri-preview-today
-- Python, Node and Go wrappers (Node on npm; Python and Go from CI): Thin `dctx rpc` wrappers, built and tested in CI. Install Node with `npm install @tejl/dctx`, which includes pinned `@tejl/dctx-<platform>` optional dependencies; use CI artifacts for Python and Go. https://www.dctx.internet.technology/docs/modalities/#python-node-and-go-wrappers
+- Python, Node and Go wrappers (Node on npm, Python wheels from CI, Go from source): Thin `dctx rpc` wrappers tested in CI. Install Node with `npm install @tejl/dctx@1.3.2 --save-exact` for the matching pinned `@tejl/dctx-<platform>` optional dependency. Install Python from matching wrapper and platform CI wheels. Use Go from a `v1.3.2` source checkout with a local `replace` in `go.mod` and supply the matching `1.3.2` engine via `DCTX_BIN`. https://www.dctx.internet.technology/docs/modalities/#python-node-and-go-wrappers
 
 Two scopes, one binary:
 
 - System binary: the `dctx` on PATH belongs to you and your agents, and you upgrade it. Interactive agents call this one.
-- Project binary (Node from npm; Python and Go from CI): a binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Application code and CI call this one; a library never silently falls back to PATH.
+- Project binary: the application and its CI use the engine pinned by the project. Node's npm package and Python's CI wheels can install the matching native binary in node_modules or the virtualenv, respectively. With Go from a source checkout and local `replace`, the project supplies the matching engine explicitly. The wrappers never silently fall back to PATH.
 - Same engine, different owner. `dctx doctor` lists every binary in reach; verify each against SHA256SUMS and its cosign signature.
 
 **Before you start**
@@ -54,9 +54,9 @@ Two scopes, one binary:
 
 Baseline: grep plus reading files.
 
-- Measured: On 12 November 2026, the dctx harness-prefix pack (P) reached 70.91% median strict citation recall versus 19.34% for grep plus file reads across 20 questions and three repeats per arm (300 graded answers across five arms). Median list-price token cost per question was $0.195418 versus $0.179670 for grep (+8.8%). The pack missed the prespecified cost threshold, so it did not win the benchmark. https://www.dctx.internet.technology/benchmarks/#grep-read
-- Measured: Byte stability: the same query on unchanged code returns the same bytes; 33 of 33 text and JSON answers were byte-identical after unrelated edits (Linux only). https://www.dctx.internet.technology/docs/stability/
-- Historical: The October and November in-house numbers (run 7: 140 of 140 task questions, cold index and warm latency) measure tool output only, as estimated stdout tokens and raw fact coverage without a model; they are not agent completion rates or session costs. https://www.dctx.internet.technology/benchmarks/
+- Measured: On 12 November 2026, the whole-session study used claude-sonnet-5-5 across 20 questions and three repeats per arm (300 graded answers across five arms). The dctx harness-prefix pack (P) reached 70.91% median strict citation recall versus 19.34% for grep plus file reads (A). Median list-price cost per question was $0.195418 for P and $0.179670 for A (+8.8% for P), pricing uncached input, cache creation, cache reads and output separately. P met the recall requirement and missed the prespecified 15% cost reduction, so it did not win the benchmark. https://www.dctx.internet.technology/benchmarks/#grep-read
+- Measured: Byte stability was measured on Linux only. All 33 text answers and all 33 JSON answers were byte-identical after unrelated edits and across five separate invocations. https://www.dctx.internet.technology/docs/stability/
+- Historical: October 2026 run 7 covered 70 task questions. dctx scored 140/140 points and returned 353/354 gold facts. The protocol scores raw tool output without a model and estimates tokens from stdout bytes. https://www.dctx.internet.technology/benchmarks/#run7
 - Hypothesis: The whole-session benchmark compares tool and harness configurations. Isolating the effect of a pack template requires a separate A/B test. https://www.dctx.internet.technology/templates/
 
 **Removed in 1.2.0**
@@ -71,7 +71,7 @@ These existed before 1.2.0 and no longer work. A transcript that uses them descr
 **How to verify a claim**
 
 - Test suite: `cargo test --workspace --locked --exclude dctx-desktop --exclude dctx-desktop-api` https://github.com/Eris-Margeta/dctx/blob/main/docs/TESTING.md
-- CI: Every push and pull request runs the suite on Linux, macOS (ARM64 and x64) and Windows, on stable Rust and the minimum supported version 1.91. https://github.com/Eris-Margeta/dctx/actions
+- CI: CI runs on pushes to main, pull requests and manual dispatch (optional stage range and test filter). The full test matrix pairs each OS label (`ubuntu-24.04`, `macos-15`, `macos-15-intel`, `windows-2022`) with stable Rust and MSRV 1.91 for eight jobs. Linux test jobs use self-hosted dctx-fast runners for upstream pushes and GitHub-hosted runners for pull requests, fork runs and manual dispatch. The Linux quality job uses GitHub-hosted ubuntu-24.04. https://github.com/Eris-Margeta/dctx/actions
 - No network calls: `scripts/release-check.sh --quick target/release/dctx-cli` https://github.com/Eris-Margeta/dctx/blob/main/scripts/release-check.sh
 - Byte stability: `python3 docs/research/stability-20261105/verify.py` https://www.dctx.internet.technology/docs/stability/
 - Historical benchmark: `docs/research/bench-3way-20261030/run-3way.sh target/release/dctx-cli` https://github.com/Eris-Margeta/dctx/tree/main/docs/research/bench-3way-20261030
@@ -139,6 +139,6 @@ These existed before 1.2.0 and no longer work. A transcript that uses them descr
 
 - [Changelog](https://www.dctx.internet.technology/changelog/): Every dctx release, from dircontxt 1.0.0 in C to dctx in Rust, with known issues.
 - [News](https://www.dctx.internet.technology/news/): Releases, measurements and product decisions from the dctx project.
-- [dctx 1.1: three more languages and a prefix-stable pack.](https://www.dctx.internet.technology/news/dctx-1-1/): Perl, Fortran and Verilog join map mode; dctx pack drops timestamps so prompt caches hit; the three-way benchmark and the byte-stability measurement are public.
+- [dctx 1.1: three more languages and a prefix-stable pack.](https://www.dctx.internet.technology/news/dctx-1-1/): dctx 1.1.0 adds Perl, Fortran and Verilog to map mode and makes dctx pack prefix-stable. This post records the benchmark and byte-stability results.
 - [dctx Desktop is now free. Forever.](https://www.dctx.internet.technology/news/desktop-free-forever/): For individuals, teams and companies. No trial, no seat count, no expiry.
 - [Our specification, and a benchmark that does not flatter us.](https://www.dctx.internet.technology/news/specification-and-benchmark/): The dctx Context Management Specification, and an isolated comparison with Trail-Code: wins, losses and what comes next.

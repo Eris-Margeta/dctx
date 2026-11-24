@@ -285,14 +285,30 @@ view manifests in managed object files. Generations contain file inventory,
 digests and stamps, nodes, signatures, summaries, spans and edges, rather than
 copies of all source contents. See [Choosing how to use dctx](https://www.dctx.internet.technology/docs/modalities/#huge-trees-scope-before-indexing)
 for huge-tree scoping and the behavior when the cache cap is reached.
-Set `DCTX_CACHE_DIR` to an
-absolute path to override its root. Otherwise it is:
+The CLI appends its engine major and minor version to the cache parent.
+Compatible patches such as 1.3.1 and 1.3.2 share the `1.3` directory and ledger
+when they use the same parent.
+With `DCTX_CACHE_DIR` unset or empty, the paths are:
 
-| Platform | Cache root |
-| --- | --- |
-| macOS | `~/Library/Caches/dctx/v2` |
-| Windows | `%LOCALAPPDATA%/dctx/Cache/v2` |
-| Other | `$XDG_CACHE_HOME/dctx/v2`, or `~/.cache/dctx/v2` |
+| Platform | Cache parent | Active cache directory (1.3) | Active ledger (1.3) |
+| --- | --- | --- | --- |
+| Linux / other Unix (`XDG_CACHE_HOME` set and nonempty) | `$XDG_CACHE_HOME/dctx/v2` | `$XDG_CACHE_HOME/dctx/v2/1.3` | `$XDG_CACHE_HOME/dctx/v2/1.3/ledger.v1` |
+| Linux / other Unix (`XDG_CACHE_HOME` unset or empty) | `$HOME/.cache/dctx/v2` | `$HOME/.cache/dctx/v2/1.3` | `$HOME/.cache/dctx/v2/1.3/ledger.v1` |
+| macOS | `$HOME/Library/Caches/dctx/v2` | `$HOME/Library/Caches/dctx/v2/1.3` | `$HOME/Library/Caches/dctx/v2/1.3/ledger.v1` |
+| Windows | `%LOCALAPPDATA%\dctx\Cache\v2` | `%LOCALAPPDATA%\dctx\Cache\v2\1.3` | `%LOCALAPPDATA%\dctx\Cache\v2\1.3\ledger.v1` |
+
+Set `DCTX_CACHE_DIR` to an absolute cache parent path. For example, with
+`DCTX_CACHE_DIR=/path/to/dctx-cache`, the 1.3 CLI uses `/path/to/dctx-cache/1.3`
+and its ledger is `/path/to/dctx-cache/1.3/ledger.v1`.
+
+When upgrading from 1.2.0, the pre-1.3 ledger is directly in the parent as
+`<cache-parent>/ledger.v1`. Version 1.3 leaves the unscoped ledger in place and
+builds an index in its own child directory on first use. To back up the active
+cache, copy the whole `1.3` directory so the backup includes the ledger, policy
+and managed objects. With the same environment as your map commands, `dctx doctor --json`
+reports that directory as `cache_root` on the row with `running: true` when run
+with the 1.3 binary. See [Cache isolation](https://github.com/Eris-Margeta/dctx/blob/main/docs/SCOPES.md#cache-isolation) for
+the pre-1.3 backup layout.
 
 The implemented lifecycle follows
 [DX-ARCH-08](https://github.com/Eris-Margeta/dctx/blob/main/docs/archive/design/ARCHITECTURE-DECISIONS.md): time-based expiry, a system
