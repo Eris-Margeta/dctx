@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output, Stdio};
 use std::time::{Duration, UNIX_EPOCH};
 
-use serde_json::Value;
+use serde_json::{json, Value};
 
 struct Fixture {
     temp: tempfile::TempDir,
@@ -18,20 +18,26 @@ struct Fixture {
 
 impl Fixture {
     fn new(source: &[u8]) -> Self {
+        Self::with_files("repo", &[("src/lib.rs", source)])
+    }
+
+    fn with_files(name: &str, files: &[(&str, &[u8])]) -> Self {
         let temp = tempfile::tempdir().expect("fixture");
-        let repo = temp.path().join("repo");
+        let repo = temp.path().join(name);
         fs::create_dir_all(repo.join("src")).expect("source directory");
-        let file = repo.join("src/lib.rs");
-        fs::write(&file, source).expect("source");
-        // A fixed input timestamp makes the engine's metadata-bearing snapshot golden portable.
-        File::options()
-            .write(true)
-            .open(file)
-            .expect("file")
-            .set_times(
-                FileTimes::new().set_modified(UNIX_EPOCH + Duration::from_secs(1_700_000_000)),
-            )
-            .expect("fixed mtime");
+        for (path, source) in files {
+            let file = repo.join(path);
+            fs::write(&file, source).expect("source");
+            // A fixed timestamp keeps metadata-bearing snapshots portable.
+            File::options()
+                .write(true)
+                .open(file)
+                .expect("file")
+                .set_times(
+                    FileTimes::new().set_modified(UNIX_EPOCH + Duration::from_secs(1_700_000_000)),
+                )
+                .expect("fixed mtime");
+        }
         Self { temp, repo }
     }
 
@@ -52,14 +58,23 @@ impl Fixture {
     }
 
     fn pack(&self, term: &str, budget: &str) -> Vec<u8> {
-        let output = self.run(&["pack", "--for", term, "--budget", budget, "--json"]);
+        self.run_success(&["pack", "--for", term, "--budget", budget, "--json"])
+    }
+
+    fn run_success(&self, args: &[&str]) -> Vec<u8> {
+        let output = self.run(args);
         assert!(
             output.status.success(),
-            "{}",
-            String::from_utf8_lossy(&output.stderr)
+            "CLI {args:?} exited with {} and stderr {}",
+            output.status,
+            quoted_output(&output.stderr)
         );
         output.stdout
     }
+}
+
+fn quoted_output(bytes: &[u8]) -> String {
+    format!("{:?}", String::from_utf8_lossy(bytes))
 }
 
 fn validate(bytes: &[u8], valid: bool) {
@@ -70,7 +85,7 @@ fn validate(bytes: &[u8], valid: bool) {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .unwrap_or_else(|err| panic!("pack schema tests require {python}: {err}"));
+        .unwrap_or_else(|err| panic!("could not start the required {python} validator ({err:?})"));
     let written = child.stdin.take().expect("stdin").write_all(bytes);
     let output = child.wait_with_output().expect("validator");
     let stderr = String::from_utf8_lossy(&output.stderr);
@@ -81,30 +96,42 @@ fn validate(bytes: &[u8], valid: bool) {
         "pack schema tests require the Python module `jsonschema`. From the repo root, run `{python} -m pip install -r scripts/requirements.txt`."
     );
     written.expect("JSON input");
-    assert_eq!(output.status.success(), valid, "{stderr}");
+    assert_eq!(
+        output.status.success(),
+        valid,
+        "{}",
+        quoted_output(&output.stderr)
+    );
 }
 
 fn verify_spans(bytes: &[u8], repo: &Path) -> Value {
     validate(bytes, true);
     let document: Value = serde_json::from_slice(bytes).expect("JSON");
     for fragment in document["fragments"].as_array().expect("fragments") {
-        let source =
-            fs::read(repo.join(fragment["path"].as_str().expect("path"))).expect("source bytes");
-        let start = fragment["byte_start"].as_u64().expect("start") as usize;
-        let end = fragment["byte_end"].as_u64().expect("end") as usize;
-        assert!(end > start);
-        let span = &source[start..end];
-        assert_eq!(
-            span,
-            fragment["content"].as_str().expect("content").as_bytes()
+        let path = fragment["path"].as_str().expect("path");
+        let source = fs::read(repo.join(path))
+            .unwrap_or_else(|err| panic!("reading fragment source {path:?} failed with {err:?}"));
+        let start = usize::try_from(fragment["byte_start"].as_u64().expect("start"))
+            .expect("start fits usize");
+        let end =
+            usize::try_from(fragment["byte_end"].as_u64().expect("end")).expect("end fits usize");
+        assert!(
+            start < end && end <= source.len(),
+            "invalid byte range [{start}, {end}) for {path:?} ({} bytes)",
+            source.len()
         );
+        let span = &source[start..end];
+        let content = fragment["content"].as_str().expect("content");
+        assert_eq!(span, content.as_bytes(), "source bytes for {path:?}");
         assert_eq!(
             fragment["line_start"],
-            1 + source[..start].iter().filter(|&&b| b == b'\n').count()
+            1 + source[..start].iter().filter(|&&b| b == b'\n').count(),
+            "first line for {path:?}"
         );
         assert_eq!(
             fragment["line_end"],
-            1 + source[..end - 1].iter().filter(|&&b| b == b'\n').count()
+            1 + source[..end - 1].iter().filter(|&&b| b == b'\n').count(),
+            "last line for {path:?}"
         );
         let digest = dctx_hash::Sha256::digest(span).expect("sha256");
         let hex: String = digest
@@ -112,14 +139,22 @@ fn verify_spans(bytes: &[u8], repo: &Path) -> Value {
             .iter()
             .map(|b| format!("{b:02x}"))
             .collect();
-        assert_eq!(fragment["sha256"], hex);
+        assert_eq!(fragment["sha256"], hex, "SHA-256 for {path:?}");
         // The display page may add a final LF; the fragment must retain the exact source.
-        assert!(document["text"]
-            .as_str()
-            .expect("text")
-            .contains(fragment["content"].as_str().expect("content")));
+        assert!(
+            document["text"].as_str().expect("text").contains(content),
+            "display text is missing the fragment for {path:?}"
+        );
     }
     document
+}
+
+#[test]
+fn subprocess_diagnostics_quote_control_characters() {
+    assert_eq!(
+        quoted_output(b"first\n\x1b[31m\"second\""),
+        r#""first\n\u{1b}[31m\"second\"""#
+    );
 }
 
 #[test]
@@ -185,6 +220,85 @@ fn budget_truncation_keeps_exact_prefix_spans_and_no_display_markers() {
     assert!(content.ends_with('\n'));
     assert!(!content.contains("DCTX_TRUNCATED") && !content.contains("DCTX_OMITTED"));
     assert_eq!(bytes, fixture.pack("ping", "300"));
+}
+
+#[test]
+fn cross_file_citations() {
+    let fixture = Fixture::with_files(
+        "rust",
+        &[
+            (
+                "Cargo.toml",
+                include_bytes!("../../dctx-map-parse/tests/fixtures/rust/Cargo.toml"),
+            ),
+            (
+                "src/lib.rs",
+                include_bytes!("../../dctx-map-parse/tests/fixtures/rust/src/lib.rs"),
+            ),
+            (
+                "src/support.rs",
+                include_bytes!("../../dctx-map-parse/tests/fixtures/rust/src/support.rs"),
+            ),
+        ],
+    );
+
+    let trait_run = "s:src/lib.rs#Work::run";
+    let declaration = fixture.run_success(&["map", "read", trait_run, "--json"]);
+    let declaration: Value = serde_json::from_slice(&declaration).expect("JSON declaration");
+    let records = declaration["records"].as_array().expect("read records");
+    assert_eq!(records.len(), 1);
+    assert_eq!(records[0]["id"], trait_run);
+    assert_eq!(records[0]["path"], "src/lib.rs");
+    assert_eq!(records[0]["lines"], json!([19, 19]));
+    assert_eq!(records[0]["source_utf8"], "fn run(&self) -> u32;");
+
+    let caller_id = "s:src/lib.rs#Widget::run";
+    let full = [
+        (caller_id, "src/lib.rs", [23, 25], [438, 483]),
+        (
+            "s:src/support.rs#helper",
+            "src/support.rs",
+            [8, 10],
+            [235, 267],
+        ),
+    ];
+    let signature = [(caller_id, "src/lib.rs", [23, 23], [438, 461])];
+
+    // Selection budgets reduce source coverage while the hit count stays fixed.
+    for (budget, expected) in [
+        (3000, full.as_slice()),
+        (212, signature.as_slice()),
+        (100, &[]),
+    ] {
+        let bytes = fixture.pack("`run` `helper`", &budget.to_string());
+        let doc = verify_spans(&bytes, &fixture.repo);
+        assert_eq!(doc["budget"], budget);
+        assert_eq!(doc["terms"], 2, "budget {budget}");
+        assert_eq!(doc["hits"], 3, "budget {budget}");
+        let fragments = doc["fragments"].as_array().expect("fragments");
+        assert_eq!(fragments.len(), expected.len(), "budget {budget}");
+        for &(target, path, [first, last], [start, end]) in expected {
+            let fragment = fragments
+                .iter()
+                .find(|fragment| fragment["target"] == target)
+                .unwrap_or_else(|| panic!("budget {budget} has no fragment for {target:?}"));
+            assert_eq!(fragment["path"], path, "budget {budget}");
+            assert_eq!(fragment["line_start"], first, "budget {budget}");
+            assert_eq!(fragment["line_end"], last, "budget {budget}");
+            assert_eq!(fragment["byte_start"], start, "budget {budget}");
+            assert_eq!(fragment["byte_end"], end, "budget {budget}");
+        }
+        if budget == 3000 {
+            assert!(
+                doc["text"]
+                    .as_str()
+                    .expect("text")
+                    .lines()
+                    .any(|line| line.split('\t').next() == Some(trait_run)),
+                "the competing trait declaration should appear in the find results"
+            );
+        }
+    }
 }
 
 #[test]
