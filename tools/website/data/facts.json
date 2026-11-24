@@ -66,7 +66,7 @@
   "claims": [
    {
     "status": "measured",
-    "text": "On 12 November 2026, the whole-session study used claude-sonnet-5-5 across 20 questions and three repeats per arm (300 graded answers across five arms). The dctx harness-prefix pack (P) reached 70.91% median strict citation recall versus 19.34% for grep plus file reads (A). Median list-price cost per question was $0.195418 for P and $0.179670 for A (+8.8% for P), pricing uncached input, cache creation, cache reads and output separately. P met the recall requirement and missed the prespecified 15% cost reduction, so it did not win the benchmark.",
+    "text": "On 12 November 2026, the whole-session study used claude-sonnet-5-5 across 20 questions and three repeats per arm (300 graded answers across five arms). The dctx harness-prefix pack (P) reached 70.91% median strict citation recall versus 19.34% for grep plus file reads (A). Median list-price cost per question was $0.195418 for P and $0.179670 for A (+8.8% for P), billing uncached input, cache creation, cache reads and output at their separate rates. P met the recall requirement and missed the prespecified 15% cost reduction, so it did not win the benchmark.",
     "link": "/benchmarks/#grep-read"
    },
    {
