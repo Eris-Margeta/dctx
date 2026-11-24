@@ -6,6 +6,7 @@ import io
 import json
 import os
 import subprocess
+import sys
 import tarfile
 import tempfile
 import unittest
@@ -18,34 +19,54 @@ prepare_npm = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(prepare_npm)
 
 
+HANDSHAKE = (
+    b'#!/bin/sh\nif [ "$1" = rpc ]; then\n'
+    b'IFS= read -r request\n'
+    b"printf '%s\\n' '{\"id\":\"0\",\"engine_version\":\"1.2.3\",\"result\":{\"protocol_version\":\"1.0.0\",\"verbs\":[\"hello\"]}}'\n"
+    b'cat >/dev/null\nexit 0\nfi\n'
+)
+
+
+def write_archives(artifacts):
+    artifacts.mkdir()
+    binary = HANDSHAKE + b'printf "arg=<%s>\\n" "$@"\nexit 23\n'
+    rows = []
+    for platform, target in prepare_npm.PLATFORMS.items():
+        windows = platform.startswith("win32")
+        archive = artifacts / f"dctx-{target}.{'zip' if windows else 'tar.gz'}"
+        if windows:
+            with zipfile.ZipFile(archive, "w") as package:
+                package.writestr("dctx.exe", binary)
+        else:
+            with tarfile.open(archive, "w:gz") as package:
+                entry = tarfile.TarInfo("dctx")
+                entry.size, entry.mode = len(binary), 0o755
+                package.addfile(entry, io.BytesIO(binary))
+        digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+        rows.append(f"{digest.upper()} *{archive.name}" if windows else f"{digest}  {archive.name}")
+    return rows
+
+
+def run_prepare(artifacts, packages):
+    return subprocess.run([sys.executable, "-B", str(ROOT / "tools/release/prepare-npm.py"),
+                           "v1.2.3", str(artifacts), "--out-dir", str(packages)],
+                          capture_output=True, text=True)
+
+
 class Packaging(unittest.TestCase):
     def test_artifacts_tarballs_and_shim(self):
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
             artifacts, packages = directory / "artifacts", directory / "packages"
-            artifacts.mkdir()
-            handshake = (
-                b'#!/bin/sh\nif [ "$1" = rpc ]; then\n'
-                b'IFS= read -r request\n'
-                b"printf '%s\\n' '{\"id\":\"0\",\"engine_version\":\"1.2.3\",\"result\":{\"protocol_version\":\"1.0.0\",\"verbs\":[\"hello\"]}}'\n"
-                b'cat >/dev/null\nexit 0\nfi\n'
-            )
-            binary = handshake + b'printf "arg=<%s>\\n" "$@"\nexit 23\n'
-            checksums = []
-            for platform, target in prepare_npm.PLATFORMS.items():
-                windows = platform.startswith("win32")
-                archive = artifacts / f"dctx-{target}.{'zip' if windows else 'tar.gz'}"
-                if windows:
-                    with zipfile.ZipFile(archive, "w") as package:
-                        package.writestr("dctx.exe", binary)
-                else:
-                    with tarfile.open(archive, "w:gz") as package:
-                        entry = tarfile.TarInfo("dctx")
-                        entry.size, entry.mode = len(binary), 0o755
-                        package.addfile(entry, io.BytesIO(binary))
-                checksums.append(f"{hashlib.sha256(archive.read_bytes()).hexdigest()}  {archive.name}")
+            checksums = write_archives(artifacts)
+            sbom = artifacts / "release.spdx.json"
+            sbom.write_bytes(b"{}")
+            checksums.append(f"{hashlib.sha256(sbom.read_bytes()).hexdigest()}  {sbom.name}")
             (artifacts / "SHA256SUMS").write_text("\n".join(checksums) + "\n")
-            prepare_npm.prepare("v1.2.3", artifacts, packages)
+            result = run_prepare(artifacts, packages)
+            self.assertEqual(result.returncode, 0, ascii(result.stderr))
+            self.assertEqual({p.name for p in packages.iterdir()},
+                             {"dctx", *(f"cli-{p}" for p in prepare_npm.PLATFORMS)})
             for package in sorted(packages.iterdir()):
                 manifest = json.loads((package / "package.json").read_text())
                 self.assertEqual(manifest["version"], "1.2.3")
@@ -66,7 +87,7 @@ class Packaging(unittest.TestCase):
                 executable = "dctx.js" if package.name == "dctx" else "dctx.exe" if "win32" in package.name else "dctx"
                 self.assertIn(f"bin/{executable}", contents)
                 self.assertNotIn("scripts", manifest)
-                print(f"npm pack --dry-run: {manifest['name']} PASS")
+                print(f"npm pack --dry-run: {manifest['name']!a} PASS")
 
             main = packages / "dctx"
             native = packages / "cli-linux-x64"
@@ -81,7 +102,7 @@ class Packaging(unittest.TestCase):
             self.assertEqual(result.returncode, 23)
             self.assertEqual(result.stdout, "arg=<with spaces>\narg=<--flag>\narg=<λ>\n")
             self.assertEqual(result.stderr, "")
-            (native / "bin/dctx").write_bytes(handshake + b"kill -TERM $$\n")
+            (native / "bin/dctx").write_bytes(HANDSHAKE + b"kill -TERM $$\n")
             result = subprocess.run(command, capture_output=True, text=True, env=env)
             self.assertEqual(result.returncode, -15)
             (modules / "dctx-linux-x64").unlink()
@@ -89,11 +110,48 @@ class Packaging(unittest.TestCase):
             self.assertEqual(result.returncode, 1)
             self.assertIn("npm install @tejl/dctx-linux-x64@1.2.3", result.stderr)
             self.assertIn("npm install @tejl/dctx normally includes it as an optional dependency.", result.stderr)
-            # A damaged archive must be rejected before any output package is written.
-            archive.write_bytes(b"corrupted")
-            with self.assertRaisesRegex(ValueError, "checksum mismatch"):
-                prepare_npm.prepare("v1.2.3", artifacts, directory / "bad-packages")
-            self.assertFalse((directory / "bad-packages").exists())
+
+    def test_invalid_inputs_preserve_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            artifacts = Path(tmp) / 'artifacts\n\x1b"'
+            packages = Path(tmp) / "packages"
+            sentinel = packages / "dctx/package.json"
+            sentinel.parent.mkdir(parents=True)
+            sentinel.write_bytes(b"keep this manifest")
+            rows = write_archives(artifacts)
+            digest, filename = rows[-1].split(" *")
+            good = rows[-1]
+            bad = f"{'0' * 64}  {filename}"
+            manifest = artifacts / "SHA256SUMS"
+
+            def assert_rejected(reason):
+                result = run_prepare(artifacts, packages)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(reason, result.stderr)
+                self.assertEqual(len(result.stderr.splitlines()), 1, ascii(result.stderr))
+                self.assertNotIn("\x1b", result.stderr)
+                self.assertEqual(result.stdout, "")
+                self.assertEqual(sentinel.read_bytes(), b"keep this manifest")
+                self.assertEqual(set(packages.rglob("*")), {sentinel.parent, sentinel})
+
+            # The missing manifest diagnostic includes the hostile artifacts path.
+            assert_rejected("SHA256SUMS")
+            for case, replacements, reason in (
+                ("identical duplicate", [good, good], "duplicate SHA256SUMS entry"),
+                ("conflict first", [bad, good], "duplicate SHA256SUMS entry"),
+                ("conflict last", [good, bad], "duplicate SHA256SUMS entry"),
+                ("missing archive row", [], "missing SHA256SUMS entry"),
+                ("short digest", [f"{digest[:-1]}  {filename}"], "invalid SHA256SUMS row"),
+                ("long digest", [f"{digest}0  {filename}"], "invalid SHA256SUMS row"),
+                ("nonhex digest", [f"{'g' * 64}  {filename}"], "invalid SHA256SUMS row"),
+            ):
+                with self.subTest(case=case):
+                    manifest.write_text("\n".join(rows[:-1] + replacements) + "\n")
+                    assert_rejected(reason)
+
+            manifest.write_text("\n".join(rows) + "\n")
+            (artifacts / filename).write_bytes(b"corrupted")
+            assert_rejected("checksum mismatch")
 
     def test_npm_names_are_scoped_and_pinned(self):
         # The registry refused the unscoped name "dctx" (too similar to existing packages), and
