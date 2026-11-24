@@ -6,9 +6,11 @@
 
 #![forbid(unsafe_code)]
 
+use std::cell::Cell;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::sync::mpsc::{self, Receiver, Sender};
 
 use dctx::memory::{CancelFlag, FixedClock, MemorySource};
 use dctx::{
@@ -16,8 +18,17 @@ use dctx::{
     PurgeScope, RuleTexts, SelectionPolicy, Session, SnapshotRequest, Source, StoragePolicy,
     Timestamp,
 };
+use dctx_core::datatypes::NodeType;
+use dctx_core::error::DctxError as CoreError;
+use dctx_core::facts::{EntryMeta, ReadGrant, SourceEntry};
+use dctx_core::ids::RelativePath;
 
 const CAP: u64 = 8 * 1024 * 1024;
+const APPLY_PURGE: PurgeRequest = PurgeRequest {
+    confirm: true,
+    apply: true,
+    scope: PurgeScope::All,
+};
 
 #[test]
 fn two_sessions_on_one_root_share_admission() {
@@ -113,6 +124,175 @@ fn live_snapshot_lease_is_persisted_and_survives_reopen() {
     assert!(purged.reclaimed_bytes > 0);
     assert!(objects(&cache).is_empty());
     assert_eq!(reopened.cache_ledger().expect("empty").admitted_bytes, 0);
+}
+
+#[test]
+fn reuse_pin_wins_before_explicit_reclaim() {
+    reclaim_during_reuse(true);
+}
+
+#[test]
+fn explicit_reclaim_wins_before_reuse_pin() {
+    reclaim_during_reuse(false);
+}
+
+fn reclaim_during_reuse(pin_first: bool) {
+    let dir = tempfile::tempdir().expect("temp");
+    let cache = cache_dir(dir.path());
+    let request = SnapshotRequest::immutable();
+    let key = "reclaim fixture";
+    let mut publisher = open(&cache, CAP, wide_source());
+    let original = publisher.snapshot_reusable(&request, key).expect("publish");
+    let digest = original.digest().to_owned();
+    let kept = objects(&cache);
+    let admitted = publisher
+        .cache_ledger()
+        .expect("published ledger")
+        .admitted_bytes;
+    assert_eq!(kept.len(), 2);
+    assert_eq!(payload(&kept), admitted);
+    drop(original);
+    drop(publisher);
+
+    let mut purger = open(&cache, CAP, wide_source());
+    let handle = std::thread::scope(|scope| {
+        let (checking, loaded) = mpsc::channel();
+        let (resume, paused) = mpsc::channel();
+        let mut reader = open(
+            &cache,
+            CAP,
+            PausedSource {
+                inner: wide_source(),
+                rendezvous: Cell::new(Some((checking, paused))),
+            },
+        );
+        let reading = scope.spawn(move || reader.snapshot_reusable(&request, key));
+        loaded.recv().expect("reader reached source verification");
+        if !pin_first {
+            let purged = purger.cache_purge(APPLY_PURGE).expect("purge before pin");
+            assert_eq!(purged.blocked_generations, 0);
+            assert_eq!(purged.reclaimed_bytes, admitted);
+            assert!(objects(&cache).is_empty());
+            assert_eq!(
+                purger.cache_ledger().expect("empty ledger").admitted_bytes,
+                0
+            );
+        }
+        resume.send(()).expect("resume reader");
+        reading
+            .join()
+            .expect("reader thread")
+            .expect("snapshot after rendezvous")
+    });
+
+    assert_eq!(handle.reused(), pin_first);
+    assert_eq!(handle.digest(), digest);
+    let released_bytes = if pin_first {
+        let purged = purger.cache_purge(APPLY_PURGE).expect("purge after pin");
+        assert_eq!(purged.blocked_generations, 1);
+        assert_eq!(purged.reclaimed_bytes, 0);
+        assert_eq!(objects(&cache), kept);
+        let collected = purger
+            .cache_gc(GcRequest { apply: true })
+            .expect("gc after pin");
+        assert_eq!(collected.blocked_generations, 1);
+        assert_eq!(collected.reclaimed_bytes, 0);
+        assert_eq!(objects(&cache), kept);
+        assert_eq!(
+            purger.cache_ledger().expect("held ledger").admitted_bytes,
+            admitted
+        );
+        admitted
+    } else {
+        let rebuilt = objects(&cache);
+        assert_eq!(rebuilt.len(), kept.len());
+        assert!(rebuilt.keys().all(|name| !kept.contains_key(name)));
+        payload(&rebuilt)
+    };
+
+    drop(handle);
+    let collected = purger
+        .cache_gc(GcRequest { apply: true })
+        .expect("gc after release");
+    assert_eq!(collected.reclaimed_bytes, released_bytes);
+    assert!(objects(&cache).is_empty());
+    let again = purger.cache_purge(APPLY_PURGE).expect("repeated purge");
+    assert_eq!(again.reclaimed_bytes, 0);
+    assert_eq!(
+        purger
+            .cache_ledger()
+            .expect("released ledger")
+            .admitted_bytes,
+        0
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn explicit_reclaim_cannot_unlink_under_a_shared_ledger_lock() {
+    use dctx_adapter_cache::Quota;
+    use dctx_adapter_cache::adapters::FsLedgerStore;
+
+    let dir = tempfile::Builder::new()
+        .prefix("cache\n\x1b\"")
+        .tempdir()
+        .expect("temp");
+    let cache = cache_dir(dir.path());
+    let mut session = open(&cache, CAP, wide_source());
+    drop(
+        session
+            .snapshot(&SnapshotRequest::immutable())
+            .expect("publish"),
+    );
+    let kept = objects(&cache);
+    assert_eq!(kept.len(), 2);
+
+    let ledger = FsLedgerStore::open(&cache).expect("ledger");
+    // Hold the read lock until the purge exhausts the coordinator's lock wait.
+    ledger
+        .read(Quota::product_default(), |_| {
+            let error = session
+                .cache_purge(APPLY_PURGE)
+                .expect_err("reader holds the ledger");
+            assert_eq!(error, DctxError::Busy);
+            assert_eq!(error.to_string(), "busy");
+            assert_eq!(objects(&cache), kept);
+            Ok::<_, DctxError>(())
+        })
+        .expect("shared ledger read");
+    let purged = session
+        .cache_purge(APPLY_PURGE)
+        .expect("purge after unlock");
+    assert_eq!(purged.reclaimed_bytes, payload(&kept));
+    assert!(objects(&cache).is_empty());
+}
+
+struct PausedSource {
+    inner: MemorySource,
+    rendezvous: Cell<Option<(Sender<()>, Receiver<()>)>>,
+}
+
+impl Source for PausedSource {
+    fn root_kind(&self) -> Result<NodeType, CoreError> {
+        // On warm reuse the retained segment has been read before source verification starts.
+        if let Some((checking, resume)) = self.rendezvous.take() {
+            checking.send(()).expect("announce source verification");
+            resume.recv().expect("continue source verification");
+        }
+        self.inner.root_kind()
+    }
+
+    fn entries(&self, dir: &RelativePath) -> Result<Vec<SourceEntry>, CoreError> {
+        self.inner.entries(dir)
+    }
+
+    fn metadata(&self, path: &RelativePath) -> Result<EntryMeta, CoreError> {
+        self.inner.metadata(path)
+    }
+
+    fn read(&self, grant: &ReadGrant, max_bytes: u64) -> Result<Vec<u8>, CoreError> {
+        self.inner.read(grant, max_bytes)
+    }
 }
 
 #[test]

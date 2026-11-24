@@ -8,7 +8,7 @@
 use std::path::Path;
 
 use dctx_adapter_cache::adapters::{FsLedgerStore, FsObjectStore, LeaseHold, LedgerUpdateError};
-use dctx_adapter_cache::ports::{LedgerStore, ObjectStore};
+use dctx_adapter_cache::ports::ObjectStore;
 use dctx_adapter_cache::{
     CacheError, GcRequest as AdapterGc, GenerationId, LeaseId, Lifecycle, ObjectId,
     PurgeRequest as AdapterPurge, PurgeScope as AdapterScope, Quota, RootId, SliceBudget,
@@ -177,41 +177,37 @@ impl PersistedCache {
                 held_by_lease: report.held_by_lease,
             });
         }
-        for _ in 0..COMMIT_ATTEMPTS {
-            self.reload()?;
-            ensure_root(&mut self.life, self.root_id)?;
-            let original = self.life.clone();
-            let mut working = original.clone();
-            working.observe(clock_sample(now_ms));
-            let purged = working
-                .purge(AdapterPurge {
-                    scope: AdapterScope::Root(self.root_id),
-                    confirm: true,
-                    dry_run: false,
-                })
-                .map_err(map_cache)?;
-            sweep(&mut working, self.root_id).map_err(map_cache)?;
-            let reclaimed = original.admitted().saturating_sub(working.admitted());
-            let removed = removed_ids(&original, &working);
-            if let Err(error) = unlink_all(&self.objects, &removed) {
-                if is_conflict(&error) {
-                    continue;
+        let root_id = self.root_id;
+        // Keep the lease check, unlink and store under the same lock used to confirm a pin.
+        let (report, life) = self
+            .ledger
+            .update(Quota::product_default(), |working| {
+                ensure_root(working, root_id)?;
+                let admitted = working.admitted();
+                let objects_before = working.object_ids();
+                working.observe(clock_sample(now_ms));
+                let purged = working
+                    .purge(AdapterPurge {
+                        scope: AdapterScope::Root(root_id),
+                        confirm: true,
+                        dry_run: false,
+                    })
+                    .map_err(map_cache)?;
+                sweep(working, root_id).map_err(map_cache)?;
+                for id in objects_before {
+                    if working.object_state(id).is_none() {
+                        self.objects.unlink_object(id).map_err(map_cache)?;
+                    }
                 }
-                return Err(map_cache(error));
-            }
-            match self.ledger.store(&working) {
-                Ok(()) => {
-                    self.life = working;
-                    return Ok(DiskReclaim {
-                        reclaimed_bytes: reclaimed,
-                        held_by_lease: purged.held_by_lease,
-                    });
-                }
-                Err(error) if is_conflict(&error) => {}
-                Err(error) => return Err(map_cache(error)),
-            }
-        }
-        Err(DctxError::invalid("stale ledger"))
+                let report = DiskReclaim {
+                    reclaimed_bytes: admitted.saturating_sub(working.admitted()),
+                    held_by_lease: purged.held_by_lease,
+                };
+                Ok(((report, working.clone()), true))
+            })
+            .map_err(update_error)?;
+        self.life = life;
+        Ok(report)
     }
 
     /// Bytes of the current view's segment. `Ok(None)` when the root has no readable generation.
@@ -408,21 +404,6 @@ fn manifest_object(
         .ok_or_else(|| DctxError::invalid("snapshot manifest missing"))?;
     life.manifest_object(manifest_id)
         .ok_or_else(|| DctxError::invalid("snapshot manifest object missing"))
-}
-
-fn removed_ids(before: &Lifecycle, after: &Lifecycle) -> Vec<ObjectId> {
-    before
-        .object_ids()
-        .into_iter()
-        .filter(|id| after.object_state(*id).is_none())
-        .collect()
-}
-
-fn unlink_all(objects: &FsObjectStore, ids: &[ObjectId]) -> Result<(), CacheError> {
-    for id in ids {
-        objects.unlink_object(*id)?;
-    }
-    Ok(())
 }
 
 fn sweep(life: &mut Lifecycle, root: RootId) -> Result<(), CacheError> {
