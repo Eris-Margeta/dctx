@@ -12,6 +12,11 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      inject_regression:
+        description: 'Add 80 ms to candidate cold samples (disposable latency-control/* branches only)'
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -59,15 +64,17 @@ jobs:
       - name: Test latency harness
         run: |
           umask 022
-          python -m unittest scripts.test_win_latency scripts.test_win_latency_ab -v
+          python -m unittest scripts.test_win_latency scripts.test_win_latency_ab scripts.test_win_latency_control -v
       - name: A/B against the latest release, 7 interleaved rounds of 30 cold and 30 warm processes over 1500 files
         id: measure
+        env:
+          BASELINE_TAG: ${{ steps.baseline.outputs.tag }}
+          INJECT_REGRESSION: ${{ github.event_name == 'workflow_dispatch' && inputs.inject_regression }}
         run: |
           umask 022
-          python scripts/win_latency_ab.py \
-            --baseline "$RUNNER_TEMP/dctx-baseline/bin/dctx.exe" --baseline-label "${{ steps.baseline.outputs.tag }}" \
+          python scripts/win_latency_control.py measure \
+            --baseline "$RUNNER_TEMP/dctx-baseline/bin/dctx.exe" --baseline-label "$BASELINE_TAG" \
             --candidate "$RUNNER_TEMP/dctx-build/release/dctx-cli.exe" \
-            --rounds 7 --runs 30 --files 1500 --max-regression 0.20 --ceiling-ms 1000 --target-ms 500 \
             --output target/win-latency/report.json
       - name: Upload latency JSON
         if: ${{ !cancelled() && (steps.measure.outcome == 'success' || steps.measure.outcome == 'failure') }}
