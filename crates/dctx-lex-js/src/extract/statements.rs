@@ -208,7 +208,7 @@ impl Walker<'_> {
         }
     }
 
-    /// `const|let|var` declarator lists; arrow and function values become items.
+    /// `const|let|var` declarator lists; function values and named export bindings become items.
     fn variables(&mut self, i: usize, end: usize, scope: &Scope, decl: Decl) -> usize {
         let mut j = i + 1;
         loop {
@@ -254,6 +254,25 @@ impl Walker<'_> {
                 }
                 self.walk_function(&shape, &inner);
             } else {
+                let inner = (decl.public && self.ident(pattern)).then(|| {
+                    let last = value_end - 1;
+                    let end_byte = self.end_byte(last);
+                    self.item(
+                        Item {
+                            kind: NodeKind::Symbol,
+                            symbol: SymbolKind::Const,
+                            local: self.text(pattern).to_owned(),
+                            first: pattern,
+                            last,
+                            sig_end: end_byte,
+                            body: (self.start_byte(value.unwrap_or(pattern)), end_byte),
+                            public: true,
+                            doc: decl.anchor,
+                        },
+                        scope,
+                    )
+                });
+                let scope = inner.as_ref().unwrap_or(scope);
                 if pattern_end > pattern + 1 {
                     self.expr(pattern, pattern_end, scope);
                 }
