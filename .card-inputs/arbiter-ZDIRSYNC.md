@@ -1,6 +1,0 @@
-D1123-ZDIRSYNC DROP
-crates/dctx-adapter-store/src/adapters/stdfs/dir_sync.rs:199 queues a completion file based on ownership alone. After every required directory fsync succeeds, line 144 tries to create that file and line 147 makes EACCES fatal.
-state/codex/D1123-ZDIRSYNC.review.md:3 records the regression as a regular Linux user. With a writable nested store beneath an owned ancestor changed to mode 0555, generation 1 publishes on HEAD and fails on the card. Reopening queues the same missing completion again.
-Keep the pointer-input barriers and child-before-parent sync order in crates/dctx-adapter-store/src/adapters/stdfs/dir_sync.rs:104 and :132. Preserve the process-exit, sync-failure, and sibling-retry tests in crates/dctx-adapter-store/tests/native_publish_cuts.rs:100, :441, and :588.
-The replacement card should make completion recording at crates/dctx-adapter-store/src/adapters/stdfs/dir_sync.rs:142 optional when the ancestor denies the write. Leave the receipt pending for the next opener to repeat the fsyncs, and continue to propagate actual fsync failures at line 139.
-Extend crates/dctx-adapter-store/tests/native_publish_cuts.rs:525 with the unprivileged 0555 case. Require an injected ancestor fsync failure to block publication, then reopen, publish, and read generation 1 with the ancestor still at 0555.

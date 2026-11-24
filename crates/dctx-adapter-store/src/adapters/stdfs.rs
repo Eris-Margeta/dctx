@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Std filesystem adapter for durable segment names.
 //! Implements SEGMENTS-v1 sync and rename on a caller-supplied directory.
-//! Depends on [`crate::ports::StoreFs`]. Unix syncs modified directory entries explicitly.
+//! Depends on [`crate::ports::StoreFs`]. Crash cuts and Windows sharing live in [`super::memory`].
 //! Unix directories are mode 0700 and files 0600. Symlinks and over-ceiling reads are refused.
 
 use std::collections::BTreeMap;
@@ -13,8 +13,6 @@ use std::sync::{Mutex, MutexGuard, PoisonError};
 use crate::domain::{Boundary, StoreError, check_root};
 use crate::ports::{self, FsCapabilities, StoreFs, read_ceiling};
 
-#[cfg(unix)]
-mod dir_sync;
 #[cfg(windows)]
 #[allow(
     unsafe_code,
@@ -26,8 +24,6 @@ mod windows;
 pub struct StdFs {
     root: PathBuf,
     locks: Mutex<BTreeMap<String, File>>,
-    #[cfg(unix)]
-    dir_sync: dir_sync::DirSync,
 }
 
 impl StdFs {
@@ -37,49 +33,16 @@ impl StdFs {
     /// refused. On Unix an existing root must also be owned by the effective user and not
     /// writable by group or others, and its ancestors must be owned by root or that user and not
     /// writable by others (root-owned sticky directories and read-only mounts excepted).
-    /// On Unix the first name sync also persists any directory entries added while creating
-    /// the root. Recovery records let openers beneath a shared ancestor finish its
-    /// directory sync after the installation is interrupted.
     ///
     /// # Errors
     /// Returns [`StoreError::InvalidRequest`] for an unsafe root, or directory-creation and
     /// canonicalization IO failures.
     pub fn open(root: &Path) -> Result<Self, StoreError> {
-        #[cfg(unix)]
-        {
-            Self::open_unix(root, None)
-        }
-        #[cfg(not(unix))]
-        {
-            Ok(Self {
-                root: ports::prepare_root(root)?,
-                locks: Mutex::new(BTreeMap::new()),
-            })
-        }
-    }
-
-    #[cfg(unix)]
-    fn open_unix(root: &Path, hook: Option<Box<dir_sync::BeforeSync>>) -> Result<Self, StoreError> {
-        let (root, dir_sync) = dir_sync::DirSync::prepare(root, hook)?;
+        let root = ports::prepare_root(root)?;
         Ok(Self {
-            dir_sync,
             root,
             locks: Mutex::new(BTreeMap::new()),
         })
-    }
-
-    /// Opens the Unix adapter with a hook called before each directory sync.
-    /// A hook error is propagated as a directory sync failure.
-    ///
-    /// # Errors
-    /// Returns the same root validation and IO errors as [`Self::open`].
-    #[cfg(unix)]
-    #[doc(hidden)]
-    pub fn open_with_dir_sync_hook(
-        root: &Path,
-        hook: impl Fn(&Path) -> std::io::Result<()> + Send + Sync + 'static,
-    ) -> Result<Self, StoreError> {
-        Self::open_unix(root, Some(Box::new(hook)))
     }
 
     fn guard(&self) -> MutexGuard<'_, BTreeMap<String, File>> {
@@ -181,8 +144,6 @@ impl StoreFs for StdFs {
         }
         ports::set_nofollow(&mut options);
         options.open(&path).map_err(ports::io_err)?;
-        #[cfg(unix)]
-        self.dir_sync.record(&path);
         Ok(())
     }
 
@@ -202,20 +163,15 @@ impl StoreFs for StdFs {
         let file = self.open_file(path, true, false)?;
         // std calls FlushFileBuffers on Windows, with a writable file handle.
         file.sync_all().map_err(ports::io_err)?;
-        #[cfg(unix)]
-        if matches!(
-            path,
-            "tmp/previous.partial" | "tmp/pointer.partial" | "tmp/recover-pointer.partial"
-        ) {
-            // The publisher syncs these staged files before renaming either pointer.
-            self.dir_sync.sync_pointer_inputs(&self.root)?;
-        }
         Ok(())
     }
 
     fn sync_dir(&self) -> Result<(), StoreError> {
         #[cfg(unix)]
-        return self.dir_sync.sync(&self.root, &[]);
+        {
+            let dir = File::open(&self.root).map_err(ports::io_err)?;
+            dir.sync_all().map_err(ports::io_err)
+        }
         #[cfg(windows)]
         {
             // Every publication rename already used MOVEFILE_WRITE_THROUGH.
@@ -242,8 +198,8 @@ impl StoreFs for StdFs {
             use rustix::fs::{CWD, RenameFlags, renameat_with};
             // The absence check above is only an early refusal; the move itself
             // must refuse a destination created by a concurrent publisher.
-            renameat_with(CWD, &from, CWD, &to, RenameFlags::NOREPLACE)
-                .map_err(|error| ports::io_err(error.into()))?;
+            renameat_with(CWD, from, CWD, to, RenameFlags::NOREPLACE)
+                .map_err(|error| ports::io_err(error.into()))
         }
         #[cfg(not(any(
             windows,
@@ -255,17 +211,7 @@ impl StoreFs for StdFs {
             // Regular immutable files can be installed without replacing a name
             // even on platforms without an exclusive rename operation.
             fs::hard_link(&from, &to).map_err(ports::io_err)?;
-            if let Err(err) = fs::remove_file(&from) {
-                #[cfg(unix)]
-                self.dir_sync.record(&to);
-                return Err(ports::io_err(err));
-            }
-        }
-        #[cfg(not(windows))]
-        {
-            #[cfg(unix)]
-            self.dir_sync.record_rename(&from, &to);
-            Ok(())
+            fs::remove_file(from).map_err(ports::io_err)
         }
     }
 
@@ -276,12 +222,7 @@ impl StoreFs for StdFs {
         #[cfg(windows)]
         return windows::rename(&from, &to, true).map_err(ports::io_err);
         #[cfg(not(windows))]
-        {
-            fs::rename(&from, &to).map_err(ports::io_err)?;
-            #[cfg(unix)]
-            self.dir_sync.record_rename(&from, &to);
-            Ok(())
-        }
+        fs::rename(from, to).map_err(ports::io_err)
     }
 
     fn read(&self, path: &str) -> Result<Vec<u8>, StoreError> {
@@ -328,10 +269,7 @@ impl StoreFs for StdFs {
         if meta.file_type().is_symlink() {
             return Err(StoreError::InvalidRequest { reason: "path" });
         }
-        fs::remove_file(&path).map_err(ports::io_err)?;
-        #[cfg(unix)]
-        self.dir_sync.record(&path);
-        Ok(())
+        fs::remove_file(path).map_err(ports::io_err)
     }
 
     fn list_prefix(&self, prefix: &str) -> Result<Vec<String>, StoreError> {
