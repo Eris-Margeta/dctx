@@ -4,7 +4,7 @@
 //! Depends on [`crate::ports::StoreFs`] and the pure manifest rules. Publish, recover, and GC share this type.
 //! One pin names one generation. Bytes are read from immutable digest names.
 
-use std::collections::{BTreeSet, HashSet};
+use std::collections::{BTreeSet, HashSet, VecDeque};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
@@ -511,10 +511,44 @@ fn segment_ok<F: StoreFs>(fs: &F, segment: &SegmentRef) -> Result<bool, StoreErr
         return Ok(false);
     }
     let bytes = load_limited(fs, &path, segment.length)?;
-    let Ok(digest) = segment_object_digest(&bytes) else {
-        return Ok(false);
-    };
-    Ok(!(digest != segment.digest || decode(&bytes, segment.role).is_err()))
+    Ok(valid_segment_bytes(segment, bytes))
+}
+
+// Recovery and pinning inspect immutable objects several times per open. Share
+// successful codec and digest checks across opens, but always read the bounded
+// on-disk bytes above: missing objects and same-length replacements must be seen.
+fn valid_segment_bytes(segment: &SegmentRef, bytes: Vec<u8>) -> bool {
+    // The repository-scale journal occupies about 204 MiB across 30 objects.
+    const MAX_BYTES: usize = 256 * 1024 * 1024;
+    const MAX_ENTRIES: usize = 64;
+    type Entry = (SegmentRef, Box<[u8]>);
+    static VERIFIED: RwLock<VecDeque<Entry>> = RwLock::new(VecDeque::new());
+
+    if let Some((_, verified)) = VERIFIED
+        .read()
+        .unwrap_or_else(PoisonError::into_inner)
+        .iter()
+        .find(|(reference, _)| reference == segment)
+    {
+        return verified.as_ref() == bytes;
+    }
+    if segment_object_digest(&bytes) != Ok(segment.digest) || decode(&bytes, segment.role).is_err()
+    {
+        return false;
+    }
+    if bytes.len() <= MAX_BYTES {
+        let mut entries = VERIFIED.write().unwrap_or_else(PoisonError::into_inner);
+        if !entries.iter().any(|(reference, _)| reference == segment) {
+            let mut total = bytes.len() + entries.iter().map(|(_, data)| data.len()).sum::<usize>();
+            while (entries.len() >= MAX_ENTRIES || total > MAX_BYTES)
+                && let Some((_, oldest)) = entries.pop_front()
+            {
+                total -= oldest.len();
+            }
+            entries.push_back((segment.clone(), bytes.into_boxed_slice()));
+        }
+    }
+    true
 }
 
 pub(crate) fn manifest_bytes_ok(bytes: &[u8], expected: &[u8; 32]) -> Result<Manifest, StoreError> {
