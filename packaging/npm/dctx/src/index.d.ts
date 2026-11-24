@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2026 Eris Margeta
-import type { Error as RpcError, Hello, Verb, Response } from './protocol.js';
+import type { Error as RpcError, Hello, Id, Verb, Response } from './protocol.js';
 export type * from './protocol.js';
 
 export interface BinaryOptions {
@@ -17,7 +17,7 @@ export interface ConnectOptions extends BinaryOptions {
   /** Raw engine diagnostics; defaults to forwarding to process.stderr. */
   onStderr?: (chunk: Uint8Array) => void;
 }
-export type OperationResponse = Pick<Response, 'id' | 'engine_version'> & (
+export type OperationResponse = Pick<Response, 'engine_version'> & { id: Id } & (
   | { result: { output: string }; error?: never }
   | { error: RpcError; result?: never }
 );

@@ -18,7 +18,6 @@ import (
 type node struct {
 	Ref        string          `json:"$ref"`
 	Type       string          `json:"type"`
-	Format     string          `json:"format"`
 	Properties map[string]node `json:"properties"`
 	Required   []string        `json:"required"`
 	Items      *node           `json:"items"`
@@ -32,7 +31,7 @@ func main() {
 	check := flag.Bool("check", false, "fail if generated API differs")
 	flag.Parse()
 	if err := run(*check); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintf(os.Stderr, "RPC Go API generation failed: %q\n", err.Error())
 		os.Exit(1)
 	}
 }
@@ -73,7 +72,11 @@ func run(check bool) error {
 		if !ok {
 			return fmt.Errorf("schema missing %s", pair[0])
 		}
-		fmt.Fprintf(&b, "// %s is the RPC %s envelope.\ntype %s struct {\n", pair[1], pair[0], pair[1])
+		fmt.Fprintf(&b, "// %s is the RPC %s envelope.\n", pair[1], pair[0])
+		if pair[0] == "Response" {
+			b.WriteString("// ID holds a raw JSON token, including null for an uncorrelated refusal.\n")
+		}
+		fmt.Fprintf(&b, "type %s struct {\n", pair[1])
 		keys := make([]string, 0, len(n.Properties))
 		for key := range n.Properties {
 			keys = append(keys, key)
@@ -173,11 +176,11 @@ func goType(n node) (string, error) {
 		}
 		return "", fmt.Errorf("unsupported reference %s", n.Ref)
 	}
-	if len(n.AnyOf) > 0 { // Response ID union, string or signed int64.
-		if len(n.AnyOf) != 2 || n.AnyOf[0].Type != "string" || n.AnyOf[1].Format != "int64" {
+	if len(n.AnyOf) > 0 {
+		if len(n.AnyOf) != 2 || n.AnyOf[0].Ref != "#/definitions/Id" || n.AnyOf[1].Type != "null" {
 			return "", fmt.Errorf("unsupported union")
 		}
-		return "json.RawMessage", nil
+		return goType(n.AnyOf[0])
 	}
 	switch n.Type {
 	case "string":

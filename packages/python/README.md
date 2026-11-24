@@ -44,8 +44,10 @@ with Client("./my-project") as engine:
 Every operation accepts positional CLI argument strings, passed individually
 without a shell: `pack`, `context`, `map`, `find`, `read`, `skeleton`, `explain`,
 `neighbors`, `grep`, `hubs`, `path`, `trace`, `impact`, `languages`, `cache_status`.
-RPC supplies `--json` by default. `context` requires `--for TEXT`. `pack` output can include a
-summary line after JSON: output is opaque bytes, not a Python object. Budgets,
+RPC supplies `--json` by default. Use `context("TARGET")` for named context or
+`context("--for", "TEXT")` for task context through `dctx pack --for TEXT`.
+By default, `pack` returns one JSON document with a trailing newline as opaque
+stdout bytes. The CLI's `pack bytes=...` status line goes to stderr. Budgets,
 continuation cursors and paths go straight to the engine. `hello()` returns typed
 protocol metadata. Unknown envelope fields and added verbs are tolerated.
 

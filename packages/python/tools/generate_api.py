@@ -61,10 +61,12 @@ def generate() -> str:
         lines.extend(typed_dict(name, definitions[name]))
     lines.extend(typed_dict("Output", result[1]))
     lines += ["ResultBody = Hello | Output", "", ""]
-    for name, field, annotation in (("Success", "result", "ResultBody"), ("Failure", "error", "Error")):
-        lines += [f"class {name}(TypedDict):", "    id: Id | None",
-                  f"    engine_version: {wire_type(response['properties']['engine_version'])}",
-                  f"    {field}: {annotation}", "", ""]
+    for arm in response["anyOf"]:
+        field, = arm["required"]
+        lines.extend(typed_dict({"result": "Success", "error": "Failure"}[field], {
+            "properties": response["properties"] | arm["properties"],
+            "required": response["required"] + arm["required"],
+        }))
     lines += ["Response = Success | Failure", "", "", "class Operations:",
               '    """Pass CLI argument strings unchanged; return exact engine stdout bytes."""', "",
               "    def _operation(self, verb: Verb, args: tuple[str, ...]) -> bytes:",
@@ -81,12 +83,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    output = generate()
-    if args.check:
-        if not DEST.is_file() or DEST.read_text(encoding="utf-8") != output:
-            parser.exit(1, "RPC Python API is stale; run python packages/python/tools/generate_api.py\n")
-    else:
-        DEST.write_text(output, encoding="utf-8")
+    try:
+        output = generate()
+        if args.check:
+            if not DEST.is_file() or DEST.read_text(encoding="utf-8") != output:
+                parser.exit(1, "RPC Python API is stale; run python packages/python/tools/generate_api.py\n")
+        else:
+            DEST.write_text(output, encoding="utf-8")
+    except (AssertionError, KeyError, OSError, TypeError, ValueError) as error:
+        parser.exit(1, f"RPC Python API generation failed: {error!a}\n")
 
 
 if __name__ == "__main__":

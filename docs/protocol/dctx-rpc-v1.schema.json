@@ -163,13 +163,10 @@
           "description": "Echoed request token; null when the request token could not be decoded.",
           "anyOf": [
             {
-              "description": "UTF-8 string token.",
-              "type": "string"
+              "$ref": "#/definitions/Id"
             },
             {
-              "description": "Signed 64-bit integer token.",
-              "type": "integer",
-              "format": "int64"
+              "type": "null"
             }
           ]
         }
@@ -212,14 +209,14 @@
           ]
         },
         {
-          "description": "`dctx pack`, including `--for`.",
+          "description": "`dctx pack [PATH]`, including `--for TEXT` for task context. The default JSON output is one document; `pack bytes=...` status goes to stderr.",
           "type": "string",
           "enum": [
             "pack"
           ]
         },
         {
-          "description": "Alias for `dctx pack --for`; arguments include `--for TEXT`.",
+          "description": "`dctx context TARGET` for named context; `--for TEXT` selects `dctx pack --for TEXT`.",
           "type": "string",
           "enum": [
             "context"
