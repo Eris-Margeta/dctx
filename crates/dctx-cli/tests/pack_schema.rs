@@ -267,7 +267,7 @@ fn cross_file_citations() {
     // Selection budgets reduce source coverage while the hit count stays fixed.
     for (budget, expected) in [
         (3000, full.as_slice()),
-        (212, signature.as_slice()),
+        (228, signature.as_slice()),
         (100, &[]),
     ] {
         let bytes = fixture.pack("`run` `helper`", &budget.to_string());

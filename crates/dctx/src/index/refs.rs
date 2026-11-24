@@ -40,8 +40,8 @@ use dctx_map_model::{Confidence, EdgeKind};
 use super::decl_pair::is_declaration_only_path;
 use super::extract::language_of;
 use super::refs_names::{
-    ImportBinding, JS_SOURCE_EXTENSIONS, call_segments, import_binding, import_segments,
-    last_segment, module_keys, module_segments, relative_import,
+    ImportBinding, call_segments, import_binding, import_segments, last_segment, module_keys,
+    module_segments, relative_import,
 };
 use super::{IndexedEdge, IndexedNode, TextBlob, write_node_id};
 
@@ -425,19 +425,38 @@ impl<'a> Tables<'a> {
             } else {
                 module_segments(&reference.name)
             };
-            let Some((dst, module)) = self.import_target(importer, family, reference, &segments)
-            else {
+            let (target, js_file) = if family == "javascript" {
+                let Some((file, target)) = self.javascript_target(importer, reference) else {
+                    continue;
+                };
+                (target, Some(file))
+            } else {
+                (
+                    self.import_target(importer, family, reference, &segments),
+                    None,
+                )
+            };
+            // Literal paths can name data files. A member must belong to the importer's family.
+            let target = target.and_then(|(dst, module)| {
+                let path = self.text.get(self.nodes[dst as usize].path);
+                let same_family = language_family(language_of(path)) == family;
+                (module || same_family).then_some((dst, module, same_family))
+            });
+            let Some((dst, module, same_family)) = target else {
+                // The path still proves the dependency when the clause yields no binding.
+                if let Some(file) = js_file
+                    && reference.kind == EdgeKind::Imports
+                    && src != file
+                {
+                    note(found, src, EdgeKind::Imports, file, Confidence::Exact);
+                }
                 continue;
             };
             if dst == src {
                 continue;
             }
-            // A literal path can name a data file. Only same-family symbols can bind calls.
-            let target_path = self.text.get(self.nodes[dst as usize].path);
-            if language_family(language_of(target_path)) != family {
-                if module {
-                    note(found, src, reference.kind, dst, Confidence::Exact);
-                }
+            if !same_family {
+                note(found, src, reference.kind, dst, Confidence::Exact);
                 continue;
             }
             let rank = if reference.form == RefForm::Require && family == "javascript" {
@@ -541,9 +560,6 @@ impl<'a> Tables<'a> {
         }
         if family == "python" {
             return self.python_target(importer, &reference.name);
-        }
-        if family == "javascript" {
-            return self.javascript_target(importer, reference);
         }
         if let Some(module) = self.module_named(segments, family) {
             return Some((module, true));

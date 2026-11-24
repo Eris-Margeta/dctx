@@ -14,6 +14,8 @@ and distribution plans below do not describe the current release.
 
 ## [Unreleased]
 
+- JavaScript and TypeScript imports retain a file-level dependency when the path resolves but the imported member cannot be verified.
+
 ## [1.3.2] - 2026-11-22
 
 ### Removed: MCP server

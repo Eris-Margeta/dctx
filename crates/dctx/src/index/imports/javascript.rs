@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 //! JavaScript module operands resolve relative to the importing source.
-use super::{EdgeKind, JS_SOURCE_EXTENSIONS, RawRef, RefForm, Tables, relative_import};
+use super::{EdgeKind, RawRef, RefForm, Tables, dir_of, relative_import};
+use crate::index::refs_names::{inventory_join, js_relative_candidates};
 
 impl Tables<'_> {
+    /// Returns the resolved path and the target, if any, proven by the import clause.
     pub(super) fn javascript_target(
         &self,
         importer: &str,
         reference: &RawRef,
-    ) -> Option<(u32, bool)> {
+    ) -> Option<(u32, Option<(u32, bool)>)> {
         if reference.form == RefForm::Require
             && (importer.ends_with(".mjs") || importer.ends_with(".mts"))
         {
@@ -20,7 +22,7 @@ impl Tables<'_> {
             path.split(['?', '#']).next()?
         };
         let module = self.relative_js_module(importer, path)?;
-        match member {
+        let target = match member {
             Some("*") | None => Some((module, true)),
             Some("default")
                 if self.js_interop(importer) && self.js_assignment(module).is_some() =>
@@ -34,7 +36,8 @@ impl Tables<'_> {
                 &mut Vec::new(),
                 &mut 4096,
             ),
-        }
+        };
+        Some((module, target))
     }
 
     pub(super) fn js_assignment(&self, module: u32) -> Option<(u32, bool)> {
@@ -154,34 +157,8 @@ impl Tables<'_> {
 
     /// Joins a specifier to the importer inside the inventory, without touching the filesystem.
     fn relative_js_module(&self, importer: &str, path: &str) -> Option<u32> {
-        let mut parts: Vec<_> = importer.split('/').collect();
-        parts.pop();
-        for part in path.split('/') {
-            match part {
-                "" | "." => {}
-                ".." => {
-                    parts.pop()?;
-                }
-                _ => parts.push(part),
-            }
-        }
-        let base = parts.join("/");
-        let lookup = |stem: &str| {
-            JS_SOURCE_EXTENSIONS.iter().find_map(|ext| {
-                self.module_paths
-                    .get(format!("{stem}.{ext}").as_str())
-                    .copied()
-            })
-        };
-        if !matches!(path.rsplit('/').next(), Some("" | "." | "..")) {
-            if let Some(&module) = self.module_paths.get(base.as_str()) {
-                return Some(module);
-            }
-            if let Some(module) = lookup(&base) {
-                return Some(module);
-            }
-        }
-        parts.push("index");
-        lookup(&parts.join("/"))
+        let base = inventory_join(dir_of(importer), path)?;
+        js_relative_candidates(&base, path)
+            .find_map(|candidate| self.module_paths.get(candidate.as_ref()).copied())
     }
 }

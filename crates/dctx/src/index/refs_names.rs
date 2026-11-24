@@ -3,6 +3,8 @@
 //! Implements the name side of SPEC-MAP-MODE 6.3 for every first-party lexer's spelling (`a.b`, `a::b`, `a->b`, `./a/b`).
 //! Pure string functions; the resolver in `refs` owns the tables.
 
+use std::borrow::Cow;
+
 /// Implicit JS/TS source extensions, in lookup order.
 pub(super) const JS_SOURCE_EXTENSIONS: &[&str] =
     &["js", "jsx", "mjs", "cjs", "ts", "tsx", "mts", "cts"];
@@ -160,6 +162,28 @@ pub(super) fn inventory_join(directory: &str, relative: &str) -> Option<String> 
     Some(parts.join("/"))
 }
 
+/// Try the joined path as spelled, with source extensions, then as a directory index.
+/// A specifier ending in a slash, `.` or `..` names a directory only.
+pub(super) fn js_relative_candidates<'a>(
+    base: &'a str,
+    specifier: &str,
+) -> impl Iterator<Item = Cow<'a, str>> {
+    let file = (!matches!(specifier.rsplit('/').next(), Some("" | "." | ".."))).then_some(base);
+    let extensions = file.into_iter().flat_map(|stem| {
+        JS_SOURCE_EXTENSIONS
+            .iter()
+            .map(move |ext| Cow::Owned(format!("{stem}.{ext}")))
+    });
+    let separator = if base.is_empty() { "" } else { "/" };
+    let indexes = JS_SOURCE_EXTENSIONS
+        .iter()
+        .map(move |ext| Cow::Owned(format!("{base}{separator}index.{ext}")));
+    file.into_iter()
+        .map(Cow::Borrowed)
+        .chain(extensions)
+        .chain(indexes)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -207,6 +231,48 @@ mod tests {
             relative_import(&format!("{path}::f")),
             Some((path, Some("f")))
         );
+    }
+
+    #[test]
+    fn relative_js_candidates_preserve_file_and_directory_order() {
+        let specifier = ".././x\n\x1b\"";
+        let base = inventory_join("p/sub", specifier).expect("path within inventory");
+        let candidates: Vec<_> = js_relative_candidates(&base, specifier).collect();
+        assert_eq!(
+            candidates,
+            [
+                "p/x\n\x1b\"",
+                "p/x\n\x1b\".js",
+                "p/x\n\x1b\".jsx",
+                "p/x\n\x1b\".mjs",
+                "p/x\n\x1b\".cjs",
+                "p/x\n\x1b\".ts",
+                "p/x\n\x1b\".tsx",
+                "p/x\n\x1b\".mts",
+                "p/x\n\x1b\".cts",
+                "p/x\n\x1b\"/index.js",
+                "p/x\n\x1b\"/index.jsx",
+                "p/x\n\x1b\"/index.mjs",
+                "p/x\n\x1b\"/index.cjs",
+                "p/x\n\x1b\"/index.ts",
+                "p/x\n\x1b\"/index.tsx",
+                "p/x\n\x1b\"/index.mts",
+                "p/x\n\x1b\"/index.cts",
+            ]
+        );
+        for specifier in ["../", "../.", "./sub/.."] {
+            let base = inventory_join("p", specifier).expect("path within inventory");
+            let first = if base.is_empty() {
+                "index.js"
+            } else {
+                "p/index.js"
+            };
+            assert_eq!(
+                js_relative_candidates(&base, specifier).next().as_deref(),
+                Some(first)
+            );
+        }
+        assert_eq!(inventory_join("p", "../../x"), None);
     }
 
     #[test]
