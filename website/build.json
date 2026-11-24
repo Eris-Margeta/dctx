@@ -1,10 +1,10 @@
 {
  "version": "1.3.2",
- "build_id": "ba564aca70949967a1651ebca76ed361f572a27378efa2421c98b46555dd9c34",
- "source_sha256": "15d09ce001728d8e1daf9108c44785e72126b9d6b7b7eb758e1afdc0e5beab0c",
+ "build_id": "73f9b0ee5a013913ed44e716be222692254f51e7e4a3c8f9761ad793cee7d61c",
+ "source_sha256": "65f31ebc99240ab7281d6d5d0b0b3e2ecd08a41abc6d67d8b81aafaa05763018",
  "sources": 53,
  "sources_updated": "2026-11-24",
  "pages": 45,
  "files": 239,
- "bytes": 22217070
+ "bytes": 22217219
 }
