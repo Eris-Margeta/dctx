@@ -3,10 +3,14 @@
 //! Implements the name side of SPEC-MAP-MODE 6.3 for every first-party lexer's spelling (`a.b`, `a::b`, `a->b`, `./a/b`).
 //! Pure string functions; the resolver in `refs` owns the tables.
 
-/// Extensions removed from a path-shaped import such as `./util.js` or `lib/x.rb`.
-const SOURCE_EXTENSIONS: &[&str] = &[
-    "js", "jsx", "mjs", "cjs", "ts", "tsx", "mts", "cts", "py", "pyi", "rs", "go", "java", "c",
-    "h", "cc", "cpp", "cxx", "hpp", "hh", "cs", "kt", "kts", "rb", "php", "swift",
+/// Implicit JS/TS source extensions, in lookup order.
+pub(super) const JS_SOURCE_EXTENSIONS: &[&str] =
+    &["js", "jsx", "mjs", "cjs", "ts", "tsx", "mts", "cts"];
+
+/// Source extensions stripped from path-shaped imports in other languages.
+const OTHER_SOURCE_EXTENSIONS: &[&str] = &[
+    "py", "pyi", "rs", "go", "java", "c", "h", "cc", "cpp", "cxx", "hpp", "hh", "cs", "kt", "kts",
+    "rb", "php", "swift",
 ];
 
 /// Leading words of a call spelling that name no segment.
@@ -41,11 +45,31 @@ pub(super) fn call_segments(name: &str, language: Option<&str>) -> Vec<String> {
     all
 }
 
+/// The module path and optional lexer-supplied binding of a relative JS import.
+pub(super) fn relative_import(name: &str) -> Option<(&str, Option<&str>)> {
+    if !name.starts_with("./") && !name.starts_with("../") {
+        return None;
+    }
+    Some(
+        name.rsplit_once("::")
+            .map_or((name, None), |(module, binding)| (module, Some(binding))),
+    )
+}
+
 /// Segments of an import spelling. A trailing source extension, quotes, relative dots and `*` are dropped.
 pub(super) fn import_segments(name: &str) -> Vec<String> {
+    let (module, binding) = relative_import(name).unwrap_or((name, None));
+    let mut segments = module_segments(module);
+    segments.extend(binding.map(str::to_owned));
+    segments
+}
+
+/// Splits a module spelling using the shared suffix resolver's rules.
+pub(super) fn module_segments(name: &str) -> Vec<String> {
     let mut spelled = name.trim();
     if let Some((stem, extension)) = spelled.rsplit_once('.')
-        && SOURCE_EXTENSIONS.contains(&extension)
+        && (JS_SOURCE_EXTENSIONS.contains(&extension)
+            || OTHER_SOURCE_EXTENSIONS.contains(&extension))
         && (spelled.contains('/')
             || spelled.starts_with('.')
             || matches!(extension, "h" | "hpp" | "hh"))
@@ -117,6 +141,7 @@ mod tests {
     #[test]
     fn import_segments_work() {
         assert_eq!(import_segments("./util.js"), ["util"]);
+        assert_eq!(import_segments("./util.js::helper"), ["util", "helper"]);
         assert_eq!(import_segments("a::beta"), ["a", "beta"]);
         assert_eq!(
             import_segments("static java.util.Objects.*"),
@@ -124,6 +149,15 @@ mod tests {
         );
         assert_eq!(import_segments("crate::a::B"), ["a", "B"]);
         assert_eq!(import_segments("stdio.h"), ["stdio"]);
+    }
+
+    #[test]
+    fn relative_import_preserves_literal_module_text() {
+        let path = "./a\n\x1b\"/x.js";
+        assert_eq!(
+            relative_import(&format!("{path}::f")),
+            Some((path, Some("f")))
+        );
     }
 
     #[test]

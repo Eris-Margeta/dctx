@@ -10,7 +10,10 @@ use dctx_map_model::EdgeKind;
 
 use super::decl_pair::is_declaration_only_path;
 use super::extract::language_of;
-use super::refs_names::{call_segments, import_segments, last_segment, module_keys};
+use super::refs_names::{
+    JS_SOURCE_EXTENSIONS, call_segments, import_segments, last_segment, module_keys,
+    module_segments, relative_import,
+};
 use super::{IndexedEdge, IndexedNode, TextBlob, write_node_id};
 
 /// One unresolved call or import exactly as a lexer reported it.
@@ -64,7 +67,7 @@ pub(crate) struct FileRefs {
 /// Languages where a call spelled as a bare name never reaches a method: a method needs a receiver (`self.`, `this.`, `x.`) or a type path (`Self::`).
 const RECEIVER_ONLY: &[&str] = &["rust", "python", "javascript", "typescript", "go"];
 
-/// Language family of a language tag: calls and imports resolve only between files of one family.
+/// Language family used for symbol resolution and module suffix lookup.
 ///
 /// Languages that share a toolchain and call each other directly form one family (JS/TS and web components,
 /// the JVM languages, the BEAM languages); every other tag is its own family. A Rust `.all(..)` therefore never
@@ -111,6 +114,8 @@ struct Tables<'a> {
     names: HashMap<(u32, &'a str), Vec<u32>>,
     /// (language family, last name segment) to symbols.
     bare: HashMap<(&'a str, &'a str), Vec<u32>>,
+    /// Module nodes by literal inventory path, including files without symbols or references.
+    module_paths: HashMap<&'a str, u32>,
     /// Module key to (module index, key is the full path form, language family).
     modules: HashMap<String, Vec<(u32, bool, &'a str)>>,
 }
@@ -157,6 +162,12 @@ impl<'a> Tables<'a> {
         let mut names: HashMap<(u32, &str), Vec<u32>> = HashMap::new();
         let mut bare: HashMap<(&str, &str), Vec<u32>> = HashMap::new();
         let mut modules: HashMap<String, Vec<(u32, bool, &str)>> = HashMap::new();
+        let module_paths = nodes
+            .iter()
+            .enumerate()
+            .filter(|(_, node)| node.letter == b'm')
+            .filter_map(|(index, node)| Some((text.get(node.path), u32::try_from(index).ok()?)))
+            .collect();
         for file in files {
             let Some(module) = nodes.get(file.first as usize) else {
                 continue;
@@ -195,6 +206,7 @@ impl<'a> Tables<'a> {
             files,
             names,
             bare,
+            module_paths,
             modules,
         }
     }
@@ -214,10 +226,13 @@ impl<'a> Tables<'a> {
             }
             ids.insert(id, index);
         }
-        let module_node = self.nodes.get(file.first as usize);
-        let language = module_node.map(|module| language_of(self.text.get(module.path)));
-        let family = language_family(language.unwrap_or("opaque"));
-        let receiver_only = language.is_some_and(|language| RECEIVER_ONLY.contains(&language));
+        let Some(module) = self.nodes.get(file.first as usize) else {
+            return;
+        };
+        let importer = self.text.get(module.path);
+        let language = language_of(importer);
+        let family = language_family(language);
+        let receiver_only = RECEIVER_ONLY.contains(&language);
         let mut visible: HashSet<&str> = HashSet::new();
         for index in file.first.saturating_add(1)..file.end {
             if let Some(node) = self.nodes.get(index as usize) {
@@ -251,11 +266,25 @@ impl<'a> Tables<'a> {
             let Some(&src) = ids.get(&reference.src) else {
                 continue;
             };
-            let segments = import_segments(&reference.name);
-            let Some((dst, module)) = self.import_target(&segments, family) else {
+            let segments = if family == "javascript" {
+                import_segments(&reference.name)
+            } else {
+                module_segments(&reference.name)
+            };
+            let Some((dst, module)) =
+                self.import_target(importer, family, &reference.name, &segments)
+            else {
                 continue;
             };
             if dst == src {
+                continue;
+            }
+            // A literal path can name a data file. Only same-family symbols can bind calls.
+            let target_path = self.text.get(self.nodes[dst as usize].path);
+            if language_family(language_of(target_path)) != family {
+                if module {
+                    note(found, src, false, dst, Rank::Exact);
+                }
                 continue;
             }
             note(found, src, false, dst, Rank::Exact);
@@ -288,7 +317,7 @@ impl<'a> Tables<'a> {
             let Some(&src) = ids.get(&reference.src) else {
                 continue;
             };
-            let segments = call_segments(&reference.name, language);
+            let segments = call_segments(&reference.name, Some(language));
             let Some((callee, qualifier)) = segments.split_last() else {
                 continue;
             };
@@ -313,13 +342,65 @@ impl<'a> Tables<'a> {
     }
 
     /// Module or symbol of `family` an import path names. `true` marks a module.
-    fn import_target(&self, segments: &[String], family: &str) -> Option<(u32, bool)> {
+    fn import_target(
+        &self,
+        importer: &str,
+        family: &str,
+        name: &str,
+        segments: &[String],
+    ) -> Option<(u32, bool)> {
+        if family == "javascript"
+            && let Some((path, binding)) = relative_import(name)
+        {
+            let module = self.relative_js_module(importer, path)?;
+            return match binding {
+                Some(symbol) => self.import_symbol(module, symbol),
+                None => Some((module, true)),
+            };
+        }
         if let Some(module) = self.module_named(segments, family) {
             return Some((module, true));
         }
         let (symbol, path) = segments.split_last()?;
         let module = self.module_named(path, family)?;
-        let hit = self.names.get(&(module, symbol.as_str()))?;
+        self.import_symbol(module, symbol)
+    }
+
+    /// Joins a specifier to the importer inside the inventory, without touching the filesystem.
+    fn relative_js_module(&self, importer: &str, path: &str) -> Option<u32> {
+        let mut parts: Vec<_> = importer.split('/').collect();
+        parts.pop();
+        for part in path.split('/') {
+            match part {
+                "" | "." => {}
+                ".." => {
+                    parts.pop()?;
+                }
+                _ => parts.push(part),
+            }
+        }
+        let base = parts.join("/");
+        let lookup = |stem: &str| {
+            JS_SOURCE_EXTENSIONS.iter().find_map(|ext| {
+                self.module_paths
+                    .get(format!("{stem}.{ext}").as_str())
+                    .copied()
+            })
+        };
+        if !matches!(path.rsplit('/').next(), Some("" | "." | "..")) {
+            if let Some(&module) = self.module_paths.get(base.as_str()) {
+                return Some(module);
+            }
+            if let Some(module) = lookup(&base) {
+                return Some(module);
+            }
+        }
+        parts.push("index");
+        lookup(&parts.join("/"))
+    }
+
+    fn import_symbol(&self, module: u32, symbol: &str) -> Option<(u32, bool)> {
+        let hit = self.names.get(&(module, symbol))?;
         (hit.len() == 1).then(|| (hit[0], false))
     }
 
