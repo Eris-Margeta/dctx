@@ -125,6 +125,10 @@ jobs:
           python packages/python/tools/build_wheels.py --output wheelhouse \
             --binary "$binary" --target "$TARGET"
           python -W error::ResourceWarning -m unittest discover -s packages/python/tests -v
+      - name: Verify the release archive and install the upload candidates offline
+        run: |
+          python -B tools/release/check_wheel_install.py --target "$DCTX_WHEEL_TARGET" \
+            --archives target/python-native --wheelhouse wheelhouse
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: python-${{ matrix.target }}
