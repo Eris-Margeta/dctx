@@ -65,6 +65,9 @@ jobs:
       - name: Check committed baseline
         run: python3 tools/bench/perf_ci.py check
 
+      - name: Verify baseline and candidate samples
+        run: python3 tools/bench/verify_perf_samples.py tools/bench/perf-baseline.json target/perfci/report.json
+
       - name: Preserve raw samples and provenance
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
