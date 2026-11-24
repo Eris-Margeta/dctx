@@ -312,6 +312,23 @@ fn js_imports_with_spelled_extensions_bind_named_and_default_calls() {
 }
 
 #[test]
+fn js_unproven_members_link_the_file_without_binding_calls() {
+    for clause in ["dep", "{ hidden as dep }", "{ absent as dep }"] {
+        let importer =
+            format!("import {clause} from './a.js'; export function run() {{ dep(); dep.f(); }}");
+        assert_eq!(
+            walked_dependencies(&[
+                ("a.js", "export function f() {} function hidden() {}"),
+                ("b.js", &importer),
+                ("decoy.js", "export function dep() {}"),
+            ]),
+            [["m:b.js", "imports", "m:a.js", "exact"]],
+            "{clause:?}"
+        );
+    }
+}
+
+#[test]
 fn js_relative_imports_resolve_in_the_importers_directory_only() {
     let target = ("p/lib/x.js", "export function f() {}");
     for (importer, specifier) in [("p/b.js", "./lib/x"), ("p/sub/b.js", "../lib/x")] {
@@ -1392,8 +1409,17 @@ fn ts_export_assignment_requires_default_interop() {
             ("b.ts", "import work from './a'; function run(){work();}"),
             ("tsconfig.json", &config),
         ]);
-        assert_eq!(got.len(), if enabled { 2 } else { 0 }, "{got:?}");
-        assert!(got.iter().all(|e| e[2] == "s:a.ts#hit"), "{got:?}");
+        if enabled {
+            assert_eq!(
+                got,
+                [
+                    ["m:b.ts", "imports", "s:a.ts#hit", "exact"],
+                    ["s:b.ts#run", "calls", "s:a.ts#hit", "name"],
+                ]
+            );
+        } else {
+            assert_eq!(got, [["m:b.ts", "imports", "m:a.ts", "exact"]]);
+        }
     }
 }
 

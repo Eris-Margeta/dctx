@@ -271,9 +271,8 @@ impl<'a> ReferenceProjection<'a> {
                 {
                     RefForm::PhpFile
                 }
-                Some("directory")
-                    if let Some(literal) = reference.name.strip_prefix("__DIR__ . ") =>
-                {
+                Some("directory") => {
+                    let literal = reference.name.strip_prefix("__DIR__ . ")?;
                     let operand = literal
                         .get(1..literal.len().checked_sub(1)?)?
                         .strip_prefix('/')?;
