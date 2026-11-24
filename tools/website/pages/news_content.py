@@ -2,15 +2,13 @@
 the rendered documents on this site."""
 from __future__ import annotations
 
-from common import VERSION
-
 NEWS = [
     {
-        "slug": "dctx-1-1", "date": "2026-11-04", "kind": "Release",
+        "slug": "dctx-1-1", "date": "2026-11-06", "kind": "Release",
         "title": "dctx 1.1: three more languages and a prefix-stable pack.",
-        "summary": "Perl, Fortran and Verilog join map mode; dctx pack drops timestamps so prompt caches hit; the three-way benchmark and the byte-stability measurement are public.",
-        "body": f"""
-<p>dctx {VERSION} was released on 4 November 2026. It folds in the 1.0.1 line and follows the first v1 release of 31 October.</p>
+        "summary": "dctx 1.1.0 adds Perl, Fortran and Verilog to map mode and makes dctx pack prefix-stable. This post records the benchmark and byte-stability results.",
+        "body": """
+<p>The dctx 1.1.0 release candidate (<code>v1.1.0-rc1</code>) came out on 4 November 2026. The final release (<code>v1.1.0</code>) followed on 6 November 2026. It folds in the 1.0.1 line and follows the first v1 release of 31 October.</p>
 <h2>What is new</h2>
 <ul>
 <li><strong>Perl, Fortran and Verilog/SystemVerilog</strong> join the full tier, with symbols and lexical call edges labelled <code>guess</code>. dctx now covers 50 language families: 36 full, 8 outline and 6 documentation formats.</li>
@@ -20,7 +18,7 @@ NEWS = [
 <h2>Historical output-only measurements</h2>
 <p>These other-tool results are retained as release history. Tokens here estimate tool stdout, not whole-session cost. The current baseline is <a href="/benchmarks/#grep-read">grep plus file reads</a>; <a href="/docs/modalities/">choose a mode</a> and count startup context and all model turns.</p>
 <p>On our own 70-question protocol, run on 31 October against Trail-Code 0.28.0 and graphify 0.9.97 in code-only mode, dctx scored 140 of 140 points with 29,340 estimated tokens; Trail-Code scored 122 with 88,923 and graphify 96 with 197,203. Cold indexing of the six corpora took dctx 0.13&ndash;1.20 s.</p>
-<p>That protocol was designed by the dctx team and can favour dctx. An independently selected protocol is pending, and we will publish its result whatever it shows.</p>
+<p>The dctx team designed that protocol, which can favour dctx. In the <a href="/docs/benchmark/#independent-benchmark-31102026-run-uncapped-on-the-linux-benchmark-host">31 October 2026 independent benchmark</a> on three independently selected repositories, dctx scored 22 of 28 task points and retrieved 31 of 36 facts. Trail-Code scored 19 of 28 task points and graphify scored 14 of 28.</p>
 <p>On 6 November, 33 of 33 text answers and 33 of 33 JSON answers stayed byte-identical after unrelated edits across three pinned corpora. Three weeks earlier, answer headers that changed after unrelated edits were one of the findings that <a href="/news/specification-and-benchmark/">our first benchmark</a> held against us.</p>
 <p><a href="/docs/benchmark/">Benchmark write-up</a> &middot; <a href="/docs/stability/">Stability report</a> &middot; <a href="/changelog/#v1-1-0">Full changelog</a></p>
 """},
