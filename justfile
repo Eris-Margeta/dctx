@@ -99,11 +99,43 @@ desktop-build: desktop-frontend
 desktop-dev:
     cd apps/dctx-desktop && bun run tauri:dev
 
-# Check everything including desktop app
-check-all: fmt-check lint desktop-lint
+# Check all Rust targets on the minimum supported toolchain declared in Cargo.toml.
+msrv-check: desktop-frontend
+    #!/usr/bin/env python3
+    from pathlib import Path
+    import re
+    import subprocess
+    import sys
+    import tomllib
 
-# Run all CI checks locally (format, lint, test, desktop-lint)
-ci: fmt-check lint test desktop-lint
+    def run(*args, check=True):
+        return subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=check)
+
+    try:
+        with Path("Cargo.toml").open("rb") as manifest:
+            version = tomllib.load(manifest)["workspace"]["package"]["rust-version"]
+        if not isinstance(version, str) or not re.fullmatch(r"[0-9]+\.[0-9]+(?:\.[0-9]+)?", version):
+            raise ValueError(f"invalid workspace rust-version {version!r}")
+        if run("rustup", "run", version, "cargo", "--version", check=False).returncode:
+            run("rustup", "toolchain", "install", version, "--profile", "minimal")
+        run(
+            "cargo", f"+{version}", "check", "--workspace", "--all-targets",
+            "--locked", "--color", "never",
+        )
+    except subprocess.CalledProcessError as error:
+        output = error.stdout.decode("utf-8", "replace")
+        print(f"MSRV check failed ({error.returncode}): {ascii(output)}", file=sys.stderr)
+        sys.exit(1)
+    except (OSError, KeyError, TypeError, ValueError) as error:
+        print(f"MSRV check failed: {ascii(str(error))}", file=sys.stderr)
+        sys.exit(1)
+    print(f"MSRV check passed on Rust {version}")
+
+# Check everything including desktop app
+check-all: fmt-check lint desktop-lint msrv-check
+
+# Run all CI checks locally (format, lint, test, desktop-lint, MSRV)
+ci: fmt-check lint test desktop-lint msrv-check
 
 # Clean build artifacts
 clean:
