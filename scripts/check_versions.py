@@ -34,6 +34,11 @@ def read_text(path):
     return path.read_text(encoding="utf-8")
 
 
+def escaped(text):
+    """Escape a report field as JSON string content, keeping plain labels unchanged."""
+    return json.dumps(text)[1:-1]
+
+
 def headings(text):
     """Yield level-two section labels, excluding fenced examples and links."""
     fence = None
@@ -161,7 +166,9 @@ def check(root, allow_unreleased=False, preflight=False):
 
 # These selectors read the scalar declarations used by the repository's workflows.
 # Keep the preflight dependency-free and never source a workflow or shell file.
-ACTION_USE = re.compile(r"""^\s*(?:-\s*)?uses:\s*["']?([^\s"'#]+)""")
+# Strip matching YAML quotes and whitespace-separated comments. A '#' or
+# quote inside a plain ref is part of the ref and must reach the SHA check.
+ACTION_USE = re.compile(r"""^\s*(?:-\s*)?uses:\s*(?!#)(["']?)(?P<ref>\S.*?)\1(?:\s+#.*)?\s*$""")
 TOOLCHAIN_FIELD = re.compile(r"""^\s*(?:-\s*)?(?:toolchain|RUSTUP_TOOLCHAIN|DCTX_CI_RUST):\s*["']?([^\s"'#]+)""")
 TOOLCHAIN_INSTALL = re.compile(r"""\brustup\s+toolchain\s+install\s+["']?([^\s"'#]+)""")
 CHANNEL = re.compile(r"(?:stable|beta|nightly(?:-\d{4}-\d{2}-\d{2})?|\d+\.\d+(?:\.\d+)?)")
@@ -177,13 +184,13 @@ def workflow_checks(root):
         try:
             lines = read_text(path).splitlines()
         except (OSError, UnicodeError) as exc:
-            read_errors.append(f"{path.name}: {type(exc).__name__}")
+            read_errors.append(f"{escaped(path.name)}: {type(exc).__name__}")
             continue
         for number, line in enumerate(lines, 1):
-            source = f".github/workflows/{path.name}:{number}"
+            source = f".github/workflows/{escaped(path.name)}:{number}"
             action = ACTION_USE.match(line)
-            if action and not action[1].startswith(("./", "docker://")):
-                actions.append((source, action[1]))
+            if action and not action["ref"].startswith(("./", "docker://")):
+                actions.append((source, action["ref"]))
             # The matrix includes an MSRV lane, and release and benchmark jobs
             # deliberately install their own toolchains.
             if path.name == "performance.yml" or line.lstrip().startswith("#"):
@@ -193,8 +200,8 @@ def workflow_checks(root):
             match = field or install
             if match and (CHANNEL.fullmatch(match[1]) or match[1] in ("$DCTX_CI_RUST", "${DCTX_CI_RUST}")):
                 toolchains.append((source, match[1]))
-            if action and action[1].startswith("dtolnay/rust-toolchain@"):
-                ref = action[1].split("@", 1)[1]
+            if action and action["ref"].startswith("dtolnay/rust-toolchain@"):
+                ref = action["ref"].split("@", 1)[1]
                 if CHANNEL.fullmatch(ref):
                     toolchains.append((source, ref))
 
@@ -221,13 +228,12 @@ def workflow_checks(root):
         if expected.startswith("$"):
             expected = ci_pin
         if expected is None or (channel and channel != expected):
-            errors.append(f"{source}: expected {expected or 'a DCTX_CI_RUST pin'}, found {channel!r}")
+            errors.append(f"{source}: expected {escaped(expected or 'a DCTX_CI_RUST pin')}, found {channel!a}")
     yield "rust-toolchain", errors
 
     errors = read_errors.copy()
-    if any(SHA.fullmatch(action.rpartition("@")[2]) for _, action in actions):
-        errors.extend(f"{source}: {action} needs a full commit SHA"
-                      for source, action in actions if not SHA.fullmatch(action.rpartition("@")[2]))
+    errors.extend(f"{source}: {escaped(action)} needs a full commit SHA"
+                  for source, action in actions if not SHA.fullmatch(action.partition("@")[2]))
     yield "action-pins", errors
 
 
@@ -235,9 +241,9 @@ def run_preflight(root):
     rows = check(root, preflight=True)
     version = rows[0][1]
     checks = [
-        ("versions", [f"{source}={value!r} (VERSION={version!r})" for source, value, ok in rows
+        ("versions", [f"{escaped(source)}={value!a} (VERSION={version!a})" for source, value, ok in rows
                       if not ok and not source.startswith("CHANGELOG.md")]),
-        ("changelog", [f"{source}={value!r} (VERSION={version!r})" for source, value, ok in rows
+        ("changelog", [f"{escaped(source)}={value!a} (VERSION={version!a})" for source, value, ok in rows
                        if not ok and source.startswith("CHANGELOG.md")]),
         *workflow_checks(root),
     ]
@@ -246,8 +252,13 @@ def run_preflight(root):
     return int(any(errors for _, errors in checks))
 
 
+class ArgumentParser(argparse.ArgumentParser):
+    def error(self, message):
+        super().error(escaped(message))
+
+
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = ArgumentParser(prog="check_versions.py", description=__doc__)
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1],
                         help="repository tree to check (default: this script's repository)")
     parser.add_argument("--allow-unreleased", action="store_true",
@@ -259,8 +270,8 @@ def main(argv=None):
     rows = check(args.root, args.allow_unreleased)
     print("source\tvalue\tok")
     for source, value, ok in rows:
-        print(f"{source}\t{json.dumps(value, ensure_ascii=False)}\t{'yes' if ok else 'NO'}")
-    failures = [source for source, _, ok in rows if not ok]
+        print(f"{escaped(source)}\t{json.dumps(value)}\t{'yes' if ok else 'NO'}")
+    failures = [escaped(source) for source, _, ok in rows if not ok]
     if failures:
         print("Disagreeing or invalid sources: " + ", ".join(failures))
     return int(bool(failures))
