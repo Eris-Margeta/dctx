@@ -3,9 +3,9 @@
 """Gate dctx map/pack scaling at 2,000 and 8,000 seeded small source files.
 
 Five cold-cache runs per size are compared by median process elapsed time.
-Only a ratio above 6x or different stdout bytes across repeated runs fails the
-gate (exit 1). Setup/command errors exit 2. Automatic discovery skips with a
-NOTE when it finds no executable.
+A ratio above 6x, different stdout bytes across repeated runs, or missing
+fixture evidence fails the gate (exit 1). Setup/command errors exit 2.
+Automatic discovery skips with a NOTE when it finds no executable.
 Fixtures, subprocess state and caches are temporary and stay in this worktree.
 """
 from __future__ import annotations
@@ -128,6 +128,35 @@ class Measurement:
     median: float
     output_bytes: int
     deterministic: bool
+    fixture_evidence: bool
+
+
+def has_fixture_output(args: list[str], output: bytes) -> bool:
+    """Look for the first seeded file, which fits even the default pack budget."""
+    if args == ["pack", "."]:
+        return re.search(
+            rb'^<FILE_CONTENT_START ID="[^"\r\n]+" PATH="group_00/item_00000\.rs" LINES="\d+">\n'
+            rb'pub fn item_00000\(\) -> u32 \{ \d+ \}$', output, re.MULTILINE
+        ) is not None
+    if args != ["map", "export"]:
+        raise ValueError("unsupported speed gate workload")
+    try:
+        graph = json.loads(output)
+    except (ValueError, RecursionError):
+        return False
+    if not (isinstance(graph, dict) and isinstance(graph.get("nodes"), list)
+            and isinstance(graph.get("edges"), list)):
+        return False
+    path = "group_00/item_00000.rs"
+    missing = {f"m:{path}", f"s:{path}#item_00000"}
+    for node in graph["nodes"]:
+        if isinstance(node, dict) and node.get("path") == path:
+            node_id = node.get("id")
+            if isinstance(node_id, str):
+                missing.discard(node_id)
+                if not missing:
+                    return True
+    return False
 
 
 def measure(binary: Path, args: list[str], fixture: Path, state: Path,
@@ -135,6 +164,7 @@ def measure(binary: Path, args: list[str], fixture: Path, state: Path,
     samples = []
     baseline = None
     deterministic = True
+    fixture_evidence = True
     for run in range(RUNS):
         # A fresh cache for every process measures indexing, not cache reuse.
         env = isolated_env(state / str(run))
@@ -144,11 +174,13 @@ def measure(binary: Path, args: list[str], fixture: Path, state: Path,
         if not math.isfinite(elapsed) or elapsed < 0:
             raise ValueError("timer must return finite, nondecreasing readings")
         samples.append(elapsed)
-        if baseline is None:
-            baseline = output
-        else:
-            deterministic = deterministic and output == baseline
-    return Measurement(statistics.median(samples), len(baseline), deterministic)
+        if baseline is None or output != baseline:
+            fixture_evidence = fixture_evidence and has_fixture_output(args, output)
+            if baseline is None:
+                baseline = output
+            else:
+                deterministic = False
+    return Measurement(statistics.median(samples), len(baseline), deterministic, fixture_evidence)
 
 
 def time_ratio(small: float, large: float) -> float:
@@ -186,8 +218,8 @@ def main(argv: list[str] | None = None, *,
                 fixtures.append(fixture)
             print(f"Median of {RUNS} cold-cache runs; 4x files; ratio limit {MAX_RATIO:g}x.")
             print(f"| Command | {BASE_FILES} files (s) | {4 * BASE_FILES} files (s) | "
-                  "Ratio | Output bytes (N / 4N) | Deterministic | Result |")
-            print("| --- | ---: | ---: | ---: | ---: | --- | --- |")
+                  "Ratio | Output bytes (N / 4N) | Fixture evidence | Deterministic | Result |")
+            print("| --- | ---: | ---: | ---: | ---: | --- | --- | --- |")
             failed = False
             for name, command in commands.items():
                 small, large = [measure(binary, command, fixture,
@@ -196,10 +228,12 @@ def main(argv: list[str] | None = None, *,
                                 for i, fixture in enumerate(fixtures)]
                 ratio = time_ratio(small.median, large.median)
                 deterministic = small.deterministic and large.deterministic
-                passed = ratio <= MAX_RATIO and deterministic
+                fixture_evidence = small.fixture_evidence and large.fixture_evidence
+                passed = ratio <= MAX_RATIO and deterministic and fixture_evidence
                 failed = failed or not passed
                 print(f"| {name} | {small.median:.6f} | {large.median:.6f} | {ratio:.3f}x | "
                       f"{small.output_bytes} / {large.output_bytes} | "
+                      f"{'yes' if fixture_evidence else 'NO'} | "
                       f"{'yes' if deterministic else 'NO'} | {'PASS' if passed else 'FAIL'} |")
             return int(failed)
     except (OSError, subprocess.CalledProcessError, ValueError) as error:
