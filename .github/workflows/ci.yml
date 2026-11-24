@@ -99,6 +99,12 @@ jobs:
       - name: Format
         run: cargo fmt --all -- --check
 
+      - name: Engine contract test dependencies
+        run: |
+          python3 -m venv "$RUNNER_TEMP/engine-venv"
+          "$RUNNER_TEMP/engine-venv/bin/pip" install -r scripts/requirements.txt
+          echo "$RUNNER_TEMP/engine-venv/bin" >> "$GITHUB_PATH"
+
       - name: Wrapper engine API boundary
         run: |
           python3 tools/engine-contract/check_imports.py
