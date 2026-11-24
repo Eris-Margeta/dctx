@@ -14,7 +14,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Output};
 
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use tempfile::TempDir;
 
 struct Repository {
@@ -219,11 +219,10 @@ fn explain_and_read_use_an_id_returned_by_find() {
     let read = repo.run(&["map", "read", &id, "--json"]);
     let source = json_field(&read, "source_utf8").expect("source");
     assert!(source.contains("Beacon"), "{read:?}");
-    assert!(
-        repo.output(&["map", "read", &id, "--limit", "1", "--json"])
-            .status
-            .success()
-    );
+    assert!(repo
+        .output(&["map", "read", &id, "--limit", "1", "--json"])
+        .status
+        .success());
 }
 
 #[test]

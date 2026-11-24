@@ -9,7 +9,7 @@
 
 mod common;
 
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::fmt::Write as _;
 use std::fs;
 use std::path::PathBuf;
