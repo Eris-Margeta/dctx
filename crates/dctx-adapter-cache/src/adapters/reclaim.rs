@@ -48,30 +48,44 @@ impl Drop for LeaseHold {
     }
 }
 
-enum Owner {
-    Alive,
-    Dead,
-    Unknown,
+/// An unlocked liveness file proves its owner is gone. Keep the lock through the release commit.
+struct DeadLease {
+    file: File,
+    path: PathBuf,
 }
 
-fn probe(root: &Path, id: LeaseId) -> Owner {
-    let path = root.join(lease_lock_name(id));
-    let Ok(file) = open_lease(&path, false) else {
-        return Owner::Unknown;
-    };
-    match file.try_lock() {
-        Ok(()) => {
-            let _ = file.unlock();
-            Owner::Dead
+impl DeadLease {
+    fn probe(path: PathBuf) -> Option<Self> {
+        let file = open_lease(&path, false).ok()?;
+        file.try_lock().ok()?;
+        Some(Self { file, path })
+    }
+
+    /// Remove evidence only while the ledger lock is still held and the path has no live holder.
+    fn remove(self) {
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::MetadataExt;
+            if let (Ok(held), Ok(named)) = (self.file.metadata(), fs::symlink_metadata(&self.path))
+                && (held.dev(), held.ino()) == (named.dev(), named.ino())
+            {
+                let _ = fs::remove_file(&self.path);
+            }
         }
-        Err(std::fs::TryLockError::WouldBlock) => Owner::Alive,
-        Err(std::fs::TryLockError::Error(_)) => Owner::Unknown,
+        #[cfg(not(unix))]
+        {
+            // Check the current file for a holder again on platforms without stable inode metadata.
+            drop(self.file);
+            if let Some(evidence) = Self::probe(self.path) {
+                let _ = fs::remove_file(&evidence.path);
+            }
+        }
     }
 }
 
 impl FsLedgerStore {
     /// Loads the ledger fresh under the exclusive lock, runs `body`, and when `body` commits, reclaims what the edit
-    /// superseded and stores. `body` returns `(value, commit)`; a false `commit` leaves the committed file unchanged.
+    /// superseded and stores. `body` returns `(value, commit)`. A dead lease also triggers a commit.
     /// The committed ledger first names the reclaimable objects as pending, then the files are unlinked and a second
     /// commit drops their charge. An unlink that refuses stays pending and is retried by the next section.
     /// Returns `value` and the ledger as committed.
@@ -93,8 +107,8 @@ impl FsLedgerStore {
         let mut life = loaded.lifecycle;
         let reaped = self.reap_dead_leases(&mut life);
         let (value, commit) = body(&mut life).map_err(LedgerUpdateError::Body)?;
-        if commit || reaped {
-            self.commit_reclaiming(&mut life, objects)
+        if commit || !reaped.is_empty() {
+            self.commit_reclaiming(&mut life, objects, reaped)
                 .map_err(LedgerUpdateError::Cache)?;
         }
         Ok((value, life))
@@ -114,13 +128,14 @@ impl FsLedgerStore {
         Ok(LeaseHold { _lock: file, path })
     }
 
-    /// Marks the leases whose reader process is gone. A lease without a lock file predates this check and is kept.
-    fn reap_dead_leases(&self, life: &mut Lifecycle) -> bool {
-        let mut reaped = false;
+    /// Marks leases with proof their owner died. Missing, unreadable, and locked files preserve their leases.
+    fn reap_dead_leases(&self, life: &mut Lifecycle) -> Vec<DeadLease> {
+        let mut reaped = Vec::new();
         for id in life.open_leases() {
-            if matches!(probe(&self.root, id), Owner::Dead) && life.reader_owner_dead(id).is_ok() {
-                let _ = fs::remove_file(self.root.join(lease_lock_name(id)));
-                reaped = true;
+            if let Some(evidence) = DeadLease::probe(self.root.join(lease_lock_name(id)))
+                && life.reader_owner_dead(id).is_ok()
+            {
+                reaped.push(evidence);
             }
         }
         reaped
@@ -130,9 +145,12 @@ impl FsLedgerStore {
         &self,
         life: &mut Lifecycle,
         objects: &FsObjectStore,
+        mut reaped: Vec<DeadLease>,
     ) -> Result<(), CacheError> {
         if life.begin_reclaim() > 0 {
             self.store_locked(life)?;
+            // The release is durable even if the final commit leaves the unlink charges pending.
+            reaped.drain(..).for_each(DeadLease::remove);
         }
         let prior = life.clone();
         let ids = life.finish_reclaim();
@@ -141,7 +159,9 @@ impl FsLedgerStore {
                 life.restore_pending_charge(&prior, id)?;
             }
         }
-        self.store_locked(life)
+        self.store_locked(life)?;
+        reaped.into_iter().for_each(DeadLease::remove);
+        Ok(())
     }
 }
 
