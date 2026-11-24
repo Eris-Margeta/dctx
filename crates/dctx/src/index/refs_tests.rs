@@ -51,11 +51,14 @@ fn linked(files: &[(&str, &str)]) -> Vec<String> {
             &mut edges,
             &mut text,
         );
-        spans.push(FileRefs {
-            first,
-            end: u32::try_from(nodes.len()).expect("small"),
-            refs: raw,
-        });
+        let end = u32::try_from(nodes.len()).expect("small");
+        if !raw.is_empty() || end > first + 1 {
+            spans.push(FileRefs {
+                first,
+                end,
+                refs: raw,
+            });
+        }
     }
     link(&nodes, &mut edges, &mut text, &spans);
     edges
@@ -95,6 +98,104 @@ fn python_calls_resolve_in_file_and_through_an_import() {
     );
     assert!(
         edges.contains(&"imports m:b.py>s:a.py#beta exact".to_string()),
+        "{edges:?}"
+    );
+}
+
+#[test]
+fn js_imports_with_spelled_extensions_bind_named_and_default_calls() {
+    let edges = linked(&[
+        (
+            "util.js",
+            "export function helper() {}\nexport default function () {}\n",
+        ),
+        (
+            "main.js",
+            "import { helper } from './util.js';\nimport d from './util.js';\nexport function run() { helper(); d(); }\n",
+        ),
+    ]);
+    for edge in [
+        "imports m:main.js>s:util.js#helper exact",
+        "imports m:main.js>s:util.js#default exact",
+        "calls s:main.js#run>s:util.js#helper name",
+        "calls s:main.js#run>s:util.js#default name",
+    ] {
+        assert!(edges.iter().any(|got| got == edge), "{edge:?} in {edges:?}");
+    }
+}
+
+#[test]
+fn js_relative_imports_resolve_in_the_importers_directory_only() {
+    let target = ("p/lib/x.js", "export function f() {}");
+    for (importer, specifier) in [("p/b.js", "./lib/x"), ("p/sub/b.js", "../lib/x")] {
+        let source = format!("import {{ f }} from '{specifier}';\n");
+        for other in ["lib/x.js", "q/lib/x.js"] {
+            let edges = linked(&[(other, target.1), target, (importer, &source)]);
+            let imports: Vec<_> = edges
+                .iter()
+                .filter(|edge| edge.starts_with("imports "))
+                .collect();
+            assert_eq!(
+                imports,
+                [&format!("imports m:{importer}>s:p/lib/x.js#f exact")]
+            );
+        }
+    }
+    for (importer, specifier) in [
+        ("z/b.js", "./lib/x"),
+        ("z/sub/b.js", "../lib/x"),
+        ("b.js", "../p/lib/x"),
+    ] {
+        let source = format!("import {{ f }} from '{specifier}';\n");
+        let edges = linked(&[target, (importer, &source)]);
+        assert!(
+            edges.iter().all(|edge| !edge.starts_with("imports ")),
+            "{edges:?}"
+        );
+    }
+}
+
+#[test]
+fn relative_imports_try_spelled_path_then_extensions_then_index() {
+    let edges = linked(&[
+        ("p/data", ""),
+        ("p/data.js", ""),
+        ("p/x.ts", ""),
+        ("p/x.ts.js", ""),
+        ("p/y.tsx", ""),
+        ("p/y/index.js", ""),
+        ("p/pkg/index.mts", ""),
+        (
+            "p/main.ts",
+            "import './data';\nimport './x.ts';\nimport './y';\nimport './sub/../pkg';\n",
+        ),
+    ]);
+    let imports: Vec<_> = edges
+        .iter()
+        .filter(|edge| edge.starts_with("imports "))
+        .map(String::as_str)
+        .collect();
+    assert_eq!(
+        imports,
+        [
+            "imports m:p/main.ts>m:p/data exact",
+            "imports m:p/main.ts>m:p/x.ts exact",
+            "imports m:p/main.ts>m:p/y.tsx exact",
+            "imports m:p/main.ts>m:p/pkg/index.mts exact",
+        ]
+    );
+}
+
+#[test]
+fn bare_js_imports_still_use_module_suffixes() {
+    let edges = linked(&[
+        ("vendor/scope/pkg.js", "export function f() {}"),
+        ("p/main.ts", "import { f } from '@scope/pkg';\n"),
+    ]);
+    assert!(
+        edges
+            .iter()
+            .any(|edge| edge == "imports m:p/main.ts>s:vendor/scope/pkg.js#f exact"),
         "{edges:?}"
     );
 }
