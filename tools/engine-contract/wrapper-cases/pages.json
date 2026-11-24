@@ -1,0 +1,77 @@
+{
+  "files": {
+    "graph.py": "def origin():\n    left()\n    right()\n\ndef left():\n    sink()\n\ndef right():\n    sink()\n\ndef sink():\n    return 1\n",
+    "spans.rs": "// café 🔑\r\npub fn snow() -> &'static str {\r\n    \"雪\"\r\n}\r\npub fn tail() -> &'static str { \"é\" }",
+    "opaque.unknown": "fn hidden_beacon() {}\n"
+  },
+  "context": {
+    "good": "tail",
+    "gone": "gone_fixture_target",
+    "session": "wrapper-pages",
+    "target": "s:spans.rs#tail",
+    "content": "spans.rs:5-5\npub fn tail() -> &'static str { \"é\" }"
+  },
+  "reads": [
+    {"target": "s:spans.rs#snow", "file": "spans.rs", "lines": [2, 4]},
+    {"target": "s:spans.rs#tail", "file": "spans.rs", "lines": [5, 5]}
+  ],
+  "outline": {
+    "target": "m:spans.rs",
+    "ids": ["s:spans.rs#snow", "s:spans.rs#tail"]
+  },
+  "graph": [
+    {
+      "verb": "trace",
+      "args": ["origin", "sink", "--max-paths", "1"],
+      "expected": {
+        "verb": "trace",
+        "truncated": true,
+        "counts": {"paths": 1},
+        "paths": [[{"id": "s:graph.py#origin"}, {"id": "s:graph.py#left"}, {"id": "s:graph.py#sink"}]]
+      }
+    },
+    {
+      "verb": "impact",
+      "args": ["sink", "--max-sites", "1"],
+      "expected": {
+        "verb": "impact",
+        "truncated": true,
+        "counts": {"direct_sites": 1},
+        "files": [{"file": "graph.py", "direct": [{"id": "s:graph.py#left", "line": 6}]}]
+      }
+    }
+  ],
+  "extraction": {
+    "oversized_file": "over-limit.py",
+    "size": 8388609,
+    "partial": {
+      "verb": "find",
+      "args": ["tail"],
+      "expected": {
+        "precision": {"coverage": "structural", "completion": "partial"},
+        "records": [{"id": "s:spans.rs#tail"}]
+      }
+    },
+    "opaque": {
+      "verb": "map",
+      "args": ["m:opaque.unknown"],
+      "expected": {
+        "precision": {"coverage": "structural", "completion": "complete"},
+        "records": [],
+        "more": 0,
+        "next": null
+      }
+    },
+    "refused_read": {
+      "verb": "read",
+      "args": ["m:over-limit.py"],
+      "expected": {
+        "precision": {"completion": "partial"},
+        "records": [],
+        "outcome": "gone",
+        "outcome_id": "m:over-limit.py"
+      }
+    }
+  },
+  "hostile_flag": "--bad\n\u001b\""
+}
