@@ -13,22 +13,22 @@ use std::fmt::Write as _;
 use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Output};
-use std::sync::atomic::{AtomicU64, Ordering};
 
-static NEXT: AtomicU64 = AtomicU64::new(1);
+use serde_json::{Value, json};
+use tempfile::TempDir;
 
 struct Repository {
-    root: PathBuf,
+    root: TempDir,
 }
 
 impl Repository {
     fn new(label: &str) -> Self {
-        let n = NEXT.fetch_add(1, Ordering::Relaxed);
-        let root =
-            std::env::temp_dir().join(format!("dctx-e02c-{label}-{}-{n}", std::process::id()));
-        let _ = fs::remove_dir_all(&root);
-        fs::create_dir_all(root.join("repo")).expect("repo");
+        let root = tempfile::Builder::new()
+            .prefix(&format!("dctx-e02c-{label}-"))
+            .tempdir()
+            .expect("temporary test root");
         for folder in [
+            "repo",
             "home",
             "config",
             "cache",
@@ -38,13 +38,13 @@ impl Repository {
             "empty-path",
             "tmp",
         ] {
-            fs::create_dir(root.join(folder)).expect("isolated directory");
+            fs::create_dir(root.path().join(folder)).expect("isolated directory");
         }
         Self { root }
     }
 
     fn repo(&self) -> PathBuf {
-        self.root.join("repo")
+        self.root.path().join("repo")
     }
 
     fn write(&self, name: &str, body: &str) {
@@ -59,14 +59,14 @@ impl Repository {
             .args(args)
             .env("DCTX_AUTO_CLEAN", "0")
             .env("NO_COLOR", "1");
-        common::isolated_dirs(&mut command, &self.root);
+        common::isolated_dirs(&mut command, self.root.path());
         for (variable, folder) in [
             ("DCTX_PLUGIN_ROOT", "plugins"),
             ("DCTX_CACHE_DIR", "cache"),
             ("DCTX_MAP_CACHE", "map-cache"),
             ("PATH", "empty-path"),
         ] {
-            command.env(variable, self.root.join(folder));
+            command.env(variable, self.root.path().join(folder));
         }
         command.output().expect("run compiled CLI")
     }
@@ -77,13 +77,13 @@ impl Repository {
             output.status.success(),
             "{args:?}: status {}; stdout: {}; stderr: {}",
             output.status,
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr),
+            escaped_output(&output.stdout),
+            escaped_output(&output.stderr),
         );
         assert!(
             output.stderr.is_empty(),
             "{args:?}: {}",
-            String::from_utf8_lossy(&output.stderr)
+            escaped_output(&output.stderr)
         );
         String::from_utf8(output.stdout).expect("UTF-8 stdout")
     }
@@ -93,21 +93,24 @@ impl Repository {
         assert!(
             !output.status.success(),
             "{args:?} succeeded: {}",
-            String::from_utf8_lossy(&output.stdout),
+            escaped_output(&output.stdout),
         );
         assert!(
             output.stdout.is_empty(),
             "{args:?} wrote stdout on failure: {}",
-            String::from_utf8_lossy(&output.stdout),
+            escaped_output(&output.stdout),
         );
         String::from_utf8(output.stderr).expect("UTF-8 stderr")
     }
 }
 
-impl Drop for Repository {
-    fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.root);
-    }
+fn escaped_output(bytes: &[u8]) -> String {
+    format!("{:?}", String::from_utf8_lossy(bytes))
+}
+
+#[test]
+fn subprocess_diagnostics_escape_hostile_output() {
+    assert_eq!(escaped_output(b"row\n\x1b[31m\""), r#""row\n\u{1b}[31m\"""#);
 }
 
 fn json_string_at(text: &str) -> Option<String> {
@@ -199,8 +202,8 @@ fn line_slice(text: &str, start: u32, end: u32) -> String {
 }
 
 fn touch_was_not_scanned(stderr: &str) {
-    assert!(!stderr.contains("os error"), "{stderr}");
-    assert!(!stderr.contains("source unavailable"), "{stderr}");
+    assert!(!stderr.contains("os error"), "{stderr:?}");
+    assert!(!stderr.contains("source unavailable"), "{stderr:?}");
 }
 
 #[test]
@@ -209,17 +212,96 @@ fn explain_and_read_use_an_id_returned_by_find() {
     repo.write("beacon.rs", "fn Beacon() {}\n");
     let found = repo.run(&["map", "find", "Beacon", "--json"]);
     let id = json_field(&found, "id").expect("find id");
-    assert!(id.contains("Beacon"), "{found}");
+    assert!(id.contains("Beacon"), "{found:?}");
     let explained = repo.run(&["map", "explain", &id, "--json"]);
     let signature = json_field(&explained, "signature").expect("signature");
-    assert!(signature.contains("Beacon"), "{explained}");
+    assert!(signature.contains("Beacon"), "{explained:?}");
     let read = repo.run(&["map", "read", &id, "--json"]);
     let source = json_field(&read, "source_utf8").expect("source");
-    assert!(source.contains("Beacon"), "{read}");
-    assert!(repo
-        .output(&["map", "read", &id, "--limit", "1", "--json"])
-        .status
-        .success());
+    assert!(source.contains("Beacon"), "{read:?}");
+    assert!(
+        repo.output(&["map", "read", &id, "--limit", "1", "--json"])
+            .status
+            .success()
+    );
+}
+
+#[test]
+fn find_pages_distinguish_run_declaration_and_implementation() {
+    let repo = Repository::new("run");
+    fs::create_dir(repo.repo().join("src")).expect("fixture source directory");
+    repo.write(
+        "Cargo.toml",
+        include_str!("../../dctx-map-parse/tests/fixtures/rust/Cargo.toml"),
+    );
+    repo.write(
+        "src/lib.rs",
+        include_str!("../../dctx-map-parse/tests/fixtures/rust/src/lib.rs"),
+    );
+    repo.write(
+        "src/support.rs",
+        include_str!("../../dctx-map-parse/tests/fixtures/rust/src/support.rs"),
+    );
+
+    let run_json =
+        |args: &[&str]| serde_json::from_str::<Value>(&repo.run(args)).expect("map JSON answer");
+    let text = repo.run(&["map", "find", "run", "--limit", "1"]);
+    let first = run_json(&["map", "find", "run", "--limit", "1", "--json"]);
+    assert_eq!(first["more"], 1);
+    let cursor = first["next"].as_str().expect("first-page cursor");
+    assert!(!cursor.is_empty());
+    let second = run_json(&[
+        "map", "find", "run", "--limit", "1", "--json", "--cursor", cursor,
+    ]);
+    assert_eq!(second["more"], 0);
+    assert_eq!(second.get("next"), Some(&Value::Null));
+
+    let all = run_json(&["map", "find", "run", "--json"]);
+    assert_eq!(all["more"], 0);
+    let implementation = "s:src/lib.rs#Widget::run";
+    let declaration = "s:src/lib.rs#Work::run";
+    let records = all["records"].as_array().expect("unbounded find records");
+    let ids: Vec<_> = records.iter().map(|record| record["id"].as_str()).collect();
+    assert_eq!(ids, [Some(implementation), Some(declaration)]);
+    assert_eq!(
+        first["records"].as_array().expect("first page"),
+        &records[..1]
+    );
+    assert_eq!(
+        second["records"].as_array().expect("second page"),
+        &records[1..]
+    );
+    assert_eq!(records[0]["lines"], json!([23, 25]));
+    assert_eq!(records[1]["lines"], json!([19, 19]));
+
+    let (header, row) = text.split_once('\n').expect("text find header and row");
+    assert!(
+        header.starts_with("# ") && header.ends_with(" find"),
+        "{header:?}"
+    );
+    let first_id = first["records"][0]["id"].as_str().expect("first find ID");
+    assert_eq!(row, format!("{first_id}\tmethod\tL23-25\n"));
+
+    let explicit_impl = run_json(&["map", "read", implementation, "--json"]);
+    let explicit_decl = run_json(&["map", "read", declaration, "--json"]);
+    for (read, found) in [(&explicit_impl, &records[0]), (&explicit_decl, &records[1])] {
+        let [record] = read["records"].as_array().expect("read records").as_slice() else {
+            panic!("expected one read record: {read:?}");
+        };
+        assert_eq!(record["id"], found["id"]);
+        assert_eq!(record["lines"], found["lines"]);
+    }
+    assert_eq!(
+        explicit_impl["records"][0]["source_utf8"],
+        "fn run(&self) -> u32 {\n        helper()\n    }"
+    );
+    assert_eq!(
+        explicit_decl["records"][0]["source_utf8"],
+        "fn run(&self) -> u32;"
+    );
+
+    let bare = run_json(&["map", "read", "run", "--json"]);
+    assert_eq!(bare["records"], explicit_impl["records"]);
 }
 
 #[test]
@@ -228,13 +310,13 @@ fn missing_target_and_a_directory_are_usage_errors_without_a_scan() {
     repo.write("beacon.rs", "fn Beacon() {}\n");
     fs::create_dir(repo.repo().join("nested")).expect("directory");
     let missing = repo.fail(&["map", "map", "--place", "/no/such/dctx-e02c-place"]);
-    assert!(missing.contains("requires a target"), "{missing}");
+    assert!(missing.contains("requires a target"), "{missing:?}");
     touch_was_not_scanned(&missing);
     let directory = repo.fail(&["map", "map", "nested"]);
-    assert!(directory.contains("directory"), "{directory}");
+    assert!(directory.contains("directory"), "{directory:?}");
     touch_was_not_scanned(&directory);
     let absent = repo.fail(&["map", "map", "missing.rs"]);
-    assert!(absent.contains("not an existing file"), "{absent}");
+    assert!(absent.contains("not an existing file"), "{absent:?}");
     touch_was_not_scanned(&absent);
 }
 
@@ -245,13 +327,13 @@ fn an_existing_file_path_returns_the_same_records_as_its_module_id() {
     let by_path = repo.run(&["map", "map", "beacon.rs", "--json"]);
     let by_id = repo.run(&["map", "map", "m:beacon.rs", "--json"]);
     assert_eq!(record_ids(&by_path), record_ids(&by_id));
-    assert!(by_path.contains("s:beacon.rs#Beacon"), "{by_path}");
-    assert!(!by_path.contains("gone"), "{by_path}");
+    assert!(by_path.contains("s:beacon.rs#Beacon"), "{by_path:?}");
+    assert!(!by_path.contains("gone"), "{by_path:?}");
     let help = repo.run(&["map", "--help"]);
-    assert!(help.contains("--cursor"), "{help}");
-    assert!(help.contains("place-relative file"), "{help}");
-    assert!(help.contains("crates/dctx-cli/src/main.rs"), "{help}");
-    assert!(!help.contains("crates/dctx-core --depth"), "{help}");
+    assert!(help.contains("--cursor"), "{help:?}");
+    assert!(help.contains("place-relative file"), "{help:?}");
+    assert!(help.contains("crates/dctx-cli/src/main.rs"), "{help:?}");
+    assert!(!help.contains("crates/dctx-core --depth"), "{help:?}");
 }
 
 #[test]
@@ -277,14 +359,14 @@ fn three_pages_visit_each_record_once_across_processes() {
             None => repo.run(&["map", "map", "m:page.rs", "--limit", "1", "--json"]),
         };
         let ids = record_ids(&page);
-        assert_eq!(ids.len(), 1, "page {page_index}: {page}");
-        assert!(!seen.contains(&ids[0]), "duplicate {}", ids[0]);
+        assert_eq!(ids.len(), 1, "page {page_index}: {page:?}");
+        assert!(!seen.contains(&ids[0]), "duplicate {:?}", ids[0]);
         seen.push(ids[0].clone());
         cursor = json_field(&page, "next");
         if page_index < 2 {
-            assert!(cursor.is_some(), "{page}");
+            assert!(cursor.is_some(), "{page:?}");
         } else {
-            assert!(cursor.is_none(), "{page}");
+            assert!(cursor.is_none(), "{page:?}");
         }
     }
     assert_eq!(seen, all);
@@ -296,7 +378,7 @@ fn three_pages_visit_each_record_once_across_processes() {
         "v1|9|map|s:page.rs#aaa",
         "--json",
     ]);
-    assert!(stale.contains("stale continuation"), "{stale}");
+    assert!(stale.contains("stale continuation"), "{stale:?}");
 }
 
 #[test]
@@ -310,14 +392,14 @@ fn lines_35_36_match_disk_and_an_inner_symbol_range_is_not_shifted() {
     repo.write("lines.rs", &body);
     let page = repo.run(&["map", "read", "m:lines.rs", "--lines", "35-36", "--json"]);
     let source = json_field(&page, "source_utf8").expect("module source");
-    assert_eq!(source, line_slice(&body, 35, 36), "{page}");
-    assert!(!source.contains("L01"), "{source}");
+    assert_eq!(source, line_slice(&body, 35, 36), "{page:?}");
+    assert!(!source.contains("L01"), "{source:?}");
 
     let explained = repo.run(&["map", "explain", "s:lines.rs#inner", "--json"]);
     let (start, end) = json_lines(&explained).expect("symbol lines");
     assert!(
         end >= start.saturating_add(2),
-        "span {start}-{end} has no inner range: {explained}"
+        "span {start}-{end} has no inner range: {explained:?}"
     );
     let inner_start = start.saturating_add(1);
     let inner_end = inner_start.saturating_add(1).min(end);
@@ -334,7 +416,7 @@ fn lines_35_36_match_disk_and_an_inner_symbol_range_is_not_shifted() {
     assert_eq!(
         inner_source,
         line_slice(&body, inner_start, inner_end),
-        "{inner}"
+        "{inner:?}"
     );
     let prefix = line_slice(&body, start, start.saturating_add(inner_end - inner_start));
     assert_ne!(
@@ -355,5 +437,5 @@ fn lines_35_36_match_disk_and_an_inner_symbol_range_is_not_shifted() {
         &outside,
         "--json",
     ]);
-    assert!(refused.contains("outside"), "{refused}");
+    assert!(refused.contains("outside"), "{refused:?}");
 }
