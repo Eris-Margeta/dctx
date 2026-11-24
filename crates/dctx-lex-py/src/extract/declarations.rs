@@ -491,3 +491,43 @@ impl Walker<'_> {
         (lo, self.i)
     }
 }
+
+impl crate::PyLexer {
+    /// Names bound by a function's parameter list, excluding annotations and defaults.
+    #[must_use]
+    pub fn parameter_names(&self, signature: &str) -> Vec<String> {
+        if signature.len() > self.limits.max_bytes {
+            return Vec::new();
+        }
+        let Ok(lexed) = crate::lexer::lex(signature, self.limits.max_depth) else {
+            return Vec::new();
+        };
+        let mut tokens = lexed
+            .tokens
+            .iter()
+            .map(|t| (t.kind, &signature[t.start as usize..t.end as usize]));
+        if !tokens.by_ref().any(|(_, v)| v == "(") {
+            return Vec::new();
+        }
+        let mut names = Vec::new();
+        let mut first = true;
+        let mut nested = 0usize;
+        for (kind, word) in tokens {
+            match word {
+                ")" if nested == 0 => break,
+                "(" | "{" | "[" => nested += 1,
+                ")" | "}" | "]" => nested = nested.saturating_sub(1),
+                "," if nested == 0 => first = true,
+                "*" | "**" | "/" if first => {}
+                _ if nested == 0 && first => {
+                    if kind == Kind::Ident {
+                        names.push(word.to_owned());
+                    }
+                    first = false;
+                }
+                _ => {}
+            }
+        }
+        names
+    }
+}

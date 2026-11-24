@@ -135,15 +135,24 @@ impl Walker<'_> {
             first += 1;
             last -= 1;
         }
+        let directory = self.is(first, "__DIR__") && self.is(first + 1, ".");
+        if directory {
+            first += 2;
+        }
         if first + 1 == last && self.kind(first) == Some(Kind::String) {
             let raw = self.text(first);
             if let Some(value) = raw.get(1..raw.len().saturating_sub(1))
                 && !value.contains('\\')
+                && !(raw.starts_with('"') && value.contains('$'))
             {
                 self.reference(
                     scope,
                     EdgeKind::Imports,
-                    value.to_string(),
+                    if directory {
+                        format!("__DIR__ . {raw}")
+                    } else {
+                        value.to_string()
+                    },
                     None,
                     (first, Precision::Structural),
                 )?;
@@ -276,4 +285,123 @@ fn non_callee(word: &str) -> bool {
             | "require"
             | "require_once"
     )
+}
+
+impl crate::PhpLexer {
+    /// Kinds of namespace use operands by source line and qualified spelling, including grouped uses.
+    #[must_use]
+    pub fn use_kinds(
+        &self,
+        source: &str,
+    ) -> std::collections::HashMap<(u32, String), &'static str> {
+        let mut result = std::collections::HashMap::new();
+        if source.len() > self.limits.max_bytes {
+            return result;
+        }
+        let Ok(lexed) = crate::lexer::lex(source, &self.limits) else {
+            return result;
+        };
+        let word = |i: usize| lexed.tokens.get(i).map_or("", |t| &source[t.start..t.end]);
+        let mut i = 0;
+        while i < lexed.tokens.len() {
+            if matches!(
+                word(i).to_ascii_lowercase().as_str(),
+                "include" | "include_once" | "require" | "require_once"
+            ) {
+                let mut operand = i + 1;
+                while word(operand) == "(" {
+                    operand += 1;
+                }
+                let directory = word(operand) == "__DIR__" && word(operand + 1) == ".";
+                operand += 2 * usize::from(directory);
+                if let Some(token) = lexed.tokens.get(operand).filter(|t| t.kind == Kind::String) {
+                    let raw = word(operand);
+                    let kind = if directory { "directory" } else { "file" };
+                    let name = if directory {
+                        format!("__DIR__ . {raw}")
+                    } else {
+                        raw.get(1..raw.len().saturating_sub(1))
+                            .unwrap_or_default()
+                            .to_owned()
+                    };
+                    let key = (lexed.line(token.start), name);
+                    result
+                        .entry(key)
+                        .and_modify(|old| {
+                            if *old != kind {
+                                *old = "ambiguous";
+                            }
+                        })
+                        .or_insert(kind);
+                }
+            }
+            if !word(i).eq_ignore_ascii_case("use") {
+                i += 1;
+                continue;
+            }
+            i += 1;
+            let (mut default, mut prefix) = ("class", String::new());
+            if matches!(word(i), "function" | "const") {
+                default = if word(i) == "const" {
+                    "const"
+                } else {
+                    "function"
+                };
+                i += 1;
+            }
+            loop {
+                let kind = match word(i) {
+                    "function" => {
+                        i += 1;
+                        "function"
+                    }
+                    "const" => {
+                        i += 1;
+                        "const"
+                    }
+                    _ => default,
+                };
+                let start = i;
+                if word(i) == "\\" {
+                    i += 1;
+                }
+                while lexed.tokens.get(i).is_some_and(|t| t.kind == Kind::Ident) {
+                    i += 1;
+                    if word(i) != "\\" {
+                        break;
+                    }
+                    i += 1;
+                }
+                if i == start {
+                    break;
+                }
+                let name = &source[lexed.tokens[start].start..lexed.tokens[i - 1].end];
+                if word(i) == "{" {
+                    prefix = name.to_owned();
+                    i += 1;
+                    continue;
+                }
+                let key = (
+                    lexed.line(lexed.tokens[start].start),
+                    format!("{prefix}{name}"),
+                );
+                result
+                    .entry(key)
+                    .and_modify(|k| {
+                        if *k != kind {
+                            *k = "ambiguous";
+                        }
+                    })
+                    .or_insert(kind);
+                if word(i) == "as" {
+                    i += 2;
+                }
+                if word(i) != "," {
+                    break;
+                }
+                i += 1;
+            }
+        }
+        result
+    }
 }

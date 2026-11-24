@@ -340,3 +340,99 @@ fn modifier(word: &str) -> bool {
             | "consuming"
     )
 }
+
+impl crate::SwiftLexer {
+    /// Literal default-layout SwiftPM targets and their direct, unconditional target dependencies.
+    #[must_use]
+    pub fn package_targets(&self, source: &str) -> Vec<(String, Vec<String>)> {
+        if source.len() > self.limits.max_bytes {
+            return Vec::new();
+        }
+        let Ok(lexed) = crate::lexer::lex(source, &self.limits) else {
+            return Vec::new();
+        };
+        if !lexed.diagnostics.is_empty()
+            || lexed
+                .tokens
+                .iter()
+                .any(|t| t.kind == crate::lexer::Kind::Directive)
+        {
+            return Vec::new();
+        }
+        let word = |i: usize| {
+            lexed
+                .tokens
+                .get(i)
+                .map_or("", |t| &source[t.start as usize..t.end as usize])
+        };
+        let literal = |i| {
+            word(i)
+                .strip_prefix('"')?
+                .strip_suffix('"')
+                .filter(|s| !s.is_empty() && s.chars().all(|c| c.is_alphanumeric() || c == '_'))
+        };
+        let Some(pkg) = (0..lexed.tokens.len()).find(|&i| {
+            word(i) == "let"
+                && word(i + 1) == "package"
+                && word(i + 2) == "="
+                && word(i + 3) == "Package"
+                && word(i + 4) == "("
+        }) else {
+            return Vec::new();
+        };
+        let Some(end) = lexed.partner[pkg + 4] else {
+            return Vec::new();
+        };
+        let mut i = pkg + 5;
+        while i < end && word(i) != "targets" {
+            i = lexed.partner[i].filter(|&j| j > i).unwrap_or(i) + 1;
+        }
+        if word(i + 1) != ":" || word(i + 2) != "[" {
+            return Vec::new();
+        }
+        let stop = lexed.partner[i + 2].unwrap_or(i + 2);
+        i += 3;
+        let mut targets = Vec::new();
+        while i < stop {
+            if word(i) != "." || word(i + 2) != "(" {
+                return Vec::new();
+            }
+            let close = lexed.partner[i + 2].unwrap_or(stop);
+            if matches!(word(i + 1), "target" | "executableTarget")
+                && word(i + 3) == "name"
+                && word(i + 4) == ":"
+                && let Some(name) = literal(i + 5)
+            {
+                let mut at = i + 6;
+                let mut deps = Vec::new();
+                if word(at) == ","
+                    && word(at + 1) == "dependencies"
+                    && word(at + 2) == ":"
+                    && word(at + 3) == "["
+                {
+                    at += 4;
+                    while let Some(dep) = literal(at) {
+                        deps.push(dep.to_owned());
+                        at += 1;
+                        if word(at) == "," {
+                            at += 1;
+                        } else {
+                            break;
+                        }
+                    }
+                    if word(at) == "]" {
+                        at += 1;
+                    }
+                }
+                if at == close {
+                    targets.push((name.into(), deps));
+                }
+            }
+            i = close + 1;
+            if word(i) == "," {
+                i += 1;
+            }
+        }
+        targets
+    }
+}

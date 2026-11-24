@@ -4,8 +4,8 @@
 //! (`module::name`, namespace aliases, side-effect imports); `import x = ..` abstains.
 //! Called from statements; dynamic `import()` is an expression and yields nothing.
 use super::{Scope, Walker};
-use crate::domain::Precision;
 use crate::lexer::Kind;
+use crate::{RawReference, domain::Precision};
 use dctx_map_model::EdgeKind;
 
 type Binding = (String, Option<String>, (usize, usize));
@@ -22,14 +22,33 @@ impl Walker<'_> {
         }
         if self.kind(j) == Some(Kind::Str) {
             let last = self.module_tail(j + 1, end);
-            let module = self.content(j);
-            self.emit_modules(i, last, scope, EdgeKind::Imports, Some(module), Vec::new());
+            let module = self.module_literal(j);
+            self.emit_modules(i, last, scope, EdgeKind::Imports, module, Vec::new());
             return last + 1;
         }
         let mut bindings: Vec<Binding> = Vec::new();
         loop {
             if self.ident(j) && !self.is(j, "from") {
                 if self.is(j + 1, "=") {
+                    if self.ts
+                        && self.is(j + 2, "require")
+                        && self.is(j + 3, "(")
+                        && self.is(j + 5, ")")
+                        && let Some(module) = self.module_literal(j + 4)
+                    {
+                        let last = self.module_tail(j + 6, end);
+                        self.refer(
+                            0,
+                            scope,
+                            EdgeKind::Imports,
+                            format!("import = {}", RawReference::module_name(&module, None)),
+                            Some(self.text(j).to_owned()),
+                            (i, last),
+                            (i, last),
+                            Precision::Structural,
+                        );
+                        return last + 1;
+                    }
                     return self.statement_end(j, end);
                 }
                 bindings.push(("default".into(), Some(self.text(j).into()), (j, j)));
@@ -49,7 +68,7 @@ impl Walker<'_> {
         if !self.is(j, "from") {
             return j.max(i + 1);
         }
-        let module = (self.kind(j + 1) == Some(Kind::Str)).then(|| self.content(j + 1));
+        let module = self.module_literal(j + 1);
         let last = self.module_tail(j + 2, end);
         self.emit_modules(i, last, scope, EdgeKind::Imports, module, bindings);
         last + 1
@@ -72,7 +91,7 @@ impl Walker<'_> {
         }
         let mut module = None;
         if self.is(j, "from") && self.kind(j + 1) == Some(Kind::Str) {
-            module = Some(self.content(j + 1));
+            module = self.module_literal(j + 1);
             j += 2;
         }
         let last = self.module_tail(j, end);
@@ -118,13 +137,13 @@ impl Walker<'_> {
         bindings: Vec<Binding>,
     ) {
         let key = (first, last);
+        let all_types = self.is(first + 1, "type") && !self.is(first + 2, "from");
         if bindings.is_empty() {
             if let Some(module) = module {
-                let target = if kind == EdgeKind::Reexports {
-                    format!("{module}::*")
-                } else {
-                    module
-                };
+                let target = RawReference::module_name(
+                    &module,
+                    (kind == EdgeKind::Reexports).then_some("*"),
+                );
                 self.refer(
                     0,
                     scope,
@@ -140,9 +159,19 @@ impl Walker<'_> {
         }
         for (name, alias, site) in bindings {
             let target = match &module {
-                Some(module) if name == "*" && alias.is_some() => module.clone(),
-                Some(module) => format!("{module}::{name}"),
+                Some(module) => RawReference::module_name(
+                    module,
+                    (!(name == "*" && alias.is_some())).then_some(name.as_str()),
+                ),
                 None => name,
+            };
+            let target = if kind == EdgeKind::Imports
+                && (all_types
+                    || (site.0 < site.1 && self.is(site.0, "type") && !self.is(site.0 + 1, "as")))
+            {
+                format!("import type {target}")
+            } else {
+                target
             };
             self.refer(
                 0,
@@ -158,6 +187,56 @@ impl Walker<'_> {
     }
 }
 
+impl crate::JsLexer {
+    /// Read a literal boolean compiler option from a validated TypeScript JSON manifest.
+    #[must_use]
+    pub fn compiler_option(&self, source: &str, option: &str) -> Option<bool> {
+        if source.len() > self.limits.max_bytes {
+            return None;
+        }
+        let lexed = crate::lexer::lex(source, crate::Dialect::JavaScript, &self.limits).ok()?;
+        let word = |i: usize| {
+            lexed
+                .tokens
+                .get(i)
+                .map(|t| &source[t.start as usize..t.end as usize])
+        };
+        let field = |object: usize, key: &str| {
+            if word(object)? != "{" {
+                return None;
+            }
+            let end = *lexed.partner.get(object)? as usize;
+            let mut i = object + 1;
+            let mut found = None;
+            while i < end {
+                let spelling = RawReference::string_literal(word(i)?)?;
+                if word(i + 1)? != ":" {
+                    return None;
+                }
+                let value = i + 2;
+                if spelling == key && found.replace(value).is_some() {
+                    return None;
+                }
+                i = match word(value)? {
+                    "[" | "{" => (*lexed.partner.get(value)? as usize).checked_add(1)?,
+                    _ => value + 1,
+                };
+                if i < end {
+                    if word(i)? != "," {
+                        return None;
+                    }
+                    i += 1;
+                }
+            }
+            found
+        };
+        match word(field(field(0, "compilerOptions")?, option)?)? {
+            "true" => Some(true),
+            "false" => Some(false),
+            _ => None,
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use crate::JsLexer;
@@ -197,6 +276,8 @@ mod tests {
                     Some("default".into()),
                     8
                 ),
+                (EdgeKind::Imports, "f".into(), Some("q".into()), 9),
+                (EdgeKind::Imports, "g".into(), None, 10),
             ]
         );
     }

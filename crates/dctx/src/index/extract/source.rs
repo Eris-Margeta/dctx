@@ -52,12 +52,50 @@ fn rust_decl(line: &str) -> Option<(&'static str, String)> {
     None
 }
 
-pub(super) fn markdown_symbols(bytes: &[u8]) -> Vec<Symbol> {
+pub(super) fn markdown_symbols(path: &str, bytes: &[u8]) -> (Vec<Symbol>, Vec<RawRef>) {
     let Ok(document) = dctx_lex_md::extract(bytes) else {
-        return Vec::new();
+        return (Vec::new(), Vec::new());
     };
+    let mut refs = Vec::new();
+    let mut ids = Vec::new();
+    let mut counts = std::collections::HashMap::new();
+    for heading in &document.headings {
+        let count = counts.entry(&heading.title).or_insert(0);
+        *count += 1;
+        let mut id = String::new();
+        super::super::write_stable_id(
+            &mut id,
+            b'd',
+            path,
+            &heading.title,
+            if *count == 1 { 0 } else { *count },
+        );
+        ids.push(id);
+    }
+    for r in &document.references {
+        if matches!(
+            r.kind,
+            dctx_lex_md::ReferenceKind::PathLink | dctx_lex_md::ReferenceKind::AnchorLink
+        ) && let Some(owner) = r.owner.and_then(|i| ids.get(i))
+        {
+            refs.extend(RawRef::new(
+                owner,
+                dctx_map_model::EdgeKind::Documents,
+                &r.name,
+                "",
+                None,
+            ));
+        }
+    }
     let mut symbols = Vec::new();
-    for heading in document.headings {
+    for (heading, id) in document.headings.into_iter().zip(ids) {
+        if heading.ordinal.unwrap_or(1) == 1 {
+            refs.push(RawRef::fact(
+                super::super::refs::RefForm::Anchor,
+                &heading.name,
+                &id,
+            ));
+        }
         if heading.title.is_empty() {
             continue;
         }
@@ -80,7 +118,7 @@ pub(super) fn markdown_symbols(bytes: &[u8]) -> Vec<Symbol> {
             signature: String::new(),
         });
     }
-    symbols
+    (symbols, refs)
 }
 
 fn keyword_name(line: &str, keyword: &str) -> Option<String> {

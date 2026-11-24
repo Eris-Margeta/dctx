@@ -274,3 +274,23 @@ fn oracle_fixtures_are_reproduced_exactly() {
         assert_eq!(refs, expected, "{path:?} references");
     }
 }
+
+#[test]
+fn module_spelling_round_trips_operands_and_members() {
+    for module in [
+        "./a.js",
+        "./a::b.js",
+        "./x:",
+        "#7:./alias",
+        "./\n\x1b\".mjs",
+    ] {
+        for member in [None, Some("f"), Some("$g"), Some("a::b")] {
+            let spelling = dctx_lex_js::RawReference::module_name(module, member);
+            assert_eq!(
+                dctx_lex_js::RawReference::module_parts(&spelling),
+                (module, member),
+                "{spelling:?}"
+            );
+        }
+    }
+}

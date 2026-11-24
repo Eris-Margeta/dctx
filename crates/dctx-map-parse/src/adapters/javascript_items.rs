@@ -20,10 +20,9 @@ pub(super) fn children(node: Syntax<'_>) -> Vec<Syntax<'_>> {
 }
 
 pub(super) fn string(node: Syntax<'_>, source: &str) -> Option<String> {
-    (node.kind() == "string").then(|| {
-        let value = text(node, source);
-        value[1..value.len() - 1].to_owned()
-    })
+    (node.kind() == "string")
+        .then(|| dctx_lex_js::RawReference::string_literal(text(node, source)))
+        .flatten()
 }
 
 pub(super) fn test_name(node: Syntax<'_>, source: &str) -> Option<String> {

@@ -78,7 +78,7 @@ fn imports(node: Node<'_>, source: &str, scope: &Scope, facts: &mut Facts) {
     };
     let public = named_children(node)
         .iter()
-        .any(|n| n.kind() == "visibility_modifier");
+        .any(|n| n.kind() == "visibility_modifier" && text(*n, source) == "pub");
     let mut pending = vec![(argument, String::new())];
     while let Some((part, prefix)) = pending.pop() {
         match part.kind() {

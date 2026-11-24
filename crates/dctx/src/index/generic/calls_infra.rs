@@ -210,6 +210,9 @@ pub(super) fn references(
     text: &str,
     symbols: &[Symbol],
 ) -> Vec<RawRef> {
+    if language == "proto" {
+        return proto_imports(path, text);
+    }
     let syntax = match language {
         "hcl" => &HCL,
         "sql" => &SQL,
@@ -466,6 +469,86 @@ fn shell_calls(body: &str, functions: &HashSet<&str>) -> Vec<String> {
         }
     }
     out
+}
+
+/// Top-level protobuf statements, with comments and delimited strings kept opaque.
+fn proto_imports(path: &str, mut text: &str) -> Vec<RawRef> {
+    use crate::index::refs::RefForm;
+    let owner = format!("m:{path}");
+    let mut refs = Vec::new();
+    let mut depth = 0usize;
+    let mut stmt = Vec::new();
+    loop {
+        text = text.trim_start();
+        if text.is_empty() {
+            break;
+        }
+        if let Some(rest) = text.strip_prefix("//") {
+            text = rest.split_once('\n').map_or("", |(_, tail)| tail);
+            continue;
+        }
+        if let Some(rest) = text.strip_prefix("/*") {
+            text = rest.split_once("*/").map_or("", |(_, tail)| tail);
+            continue;
+        }
+        let first = text.as_bytes()[0];
+        let len = if matches!(first, b'"' | b'\'') {
+            let mut escaped = false;
+            let close = text.bytes().enumerate().skip(1).find_map(|(i, b)| {
+                if escaped {
+                    escaped = false;
+                } else if b == b'\\' {
+                    escaped = true;
+                } else if b == first {
+                    return Some(i + 1);
+                }
+                None
+            });
+            let Some(len) = close else { break };
+            len
+        } else if first.is_ascii_alphanumeric() || first == b'_' {
+            text.bytes()
+                .take_while(|b| b.is_ascii_alphanumeric() || *b == b'_')
+                .count()
+        } else {
+            text.chars().next().map_or(0, char::len_utf8)
+        };
+        let (word, rest) = text.split_at(len);
+        text = rest;
+        match word {
+            "{" => {
+                depth += 1;
+                stmt.clear();
+            }
+            "}" => {
+                depth = depth.saturating_sub(1);
+                stmt.clear();
+            }
+            ";" if depth == 0 => {
+                let arg = match stmt.as_slice() {
+                    ["import", arg] => Some((RefForm::Ordinary, *arg)),
+                    ["import", "public", arg] => Some((RefForm::ProtoPublic, *arg)),
+                    ["import", "weak", arg] => Some((RefForm::ProtoWeak, *arg)),
+                    _ => None,
+                };
+                if let Some((form, arg)) = arg
+                    && let Some(file) = arg
+                        .strip_prefix('"')
+                        .and_then(|s| s.strip_suffix('"'))
+                        .or_else(|| arg.strip_prefix('\'').and_then(|s| s.strip_suffix('\'')))
+                    && !file.contains('\\')
+                    && let Some(mut r) = RawRef::new(&owner, EdgeKind::Imports, file, "", None)
+                {
+                    r.form = form;
+                    refs.push(r);
+                }
+                stmt.clear();
+            }
+            _ if depth == 0 && stmt.len() < 4 => stmt.push(word),
+            _ => {}
+        }
+    }
+    refs
 }
 
 #[cfg(test)]

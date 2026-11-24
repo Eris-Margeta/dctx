@@ -160,3 +160,76 @@ impl Walker<'_> {
         Some(name)
     }
 }
+
+impl crate::PyLexer {
+    /// Statically assigned module-level `__all__`. Unknown expressions or mutations abstain.
+    #[must_use]
+    pub fn literal_exports(&self, source: &str) -> Option<std::collections::BTreeSet<String>> {
+        if !source.contains("__all__") || source.len() > self.limits.max_bytes {
+            return None;
+        }
+        let lexed = crate::lexer::lex(source, self.limits.max_depth).ok()?;
+        if !lexed.diagnostics.is_empty() {
+            return None;
+        }
+        let tokens = &lexed.tokens;
+        let word = |i: usize| {
+            tokens
+                .get(i)
+                .map_or("", |t| &source[t.start as usize..t.end as usize])
+        };
+        let mut names = None;
+        let mut depth = 0usize;
+        for (i, token) in tokens.iter().enumerate() {
+            match token.kind {
+                Kind::Indent => depth += 1,
+                Kind::Dedent => depth = depth.saturating_sub(1),
+                Kind::Ident if word(i) == "__all__" => {
+                    if depth != 0
+                        || (i > 0 && !matches!(tokens[i - 1].kind, Kind::Newline | Kind::Dedent))
+                    {
+                        return None;
+                    }
+                    let mut list = match word(i + 1) {
+                        "=" => std::collections::BTreeSet::new(),
+                        "+=" => names.take()?,
+                        _ => return None,
+                    };
+                    let close = match word(i + 2) {
+                        "[" => "]",
+                        "(" => ")",
+                        _ => return None,
+                    };
+                    let mut j = i + 3;
+                    let mut comma = false;
+                    while word(j) != close {
+                        let literal = word(j);
+                        let quote = literal.chars().next()?;
+                        if !matches!(quote, '\'' | '"') {
+                            return None;
+                        }
+                        let name = literal.strip_prefix(quote)?.strip_suffix(quote)?;
+                        if name.is_empty() || !name.chars().all(|c| c == '_' || c.is_alphanumeric())
+                        {
+                            return None;
+                        }
+                        list.insert(name.to_owned());
+                        j += 1;
+                        if word(j) == "," {
+                            comma = true;
+                            j += 1;
+                        } else if word(j) != close || (close == ")" && !comma) {
+                            return None;
+                        }
+                    }
+                    if tokens.get(j + 1).is_some_and(|t| t.kind != Kind::Newline) {
+                        return None;
+                    }
+                    names = Some(list);
+                }
+                _ => {}
+            }
+        }
+        names
+    }
+}

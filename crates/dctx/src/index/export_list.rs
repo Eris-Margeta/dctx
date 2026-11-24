@@ -17,7 +17,7 @@ pub(crate) fn names(language: &str, text: &str) -> Option<BTreeSet<String>> {
     let lang = language.trim().to_ascii_lowercase();
     let mut found = BTreeSet::new();
     if lang.contains("python") {
-        python_all_names(text, &mut found);
+        return dctx_lex_py::PyLexer::default().literal_exports(text);
     } else if lang.contains("javascript") || lang.contains("typescript") {
         commonjs_export_names(text, &mut found);
         export_list_names(text, &mut found);
@@ -89,79 +89,6 @@ fn scan_string(text: &str, at: usize) -> (Option<String>, usize) {
         i += ch.len_utf8();
     }
     (None, bytes.len())
-}
-
-/// Adds the string items of every Python `__all__` list in `text` (only lines starting with `__all__ =`
-/// or `__all__ +=`) to `names`.
-fn python_all_names(text: &str, names: &mut BTreeSet<String>) {
-    let mut offset = 0usize;
-    for line in text.split('\n') {
-        let lead = line.trim_start();
-        if let Some(after) = lead.strip_prefix("__all__") {
-            // Space(s) between `__all__` and the `=` / `+=` are allowed.
-            let rest = after.trim_start_matches([' ', '\t']);
-            let bytes = rest.as_bytes();
-            let after_eq = if bytes.first() == Some(&b'+') && bytes.get(1) == Some(&b'=') {
-                2
-            } else if bytes.first() == Some(&b'=') {
-                1
-            } else {
-                0
-            };
-            if after_eq > 0 {
-                let skip = after.len() - rest.len();
-                let start = offset + (line.len() - lead.len()) + "__all__".len() + skip + after_eq;
-                names.extend(all_list_items(text, start));
-            }
-        }
-        offset += line.len() + 1;
-    }
-}
-
-/// The quoted-string items of the Python list whose opening `(` / `[` is searched from `start` (right after
-/// the `=` / `+=` of an `__all__` assignment); items may span lines, and `# ..` comments are skipped.
-fn all_list_items(text: &str, start: usize) -> BTreeSet<String> {
-    let bytes = text.as_bytes();
-    let mut i = start;
-    // Whitespace and `# ..` comments before the opening delimiter.
-    while i < bytes.len() {
-        match bytes[i] {
-            b'#' => i += bytes[i..].iter().take_while(|b| **b != b'\n').count() + 1,
-            b if b.is_ascii_whitespace() => i += 1,
-            _ => break,
-        }
-    }
-    if !matches!(bytes.get(i), Some(b'[') | Some(b'(')) {
-        return BTreeSet::new();
-    }
-    let mut items = BTreeSet::new();
-    let mut depth = 1usize;
-    i += 1;
-    while i < bytes.len() {
-        match bytes[i] {
-            b'\'' | b'"' => {
-                let (item, next) = scan_string(text, i);
-                if let Some(item) = item.filter(|item| !item.is_empty()) {
-                    items.insert(item);
-                }
-                i = next;
-            }
-            b'#' => i += bytes[i..].iter().take_while(|b| **b != b'\n').count() + 1,
-            b'[' | b'(' | b'{' => {
-                depth += 1;
-                i += 1;
-            }
-            b']' | b')' | b'}' => {
-                depth -= 1;
-                i += 1;
-                if depth == 0 {
-                    return items;
-                }
-            }
-            _ => i += 1,
-        }
-    }
-    items
 }
 
 /// The leading key of one `{`-list entry: the entry's first identifier (the word before `:` /

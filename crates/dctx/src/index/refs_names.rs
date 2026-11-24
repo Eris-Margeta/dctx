@@ -26,11 +26,14 @@ const IMPORT_NOISE: &[&str] = &[
 /// Words of `name`, split on everything that cannot be part of an identifier.
 /// For PowerShell, `-` is allowed in identifiers (e.g., `Get-Config`).
 fn words(name: &str, language: Option<&str>) -> Vec<String> {
+    let js = matches!(language, Some("javascript" | "typescript" | "web"));
     let is_powershell = language == Some("powershell");
-    name.split(|c: char| !(c.is_alphanumeric() || c == '_' || (is_powershell && c == '-')))
-        .filter(|word| !word.is_empty())
-        .map(str::to_string)
-        .collect()
+    name.split(|c: char| {
+        !(c.is_alphanumeric() || c == '_' || (is_powershell && c == '-') || (js && c == '$'))
+    })
+    .filter(|word| !word.is_empty())
+    .map(str::to_string)
+    .collect()
 }
 
 /// Segments of a call spelling without receiver noise: `self.helper` is `[helper]`, `a::b.c` is `[a, b, c]`.
@@ -47,16 +50,16 @@ pub(super) fn call_segments(name: &str, language: Option<&str>) -> Vec<String> {
 
 /// The module path and optional lexer-supplied binding of a relative JS import.
 pub(super) fn relative_import(name: &str) -> Option<(&str, Option<&str>)> {
-    if !name.starts_with("./") && !name.starts_with("../") {
+    let (module, member) = js_import_parts(name);
+    if !module.starts_with("./") && !module.starts_with("../") {
         return None;
     }
-    Some(js_import_parts(name))
+    Some((module, member))
 }
 
 /// The JS lexer spells a selected member as `module::member`.
 fn js_import_parts(name: &str) -> (&str, Option<&str>) {
-    name.rsplit_once("::")
-        .map_or((name, None), |(module, member)| (module, Some(member)))
+    dctx_lex_js::RawReference::module_parts(name)
 }
 
 /// Local name evidence in an import fact, independent of its target.
@@ -137,6 +140,24 @@ pub(super) fn module_keys(path: &str) -> Vec<(String, bool)> {
     (0..segments.len())
         .map(|start| (segments[start..].join("::"), start == 0))
         .collect()
+}
+
+/// Join a literal relative operand within the project inventory.
+pub(super) fn inventory_join(directory: &str, relative: &str) -> Option<String> {
+    if relative.is_empty() || relative.starts_with('/') || relative.contains('\0') {
+        return None;
+    }
+    let mut parts: Vec<_> = directory.split('/').filter(|s| !s.is_empty()).collect();
+    for part in relative.split('/') {
+        match part {
+            "" | "." => {}
+            ".." => {
+                parts.pop()?;
+            }
+            _ => parts.push(part),
+        }
+    }
+    Some(parts.join("/"))
 }
 
 #[cfg(test)]

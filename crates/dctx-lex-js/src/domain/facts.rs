@@ -90,6 +90,44 @@ pub struct RawReference {
     pub owner_path: String,
 }
 
+/// A reference site keeps its binding space independently of relation and precision.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReferenceFact {
+    /// Reference in the common map fact vocabulary.
+    pub fact: RawReference,
+    /// Syntactic or convention evidence for the site.
+    pub precision: Precision,
+    /// A type-space import contributes a dependency without a runtime binding.
+    pub type_only: bool,
+    /// A TypeScript import-equals declaration binds the module's assigned value.
+    pub import_equals: bool,
+}
+
+impl FromIterator<Labeled<RawReference>> for Vec<ReferenceFact> {
+    fn from_iter<I: IntoIterator<Item = Labeled<RawReference>>>(iter: I) -> Self {
+        iter.into_iter()
+            .map(|mut labeled| {
+                let type_only = labeled.fact.kind == EdgeKind::Imports
+                    && labeled.fact.name.starts_with("import type ");
+                let import_equals = labeled.fact.kind == EdgeKind::Imports
+                    && labeled.fact.name.starts_with("import = ");
+                if type_only {
+                    labeled.fact.name.drain(.."import type ".len());
+                }
+                if import_equals {
+                    labeled.fact.name.drain(.."import = ".len());
+                }
+                ReferenceFact {
+                    fact: labeled.fact,
+                    precision: labeled.precision,
+                    type_only,
+                    import_equals,
+                }
+            })
+            .collect()
+    }
+}
+
 /// Why a span could not be extracted with full structure.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DiagnosticReason {
@@ -143,12 +181,121 @@ pub struct LexedFile {
     /// Containment relations owned by this file.
     pub edges: Vec<Labeled<Edge>>,
     /// Unresolved references; repeated sites remain separate records.
-    pub references: Vec<Labeled<RawReference>>,
+    pub references: Vec<ReferenceFact>,
 }
 
 impl LexedFile {
     /// Bound on retained diagnostics; later problems still mark the file partial.
     pub const MAX_DIAGNOSTICS: usize = 64;
+}
+
+impl RawReference {
+    /// Lossless module/member spelling for adapters that carry a single string.
+    /// Ordinary paths keep their existing spelling. A byte count delimits an ambiguous operand.
+    #[must_use]
+    pub fn module_name(module: &str, member: Option<&str>) -> String {
+        let explicit = module.starts_with("import type ")
+            || module.starts_with("import = ")
+            || module.starts_with('#')
+            || module.contains("::")
+            || module.ends_with(':')
+            || member.is_some_and(|m| m.contains("::"));
+        let mut name = if explicit {
+            format!("#{}:{module}", module.len())
+        } else {
+            module.into()
+        };
+        if let Some(member) = member {
+            name.push_str("::");
+            name.push_str(member);
+        }
+        name
+    }
+
+    /// Recover a module operand and selected member without splitting literal punctuation.
+    #[must_use]
+    pub fn module_parts(name: &str) -> (&str, Option<&str>) {
+        if let Some((length, tail)) = name.strip_prefix('#').and_then(|s| s.split_once(':'))
+            && let Ok(len) = length.parse::<usize>()
+            && let Some((module, member)) = tail.split_at_checked(len)
+        {
+            if member.is_empty() {
+                return (module, None);
+            }
+            if let Some(member) = member.strip_prefix("::") {
+                return (module, Some(member));
+            }
+        }
+        name.rsplit_once("::")
+            .map_or((name, None), |(path, member)| (path, Some(member)))
+    }
+
+    /// Cooks a quoted ECMAScript string operand. Malformed escapes supply no module evidence.
+    #[must_use]
+    pub fn string_literal(raw: &str) -> Option<String> {
+        let quote = raw.chars().next()?;
+        if !matches!(quote, '\'' | '"') {
+            return None;
+        }
+        let body = raw.strip_prefix(quote)?.strip_suffix(quote)?;
+        let mut chars = body.chars();
+        let mut out = String::with_capacity(body.len());
+        while let Some(c) = chars.next() {
+            if c != '\\' {
+                out.push(c);
+                continue;
+            }
+            out.push(match chars.next()? {
+                'n' => '\n',
+                'r' => '\r',
+                't' => '\t',
+                'b' => '\x08',
+                'f' => '\x0c',
+                'v' => '\x0b',
+                '0' if !chars.clone().next().is_some_and(|c| c.is_ascii_digit()) => '\0',
+                '\n' | '\u{2028}' | '\u{2029}' => continue,
+                '\r' => {
+                    if chars.as_str().starts_with('\n') {
+                        chars.next();
+                    }
+                    continue;
+                }
+                'x' => char::from_u32(hex(&mut chars, 2)?)?,
+                'u' => {
+                    let code = if chars.as_str().starts_with('{') {
+                        chars.next();
+                        let (digits, rest) = chars.as_str().split_once('}')?;
+                        if digits.is_empty() || !digits.bytes().all(|b| b.is_ascii_hexdigit()) {
+                            return None;
+                        }
+                        let code = u32::from_str_radix(digits, 16).ok()?;
+                        chars = rest.chars();
+                        code
+                    } else {
+                        let first = hex(&mut chars, 4)?;
+                        if (0xd800..=0xdbff).contains(&first) {
+                            chars = chars.as_str().strip_prefix("\\u")?.chars();
+                            let low = hex(&mut chars, 4)?;
+                            if !(0xdc00..=0xdfff).contains(&low) {
+                                return None;
+                            }
+                            0x10000 + ((first - 0xd800) << 10) + low - 0xdc00
+                        } else {
+                            first
+                        }
+                    };
+                    char::from_u32(code)?
+                }
+                c if c.is_ascii_digit() => return None,
+                other => other,
+            });
+        }
+        Some(out)
+    }
+}
+
+fn hex(chars: &mut std::str::Chars<'_>, count: usize) -> Option<u32> {
+    (0..count).try_fold(0, |value, _| Some(value * 16 + chars.next()?.to_digit(16)?))
 }
 
 #[cfg(test)]

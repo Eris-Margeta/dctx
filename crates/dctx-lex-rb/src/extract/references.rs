@@ -439,6 +439,28 @@ fn unescape(inner: &str) -> Option<String> {
     Some(out)
 }
 
+impl crate::RubyLexer {
+    /// The loader of a sole literal argument at a structural import site.
+    #[must_use]
+    pub fn literal_loader(site: &str, name: &str) -> Option<&'static str> {
+        let site = site.trim();
+        for op in ["require_relative", "require", "load"] {
+            if let Some(tail) = site.strip_prefix(op) {
+                let tail = tail.trim_start();
+                let arg = if let Some(tail) = tail.strip_prefix('(') {
+                    tail.strip_suffix(')')?.trim()
+                } else {
+                    tail
+                };
+                if decode_string(arg).as_deref() == Some(name) {
+                    return Some(op);
+                }
+            }
+        }
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

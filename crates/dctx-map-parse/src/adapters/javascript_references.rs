@@ -4,6 +4,7 @@
 //! The walker supplies lexical source ownership; the resolver consumes spellings.
 use super::facts::{Facts, compact, lines, text};
 use super::javascript_items::{Scope, children, string, test_name};
+use dctx_lex_js::RawReference;
 use dctx_map_model::EdgeKind;
 use tree_sitter::Node;
 
@@ -80,6 +81,28 @@ fn imports(node: Node<'_>, source: &str, scope: &Scope, facts: &mut Facts) {
     } else {
         EdgeKind::Imports
     };
+    if let Some(clause) = children(node)
+        .into_iter()
+        .find(|n| n.kind() == "import_require_clause")
+    {
+        if let Some(module) = clause
+            .child_by_field_name("source")
+            .and_then(|n| string(n, source))
+            && let Some(local) = children(clause)
+                .into_iter()
+                .find(|n| n.kind() == "identifier")
+        {
+            facts.reference(
+                0,
+                EdgeKind::Imports,
+                RawReference::module_name(&module, None),
+                &scope.name,
+                Some(text(local, source).into()),
+                lines(node),
+            );
+        }
+        return;
+    }
     let mut bindings = Vec::new();
     let mut pending = children(node).into_iter().rev().collect::<Vec<_>>();
     while let Some(part) = pending.pop() {
@@ -112,11 +135,7 @@ fn imports(node: Node<'_>, source: &str, scope: &Scope, facts: &mut Facts) {
     }
     if bindings.is_empty() {
         if let Some(module) = module {
-            let target = if export {
-                format!("{module}::*")
-            } else {
-                module
-            };
+            let target = RawReference::module_name(&module, export.then_some("*"));
             facts.reference(0, kind, target, &scope.name, None, lines(node));
         }
         return;
@@ -125,11 +144,10 @@ fn imports(node: Node<'_>, source: &str, scope: &Scope, facts: &mut Facts) {
         let target = module.as_ref().map_or_else(
             || name.clone(),
             |module| {
-                if name == "*" && alias.is_some() {
-                    module.clone()
-                } else {
-                    format!("{module}::{name}")
-                }
+                RawReference::module_name(
+                    module,
+                    (!(name == "*" && alias.is_some())).then_some(name.as_str()),
+                )
             },
         );
         facts.reference(0, kind, target, &scope.name, alias, site);
@@ -140,7 +158,26 @@ fn require(node: Node<'_>, source: &str, scope: &Scope, facts: &mut Facts) -> bo
     let Some(function) = node.child_by_field_name("function") else {
         return false;
     };
-    if function.kind() != "identifier" || text(function, source) != "require" {
+    if function.kind() == "import" {
+        if let Some(args) = node.child_by_field_name("arguments")
+            && let [arg] = children(args).as_slice()
+            && let Some(module) = string(*arg, source)
+        {
+            facts.reference(
+                scope.owner,
+                EdgeKind::Imports,
+                RawReference::module_name(&module, None),
+                &scope.name,
+                None,
+                lines(node),
+            );
+        }
+        return true;
+    }
+    if function.kind() != "identifier"
+        || text(function, source) != "require"
+        || shadowed_loader(node, source)
+    {
         return false;
     }
     let Some(arguments) = node.child_by_field_name("arguments") else {
@@ -174,7 +211,7 @@ fn require(node: Node<'_>, source: &str, scope: &Scope, facts: &mut Facts) -> bo
                 facts.reference(
                     0,
                     EdgeKind::Imports,
-                    format!("{module}::{name}"),
+                    RawReference::module_name(&module, Some(name)),
                     &scope.name,
                     alias,
                     lines(part),
@@ -184,13 +221,46 @@ fn require(node: Node<'_>, source: &str, scope: &Scope, facts: &mut Facts) -> bo
         _ => facts.reference(
             0,
             EdgeKind::Imports,
-            module,
+            RawReference::module_name(&module, None),
             &scope.name,
             binding.map(|n| text(n, source).into()),
             lines(node),
         ),
     }
     true
+}
+
+fn shadowed_loader(mut node: Node<'_>, source: &str) -> bool {
+    while let Some(parent) = node.parent() {
+        if let Some(params) = parent
+            .child_by_field_name("parameters")
+            .or_else(|| parent.child_by_field_name("parameter"))
+        {
+            let mut stack = vec![params];
+            while let Some(param) = stack.pop() {
+                if param.kind() == "identifier" && text(param, source) == "require" {
+                    return true;
+                }
+                stack.extend(children(param));
+            }
+        }
+        if matches!(parent.kind(), "program" | "statement_block")
+            && children(parent).iter().any(|n| {
+                (n.kind() == "function_declaration"
+                    && n.child_by_field_name("name")
+                        .is_some_and(|id| text(id, source) == "require"))
+                    || (matches!(n.kind(), "lexical_declaration" | "variable_declaration")
+                        && children(*n).iter().any(|d| {
+                            d.child_by_field_name("name")
+                                .is_some_and(|id| text(id, source) == "require")
+                        }))
+            })
+        {
+            return true;
+        }
+        node = parent;
+    }
+    false
 }
 
 #[cfg(test)]
