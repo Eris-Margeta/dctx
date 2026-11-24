@@ -51,10 +51,11 @@ The generated methods are `Pack`, `Context`, `Map`, `Find`, `Read`, `Skeleton`,
 `CacheStatus`.
 `Call(ctx, dctx.VerbFind, args...)` provides the same transport directly. `Hello`
 returns typed protocol metadata. Arguments pass individually without a shell;
-RPC supplies `--json`. Pass `"--for", "your task"` to `Context`. Budget flags,
-cursors, paths and output destinations retain engine semantics. Pack output is
-exactly the JSON document; the CLI's `pack bytes=` status line goes to stderr and is
-not part of it. Treat the output as opaque bytes.
+RPC supplies `--json` by default. Pass `"TARGET"` to `Context` for named context
+or `"--for", "TEXT"` for task context through `dctx pack --for TEXT`. Budget flags,
+cursors, paths and output destinations retain engine semantics. By default, `Pack`
+returns one JSON document with a trailing newline as opaque stdout bytes. The CLI's
+`pack bytes=...` status line goes to stderr.
 
 **Arguments carry full CLI authority.** They are CLI argv for the engine: `--place`
 selects any readable directory, `pack --output` writes any path the process may
@@ -78,9 +79,10 @@ Both are safe to call repeatedly. Diagnostics inherit stderr; no diagnostic pipe
 can fill unnoticed. Responses have no wrapper-imposed output-size limit.
 
 `EngineError` preserves `Code`, `Message`, `Hint` and `Output`. Branch on `Code`:
-1 means no result, 2 usage/protocol refusal, and 3 index/source/I/O failure (the
-legacy cache command retains its CLI code 1). Engine refusals leave the session
-usable. `TransportError` and `VersionMismatchError` terminate it. The initial
+1 means no result, 2 usage/protocol refusal, and 3 index/source/I/O failure.
+`CacheStatus` returns 1 for an unregistered root and 2 for invalid arguments.
+Engine refusals leave the session usable. `TransportError` and
+`VersionMismatchError` terminate it. The initial
 hello and every response must report engine **1.3.2**; RPC major **1** is checked
 independently. Unknown envelope fields and added verbs are tolerated.
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Versioned engine RPC wire types. Output is opaque: transports never parse engine pages.
 
-use schemars::JsonSchema;
+use schemars::{JsonSchema, r#gen::SchemaGenerator, schema::Schema};
 use serde::{Deserialize, Serialize};
 
 /// Protocol semver, independent of the engine release.
@@ -23,9 +23,10 @@ pub enum Id {
 pub enum Verb {
     /// Required handshake, with no arguments.
     Hello,
-    /// `dctx pack`, including `--for`.
+    /// `dctx pack [PATH]`, including `--for TEXT` for task context.
+    /// The default JSON output is one document; `pack bytes=...` status goes to stderr.
     Pack,
-    /// Alias for `dctx pack --for`; arguments include `--for TEXT`.
+    /// `dctx context TARGET` for named context; `--for TEXT` selects `dctx pack --for TEXT`.
     Context,
     /// `dctx map map`.
     Map,
@@ -169,13 +170,18 @@ pub enum Outcome {
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct Response {
     /// Echoed request token; null when the request token could not be decoded.
-    #[schemars(required)]
+    #[schemars(schema_with = "response_id_schema")]
     pub id: Option<Id>,
     /// Engine release that produced this reply, including protocol errors.
     pub engine_version: String,
     /// Exactly one result or error.
     #[serde(flatten)]
     pub outcome: Outcome,
+}
+
+// Schemars treats a schema function as required and derives the value schema separately.
+fn response_id_schema(generator: &mut SchemaGenerator) -> Schema {
+    generator.subschema_for::<Option<Id>>()
 }
 
 /// All messages in a v1 session, used as the schema generation root.

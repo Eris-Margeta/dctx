@@ -9,7 +9,7 @@ import (
 )
 
 const Version = "1.3.2"
-const schemaSHA256 = "8000c328ded19f1130886f3cd881dc9f143713bcd37841a70f1f03109ecf5ea3"
+const schemaSHA256 = "84ee13a59535d8ad9928b7f4c53f5c7ac6ba2d6808a9921c5e3674c70b033570"
 
 // Verb is an engine operation. Arguments retain CLI spelling.
 type Verb string
@@ -55,6 +55,7 @@ type EngineError struct {
 }
 
 // Response is the RPC Response envelope.
+// ID holds a raw JSON token, including null for an uncorrelated refusal.
 type Response struct {
 	EngineVersion string          `json:"engine_version"`
 	ID            json.RawMessage `json:"id"`
