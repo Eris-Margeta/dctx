@@ -14,6 +14,7 @@ from scripts import win_latency_ab as ab
 
 
 FIND_HEADER = b"# fixture find\n"
+# Pin the CLI response to generate_fixture(), independently of the website captures.
 PROBE_ROW = b"s:group_0000/item_0000.rs#win_latency_probe\tfn\tL1\n"
 
 
@@ -54,7 +55,9 @@ class FixtureTests(unittest.TestCase):
             sources = sorted(root.rglob("*.rs"))
             self.assertEqual(len(sources), 1500)
             self.assertEqual(len([p for p in root.rglob("*") if p.is_file()]), 1500)
-            self.assertEqual(sum(latency.TERM in p.read_text() for p in sources), 1)
+            matches = [p for p in sources if latency.TERM in p.read_text(encoding="utf-8")]
+            self.assertEqual(matches, [root / "group_0000" / "item_0000.rs"])
+            self.assertEqual(matches[0].read_text(encoding="utf-8"), "pub fn win_latency_probe() -> usize { 0 }\n")
             self.assertEqual(len(list(root.iterdir())), 60)
             self.assertTrue(all(p.stat().st_mtime_ns <= now - 5_000_000_000 for p in sources))
 

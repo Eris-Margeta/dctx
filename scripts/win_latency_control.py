@@ -79,18 +79,7 @@ def recorded_rounds(run_rounds, identity, baseline, candidate, root, rounds, run
 
 
 def measure(args):
-    render = ab.render
-
-    def safe_render(report):
-        label = json.dumps(report["baseline_label"], ensure_ascii=True)
-        line, _ = render({**report, "baseline_label": label})
-        # A padded Markdown code span preserves even backticks and link syntax.
-        fence = "`" * (1 + max(map(len, re.findall(r"`+", label)), default=0))
-        _, summary = render({**report, "baseline_label": f"{fence} {label} {fence}"})
-        return line, summary
-
     with ExitStack() as scope:
-        scope.enter_context(patch.object(ab, "render", safe_render))
         output = Path(args.output)
         gate_output = output
         if os.environ.get("INJECT_REGRESSION", "false").lower() == "true":
@@ -103,11 +92,16 @@ def measure(args):
             output.unlink(missing_ok=True)
             tmp = scope.enter_context(tempfile.TemporaryDirectory(dir=output.parent))
             gate_output = Path(tmp) / "report.json"
-        status = ab.main(["--baseline", args.baseline, "--baseline-label=" + args.baseline_label,
-                          "--candidate", args.candidate, "--output", str(gate_output),
-                          "--rounds", str(ROUNDS), "--runs", str(RUNS), "--files", str(FILES),
-                          "--max-regression", str(REGRESSION), "--ceiling-ms", str(CEILING_MS),
-                          "--target-ms", str(TARGET_MS)])
+        try:
+            status = ab.main(["--baseline", args.baseline, "--baseline-label=" + args.baseline_label,
+                              "--candidate", args.candidate, "--output", str(gate_output),
+                              "--rounds", str(ROUNDS), "--runs", str(RUNS), "--files", str(FILES),
+                              "--max-regression", str(REGRESSION), "--ceiling-ms", str(CEILING_MS),
+                              "--target-ms", str(TARGET_MS)])
+        except SystemExit as error:
+            if error.code != 2:
+                raise
+            return 2
         if gate_output != output:
             gate_output.replace(output)
         return status
@@ -140,12 +134,10 @@ def replay_samples(mode_samples, delta):
     raw, gated = mode_samples["raw_ns"], mode_samples["gated_ns"]
     require(isinstance(raw, list) and isinstance(gated, list) and len(raw) == len(gated) == RUNS,
             "wrong number of timed samples")
-    restored = []
     for before, after in zip(raw, gated):
         require(type(before) is int and type(after) is int and before > 0 and after - before == delta,
                 "invalid nanosecond sample or unexpected delta")
-        restored.append((after - delta) / NS_PER_MS)
-    return ab.latency.summarize([ns / NS_PER_MS for ns in gated]), ab.latency.summarize(restored)
+    return gated, raw
 
 
 def verify(job, report):
@@ -170,8 +162,12 @@ def verify(job, report):
         cold = replay_samples(row["cold"], INCREMENT_NS if arm == "candidate" else 0)
         warm = replay_samples(row["warm"], 0)
         for rounds, c, w in zip((injected, restored), cold, warm):
-            rounds[arm].append({"round": number, "cold_p95_ms": c["p95_ms"],
-                                "cold_p50_ms": c["p50_ms"], "warm_p95_ms": w["p95_ms"]})
+            rounds[arm].append({
+                "round": number,
+                "cold_samples_ns": c,
+                "warm_samples_ns": w,
+                **{key: float(value) for key, value in ab.row_stats(c, w).items()},
+            })
     gate = ab.verdict(injected, REGRESSION, CEILING_MS, TARGET_MS)
     require(report["rounds"] == injected and report["gate"] == gate, "production report disagrees with replay")
     require(gate["verdict"] == "FAIL" and gate["medians"]["candidate"]["cold_p95_ms"] <= CEILING_MS,

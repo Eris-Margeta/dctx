@@ -30,12 +30,17 @@ def completed_job():
 
 class ControlTests(unittest.TestCase):
     def setUp(self):
-        tmp = tempfile.TemporaryDirectory(dir=Path.cwd())
+        tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.root = Path(tmp.name)
         self.report = self.root / "report.json"
         self.summary = self.root / "summary.md"
         self.job = self.root / "job.json"
+        self.baseline = self.root / "baseline.exe"
+        self.candidate = self.root / "candidate.exe"
+        for binary in (self.baseline, self.candidate):
+            binary.write_bytes(binary.stem.encode())
+            binary.chmod(0o755)
 
     def run_gate(self, base=400, cand=410, enabled=True, label=TAG):
         env = {"INJECT_REGRESSION": str(enabled), "GITHUB_EVENT_NAME": "workflow_dispatch",
@@ -45,7 +50,7 @@ class ControlTests(unittest.TestCase):
         # Ordinary production measure() reports. Use distinct, unsorted sub-ms
         # samples, with the 29th nearest rank exactly at the named duration.
         def fake_measure(binary, root, runs, cache_root):
-            ms = base if Path(binary).name == "base" else cand
+            ms = {self.baseline.name: base, self.candidate.name: cand}[Path(binary).name]
             cold = [ms + (1 - i) / control.NS_PER_MS for i in range(runs)]
             return {"runs_per_mode": runs, "warmup_runs": 1, "percentile_method": "nearest-rank",
                     "cold": ab.latency.summarize(cold),
@@ -53,11 +58,10 @@ class ControlTests(unittest.TestCase):
 
         out = StringIO()
         with patch.dict(os.environ, env), patch.object(ab.platform, "system", return_value="Windows"), \
-                patch.object(ab.shutil, "which", side_effect=lambda p: p), \
                 patch.object(ab.latency, "generate_fixture") as fixture, \
                 patch.object(ab.latency, "measure", side_effect=fake_measure) as sampler, redirect_stdout(out):
-            status = control.main(["measure", "--baseline", "base", "--baseline-label", label,
-                                   "--candidate", "cand", "--output", str(self.report)])
+            status = control.main(["measure", "--baseline", str(self.baseline), "--baseline-label", label,
+                                   "--candidate", str(self.candidate), "--output", str(self.report)])
         fixture.assert_called_once()
         self.assertEqual(fixture.call_args.args[1], 1500)
         self.assertEqual(sampler.call_count, 14)
@@ -125,6 +129,8 @@ class ControlTests(unittest.TestCase):
                                 (rows[0], "round", 1), (rows[0], "arm", "candidate"),
                                 (rows[0]["warm"], "gated_ns", [1] * 29),
                                 (rows[1]["cold"], "raw_ns", [410000000.0] * 30),
+                                (report["rounds"]["candidate"][0], "cold_samples_ns",
+                                 list(reversed(rows[1]["cold"]["gated_ns"]))),
                                 (report["rounds"]["candidate"][0], "cold_p95_ms", 410),
                                 (report["gate"], "ratio", 1.0)):
             with self.subTest(key=key), patch.dict(obj, {key: value}), self.assertRaises(ValueError):
@@ -174,7 +180,8 @@ class ControlTests(unittest.TestCase):
         self.assertEqual(errors.getvalue().splitlines(), ["Windows latency error " + json.dumps(HOSTILE)])
 
     def test_workflow_passes_literal_tag_as_one_argument(self):
-        workflow = Path(".github/workflows/win-latency.yml").read_text(encoding="utf-8")
+        path = Path(__file__).resolve().parents[1] / ".github" / "workflows" / "win-latency.yml"
+        workflow = path.read_text(encoding="utf-8")
         step = workflow.split("        id: measure\n", 1)[1].split("\n      - name:", 1)[0]
         env, script = step.split("        run: |\n", 1)
         self.assertIn("BASELINE_TAG: ${{ steps.baseline.outputs.tag }}", env)
