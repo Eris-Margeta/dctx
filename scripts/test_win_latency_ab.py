@@ -5,12 +5,12 @@ from hashlib import sha256
 from io import StringIO
 import json
 from pathlib import Path
-import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
 
 from scripts import win_latency_ab as ab
+from scripts.test_win_latency import process_result
 
 
 def fake_measure(cold_by_binary):
@@ -116,7 +116,7 @@ class GateTests(unittest.TestCase):
 
 class MainTests(unittest.TestCase):
     def setUp(self):
-        directory = tempfile.TemporaryDirectory(dir=Path.cwd())
+        directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         self.root = Path(directory.name)
         self.output = self.root / "ab.json"
@@ -172,10 +172,9 @@ class MainTests(unittest.TestCase):
                 evidence[arm].append((cold, warm))
                 for ns in [*cold, 12345, *warm]:
                     ticks.extend((1_000_000, 1_000_000 + ns))
-        result = subprocess.CompletedProcess([], 0, stdout=b"fixture#win_latency_probe")
         with patch.dict(ab.os.environ, actions), patch.object(ab, "datetime") as clock, \
                 patch.object(ab.latency.time, "perf_counter_ns", side_effect=ticks), \
-                patch.object(ab.latency.subprocess, "run", return_value=result):
+                patch.object(ab.latency.subprocess, "run", return_value=process_result()):
             clock.now.return_value = utc
             self.assertEqual(ab.main(self.args), 0)
         clock.now.assert_called_once_with(timezone.utc)

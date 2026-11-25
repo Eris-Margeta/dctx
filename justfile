@@ -132,10 +132,14 @@ msrv-check: desktop-frontend
     print(f"MSRV check passed on Rust {version}")
 
 # Check everything including desktop app
-check-all: fmt-check lint desktop-lint msrv-check
+check-all: test-win-latency fmt-check lint desktop-lint msrv-check
 
-# Run all CI checks locally (format, lint, test, desktop-lint, MSRV)
-ci: fmt-check lint test desktop-lint msrv-check
+# Run CI checks locally, starting with the Python latency harness
+ci: test-win-latency fmt-check lint test desktop-lint msrv-check
+
+# Run the Windows latency workflow's unit tests on the local host.
+test-win-latency:
+    python3 -B -m unittest scripts.test_win_latency scripts.test_win_latency_ab scripts.test_win_latency_control -v
 
 # Clean build artifacts
 clean:
@@ -286,12 +290,12 @@ test-linux:
     docker run --rm -v "$PWD":/app -w /app rust:latest cargo test --all
 
 # Website: build, then check (isolated rebuild, capture drift, links, budgets). Needs tools/website/.venv.
-site:
+site: test-win-latency
     tools/website/.venv/bin/python tools/website/build.py
     DCTX_BIN=target/release/dctx-cli tools/website/.venv/bin/python tools/website/check.py
 
 # Re-record the CLI outputs the website shows (after a CLI change), then rebuild.
-site-capture:
+site-capture: test-win-latency
     DCTX_BIN=target/release/dctx-cli python3 tools/website/capture.py
     DCTX_BIN=target/release/dctx-cli python3 tools/website/capture.py --llms
     tools/website/.venv/bin/python tools/website/build.py
