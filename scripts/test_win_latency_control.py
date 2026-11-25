@@ -179,6 +179,32 @@ class ControlTests(unittest.TestCase):
             self.assertEqual(control.main(["verify", str(self.job), str(self.report)]), 2)
         self.assertEqual(errors.getvalue().splitlines(), ["Windows latency error " + json.dumps(HOSTILE)])
 
+    def run_workflow_snippet(self, script, label):
+        bash = "bash"
+        if os.name == "nt":
+            # CreateProcess searches System32 (WSL bash) before PATH.
+            program_files = os.environ.get("ProgramW6432") or os.environ.get("ProgramFiles")
+            self.assertTrue(program_files, "Cannot locate the Git for Windows installation directory")
+            bash = str(Path(program_files) / "Git" / "bin" / "bash.exe")
+        try:
+            result = subprocess.run(
+                [bash, "--noprofile", "--norc", "-e", "-o", "pipefail", "-s"],
+                input=script.encode("utf-8"),
+                env={**os.environ, "BASELINE_TAG": label, "RUNNER_TEMP": "."},
+                capture_output=True,
+            )
+        except OSError as error:
+            raise self.failureException(f"Could not start {bash!a}: {str(error)!a}") from None
+        stderr = json.dumps(result.stderr.decode("utf-8", errors="replace"))
+        self.assertEqual(result.returncode, 0, f"Workflow snippet stderr {stderr}")
+        return result.stdout.split(b"\0")
+
+    def test_workflow_snippet_failure_escapes_stderr(self):
+        result = subprocess.CompletedProcess([], 1, b"", HOSTILE.encode())
+        with patch.object(subprocess, "run", return_value=result), self.assertRaises(AssertionError) as error:
+            self.run_workflow_snippet("false\n", TAG)
+        self.assertEqual(str(error.exception), "1 != 0 : Workflow snippet stderr " + json.dumps(HOSTILE))
+
     def test_workflow_passes_literal_tag_as_one_argument(self):
         path = Path(__file__).resolve().parents[1] / ".github" / "workflows" / "win-latency.yml"
         workflow = path.read_text(encoding="utf-8")
@@ -190,10 +216,11 @@ class ControlTests(unittest.TestCase):
         self.assertIn("      - name: " + control.MEASURE_STEP + "\n", workflow)
         self.assertIn("      - name: " + control.UPLOAD_STEP + "\n", workflow)
         recorder = r"""python() { printf '%s\0' "$@"; }"""
+        snippet = recorder + "\n" + textwrap.dedent(script) + "\n"
         for label in (TAG, HOSTILE):
-            args = subprocess.run(["bash", "-e", "-c", recorder + "\n" + textwrap.dedent(script)],
-                                  env={**os.environ, "BASELINE_TAG": label, "RUNNER_TEMP": "."},
-                                  capture_output=True, check=True).stdout.split(b"\0")
+            args = self.run_workflow_snippet(snippet, label)
+            self.assertIn(b"--baseline-label", args)
+            self.assertIn(b"--candidate", args)
             self.assertEqual(args[args.index(b"--baseline-label") + 1:args.index(b"--candidate")],
                              [label.encode()])
 
